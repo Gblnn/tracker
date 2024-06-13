@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 
 export default function Inbox(){
 
-    const today = new Date()
+    // const today = new Date()
     const [records, setRecords] = useState<any>([])
     const [pageLoad, setPageLoad] = useState(false)
 
