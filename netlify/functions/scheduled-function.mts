@@ -1,6 +1,6 @@
-import type { Config } from "@netlify/functions"
-import { useEffect, useRef, useState } from "react"
 import emailjs from '@emailjs/browser'
+import type { Config } from "@netlify/functions"
+import { useEffect } from "react"
 
 export default async (req: Request) => {
 
