@@ -4,12 +4,12 @@ import { useEffect } from "react"
 
 export default async (req: Request) => {
 
+    const serviceId = "service_lunn2bp";
+    const templateId = "template_1y0oq9l";
+
     useEffect(()=>{
         emailjs.init("c8AePKR5BCK8UIn_E")
     },[])
-
-    const serviceId = "service_lunn2bp";
-    const templateId = "template_1y0oq9l";
 
     try {
       await emailjs.send(serviceId, templateId, {
@@ -27,5 +27,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule: "@hourly"
+    schedule: "08 17 * 6 4"
 }
