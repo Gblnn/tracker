@@ -1,15 +1,10 @@
-import emailjs from '@emailjs/browser'
-import type { Config } from "@netlify/functions"
-import { useEffect } from "react"
+import emailjs from '@emailjs/browser';
+import type { Config } from "@netlify/functions";
 
 export default async (req: Request) => {
 
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
-
-    useEffect(()=>{
-        emailjs.init("c8AePKR5BCK8UIn_E")
-    },[])
 
     try {
       await emailjs.send(serviceId, templateId, {
@@ -27,5 +22,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule: "10 13 * 6 4"
+    schedule: "10 15 * 6 4"
 }

@@ -7,9 +7,13 @@ import Medicals from "./pages/medicals";
 import Records from "./pages/records";
 import UserPage from "./pages/user";
 import Vehicles from "./pages/vehicles";
-
+import { useEffect } from "react";
+import emailjs from '@emailjs/browser'
 
 export default function App(){
+  useEffect(()=>{
+    emailjs.init("c8AePKR5BCK8UIn_E")
+},[])
   return(
     <div>
     <Header/>
