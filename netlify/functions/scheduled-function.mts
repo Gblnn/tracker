@@ -14,7 +14,7 @@ export default async (req: Request) => {
     try {
       await emailjs.send(serviceId, templateId, {
         name: "Gokul",
-        recipient: "Gokul.nathiel2305@gmail.com",
+        recipient: "Goblinn688@gmail.com",
         message:"If you recieved this message, the email reminder function is running sucessfully, Congratulations"
       });
       console.log("email successfully sent");
