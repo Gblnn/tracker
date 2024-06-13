@@ -32,7 +32,7 @@ export default function AddDialog(props:Props){
         <>
         <Dialog open={props.open}>
 
-            <DialogContent style={{}}>
+            <DialogContent onOpenAutoFocus={(e)=>e.preventDefault()} style={{}}>
 
                 <DialogHeader style={{}}>
                     <DialogTitle className="heading" style={{userSelect:"none", width:"100%", display:"flex"}}>
