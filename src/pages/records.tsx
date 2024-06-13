@@ -132,6 +132,8 @@ export default function Records(){
             setCivilNumber("")
             setCivilExpiry("")
             setCivilDOB("")
+            setNewCivilExpiry("")
+            setNewCivilNumber("")
             setLoading(false)
             message.info("ID generation failed "+String(error))
         }
@@ -147,6 +149,8 @@ export default function Records(){
         setCivilNumber("")
         setCivilExpiry("")
         setCivilDOB("")
+        setNewCivilExpiry("")
+        setNewCivilNumber("")
         fetchData()
     }
 
@@ -158,6 +162,8 @@ export default function Records(){
         setCivilExpiry("")
         setCivilDOB("")
         setName("")
+        setNewCivilExpiry("")
+        setNewCivilNumber("")
         setUserDeletePrompt(false)
         setRecordSummary(false)
         setLoading(false)
@@ -207,7 +213,7 @@ export default function Records(){
                         setName(post.name);
                         setID(post.id);
                         setCivilNumber(post.civil_number);
-                        setCivilExpiry(moment(post.civil_expiry.toDate()).format("DD/MM/YYYY"));
+                        setCivilExpiry(moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"));
                         setCivilDOB(post.civil_DOB)
                     }}
                         
