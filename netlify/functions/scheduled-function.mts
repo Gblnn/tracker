@@ -1,6 +1,26 @@
 import type { Config } from "@netlify/functions"
+import { useEffect, useRef, useState } from "react"
+import emailjs from '@emailjs/browser'
 
 export default async (req: Request) => {
+
+    useEffect(()=>{
+        emailjs.init("c8AePKR5BCK8UIn_E")
+    },[])
+
+    const serviceId = "service_lunn2bp";
+    const templateId = "template_1y0oq9l";
+
+    try {
+      await emailjs.send(serviceId, templateId, {
+        name: "Gokul",
+        recipient: "Gokul.nathiel2305@gmail.com",
+        message:"If you recieved this message, the email reminder function is running sucessfully, Congratulations"
+      });
+      console.log("email successfully sent");
+    } catch (error) {
+      console.log(error);
+    }
     const { next_run } = await req.json()
 
     console.log("Received event! Next invocation at:", next_run)
