@@ -1,9 +1,10 @@
 import Back from "@/components/back";
 import InboxComponent from "@/components/inbox-component";
 import { db } from "@/firebase";
-import { Timestamp, collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query } from "firebase/firestore";
 import { motion } from 'framer-motion';
 import { Info, RefreshCcw } from "lucide-react";
+import moment from "moment";
 import { useEffect, useState } from "react";
 
 export default function Inbox(){
@@ -21,7 +22,7 @@ export default function Inbox(){
             setPageLoad(true)
             
             const RecordCollection = collection(db, "records")
-            const recordQuery = query(RecordCollection, where("civil_expiry", "==", Timestamp.fromDate(new Date(today))))
+            const recordQuery = query(RecordCollection)
             const querySnapshot = await getDocs(recordQuery)
             const fetchedData:any = [];
 
@@ -57,7 +58,7 @@ export default function Inbox(){
 
                     {
                         records.map((record:any)=>(
-                            <InboxComponent icon={<Info/>} priority="low" key={record.id} title={record.name} desc={"Civil expiry on "+record.civil_expiry}/>
+                            <InboxComponent icon={<Info/>} priority="low" key={record.id} title={record.name} desc={"Civil expiry on "+record.civil_expiry?moment((record.civil_expiry).toDate()).format("DD/MM/YYYY"):""}/>
                         ))
                     }
 

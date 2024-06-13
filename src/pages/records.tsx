@@ -269,7 +269,7 @@ export default function Records(){
 
             <AddRecordButton onClick={()=>{setAddDialog(true)}}/>
 
-            <AddDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setName(e.target.value)}} inputplaceholder="Enter Name" disabled={loading||!name?true:false} updating={loading}/>
+            <AddDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setName(e.target.value)} } inputplaceholder="Enter Name" disabled={loading||!name?true:false} updating={loading}/>
 
             </motion.div>
 
@@ -280,7 +280,7 @@ export default function Records(){
             close extra={
                 <div style={{border:"", width:"100%", display:"flex", flexFlow:"column", gap:"0.5rem", paddingBottom:"1rem", paddingTop:"1rem"}}>
                     
-                    <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={new_civil_expiry?new_civil_expiry:civil_expiry} status={false}/>
+                    <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={civil_expiry} status={false}/>
                     <Directive onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="Vehicle"/>
                     <Directive icon={<HeartPulse color="tomato"/>} title="Medical"/>
                     <Directive icon={<GraduationCap color="lightgreen"/>} title="Training"/>
@@ -305,15 +305,14 @@ export default function Records(){
                                 !loading?
                                 <>
                                 <Plus width={"1rem"}/>
-                                Add ID
+                                    Add ID
                                 </>
                                 
                                 :
                                 <>
                                 <LoadingOutlined/>
-                                Generating ID
+                                    Generating ID
                                 </>
-                                
                             }
                             
                             </button>
