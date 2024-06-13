@@ -11,9 +11,10 @@ import { LoadingOutlined } from '@ant-design/icons'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Book, Car, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, PackageX, PenLine, Plus, RefreshCcw, TextCursor, UserCircle, X } from "lucide-react"
+import { Book, Car, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Mail, PackageX, PenLine, Plus, RefreshCcw, TextCursor, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
+import emailjs from '@emailjs/browser'
 
 type Record = {
     id:string,
@@ -49,6 +50,9 @@ export default function Records(){
     // const [vehicle_expiry, setVehicleExpiry] = useState("")
     // const [expiryRef, setExpiryRef] = useState()
     // const date = new Date()
+
+    const serviceId = "service_lunn2bp";
+    const templateId = "template_1y0oq9l";
 
     useEffect(() =>{
         fetchData()
@@ -162,13 +166,47 @@ export default function Records(){
         fetchData()
     }
 
+    const TestMail = async () => {
+        try {
+            setLoading(true)
+            await emailjs.send(serviceId, templateId, {
+              name: "Gokul",
+              recipient: "Goblinn688@gmail.com",
+              message:"If you recieved this message, the email reminder function is running sucessfully, Congratulations"
+            });
+            setLoading(false)
+            console.log("email successfully sent");
+          } catch (error) {
+            console.log(error);
+          }
+    }
+
     
     return(
         <>
         <div style={{margin:"1.25rem"}}>
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
 
-            <Back title="Records" extra={<button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={fetchData} ><RefreshCcw width="1.1rem" color="dodgerblue"/></button>}/>
+            <Back title="Records" 
+            extra={
+                <div style={{display:"flex", gap:"0.5rem"}}>
+                <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={TestMail} >
+                    {
+                        loading?
+                        <LoadingOutlined color="dodgerblue"/>
+                        :
+                        <Mail width="1.1rem" color="dodgerblue"/>
+                        
+                    }
+                    
+                    <p style={{fontSize:"0.8rem"}}>Test Mail</p>
+                    </button>
+
+<button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={fetchData} ><RefreshCcw width="1.1rem" color="dodgerblue"/></button>
+                </div>
+                
+        }
+            />
 
             <br/>
 
