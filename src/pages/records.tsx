@@ -70,13 +70,9 @@ export default function Records(){
             setPageLoad(false)
             setRecords(fetchedData)
             
-    
-
-            
         } catch (error) {
             console.log(error)
-        }
-        
+        }   
     }
 
     const addRecord = async () => {
@@ -109,10 +105,8 @@ export default function Records(){
         } catch (error) {
             console.log(error)  
             setLoading(false)   
-            message.info(String(error))  
-                
+            message.info(String(error))
         }
-        
     }
 
     const addCivilID = async () => {
@@ -174,7 +168,7 @@ export default function Records(){
         <div style={{margin:"1.25rem"}}>
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
 
-            <Back title="Records" extra={<button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={fetchData} ><RefreshCcw width="1.1rem" color="grey"/></button>}/>
+            <Back title="Records" extra={<button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={fetchData} ><RefreshCcw width="1.1rem" color="dodgerblue"/></button>}/>
 
             <br/>
 
@@ -211,10 +205,10 @@ export default function Records(){
                         setName(post.name);
                         setID(post.id);
                         setCivilNumber(post.civil_number);
-                        setCivilExpiry(moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"));
+                        setCivilExpiry(post.civil_expiry?moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"):null);
+                    
                         setCivilDOB(post.civil_DOB)
-                    }}
-                        
+                    }}                        
 
                     key={post.id} title={post.name} icon={<UserCircle color="dodgerblue" width={"1.1rem"} height={"1.1rem"} />} />
                     </motion.div>

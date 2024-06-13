@@ -18,7 +18,7 @@ export default function Header(){
                 {/* <NotifyButton/> */}
                 <Link to="/inbox">
                 <Button variant={"ghost"} style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
-                    <Inbox width={"1.5rem"}/>
+                    <Inbox color="crimson" width={"1.5rem"}/>
                     <p style={{}}>1</p>
                 </Button>
                 </Link>
