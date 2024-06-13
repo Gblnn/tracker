@@ -72,6 +72,13 @@ input:focus {
   cursor: default;
 }
 
+.hidden {
+  display: none;
+}
+.visible {
+  display: flex;
+}
+
 .chats::-webkit-scrollbar {
   width: 0.5em;
 }

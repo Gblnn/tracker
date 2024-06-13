@@ -101,8 +101,6 @@ export default function Records(){
         try {
             await updateDoc(doc(db, "records", id),{civil_number:civil_number, 
                 civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
-            
-            
             setCivilExpiry(new_civil_expiry)
             setEditcivilprompt(false)
             setLoading(false)
@@ -275,9 +273,9 @@ export default function Records(){
                 </PaginationContent>
             </Pagination> */}
 
-            <AddRecordButton onClick={()=>setAddDialog(true)}/>
+            <AddRecordButton onClick={()=>{setAddDialog(true)}}/>
 
-            <AddDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setName(e.target.value)}} inputplaceholder="Enter Name" disabled={loading} updating={loading}/>
+            <AddDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setName(e.target.value)}} inputplaceholder="Enter Name" disabled={loading||!name?true:false} updating={loading}/>
 
             </motion.div>
 
@@ -356,7 +354,7 @@ export default function Records(){
 
 
             {/* EDIT CIVIL ID DIALOG */}
-            <AddDialog open={editcivilprompt} title="Edit Civil ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setNewCivilExpiry(civil_expiry);setNewCivilNumber(civil_number)}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setNewCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={civil_number} input2Value={new_civil_expiry?new_civil_expiry:civil_expiry?civil_expiry:null} input3Value={civil_DOB}/>
+            <AddDialog open={editcivilprompt} title="Edit Civil ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setNewCivilExpiry(civil_expiry);setNewCivilNumber(civil_number);setCivilNumber(civil_number)}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setNewCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={new_civil_number?new_civil_number:civil_number?civil_number:""} input2Value={new_civil_expiry?new_civil_expiry:civil_expiry?civil_expiry:null} input3Value={civil_DOB}/>
 
             <DefaultDialog updating={loading} open={civilDelete} title="Delete Civil ID?" OkButtonText="Delete" onCancel={()=>setCivilDelete(false)} onOk={deleteCivilID} disabled={loading}/>
 
