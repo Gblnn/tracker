@@ -11,7 +11,7 @@ import { LoadingOutlined } from '@ant-design/icons'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Car, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, PackageX, PenLine, Plus, RefreshCcw, TextCursor, UserCircle, X } from "lucide-react"
+import { Book, Car, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, PackageX, PenLine, Plus, RefreshCcw, TextCursor, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 
@@ -96,10 +96,11 @@ export default function Records(){
     }
     
     const EditCivilID = async () => {
-        console.log(civil_expiry)
+        
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{civil_number:civil_number, civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
+            await updateDoc(doc(db, "records", id),{civil_number:civil_number, 
+                civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
             
             
             setCivilExpiry(new_civil_expiry)
@@ -199,7 +200,19 @@ export default function Records(){
             {
                 records.map((post:any)=>(
                     <motion.div key={post.id} initial={{opacity:0}} whileInView={{opacity:1}}>
-                    <Directive tag={post.civil_number?"available":null} onClick={()=>{setRecordSummary(true);setName(post.name);setID(post.id);setCivilNumber(post.civil_number);setCivilExpiry(post.civil_expiry);setCivilDOB(post.civil_DOB)}} key={post.id} title={post.name} icon={<UserCircle color="dodgerblue" width={"1.1rem"} height={"1.1rem"} />} />
+                    <Directive tag={post.civil_number?"available":null} 
+
+                    onClick={()=>{
+                        setRecordSummary(true);
+                        setName(post.name);
+                        setID(post.id);
+                        setCivilNumber(post.civil_number);
+                        setCivilExpiry(moment(post.civil_expiry.toDate()).format("DD/MM/YYYY"));
+                        setCivilDOB(post.civil_DOB)
+                    }}
+                        
+
+                    key={post.id} title={post.name} icon={<UserCircle color="dodgerblue" width={"1.1rem"} height={"1.1rem"} />} />
                     </motion.div>
                 ))
             }
@@ -269,10 +282,11 @@ export default function Records(){
             close extra={
                 <div style={{border:"", width:"100%", display:"flex", flexFlow:"column", gap:"0.5rem", paddingBottom:"1rem", paddingTop:"1rem"}}>
                     
-                    <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={civil_expiry?moment(new_civil_expiry?new_civil_expiry:civil_expiry.toDate()).format("DD/MM/YYYY"):""} status={false}/>
+                    <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={new_civil_expiry?new_civil_expiry:civil_expiry} status={false}/>
                     <Directive onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="Vehicle"/>
                     <Directive icon={<HeartPulse color="tomato"/>} title="Medical"/>
-                    <Directive icon={<GraduationCap color="grey"/>} title="Training"/>
+                    <Directive icon={<GraduationCap color="lightgreen"/>} title="Training"/>
+                    <Directive icon={<Book color="goldenrod"/>} title="Passport"/>
                     
                 </div>
             
@@ -308,7 +322,7 @@ export default function Records(){
                         </div>
                         :
                         <div>
-                        <CivilID name={name} expirydate={String(moment(new_civil_expiry?new_civil_expiry:civil_expiry.toDate()).format("DD/MM/YYYY"))} civilid={civil_number} DOB={civil_DOB}/>
+                        <CivilID name={name} expirydate={new_civil_expiry?new_civil_expiry:civil_expiry} civilid={new_civil_number?new_civil_number:civil_number} DOB={civil_DOB}/>
                         {/* <br/>
                         <button style={{width:"100%"}}>Edit</button> */}
                         </div>  
@@ -327,7 +341,7 @@ export default function Records(){
                 </div>
             }/>
 
-            <AddDialog open={userEditPrompt} titleIcon={<PenLine/>} title="Edit Record Name" inputplaceholder="Enter New Name" OkButtonText="Rename" OkButtonIcon={<TextCursor width={"1rem"}/>} onCancel={()=>setUserEditPrompt(false)} onOk={EditRecordName} inputOnChange={(e:any)=>setName(e.target.value)} updating={loading} disabled={loading}/>
+            <AddDialog open={userEditPrompt} titleIcon={<PenLine/>} title="Edit Record Name" inputplaceholder="Enter New Name" OkButtonText="Rename" OkButtonIcon={<TextCursor width={"1rem"}/>} onCancel={()=>setUserEditPrompt(false)} onOk={EditRecordName} inputOnChange={(e:any)=>setName(e.target.value)} updating={loading} disabled={loading} input1Value={name}/>
 
 
 
@@ -336,7 +350,7 @@ export default function Records(){
 
 
             {/* EDIT CIVIL ID DIALOG */}
-            <AddDialog open={editcivilprompt} title="Edit Civil ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>setEditcivilprompt(false)} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setNewCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading}/>
+            <AddDialog open={editcivilprompt} title="Edit Civil ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setNewCivilExpiry(civil_expiry);setNewCivilNumber(civil_number)}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setNewCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={civil_number} input2Value={new_civil_expiry?new_civil_expiry:civil_expiry?civil_expiry:null} input3Value={civil_DOB}/>
 
             <DefaultDialog updating={loading} open={civilDelete} title="Delete Civil ID?" OkButtonText="Delete" onCancel={()=>setCivilDelete(false)} onOk={deleteCivilID} disabled={loading}/>
 

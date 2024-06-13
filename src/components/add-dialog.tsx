@@ -21,6 +21,9 @@ interface Props {
     disabled?:boolean
     OkButtonIcon?:any
     updating?:boolean
+    input1Value?:string
+    input2Value?:string
+    input3Value?:string
 }
 
 export default function AddDialog(props:Props){
@@ -40,16 +43,18 @@ export default function AddDialog(props:Props){
                         
                     </DialogTitle>
                     <div style={{display:'flex', flexFlow:"column", width:"100%", gap:"0.5rem", paddingBottom:"0.5rem"}}>
-                    <input placeholder={props.inputplaceholder} onChange={props.inputOnChange}/>
+
+
+                    <input value={props.input1Value} placeholder={props.inputplaceholder} onChange={props.inputOnChange}/>
                     {
                         props.input2placeholder?
-                        <input placeholder={props.input2placeholder} onChange={props.input2OnChange}/>
+                        <input value={props.input2Value} placeholder={props.input2placeholder} onChange={props.input2OnChange}/>
                         :null
                     }
 
 {
                         props.input3placeholder?
-                        <input placeholder={props.input3placeholder} onChange={props.input3OnChange}/>
+                        <input value={props.input3Value} placeholder={props.input3placeholder} onChange={props.input3OnChange}/>
                         :null
                     }
                     
