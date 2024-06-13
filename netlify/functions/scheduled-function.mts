@@ -7,6 +7,7 @@ export default async (req: Request) => {
     const templateId = "template_1y0oq9l";
 
     try {
+        emailjs.init("c8AePKR5BCK8UIn_E")
       await emailjs.send(serviceId, templateId, {
         name: "Gokul",
         recipient: "Goblinn688@gmail.com",
@@ -22,5 +23,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    
+    schedule:"45 17 * 6 4"
 }
