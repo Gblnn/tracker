@@ -9,7 +9,7 @@ import VehicleID from "@/components/vehicle-id"
 import { db } from "@/firebase"
 import { LoadingOutlined } from '@ant-design/icons'
 import { message } from 'antd'
-import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc } from 'firebase/firestore'
+import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
 import { Book, Car, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Mail, PackageX, PenLine, Plus, RefreshCcw, TextCursor, UserCircle, X } from "lucide-react"
 import moment from 'moment'
@@ -31,6 +31,7 @@ export default function Records(){
     const [civil, setCivil] = useState(false)
     const [vehicle, setVehicle] = useState(false)
     const [addcivil, setAddcivil] = useState(false)
+    const [created_on, setCreatedOn] = useState("")
 
     const [civil_number, setCivilNumber] = useState("")
     const [new_civil_number, setNewCivilNumber] = useState("")
@@ -54,6 +55,8 @@ export default function Records(){
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
 
+    const today = new Date()
+
     useEffect(() =>{
         fetchData()
     },[])
@@ -64,7 +67,7 @@ export default function Records(){
         try {
             setPageLoad(true)
             const RecordCollection = collection(db, "records")
-            const recordQuery = query(RecordCollection)
+            const recordQuery = query(RecordCollection, orderBy("created_on"))
             const querySnapshot = await getDocs(recordQuery)
             const fetchedData: Array<Record> = [];
 
@@ -81,7 +84,7 @@ export default function Records(){
 
     const addRecord = async () => {
         setLoading(true)
-        await addDoc(collection(db, "records"), {name:name})
+        await addDoc(collection(db, "records"), {name:name, created_on:Timestamp.fromDate(today)})
         setAddDialog(false)
         setLoading(false)
         fetchData()
@@ -94,6 +97,8 @@ export default function Records(){
         setLoading(false)
         fetchData()
     }
+
+    
     
     const EditCivilID = async () => {
         
@@ -244,8 +249,8 @@ export default function Records(){
                         setID(post.id);
                         setCivilNumber(post.civil_number);
                         setCivilExpiry(post.civil_expiry?moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"):null);
-                    
                         setCivilDOB(post.civil_DOB)
+                        setCreatedOn(post.created_on?moment((post.created_on).toDate()).format("DD/MM/YYYY"):"")
                     }}                        
 
                     key={post.id} title={post.name} icon={<UserCircle color="dodgerblue" width={"1.1rem"} height={"1.1rem"} />} />
@@ -312,7 +317,7 @@ export default function Records(){
             </motion.div>
 
 
-            <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>setRecordSummary(false)} title_extra={
+            <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>setRecordSummary(false)} created_on={created_on} title_extra={
             <DropDown onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>setUserEditPrompt(true)} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
             }
             close extra={

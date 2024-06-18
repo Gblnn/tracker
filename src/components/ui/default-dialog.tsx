@@ -21,6 +21,7 @@ interface Props {
     back?:boolean
     sendmail?:boolean
     updating?:boolean
+    created_on?:string
 }
 
 export default function DefaultDialog(props:Props){
@@ -34,9 +35,15 @@ export default function DefaultDialog(props:Props){
                 <DialogHeader>
                     <DialogTitle className="heading" style={{userSelect:"none", width:"100%"}}>
                         <div className="flex" style={{border:"", justifyContent:"space-between"}}>
-                            <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
+                            <div style={{display:"flex", alignItems:"center", gap:"0.75rem"}}>
                                 {props.titleIcon}
                                 {props.title}
+                                <p style={{fontWeight:500, fontSize:"0.8rem", opacity:0.5, letterSpacing:"0.075rem", display:"flex", gap:"0.5rem"}}>
+                                    
+                                    {props.created_on}
+                                    
+                                    
+                                </p>
                             </div>
 
                             {props.title_extra}

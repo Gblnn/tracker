@@ -1,18 +1,25 @@
-import emailjs from '@emailjs/browser';
+import emailjs from '@emailjs/nodejs'
 import type { Config } from "@netlify/functions";
 
 export default async (req: Request) => {
+
+    
 
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
 
     try {
-        emailjs.init("c8AePKR5BCK8UIn_E")
+        
+        
       await emailjs.send(serviceId, templateId, {
         name: "Gokul",
         recipient: "Goblinn688@gmail.com",
         message:"If you recieved this message, the email reminder function is running sucessfully, Congratulations"
-      });
+      },{
+        publicKey:"c8AePKR5BCK8UIn_E",
+        privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
+      }
+    );
       console.log("email successfully sent");
     } catch (error) {
       console.log(error);
@@ -23,5 +30,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"39 13 * 6 4"
+    schedule:"00 13 * 6 *"
 }

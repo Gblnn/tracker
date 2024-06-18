@@ -1,7 +1,7 @@
 import Back from "@/components/back";
 import InboxComponent from "@/components/inbox-component";
 import { db } from "@/firebase";
-import { collection, getDocs, query } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from 'framer-motion';
 import { Info, RefreshCcw } from "lucide-react";
 import moment from "moment";
@@ -17,17 +17,20 @@ export default function Inbox(){
         fetchData()
     },[])
 
+    
+
     const fetchData = async () => {
         try {
             setPageLoad(true)
             
             const RecordCollection = collection(db, "records")
-            const recordQuery = query(RecordCollection)
+            const recordQuery = query(RecordCollection, where("civil_expiry", "!=", null))
             const querySnapshot = await getDocs(recordQuery)
             const fetchedData:any = [];
 
             querySnapshot.forEach((doc:any)=>{
                 fetchedData.push({id: doc.id, ...doc.data()})
+                console.log(doc.civil_expiry)
                 setRecords(fetchedData)
             })
             setPageLoad(false)
@@ -42,6 +45,10 @@ export default function Inbox(){
         }
         
     }
+
+    // const Evaluate = () => {
+        
+    // }
 
     return(
         <div style={{margin:"1.25rem"}}>
