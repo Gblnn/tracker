@@ -71,6 +71,11 @@ textarea:hover {
   background-color: rgba(100 100 100/ 15%);
 }
 
+textarea:focus {
+  outline: none;
+  background-color: rgba(100 100 100/ 15%);
+}
+
 input:focus {
   outline: none;
   background-color: rgba(100 100 100/ 15%);

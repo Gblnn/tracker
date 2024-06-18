@@ -49,6 +49,7 @@ export default function Records(){
 
     const [mailconfigdialog, setMailConfigDialog] = useState(false)
     const [recipient, setRecipient] = useState("")
+    const [testmessage, setTestMessage] = useState("")
 
     // const [vecicle_make, setVehicleMake] = useState("")
     // const [vehicle_issue, setVehicleIssue] = useState("")
@@ -176,12 +177,13 @@ export default function Records(){
     }
 
     const TestMail = async () => {
+        
         try {
             setLoading(true)
             await emailjs.send(serviceId, templateId, {
               name: "User",
               recipient: recipient,
-              message:"This is a test E-mail to check backend functionality. Do not reply. Thank You."
+              message: testmessage
             });
             setLoading(false)
             console.log("email successfully sent");
@@ -407,7 +409,7 @@ export default function Records(){
             <DefaultDialog titleIcon={<MailCheck/>} title="Mail Configuration" open={mailconfigdialog} onCancel={()=>setMailConfigDialog(false)} onOk={TestMail} updating={loading} OkButtonText="Send Test Mail" extra={
                 <div style={{display:"flex", border:"", width:"100%", flexFlow:"column", gap:"0.5rem"}}>
                     <input placeholder="Enter E-Mail Address" onChange={(e)=>setRecipient(e.target.value)}/>
-                    <textarea placeholder="Message..." rows={4}/>
+                    <textarea onChange={(e:any)=>setTestMessage(e.target.value)} placeholder="Message..." rows={4}/>
                 <Button variant={"ghost"} style={{flex:1}}>
                     <Plus style={{width:"1rem"}} color="dodgerblue"/>
                     Add Recipient
