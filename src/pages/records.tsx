@@ -4,17 +4,18 @@ import Back from "@/components/back"
 import CivilID from "@/components/civil-id"
 import Directive from "@/components/directive"
 import DropDown from "@/components/dropdown"
+import { Button } from "@/components/ui/button"
 import DefaultDialog from "@/components/ui/default-dialog"
 import VehicleID from "@/components/vehicle-id"
 import { db } from "@/firebase"
 import { LoadingOutlined } from '@ant-design/icons'
+import emailjs from '@emailjs/browser'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Book, Car, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Mail, PackageX, PenLine, Plus, RefreshCcw, TextCursor, UserCircle, X } from "lucide-react"
+import { Book, Car, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, TextCursor, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
-import emailjs from '@emailjs/browser'
 
 type Record = {
     id:string,
@@ -45,6 +46,9 @@ export default function Records(){
     const [userDeletePrompt, setUserDeletePrompt] = useState(false)
     const [userEditPrompt, setUserEditPrompt] = useState(false)
     const [editcivilprompt, setEditcivilprompt] = useState(false)
+
+    const [mailconfigdialog, setMailConfigDialog] = useState(false)
+    const [recipient, setRecipient] = useState("")
 
     // const [vecicle_make, setVehicleMake] = useState("")
     // const [vehicle_issue, setVehicleIssue] = useState("")
@@ -175,15 +179,16 @@ export default function Records(){
         try {
             setLoading(true)
             await emailjs.send(serviceId, templateId, {
-              name: "Gokul",
-              recipient: "Goblinn688@gmail.com",
-              message:"If you recieved this message, the email reminder function is running sucessfully, Congratulations"
+              name: "User",
+              recipient: recipient,
+              message:"This is a test E-mail to check backend functionality. Do not reply. Thank You."
             });
             setLoading(false)
             console.log("email successfully sent");
           } catch (error) {
             console.log(error);
           }
+          setMailConfigDialog(false)
     }
 
     
@@ -195,7 +200,8 @@ export default function Records(){
             <Back title="Records" 
             extra={
                 <div style={{display:"flex", gap:"0.5rem"}}>
-                <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={TestMail} >
+
+                <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>setMailConfigDialog(true)} >
                     {
                         loading?
                         <LoadingOutlined color="dodgerblue"/>
@@ -204,8 +210,8 @@ export default function Records(){
                         
                     }
                     
-                    <p style={{fontSize:"0.8rem"}}>Test Mail</p>
-                    </button>
+                    <p style={{fontSize:"0.8rem"}}>Mail Configuration</p>
+                </button>
 
 <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={fetchData} ><RefreshCcw width="1.1rem" color="dodgerblue"/></button>
                 </div>
@@ -395,6 +401,20 @@ export default function Records(){
             <DefaultDialog updating={loading} open={civilDelete} title="Delete Civil ID?" OkButtonText="Delete" onCancel={()=>setCivilDelete(false)} onOk={deleteCivilID} disabled={loading}/>
 
             <DefaultDialog open={userDeletePrompt} titleIcon={<X/>} destructive title="Delete Record?" OkButtonText="Delete" onCancel={()=>setUserDeletePrompt(false)} onOk={deleteRecord} updating={loading} disabled={loading}/>
+
+
+            {/* Mail Configuration */}
+            <DefaultDialog titleIcon={<MailCheck/>} title="Mail Configuration" open={mailconfigdialog} onCancel={()=>setMailConfigDialog(false)} onOk={TestMail} updating={loading} OkButtonText="Send Test Mail" extra={
+                <div style={{display:"flex", border:"", width:"100%", flexFlow:"column", gap:"0.5rem"}}>
+                    <input placeholder="Enter E-Mail Address" onChange={(e)=>setRecipient(e.target.value)}/>
+                    <textarea placeholder="Message..." rows={4}/>
+                <Button variant={"ghost"} style={{flex:1}}>
+                    <Plus style={{width:"1rem"}} color="dodgerblue"/>
+                    Add Recipient
+                </Button>
+                </div>
+                
+                }/>
 
         </div>
         </>

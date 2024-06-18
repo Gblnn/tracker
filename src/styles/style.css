@@ -18,6 +18,7 @@ button {
   font-weight: 500;
   transition: 0.3s;
   gap: 0.5rem;
+  font-size: 1rem;
 }
 
 button:hover {
@@ -49,6 +50,24 @@ input::placeholder {
 }
 
 input:hover {
+  background-color: rgba(100 100 100/ 15%);
+}
+
+textarea {
+  border: none;
+  width: 100%;
+  padding: 0.5rem;
+  padding-left: 1rem;
+  background: rgba(100 100 100/ 10%);
+  border-radius: 0.75rem;
+  transition: 0.3s;
+}
+
+textarea::placeholder {
+  color: rgb(100 100 100);
+}
+
+textarea:hover {
   background-color: rgba(100 100 100/ 15%);
 }
 

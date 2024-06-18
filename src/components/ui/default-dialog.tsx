@@ -53,7 +53,7 @@ export default function DefaultDialog(props:Props){
                     </DialogTitle>
                     {
                         props.desc?
-                        <p style={{textAlign:"left",width:"100%", fontSize:"0.9rem", opacity:0.5, height:"2rem", marginBottom:"1.25rem"}}>{props.desc}</p>
+                        <p style={{textAlign:"left",width:"100%", fontSize:"0.9rem", opacity:0.5, height:"2rem", marginBottom:""}}>{props.desc}</p>
                         :null
                     }
 
