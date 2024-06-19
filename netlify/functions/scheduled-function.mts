@@ -1,14 +1,24 @@
 import emailjs from '@emailjs/nodejs'
 import type { Config } from "@netlify/functions";
+import { initializeApp } from 'firebase-admin/app'
+import {getFirestore} from 'firebase-admin/firestore'
 
 export default async (req: Request) => {
 
-    
+  const today = new Date()
 
+  initializeApp();
+    
+    const db = getFirestore()
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
 
     try {
+
+      const snapshot = await db.collection("records").get();
+      snapshot.forEach((doc) => {
+        console.log(doc.id, '=>', doc.data())
+      })
         
         
       await emailjs.send(serviceId, templateId, {
@@ -30,5 +40,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"05 11 * 6 *"
+    schedule:"05 07 * 6 *"
 }

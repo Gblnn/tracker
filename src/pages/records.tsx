@@ -40,6 +40,10 @@ export default function Records(){
     const [civil_expiry, setCivilExpiry] = useState<any>()
     const [civil_DOB, setCivilDOB] = useState("")
 
+    const [edited_civil_number, setEditedCivilNumber] = useState("")
+    const [edited_civil_expiry, setEditedCivilExpiry] = useState<any>()
+    const [edited_civil_DOB, setEditedCivilDOB] = useState("")
+
     const [civilDelete, setCivilDelete] = useState(false)
     const [addDialog, setAddDialog] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -84,6 +88,7 @@ export default function Records(){
             
         } catch (error) {
             console.log(error)
+            message.info(String(error))
         }   
     }
 
@@ -109,9 +114,12 @@ export default function Records(){
         
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{civil_number:civil_number, 
-                civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
-            setCivilExpiry(new_civil_expiry)
+            await updateDoc(doc(db, "records", id),{civil_number:edited_civil_number!=""?edited_civil_number:civil_number, civil_expiry:edited_civil_expiry?Timestamp.fromDate(moment(edited_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:edited_civil_DOB?edited_civil_DOB:civil_DOB})
+
+            // await updateDoc(doc(db, "records", id),{civil_number:civil_number, 
+            //     civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
+            // setCivilExpiry(new_civil_expiry)
+
             setEditcivilprompt(false)
             setLoading(false)
             fetchData()
@@ -127,11 +135,16 @@ export default function Records(){
         setAddcivil(false)
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{civil_number:new_civil_number, civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
-            setCivilNumber(new_civil_number)
-            setCivilExpiry(new_civil_expiry)
+            await updateDoc(doc(db, "records", id),{civil_number:civil_number, civil_expiry:Timestamp.fromDate(moment(civil_expiry, "DD/MM/YYYY").toDate()), civil_DOB:civil_DOB})
+
+            // await updateDoc(doc(db, "records", id),{civil_number:new_civil_number, civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
+            // setCivilNumber(new_civil_number)
+            // setCivilExpiry(new_civil_expiry)
+
+            
             setLoading(false)
             fetchData()
+            
             
         } catch (error) {
             console.log(error)
@@ -189,6 +202,8 @@ export default function Records(){
             console.log("email successfully sent");
           } catch (error) {
             console.log(error);
+            message.info("Invalid email address")
+            setLoading(false)
           }
           setMailConfigDialog(false)
     }
@@ -203,7 +218,7 @@ export default function Records(){
             extra={
                 <div style={{display:"flex", gap:"0.5rem"}}>
 
-                <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>setMailConfigDialog(true)} >
+                    <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>setMailConfigDialog(true)} >
                     {
                         loading?
                         <LoadingOutlined color="dodgerblue"/>
@@ -212,10 +227,10 @@ export default function Records(){
                         
                     }
                     
-                    <p style={{fontSize:"0.8rem"}}>Mail Configuration</p>
-                </button>
+                    {/* <p style={{fontSize:"0.8rem"}}>Mail Configuration</p> */}
+                    </button>
 
-<button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={fetchData} ><RefreshCcw width="1.1rem" color="dodgerblue"/></button>
+                    <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={fetchData} ><RefreshCcw width="1.1rem" color="dodgerblue"/></button>
                 </div>
                 
         }
@@ -259,6 +274,9 @@ export default function Records(){
                         setCivilExpiry(post.civil_expiry?moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"):null);
                         setCivilDOB(post.civil_DOB)
                         setCreatedOn(post.created_on?moment((post.created_on).toDate()).format("DD/MM/YYYY"):"")
+                        console.log("civil number : ",civil_number)
+                        console.log("civil expiry : ",civil_expiry)
+                        console.log("civil DOB : ",civil_DOB)
                     }}                        
 
                     key={post.id} title={post.name} icon={<UserCircle color="dodgerblue" width={"1.1rem"} height={"1.1rem"} />} />
@@ -394,11 +412,11 @@ export default function Records(){
 
 
             {/* ADD CIVIL ID DIALOG */}
-            <AddDialog open={addcivil} title="Add Civil ID" titleIcon={<CreditCard/>} inputplaceholder="Civil Number" input2placeholder="Expiry Date" input3placeholder="Date of Birth" OkButtonText="Add" onCancel={()=>setAddcivil(false)} onOk={addCivilID} inputOnChange={(e:any)=>setNewCivilNumber(e.target.value)} input2OnChange={(e:any)=>setNewCivilExpiry(e.target.value)} input3OnChange={(e:any)=>setCivilDOB(e.target.value)} updating={loading} disabled={loading}/>
+            <AddDialog open={addcivil} title="Add Civil ID" titleIcon={<CreditCard/>} inputplaceholder="Civil Number" input2placeholder="Expiry Date" input3placeholder="Date of Birth" OkButtonText="Add" onCancel={()=>setAddcivil(false)} onOk={addCivilID} inputOnChange={(e:any)=>setCivilNumber(e.target.value)} input2OnChange={(e:any)=>setCivilExpiry(e.target.value)} input3OnChange={(e:any)=>setCivilDOB(e.target.value)} updating={loading} disabled={loading}/>
 
 
             {/* EDIT CIVIL ID DIALOG */}
-            <AddDialog open={editcivilprompt} title="Edit Civil ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setNewCivilExpiry(civil_expiry);setNewCivilNumber(civil_number);setCivilNumber(civil_number)}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setNewCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={new_civil_number?new_civil_number:civil_number?civil_number:""} input2Value={new_civil_expiry?new_civil_expiry:civil_expiry?civil_expiry:null} input3Value={civil_DOB}/>
+            <AddDialog open={editcivilprompt} title="Edit Civil ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setEditedCivilNumber("");setEditedCivilExpiry(null);setEditedCivilDOB("")}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setEditedCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setEditedCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={civil_number} input2Value={civil_expiry} input3Value={civil_DOB}/>
 
             <DefaultDialog updating={loading} open={civilDelete} title="Delete Civil ID?" OkButtonText="Delete" onCancel={()=>setCivilDelete(false)} onOk={deleteCivilID} disabled={loading}/>
 
