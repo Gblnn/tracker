@@ -289,7 +289,7 @@ export default function Records(){
                 <div style={{display:"flex", gap:"0.5rem"}}>
 
                     <Tooltip title="Upload CSV">
-                    <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><FilePlus width={"1rem"} color="lightgreen"/></button>
+                    <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><FilePlus width={"1rem"} color="tomato"/></button>
                     </Tooltip>
 
                     <Tooltip title="Email Test">
