@@ -446,7 +446,7 @@ export default function Records(){
                     
                     <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={civil_expiry} status={false}/>
                     <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="Vehicle"/>
-                    <Directive icon={<HeartPulse color="tomato"/>} title="Medical" subtext="Upcoming"/>
+                    <Directive icon={<HeartPulse color="tomato"/>} title="Medical"/>
                     <Directive icon={<GraduationCap color="lightgreen"/>} title="Training"/>
                     <Directive icon={<Book color="goldenrod"/>} title="Passport"/>
                     
