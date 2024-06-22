@@ -274,9 +274,9 @@ export default function Records(){
                         setCivilExpiry(post.civil_expiry?moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"):null);
                         setCivilDOB(post.civil_DOB)
                         setCreatedOn(post.created_on?moment((post.created_on).toDate()).format("DD/MM/YYYY"):"")
-                        console.log("civil number : ",civil_number)
-                        console.log("civil expiry : ",civil_expiry)
-                        console.log("civil DOB : ",civil_DOB)
+                        // console.log("civil number : ",civil_number)
+                        // console.log("civil expiry : ",civil_expiry)
+                        // console.log("civil DOB : ",civil_DOB)
                     }}                        
 
                     key={post.id} title={post.name} icon={<UserCircle color="dodgerblue" width={"1.1rem"} height={"1.1rem"} />} />

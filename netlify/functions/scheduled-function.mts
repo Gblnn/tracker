@@ -5,8 +5,6 @@ import {getFirestore} from 'firebase-admin/firestore'
 
 export default async (req: Request) => {
 
-  const today = new Date()
-
   initializeApp();
     
     const db = getFirestore()

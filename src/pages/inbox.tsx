@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 
 export default function Inbox(){
 
-    // const today = new Date()
+    const today:any = moment().toDate()
     const [records, setRecords] = useState<any>([])
     const [pageLoad, setPageLoad] = useState(false)
 
@@ -30,12 +30,16 @@ export default function Inbox(){
 
             querySnapshot.forEach((doc:any)=>{
                 fetchedData.push({id: doc.id, ...doc.data()})
-                console.log(doc.civil_expiry)
+                
                 setRecords(fetchedData)
+                
             })
             setPageLoad(false)
+            // console.log(records)
+            records.forEach((r:any)=>{
             
-        
+                console.log(r.civil_expiry.toDate()-today)
+            })
             
     
 
