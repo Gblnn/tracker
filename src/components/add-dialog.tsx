@@ -45,16 +45,28 @@ export default function AddDialog(props:Props){
                     <div style={{display:'flex', flexFlow:"column", width:"100%", gap:"0.5rem", paddingBottom:"0.5rem"}}>
 
 
+                    <div>
+                        
                     <input defaultValue={props.input1Value} placeholder={props.inputplaceholder} onChange={props.inputOnChange}/>
+                    </div>
+                    
                     {
                         props.input2placeholder?
-                        <input defaultValue={props.input2Value} placeholder={props.input2placeholder} onChange={props.input2OnChange}/>
+                        <div>
+                            
+                            <input defaultValue={props.input2Value} placeholder={props.input2placeholder} onChange={props.input2OnChange}/>
+                        </div>
+                        
                         :null
                     }
 
 {
                         props.input3placeholder?
-                        <input defaultValue={props.input3Value} placeholder={props.input3placeholder} onChange={props.input3OnChange}/>
+                        <div>
+                            
+                            <input defaultValue={props.input3Value} placeholder={props.input3placeholder} onChange={props.input3OnChange}/>
+                        </div>
+                        
                         :null
                     }
                     

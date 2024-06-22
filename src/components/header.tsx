@@ -1,6 +1,7 @@
 import { Inbox } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
+import { Tooltip } from "antd";
 
 
 export default function Header(){
@@ -16,12 +17,14 @@ export default function Header(){
 
             <div style={{marginRight:"1.25rem", gap:"0.5rem", display:"flex"}}>
                 {/* <NotifyButton/> */}
+                <Tooltip title="Inbox">
                 <Link to="/inbox">
                 <Button variant={"ghost"} style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                     <Inbox color="crimson" width={"1.5rem"}/>
                     <p style={{}}>1</p>
                 </Button>
                 </Link>
+                </Tooltip>
                 
             
                 

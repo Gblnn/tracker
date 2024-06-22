@@ -11,7 +11,7 @@ import VehicleID from "@/components/vehicle-id"
 import { db } from "@/firebase"
 import { LoadingOutlined } from '@ant-design/icons'
 import emailjs from '@emailjs/browser'
-import { message } from 'antd'
+import { Tooltip, message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
 import { Book, Car, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, TextCursor, Upload, UserCircle, X } from "lucide-react"
@@ -265,7 +265,7 @@ export default function Records(){
               message: testmessage
             });
             setLoading(false)
-            console.log("email successfully sent");
+            message.success("Email Successfully Sent")
           } catch (error) {
             console.log(error);
             message.info("Invalid email address")
@@ -288,8 +288,11 @@ export default function Records(){
             extra={
                 <div style={{display:"flex", gap:"0.5rem"}}>
 
+                    <Tooltip title="Upload CSV">
                     <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><FilePlus width={"1rem"} color="lightgreen"/></button>
+                    </Tooltip>
 
+                    <Tooltip title="Email Test">
                     <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>setMailConfigDialog(true)}>
                     {
                         loading?
@@ -301,16 +304,28 @@ export default function Records(){
                     {/* MAIL BUTTON LABEL */}
                     {/* <p style={{fontSize:"0.8rem"}}>Mail Configuration</p> */}
                     </button>
+                    </Tooltip>
 
                     
+                    <Tooltip title="Refresh">
+                    <button style={{width:"3rem"}} onClick={fetchData} >
 
-                    <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={fetchData} ><RefreshCcw width="1.1rem" color="dodgerblue"/></button>
+                        {
+                            pageLoad?
+                            <LoadingOutlined style={{color:"dodgerblue"}} width={"1.5rem"}/>
+                            :
+                            <RefreshCcw width="1.1rem" color="dodgerblue"/>
+                        }
+                        
+
+                        </button>
+                    </Tooltip>
                 </div>
                 
         }
             />
 
-            <DefaultDialog onCancel={()=>setExcelUploadDialog(false)} OkButtonText="Done" open={excel_upload_dialog} title="Upload Excel Data" titleIcon={<Upload/> } 
+            <DefaultDialog onCancel={()=>setExcelUploadDialog(false)} OkButtonText="Upload" open={excel_upload_dialog} title="Upload Excel Data" titleIcon={<Upload/> } 
             extra={
             <>
             <FileInput/>
@@ -389,7 +404,7 @@ export default function Records(){
 
                     <div style={{display:"flex", flexFlow:"column", alignItems:"center", gap:"1rem"}}>
                     <div className="loader"></div>
-                    <p style={{fontSize:"1rem", opacity:"0.5"}}>Connecting</p>
+                    {/* <p style={{fontSize:"1rem", opacity:"0.5"}}>Loading</p> */}
                     </div>
                     
 
