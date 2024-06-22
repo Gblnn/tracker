@@ -53,6 +53,15 @@ input:hover {
   background-color: rgba(100 100 100/ 15%);
 }
 
+input::file-selector-button {
+  background: rgba(100 100 100/ 30%);
+  border: none;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  border-radius: 0.75rem;
+  margin-right: 1rem;
+}
+
 textarea {
   border: none;
   width: 100%;

@@ -1,3 +1,4 @@
+import {motion} from 'framer-motion'
 
 interface Props{
     make?:string
@@ -9,6 +10,7 @@ interface Props{
 
 export default function VehicleID(props:Props){
     return(
+        <motion.div initial={{opacity:0}} whileInView={{opacity:1}} transition={{delay:0.15}}>
         <div className="civil-id" style={{width:"32ch", height:"19ch", background:"", borderRadius:"0.75rem",  cursor:"pointer", zIndex:0, display:"flex", flexFlow:"column", justifyContent:"space-between"}}>
 
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", paddingLeft:"1.5rem", borderBottom:"1px solid rgba(100 100 100/50%)"}}>
@@ -25,10 +27,10 @@ export default function VehicleID(props:Props){
                 
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem"}}>
 
-                <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
+                {/* <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
                         <p style={{fontSize:"0.75rem"}}>REGISTRATION : </p>
                         <p style={{fontWeight:600, fontSize:"0.8rem", textTransform:"uppercase"}}>{props.reg_no}</p>
-                    </div>
+                    </div> */}
 
                     <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
                         <p style={{fontSize:"0.75rem"}}>MAKE : </p>
@@ -82,5 +84,6 @@ export default function VehicleID(props:Props){
             </div>
             
         </div>
+        </motion.div>
     )
 }

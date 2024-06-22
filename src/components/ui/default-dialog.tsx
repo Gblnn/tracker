@@ -76,12 +76,12 @@ export default function DefaultDialog(props:Props){
                             {
                                 props.back?
                                 <>
-                                <ChevronLeft width={"1rem"}/><p>Back</p>
+                                <ChevronLeft color="dodgerblue" width={"1rem"}/><p>Back</p>
                                 </>
                                 
                                 :
                                 <>
-                                <X width="1rem"/><p>Close</p>
+                                <X width="1rem" color="crimson"/><p>Close</p>
                                 </>
                                 
                             }

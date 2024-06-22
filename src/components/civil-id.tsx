@@ -9,7 +9,7 @@ interface Props{
 
 export default function CivilID(props:Props){
     return(
-        <motion.div initial={{opacity:0}} whileInView={{opacity:1}} transition={{delay:0.15}} >
+        <motion.div initial={{opacity:0}} whileInView={{opacity:1}} transition={{delay:0.15}}>
         <div className="civil-id" style={{width:"32ch", height:"19ch", background:"", borderRadius:"0.75rem", zIndex:0, userSelect:"none"}}>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", paddingLeft:"1.5rem", borderBottom:"1px solid rgba(100 100 100/ 35%)"}}>
                 <div style={{border:""}}>

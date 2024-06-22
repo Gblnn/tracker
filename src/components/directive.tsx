@@ -8,6 +8,7 @@ interface Props{
     tag?:any
     status?:boolean
     onClick?:any
+    subtext?:string
 }
 
 export default function Directive(props:Props){
@@ -30,9 +31,19 @@ export default function Directive(props:Props){
                         {props.title}
                     </p>
 
+                    
+                    
+
                 </div>
 
-            <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
+            <div style={{display:"flex", alignItems:"center", gap:"0.75rem"}}>
+            {
+                        props.subtext?
+                        <p style={{fontWeight:400, width:"", textAlign:"left", fontSize:"0.65rem", opacity:"0.6", textTransform:"uppercase"}}>
+                        {""+props.subtext+""}
+                        </p>
+                        :null
+                    }
                 {
                 props.tag?
                 
