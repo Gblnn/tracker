@@ -35,6 +35,7 @@ export default function Records(){
     const [vehicle, setVehicle] = useState(false)
     const [addcivil, setAddcivil] = useState(false)
     const [created_on, setCreatedOn] = useState("")
+    const [loading, setLoading] = useState(false)
 
     // CIVIL ID VARIABLES
     const [civil_number, setCivilNumber] = useState("")
@@ -43,23 +44,24 @@ export default function Records(){
     const [civil_expiry, setCivilExpiry] = useState<any>()
     const [civil_DOB, setCivilDOB] = useState("")
 
+    //EDIT CIVIL ID VARIABLES
     const [edited_civil_number, setEditedCivilNumber] = useState("")
     const [edited_civil_expiry, setEditedCivilExpiry] = useState<any>()
     const [edited_civil_DOB, setEditedCivilDOB] = useState("")
-
-    
     const [civilDelete, setCivilDelete] = useState(false)
+
+    //MAIL CONFIG VARIABLES
     const [addDialog, setAddDialog] = useState(false)
-    const [loading, setLoading] = useState(false)
     const [userDeletePrompt, setUserDeletePrompt] = useState(false)
     const [userEditPrompt, setUserEditPrompt] = useState(false)
     const [editcivilprompt, setEditcivilprompt] = useState(false)
 
-
+    //MAIL CONFIG VALUES
     const [mailconfigdialog, setMailConfigDialog] = useState(false)
     const [recipient, setRecipient] = useState("")
     const [testmessage, setTestMessage] = useState("")
 
+    //VEHICLE ID VARIABLES
     const [vehicle_make, setVehicleMake] = useState("")
     const [vehicle_issue, setVehicleIssue] = useState("")
     const [vehicle_expiry, setVehicleExpiry] = useState("")
@@ -70,9 +72,6 @@ export default function Records(){
     const [add_vehicle_id, setAddVehicleID] = useState(false)
 
     const [excel_upload_dialog, setExcelUploadDialog] = useState(false)
-
-    // const [expiryRef, setExpiryRef] = useState()
-    // const date = new Date()
 
     // MAILJS VARIABLES
     const serviceId = "service_lunn2bp";
@@ -86,7 +85,7 @@ export default function Records(){
         fetchData()
     },[])
 
-    
+
     //INITIAL DATA FETCH ON PAGE LOAD
     const fetchData = async () => {
         try {
@@ -109,7 +108,10 @@ export default function Records(){
     }
 
 
-    // FUNCTION TO ADD RECORD TO FIRESTORE
+
+
+
+    // FUNCTION TO ADD RECORDs TO FIRESTORE
     const addRecord = async () => {
         setLoading(true)
         await addDoc(collection(db, "records"), {name:name, created_on:Timestamp.fromDate(today)})
@@ -118,7 +120,7 @@ export default function Records(){
         fetchData()
     }
 
-    // FUNCTION TO EDIT RECORD NAME IN FIRESTORE
+    // FUNCTION TO EDIT RECORD_NAME IN FIRESTORE
     const EditRecordName = async () => {
         setLoading(true)
         await updateDoc(doc(db, "records", id), {name:name})
@@ -127,27 +129,25 @@ export default function Records(){
         fetchData()
     }
 
-    
-    // FUNCTION TO EDIT CIVIL ID IN FIRESTORE
-    const EditCivilID = async () => {
+    // FUNCTION TO DELETE A RECORD FROM FIRESTORE
+    const deleteRecord = async () => {
         setLoading(true)
-        try {
-            await updateDoc(doc(db, "records", id),{civil_number:edited_civil_number!=""?edited_civil_number:civil_number, civil_expiry:edited_civil_expiry?Timestamp.fromDate(moment(edited_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:edited_civil_DOB?edited_civil_DOB:civil_DOB})
-
-            // await updateDoc(doc(db, "records", id),{civil_number:civil_number, 
-            //     civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
-            // setCivilExpiry(new_civil_expiry)
-
-            setEditcivilprompt(false)
-            setLoading(false)
-            fetchData()
-
-        } catch (error) {
-            console.log(error)  
-            setLoading(false)   
-            message.info(String(error))
-        }
+        await deleteDoc(doc(db, "records", id))
+        setCivilNumber("")
+        setCivilNumber("")
+        setCivilExpiry("")
+        setCivilDOB("")
+        setName("")
+        setNewCivilExpiry("")
+        setNewCivilNumber("")
+        setUserDeletePrompt(false)
+        setRecordSummary(false)
+        setLoading(false)
+        fetchData()
     }
+
+   
+    
 
 
     // FUNCTION TO ADD A NEW CIVIL ID IN FIRESTORE
@@ -179,6 +179,44 @@ export default function Records(){
         
     }
 
+    // FUNCTION TO DELETE A CIVIL ID FROM FIRESTORE
+    const deleteCivilID = async () => {
+        setLoading(true)
+        await updateDoc(doc(db, "records", id),{civil_number:"", civil_expiry:"", civil_DOB:""})
+        setCivilDelete(false)
+        setLoading(false)
+        setCivilNumber("")
+        setCivilNumber("")
+        setCivilExpiry("")
+        setCivilDOB("")
+        setNewCivilExpiry("")
+        setNewCivilNumber("")
+        fetchData()
+    }
+
+    // FUNCTION TO EDIT CIVIL ID IN FIRESTORE
+    const EditCivilID = async () => {
+        setLoading(true)
+        try {
+            await updateDoc(doc(db, "records", id),{civil_number:edited_civil_number!=""?edited_civil_number:civil_number, civil_expiry:edited_civil_expiry?Timestamp.fromDate(moment(edited_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:edited_civil_DOB?edited_civil_DOB:civil_DOB})
+
+            // await updateDoc(doc(db, "records", id),{civil_number:civil_number, 
+            //     civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
+            // setCivilExpiry(new_civil_expiry)
+
+            setEditcivilprompt(false)
+            setLoading(false)
+            fetchData()
+
+        } catch (error) {
+            console.log(error)  
+            setLoading(false)   
+            message.info(String(error))
+        }
+    }
+
+    
+
 
     // FUNCTION TO ADD A NEW VEHICLE ID TO FIRESTORE
     const addVehicleID = async () => {
@@ -209,22 +247,6 @@ export default function Records(){
         
     }
 
-
-    // FUNCTION TO DELETE A CIVIL ID FROM FIRESTORE
-    const deleteCivilID = async () => {
-        setLoading(true)
-        await updateDoc(doc(db, "records", id),{civil_number:"", civil_expiry:"", civil_DOB:""})
-        setCivilDelete(false)
-        setLoading(false)
-        setCivilNumber("")
-        setCivilNumber("")
-        setCivilExpiry("")
-        setCivilDOB("")
-        setNewCivilExpiry("")
-        setNewCivilNumber("")
-        fetchData()
-    }
-
     // FUNCTION TO DELETE A CIVIL ID FROM FIRESTORE
     const deleteVehicleID = async () => {
         setLoading(true)
@@ -237,22 +259,9 @@ export default function Records(){
         fetchData()
     }
 
-    // FUNCTION TO DELETE A RECORD FROM FIRESTORE
-    const deleteRecord = async () => {
-        setLoading(true)
-        await deleteDoc(doc(db, "records", id))
-        setCivilNumber("")
-        setCivilNumber("")
-        setCivilExpiry("")
-        setCivilDOB("")
-        setName("")
-        setNewCivilExpiry("")
-        setNewCivilNumber("")
-        setUserDeletePrompt(false)
-        setRecordSummary(false)
-        setLoading(false)
-        fetchData()
-    }
+    
+
+
 
     // FUNCTION TO SEND A TEST EMAIL
     const TestMail = async () => {
@@ -275,181 +284,213 @@ export default function Records(){
     }
 
     
-
-    
     return(
         <>
+
+        {/* Main Container */}
         <div style={{margin:"1.25rem"}}>
+
+
+            {/* Fade Animation Handler */}
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
 
 
-            {/* BACK BUTTON */}
-            <Back title="Records" 
-            extra={
-                <div style={{display:"flex", gap:"0.5rem"}}>
+                {/* BACK BUTTON */}
+                <Back title="Records" 
+                extra={
+                    <div style={{display:"flex", gap:"0.5rem"}}>
 
-                    <Tooltip title="Upload CSV">
-                    <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><FilePlus width={"1rem"} color="tomato"/></button>
-                    </Tooltip>
+                        <Tooltip title="Upload CSV">
+                        <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><FilePlus width={"1rem"} color="tomato"/></button>
+                        </Tooltip>
 
-                    <Tooltip title="Email Test">
-                    <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>setMailConfigDialog(true)}>
-                    {
-                        loading?
-                        <LoadingOutlined color="dodgerblue"/>
-                        :
-                        <Mail width="1.1rem" color="dodgerblue"/>
-                        
-                    }
-                    {/* MAIL BUTTON LABEL */}
-                    {/* <p style={{fontSize:"0.8rem"}}>Mail Configuration</p> */}
-                    </button>
-                    </Tooltip>
-
-                    
-                    <Tooltip title="Refresh">
-                    <button style={{width:"3rem"}} onClick={fetchData} >
-
+                        <Tooltip title="Email Test">
+                        <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>setMailConfigDialog(true)}>
                         {
-                            pageLoad?
-                            <LoadingOutlined style={{color:"dodgerblue"}} width={"1.5rem"}/>
+                            loading?
+                            <LoadingOutlined color="dodgerblue"/>
                             :
-                            <RefreshCcw width="1.1rem" color="dodgerblue"/>
+                            <Mail width="1.1rem" color="dodgerblue"/>
+                            
                         }
-                        
-
+                        {/* MAIL BUTTON LABEL */}
+                        {/* <p style={{fontSize:"0.8rem"}}>Mail Configuration</p> */}
                         </button>
-                    </Tooltip>
+                        </Tooltip>
+
+                        
+                        <Tooltip title="Refresh">
+                        <button style={{width:"3rem"}} onClick={fetchData} >
+
+                            {
+                                pageLoad?
+                                <LoadingOutlined style={{color:"dodgerblue"}} width={"1.5rem"}/>
+                                :
+                                <RefreshCcw width="1.1rem" color="dodgerblue"/>
+                            }
+                            
+
+                            </button>
+                        </Tooltip>
+                    </div>
+                    }
+                />
+
+                
+
+                <br/>
+
+                {!pageLoad? // if page doesn't load
+
+
+                // IF NUMBER OF RECORDS IS LESS THAN 1
+                records.length<1?
+
+                
+                //DISPLAY EMPTY SET - PAGE
+                <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
+                    <div style={{width:"100%",height:"50svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
+
+                        <div style={{display:"flex", gap:"0.5rem", opacity:"0.5"}}>
+                            <PackageX/>
+                            <p>No Data</p>
+                        </div>
+
+
+                    </div>
+                </motion.div>
+
+
+                : //else
+
+
+                //Page Beginning
+                <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", marginTop:"1"}}>
+
+                    {/* Searchbar */}
+                    <input id="search-bar" placeholder="Search Records"/> 
+
+                    <p style={{height:"0.25rem"}}/>
+
+                {
+                    // RECORD DATA MAPPING
+                    records.map((post:any)=>(
+                        <motion.div key={post.id} initial={{opacity:0}} whileInView={{opacity:1}}>
+
+                            <Directive tag={post.civil_number?"available":null} 
+
+                                // ON CLICK
+                                onClick={()=>{
+
+                                    setRecordSummary(true);
+                                    setName(post.name);
+                                    setID(post.id);
+
+                                    setCivilNumber(post.civil_number);
+                                    setCivilExpiry(post.civil_expiry?moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"):null);
+                                    setCivilDOB(post.civil_DOB)
+
+                                    setVehicleMake(post.vehicle_make)
+                                    setVehicleExpiry(post.vehicle_expiry?moment((post.vehicle_expiry).toDate()).format("DD/MM/YYYY"):"")
+                                    setVehicleIssue(post.vehicle_issue)
+
+                                    setCreatedOn(post.created_on?moment((post.created_on).toDate()).format("DD/MM/YYYY"):"")
+                                }}                        
+
+                            key={post.id} title={post.name} icon={<UserCircle color="dodgerblue" width={"1.1rem"} height={"1.1rem"} />} />
+                        </motion.div>
+                    ))
+                }
+
+                {/* <Directive to="/vehicles" title="Vehicles" icon={<Car color="dodgerblue" width={"1.1rem"} height={"1.1rem"}/>}/>
+
+                <Directive to="/medicals" title="Medicals" icon={<HeartPulse color="tomato" width={"1.1rem"} height={"1.1rem"}/>}/> */}
+
                 </div>
                 
-        }
-            />
+                : //else
 
-            <DefaultDialog onCancel={()=>setExcelUploadDialog(false)} OkButtonText="Upload" open={excel_upload_dialog} title="Upload Excel Data" titleIcon={<Upload/> } 
-            extra={
-            <>
-            <FileInput/>
-            </>
-        }/>
+                // LOADING SCREEN
+                <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
+                    <div style={{width:"100%",height:"55svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
 
-            <br/>
+                        <div style={{display:"flex", flexFlow:"column", alignItems:"center", gap:"1rem"}}>
+                        <div className="loader"></div>
+                        {/* <p style={{fontSize:"1rem", opacity:"0.5"}}>Loading</p> */}
+                        </div>
+                        
 
-            {!pageLoad?
-
-            // IF NUMBER OF RECORDS IS LESS THAN 1, DISPLAY EITHER EMPTY SET OR RECORD DATA MAPPING
-            records.length<1?
-            
-            // EMPTY SET - PAGE
-            <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                <div style={{width:"100%",height:"50svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
-
-                    <div style={{display:"flex", gap:"0.5rem", opacity:"0.5"}}>
-                        <PackageX/>
-                        <p>No Data</p>
                     </div>
+                </motion.div>
+                
+                }
 
+                <br/>
 
-                </div>
+                {/* <Pagination style={{cursor:"pointer"}}>
+                    <PaginationContent>
+
+                        <PaginationItem>
+                            <PaginationLink>
+                                <ChevronLeft width="1rem" height="1rem"/>
+                            </PaginationLink>
+                        </PaginationItem>
+
+                        <PaginationItem>
+                            <PaginationLink isActive>1</PaginationLink>
+                        </PaginationItem>
+
+                        <PaginationItem>
+                            <PaginationLink>2</PaginationLink>
+                        </PaginationItem>
+                        
+                        <PaginationItem>
+                            <PaginationLink><Ellipsis width="1rem" height="1rem"/></PaginationLink>
+                        </PaginationItem>
+
+                        <PaginationItem>
+                            <PaginationNext/>
+                        </PaginationItem>
+
+                    </PaginationContent>
+                </Pagination> */}
+
             </motion.div>
-            :
 
-            // RECORD DATA MAPPING
-            <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", marginTop:"1"
-            }}>
-                <input id="search-bar" placeholder="Search Records"/>
-                <p style={{height:"0.25rem"}}/>
 
-            {
-                records.map((post:any)=>(
-                    <motion.div key={post.id} initial={{opacity:0}} whileInView={{opacity:1}}>
-                    <Directive tag={post.civil_number?"available":null} 
-
-                    // ON CLICK COLLECT REQUIRED DATA FROM RECORD COMPONENT
-                    onClick={()=>{
-
-                        setRecordSummary(true);
-                        setName(post.name);
-                        setID(post.id);
-
-                        setCivilNumber(post.civil_number);
-                        setCivilExpiry(post.civil_expiry?moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"):null);
-                        setCivilDOB(post.civil_DOB)
-
-                        setVehicleMake(post.vehicle_make)
-                        setVehicleExpiry(post.vehicle_expiry?moment((post.vehicle_expiry).toDate()).format("DD/MM/YYYY"):"")
-                        setVehicleIssue(post.vehicle_issue)
-
-                        setCreatedOn(post.created_on?moment((post.created_on).toDate()).format("DD/MM/YYYY"):"")
-
-                        // console.log("civil number : ",civil_number)
-                        // console.log("civil expiry : ",civil_expiry)
-                        // console.log("civil DOB : ",civil_DOB)
-                    }}                        
-
-                    key={post.id} title={post.name} icon={<UserCircle color="dodgerblue" width={"1.1rem"} height={"1.1rem"} />} />
-                    </motion.div>
-                ))
-            }
-
-            {/* <Directive to="/vehicles" title="Vehicles" icon={<Car color="dodgerblue" width={"1.1rem"} height={"1.1rem"}/>}/>
-
-            <Directive to="/medicals" title="Medicals" icon={<HeartPulse color="tomato" width={"1.1rem"} height={"1.1rem"}/>}/> */}
-
-            </div>
-            
-            :
-            // LOADING SCREEN HANDLER
-            <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                <div style={{width:"100%",height:"55svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
-
-                    <div style={{display:"flex", flexFlow:"column", alignItems:"center", gap:"1rem"}}>
-                    <div className="loader"></div>
-                    {/* <p style={{fontSize:"1rem", opacity:"0.5"}}>Loading</p> */}
-                    </div>
-                    
-
-                </div>
-            </motion.div>
-            
-            
-            }
-
-            <br/>
-
-            {/* <Pagination style={{cursor:"pointer"}}>
-                <PaginationContent>
-
-                    <PaginationItem>
-                        <PaginationLink>
-                            <ChevronLeft width="1rem" height="1rem"/>
-                        </PaginationLink>
-                    </PaginationItem>
-
-                    <PaginationItem>
-                        <PaginationLink isActive>1</PaginationLink>
-                    </PaginationItem>
-
-                    <PaginationItem>
-                        <PaginationLink>2</PaginationLink>
-                    </PaginationItem>
-                    
-                    <PaginationItem>
-                        <PaginationLink><Ellipsis width="1rem" height="1rem"/></PaginationLink>
-                    </PaginationItem>
-
-                    <PaginationItem>
-                        <PaginationNext/>
-                    </PaginationItem>
-
-                </PaginationContent>
-            </Pagination> */}
-
+            {/* ADD RECORD BUTTON */}
             <AddRecordButton onClick={()=>{setAddDialog(true)}}/>
+
+
+            {/* Dialog Boxes 👇*/}
+
+
+
+            {/* Dialog to upload Excel files */}
+            <DefaultDialog onCancel={()=>setExcelUploadDialog(false)} OkButtonText="Upload" open={excel_upload_dialog} title="Upload Excel Data" titleIcon={<Upload/> } 
+                extra={
+                <>
+                <FileInput/>
+                </>
+            }/>
+
+
+            {/* Mail Configuration */}
+            <DefaultDialog titleIcon={<MailCheck/>} title="Mail Configuration" open={mailconfigdialog} onCancel={()=>setMailConfigDialog(false)} onOk={TestMail} updating={loading} OkButtonText="Send Test Mail" extra={
+                <div style={{display:"flex", border:"", width:"100%", flexFlow:"column", gap:"0.5rem"}}>
+                    <input placeholder="Enter E-Mail Address" onChange={(e)=>setRecipient(e.target.value)}/>
+                    <textarea onChange={(e:any)=>setTestMessage(e.target.value)} placeholder="Message..." rows={4}/>
+                <Button variant={"ghost"} style={{flex:1}}>
+                    <Plus style={{width:"1rem"}} color="dodgerblue"/>
+                    Add Recipient
+                </Button>
+                </div>
+                
+                }/>
+
 
             {/* ADD RECORD DIALOG */}
             <AddDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setName(e.target.value)} } inputplaceholder="Enter Name" disabled={loading||!name?true:false} updating={loading}/>
-
-            </motion.div>
 
             
             {/* RECORD SUMMARY DIALOG */}
@@ -470,7 +511,7 @@ export default function Records(){
             }/>
 
 
-            {/* CIVIL ID DIALOG */}
+            {/*DISPLAY CIVIL ID DIALOG */}
             <DefaultDialog back close titleIcon={<CreditCard color="dodgerblue"/>} title="Civil ID" open={civil} onCancel={()=>setCivil(false)} OkButtonText="Add" title_extra={civil_number?
             <DropDown onDelete={()=>{setCivilDelete(true)}} onEdit={()=>{setEditcivilprompt(true)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>
             
@@ -511,16 +552,15 @@ export default function Records(){
                     
                 </div>
             }
-            
             />
 
-            {/* DELETE CIVIL ID */}
+            {/* DELETE CIVIL ID DIALOG */}
             <DefaultDialog updating={loading} open={civilDelete} title="Delete Civil ID?" OkButtonText="Delete" onCancel={()=>setCivilDelete(false)} onOk={deleteCivilID} disabled={loading}/>
 
-            {/* DELETE VEHICLE ID */}
+            {/* DELETE VEHICLE ID DIALOG */}
             <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading}/>
 
-            {/* VEHICLE ID DIALOG */}
+            {/*DISPLAY VEHICLE ID DIALOG */}
             <DefaultDialog close titleIcon={<Car color="violet"/>} title="Vehicle ID" open={vehicle} onCancel={()=>setVehicle(false)} OkButtonText="Add" back
             title_extra={vehicle_make?
                 <DropDown onDelete={()=>{setVehicleIdDelete(true)}} onEdit={()=>{setEditVehicleIDprompt(true)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>
@@ -560,14 +600,6 @@ export default function Records(){
                     <br/>         
                 </div>
             }
-            
-            
-            // extra={
-            //     <div>
-            //         <VehicleID name={name} issuedate={"10/12/2023"} expirydate={"10/04/2024"} make={"XXXXX"}/>
-            //         <br/>
-            //     </div>
-            // }
             />
 
 
@@ -595,18 +627,7 @@ export default function Records(){
             <DefaultDialog open={userDeletePrompt} titleIcon={<X/>} destructive title="Delete Record?" OkButtonText="Delete" onCancel={()=>setUserDeletePrompt(false)} onOk={deleteRecord} updating={loading} disabled={loading}/>
 
 
-            {/* Mail Configuration */}
-            <DefaultDialog titleIcon={<MailCheck/>} title="Mail Configuration" open={mailconfigdialog} onCancel={()=>setMailConfigDialog(false)} onOk={TestMail} updating={loading} OkButtonText="Send Test Mail" extra={
-                <div style={{display:"flex", border:"", width:"100%", flexFlow:"column", gap:"0.5rem"}}>
-                    <input placeholder="Enter E-Mail Address" onChange={(e)=>setRecipient(e.target.value)}/>
-                    <textarea onChange={(e:any)=>setTestMessage(e.target.value)} placeholder="Message..." rows={4}/>
-                <Button variant={"ghost"} style={{flex:1}}>
-                    <Plus style={{width:"1rem"}} color="dodgerblue"/>
-                    Add Recipient
-                </Button>
-                </div>
-                
-                }/>
+            
 
         </div>
         </>
