@@ -114,6 +114,10 @@ input:focus {
   background-color: rgba(100 100 100/ 10%);
 }
 
+.check-square {
+  transition: 0.25s;
+}
+
 .disabled {
   opacity: 0.5;
   cursor: default;

@@ -83,6 +83,9 @@ export default function Records(){
     const [selectable, setSelectable] = useState(false)
     const [search, setSearch] = useState("")
 
+    const [checked, setChecked] = useState<any>([])
+
+
     // MAILJS VARIABLES
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
@@ -91,10 +94,16 @@ export default function Records(){
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
+    
+
     // PAGE LOAD HANDLER
     useEffect(() =>{
         fetchData()
     },[])
+
+    // useEffect(()=>{
+        
+    // },[checked])
 
 
     //INITIAL DATA FETCH ON PAGE LOAD
@@ -123,7 +132,7 @@ export default function Records(){
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
         setLoading(true)
-        await addDoc(collection(db, "records"), {name:name, created_on:Timestamp.fromDate(today)})
+        await addDoc(collection(db, "records"), {name:name, created_on:Timestamp.fromDate(today), civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:""})
         setAddDialog(false)
         setLoading(false)
         fetchData()
@@ -153,6 +162,7 @@ export default function Records(){
         setRecordSummary(false)
         setLoading(false)
         fetchData()
+        window.location.reload()
     }
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */} 
@@ -290,6 +300,25 @@ export default function Records(){
     }
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
+
+    const handleSelect = (id:any) => {
+        
+        // console.log(typeof(id))
+        const index = checked.indexOf(id)
+        console.log(index)
+
+
+        if(index == -1){
+            setChecked((data:any)=>[...data,id])
+        }else{
+            const newVal = [...checked]
+            
+            setChecked(newVal)
+        }
+        console.log(checked)
+
+    }
+
     return(
         <>
 
@@ -375,7 +404,7 @@ export default function Records(){
 
                     {/* Searchbar */}
                     <div style={{display:"flex", gap:"1rem"}}>
-                        <button className={selectable?"blue":""} onClick={()=>setSelectable(!selectable)}><CheckSquare2 color={selectable?"white":"dodgerblue"}/></button>
+                        <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable)}}><CheckSquare2 color={selectable?"white":"dodgerblue"}/></button>
                         <input type="search" onChange={(e)=>{setSearch(e.target.value.toLowerCase())}} id="search-bar" placeholder="Search Records"/>
                     </div>
                      
@@ -398,11 +427,46 @@ export default function Records(){
                     .map((post:any)=>(
                         <motion.div key={post.id} initial={{opacity:0}} whileInView={{opacity:1}}>
 
-                            <Directive tag={post.civil_number?"available":null} 
+                            <Directive 
+                                
+                                tag={
 
+                                    
+                                    
+                                    
+                                    post.civil_expiry==""||post.vehicle_expiry==""?
+                                    "No Data"
+                                    :
+                                    post.civil_expiry?
+                                    moment((post.civil_expiry).toDate()).diff(moment(today), 'months')<=3?
+                                    
+                                    "Expiring":"Available":"No Data"
+                                    ||
+                                    post.vehicle_expiry?
+                                    moment((post.vehicle_expiry).toDate()).diff(moment(today), 'months')<=3?
+                                    "Expiring":"Available":"No Data"
+                                
+                                    
+
+
+                                    
+                                    
+
+                                }
+                                
+                               
+
+                                selectable={selectable}
+
+                                status
+                            
                                 // ON CLICK
+                                onSelect={()=>{
+                                    handleSelect(post.id)
+                                }}
                                 onClick={()=>{
-
+                                    
+                                    
                                     setRecordSummary(true);
                                     setName(post.name);
                                     setID(post.id);
@@ -416,9 +480,11 @@ export default function Records(){
                                     setVehicleIssue(post.vehicle_issue)
 
                                     setCreatedOn(post.created_on?moment((post.created_on).toDate()).format("DD/MM/YYYY"):"")
+                    
+                                    
                                 }}                        
 
-                            key={post.id} title={post.name} icon={<UserCircle color="dodgerblue" width={"1.1rem"} height={"1.1rem"} />} />
+                            key={post.id} title={post.name} icon={<UserCircle color="dodgerblue" />} />
                         </motion.div>
                     ))
                 }
@@ -519,8 +585,9 @@ export default function Records(){
             close extra={
                 <div style={{border:"", width:"100%", display:"flex", flexFlow:"column", gap:"0.5rem", paddingBottom:"1rem", paddingTop:"1rem"}}>
                     
-                    <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={civil_expiry} status={false}/>
-                    <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="Vehicle"/>
+                    <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={civil_expiry} status={moment(new Date(civil_expiry)).diff(moment(today), "months")+1<=2}/>
+
+                    <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="Vehicle" status/>
                     <Directive icon={<HeartPulse color="tomato"/>} title="Medical"/>
                     <Directive icon={<GraduationCap color="lightgreen"/>} title="Training"/>
                     <Directive icon={<Book color="goldenrod"/>} title="Passport"/>

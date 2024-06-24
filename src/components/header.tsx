@@ -1,11 +1,61 @@
-import { Inbox } from "lucide-react";
+import { Inbox, Info } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Tooltip } from "antd";
-
+import moment from "moment";
+import InboxComponent from "./inbox-component";
+import { useEffect, useState } from "react";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/firebase";
+import { LoadingOutlined } from '@ant-design/icons'
 
 export default function Header(){
 
+    const today:any = moment().toDate()
+    const [records, setRecords] = useState<any>([])
+    const [pageLoad, setPageLoad] = useState(false)
+    const [count, setCount] = useState(0)
+
+    const fetchData = async () => {
+        try {
+            setPageLoad(true)
+            
+            const RecordCollection = collection(db, "records")
+            const recordQuery = query(RecordCollection, where("civil_expiry", "!=", null))
+            const querySnapshot = await getDocs(recordQuery)
+            const fetchedData:any = [];
+
+            querySnapshot.forEach((doc:any)=>{
+                fetchedData.push({id: doc.id, ...doc.data()})
+                
+                setRecords(fetchedData)
+                
+            })
+            setPageLoad(false)
+            // console.log(records)
+            // records.forEach((r:any)=>{
+            
+            //     console.log(r.civil_expiry.toDate())
+            // })
+            
+            
+    
+
+            
+        } catch (error) {
+            console.log(error)
+        }
+        
+    }
+
+    useEffect(()=>{
+        fetchData()
+    },[])
+
+    useEffect(()=>{
+        // console.log(document.getElementById("inboxes")?.childElementCount)
+        setCount(Number(document.getElementById("inboxes")?.childElementCount))
+    },[pageLoad, fetchData])
 
     return(
         <>
@@ -20,9 +70,14 @@ export default function Header(){
                 {/* <NotifyButton/> */}
                 <Tooltip title="Inbox">
                 <Link to="/inbox">
-                <Button variant={"ghost"} style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
+                <Button onClick={()=>fetchData()} variant={"ghost"} style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                     <Inbox color="crimson" width={"1.5rem"}/>
-                    {/* <p style={{}}></p> */}
+                    {
+                        count?
+                        <p style={{}}>{pageLoad?<LoadingOutlined/>:count?count:null}</p>
+                        :null
+                    }
+                    
                 </Button>
                 </Link>
                 </Tooltip>
@@ -31,6 +86,19 @@ export default function Header(){
                 
                 
             </div>
+
+            <div id="inboxes" style={{display:"none", flexFlow:"column", gap:"0.75rem"}}>
+                    {
+                        records
+                        .filter((record:any)=>{
+                            return record.civil_expiry?(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')<=3):null
+                        }).map((record:any)=>(
+                            <InboxComponent 
+                            // onClick={()=>console.log(Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')))}
+                             icon={<Info/>} priority="low" key={record.id} title={record.name+" expiry reminder"} desc={"Civil expiry in "+Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"+" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")}/>
+                        ))
+                    }
+                </div>
             
             
         </div>

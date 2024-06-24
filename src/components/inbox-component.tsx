@@ -25,7 +25,7 @@ export default function InboxComponent(props:Props){
                     {props.icon}
                     </div>
                     <div style={{border:"", display:'flex', flexFlow:"column"}}>
-                    <p style={{fontWeight:600, width:"", textAlign:"left", fontSize:"0.85rem"}}>
+                    <p style={{fontWeight:500, width:"", textAlign:"left", fontSize:"0.85rem"}}>
                         {props.title}
                     </p>
                     <p style={{textAlign:"left", fontWeight:400, opacity:0.75, fontSize:"0.75rem"}}>{props.desc}</p>

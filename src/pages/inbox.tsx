@@ -1,7 +1,7 @@
 import Back from "@/components/back";
 import InboxComponent from "@/components/inbox-component";
 import { db } from "@/firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { motion } from 'framer-motion';
 import { Info, RefreshCcw } from "lucide-react";
 import moment from "moment";
@@ -12,10 +12,16 @@ export default function Inbox(){
     const today:any = moment().toDate()
     const [records, setRecords] = useState<any>([])
     const [pageLoad, setPageLoad] = useState(false)
+    
+    
 
     useEffect(()=>{
         fetchData()
     },[])
+
+    // useEffect(()=>{
+    //     console.log(document.getElementById("inboxes")?.childElementCount)
+    // },[pageLoad])
 
     
 
@@ -24,7 +30,7 @@ export default function Inbox(){
             setPageLoad(true)
             
             const RecordCollection = collection(db, "records")
-            const recordQuery = query(RecordCollection, where("civil_expiry", "!=", null))
+            const recordQuery = query(RecordCollection, orderBy("created_on"))
             const querySnapshot = await getDocs(recordQuery)
             const fetchedData:any = [];
 
@@ -41,6 +47,7 @@ export default function Inbox(){
             //     console.log(r.civil_expiry.toDate())
             // })
             
+            
     
 
             
@@ -56,7 +63,7 @@ export default function Inbox(){
 
     return(
         <div style={{margin:"1.25rem"}}>
-            <Back title="Inbox" 
+            <Back title="Alerts" 
                 extra={
                     <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={fetchData} >
                         <RefreshCcw width="1.1rem" color="grey"/></button>}/>
@@ -65,22 +72,43 @@ export default function Inbox(){
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
                 
                 <br/>
-                <div style={{display:"flex", flexFlow:"column", gap:"0.75rem"}}>
-
+                <div id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.75rem"}}>
                     {
-                        records.map((record:any)=>(
+                        records
+                        .filter((record:any)=>{
+                            return (
+
+                                
+                                record.civil_expiry?
+                                moment(record.civil_expiry.toDate()).diff(moment(today), 'months')<=2
+                                :null
+
+                                ||
+                                
+                                record.vehicle_expiry?
+                                moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months')<=2
+                                :null
+
+                            )
+                        })
+                        .map((record:any)=>(
                             <InboxComponent 
-                            onClick={()=>console.log(Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')))}
-                            hidden={
-                                (Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')))<=3?
-                                false:true
-                            } icon={<Info/>} priority="low" key={record.id} title={record.name+" expiry reminder"} desc={"Civil expiry in "+Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"+" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")}/>
+                            // onClick={()=>console.log(Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')))}
+                             icon={<Info/>} priority="low" key={record.id} title={record.name+" doc expiry reminder"} 
+                             
+                             desc={
+                                
+                                record.civil_expiry?
+                                ("Civil expiry in "+Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')+1)+" month(s)"+" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")):""
+                                // ||
+                                // record.vehicle_expiry?
+                                // ("Vehicle expiry in "+Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"+" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY")):""
+
+                                
+
+                            }/>
                         ))
                     }
-
-                    {/* <InboxComponent title="Civil ID Expiry Reminder" desc="Civil ID number XXXXXXXX is expiring on 12/10/2024 (in 4 months)" priority="low" icon={<Info/>}/>
-
-                    <InboxComponent title="Vehicle ID Expiry Reminder" desc="Vehicle ID number XXXXXXXX is expiring on 12/10/2024 (in 4 months)" priority="low" icon={<Car/>}/> */}
                 </div>
             </motion.div>
             :
