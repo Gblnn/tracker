@@ -1,28 +1,24 @@
-import emailjs from '@emailjs/nodejs'
+import emailjs from '@emailjs/nodejs';
 import type { Config } from "@netlify/functions";
-import { initializeApp } from 'firebase-admin/app'
-import {getFirestore} from 'firebase-admin/firestore'
+import { initializeApp } from 'firebase-admin/app';
 
 export default async (req: Request) => {
 
   initializeApp();
     
-    const db = getFirestore()
+
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
 
     try {
 
-      const snapshot = await db.collection("records").get();
-      snapshot.forEach((doc) => {
-        console.log(doc.id, '=>', doc.data())
-      })
+      
         
         
       await emailjs.send(serviceId, templateId, {
         name: "Gokul",
         recipient: "Goblinn688@gmail.com",
-        message:"If you recieved this message, the email reminder function is running sucessfully, Congratulations"
+        message:"If you recieved this message, the email reminder function is running sucessfully on the netlify scheduled function, Congratulations"
       },{
         publicKey:"c8AePKR5BCK8UIn_E",
         privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
@@ -38,5 +34,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"00 07 * 6 *"
+    schedule:"00 07 * * *"
 }
