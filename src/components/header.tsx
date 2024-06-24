@@ -1,13 +1,12 @@
-import { Inbox, Info } from "lucide-react";
-import { Link } from "react-router-dom";
-import { Button } from "./ui/button";
-import { Tooltip } from "antd";
-import moment from "moment";
-import InboxComponent from "./inbox-component";
-import { useEffect, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/firebase";
-import { LoadingOutlined } from '@ant-design/icons'
+import { LoadingOutlined } from '@ant-design/icons';
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { Inbox, Info } from "lucide-react";
+import moment from "moment";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import InboxComponent from "./inbox-component";
+import { Button } from "./ui/button";
 
 export default function Header(){
 
@@ -68,7 +67,7 @@ export default function Header(){
 
             <div style={{marginRight:"1.25rem", gap:"0.5rem", display:"flex"}}>
                 {/* <NotifyButton/> */}
-                <Tooltip title="Inbox">
+                
                 <Link to="/inbox">
                 <Button onClick={()=>fetchData()} variant={"ghost"} style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                     <Inbox color="crimson" width={"1.5rem"}/>
@@ -80,7 +79,7 @@ export default function Header(){
                     
                 </Button>
                 </Link>
-                </Tooltip>
+                
                 
             
                 
