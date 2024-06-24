@@ -14,7 +14,7 @@ import emailjs from '@emailjs/browser'
 import { Tooltip, message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Book, Car, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, TextCursor, Upload, UserCircle, X } from "lucide-react"
+import { Book, Car, Check, CheckCheck, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, TextCursor, Upload, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 
@@ -86,6 +86,7 @@ export default function Records(){
 
     const today = new Date()
 
+{/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
     // PAGE LOAD HANDLER
     useEffect(() =>{
@@ -114,11 +115,9 @@ export default function Records(){
         }   
     }
 
+{/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
-
-
-
-    // FUNCTION TO ADD RECORDs TO FIRESTORE
+    // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
         setLoading(true)
         await addDoc(collection(db, "records"), {name:name, created_on:Timestamp.fromDate(today)})
@@ -127,7 +126,7 @@ export default function Records(){
         fetchData()
     }
 
-    // FUNCTION TO EDIT RECORD_NAME IN FIRESTORE
+    // FUNCTION TO EDIT RECORD
     const EditRecordName = async () => {
         setLoading(true)
         await updateDoc(doc(db, "records", id), {name:name})
@@ -136,7 +135,7 @@ export default function Records(){
         fetchData()
     }
 
-    // FUNCTION TO DELETE A RECORD FROM FIRESTORE
+    // FUNCTION TO DELETE RECORD
     const deleteRecord = async () => {
         setLoading(true)
         await deleteDoc(doc(db, "records", id))
@@ -153,11 +152,10 @@ export default function Records(){
         fetchData()
     }
 
-   
-    
+{/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */} 
 
 
-    // FUNCTION TO ADD A NEW CIVIL ID IN FIRESTORE
+    // FUNCTION TO ADD A CIVIL ID
     const addCivilID = async () => {
         setAddcivil(false)
         setLoading(true)
@@ -186,7 +184,7 @@ export default function Records(){
         
     }
 
-    // FUNCTION TO DELETE A CIVIL ID FROM FIRESTORE
+    // FUNCTION TO DELETE A CIVIL ID
     const deleteCivilID = async () => {
         setLoading(true)
         await updateDoc(doc(db, "records", id),{civil_number:"", civil_expiry:"", civil_DOB:""})
@@ -201,7 +199,7 @@ export default function Records(){
         fetchData()
     }
 
-    // FUNCTION TO EDIT CIVIL ID IN FIRESTORE
+    // FUNCTION TO EDIT A CIVIL ID
     const EditCivilID = async () => {
         setLoading(true)
         try {
@@ -222,10 +220,10 @@ export default function Records(){
         }
     }
 
-    
+{/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}    
 
 
-    // FUNCTION TO ADD A NEW VEHICLE ID TO FIRESTORE
+    // FUNCTION TO ADD A VEHICLE ID
     const addVehicleID = async () => {
         setAddVehicleID(false)
         setLoading(true)
@@ -254,7 +252,7 @@ export default function Records(){
         
     }
 
-    // FUNCTION TO DELETE A CIVIL ID FROM FIRESTORE
+    // FUNCTION TO DELETE A CIVIL ID
     const deleteVehicleID = async () => {
         setLoading(true)
         await updateDoc(doc(db, "records", id),{vehicle_make:"", vehicle_expiry:"", vehicle_issue:""})
@@ -264,11 +262,9 @@ export default function Records(){
         setVehicleExpiry("")
         setVehicleIssue("")
         fetchData()
-    }
+    } 
 
-    
-
-
+{/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
     // FUNCTION TO SEND A TEST EMAIL
     const TestMail = async () => {
@@ -289,8 +285,8 @@ export default function Records(){
           }
           setMailConfigDialog(false)
     }
+{/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
-    
     return(
         <>
 
@@ -298,7 +294,7 @@ export default function Records(){
         <div style={{margin:"1.25rem"}}>
 
 
-            {/* Fade Animation Handler */}
+            {/* Main Component */}
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
 
 
@@ -308,7 +304,7 @@ export default function Records(){
                     <div style={{display:"flex", gap:"0.5rem"}}>
 
                         <Tooltip title="Upload CSV">
-                        <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><FilePlus width={"1rem"} color="tomato"/></button>
+                        <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><Check width={"1rem"} color="tomato"/></button>
                         </Tooltip>
 
                         <Tooltip title="Email Test">
@@ -371,7 +367,7 @@ export default function Records(){
                 : //else
 
 
-                //Page Beginning
+                //DISPLAY Page Beginning
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", marginTop:"1"}}>
 
                     {/* Searchbar */}
@@ -469,11 +465,12 @@ export default function Records(){
             <AddRecordButton onClick={()=>{setAddDialog(true); setName("")}}/>
 
 
+{/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
+
             {/* Dialog Boxes 👇*/}
 
 
-
-            {/* Dialog to upload Excel files */}
+            {/* Upload Excel files Dialog */}
             <DefaultDialog onCancel={()=>setExcelUploadDialog(false)} OkButtonText="Upload" open={excel_upload_dialog} title="Upload Excel Data" titleIcon={<Upload/> } 
                 extra={
                 <>
@@ -482,7 +479,7 @@ export default function Records(){
             }/>
 
 
-            {/* Mail Configuration */}
+            {/* Mail Configuration Dialog */}
             <DefaultDialog titleIcon={<MailCheck/>} title="Mail Configuration" open={mailconfigdialog} onCancel={()=>setMailConfigDialog(false)} onOk={TestMail} updating={loading} OkButtonText="Send Test Mail" extra={
                 <div style={{display:"flex", border:"", width:"100%", flexFlow:"column", gap:"0.5rem"}}>
                     <input placeholder="Enter E-Mail Address" onChange={(e)=>setRecipient(e.target.value)}/>
@@ -495,12 +492,9 @@ export default function Records(){
                 
                 }/>
 
+{/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
-            {/* ADD RECORD DIALOG */}
-            <AddDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setName(e.target.value)} } inputplaceholder="Enter Name" disabled={loading||!name?true:false} updating={loading}/>
-
-            
-            {/* RECORD SUMMARY DIALOG */}
+            {/* DISPLAY RECORD DIALOG */}
             <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>setRecordSummary(false)} created_on={created_on} title_extra={
             <DropDown onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>setUserEditPrompt(true)} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
             }
@@ -516,6 +510,18 @@ export default function Records(){
                 </div>
             
             }/>
+
+            {/* ADD RECORD DIALOG */}
+            <AddDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setName(e.target.value)} } inputplaceholder="Enter Name" disabled={loading||!name?true:false} updating={loading}/>
+
+
+            {/* EDIT RECORD DIALOG */}
+            <AddDialog open={userEditPrompt} titleIcon={<PenLine/>} title="Edit Record Name" inputplaceholder="Enter New Name" OkButtonText="Rename" OkButtonIcon={<TextCursor width={"1rem"}/>} onCancel={()=>setUserEditPrompt(false)} onOk={EditRecordName} inputOnChange={(e:any)=>setName(e.target.value)} updating={loading} disabled={loading} input1Value={name}/>
+
+            {/* DELETE RECORD DIALOG */}
+            <DefaultDialog open={userDeletePrompt} titleIcon={<X/>} destructive title="Delete Record?" OkButtonText="Delete" onCancel={()=>setUserDeletePrompt(false)} onOk={deleteRecord} updating={loading} disabled={loading}/>
+
+{/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
 
             {/*DISPLAY CIVIL ID DIALOG */}
@@ -561,11 +567,17 @@ export default function Records(){
             }
             />
 
+            {/* ADD CIVIL ID DIALOG */}
+            <AddDialog open={addcivil} title="Add Civil ID" titleIcon={<CreditCard/>} inputplaceholder="Civil Number" input2placeholder="Expiry Date" input3placeholder="Date of Birth" OkButtonText="Add" onCancel={()=>setAddcivil(false)} onOk={addCivilID} inputOnChange={(e:any)=>setCivilNumber(e.target.value)} input2OnChange={(e:any)=>setCivilExpiry(e.target.value)} input3OnChange={(e:any)=>setCivilDOB(e.target.value)} updating={loading} disabled={loading}/>
+
+
+            {/* EDIT CIVIL ID DIALOG */}
+            <AddDialog open={editcivilprompt} title="Edit Civil ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setEditedCivilNumber("");setEditedCivilExpiry(null);setEditedCivilDOB("")}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setEditedCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setEditedCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={civil_number} input2Value={civil_expiry} input3Value={civil_DOB}/>
+
             {/* DELETE CIVIL ID DIALOG */}
             <DefaultDialog updating={loading} open={civilDelete} title="Delete Civil ID?" OkButtonText="Delete" onCancel={()=>setCivilDelete(false)} onOk={deleteCivilID} disabled={loading}/>
 
-            {/* DELETE VEHICLE ID DIALOG */}
-            <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading}/>
+{/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
             {/*DISPLAY VEHICLE ID DIALOG */}
             <DefaultDialog close titleIcon={<Car color="violet"/>} title="Vehicle ID" open={vehicle} onCancel={()=>setVehicle(false)} OkButtonText="Add" back
@@ -606,35 +618,17 @@ export default function Records(){
                     }
                     <br/>         
                 </div>
-            }
-            />
-
-
-            {/* EDIT RECORD NAME */}
-            <AddDialog open={userEditPrompt} titleIcon={<PenLine/>} title="Edit Record Name" inputplaceholder="Enter New Name" OkButtonText="Rename" OkButtonIcon={<TextCursor width={"1rem"}/>} onCancel={()=>setUserEditPrompt(false)} onOk={EditRecordName} inputOnChange={(e:any)=>setName(e.target.value)} updating={loading} disabled={loading} input1Value={name}/>
-
-
-
-            {/* ADD CIVIL ID DIALOG */}
-            <AddDialog open={addcivil} title="Add Civil ID" titleIcon={<CreditCard/>} inputplaceholder="Civil Number" input2placeholder="Expiry Date" input3placeholder="Date of Birth" OkButtonText="Add" onCancel={()=>setAddcivil(false)} onOk={addCivilID} inputOnChange={(e:any)=>setCivilNumber(e.target.value)} input2OnChange={(e:any)=>setCivilExpiry(e.target.value)} input3OnChange={(e:any)=>setCivilDOB(e.target.value)} updating={loading} disabled={loading}/>
-
-
-            {/* EDIT CIVIL ID DIALOG */}
-            <AddDialog open={editcivilprompt} title="Edit Civil ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setEditedCivilNumber("");setEditedCivilExpiry(null);setEditedCivilDOB("")}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setEditedCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setEditedCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={civil_number} input2Value={civil_expiry} input3Value={civil_DOB}/>
-
-            {/* EDIT VEHICLE ID DIALOG */}
-            <AddDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setEditedCivilNumber("");setEditedCivilExpiry(null);setEditedCivilDOB("")}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setEditedCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setEditedCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={civil_number} input2Value={civil_expiry} input3Value={civil_DOB}/>
-
+            }/>
 
             {/* ADD VEHICLE ID DIALOG */}
             <AddDialog open={add_vehicle_id} title="Add Vehicle ID" titleIcon={<Car/>} inputplaceholder="Vehicle Make" input2placeholder="Expiry Date" input3placeholder="Issue Date" OkButtonText="Add" onCancel={()=>setAddVehicleID(false)} onOk={addVehicleID} inputOnChange={(e:any)=>setVehicleMake(e.target.value)} input2OnChange={(e:any)=>setVehicleExpiry(e.target.value)} input3OnChange={(e:any)=>setVehicleIssue(e.target.value)} updating={loading} disabled={loading}/>
 
+            {/* EDIT VEHICLE ID DIALOG */}
+            <AddDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setEditedCivilNumber("");setEditedCivilExpiry(null);setEditedCivilDOB("")}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setEditedCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setEditedCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={civil_number} input2Value={civil_expiry} input3Value={civil_DOB}/>
 
-            {/* DELETE RECORD DIALOG */}
-            <DefaultDialog open={userDeletePrompt} titleIcon={<X/>} destructive title="Delete Record?" OkButtonText="Delete" onCancel={()=>setUserDeletePrompt(false)} onOk={deleteRecord} updating={loading} disabled={loading}/>
+            {/* DELETE VEHICLE ID DIALOG */}
+            <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading}/>
 
-
-            
 
         </div>
         </>
