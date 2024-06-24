@@ -14,7 +14,7 @@ import emailjs from '@emailjs/browser'
 import { Tooltip, message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Book, Car, Check, CheckCheck, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, TextCursor, Upload, UserCircle, X } from "lucide-react"
+import { Book, Car, CheckSquare2, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, TextCursor, Upload, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 
@@ -79,6 +79,9 @@ export default function Records(){
     const [add_vehicle_id, setAddVehicleID] = useState(false)
 
     const [excel_upload_dialog, setExcelUploadDialog] = useState(false)
+
+    const [selectable, setSelectable] = useState(false)
+    const [search, setSearch] = useState("")
 
     // MAILJS VARIABLES
     const serviceId = "service_lunn2bp";
@@ -304,7 +307,7 @@ export default function Records(){
                     <div style={{display:"flex", gap:"0.5rem"}}>
 
                         <Tooltip title="Upload CSV">
-                        <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><Check width={"1rem"} color="tomato"/></button>
+                        <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><FilePlus width={"1rem"} color="tomato"/></button>
                         </Tooltip>
 
                         <Tooltip title="Email Test">
@@ -371,13 +374,28 @@ export default function Records(){
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", marginTop:"1"}}>
 
                     {/* Searchbar */}
-                    <input id="search-bar" placeholder="Search Records"/> 
+                    <div style={{display:"flex", gap:"1rem"}}>
+                        <button className={selectable?"blue":""} onClick={()=>setSelectable(!selectable)}><CheckSquare2 color={selectable?"white":"dodgerblue"}/></button>
+                        <input type="search" onChange={(e)=>{setSearch(e.target.value.toLowerCase())}} id="search-bar" placeholder="Search Records"/>
+                    </div>
+                     
 
                     <p style={{height:"0.25rem"}}/>
 
                 {
                     // RECORD DATA MAPPING
-                    records.map((post:any)=>(
+                    records
+                    .filter((post:any)=>{
+                    
+                        return search == ""?
+                        {}
+                        :
+                        post.name&&
+                        ((post.name).toLowerCase()).includes(search.toLowerCase())
+                        
+                    
+                    })
+                    .map((post:any)=>(
                         <motion.div key={post.id} initial={{opacity:0}} whileInView={{opacity:1}}>
 
                             <Directive tag={post.civil_number?"available":null} 
@@ -418,7 +436,7 @@ export default function Records(){
                     <div style={{width:"100%",height:"55svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
 
                         <div style={{display:"flex", flexFlow:"column", alignItems:"center", gap:"1rem"}}>
-                        <div className="loader"></div>
+                        <LoadingOutlined style={{color:"crimson", fontSize:"3.5rem"}}/>
                         {/* <p style={{fontSize:"1rem", opacity:"0.5"}}>Loading</p> */}
                         </div>
                         

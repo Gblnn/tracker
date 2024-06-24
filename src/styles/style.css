@@ -25,6 +25,15 @@ button:hover {
   background-color: rgba(100 100 100/ 25%);
 }
 
+.blue {
+  background: dodgerblue;
+  color: white;
+}
+
+.blue:hover {
+  background: rgb(27, 128, 228);
+}
+
 h1 {
   font-weight: 600;
   font-size: 1.5rem;
@@ -43,6 +52,11 @@ input {
   background: rgba(100 100 100/ 10%);
   border-radius: 0.75rem;
   transition: 0.3s;
+}
+
+input::-webkit-search-cancel-button {
+  margin-right: 0.75rem;
+  cursor: pointer;
 }
 
 input::placeholder {
