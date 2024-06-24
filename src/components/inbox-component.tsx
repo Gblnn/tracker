@@ -10,11 +10,12 @@ interface Props{
     onClick?:any
     priority?:string
     desc?:string
+    hidden?:boolean
 }
 
 export default function InboxComponent(props:Props){
     return(
-        <Link to={props.to}>
+        <Link className={props.hidden==true?"hidden":"visible"} to={props.to}>
 
             <button onClick={props.onClick} style={{paddingLeft:"1rem", gap:"0.5rem", width:"100%", justifyContent:"space-between"}}>
 

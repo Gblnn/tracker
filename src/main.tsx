@@ -10,7 +10,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   
     <BrowserRouter>
     
-    <ThemeProvider defaultTheme='system'>
+    <ThemeProvider defaultTheme='dark'>
     <App />
     </ThemeProvider>
     </BrowserRouter>

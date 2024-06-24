@@ -36,10 +36,10 @@ export default function Inbox(){
             })
             setPageLoad(false)
             // console.log(records)
-            records.forEach((r:any)=>{
+            // records.forEach((r:any)=>{
             
-                console.log(r.civil_expiry.toDate()-today)
-            })
+            //     console.log(r.civil_expiry.toDate())
+            // })
             
     
 
@@ -69,7 +69,12 @@ export default function Inbox(){
 
                     {
                         records.map((record:any)=>(
-                            <InboxComponent icon={<Info/>} priority="low" key={record.id} title={record.name} desc={"Civil expiry on "+record.civil_expiry?moment((record.civil_expiry).toDate()).format("DD/MM/YYYY"):""}/>
+                            <InboxComponent 
+                            onClick={()=>console.log(Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')))}
+                            hidden={
+                                (Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')))<=3?
+                                false:true
+                            } icon={<Info/>} priority="low" key={record.id} title={record.name+" expiry reminder"} desc={"Civil expiry in "+Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"+" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")}/>
                         ))
                     }
 

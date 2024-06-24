@@ -23,6 +23,13 @@ type Record = {
     name:string
 }
 
+
+// Running Notes
+// Check whether expiry date minus 3 is equals to today - 3 month reminder
+
+
+
+
 export default function Records(){
 
     // BASIC PAGE VARIABLES
@@ -340,14 +347,14 @@ export default function Records(){
 
                 <br/>
 
-                {!pageLoad? // if page doesn't load
+                {!pageLoad? // if page doesn't load : 
 
 
                 // IF NUMBER OF RECORDS IS LESS THAN 1
                 records.length<1?
 
                 
-                //DISPLAY EMPTY SET - PAGE
+                // DISPLAY EMPTY SET - PAGE
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
                     <div style={{width:"100%",height:"50svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
 
@@ -459,7 +466,7 @@ export default function Records(){
 
 
             {/* ADD RECORD BUTTON */}
-            <AddRecordButton onClick={()=>{setAddDialog(true)}}/>
+            <AddRecordButton onClick={()=>{setAddDialog(true); setName("")}}/>
 
 
             {/* Dialog Boxes 👇*/}
