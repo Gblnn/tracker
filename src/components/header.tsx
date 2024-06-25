@@ -8,7 +8,11 @@ import { Link } from "react-router-dom";
 import InboxComponent from "./inbox-component";
 import { Button } from "./ui/button";
 
-export default function Header(){
+interface Props{
+    updateInbox?:any
+}
+
+export default function Header(props:Props){
 
     const today:any = moment().toDate()
     const [records, setRecords] = useState<any>([])
@@ -49,7 +53,7 @@ export default function Header(){
 
     useEffect(()=>{
         fetchData()
-    },[])
+    },[props.updateInbox])
 
     useEffect(()=>{
         // console.log(document.getElementById("inboxes")?.childElementCount)
@@ -91,7 +95,8 @@ export default function Header(){
                     {
                         records
                         .filter((record:any)=>{
-                            return record.civil_expiry!=""?(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')<=3):null
+                            return record.civil_expiry&&
+                                moment(record.civil_expiry.toDate()).diff(moment(today), 'months')<=2
                         }).map((record:any)=>(
                             <InboxComponent 
                             // onClick={()=>console.log(Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')))}

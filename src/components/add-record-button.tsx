@@ -1,4 +1,3 @@
-import { Button } from "./ui/button";
 
 interface Props{
     title?:string
@@ -14,11 +13,11 @@ export default function AddRecordButton(props:Props){
     
     return(
         <>
-        <Button variant={"ghost"} style={{position:"fixed", bottom:0, right:0, margin:"2rem", gap:"0.5rem"}} onClick={props.onClickSwap?props.alternateOnClick:props.onClick}>
+        <button className="transitions" style={{position:"fixed", bottom:0, right:0, margin:"2rem", gap:"0.5rem", paddingRight:"1rem", paddingLeft:"1rem"}} onClick={props.onClickSwap?props.alternateOnClick:props.onClick}>
             {props.icon}
             
-            {props.title}
-        </Button>
+            <p className="transitions" style={{fontSize:"0.8rem"}}>{props.title}</p>
+        </button>
         
         
         </>

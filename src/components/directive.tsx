@@ -13,6 +13,7 @@ interface Props{
     selectable?:boolean
     onSelect?:any
     noArrow?:boolean
+    selected?:boolean
 }
 
 export default function Directive(props:Props){

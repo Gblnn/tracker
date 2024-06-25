@@ -16,7 +16,7 @@ export default function App(){
   return(
     <div>
 
-    <Header/>
+    <Header updateInbox/>
     <div style={{height:"5rem"}}></div>
     
   
@@ -30,7 +30,7 @@ export default function App(){
     <Routes>
       <Route path="/" element={<Index/>}/>
       <Route path="/inbox" element={<Inbox/>}/>
-      <Route path="/records" element={<Records/>}/>
+      <Route path="/records" element={<Records onUpdate/>}/>
       <Route path="/user" element={<UserPage/>}/>
       <Route path="/vehicles" element={<Vehicles/>}/>
       <Route path="/medicals" element={<Medicals/>}/>

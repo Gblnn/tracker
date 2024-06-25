@@ -76,6 +76,10 @@ input::file-selector-button {
   margin-right: 1rem;
 }
 
+.transitions {
+  transition: 0.3s;
+}
+
 textarea {
   border: none;
   width: 100%;

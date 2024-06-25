@@ -27,10 +27,13 @@ type Record = {
 // Running Notes
 // Check whether expiry date minus 3 is equals to today - 3 month reminder
 
+interface Props{
+    onUpdate?:any
+}
 
 
+export default function Records(props:Props){
 
-export default function Records(){
 
     // BASIC PAGE VARIABLES
     const [pageLoad, setPageLoad] = useState(false)
@@ -77,7 +80,7 @@ export default function Records(){
     //VEHICLE ID VARIABLES
     const [vehicle_make, setVehicleMake] = useState("")
     const [vehicle_issue, setVehicleIssue] = useState("")
-    const [vehicle_expiry, setVehicleExpiry] = useState("")
+    const [vehicle_expiry, setVehicleExpiry] = useState<any>()
 
     const [vehicleIdDelete, setVehicleIdDelete] = useState(false)
     const [edit_vehicle_id_prompt, setEditVehicleIDprompt] = useState(false)
@@ -96,17 +99,19 @@ export default function Records(){
 
     const [progress, setProgress] = useState("")
 
+    const [selected, setSelected] = useState(false)
+
     // MAILJS VARIABLES
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
 
     const today = new Date()
 
-{/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
+{/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
 
     const TimeStamper = (date:any) => {
-        return Timestamp.fromDate(moment(date, "DD/MM/YYYY").toDate())
+        return Timestamp.fromDate(moment(date, "DD/MM/YYYY").toDate())  
     }
 
     
@@ -124,9 +129,9 @@ export default function Records(){
         console.log(checked)
     },[checked])
 
-    useEffect(()=>{
-        console.log(Math.round(moment(new Date(civil_expiry)).diff(moment(today),'months')+1))
-    },[civil_expiry])
+    // useEffect(()=>{
+    //     console.log(Math.round(moment(new Date(civil_expiry)).diff(moment(today),'months')+1))
+    // },[civil_expiry])
 
 
     //INITIAL DATA FETCH ON PAGE LOAD
@@ -199,16 +204,12 @@ export default function Records(){
         setAddcivil(false)
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{civil_number:civil_number, civil_expiry:TimeStamper(civil_expiry), civil_DOB:civil_DOB})
-
-            // await updateDoc(doc(db, "records", id),{civil_number:new_civil_number, civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
-            // setCivilNumber(new_civil_number)
-            // setCivilExpiry(new_civil_expiry)
-
+            await updateDoc(doc(db, "records", id),{civil_number:civil_number, 
+                civil_expiry:TimeStamper(civil_expiry), civil_DOB:civil_DOB})
             
             setLoading(false)
             fetchData()
-            
+            props.onUpdate
             
         } catch (error) {
             console.log(error)
@@ -243,14 +244,10 @@ export default function Records(){
         setLoading(true)
         try {
             await updateDoc(doc(db, "records", id),{civil_number:edited_civil_number?edited_civil_number:civil_number, civil_expiry:edited_civil_expiry?TimeStamper(edited_civil_expiry):TimeStamper(civil_expiry), civil_DOB:edited_civil_DOB?edited_civil_DOB:civil_DOB})
-
             
             setCivilNumber(edited_civil_number?edited_civil_number:civil_number)
             setCivilExpiry(edited_civil_expiry?edited_civil_expiry:civil_expiry)
             setCivilDOB(edited_civil_DOB?edited_civil_DOB:civil_DOB)
-            // await updateDoc(doc(db, "records", id),{civil_number:civil_number, 
-            //     civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
-            // setCivilExpiry(new_civil_expiry)
 
             setEditcivilprompt(false)
             setLoading(false)
@@ -271,18 +268,15 @@ export default function Records(){
         setAddVehicleID(false)
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{vehicle_make:vehicle_make, vehicle_expiry:Timestamp.fromDate(moment(vehicle_expiry, "DD/MM/YYYY").toDate()), vehicle_issue:vehicle_issue})
+            await updateDoc(doc(db, "records", id),{vehicle_make:vehicle_make, 
+            vehicle_expiry:TimeStamper(vehicle_expiry), vehicle_issue:vehicle_issue})
 
-            // await updateDoc(doc(db, "records", id),{civil_number:new_civil_number, civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
-            // setCivilNumber(new_civil_number)
-            // setCivilExpiry(new_civil_expiry)
-
-            
             setLoading(false)
             fetchData()
             
             
-        } catch (error) {
+        }
+         catch (error) {
             console.log(error)
             setCivilNumber("")
             setCivilExpiry("")
@@ -312,13 +306,11 @@ export default function Records(){
         setLoading(true)
         try {
             
-            let timestamp = Timestamp.fromDate(moment(edited_vehicle_expiry, "DD/MM/YYYY").toDate())
-            await updateDoc(doc(db, "records", id),{vehicle_make:edited_vehicle_make!=""?edited_vehicle_make:vehicle_make, vehicle_expiry:edited_vehicle_expiry?timestamp:vehicle_expiry, vehicle_issue:edited_vehicle_issue?edited_civil_DOB:vehicle_issue})
+            await updateDoc(doc(db, "records", id),{vehicle_make:edited_vehicle_make?edited_vehicle_make:vehicle_make, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), vehicle_issue:edited_vehicle_issue?edited_civil_DOB:vehicle_issue})
 
-
-            // await updateDoc(doc(db, "records", id),{civil_number:civil_number, 
-            //     civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
-            // setCivilExpiry(new_civil_expiry)
+            setVehicleMake(edited_vehicle_make?edited_vehicle_make:vehicle_make)
+            setVehicleExpiry(edited_vehicle_expiry?edited_vehicle_expiry:vehicle_expiry)
+            setVehicleIssue(edited_vehicle_issue?edited_vehicle_issue:vehicle_issue)
 
             setEditVehicleIDprompt(false)
             setLoading(false)
@@ -364,11 +356,11 @@ export default function Records(){
         if(index == -1){
             setChecked((data:any)=>[...data,id])
         }
-        // else{
-        //     const newVal = [...checked]
-        //     newVal.splice(id+1, 1)
-        //     setChecked(newVal)
-        // }
+        else{
+            const newVal = [...checked]
+            newVal.splice(id+1, 1)
+            setChecked(newVal)
+        }
         
     }
 
@@ -489,7 +481,7 @@ export default function Records(){
                     {/* Searchbar */}
                     <div style={{display:"flex", gap:"1rem"}}>
 
-                        <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable);setAddButtonModeSwap(!addButtonModeSwap);selectable && setChecked([]);
+                        <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable);setAddButtonModeSwap(!addButtonModeSwap);selectable && setChecked([]); !selectable && setSelected(false)
                             //  selectable && fetchData()
                              }}><CheckSquare2 color={selectable?"white":"dodgerblue"}/></button>
 
@@ -523,23 +515,9 @@ export default function Records(){
                                     :
                                     "No Data"
 
-                                    // ||
-
-                                    // (moment((post.civil_expiry).toDate()).diff(moment(today), 'months')<=3
-                                    // ||
-                                    // moment((post.vehicle_expiry).toDate()).diff(moment(today), 'months')<=3)
-                                    // ?
-                                    // "Expiring":""
-                                        
-
-                                    
-                                    
-                                    // post.vehicle_expiry?
-                                    
-
                                 }
                                 
-                               
+                                selected={selected}
 
                                 selectable={selectable}
 
@@ -548,6 +526,7 @@ export default function Records(){
                                 // ON CLICK
                                 onSelect={()=>{
                                     handleSelect(post.id)
+                            
                                 }}
                                 onClick={()=>{
                                     
@@ -737,7 +716,11 @@ export default function Records(){
                         </div>
                         :
                         <div>
-                        <CivilID name={name} expirydate={new_civil_expiry?new_civil_expiry:civil_expiry} civilid={new_civil_number?new_civil_number:civil_number} DOB={civil_DOB}/>
+                        <CivilID 
+                        name={name} 
+                        expirydate={new_civil_expiry?new_civil_expiry:civil_expiry} 
+                        civilid={new_civil_number?new_civil_number:civil_number} 
+                        DOB={civil_DOB}/>
                         {/* <br/>
                         <button style={{width:"100%"}}>Edit</button> */}
                         </div>  
@@ -794,7 +777,7 @@ export default function Records(){
                         </div>
                         :
                         <div>
-                        <VehicleID name={name} expirydate={vehicle_expiry?vehicle_expiry:vehicle_expiry} make={vehicle_make?vehicle_make:vehicle_make} issuedate={vehicle_issue}/>
+                        <VehicleID name={name} expirydate={vehicle_expiry} make={vehicle_make?vehicle_make:vehicle_make} issuedate={vehicle_issue}/>
                         {/* <br/>
                         <button style={{width:"100%"}}>Edit</button> */}
                         </div>  
@@ -807,7 +790,7 @@ export default function Records(){
             <AddDialog open={add_vehicle_id} title="Add Vehicle ID" titleIcon={<Car/>} inputplaceholder="Vehicle Make" input2placeholder="Expiry Date" input3placeholder="Issue Date" OkButtonText="Add" onCancel={()=>setAddVehicleID(false)} onOk={addVehicleID} inputOnChange={(e:any)=>setVehicleMake(e.target.value)} input2OnChange={(e:any)=>setVehicleExpiry(e.target.value)} input3OnChange={(e:any)=>setVehicleIssue(e.target.value)} updating={loading} disabled={loading}/>
 
             {/* EDIT VEHICLE ID DIALOG */}
-            <AddDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditVehicleIDprompt(false)}} inputplaceholder="Enter Vehicle Make" input2placeholder="Enter Issue Date" input3placeholder="Enter Expiry Date" inputOnChange={(e:any)=>setEditedVehicleMake(e.target.value)} input2OnChange={(e:any)=>{setEditedVehicleIssue(e.target.value)}} input3OnChange={(e:any)=>setEditedVehicleExpiry(e.target.value)} onOk={EditVehicleID} updating={loading} disabled={loading} input1Value={vehicle_make} input2Value={vehicle_issue} input3Value={vehicle_expiry}/>
+            <AddDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditVehicleIDprompt(false)}} inputplaceholder="Enter Vehicle Make" input2placeholder="Enter Expiry Date" input3placeholder="Enter Issue Date" inputOnChange={(e:any)=>setEditedVehicleMake(e.target.value)} input2OnChange={(e:any)=>{setEditedVehicleExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedVehicleIssue(e.target.value)} onOk={EditVehicleID} updating={loading} disabled={loading} input1Value={vehicle_make} input2Value={vehicle_expiry} input3Value={vehicle_issue}/>
 
             {/* DELETE VEHICLE ID DIALOG */}
             <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading}/>

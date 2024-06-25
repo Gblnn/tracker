@@ -57,7 +57,7 @@ export default function VehicleID(props:Props){
 
                 <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", width:'100%', margin:"1rem"}}>
                 <div id="civil-no" style={{display:"flex", alignItems:'center', gap:"0.5rem"}}>
-                    <p style={{fontSize:"0.7rem", }}>ISSUE : </p>
+                    <p style={{fontSize:"0.7rem", }}>ISSUED ON : </p>
                     <p style={{fontWeight:600, fontSize:"0.8rem"}}>{props.issuedate}</p>
                 </div>
 

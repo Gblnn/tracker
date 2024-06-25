@@ -70,8 +70,8 @@ export default function DefaultDialog(props:Props){
 
                     {
                         props.progress?
-                            <div style={{width:"100%", height:"0.5rem", background:"rgba(100 100 100/ 20%)", borderRadius:"0.5rem"}}>
-                                <div style={{background:"brown", width:props.progress, height:"0.5rem", borderRadius:"0.5rem"}}></div>
+                            <div style={{width:"100%", height:"0.25rem", background:"rgba(100 100 100/ 20%)", borderRadius:"0.5rem"}}>
+                                <div style={{background:"brown", width:props.progress, height:"0.25rem", borderRadius:"0.5rem"}}></div>
                             </div>
                         :null
                     }
