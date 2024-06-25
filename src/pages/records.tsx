@@ -46,11 +46,11 @@ export default function Records(){
     const [addButtonModeSwap, setAddButtonModeSwap] = useState(false)
 
     // CIVIL ID VARIABLES
-    const [civil_number, setCivilNumber] = useState("")
-    const [new_civil_number, setNewCivilNumber] = useState("")
+    const [civil_number, setCivilNumber] = useState<any>()
+    const [new_civil_number, setNewCivilNumber] = useState<any>()
     const [new_civil_expiry, setNewCivilExpiry] = useState<any>()
     const [civil_expiry, setCivilExpiry] = useState<any>()
-    const [civil_DOB, setCivilDOB] = useState("")
+    const [civil_DOB, setCivilDOB] = useState<any>()
 
     //EDIT CIVIL ID VARIABLES
     const [edited_civil_number, setEditedCivilNumber] = useState("")
@@ -104,11 +104,17 @@ export default function Records(){
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
+
+    const TimeStamper = (date:any) => {
+        return Timestamp.fromDate(moment(date, "DD/MM/YYYY").toDate())
+    }
+
     
 
     // PAGE LOAD HANDLER
     useEffect(() =>{
         fetchData()
+        
     },[])
 
 
@@ -125,6 +131,7 @@ export default function Records(){
 
     //INITIAL DATA FETCH ON PAGE LOAD
     const fetchData = async () => {
+        
         try {
             setPageLoad(true)
             const RecordCollection = collection(db, "records")
@@ -192,7 +199,7 @@ export default function Records(){
         setAddcivil(false)
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{civil_number:civil_number, civil_expiry:Timestamp.fromDate(moment(civil_expiry, "DD/MM/YYYY").toDate()), civil_DOB:civil_DOB})
+            await updateDoc(doc(db, "records", id),{civil_number:civil_number, civil_expiry:TimeStamper(civil_expiry), civil_DOB:civil_DOB})
 
             // await updateDoc(doc(db, "records", id),{civil_number:new_civil_number, civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
             // setCivilNumber(new_civil_number)
@@ -235,8 +242,12 @@ export default function Records(){
     const EditCivilID = async () => {
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{civil_number:edited_civil_number!=""?edited_civil_number:civil_number, civil_expiry:edited_civil_expiry?Timestamp.fromDate(moment(edited_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:edited_civil_DOB?edited_civil_DOB:civil_DOB})
+            await updateDoc(doc(db, "records", id),{civil_number:edited_civil_number?edited_civil_number:civil_number, civil_expiry:edited_civil_expiry?TimeStamper(edited_civil_expiry):TimeStamper(civil_expiry), civil_DOB:edited_civil_DOB?edited_civil_DOB:civil_DOB})
 
+            
+            setCivilNumber(edited_civil_number?edited_civil_number:civil_number)
+            setCivilExpiry(edited_civil_expiry?edited_civil_expiry:civil_expiry)
+            setCivilDOB(edited_civil_DOB?edited_civil_DOB:civil_DOB)
             // await updateDoc(doc(db, "records", id),{civil_number:civil_number, 
             //     civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
             // setCivilExpiry(new_civil_expiry)
@@ -300,7 +311,10 @@ export default function Records(){
     const EditVehicleID = async () => {
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{vehicle_make:edited_vehicle_make!=""?edited_vehicle_make:vehicle_make, vehicle_expiry:edited_vehicle_expiry?Timestamp.fromDate(moment(edited_vehicle_expiry, "DD/MM/YYYY").toDate()):vehicle_expiry, vehicle_issue:edited_vehicle_issue?edited_civil_DOB:vehicle_issue})
+            
+            let timestamp = Timestamp.fromDate(moment(edited_vehicle_expiry, "DD/MM/YYYY").toDate())
+            await updateDoc(doc(db, "records", id),{vehicle_make:edited_vehicle_make!=""?edited_vehicle_make:vehicle_make, vehicle_expiry:edited_vehicle_expiry?timestamp:vehicle_expiry, vehicle_issue:edited_vehicle_issue?edited_civil_DOB:vehicle_issue})
+
 
             // await updateDoc(doc(db, "records", id),{civil_number:civil_number, 
             //     civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
