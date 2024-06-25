@@ -78,12 +78,13 @@ export default function Inbox(){
                         .filter((record:any)=>{
                             return (
                                 record.civil_expiry&&
-                                moment(record.civil_expiry.toDate()).diff(moment(today), 'months')<=3
+                                moment(record.civil_expiry.toDate()).diff(moment(today), 'months')<=2
                                 
                             )
                         })
                         .map((record:any)=>(
                             <InboxComponent 
+                            noArrow
                             // onClick={()=>console.log(Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')))}
                              icon={<Info/>} priority="low" key={record.id} title={record.name+" doc expiry reminder"} 
                              

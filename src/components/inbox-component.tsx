@@ -11,6 +11,7 @@ interface Props{
     priority?:string
     desc?:string
     hidden?:boolean
+    noArrow?:boolean
 }
 
 export default function InboxComponent(props:Props){
@@ -41,7 +42,13 @@ export default function InboxComponent(props:Props){
                 <p style={{background:"rgba(100 100 100/ 25%)",fontSize:"0.8rem", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", color:props.status?"salmon":"lightgreen",  width:"6rem", fontWeight:600 }}>{props.tag}</p>
                 :null
                 }
-                <ChevronRight width={"1rem"}/>
+                {
+                    props.noArrow?
+                    null
+                    :
+                    <ChevronRight width={"1rem"}/>
+                }
+                
             </div>
             
         </button>

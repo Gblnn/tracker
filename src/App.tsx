@@ -1,14 +1,13 @@
+import emailjs from '@emailjs/browser';
+import { useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import Header from "./components/header";
-import { Toaster } from "./components/ui/sonner";
 import Index from "./pages";
 import Inbox from "./pages/inbox";
 import Medicals from "./pages/medicals";
 import Records from "./pages/records";
 import UserPage from "./pages/user";
 import Vehicles from "./pages/vehicles";
-import { useEffect } from "react";
-import emailjs from '@emailjs/browser'
 
 export default function App(){
   useEffect(()=>{
@@ -16,10 +15,11 @@ export default function App(){
 },[])
   return(
     <div>
+
     <Header/>
     <div style={{height:"5rem"}}></div>
     
-    <Toaster/>
+  
 
     <div style={{ display:"flex", paddingLeft:"1.5rem"}}>
     

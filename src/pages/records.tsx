@@ -112,13 +112,15 @@ export default function Records(){
     },[])
 
 
+    
+
     useEffect(()=>{
         console.log(checked)
     },[checked])
 
-    // useEffect(()=>{
-    //     console.log(moment(new Date(vehicle_expiry)).diff(moment(today), "months"))
-    // },[vehicle_expiry])
+    useEffect(()=>{
+        console.log(Math.round(moment(new Date(civil_expiry)).diff(moment(today),'months')+1))
+    },[civil_expiry])
 
 
     //INITIAL DATA FETCH ON PAGE LOAD
@@ -135,6 +137,8 @@ export default function Records(){
             })
             setPageLoad(false)
             setRecords(fetchedData)
+            setChecked([])
+            setSelectable(false)
             
         } catch (error) {
             console.log(error)
@@ -338,18 +342,20 @@ export default function Records(){
 
     const handleSelect = (id:any) => {
         
-        // console.log(typeof(id))
+        // console.log(id)
         const index = checked.indexOf(id)
     
 
 
         if(index == -1){
             setChecked((data:any)=>[...data,id])
-        }else{
-            const newVal = [...checked]
-            newVal.splice(id, 1)
-            setChecked(newVal)
         }
+        // else{
+        //     const newVal = [...checked]
+        //     newVal.splice(id+1, 1)
+        //     setChecked(newVal)
+        // }
+        
     }
 
     const handleBulkDelete = async () => {
@@ -371,6 +377,7 @@ export default function Records(){
                     setAddButtonModeSwap(false)
                     setSelectable(false)
                     fetchData()
+                    setProgress("")
                 }
             });
 
@@ -468,7 +475,9 @@ export default function Records(){
                     {/* Searchbar */}
                     <div style={{display:"flex", gap:"1rem"}}>
 
-                        <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable);setAddButtonModeSwap(!addButtonModeSwap);selectable && setChecked([]); selectable && fetchData()}}><CheckSquare2 color={selectable?"white":"dodgerblue"}/></button>
+                        <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable);setAddButtonModeSwap(!addButtonModeSwap);selectable && setChecked([]);
+                            //  selectable && fetchData()
+                             }}><CheckSquare2 color={selectable?"white":"dodgerblue"}/></button>
 
                         <input type="search" onChange={(e)=>{setSearch(e.target.value.toLowerCase())}} id="search-bar" placeholder="Search Records"/>
                     </div>
@@ -564,7 +573,8 @@ export default function Records(){
                     <div style={{width:"100%",height:"55svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
 
                         <div style={{display:"flex", flexFlow:"column", alignItems:"center", gap:"1rem"}}>
-                        <LoadingOutlined style={{color:"crimson", fontSize:"3.5rem"}}/>
+                        {/* <LoadingOutlined style={{color:"crimson", fontSize:"3.5rem"}}/> */}
+                        <div className="loader"></div>
                         {/* <p style={{fontSize:"1rem", opacity:"0.5"}}>Loading</p> */}
                         </div>
                         
@@ -652,10 +662,12 @@ export default function Records(){
                     
                     <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={civil_expiry} 
                     status={
-                        moment(new Date(civil_expiry)).diff(moment(today), "months")>3
+                        Math.round(moment(new Date(civil_expiry)).diff(moment(today), "months"))+1<=3?
+                        false:true
                     }/>
 
-                    <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="Vehicle" status={
+                    <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="Vehicle" 
+                    status={
                         moment(new Date(vehicle_expiry)).diff(moment(today), 'months')<=3?
                         false
                         :true

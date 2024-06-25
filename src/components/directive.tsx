@@ -12,6 +12,7 @@ interface Props{
     subtext?:string
     selectable?:boolean
     onSelect?:any
+    noArrow?:boolean
 }
 
 export default function Directive(props:Props){
@@ -79,7 +80,7 @@ export default function Directive(props:Props){
                 :null
                 }
                 {
-                    props.selectable?
+                    props.selectable||props.noArrow?
                     <div style={{width:"1rem"}}></div>
                     :<ChevronRight width={"1rem"}/>
                 }
