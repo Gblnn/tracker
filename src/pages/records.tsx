@@ -14,7 +14,7 @@ import emailjs from '@emailjs/browser'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Book, Car, CheckSquare2, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, TextCursor, Upload, UserCircle, X } from "lucide-react"
+import { Book, Car, CheckSquare2, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, LucideMails, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, TextCursor, Trash, Upload, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 
@@ -43,6 +43,7 @@ export default function Records(){
     const [addcivil, setAddcivil] = useState(false)
     const [created_on, setCreatedOn] = useState("")
     const [loading, setLoading] = useState(false)
+    const [addButtonModeSwap, setAddButtonModeSwap] = useState(false)
 
     // CIVIL ID VARIABLES
     const [civil_number, setCivilNumber] = useState("")
@@ -56,6 +57,11 @@ export default function Records(){
     const [edited_civil_expiry, setEditedCivilExpiry] = useState<any>()
     const [edited_civil_DOB, setEditedCivilDOB] = useState("")
     const [civilDelete, setCivilDelete] = useState(false)
+
+    const [edited_vehicle_make, setEditedVehicleMake] = useState("")
+    const [edited_vehicle_issue, setEditedVehicleIssue] = useState("")
+    const [edited_vehicle_expiry, setEditedVehicleExpiry] = useState("")
+    
 
     //MAIL CONFIG VARIABLES
     const [addDialog, setAddDialog] = useState(false)
@@ -84,6 +90,9 @@ export default function Records(){
     const [search, setSearch] = useState("")
 
     const [checked, setChecked] = useState<any>([])
+    const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false)
+
+    const [recipientsDialog, setRecipientsDialog] = useState(false)
 
 
     // MAILJS VARIABLES
@@ -101,9 +110,14 @@ export default function Records(){
         fetchData()
     },[])
 
-    // useEffect(()=>{
-        
-    // },[checked])
+
+    useEffect(()=>{
+        console.log(checked)
+    },[checked])
+
+    useEffect(()=>{
+        console.log(moment(new Date(vehicle_expiry)).diff(moment(today), "months"))
+    },[vehicle_expiry])
 
 
     //INITIAL DATA FETCH ON PAGE LOAD
@@ -277,6 +291,26 @@ export default function Records(){
         fetchData()
     } 
 
+    //FUNCTION TO EDIT VEHICLE ID
+    const EditVehicleID = async () => {
+        setLoading(true)
+        try {
+            await updateDoc(doc(db, "records", id),{vehicle_make:edited_vehicle_make!=""?edited_vehicle_make:vehicle_make, vehicle_expiry:edited_vehicle_expiry?Timestamp.fromDate(moment(edited_vehicle_expiry, "DD/MM/YYYY").toDate()):vehicle_expiry, vehicle_issue:edited_vehicle_issue?edited_civil_DOB:vehicle_issue})
+
+            // await updateDoc(doc(db, "records", id),{civil_number:civil_number, 
+            //     civil_expiry:new_civil_expiry?Timestamp.fromDate(moment(new_civil_expiry, "DD/MM/YYYY").toDate()):civil_expiry, civil_DOB:civil_DOB})
+            // setCivilExpiry(new_civil_expiry)
+
+            setEditVehicleIDprompt(false)
+            setLoading(false)
+            fetchData()
+
+        } catch (error) {
+            console.log(error)  
+            setLoading(false)   
+            message.info(String(error))
+        }
+    }
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
     // FUNCTION TO SEND A TEST EMAIL
@@ -305,18 +339,35 @@ export default function Records(){
         
         // console.log(typeof(id))
         const index = checked.indexOf(id)
-        console.log(index)
+    
 
 
         if(index == -1){
             setChecked((data:any)=>[...data,id])
         }else{
             const newVal = [...checked]
-            
+            newVal.splice(id, 1)
             setChecked(newVal)
         }
-        console.log(checked)
+    }
 
+    const handleBulkDelete = async () => {
+        try {
+            setLoading(true)
+            console.log("deleting")
+            await checked.forEach(async (item:any) => {
+                await deleteDoc(doc(db, "records", item))
+                console.log(item)
+            });
+            setLoading(false)
+            console.log("complete")
+            setBulkDeleteDialog(false)
+            setAddButtonModeSwap(false)
+            setSelectable(false)
+
+        } catch (error) {
+            message.info(String(error))
+        }
     }
 
     return(
@@ -404,7 +455,9 @@ export default function Records(){
 
                     {/* Searchbar */}
                     <div style={{display:"flex", gap:"1rem"}}>
-                        <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable)}}><CheckSquare2 color={selectable?"white":"dodgerblue"}/></button>
+
+                        <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable);setAddButtonModeSwap(!addButtonModeSwap);selectable && setChecked([]); selectable && fetchData()}}><CheckSquare2 color={selectable?"white":"dodgerblue"}/></button>
+
                         <input type="search" onChange={(e)=>{setSearch(e.target.value.toLowerCase())}} id="search-bar" placeholder="Search Records"/>
                     </div>
                      
@@ -430,26 +483,23 @@ export default function Records(){
                             <Directive 
                                 
                                 tag={
-
-                                    
-                                    
-                                    
-                                    post.civil_expiry==""||post.vehicle_expiry==""?
-                                    "No Data"
+                                    post.civil_expiry != "" || post.vehicle_expiry != ""?
+                                    "Available"
                                     :
-                                    post.civil_expiry?
-                                    moment((post.civil_expiry).toDate()).diff(moment(today), 'months')<=3?
-                                    
-                                    "Expiring":"Available":"No Data"
-                                    ||
-                                    post.vehicle_expiry?
-                                    moment((post.vehicle_expiry).toDate()).diff(moment(today), 'months')<=3?
-                                    "Expiring":"Available":"No Data"
-                                
-                                    
+                                    "No Data"
 
+                                    // ||
+
+                                    // (moment((post.civil_expiry).toDate()).diff(moment(today), 'months')<=3
+                                    // ||
+                                    // moment((post.vehicle_expiry).toDate()).diff(moment(today), 'months')<=3)
+                                    // ?
+                                    // "Expiring":""
+                                        
 
                                     
+                                    
+                                    // post.vehicle_expiry?
                                     
 
                                 }
@@ -546,7 +596,8 @@ export default function Records(){
 
 
             {/* ADD RECORD BUTTON */}
-            <AddRecordButton onClick={()=>{setAddDialog(true); setName("")}}/>
+            <AddRecordButton title={addButtonModeSwap?"Delete Record(s)":"Add Record"} onClickSwap={addButtonModeSwap} onClick={()=>{setAddDialog(true); setName("")}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
+                icon={addButtonModeSwap?<Trash color="dodgerblue" width="1rem"/>:<Plus color="crimson" width="1rem"/>}/>
 
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
@@ -568,13 +619,15 @@ export default function Records(){
                 <div style={{display:"flex", border:"", width:"100%", flexFlow:"column", gap:"0.5rem"}}>
                     <input placeholder="Enter E-Mail Address" onChange={(e)=>setRecipient(e.target.value)}/>
                     <textarea onChange={(e:any)=>setTestMessage(e.target.value)} placeholder="Message..." rows={4}/>
-                <Button variant={"ghost"} style={{flex:1}}>
+                <Button variant={"ghost"} style={{flex:1}} onClick={()=>{setRecipientsDialog(true)}}>
                     <Plus style={{width:"1rem"}} color="dodgerblue"/>
                     Add Recipient
                 </Button>
                 </div>
                 
                 }/>
+
+            <DefaultDialog titleIcon={<LucideMails/>} title="Recipients" open={recipientsDialog} onCancel={()=>setRecipientsDialog(false)} close/>
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
@@ -585,9 +638,16 @@ export default function Records(){
             close extra={
                 <div style={{border:"", width:"100%", display:"flex", flexFlow:"column", gap:"0.5rem", paddingBottom:"1rem", paddingTop:"1rem"}}>
                     
-                    <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={civil_expiry} status={moment(new Date(civil_expiry)).diff(moment(today), "months")+1<=2}/>
+                    <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={civil_expiry} 
+                    status={
+                        moment(new Date(civil_expiry)).diff(moment(today), "months")>3
+                    }/>
 
-                    <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="Vehicle" status/>
+                    <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="Vehicle" status={
+                        moment(new Date(vehicle_expiry)).diff(moment(today), 'months')<=3?
+                        false
+                        :true
+                    }/>
                     <Directive icon={<HeartPulse color="tomato"/>} title="Medical"/>
                     <Directive icon={<GraduationCap color="lightgreen"/>} title="Training"/>
                     <Directive icon={<Book color="goldenrod"/>} title="Passport"/>
@@ -709,10 +769,14 @@ export default function Records(){
             <AddDialog open={add_vehicle_id} title="Add Vehicle ID" titleIcon={<Car/>} inputplaceholder="Vehicle Make" input2placeholder="Expiry Date" input3placeholder="Issue Date" OkButtonText="Add" onCancel={()=>setAddVehicleID(false)} onOk={addVehicleID} inputOnChange={(e:any)=>setVehicleMake(e.target.value)} input2OnChange={(e:any)=>setVehicleExpiry(e.target.value)} input3OnChange={(e:any)=>setVehicleIssue(e.target.value)} updating={loading} disabled={loading}/>
 
             {/* EDIT VEHICLE ID DIALOG */}
-            <AddDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setEditedCivilNumber("");setEditedCivilExpiry(null);setEditedCivilDOB("")}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setEditedCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setEditedCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={civil_number} input2Value={civil_expiry} input3Value={civil_DOB}/>
+            <AddDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditVehicleIDprompt(false)}} inputplaceholder="Enter Vehicle Make" input2placeholder="Enter Issue Date" input3placeholder="Enter Expiry Date" inputOnChange={(e:any)=>setEditedVehicleMake(e.target.value)} input2OnChange={(e:any)=>{setEditedVehicleIssue(e.target.value)}} input3OnChange={(e:any)=>setEditedVehicleExpiry(e.target.value)} onOk={EditVehicleID} updating={loading} disabled={loading} input1Value={vehicle_make} input2Value={vehicle_issue} input3Value={vehicle_expiry}/>
 
             {/* DELETE VEHICLE ID DIALOG */}
             <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading}/>
+
+            {/* BULK DELETE DIALOG */}
+            <DefaultDialog destructive updating={loading} title="Delete record(s)?" extra={
+                <p style={{opacity:"0.5", fontSize:"0.85rem", width:"100%"}}>Delete Selected Records permanently from servers? This action is irrecoverable.</p>} open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete}/>
 
 
         </div>

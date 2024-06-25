@@ -16,8 +16,6 @@ interface Props{
 
 export default function Directive(props:Props){
 
-    
-
     const [selected, setSelected] = useState(false)
 
     return(
@@ -69,6 +67,9 @@ export default function Directive(props:Props){
                         :null
                     }
                 {
+                props.selectable?
+                null
+                :
                 props.tag?
                 
                 <p style={{background:"rgba(100 100 100/ 25%)",fontSize:"0.8rem", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", color:props.tag=="Expiring"?"violet  ":props.tag=="Available"?"lightgreen":props.status?"rgba(200 200 200/ 100%)":"violet", width:"", fontWeight:600, display:"flex", alignItems:"center", gap:"0.5rem"}}>

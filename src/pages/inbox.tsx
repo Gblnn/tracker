@@ -77,18 +77,9 @@ export default function Inbox(){
                         records
                         .filter((record:any)=>{
                             return (
-
+                                record.civil_expiry&&
+                                moment(record.civil_expiry.toDate()).diff(moment(today), 'months')<=3
                                 
-                                record.civil_expiry?
-                                moment(record.civil_expiry.toDate()).diff(moment(today), 'months')<=2
-                                :null
-
-                                ||
-                                
-                                record.vehicle_expiry?
-                                moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months')<=2
-                                :null
-
                             )
                         })
                         .map((record:any)=>(
