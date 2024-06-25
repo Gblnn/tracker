@@ -775,8 +775,7 @@ export default function Records(){
             <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading}/>
 
             {/* BULK DELETE DIALOG */}
-            <DefaultDialog destructive updating={loading} title="Delete record(s)?" extra={
-                <p style={{opacity:"0.5", fontSize:"0.85rem", width:"100%"}}>Delete Selected Records permanently from servers? This action is irrecoverable.</p>} open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete}/>
+            <DefaultDialog destructive updating={loading} title="Delete record(s)?" open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete}/>
 
 
         </div>
