@@ -22,6 +22,7 @@ interface Props {
     sendmail?:boolean
     updating?:boolean
     created_on?:string
+    progress?:string
 }
 
 export default function DefaultDialog(props:Props){
@@ -47,6 +48,8 @@ export default function DefaultDialog(props:Props){
                             </div>
 
                             {props.title_extra}
+
+                            
                         
                         </div>
                         
@@ -63,6 +66,14 @@ export default function DefaultDialog(props:Props){
                             props.extra
                         
                         :null 
+                    }
+
+                    {
+                        props.progress?
+                            <div style={{width:"100%", height:"0.5rem", background:"rgba(100 100 100/ 20%)", borderRadius:"0.5rem"}}>
+                                <div style={{background:"brown", width:props.progress, height:"0.5rem", borderRadius:"0.5rem"}}></div>
+                            </div>
+                        :null
                     }
                     
                     

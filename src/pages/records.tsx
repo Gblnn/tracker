@@ -94,6 +94,7 @@ export default function Records(){
 
     const [recipientsDialog, setRecipientsDialog] = useState(false)
 
+    const [progress, setProgress] = useState("")
 
     // MAILJS VARIABLES
     const serviceId = "service_lunn2bp";
@@ -115,9 +116,9 @@ export default function Records(){
         console.log(checked)
     },[checked])
 
-    useEffect(()=>{
-        console.log(moment(new Date(vehicle_expiry)).diff(moment(today), "months"))
-    },[vehicle_expiry])
+    // useEffect(()=>{
+    //     console.log(moment(new Date(vehicle_expiry)).diff(moment(today), "months"))
+    // },[vehicle_expiry])
 
 
     //INITIAL DATA FETCH ON PAGE LOAD
@@ -353,17 +354,28 @@ export default function Records(){
 
     const handleBulkDelete = async () => {
         try {
+            let counts = 0
+            let percentage = 100/checked.length
             setLoading(true)
-            console.log("deleting")
+            
             await checked.forEach(async (item:any) => {
                 await deleteDoc(doc(db, "records", item))
-                console.log(item)
+                counts++
+                setProgress(String(percentage*counts)+"%")
+            
+
+                if(checked.length==counts){
+                    setLoading(false)
+                    
+                    setBulkDeleteDialog(false)
+                    setAddButtonModeSwap(false)
+                    setSelectable(false)
+                    fetchData()
+                }
             });
-            setLoading(false)
-            console.log("complete")
-            setBulkDeleteDialog(false)
-            setAddButtonModeSwap(false)
-            setSelectable(false)
+
+            
+            
 
         } catch (error) {
             message.info(String(error))
@@ -775,7 +787,7 @@ export default function Records(){
             <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading}/>
 
             {/* BULK DELETE DIALOG */}
-            <DefaultDialog destructive updating={loading} title="Delete record(s)?" open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete}/>
+            <DefaultDialog progress={progress} destructive updating={loading} title="Delete record(s)?" open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete}/>
 
 
         </div>
