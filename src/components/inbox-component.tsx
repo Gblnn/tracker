@@ -36,13 +36,13 @@ export default function InboxComponent(props:Props){
                         {
                             props.civil_desc?
                 
-                                <div style={{display:"flex", gap:"0.5rem", alignItems:"center", fontWeight:400, opacity:0.75, fontSize:"0.75rem", border:""}}>
+                                <div style={{display:"flex", gap:"0.5rem", alignItems:"center", fontWeight:400, fontSize:"0.75rem", border:""}}>
                                     {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
                                     <div style={{display:"flex", alignItems:"flex-start", border:""}}>
                                     <CreditCard width={"1rem"} color="dodgerblue" style={{border:'', display:"flex", height:"fit-content"}}/>
                                     </div>
                                     
-                                    <p style={{textAlign:"left"}}>{props.civil_desc}</p>
+                                    <p style={{textAlign:"left", opacity:0.75}}>{props.civil_desc}</p>
                                 </div>
                         
                             :null
@@ -51,10 +51,10 @@ export default function InboxComponent(props:Props){
                         {
                             props.vehicle_desc?
                 
-                                <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, opacity:0.75, fontSize:"0.75rem"}}>
+                                <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.75rem"}}>
                                     {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
                                     <Car width={"0.8rem"} color="violet" style={{border:''}}/>   
-                                    <p style={{textAlign:"left"}}>{props.vehicle_desc}</p>
+                                    <p style={{textAlign:"left", opacity:0.75}}>{props.vehicle_desc}</p>
                                 </div>
                             
                             :null
