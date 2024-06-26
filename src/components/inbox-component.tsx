@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react"
+import { Car, ChevronRight, CreditCard } from "lucide-react"
 import { Link } from "react-router-dom"
 
 interface Props{
@@ -9,7 +9,8 @@ interface Props{
     status?:boolean
     onClick?:any
     priority?:string
-    desc?:string
+    civil_desc?:string
+    vehicle_desc?:string
     hidden?:boolean
     noArrow?:boolean
 }
@@ -22,14 +23,44 @@ export default function InboxComponent(props:Props){
 
                 <div style={{display:"flex", gap:"1rem", alignItems:"center", border:''}}>
 
-                    <div style={{border:"", color:props.priority=="low"?"dodgerblue":"goldenrod"}}>
+                    <div style={{border:"", color:props.priority=="low"?"dodgerblue":"goldenrod", display:"flex", alignItems:"flex-start",flex:1}}>
                     {props.icon}
                     </div>
+
                     <div style={{border:"", display:'flex', flexFlow:"column"}}>
-                    <p style={{fontWeight:500, width:"", textAlign:"left", fontSize:"0.85rem"}}>
-                        {props.title}
-                    </p>
-                    <p style={{textAlign:"left", fontWeight:400, opacity:0.75, fontSize:"0.75rem"}}>{props.desc}</p>
+
+                        <p style={{fontWeight:500, width:"", textAlign:"left", fontSize:"0.85rem"}}>
+                            {props.title}
+                        </p>
+
+                        {
+                            props.civil_desc?
+                
+                                <div style={{display:"flex", gap:"0.5rem", alignItems:"center", fontWeight:400, opacity:0.75, fontSize:"0.75rem", border:""}}>
+                                    {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
+                                    <CreditCard width={"0.8rem"} color="dodgerblue" style={{border:''}}/>
+                                    <p>{props.civil_desc}</p>
+                                </div>
+                        
+                            :null
+                        }
+
+                        {
+                            props.vehicle_desc?
+                
+                                <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, opacity:0.75, fontSize:"0.75rem"}}>
+                                    {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
+                                    <Car width={"0.8rem"} color="violet" style={{border:''}}/>   
+                                    {props.vehicle_desc}
+                                </div>
+                            
+                            :null
+
+                        }
+                        
+
+                        
+                        
                     </div>
                     
 

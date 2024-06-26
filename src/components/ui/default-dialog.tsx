@@ -1,8 +1,8 @@
+import { LoadingOutlined } from "@ant-design/icons";
 import { DialogTitle } from "@radix-ui/react-dialog";
-import { Dialog, DialogContent, DialogFooter, DialogHeader } from "./dialog";
-import { Button } from "./button";
 import { ChevronLeft, X } from "lucide-react";
-import {LoadingOutlined} from "@ant-design/icons"
+import { Button } from "./button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader } from "./dialog";
 
 interface Props {
     open?: boolean

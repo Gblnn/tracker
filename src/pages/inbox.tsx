@@ -79,6 +79,9 @@ export default function Inbox(){
                             return (
                                 record.civil_expiry&&
                                 moment(record.civil_expiry.toDate()).diff(moment(today), 'months')<=2
+                                ||
+                                record.vehicle_expiry&&
+                                moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months')<=2
                                 
                             )
                         })
@@ -88,17 +91,30 @@ export default function Inbox(){
                             // onClick={()=>console.log(Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')))}
                              icon={<Info/>} priority="low" key={record.id} title={record.name+" doc expiry reminder"} 
                              
-                             desc={
+                             civil_desc={
                                 
                                 record.civil_expiry?
-                                ("Civil expiry in "+Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')+1)+" month(s)"+" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")):""
+                                ("Civil ID (Bataqa) expiry in "+
+                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')+1)+
+                                
+                                " month(s)"
+                                +" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")):""
                                 // ||
-                                // record.vehicle_expiry?
-                                // ("Vehicle expiry in "+Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"+" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY")):""
+                                // (record.vehicle_expiry)?"Vehicle ID expiring on "+record.vehicle_expiry.toDate():""
 
                                 
 
-                            }/>
+                            }
+                            vehicle_desc={
+                                
+                                record.vehicle_expiry?
+                                ("Vehicle ID (Mulqiya) expiry in "+
+                                    Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months')+1)+" month(s)"
+                                    +" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY"))
+                                    :""
+                            }
+                            
+                            />
                         ))
                     }
                 </div>

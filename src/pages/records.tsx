@@ -14,15 +14,15 @@ import emailjs from '@emailjs/browser'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Book, Car, CheckSquare2, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, LucideMails, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, TextCursor, Trash, Upload, UserCircle, X } from "lucide-react"
+import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, LucideMails, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, TextCursor, Trash, Upload, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
+import useKeyboardShortcut from 'use-keyboard-shortcut'
 
 type Record = {
     id:string,
     name:string
 }
-
 
 // Running Notes
 // Check whether expiry date minus 3 is equals to today - 3 month reminder
@@ -109,6 +109,27 @@ export default function Records(props:Props){
 
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
+    
+    // useEffect(()=>{
+    //     document.addEventListener("keydown", detectKeyDown, true)
+    // },[])
+
+    // const detectKeyDown = (e:any) => {
+    //     console.log(e.key)
+    //     e.key == "Enter"?
+    //     setAddDialog(true)
+    //     :null
+    // }
+    
+    const {} = useKeyboardShortcut(
+        ["Control", "A"],
+        () => {
+            addDialog?
+            setAddDialog(true)
+            :null;
+
+        }
+    )
 
     const TimeStamper = (date:any) => {
         return Timestamp.fromDate(moment(date, "DD/MM/YYYY").toDate())  
@@ -129,9 +150,9 @@ export default function Records(props:Props){
         console.log(checked)
     },[checked])
 
-    // useEffect(()=>{
-    //     console.log(Math.round(moment(new Date(civil_expiry)).diff(moment(today),'months')+1))
-    // },[civil_expiry])
+    useEffect(()=>{
+        console.log(moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1)
+    },[civil_expiry])
 
 
     //INITIAL DATA FETCH ON PAGE LOAD
@@ -348,8 +369,9 @@ export default function Records(props:Props){
 
     const handleSelect = (id:any) => {
         
-        // console.log(id)
+        
         const index = checked.indexOf(id)
+        console.log(index, id)
     
 
 
@@ -358,8 +380,12 @@ export default function Records(props:Props){
         }
         else{
             const newVal = [...checked]
-            newVal.splice(id+1, 1)
+            newVal.splice(index, 1)
             setChecked(newVal)
+
+            // const newVal = [...checked]
+            // checked.filter((i:any) => i != id);
+            // setChecked(newVal)
         }
         
     }
@@ -395,6 +421,8 @@ export default function Records(props:Props){
         }
     }
 
+    
+
     return(
         <>
 
@@ -412,7 +440,7 @@ export default function Records(props:Props){
                     <div style={{display:"flex", gap:"0.5rem"}}>
 
                     
-                        <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><FilePlus width={"1rem"} color="tomato"/></button>
+                        <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><Upload width={"1rem"} color="dodgerblue"/></button>
                     
 
                     
@@ -514,6 +542,20 @@ export default function Records(props:Props){
                                     "Available"
                                     :
                                     "No Data"
+
+                                    // ||
+                                    // post.civil_expiry?
+                                    // Math.round(moment(new Date(post.civil_expiry)).diff(moment(today), 'months')+1)<=3?
+                                    // "Expiring"
+                                    // :"No Data"
+                                    // :null
+
+                                    // ||
+                                    // post.vehicle_expiry?
+                                    // Math.round(moment(new Date(post.vehicle_expiry)).diff(moment(today), 'months')+1)<=3?
+                                    // "Expiring"
+                                    // :"No Data"
+                                    // :null
 
                                 }
                                 
@@ -621,7 +663,7 @@ export default function Records(props:Props){
 
 
             {/* Upload Excel files Dialog */}
-            <DefaultDialog onCancel={()=>setExcelUploadDialog(false)} OkButtonText="Upload" open={excel_upload_dialog} title="Upload Excel Data" titleIcon={<Upload/> } 
+            <DefaultDialog onCancel={()=>setExcelUploadDialog(false)} OkButtonText="Upload" open={excel_upload_dialog} title="Upload Excel Data" titleIcon={<CloudUpload/> } 
                 extra={
                 <>
                 <FileInput/>
@@ -642,7 +684,8 @@ export default function Records(props:Props){
                 
                 }/>
 
-            <DefaultDialog titleIcon={<LucideMails/>} title="Recipients" open={recipientsDialog} onCancel={()=>setRecipientsDialog(false)} close/>
+
+            <DefaultDialog titleIcon={<LucideMails/>} title="Recipients" open={recipientsDialog} onCancel={()=>setRecipientsDialog(false)} close/> 
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
@@ -655,13 +698,13 @@ export default function Records(props:Props){
                     
                     <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={civil_expiry} 
                     status={
-                        Math.round(moment(new Date(civil_expiry)).diff(moment(today), "months"))+1<=3?
+                        moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1<=3?
                         false:true
                     }/>
 
                     <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="Vehicle" 
                     status={
-                        moment(new Date(vehicle_expiry)).diff(moment(today), 'months')<=3?
+                        moment(vehicle_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1<=3?
                         false
                         :true
                     }/>

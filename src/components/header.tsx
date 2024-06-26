@@ -1,7 +1,7 @@
 import { db } from "@/firebase";
 import { LoadingOutlined } from '@ant-design/icons';
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { Inbox, Info } from "lucide-react";
+import { Inbox } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -95,12 +95,17 @@ export default function Header(props:Props){
                     {
                         records
                         .filter((record:any)=>{
-                            return record.civil_expiry&&
+                            return (
+                                record.civil_expiry&&
                                 moment(record.civil_expiry.toDate()).diff(moment(today), 'months')<=2
-                        }).map((record:any)=>(
-                            <InboxComponent 
-                            // onClick={()=>console.log(Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')))}
-                             icon={<Info/>} priority="low" key={record.id} title={record.name+" expiry reminder"} desc={"Civil expiry in "+Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"+" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")}/>
+                                ||
+                                record.vehicle_expiry&&
+                                moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months')<=2
+                                
+                            )
+                        })
+                        .map((record:any)=>(
+                            <InboxComponent key={record.id}/>
                         ))
                     }
                 </div>
