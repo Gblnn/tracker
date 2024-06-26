@@ -94,7 +94,7 @@ export default function Inbox(){
                              civil_desc={
                                 
                                 record.civil_expiry?
-                                ("Civil ID (Bataqa) expiry in "+
+                                ("Civil ID expiry in "+
                                 Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')+1)+
                                 
                                 " month(s)"
@@ -108,7 +108,7 @@ export default function Inbox(){
                             vehicle_desc={
                                 
                                 record.vehicle_expiry?
-                                ("Vehicle ID (Mulqiya) expiry in "+
+                                ("Vehicle ID expiry in "+
                                     Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months')+1)+" month(s)"
                                     +" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY"))
                                     :""
