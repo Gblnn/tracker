@@ -1,5 +1,4 @@
 import { db } from "@/firebase";
-import { LoadingOutlined } from '@ant-design/icons';
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { Inbox } from "lucide-react";
 import moment from "moment";
@@ -78,7 +77,7 @@ export default function Header(props:Props){
                     <Inbox color="crimson" width={"1.5rem"}/>
                     {
                         count?
-                        <p style={{}}>{pageLoad?<LoadingOutlined/>:count?count:null}</p>
+                        <p >{count?count:null}</p>
                         :null
                     }
                     

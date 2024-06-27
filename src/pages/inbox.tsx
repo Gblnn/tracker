@@ -23,6 +23,8 @@ export default function Inbox(){
     //     console.log(document.getElementById("inboxes")?.childElementCount)
     // },[pageLoad])
 
+   
+
     
 
     const fetchData = async () => {
@@ -68,7 +70,12 @@ export default function Inbox(){
                     <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={fetchData} >
                         <RefreshCcw width="1.1rem" color="grey"/></button>}/>
             {
+                
                 !pageLoad?
+                // records.length<1?
+                
+                // :
+            
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
                 
                 <br/>
@@ -78,22 +85,21 @@ export default function Inbox(){
                         .filter((record:any)=>{
                             return (
                                 record.civil_expiry&&
-                                moment(record.civil_expiry.toDate()).diff(moment(today), 'months')<=2
+                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
                                 ||
                                 record.vehicle_expiry&&
-                                moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months')<=2
-                                
+                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2    
                             )
                         })
                         .map((record:any)=>(
                             <InboxComponent 
                             noArrow
-                            // onClick={()=>console.log(Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')))}
+                            onClick={()=>console.log(Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')))}
                              icon={<Info/>} priority="low" key={record.id} title={record.name+" doc expiry reminder"} 
                              
                              civil_desc={
                                 
-                                record.civil_expiry?
+                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2?
                                 ("Civil ID expiry in "+
                                 Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')+1)+
                                 
@@ -107,7 +113,8 @@ export default function Inbox(){
                             }
                             vehicle_desc={
                                 
-                                record.vehicle_expiry?
+                                record.vehicle_expiry&&
+                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2?
                                 ("Vehicle ID expiry in "+
                                     Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months')+1)+" month(s)"
                                     +" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY"))
@@ -118,13 +125,17 @@ export default function Inbox(){
                         ))
                     }
                 </div>
-            </motion.div>
-            :
-            <div style={{border:'', display:"flex", height:"65svh", justifyContent:"center", alignItems:"center"}}>
-                <div className="loader"></div>
-            </div>
+                </motion.div>
+
+                :
+                <div style={{border:'', display:"flex", height:"65svh", justifyContent:"center", alignItems:"center"}}>
+                    <div className="loader"></div>
+                </div>
+            
+            
             
             }
+
             
         </div>
     )
