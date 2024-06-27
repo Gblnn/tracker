@@ -14,7 +14,7 @@ import emailjs from '@emailjs/browser'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, LucideMails, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, TextCursor, Trash, Upload, UserCircle, X } from "lucide-react"
+import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, LucideMails, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, Sparkles, TextCursor, Trash, Upload, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import useKeyboardShortcut from 'use-keyboard-shortcut'
@@ -146,13 +146,13 @@ export default function Records(props:Props){
 
     
 
-    useEffect(()=>{
-        console.log(checked)
-    },[checked])
+    // useEffect(()=>{
+    //     console.log(checked.length)
+    // },[checked])
 
-    useEffect(()=>{
-        console.log(moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1)
-    },[civil_expiry])
+    // useEffect(()=>{
+    //     console.log(moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1)
+    // },[civil_expiry])
 
 
     //INITIAL DATA FETCH ON PAGE LOAD
@@ -371,7 +371,7 @@ export default function Records(props:Props){
         
         
         const index = checked.indexOf(id)
-        console.log(index, id)
+        // console.log(index, id)
     
 
 
@@ -435,14 +435,12 @@ export default function Records(props:Props){
 
 
                 {/* BACK BUTTON */}
-                <Back title="Records" 
+                <Back title={"Records"+" ("+records.length+")"} 
                 extra={
-                    <div style={{display:"flex", gap:"0.5rem"}}>
-
-                    
-                        <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><Upload width={"1rem"} color="dodgerblue"/></button>
-                    
-
+                    !selectable?
+                    <div style={{display:"flex", gap:"0.5rem", height:"2.5rem"}}>
+                        
+                        {/* <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><Upload width={"1rem"} color="dodgerblue"/></button> */}
                     
                         <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>setMailConfigDialog(true)}>
                         {
@@ -452,9 +450,11 @@ export default function Records(props:Props){
                             <Mail width="1.1rem" color="dodgerblue"/>
                             
                         }
-                        {/* MAIL BUTTON LABEL */}
-                        {/* <p style={{fontSize:"0.8rem"}}>Mail Configuration</p> */}
                         </button>
+                        
+
+                    
+                        
             
 
                         
@@ -471,6 +471,11 @@ export default function Records(props:Props){
 
                             </button>
             
+                    </div>
+                    :
+                    <div style={{ border:"", width:"7.5rem", background:"rgba(100 100 100/ 20%)", padding:"0.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", paddingLeft:"1rem", paddingRight:"1rem", borderRadius:"0.5rem"}}>
+                        <p style={{opacity:0.75}}>Selected</p>
+                        <p style={{color:"dodgerblue", fontWeight:600}}>{checked.length}</p>
                     </div>
                     }
                 />
@@ -731,9 +736,13 @@ export default function Records(props:Props){
 
             {/*DISPLAY CIVIL ID DIALOG */}
             <DefaultDialog back close titleIcon={<CreditCard color="dodgerblue"/>} title="Civil ID" open={civil} onCancel={()=>setCivil(false)} OkButtonText="Add" title_extra={civil_number?
-            <DropDown onDelete={()=>{setCivilDelete(true)}} onEdit={()=>{setEditcivilprompt(true)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>
             
-            }/>:null
+            <div style={{display:"flex", gap:"0.5rem", height:"2.25rem"}}>
+            <button style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem"}}><Sparkles width={"0.85rem"} fill="salmon" stroke="none"/>Renew</button>
+            <DropDown onDelete={()=>{setCivilDelete(true)}} onEdit={()=>{setEditcivilprompt(true)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} />
+            </div>
+            
+            :null
             } extra={
                 <div style={{width:"100%", display:"flex", justifyContent:'center', paddingBottom:"1rem"}}>
                     {

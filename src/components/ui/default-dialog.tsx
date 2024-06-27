@@ -23,6 +23,7 @@ interface Props {
     updating?:boolean
     created_on?:string
     progress?:string
+    footerExtra?:any
 }
 
 export default function DefaultDialog(props:Props){
@@ -81,6 +82,14 @@ export default function DefaultDialog(props:Props){
                 </DialogHeader>
 
                 <DialogFooter>
+                    <div style={{display:"flex", flexFlow:"column", width:"100%", gap:"0.5rem"}}>
+                    {
+                        props.footerExtra?
+                        
+                            props.footerExtra
+                        
+                        :null
+                    }
                     {
                         props.close?
                         <button onClick={props.onCancel} style={{width:"100%", fontSize:"0.9rem"}}>
@@ -96,6 +105,7 @@ export default function DefaultDialog(props:Props){
                                 </>
                                 
                             }
+                            
                         </button>
                             
                         :
@@ -129,6 +139,8 @@ export default function DefaultDialog(props:Props){
                         </Button>
                     </div>
                     }
+                    </div>
+                    
                     
                 </DialogFooter>
 

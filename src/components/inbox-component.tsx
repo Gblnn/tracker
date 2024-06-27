@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import { Car, ChevronRight, CreditCard } from "lucide-react"
 import { Link } from "react-router-dom"
 
@@ -17,21 +18,25 @@ interface Props{
 
 export default function InboxComponent(props:Props){
     return(
+        <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
         <Link className={props.hidden==true?"hidden":"visible"} to={props.to}>
 
             <button onClick={props.onClick} style={{paddingLeft:"1rem", gap:"0.5rem", width:"100%", justifyContent:"space-between"}}>
 
-                <div style={{display:"flex", gap:"1rem", alignItems:"center", border:''}}>
+                <div style={{display:"flex", gap:"1rem", alignItems:"center", border:'', padding:"0.15rem"}}>
 
-                    <div style={{border:"", color:props.priority=="low"?"dodgerblue":"goldenrod", display:"flex", alignItems:"flex-start",flex:1}}>
+                    {/* <div style={{border:"", color:props.priority=="low"?"dodgerblue":"goldenrod", display:"flex", alignItems:"flex-start",flex:1}}>
                     {props.icon}
-                    </div>
+                    </div> */}
 
                     <div style={{border:"", display:'flex', flexFlow:"column"}}>
 
-                        <p style={{fontWeight:500, width:"", textAlign:"left", fontSize:"0.85rem"}}>
+                        <p style={{fontWeight:500, width:"100%", textAlign:"left", fontSize:"1rem", border:"", display:"flex", gap:"0.5rem"}}>
+                            
                             {props.title}
                         </p>
+
+                        {/* <p style={{height:"0.25rem"}}></p> */}
 
                         {
                             props.civil_desc?
@@ -61,6 +66,7 @@ export default function InboxComponent(props:Props){
 
                         }
                         
+                        
 
                         
                         
@@ -69,7 +75,7 @@ export default function InboxComponent(props:Props){
 
                 </div>
 
-            <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
+            <div style={{display:"flex", alignItems:"center", gap:"1rem", marginRight:"1rem", border:""}}>
                 {
                 props.tag?
                 
@@ -83,10 +89,12 @@ export default function InboxComponent(props:Props){
                     <ChevronRight width={"1rem"}/>
                 }
                 
+                
+                
             </div>
             
         </button>
         </Link>
-        
+        </motion.div>
     )
 }

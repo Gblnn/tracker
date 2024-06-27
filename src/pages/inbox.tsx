@@ -1,9 +1,11 @@
 import Back from "@/components/back";
 import InboxComponent from "@/components/inbox-component";
+import SearchBar from "@/components/search-bar";
 import { db } from "@/firebase";
+import { LoadingOutlined } from '@ant-design/icons';
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { Info, RefreshCcw } from "lucide-react";
+import { Filter, Info, Mail, RefreshCcw } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 
@@ -12,16 +14,18 @@ export default function Inbox(){
     const today:any = moment().toDate()
     const [records, setRecords] = useState<any>([])
     const [pageLoad, setPageLoad] = useState(false)
-    
+
+    const [search, setSearch] = useState("")
+    const [count, setCount] = useState(0)
     
 
     useEffect(()=>{
         fetchData()
     },[])
 
-    // useEffect(()=>{
-    //     console.log(document.getElementById("inboxes")?.childElementCount)
-    // },[pageLoad])
+    useEffect(()=>{
+        setCount(Number(document.getElementById("inboxes")?.childElementCount))
+    },[pageLoad])
 
    
 
@@ -58,6 +62,7 @@ export default function Inbox(){
         }
         
     }
+    
 
     // const Evaluate = () => {
         
@@ -65,10 +70,22 @@ export default function Inbox(){
 
     return(
         <div style={{margin:"1.25rem"}}>
-            <Back title="Alerts" 
+            <Back title={"Alerts"+" ("+count+")"}
                 extra={
-                    <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={fetchData} >
-                        <RefreshCcw width="1.1rem" color="grey"/></button>}/>
+                    <div style={{display:"flex", gap:"0.5rem"}}>
+                    <button style={{paddingLeft:"1rem", paddingRight:"1rem"}}><Mail width={"1rem"} color="dodgerblue"/></button>
+                    <button style={{paddingLeft:"1rem", paddingRight:"1rem", height:"2.5rem"}} onClick={fetchData} >
+                        {
+                                pageLoad?
+                                <LoadingOutlined style={{color:"dodgerblue"}} width={"1.5rem"}/>
+                                :
+                                <RefreshCcw width="1.1rem" color="dodgerblue"/>
+                            }
+
+                    </button>
+                    </div>
+                    
+                }/>
             {
                 
                 !pageLoad?
@@ -78,7 +95,17 @@ export default function Inbox(){
             
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
                 
-                <br/>
+                <p style={{height:"1.5rem"}}></p>
+                <div style={{display:"flex", width:"100%", border:"", gap:"1rem"}}>
+                    <button style={{display:"flex", width:"3rem"}}>
+                        {/* <p style={{fontSize:"0.75rem"}}>Sort By</p> */}
+                        <Filter width={"1rem"} color="salmon"/>
+                        
+                    </button>
+                    <SearchBar placeholder="Search Inbox" onChange={(e:any)=>setSearch(e.target.value.toLowerCase())}/>
+                </div>
+                
+                <p style={{height:"1.5rem"}}></p>
                 <div id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.75rem"}}>
                     {
                         records
@@ -91,14 +118,24 @@ export default function Inbox(){
                                 Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2    
                             )
                         })
+                        .filter((post:any)=>{
+                    
+                            return search == ""?
+                            {}
+                            :
+                            post.name&&
+                            ((post.name).toLowerCase()).includes(search.toLowerCase())
+                            
+                        
+                        })
                         .map((record:any)=>(
                             <InboxComponent 
                             noArrow
-                            onClick={()=>console.log(Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')))}
-                             icon={<Info/>} priority="low" key={record.id} title={record.name+" doc expiry reminder"} 
+                            
+                             icon={<Info/>} priority="low" key={record.id} title={record.name+"'s doc expiry reminder"} 
                              
                              civil_desc={
-                                
+                                record.civil_expiry&&
                                 Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2?
                                 ("Civil ID expiry in "+
                                 Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')+1)+
