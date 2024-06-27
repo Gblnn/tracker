@@ -5,6 +5,7 @@ import CivilID from "@/components/civil-id"
 import Directive from "@/components/directive"
 import DropDown from "@/components/dropdown"
 import FileInput from "@/components/file-input"
+import SearchBar from "@/components/search-bar"
 import { Button } from "@/components/ui/button"
 import DefaultDialog from "@/components/ui/default-dialog"
 import VehicleID from "@/components/vehicle-id"
@@ -14,7 +15,7 @@ import emailjs from '@emailjs/browser'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, LucideMails, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, Sparkles, TextCursor, Trash, Upload, UserCircle, X } from "lucide-react"
+import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, LucideMails, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import useKeyboardShortcut from 'use-keyboard-shortcut'
@@ -433,9 +434,13 @@ export default function Records(props:Props){
             {/* Main Component */}
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
 
+            <div>
 
+            </div>
                 {/* BACK BUTTON */}
-                <Back title={"Records"+" ("+records.length+")"} 
+                <Back title={"Records"+
+                
+                " ("+records.length+")"} 
                 extra={
                     !selectable?
                     <div style={{display:"flex", gap:"0.5rem", height:"2.5rem"}}>
@@ -479,9 +484,6 @@ export default function Records(props:Props){
                     </div>
                     }
                 />
-
-                
-
                 <br/>
 
                 {!pageLoad? // if page doesn't load : 
@@ -512,18 +514,19 @@ export default function Records(props:Props){
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", marginTop:"1"}}>
 
                     {/* Searchbar */}
-                    <div style={{display:"flex", gap:"1rem"}}>
+                    <div style={{display:"flex", gap:"1rem", border:"", flex:1}}>
 
                         <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable);setAddButtonModeSwap(!addButtonModeSwap);selectable && setChecked([]); !selectable && setSelected(false)
                             //  selectable && fetchData()
                              }}><CheckSquare2 color={selectable?"white":"dodgerblue"}/></button>
 
-                        <input type="search" onChange={(e)=>{setSearch(e.target.value.toLowerCase())}} id="search-bar" placeholder="Search Records"/>
+                        <SearchBar placeholder="Search Records" onChange={(e:any)=>{setSearch(e.target.value.toLowerCase())}}/>
                     </div>
                      
 
                     <p style={{height:"0.25rem"}}/>
-
+                
+                <div className="record-list" style={{display:"flex", gap:"0.5rem", flexFlow:"column", overflowY:"auto", height:"55svh"}}>
                 {
                     // RECORD DATA MAPPING
                     records
@@ -600,9 +603,8 @@ export default function Records(props:Props){
                     ))
                 }
 
-                {/* <Directive to="/vehicles" title="Vehicles" icon={<Car color="dodgerblue" width={"1.1rem"} height={"1.1rem"}/>}/>
-
-                <Directive to="/medicals" title="Medicals" icon={<HeartPulse color="tomato" width={"1.1rem"} height={"1.1rem"}/>}/> */}
+                </div>
+                
 
                 </div>
                 

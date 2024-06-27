@@ -240,3 +240,16 @@ input:focus {
     transform: scaleY(-1) rotate(-135deg);
   }
 }
+
+/* Custom Scrollbar */
+.record-list::-webkit-scrollbar {
+  width: 0.5em;
+}
+
+.record-list::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+.record-list::-webkit-scrollbar-thumb {
+  background-color: crimson;
+}
