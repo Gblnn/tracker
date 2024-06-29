@@ -478,7 +478,7 @@ export default function Records(props:Props){
             
                     </div>
                     :
-                    <div style={{ border:"", width:"7.5rem", background:"rgba(100 100 100/ 20%)", padding:"0.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", paddingLeft:"1rem", paddingRight:"1rem", borderRadius:"0.5rem"}}>
+                    <div style={{height:"2.25rem", border:"", width:"7.5rem", background:"rgba(100 100 100/ 20%)", padding:"0.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", paddingLeft:"1rem", paddingRight:"1rem", borderRadius:"0.5rem"}}>
                         <p style={{opacity:0.75}}>Selected</p>
                         <p style={{color:"dodgerblue", fontWeight:600}}>{checked.length}</p>
                     </div>
@@ -514,7 +514,7 @@ export default function Records(props:Props){
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", marginTop:"1"}}>
 
                     {/* Searchbar */}
-                    <div style={{display:"flex", gap:"1rem", border:"", flex:1}}>
+                    <div style={{display:"flex", gap:"0.5rem", border:"", flex:1}}>
 
                         <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable);setAddButtonModeSwap(!addButtonModeSwap);selectable && setChecked([]); !selectable && setSelected(false)
                             //  selectable && fetchData()

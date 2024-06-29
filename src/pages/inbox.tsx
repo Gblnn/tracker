@@ -6,7 +6,7 @@ import { db } from "@/firebase";
 import { LoadingOutlined } from '@ant-design/icons';
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { Bell, Filter, Info, Mail, RefreshCcw } from "lucide-react";
+import { Bell, Info, Mail, Mails, RefreshCcw } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 
@@ -72,7 +72,7 @@ export default function Inbox(){
 
     return(
         <div style={{margin:"1.25rem"}}>
-            <Back title={"Alerts"+" ("+count+")"}
+            <Back title={"Inbox"+" ("+count+")"}
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
                     <button style={{paddingLeft:"1rem", paddingRight:"1rem"}}><Mail width={"1rem"} color="dodgerblue"/></button>
@@ -99,16 +99,20 @@ export default function Inbox(){
                 
                 <p style={{height:"1.5rem"}}></p>
                 <div style={{display:"flex", width:"100%", border:"", gap:"0.5rem"}}>
-                    <button style={{display:"flex", width:"2.5rem"}}>
-                        {/* <p style={{fontSize:"0.75rem"}}>Sort By</p> */}
+                    {/* <button style={{display:"flex", width:"2.5rem"}}>
+                        
                         <Filter width={"1rem"} color="salmon"/>
                         
-                    </button>
+                    </button> */}
                     <SearchBar placeholder="Search by name" onChange={(e:any)=>setSearch(e.target.value.toLowerCase())}/>
+                    <button style={{width:"7rem"}}>
+                        <Bell width={"1rem"} color="salmon"/>
+                        <p style={{fontSize:"0.8rem"}}>Notify All</p>
+                    </button>
                 </div>
                 
                 <p style={{height:"1.5rem"}}></p>
-                <div id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.75rem", height:"60svh", border:"", overflow:"auto", paddingRight:"0.5rem"}}>
+                <div className="record-list" id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.75rem", height:"60svh", border:"", overflow:"auto", paddingRight:"0.5rem"}}>
                     {
                         records
                         .filter((record:any)=>{
@@ -177,7 +181,18 @@ export default function Inbox(){
             
             }
 
-            <DefaultDialog close open={reminderDialog} onCancel={()=>setReminderDialog(false)} titleIcon={<Bell color="dodgerblue"/>} title="Reminder"/>
+            <DefaultDialog OkButtonText="Send" open={reminderDialog} onCancel={()=>setReminderDialog(false)} titleIcon={<Mails color="dodgerblue"/>} title="Notify via Mail" extra={
+                <div style={{display:"flex", width:"100%", border:'', flexFlow:"column", gap:"0.5rem"}}>
+                    
+                    <div style={{display:"flex", width:"100%", gap:"0.5rem"}}>
+                    <input placeholder="Recipient E-Mail Address"/>
+                    {/* <button style={{width:"8rem"}}>
+                        <MailCheck width={"1rem"} color="dodgerblue"/>
+                        Send </button> */}
+                    </div>
+                    
+                </div>
+            }/>
 
             
         </div>

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Bell, Car, CreditCard, Sparkle, Sparkles } from "lucide-react"
+import { AtSign, Car, CreditCard, Sparkles } from "lucide-react"
 import { Link } from "react-router-dom"
 
 interface Props{
@@ -71,9 +71,9 @@ export default function InboxComponent(props:Props){
 
                         <div style={{display:"flex", width:"100%", justifyContent:"flex-start", gap:"0.5rem"}}>
 
-                            <button onClick={props.onReminderClick} style={{display:"flex", width:"6rem", height:"2rem", fontSize:"0.8rem", border:''}}>
-                                <Bell width={"1rem"} fill='dodgerblue' color='dodgerblue'/>
-                                <p>Remind</p>
+                            <button onClick={props.onReminderClick} style={{display:"flex", width:"6.5rem", height:"2rem", fontSize:"0.8rem", border:''}}>
+                                <AtSign width={"1rem"} color='dodgerblue'/>
+                                <p>Notify (3)</p>
                             </button>
 
                             <button onClick={props.onRenewClick} style={{display:"flex", width:"5.5rem", height:"2rem", fontSize:"0.8rem", border:''}}>

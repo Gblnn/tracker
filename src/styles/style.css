@@ -50,7 +50,7 @@ input {
   padding: 0.5rem;
   padding-left: 1rem;
   background: rgba(100 100 100/ 20%);
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   transition: 0.3s;
 }
 

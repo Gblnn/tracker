@@ -22,7 +22,7 @@ export default function Directive(props:Props){
 
     return(
 
-        <Link onClick={()=>props.selectable?setSelected(!selected):null} to={props.to} style={{display:"flex"}}>
+        <Link onClick={()=>props.selectable?setSelected(!selected):null} to={props.to} style={{display:"flex", width:"100%"}}>
             {/* <div style={{background:"#1a1a1a",width:"3rem", borderTopLeftRadius:"0.5rem", borderBottomLeftRadius:"0.5rem", display:"flex", alignItems:"center", justifyContent:"center"}}>
                 {props.icon}
             </div> */}
