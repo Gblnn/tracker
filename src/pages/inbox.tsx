@@ -102,7 +102,7 @@ export default function Inbox(){
                         <Filter width={"1rem"} color="salmon"/>
                         
                     </button>
-                    <SearchBar placeholder="Search Inbox" onChange={(e:any)=>setSearch(e.target.value.toLowerCase())}/>
+                    <SearchBar placeholder="Search Inbox by name" onChange={(e:any)=>setSearch(e.target.value.toLowerCase())}/>
                 </div>
                 
                 <p style={{height:"1.5rem"}}></p>

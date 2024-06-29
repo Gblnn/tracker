@@ -1,4 +1,4 @@
-import { Check, CheckSquare2, ChevronRight } from "lucide-react"
+import { CheckSquare2, ChevronRight } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 
@@ -35,10 +35,11 @@ export default function Directive(props:Props){
                     {
                         props.selectable?
                         <div style={{display:"flex", justifyContent:"center", alignItems:"center"}}>
-                        <CheckSquare2 className="check-square" fill={selected?"dodgerblue":"rgba(100 100 100/ 50%)"} stroke="none"/>
+                        <CheckSquare2 className="check-square" fill={selected?"dodgerblue":"rgba(100 100 100/ 50%)"} stroke={selected?"white":"none"}/>
                         {
                             selected?
-                            <Check style={{position:"absolute", width:"0.75rem"}} />
+                            // <Check style={{position:"relative", width:"0.75rem"}} />
+                            ""
                             :null
                         }
                         
