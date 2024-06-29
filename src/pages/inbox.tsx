@@ -1,11 +1,12 @@
 import Back from "@/components/back";
 import InboxComponent from "@/components/inbox-component";
 import SearchBar from "@/components/search-bar";
+import DefaultDialog from "@/components/ui/default-dialog";
 import { db } from "@/firebase";
 import { LoadingOutlined } from '@ant-design/icons';
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { Filter, Info, Mail, RefreshCcw } from "lucide-react";
+import { Bell, Filter, Info, Mail, RefreshCcw } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 
@@ -14,6 +15,7 @@ export default function Inbox(){
     const today:any = moment().toDate()
     const [records, setRecords] = useState<any>([])
     const [pageLoad, setPageLoad] = useState(false)
+    const [reminderDialog, setReminderDialog] = useState(false)
 
     const [search, setSearch] = useState("")
     const [count, setCount] = useState(0)
@@ -96,17 +98,17 @@ export default function Inbox(){
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
                 
                 <p style={{height:"1.5rem"}}></p>
-                <div style={{display:"flex", width:"100%", border:"", gap:"1rem"}}>
-                    <button style={{display:"flex", width:"3rem"}}>
+                <div style={{display:"flex", width:"100%", border:"", gap:"0.5rem"}}>
+                    <button style={{display:"flex", width:"2.5rem"}}>
                         {/* <p style={{fontSize:"0.75rem"}}>Sort By</p> */}
                         <Filter width={"1rem"} color="salmon"/>
                         
                     </button>
-                    <SearchBar placeholder="Search Inbox by name" onChange={(e:any)=>setSearch(e.target.value.toLowerCase())}/>
+                    <SearchBar placeholder="Search by name" onChange={(e:any)=>setSearch(e.target.value.toLowerCase())}/>
                 </div>
                 
                 <p style={{height:"1.5rem"}}></p>
-                <div id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.75rem"}}>
+                <div id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.75rem", height:"60svh", border:"", overflow:"auto", paddingRight:"0.5rem"}}>
                     {
                         records
                         .filter((record:any)=>{
@@ -131,6 +133,8 @@ export default function Inbox(){
                         .map((record:any)=>(
                             <InboxComponent 
                             noArrow
+
+                            onReminderClick={()=>{setReminderDialog(true)}}
                             
                              icon={<Info/>} priority="low" key={record.id} title={record.name+"'s doc expiry reminder"} 
                              
@@ -172,6 +176,8 @@ export default function Inbox(){
             
             
             }
+
+            <DefaultDialog close open={reminderDialog} onCancel={()=>setReminderDialog(false)} titleIcon={<Bell color="dodgerblue"/>} title="Reminder"/>
 
             
         </div>

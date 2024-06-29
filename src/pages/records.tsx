@@ -526,7 +526,7 @@ export default function Records(props:Props){
 
                     <p style={{height:"0.25rem"}}/>
                 
-                <div className="record-list" style={{display:"flex", gap:"0.6rem", flexFlow:"column", overflowY:"auto", height:"55svh", paddingRight:"0.5rem", paddingTop:"0.5rem"}}>
+                <div className="record-list" style={{display:"flex", gap:"0.6rem", flexFlow:"column", overflowY:"auto", height:"55svh", paddingRight:"0.5rem", paddingTop:"0.25rem"}}>
                 {
                     // RECORD DATA MAPPING
                     records

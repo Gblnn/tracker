@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Car, ChevronRight, CreditCard } from "lucide-react"
+import { Bell, Car, CreditCard, Sparkle, Sparkles } from "lucide-react"
 import { Link } from "react-router-dom"
 
 interface Props{
@@ -14,6 +14,8 @@ interface Props{
     vehicle_desc?:string
     hidden?:boolean
     noArrow?:boolean
+    onReminderClick?:any
+    onRenewClick?:any
 }
 
 export default function InboxComponent(props:Props){
@@ -21,7 +23,7 @@ export default function InboxComponent(props:Props){
         <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
         <Link className={props.hidden==true?"hidden":"visible"} to={props.to}>
 
-            <button onClick={props.onClick} style={{paddingLeft:"1rem", gap:"0.5rem", width:"100%", justifyContent:"space-between"}}>
+            <div onClick={props.onClick} style={{ gap:"0.5rem", width:"100%", justifyContent:"space-between", background:"rgba(100 100 100/ 20%)", padding:"0.75rem", paddingLeft:"1rem", borderRadius:"0.75rem"}}>
 
                 <div style={{display:"flex", gap:"1rem", alignItems:"center", border:'', padding:"0.15rem"}}>
 
@@ -29,7 +31,7 @@ export default function InboxComponent(props:Props){
                     {props.icon}
                     </div> */}
 
-                    <div style={{border:"", display:'flex', flexFlow:"column"}}>
+                    <div style={{border:"", display:'flex', flexFlow:"column", width:"100%"}}>
 
                         <p style={{fontWeight:500, width:"100%", textAlign:"left", fontSize:"1rem", border:"", display:"flex", gap:"0.5rem"}}>
                             
@@ -65,7 +67,21 @@ export default function InboxComponent(props:Props){
                             :null
 
                         }
-                        
+                        <p style={{height:"0.5rem"}}/>
+
+                        <div style={{display:"flex", width:"100%", justifyContent:"flex-start", gap:"0.5rem"}}>
+
+                            <button onClick={props.onReminderClick} style={{display:"flex", width:"6rem", height:"2rem", fontSize:"0.8rem", border:''}}>
+                                <Bell width={"1rem"} fill='dodgerblue' color='dodgerblue'/>
+                                <p>Remind</p>
+                            </button>
+
+                            <button onClick={props.onRenewClick} style={{display:"flex", width:"5.5rem", height:"2rem", fontSize:"0.8rem", border:''}}>
+                                <Sparkles width={"1rem"} color='salmon'/>
+                                <p>Renew</p>
+                            </button>
+
+                        </div>
                         
 
                         
@@ -75,7 +91,7 @@ export default function InboxComponent(props:Props){
 
                 </div>
 
-            <div style={{display:"flex", alignItems:"center", gap:"1rem", marginRight:"1rem", border:""}}>
+            {/* <div style={{display:"flex", alignItems:"center", gap:"1rem", marginRight:"1rem", border:""}}>
                 {
                 props.tag?
                 
@@ -91,9 +107,9 @@ export default function InboxComponent(props:Props){
                 
                 
                 
-            </div>
+            </div> */}
             
-        </button>
+        </div>
         </Link>
         </motion.div>
     )
