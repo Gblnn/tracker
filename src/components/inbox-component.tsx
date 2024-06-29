@@ -38,7 +38,7 @@ export default function InboxComponent(props:Props){
                             {props.title}
                         </p>
 
-                        {/* <p style={{height:"0.25rem"}}></p> */}
+        
 
                         {
                             props.civil_desc?

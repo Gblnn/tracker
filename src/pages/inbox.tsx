@@ -105,14 +105,14 @@ export default function Inbox(){
                         
                     </button> */}
                     <SearchBar placeholder="Search by name" onChange={(e:any)=>setSearch(e.target.value.toLowerCase())}/>
-                    <button style={{width:"7rem"}}>
+                    <button style={{width:"6.5rem"}}>
                         <Bell width={"1rem"} color="salmon"/>
                         <p style={{fontSize:"0.8rem"}}>Notify All</p>
                     </button>
                 </div>
                 
                 <p style={{height:"1.5rem"}}></p>
-                <div className="record-list" id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.75rem", height:"60svh", border:"", overflow:"auto", paddingRight:"0.5rem"}}>
+                <div className="record-list" id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.75rem", height:"60svh", border:"", overflow:"auto", paddingRight:"0.5rem", paddingBottom:"1rem"}}>
                     {
                         records
                         .filter((record:any)=>{
