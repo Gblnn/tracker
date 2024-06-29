@@ -34,7 +34,7 @@ export default function Header(props:Props){
                 
             })
             setPageLoad(false)
-            // console.log(records)
+            console.log(count)
             // records.forEach((r:any)=>{
             
             //     console.log(r.civil_expiry.toDate())
@@ -75,11 +75,11 @@ export default function Header(props:Props){
                 <Link to="/inbox">
                 <Button onClick={()=>fetchData()} variant={"ghost"} style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                     <Inbox color="crimson" width={"1.5rem"}/>
-                    {
+                    {/* {
                         count?
                         <p >{count?count:null}</p>
                         :null
-                    }
+                    } */}
                     
                 </Button>
                 </Link>
