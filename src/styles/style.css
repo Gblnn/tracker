@@ -90,6 +90,10 @@ textarea {
   transition: 0.3s;
 }
 
+body {
+  transition: 0.3s;
+}
+
 textarea::placeholder {
   color: rgb(100 100 100);
 }

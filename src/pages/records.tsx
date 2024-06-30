@@ -15,7 +15,7 @@ import emailjs from '@emailjs/browser'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, LucideMails, Mail, MailCheck, PackageOpen, PackageX, PenLine, Plus, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, LucideMails, Mail, MailCheck, PackageOpen, PenLine, Plus, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import useKeyboardShortcut from 'use-keyboard-shortcut'
@@ -37,7 +37,7 @@ export default function Records(props:Props){
 
 
     // BASIC PAGE VARIABLES
-    const [pageLoad, setPageLoad] = useState(false)
+    // const [pageLoad, setPageLoad] = useState(false)
     const [records, setRecords] = useState<any>([])
     const [name, setName] = useState("")
     const [id, setID] = useState("")
@@ -102,6 +102,7 @@ export default function Records(props:Props){
 
     const [selected, setSelected] = useState(false)
     const [fetchingData, setfetchingData] = useState(false)
+    const [status, setStatus] = useState("")
 
     // MAILJS VARIABLES
     const serviceId = "service_lunn2bp";
@@ -123,13 +124,13 @@ export default function Records(props:Props){
     //     :null
     // }
     
-    const {} = useKeyboardShortcut(
+    const {flushHeldKeys} = useKeyboardShortcut(
         ["Control", "A"],
         () => {
-            addDialog?
-            setAddDialog(true)
-            :null;
-
+            
+            setAddDialog(!addDialog)
+            setName("")
+            flushHeldKeys
         }
     )
 
@@ -145,15 +146,32 @@ export default function Records(props:Props){
     },[])
 
     useEffect(()=>{
+        
+
         window.addEventListener('online', () => {
-            console.log('Became online')
-            message.success("Client is online")
+            setStatus("true")
         });
         window.addEventListener('offline', () => {
-            console.log('Became offline')
-            message.success("Lost internet connection")
+            setStatus("false")
         });
+
+        
     })
+
+    useEffect(()=>{
+        if(status=="true"){
+            message.success("Connection Established")
+            fetchData()
+        }
+        
+        
+        
+        else if(status=="false"){
+            message.error("Lost Connection.")
+        }
+    
+        
+    },[status])
 
 
     
@@ -477,11 +495,15 @@ export default function Records(props:Props){
 
                         
                         
-                        <button style={{width:"3rem"}} onClick={fetchData} >
+                        <button className="transitions" style={{paddingLeft:"1rem", paddingRight:"1rem", width:"3rem"}} onClick={fetchData} >
 
                             {
                                 fetchingData?
+                                <>
                                 <LoadingOutlined style={{color:"dodgerblue"}} width={"1.5rem"}/>
+                                {/* <p style={{fontSize:"0.8rem", opacity:0.5}}>Updating</p> */}
+                                </>
+                                
                                 :
                                 <RefreshCcw width="1.1rem" color="dodgerblue"/>
                             }
@@ -499,26 +521,48 @@ export default function Records(props:Props){
                 />
                 <br/>
 
-                {!pageLoad? // if page doesn't load : 
+                {// if page doesn't load : 
+
+                
 
 
                 // IF NUMBER OF RECORDS IS LESS THAN 1
                 records.length<1?
 
-                fetchingData?
+                status=="false"?
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                    <div style={{width:"100%",height:"55svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
+                    <div style={{width:"100%",height:"55svh", display:"flex", justifyContent:"center", alignItems:"center", border:"", flexFlow:"column"}}>
 
-                        <div style={{display:"flex", gap:"0.5rem", opacity:"0.5", border:""}}>
+                        <div style={{display:"flex", gap:"0.25rem", opacity:"0.5"}}>
+                            <PackageOpen width={"1rem"}/>
+                            <p>No Internet Connection</p>
                             
-                            <p style={{fontSize:"0.75rem"}} className="animate-ping">Fetching Data</p>
                         </div>
+                        <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
+                        <p style={{opacity:0.5, fontSize:"0.7rem"}}>Add a record using + Add Record</p>
+                        </motion.div>
 
 
                     </div>
                 </motion.div>
                 :
+
+                fetchingData?
+                <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
+                    <div style={{width:"100%",height:"55svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
+
+                        {/* <div style={{display:"flex", gap:"0.5rem", opacity:"0.5", border:""}}>
+                            <p style={{fontSize:"0.75rem"}} className="animate-ping">Fetching Data</p>
+                        </div> */}
+
+                        <div className="loader"></div>
+
+
+                    </div>
+                </motion.div>
                 
+                :
+
                 // DISPLAY EMPTY SET - PAGE
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
                     <div style={{width:"100%",height:"55svh", display:"flex", justifyContent:"center", alignItems:"center", border:"", flexFlow:"column"}}>
@@ -637,22 +681,6 @@ export default function Records(props:Props){
                 
 
                 </div>
-                
-                : //else
-
-                // LOADING SCREEN
-                <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                    <div style={{width:"100%",height:"55svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
-
-                        <div style={{display:"flex", flexFlow:"column", alignItems:"center", gap:"1rem"}}>
-                        {/* <LoadingOutlined style={{color:"crimson", fontSize:"3.5rem"}}/> */}
-                        <div className="loader"></div>
-                        {/* <p style={{fontSize:"1rem", opacity:"0.5"}}>Loading</p> */}
-                        </div>
-                        
-
-                    </div>
-                </motion.div>
                 
                 }
 
