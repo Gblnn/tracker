@@ -15,7 +15,7 @@ import emailjs from '@emailjs/browser'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, LucideMails, Mail, MailCheck, PackageX, PenLine, Plus, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, LucideMails, Mail, MailCheck, PackageOpen, PackageX, PenLine, Plus, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import useKeyboardShortcut from 'use-keyboard-shortcut'
@@ -101,6 +101,7 @@ export default function Records(props:Props){
     const [progress, setProgress] = useState("")
 
     const [selected, setSelected] = useState(false)
+    const [fetchingData, setfetchingData] = useState(false)
 
     // MAILJS VARIABLES
     const serviceId = "service_lunn2bp";
@@ -141,8 +142,18 @@ export default function Records(props:Props){
     // PAGE LOAD HANDLER
     useEffect(() =>{
         fetchData()
-        
     },[])
+
+    useEffect(()=>{
+        window.addEventListener('online', () => {
+            console.log('Became online')
+            message.success("Client is online")
+        });
+        window.addEventListener('offline', () => {
+            console.log('Became offline')
+            message.success("Lost internet connection")
+        });
+    })
 
 
     
@@ -160,7 +171,8 @@ export default function Records(props:Props){
     const fetchData = async () => {
         
         try {
-            setPageLoad(true)
+            
+            setfetchingData(true)
             const RecordCollection = collection(db, "records")
             const recordQuery = query(RecordCollection, orderBy("created_on"))
             const querySnapshot = await getDocs(recordQuery)
@@ -169,7 +181,8 @@ export default function Records(props:Props){
             querySnapshot.forEach((doc:any)=>{
                 fetchedData.push({id: doc.id, ...doc.data()} as Record)
             })
-            setPageLoad(false)
+           
+            setfetchingData(false)
             setRecords(fetchedData)
             setChecked([])
             setSelectable(false)
@@ -467,7 +480,7 @@ export default function Records(props:Props){
                         <button style={{width:"3rem"}} onClick={fetchData} >
 
                             {
-                                pageLoad?
+                                fetchingData?
                                 <LoadingOutlined style={{color:"dodgerblue"}} width={"1.5rem"}/>
                                 :
                                 <RefreshCcw width="1.1rem" color="dodgerblue"/>
@@ -492,15 +505,32 @@ export default function Records(props:Props){
                 // IF NUMBER OF RECORDS IS LESS THAN 1
                 records.length<1?
 
+                fetchingData?
+                <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
+                    <div style={{width:"100%",height:"55svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
+
+                        <div style={{display:"flex", gap:"0.5rem", opacity:"0.5", border:""}}>
+                            
+                            <p style={{fontSize:"0.75rem"}} className="animate-ping">Fetching Data</p>
+                        </div>
+
+
+                    </div>
+                </motion.div>
+                :
                 
                 // DISPLAY EMPTY SET - PAGE
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                    <div style={{width:"100%",height:"50svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
+                    <div style={{width:"100%",height:"55svh", display:"flex", justifyContent:"center", alignItems:"center", border:"", flexFlow:"column"}}>
 
-                        <div style={{display:"flex", gap:"0.5rem", opacity:"0.5"}}>
-                            <PackageX/>
+                        <div style={{display:"flex", gap:"0.25rem", opacity:"0.5"}}>
+                            <PackageOpen width={"1rem"}/>
                             <p>No Data</p>
+                            
                         </div>
+                        <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
+                        <p style={{opacity:0.5, fontSize:"0.7rem"}}>Add a record using + Add Record</p>
+                        </motion.div>
 
 
                     </div>

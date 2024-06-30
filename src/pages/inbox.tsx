@@ -91,9 +91,9 @@ export default function Inbox(){
             {
                 
                 !pageLoad?
-                // records.length<1?
-                
-                // :
+                records.length<1?
+                <p>No Alerts</p>
+                :
             
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
                 

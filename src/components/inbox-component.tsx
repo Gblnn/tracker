@@ -23,7 +23,7 @@ export default function InboxComponent(props:Props){
         <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
         <Link className={props.hidden==true?"hidden":"visible"} to={props.to}>
 
-            <div onClick={props.onClick} style={{ gap:"0.5rem", width:"100%", justifyContent:"space-between", background:"rgba(100 100 100/ 20%)", padding:"0.75rem", paddingLeft:"1rem", borderRadius:"0.75rem"}}>
+            <div onClick={props.onClick} style={{ gap:"0.5rem", width:"100%", justifyContent:"space-between", background:"rgba(100 100 100/ 20%)", padding:"1rem", paddingLeft:"1rem", borderRadius:"0.75rem"}}>
 
                 <div style={{display:"flex", gap:"1rem", alignItems:"center", border:'', padding:"0.15rem"}}>
 

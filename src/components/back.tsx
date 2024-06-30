@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 interface Props{
     icon?:any
-    title?:string
+    title?:any
     extra?:any
     noback?:boolean
 }
