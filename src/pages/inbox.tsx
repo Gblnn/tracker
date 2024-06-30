@@ -91,8 +91,22 @@ export default function Inbox(){
             {
                 
                 !pageLoad?
-                records.length<1?
-                <p>No Alerts</p>
+                count<1?
+                <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
+                    <div style={{width:"100%",height:"65svh", display:"flex", justifyContent:"center", alignItems:"center", border:"", flexFlow:"column"}}>
+
+                        <div style={{display:"flex", gap:"0.25rem", opacity:"0.5"}}>
+                            {/* <BellRingIcon width={"1rem"}/> */}
+                            <p>No Alerts</p>
+                            
+                        </div>
+                        <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
+                        <p style={{opacity:0.5, fontSize:"0.7rem"}}>There are no alerts at the moment</p>
+                        </motion.div>
+
+
+                    </div>
+                </motion.div>
                 :
             
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>

@@ -19,6 +19,14 @@ import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon,
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import useKeyboardShortcut from 'use-keyboard-shortcut'
+import ReactTimeAgo from 'react-time-ago'
+import TimeAgo from 'javascript-time-ago'
+
+import en from 'javascript-time-ago/locale/en'
+import ru from 'javascript-time-ago/locale/ru'
+
+TimeAgo.addDefaultLocale(en)
+TimeAgo.addLocale(ru)
 
 type Record = {
     id:string,
@@ -755,7 +763,7 @@ export default function Records(props:Props){
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
             {/* DISPLAY RECORD DIALOG */}
-            <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>setRecordSummary(false)} created_on={created_on} title_extra={
+            <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>setRecordSummary(false)} created_on={<ReactTimeAgo date={moment(created_on, "DD/MM/YYYY").toDate()} locale="en" timeStyle={"twitter"}/>} title_extra={
             <DropDown onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>setUserEditPrompt(true)} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
             }
             close extra={
@@ -798,7 +806,19 @@ export default function Records(props:Props){
             <DefaultDialog back close titleIcon={<CreditCard color="dodgerblue"/>} title="Civil ID" open={civil} onCancel={()=>setCivil(false)} OkButtonText="Add" title_extra={civil_number?
             
             <div style={{display:"flex", gap:"0.5rem", height:"2.25rem"}}>
-            <button style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem"}}><Sparkles width={"0.85rem"} fill="salmon" stroke="none"/>Renew</button>
+            
+
+            {
+                moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1<=3?
+                <button className="animate-pulse" style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem"}}>
+                    <Sparkles width={"0.85rem"} color="salmon"/>
+                    
+                    Renew
+                </button>
+                :null
+            }
+            
+
             <DropDown onDelete={()=>{setCivilDelete(true)}} onEdit={()=>{setEditcivilprompt(true)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} />
             </div>
             
@@ -850,7 +870,7 @@ export default function Records(props:Props){
 
 
             {/* EDIT CIVIL ID DIALOG */}
-            <AddDialog open={editcivilprompt} title="Edit Civil ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setEditedCivilNumber("");setEditedCivilExpiry(null);setEditedCivilDOB("")}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setEditedCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setEditedCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={civil_number} input2Value={civil_expiry} input3Value={civil_DOB}/>
+            <AddDialog open={editcivilprompt} title="Edit Civil ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setEditedCivilNumber("");setEditedCivilExpiry(null);setEditedCivilDOB("")}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setEditedCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setEditedCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={civil_number} input2Value={civil_expiry} input3Value={civil_DOB} input1Label="Civil Number : " input2Label="Expiry Date : " input3Label="Date of Birth : "/>
 
             {/* DELETE CIVIL ID DIALOG */}
             <DefaultDialog updating={loading} open={civilDelete} title="Delete Civil ID?" OkButtonText="Delete" onCancel={()=>setCivilDelete(false)} onOk={deleteCivilID} disabled={loading}/>

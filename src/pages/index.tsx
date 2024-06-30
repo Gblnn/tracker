@@ -1,8 +1,7 @@
-import Back from "@/components/back";
 import Directive from "@/components/directive";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { motion } from 'framer-motion';
-import { File, Indent, Mail, Plus } from "lucide-react";
+import { File, Mail } from "lucide-react";
 import { useState } from "react";
 
 export default function Index(){
@@ -12,14 +11,14 @@ export default function Index(){
     return(
         <div style={{margin:"1.5rem"}}>
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                <Back icon={<Indent color="salmon"/>} title="Index" noback/>
-                <br/>
+                {/* <Back icon={<Indent color="salmon"/>} title="Index" noback/> */}
+                {/* <br/> */}
 
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem"}}>
 
                     <Directive to="/records" title="Records" icon={<File color="violet" width={"1.1rem"} height={"1.1rem"}/>}/>
 
-                    <Directive onClick={()=>{setRequestDialog(true)}} title="Request Feature" icon={<Plus color="grey" width={"1.1rem"} height={"1.1rem"}/>}/>
+                    {/* <Directive onClick={()=>{setRequestDialog(true)}} title="Request Feature" icon={<Plus color="grey" width={"1.1rem"} height={"1.1rem"}/>}/> */}
 
                 </div>
             </motion.div>

@@ -5,7 +5,6 @@ import moment from "moment";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import InboxComponent from "./inbox-component";
-import { Button } from "./ui/button";
 
 interface Props{
     updateInbox?:any
@@ -73,15 +72,15 @@ export default function Header(props:Props){
                 {/* <NotifyButton/> */}
                 
                 <Link to="/inbox">
-                <Button onClick={()=>fetchData()} variant={"ghost"} style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
-                    <Inbox color="crimson" width={"1.5rem"}/>
+                <button onClick={()=>fetchData()} style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
+                    <Inbox color="crimson" width={"3rem"}/>
                     {/* {
                         count?
                         <p >{count?count:null}</p>
                         :null
                     } */}
                     
-                </Button>
+                </button>
                 </Link>
                 
                 

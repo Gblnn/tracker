@@ -24,6 +24,9 @@ interface Props {
     input1Value?:string
     input2Value?:string
     input3Value?:string
+    input1Label?:string
+    input2Label?:string
+    input3Label?:string
 }
 
 export default function AddDialog(props:Props){
@@ -45,14 +48,29 @@ export default function AddDialog(props:Props){
                     <div style={{display:'flex', flexFlow:"column", width:"100%", gap:"0.5rem", paddingBottom:"0.5rem"}}>
 
 
-                    <div>
-                        
+                    <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
+                        {
+                            props.input1Label?
+                            <p style={{width:"7rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                {props.input1Label}
+                            </p>
+                            :null
+                        }
+                    
                     <input defaultValue={props.input1Value} placeholder={props.inputplaceholder} onChange={props.inputOnChange}/>
                     </div>
                     
                     {
                         props.input2placeholder?
-                        <div>
+                        <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
+
+                            {
+                                props.input2Label?
+                                <p style={{width:"7rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                    {props.input2Label}
+                                </p>
+                                :null
+                            }
                             
                             <input defaultValue={props.input2Value} placeholder={props.input2placeholder} onChange={props.input2OnChange}/>
                         </div>
@@ -62,7 +80,14 @@ export default function AddDialog(props:Props){
 
 {
                         props.input3placeholder?
-                        <div>
+                        <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
+                            {
+                                props.input3Label?
+                                <p style={{width:"7rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                    {props.input3Label}
+                                </p>
+                                :null
+                            }
                             
                             <input defaultValue={props.input3Value} placeholder={props.input3placeholder} onChange={props.input3OnChange}/>
                         </div>

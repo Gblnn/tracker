@@ -21,7 +21,7 @@ interface Props {
     back?:boolean
     sendmail?:boolean
     updating?:boolean
-    created_on?:string
+    created_on?:any
     progress?:string
     footerExtra?:any
 }
@@ -40,7 +40,7 @@ export default function DefaultDialog(props:Props){
                             <div style={{display:"flex", alignItems:"center", gap:"0.75rem"}}>
                                 {props.titleIcon}
                                 {props.title}
-                                <p style={{fontWeight:500, fontSize:"0.8rem", opacity:0.5, letterSpacing:"0.075rem", display:"flex", gap:"0.5rem"}}>
+                                <p style={{fontWeight:400, fontSize:"1rem", opacity:0.5, letterSpacing:"0.075rem", display:"flex", gap:"0.5rem"}}>
                                     
                                     {props.created_on}
                                     
