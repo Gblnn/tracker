@@ -48,15 +48,18 @@ export default function Inbox(){
             setLoading(true)
             await emailjs.send(serviceId, templateId, {
               name: "User",
+              subject: mailTitle,
               recipient: email,
-              message: ""
+              message: mailContent
             });
             setLoading(false)
+            setEmail("")
             message.success("Email Successfully Sent")
           } catch (error) {
             console.log(error);
             message.info("Invalid email address")
             setLoading(false)
+            setEmail("")
           }
           setReminderDialog(false)
     }
@@ -186,32 +189,25 @@ export default function Inbox(){
                             onClick={()=>{}}
                             onReminderClick={()=>{
                                 setReminderDialog(true);
-                                setMailTitle(record.name+"'s doc expiry reminder");
+                                setMailTitle(record.name+"'s document expiry reminder");
                                 setMailContent(
                                 
                                     
-                                        "This a gentle reminder regarding "+record.name+"'s"+" document(s) expiring soon. \n"+
-                                    
-                                    
+                                        "This a gentle reminder regarding "+record.name+"'s"+" following document(s) expiring soon :  \n\n"+
                                     
                                         
-                                            // record.civil_expiry&&
-
-                                            // Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2?
-                                            
-                                            "Civil ID expiry in "+
+                                            ("Civil ID expiry in "+
                                                 Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))+
                                 
                                                 " month(s)"
-                                                +" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")+"\n"
+                                                +" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")+"\n")
                                             
                                         
                                         +
-                                            // record.vehicle_expiry&&
-                                            // Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2?
-                                            "Vehicle ID expiry in "+
+                                           
+                                            ("Vehicle ID expiry in "+
                                                 Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"
-                                                +" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY")
+                                                +" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY"))
                                             // :""
                                         
                                     
@@ -265,7 +261,7 @@ export default function Inbox(){
             
             }
 
-            <DefaultDialog OkButtonText="Send" open={reminderDialog} onCancel={()=>setReminderDialog(false)} titleIcon={<Mails color="dodgerblue"/>} title="Notify via Mail" updating={loading} onOk={sendMail} disabled={email?false:true}
+            <DefaultDialog OkButtonText="Send" open={reminderDialog} onCancel={()=>{setReminderDialog(false);setEmail("")}} titleIcon={<Mails color="dodgerblue"/>} title="Notify via Mail" updating={loading} onOk={sendMail} disabled={email==""||loading}
             title_extra={<button onClick={()=>setMailPreview(true)} style={{fontSize:"0.8rem", height:"2rem"}}><Eye width={"1rem"} color="dodgerblue"/>Preview</button>}
              extra={
                 <div style={{display:"flex", width:"100%", border:'', flexFlow:"column", gap:"0.5rem"}}>
@@ -280,11 +276,11 @@ export default function Inbox(){
                 </div>
             }/>
 
-            <DefaultDialog close onCancel={()=>setMailPreview(false)} open={mailPreview} title={
+            <DefaultDialog close back onCancel={()=>setMailPreview(false)} open={mailPreview} title={
                 <input onChange={(e)=>setMailTitle(e.target.value)} style={{background:"", fontSize:"1rem", border:""}} defaultValue={mailTitle}/>
             } extra={
                 <div style={{fontSize:"0.8rem",opacity:0.75, paddingBottom:"0.5rem", border:"", width:"100%"}}>
-                    <textarea rows={4} onChange={(e)=>setMailContent(e.target.value)} defaultValue={mailContent} style={{textAlign:"left", width:"100%", border:""}}></textarea>
+                    <textarea rows={6} onChange={(e)=>setMailContent(e.target.value)} defaultValue={mailContent} style={{textAlign:"left", width:"100%", border:""}}></textarea>
                 </div>
                 
             }/>
