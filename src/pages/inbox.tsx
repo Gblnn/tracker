@@ -132,10 +132,10 @@ export default function Inbox(){
                         .filter((record:any)=>{
                             return (
                                 record.civil_expiry&&
-                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=3+1 
+                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
                                 ||
                                 record.vehicle_expiry&&
-                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=3+1   
+                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2    
                             )
                         })
                         .filter((post:any)=>{
@@ -158,9 +158,9 @@ export default function Inbox(){
                              
                              civil_desc={
                                 record.civil_expiry&&
-                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=3?
+                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2?
                                 ("Civil ID expiry in "+
-                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))+
+                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')+1)+
                                 
                                 " month(s)"
                                 +" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")):""
@@ -173,9 +173,9 @@ export default function Inbox(){
                             vehicle_desc={
                                 
                                 record.vehicle_expiry&&
-                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=3?
+                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2?
                                 ("Vehicle ID expiry in "+
-                                    Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"
+                                    Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months')+1)+" month(s)"
                                     +" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY"))
                                     :""
                             }
