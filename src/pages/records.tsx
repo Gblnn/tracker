@@ -367,7 +367,7 @@ export default function Records(props:Props){
         setLoading(true)
         try {
             
-            await updateDoc(doc(db, "records", id),{vehicle_make:edited_vehicle_make?edited_vehicle_make:vehicle_make, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), vehicle_issue:edited_vehicle_issue?edited_civil_DOB:vehicle_issue})
+            await updateDoc(doc(db, "records", id),{vehicle_make:edited_vehicle_make?edited_vehicle_make:vehicle_make, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), vehicle_issue:edited_vehicle_issue?edited_vehicle_issue:vehicle_issue})
 
             setVehicleMake(edited_vehicle_make?edited_vehicle_make:vehicle_make)
             setVehicleExpiry(edited_vehicle_expiry?edited_vehicle_expiry:vehicle_expiry)
@@ -771,13 +771,13 @@ export default function Records(props:Props){
                     
                     <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={civil_expiry} 
                     status={
-                        moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1<=3?
+                        moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
                         false:true
                     }/>
 
                     <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="Vehicle" 
                     status={
-                        moment(vehicle_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1<=3?
+                        moment(vehicle_expiry, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
                         false
                         :true
                     }/>
@@ -809,7 +809,7 @@ export default function Records(props:Props){
             
 
             {
-                moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1<=3?
+                moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
                 <button className="animate-pulse" style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem"}}>
                     <Sparkles width={"0.85rem"} color="salmon"/>
                     
@@ -922,7 +922,7 @@ export default function Records(props:Props){
             <AddDialog open={add_vehicle_id} title="Add Vehicle ID" titleIcon={<Car/>} inputplaceholder="Vehicle Make" input2placeholder="Expiry Date" input3placeholder="Issue Date" OkButtonText="Add" onCancel={()=>setAddVehicleID(false)} onOk={addVehicleID} inputOnChange={(e:any)=>setVehicleMake(e.target.value)} input2OnChange={(e:any)=>setVehicleExpiry(e.target.value)} input3OnChange={(e:any)=>setVehicleIssue(e.target.value)} updating={loading} disabled={loading}/>
 
             {/* EDIT VEHICLE ID DIALOG */}
-            <AddDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditVehicleIDprompt(false)}} inputplaceholder="Enter Vehicle Make" input2placeholder="Enter Expiry Date" input3placeholder="Enter Issue Date" inputOnChange={(e:any)=>setEditedVehicleMake(e.target.value)} input2OnChange={(e:any)=>{setEditedVehicleExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedVehicleIssue(e.target.value)} onOk={EditVehicleID} updating={loading} disabled={loading} input1Value={vehicle_make} input2Value={vehicle_expiry} input3Value={vehicle_issue}/>
+            <AddDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditVehicleIDprompt(false)}} inputplaceholder="Enter Vehicle Make" input2placeholder="Enter Expiry Date" input3placeholder="Enter Issue Date" inputOnChange={(e:any)=>setEditedVehicleMake(e.target.value)} input2OnChange={(e:any)=>{setEditedVehicleExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedVehicleIssue(e.target.value)} onOk={EditVehicleID} updating={loading} disabled={loading} input1Value={vehicle_make} input2Value={vehicle_expiry} input3Value={vehicle_issue} input1Label="Vehicle Make : " input2Label="Expiry Date : " input3Label="Issue Date"/>
 
             {/* DELETE VEHICLE ID DIALOG */}
             <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading}/>
