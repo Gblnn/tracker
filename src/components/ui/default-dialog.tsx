@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader } from "./dialog";
 
 interface Props {
     open?: boolean
-    title?: string
+    title?: any
     titleIcon?:any
     desc?:string
     OkButtonText?: string
@@ -37,7 +37,7 @@ export default function DefaultDialog(props:Props){
                 <DialogHeader>
                     <DialogTitle className="heading" style={{userSelect:"none", width:"100%"}}>
                         <div className="flex" style={{border:"", justifyContent:"space-between"}}>
-                            <div style={{display:"flex", alignItems:"center", gap:"0.75rem"}}>
+                            <div style={{display:"flex", alignItems:"center", gap:"0.75rem", border:"", width:"100%"}}>
                                 {props.titleIcon}
                                 {props.title}
                                 <p style={{fontWeight:400, fontSize:"1rem", opacity:0.5, letterSpacing:"0.075rem", display:"flex", gap:"0.5rem"}}>

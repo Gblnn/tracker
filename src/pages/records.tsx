@@ -6,7 +6,6 @@ import Directive from "@/components/directive"
 import DropDown from "@/components/dropdown"
 import FileInput from "@/components/file-input"
 import SearchBar from "@/components/search-bar"
-import { Button } from "@/components/ui/button"
 import DefaultDialog from "@/components/ui/default-dialog"
 import VehicleID from "@/components/vehicle-id"
 import { db } from "@/firebase"
@@ -15,18 +14,16 @@ import emailjs from '@emailjs/browser'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, LucideMails, Mail, MailCheck, PackageOpen, PenLine, Plus, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import TimeAgo from 'javascript-time-ago'
+import { BellRing, Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, LucideMails, MailCheck, PackageOpen, PenLine, Plus, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
-import useKeyboardShortcut from 'use-keyboard-shortcut'
 import ReactTimeAgo from 'react-time-ago'
-import TimeAgo from 'javascript-time-ago'
+import useKeyboardShortcut from 'use-keyboard-shortcut'
 
 import en from 'javascript-time-ago/locale/en'
-import ru from 'javascript-time-ago/locale/ru'
 
 TimeAgo.addDefaultLocale(en)
-TimeAgo.addLocale(ru)
 
 type Record = {
     id:string,
@@ -491,7 +488,7 @@ export default function Records(props:Props){
                             loading?
                             <LoadingOutlined color="dodgerblue"/>
                             :
-                            <Mail width="1.1rem" color="dodgerblue"/>
+                            <BellRing width="1.1rem" color="dodgerblue"/>
                             
                         }
                         </button>
@@ -628,10 +625,28 @@ export default function Records(props:Props){
                             <Directive 
                                 
                                 tag={
+
                                     post.civil_expiry != "" || post.vehicle_expiry != ""?
-                                    "Available"
-                                    :
-                                    "No Data"
+
+                                    Math.round(moment(new Date(post.civil_expiry)).diff(moment(), 'months'))<=2
+                                    ||
+                                    Math.round(moment(new Date(post.vehicle_expiry)).diff(moment(), 'months'))<=2
+                                    ?
+                                    "Expiring"
+                                    :"Available"
+
+                                    
+
+                                    :"No Data"
+                                    
+                                    
+                                    
+                                    // Math.round(moment(new Date(post.civil_expiry)).diff(moment(today), 'months'))+1<=3
+                                    // ||
+                                    // Math.round(moment(new Date(post.vehicle_expiry)).diff(moment(today), 'months'))+1<=3?
+                                    // "Expiring"
+                                    // :""
+
 
                                     // ||
                                     // post.civil_expiry?
@@ -749,10 +764,10 @@ export default function Records(props:Props){
                 <div style={{display:"flex", border:"", width:"100%", flexFlow:"column", gap:"0.5rem"}}>
                     <input placeholder="Enter E-Mail Address" onChange={(e)=>setRecipient(e.target.value)}/>
                     <textarea onChange={(e:any)=>setTestMessage(e.target.value)} placeholder="Message..." rows={4}/>
-                <Button variant={"ghost"} style={{flex:1}} onClick={()=>{setRecipientsDialog(true)}}>
+                {/* <Button variant={"ghost"} style={{flex:1}} onClick={()=>{setRecipientsDialog(true)}}>
                     <Plus style={{width:"1rem"}} color="dodgerblue"/>
                     Add Recipient
-                </Button>
+                </Button> */}
                 </div>
                 
                 }/>
@@ -763,7 +778,13 @@ export default function Records(props:Props){
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
             {/* DISPLAY RECORD DIALOG */}
-            <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>setRecordSummary(false)} created_on={<ReactTimeAgo date={moment(created_on, "DD/MM/YYYY").toDate()} locale="en" timeStyle={"twitter"}/>} title_extra={
+            <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>setRecordSummary(false)} 
+            created_on={
+    
+                <ReactTimeAgo date={moment(created_on, "DD/MM/YYYY").toDate()} locale="en" timeStyle={"twitter"}/>
+                    
+            } 
+            title_extra={
             <DropDown onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>setUserEditPrompt(true)} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
             }
             close extra={
@@ -803,15 +824,17 @@ export default function Records(props:Props){
 
 
             {/*DISPLAY CIVIL ID DIALOG */}
-            <DefaultDialog back close titleIcon={<CreditCard color="dodgerblue"/>} title="Civil ID" open={civil} onCancel={()=>setCivil(false)} OkButtonText="Add" title_extra={civil_number?
+            <DefaultDialog back close titleIcon={<CreditCard color="dodgerblue"/>} title="Civil ID" open={civil} onCancel={()=>setCivil(false)} OkButtonText="Add" 
+            
+            title_extra={civil_number?
             
             <div style={{display:"flex", gap:"0.5rem", height:"2.25rem"}}>
             
 
             {
                 moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1<=3?
-                <button className="animate-pulse" style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem"}}>
-                    <Sparkles width={"0.85rem"} color="salmon"/>
+                <button className="" style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem", background:"goldenrod", color:"black"}}>
+                    <Sparkles width={"0.85rem"} color="black"/>
                     
                     Renew
                 </button>
@@ -879,11 +902,33 @@ export default function Records(props:Props){
 
             {/*DISPLAY VEHICLE ID DIALOG */}
             <DefaultDialog close titleIcon={<Car color="violet"/>} title="Vehicle ID" open={vehicle} onCancel={()=>setVehicle(false)} OkButtonText="Add" back
-            title_extra={vehicle_make?
-                <DropDown onDelete={()=>{setVehicleIdDelete(true)}} onEdit={()=>{setEditVehicleIDprompt(true)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>
+
+            title_extra=
+            {vehicle_make?
+
+                <div style={{display:"flex", gap:"0.5rem", height:"2.25rem"}}>
+
+                {
+                    moment(vehicle_expiry, "DD/MM/YYYY").diff(moment(today), 'months')<=2?
+                    <button className="" style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem", background:"goldenrod", color:"black"}}>
+                        <Sparkles width={"0.85rem"} color="black"/>
+                        
+                        Renew
+                    </button>
+                    :null
+                }
+
+                {/* <DropDown onDelete={()=>{setVehicleIdDelete(true)}} 
+                onEdit={()=>{setEditVehicleIDprompt(true)}} 
+                trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} */}
+
+                <DropDown onDelete={()=>{setVehicleIdDelete(true)}} onEdit={()=>{setEditVehicleIDprompt(true)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} />
+
+                </div>
+                :null
+            }    
                 
-                }/>:null
-                } 
+                 
             extra={
                 <div style={{width:"100%", display:"flex", justifyContent:'center', paddingBottom:"1rem"}}>
                     {
@@ -922,7 +967,7 @@ export default function Records(props:Props){
             <AddDialog open={add_vehicle_id} title="Add Vehicle ID" titleIcon={<Car/>} inputplaceholder="Vehicle Make" input2placeholder="Expiry Date" input3placeholder="Issue Date" OkButtonText="Add" onCancel={()=>setAddVehicleID(false)} onOk={addVehicleID} inputOnChange={(e:any)=>setVehicleMake(e.target.value)} input2OnChange={(e:any)=>setVehicleExpiry(e.target.value)} input3OnChange={(e:any)=>setVehicleIssue(e.target.value)} updating={loading} disabled={loading}/>
 
             {/* EDIT VEHICLE ID DIALOG */}
-            <AddDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditVehicleIDprompt(false)}} inputplaceholder="Enter Vehicle Make" input2placeholder="Enter Expiry Date" input3placeholder="Enter Issue Date" inputOnChange={(e:any)=>setEditedVehicleMake(e.target.value)} input2OnChange={(e:any)=>{setEditedVehicleExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedVehicleIssue(e.target.value)} onOk={EditVehicleID} updating={loading} disabled={loading} input1Value={vehicle_make} input2Value={vehicle_expiry} input3Value={vehicle_issue}/>
+            <AddDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditVehicleIDprompt(false)}} inputplaceholder="Enter Vehicle Make" input2placeholder="Enter Expiry Date" input3placeholder="Enter Issue Date" inputOnChange={(e:any)=>setEditedVehicleMake(e.target.value)} input2OnChange={(e:any)=>{setEditedVehicleExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedVehicleIssue(e.target.value)} onOk={EditVehicleID} updating={loading} disabled={loading} input1Value={vehicle_make} input2Value={vehicle_expiry} input3Value={vehicle_issue} input1Label="Vehicle Make : " input2Label="Expiry Date" input3Label="Issue Date"/>
 
             {/* DELETE VEHICLE ID DIALOG */}
             <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading}/>
@@ -931,8 +976,9 @@ export default function Records(props:Props){
             <DefaultDialog progress={progress} destructive updating={loading} title="Delete record(s)?" open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete}/>
 
 
-        </div>
+                </div>
+            
+    
         </>
-        
     )
 }

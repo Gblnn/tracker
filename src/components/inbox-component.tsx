@@ -77,7 +77,7 @@ export default function InboxComponent(props:Props){
                             </button>
 
                             <button onClick={props.onRenewClick} style={{display:"flex", width:"5.5rem", height:"2rem", fontSize:"0.8rem", border:''}}>
-                                <Sparkles width={"1.1rem"} color='salmon'/>
+                                <Sparkles width={"1rem"} color='goldenrod' fill='goldenrod'/>
                                 <p>Renew</p>
                             </button>
 

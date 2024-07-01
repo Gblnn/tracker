@@ -6,9 +6,11 @@ import { db } from "@/firebase";
 import { LoadingOutlined } from '@ant-design/icons';
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { Bell, Info, Mail, Mails, RefreshCcw } from "lucide-react";
+import { Bell, Eye, Info, Mail, Mails, RefreshCcw } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
+import emailjs from '@emailjs/browser'
+import { message } from "antd";
 
 export default function Inbox(){
 
@@ -19,6 +21,16 @@ export default function Inbox(){
 
     const [search, setSearch] = useState("")
     const [count, setCount] = useState(0)
+
+    const [email, setEmail] = useState("")
+    const [mailContent, setMailContent] = useState<any>()
+    const [loading, setLoading] = useState(false)
+    const [mailTitle, setMailTitle] = useState("")
+    const [mailPreview, setMailPreview] = useState(false)
+
+      // MAILJS VARIABLES
+      const serviceId = "service_lunn2bp";
+      const templateId = "template_1y0oq9l";
     
 
     useEffect(()=>{
@@ -28,6 +40,26 @@ export default function Inbox(){
     useEffect(()=>{
         setCount(Number(document.getElementById("inboxes")?.childElementCount))
     },[pageLoad])
+
+    // FUNCTION TO SEND A TEST EMAIL
+    const sendMail = async () => {
+        
+        try {
+            setLoading(true)
+            await emailjs.send(serviceId, templateId, {
+              name: "User",
+              recipient: email,
+              message: ""
+            });
+            setLoading(false)
+            message.success("Email Successfully Sent")
+          } catch (error) {
+            console.log(error);
+            message.info("Invalid email address")
+            setLoading(false)
+          }
+          setReminderDialog(false)
+    }
 
    
 
@@ -151,8 +183,46 @@ export default function Inbox(){
                         .map((record:any)=>(
                             <InboxComponent 
                             noArrow
+                            onClick={()=>{}}
+                            onReminderClick={()=>{
+                                setReminderDialog(true);
+                                setMailTitle(record.name+"'s doc expiry reminder");
+                                setMailContent(
+                                
+                                    
+                                        "This a gentle reminder regarding "+record.name+"'s"+" document(s) expiring soon. \n"+
+                                    
+                                    
+                                    
+                                        
+                                            // record.civil_expiry&&
 
-                            onReminderClick={()=>{setReminderDialog(true)}}
+                                            // Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2?
+                                            
+                                            "Civil ID expiry in "+
+                                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))+
+                                
+                                                " month(s)"
+                                                +" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")+"\n"
+                                            
+                                        
+                                        +
+                                            // record.vehicle_expiry&&
+                                            // Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2?
+                                            "Vehicle ID expiry in "+
+                                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"
+                                                +" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY")
+                                            // :""
+                                        
+                                    
+                                    
+                                    
+                                        
+                                    
+                                    
+
+                                )
+                            }}
                             
                              icon={<Info/>} priority="low" key={record.id} title={record.name+"'s doc expiry reminder"} 
                              
@@ -160,7 +230,7 @@ export default function Inbox(){
                                 record.civil_expiry&&
                                 Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2?
                                 ("Civil ID expiry in "+
-                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months')+1)+
+                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))+
                                 
                                 " month(s)"
                                 +" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")):""
@@ -175,7 +245,7 @@ export default function Inbox(){
                                 record.vehicle_expiry&&
                                 Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2?
                                 ("Vehicle ID expiry in "+
-                                    Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months')+1)+" month(s)"
+                                    Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"
                                     +" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY"))
                                     :""
                             }
@@ -195,17 +265,28 @@ export default function Inbox(){
             
             }
 
-            <DefaultDialog OkButtonText="Send" open={reminderDialog} onCancel={()=>setReminderDialog(false)} titleIcon={<Mails color="dodgerblue"/>} title="Notify via Mail" extra={
+            <DefaultDialog OkButtonText="Send" open={reminderDialog} onCancel={()=>setReminderDialog(false)} titleIcon={<Mails color="dodgerblue"/>} title="Notify via Mail" updating={loading} onOk={sendMail} disabled={email?false:true}
+            title_extra={<button onClick={()=>setMailPreview(true)} style={{fontSize:"0.8rem", height:"2rem"}}><Eye width={"1rem"} color="dodgerblue"/>Preview</button>}
+             extra={
                 <div style={{display:"flex", width:"100%", border:'', flexFlow:"column", gap:"0.5rem"}}>
                     
                     <div style={{display:"flex", width:"100%", gap:"0.5rem"}}>
-                    <input placeholder="Recipient E-Mail Address"/>
+                    <input type="email" placeholder="Recipient E-Mail Address" onChange={(e)=>setEmail(e.target.value)}/>
                     {/* <button style={{width:"8rem"}}>
                         <MailCheck width={"1rem"} color="dodgerblue"/>
                         Send </button> */}
                     </div>
                     
                 </div>
+            }/>
+
+            <DefaultDialog close onCancel={()=>setMailPreview(false)} open={mailPreview} title={
+                <input onChange={(e)=>setMailTitle(e.target.value)} style={{background:"", fontSize:"1rem", border:""}} defaultValue={mailTitle}/>
+            } extra={
+                <div style={{fontSize:"0.8rem",opacity:0.75, paddingBottom:"0.5rem", border:"", width:"100%"}}>
+                    <textarea rows={4} onChange={(e)=>setMailContent(e.target.value)} defaultValue={mailContent} style={{textAlign:"left", width:"100%", border:""}}></textarea>
+                </div>
+                
             }/>
 
             
