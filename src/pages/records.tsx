@@ -481,7 +481,7 @@ const RenewID = async () => {
         <>
 
         {/* Main Container */}
-        <div style={{margin:"1.25rem"}}>
+        <div style={{padding:"1.25rem", height:"100svh", border:""}}>
 
 
             {/* Main Component */}
@@ -516,18 +516,18 @@ const RenewID = async () => {
                             {
                                 fetchingData?
                                 <>
-                                <LoadingOutlined style={{color:"dodgerblue"}} width={"1.5rem"}/>
+                                <LoadingOutlined style={{color:"dodgerblue"}}/>
                                 {/* <p style={{fontSize:"0.8rem", opacity:0.5}}>Updating</p> */}
                                 </>
                                 
                                 :
-                                <RefreshCcw width="1.1rem" color="dodgerblue"/>
+                                <RefreshCcw color="dodgerblue"/>
                             }
                             
 
                             </button>
 
-                            <button onClick={()=>usenavigate("/inbox")} style={{paddingLeft:"1rem", paddingRight:"1rem"}}>
+                            <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem"}}>
                             <Inbox color="crimson"/>
                         </button>
             
@@ -921,7 +921,7 @@ const RenewID = async () => {
             <AddDialog open={editcivilprompt} title="Edit Civil ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setEditedCivilNumber("");setEditedCivilExpiry(null);setEditedCivilDOB("")}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setEditedCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setEditedCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={civil_number} input2Value={civil_expiry} input3Value={civil_DOB} input1Label="Civil Number : " input2Label="Expiry Date : " input3Label="Date of Birth : "/>
 
             {/* DELETE CIVIL ID DIALOG */}
-            <DefaultDialog updating={loading} open={civilDelete} title="Delete Civil ID?" OkButtonText="Delete" onCancel={()=>setCivilDelete(false)} onOk={deleteCivilID} disabled={loading}/>
+            <DefaultDialog destructive updating={loading} open={civilDelete} title="Delete Civil ID?" OkButtonText="Delete" onCancel={()=>setCivilDelete(false)} onOk={deleteCivilID} disabled={loading}/>
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
@@ -995,7 +995,7 @@ const RenewID = async () => {
             <AddDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditVehicleIDprompt(false)}} inputplaceholder="Enter Vehicle Make" input2placeholder="Enter Expiry Date" input3placeholder="Enter Issue Date" inputOnChange={(e:any)=>setEditedVehicleMake(e.target.value)} input2OnChange={(e:any)=>{setEditedVehicleExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedVehicleIssue(e.target.value)} onOk={EditVehicleID} updating={loading} disabled={loading} input1Value={vehicle_make} input2Value={vehicle_expiry} input3Value={vehicle_issue} input1Label="Vehicle Make : " input2Label="Expiry Date" input3Label="Issue Date"/>
 
             {/* DELETE VEHICLE ID DIALOG */}
-            <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading}/>
+            <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading} destructive/>
 
             {/* BULK DELETE DIALOG */}
             <DefaultDialog progress={progress} destructive updating={loading} title="Delete record(s)?" open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete}/>

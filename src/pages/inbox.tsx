@@ -119,6 +119,7 @@ export default function Inbox(){
     // }
 
     return(
+        <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
         <div style={{margin:"1.25rem"}}>
             <Back title={"Inbox"+" ("+count+")"}
                 extra={
@@ -317,5 +318,6 @@ export default function Inbox(){
 
             
         </div>
+        </motion.div>
     )
 }
