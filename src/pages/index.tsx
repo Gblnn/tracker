@@ -17,7 +17,7 @@ export default function Index(){
 
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem"}}>
 
-                    <Directive to="/records" title="Records" icon={<File color="violet" width={"1.1rem"} height={"1.1rem"}/>}/>
+                    <Directive to="/records" title="Personal Records" icon={<File color="violet" width={"1.1rem"} height={"1.1rem"}/>}/>
 
                     {/* <Directive onClick={()=>{setRequestDialog(true)}} title="Request Feature" icon={<Plus color="grey" width={"1.1rem"} height={"1.1rem"}/>}/> */}
 

@@ -51,7 +51,7 @@ export default function AddDialog(props:Props){
                     <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
                         {
                             props.input1Label?
-                            <p style={{width:"7rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                            <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
                                 {props.input1Label}
                             </p>
                             :null
@@ -66,7 +66,7 @@ export default function AddDialog(props:Props){
 
                             {
                                 props.input2Label?
-                                <p style={{width:"7rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
                                     {props.input2Label}
                                 </p>
                                 :null
@@ -83,7 +83,7 @@ export default function AddDialog(props:Props){
                         <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
                             {
                                 props.input3Label?
-                                <p style={{width:"7rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
                                     {props.input3Label}
                                 </p>
                                 :null

@@ -15,7 +15,7 @@ export default function Header(props:Props){
     const today:any = moment().toDate()
     const [records, setRecords] = useState<any>([])
     const [pageLoad, setPageLoad] = useState(false)
-    const [count, setCount] = useState(0)
+    // const [count, setCount] = useState(0)
 
     const fetchData = async () => {
         try {
@@ -33,7 +33,7 @@ export default function Header(props:Props){
                 
             })
             setPageLoad(false)
-            console.log(count)
+            // console.log(count)
             // records.forEach((r:any)=>{
             
             //     console.log(r.civil_expiry.toDate())
@@ -55,7 +55,7 @@ export default function Header(props:Props){
 
     useEffect(()=>{
         // console.log(document.getElementById("inboxes")?.childElementCount)
-        setCount(Number(document.getElementById("inboxes")?.childElementCount))
+        // setCount(Number(document.getElementById("inboxes")?.childElementCount))
     },[pageLoad, fetchData])
 
     return(

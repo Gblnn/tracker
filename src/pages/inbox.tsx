@@ -4,13 +4,14 @@ import SearchBar from "@/components/search-bar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { db } from "@/firebase";
 import { LoadingOutlined } from '@ant-design/icons';
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { collection, doc, getDocs, orderBy, query, updateDoc } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { Bell, Eye, Info, Mail, Mails, RefreshCcw } from "lucide-react";
+import { Bell, Eye, Info, Mail, Mails, RefreshCcw, Sparkles } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import emailjs from '@emailjs/browser'
 import { message } from "antd";
+import AddDialog from "@/components/add-dialog";
 
 export default function Inbox(){
 
@@ -27,6 +28,10 @@ export default function Inbox(){
     const [loading, setLoading] = useState(false)
     const [mailTitle, setMailTitle] = useState("")
     const [mailPreview, setMailPreview] = useState(false)
+    const [renewDocDialog, setRenewDocDialog] = useState(false)
+    const [docID, setDocID] = useState("")
+
+    const [newExpiry, setNewExpiry] = useState<any>()
 
       // MAILJS VARIABLES
       const serviceId = "service_lunn2bp";
@@ -54,12 +59,16 @@ export default function Inbox(){
             });
             setLoading(false)
             setEmail("")
+            setMailTitle("")
+            setMailContent("")
             message.success("Email Successfully Sent")
           } catch (error) {
             console.log(error);
             message.info("Invalid email address")
             setLoading(false)
             setEmail("")
+            setMailTitle("")
+            setMailContent("")
           }
           setReminderDialog(false)
     }
@@ -99,6 +108,10 @@ export default function Inbox(){
         }
         
     }
+
+    const RenewID = async () => {
+        await updateDoc(doc(db, "records", docID),{civil_expiry:newExpiry})
+    }
     
 
     // const Evaluate = () => {
@@ -111,7 +124,7 @@ export default function Inbox(){
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
                     <button style={{paddingLeft:"1rem", paddingRight:"1rem"}}><Mail width={"1rem"} color="dodgerblue"/></button>
-                    <button style={{paddingLeft:"1rem", paddingRight:"1rem", height:"2.5rem"}} onClick={fetchData} >
+                    <button style={{paddingLeft:"1rem", paddingRight:"1rem", height:"2.5rem", width:"3rem"}} onClick={fetchData} >
                         {
                                 pageLoad?
                                 <LoadingOutlined style={{color:"dodgerblue"}} width={"1.5rem"}/>
@@ -128,7 +141,7 @@ export default function Inbox(){
                 !pageLoad?
                 count<1?
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                    <div style={{width:"100%",height:"65svh", display:"flex", justifyContent:"center", alignItems:"center", border:"", flexFlow:"column"}}>
+                    <div style={{width:"100%",height:"80svh", display:"flex", justifyContent:"center", alignItems:"center", border:"", flexFlow:"column"}}>
 
                         <div style={{display:"flex", gap:"0.25rem", opacity:"0.5"}}>
                             {/* <BellRingIcon width={"1rem"}/> */}
@@ -154,9 +167,15 @@ export default function Inbox(){
                         
                     </button> */}
                     <SearchBar placeholder="Search by name" onChange={(e:any)=>setSearch(e.target.value.toLowerCase())}/>
-                    <button style={{width:"6.5rem"}}>
+                    <button 
+                    onClick={()=>{
+                        setReminderDialog(true)
+                        setMailTitle("Document expiry Reminder")
+                        setMailContent("There are several documents expiring soon which requires your attention.")
+                        }} 
+                        style={{width:"6.5rem"}}>
                         <Bell width={"1rem"} color="salmon"/>
-                        <p style={{fontSize:"0.8rem"}}>Notify All</p>
+                        <p style={{fontSize:"0.8rem"}}>Notify</p>
                     </button>
                 </div>
                 
@@ -187,13 +206,17 @@ export default function Inbox(){
                             <InboxComponent 
                             noArrow
                             onClick={()=>{}}
+                            onRenewClick={()=>{
+                                setRenewDocDialog(true)
+                                setDocID(record.id)
+                            }}
                             onReminderClick={()=>{
                                 setReminderDialog(true);
                                 setMailTitle(record.name+"'s document expiry reminder");
                                 setMailContent(
                                 
                                     
-                                        "This a gentle reminder regarding "+record.name+"'s"+" following document(s) expiring soon :  \n\n"+
+                                        "This is a gentle reminder regarding some of "+record.name+"'s"+" document(s) expiring soon :  \n\n"+
                                     
                                         
                                             ("Civil ID expiry in "+
@@ -253,7 +276,7 @@ export default function Inbox(){
                 </motion.div>
 
                 :
-                <div style={{border:'', display:"flex", height:"65svh", justifyContent:"center", alignItems:"center"}}>
+                <div style={{border:'', display:"flex", height:"80svh", justifyContent:"center", alignItems:"center"}}>
                     <div className="loader"></div>
                 </div>
             
@@ -261,7 +284,12 @@ export default function Inbox(){
             
             }
 
-            <DefaultDialog OkButtonText="Send" open={reminderDialog} onCancel={()=>{setReminderDialog(false);setEmail("")}} titleIcon={<Mails color="dodgerblue"/>} title="Notify via Mail" updating={loading} onOk={sendMail} disabled={email==""||loading}
+            <DefaultDialog OkButtonText="Send" open={reminderDialog} onCancel={()=>{
+                setReminderDialog(false);
+                setEmail("");
+                setMailTitle("");
+                setMailContent("");
+            }} titleIcon={<Mails color="dodgerblue"/>} title="Notify via Mail" updating={loading} onOk={sendMail} disabled={email==""||loading}
             title_extra={<button onClick={()=>setMailPreview(true)} style={{fontSize:"0.8rem", height:"2rem"}}><Eye width={"1rem"} color="dodgerblue"/>Preview</button>}
              extra={
                 <div style={{display:"flex", width:"100%", border:'', flexFlow:"column", gap:"0.5rem"}}>
@@ -284,6 +312,8 @@ export default function Inbox(){
                 </div>
                 
             }/>
+
+            <AddDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true}/>
 
             
         </div>

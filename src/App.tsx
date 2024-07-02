@@ -1,7 +1,6 @@
 import emailjs from '@emailjs/browser';
 import { useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
-import Header from "./components/header";
 import Index from "./pages";
 import Inbox from "./pages/inbox";
 import Medicals from "./pages/medicals";
@@ -16,8 +15,8 @@ export default function App(){
   return(
     <div>
 
-    <Header updateInbox/>
-    <div style={{height:"5rem"}}></div>
+    {/* <Header updateInbox/> */}
+    <div style={{height:""}}></div>
     
   
 

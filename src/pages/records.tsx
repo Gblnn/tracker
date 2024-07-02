@@ -15,13 +15,14 @@ import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
 import TimeAgo from 'javascript-time-ago'
-import { BellRing, Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, LucideMails, MailCheck, PackageOpen, PenLine, Plus, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Inbox, LucideMails, MailCheck, PackageOpen, PenLine, Plus, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import ReactTimeAgo from 'react-time-ago'
 import useKeyboardShortcut from 'use-keyboard-shortcut'
 
 import en from 'javascript-time-ago/locale/en'
+import { useNavigate } from "react-router-dom"
 
 TimeAgo.addDefaultLocale(en)
 
@@ -109,11 +110,17 @@ export default function Records(props:Props){
     const [fetchingData, setfetchingData] = useState(false)
     const [status, setStatus] = useState("")
 
+    const [renewDocDialog, setRenewDocDialog] = useState(false)
+    const [selectAll, setSelectAll] = useState(false)
+
+    const [newExpiry, setNewExpiry] = useState<any>()
+
     // MAILJS VARIABLES
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
 
     const today = new Date()
+    const usenavigate = useNavigate()
 
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
@@ -170,7 +177,6 @@ export default function Records(props:Props){
         }
         
         
-        
         else if(status=="false"){
             message.error("Lost Connection.")
         }
@@ -181,9 +187,9 @@ export default function Records(props:Props){
 
     
 
-    // useEffect(()=>{
-    //     console.log(checked.length)
-    // },[checked])
+    useEffect(()=>{
+        console.log(checked)
+    },[checked])
 
     // useEffect(()=>{
     //     console.log(moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1)
@@ -209,6 +215,7 @@ export default function Records(props:Props){
             setRecords(fetchedData)
             setChecked([])
             setSelectable(false)
+            message.success("Refreshed Feed")
             
         } catch (error) {
             console.log(error)
@@ -217,6 +224,16 @@ export default function Records(props:Props){
     }
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
+
+const RenewID = async () => {
+    setLoading(true)
+    await updateDoc(doc(db, "records", id),{civil_expiry:TimeStamper(newExpiry)})
+    setCivilExpiry(newExpiry)
+    setLoading(false)
+    setRenewDocDialog(false)
+    fetchData()
+    setNewExpiry("")
+}
 
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
@@ -483,7 +500,7 @@ export default function Records(props:Props){
                         
                         {/* <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><Upload width={"1rem"} color="dodgerblue"/></button> */}
                     
-                        <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>setMailConfigDialog(true)}>
+                        {/* <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>setMailConfigDialog(true)}>
                         {
                             loading?
                             <LoadingOutlined color="dodgerblue"/>
@@ -491,14 +508,8 @@ export default function Records(props:Props){
                             <BellRing width="1.1rem" color="dodgerblue"/>
                             
                         }
-                        </button>
-                        
+                        </button> */}
 
-                    
-                        
-            
-
-                        
                         
                         <button className="transitions" style={{paddingLeft:"1rem", paddingRight:"1rem", width:"3rem"}} onClick={fetchData} >
 
@@ -515,12 +526,28 @@ export default function Records(props:Props){
                             
 
                             </button>
+
+                            <button onClick={()=>usenavigate("/inbox")} style={{paddingLeft:"1rem", paddingRight:"1rem"}}>
+                            <Inbox color="crimson"/>
+                        </button>
             
                     </div>
                     :
-                    <div style={{height:"2.25rem", border:"", width:"7.5rem", background:"rgba(100 100 100/ 20%)", padding:"0.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", paddingLeft:"1rem", paddingRight:"1rem", borderRadius:"0.5rem"}}>
+                    <div 
+                    className="transitions" 
+                    onClick={()=>{
+                        setSelectAll(!selectAll)
+                        setSelected(true)
+                        !selectAll?
+                        records.forEach((item:any)=>{
+                            setChecked((data:any)=>[...data,item.id])
+                        
+                        })
+                        :setChecked([])
+                        }} 
+                    style={{height:"2.25rem", border:"", width:"7.5rem", background:selectAll?"dodgerblue":"rgba(100 100 100/ 20%)", padding:"0.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", paddingLeft:"1rem", paddingRight:"1rem", borderRadius:"0.5rem", cursor:"pointer"}}>
                         <p style={{opacity:0.75}}>Selected</p>
-                        <p style={{color:"dodgerblue", fontWeight:600}}>{checked.length}</p>
+                        <p style={{ fontWeight:600}}>{checked.length}</p>
                     </div>
                     }
                 />
@@ -536,7 +563,7 @@ export default function Records(props:Props){
 
                 status=="false"?
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                    <div style={{width:"100%",height:"55svh", display:"flex", justifyContent:"center", alignItems:"center", border:"", flexFlow:"column"}}>
+                    <div style={{width:"100%",height:"100svh", display:"flex", justifyContent:"center", alignItems:"center", border:"", flexFlow:"column"}}>
 
                         <div style={{display:"flex", gap:"0.25rem", opacity:"0.5"}}>
                             <PackageOpen width={"1rem"}/>
@@ -554,7 +581,7 @@ export default function Records(props:Props){
 
                 fetchingData?
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                    <div style={{width:"100%",height:"55svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
+                    <div style={{width:"100%",height:"75svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
 
                         {/* <div style={{display:"flex", gap:"0.5rem", opacity:"0.5", border:""}}>
                             <p style={{fontSize:"0.75rem"}} className="animate-ping">Fetching Data</p>
@@ -570,7 +597,7 @@ export default function Records(props:Props){
 
                 // DISPLAY EMPTY SET - PAGE
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                    <div style={{width:"100%",height:"55svh", display:"flex", justifyContent:"center", alignItems:"center", border:"", flexFlow:"column"}}>
+                    <div style={{width:"100%",height:"75svh", display:"flex", justifyContent:"center", alignItems:"center", border:"", flexFlow:"column"}}>
 
                         <div style={{display:"flex", gap:"0.25rem", opacity:"0.5"}}>
                             <PackageOpen width={"1rem"}/>
@@ -593,7 +620,7 @@ export default function Records(props:Props){
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", marginTop:"1"}}>
 
                     {/* Searchbar */}
-                    <div style={{display:"flex", gap:"0.5rem", border:"", flex:1}}>
+                    <div style={{display:"flex", gap:"0.75rem", border:"", flex:1}}>
 
                         <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable);setAddButtonModeSwap(!addButtonModeSwap);selectable && setChecked([]); !selectable && setSelected(false)
                             //  selectable && fetchData()
@@ -605,7 +632,7 @@ export default function Records(props:Props){
 
                     <p style={{height:"0.25rem"}}/>
                 
-                <div className="record-list" style={{display:"flex", gap:"0.6rem", flexFlow:"column", overflowY:"auto", height:"55svh", paddingRight:"0.5rem", paddingTop:"0.25rem"}}>
+                <div className="record-list" style={{display:"flex", gap:"0.6rem", flexFlow:"column", overflowY:"auto", height:"72svh", paddingRight:"0.5rem", paddingTop:"0.25rem"}}>
                 {
                     // RECORD DATA MAPPING
                     records
@@ -681,7 +708,6 @@ export default function Records(props:Props){
                                     setRecordSummary(true);
                                     setName(post.name);
                                     setID(post.id);
-
                                     setCivilNumber(post.civil_number);
                                     setCivilExpiry(post.civil_expiry?moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"):null);
                                     setCivilDOB(post.civil_DOB)
@@ -760,7 +786,7 @@ export default function Records(props:Props){
 
 
             {/* Mail Configuration Dialog */}
-            <DefaultDialog titleIcon={<MailCheck/>} title="Mail Configuration" open={mailconfigdialog} onCancel={()=>setMailConfigDialog(false)} onOk={TestMail} updating={loading} OkButtonText="Send Test Mail" extra={
+            <DefaultDialog disabled={loading||recipient?false:true} titleIcon={<MailCheck/>} title="Test Notifications" open={mailconfigdialog} onCancel={()=>setMailConfigDialog(false)} onOk={TestMail} updating={loading} OkButtonText="Send Test Mail" extra={
                 <div style={{display:"flex", border:"", width:"100%", flexFlow:"column", gap:"0.5rem"}}>
                     <input placeholder="Enter E-Mail Address" onChange={(e)=>setRecipient(e.target.value)}/>
                     <textarea onChange={(e:any)=>setTestMessage(e.target.value)} placeholder="Message..." rows={4}/>
@@ -781,7 +807,7 @@ export default function Records(props:Props){
             <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>setRecordSummary(false)} 
             created_on={
     
-                <ReactTimeAgo date={moment(created_on, "DD/MM/YYYY").toDate()} locale="en" timeStyle={"twitter"}/>
+                <ReactTimeAgo date={moment(created_on, "DD/MM/YYYY").add(13, 'hours').toDate()} locale="en" timeStyle={"twitter"}/>
                     
             } 
             title_extra={
@@ -811,7 +837,7 @@ export default function Records(props:Props){
             }/>
 
             {/* ADD RECORD DIALOG */}
-            <AddDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setName(e.target.value)} } inputplaceholder="Enter Name" disabled={loading||!name?true:false} updating={loading}/>
+            <AddDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setName(e.target.value)} } inputplaceholder="Enter Full Name" disabled={loading||!name?true:false} updating={loading}/>
 
 
             {/* EDIT RECORD DIALOG */}
@@ -833,9 +859,8 @@ export default function Records(props:Props){
 
             {
                 moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1<=3?
-                <button className="" style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem", background:"goldenrod", color:"black"}}>
+                <button onClick={()=>{setRenewDocDialog(true)}} className="" style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem", background:"goldenrod", color:"black"}}>
                     <Sparkles width={"0.85rem"} color="black"/>
-                    
                     Renew
                 </button>
                 :null
@@ -954,7 +979,7 @@ export default function Records(props:Props){
                         </div>
                         :
                         <div>
-                        <VehicleID name={name} expirydate={vehicle_expiry} make={vehicle_make?vehicle_make:vehicle_make} issuedate={vehicle_issue}/>
+                        <VehicleID name={name} expirydate={vehicle_expiry} make={vehicle_make?vehicle_make:vehicle_make} issuedate={vehicle_issue} reg_no="XXXX"/>
                         {/* <br/>
                         <button style={{width:"100%"}}>Edit</button> */}
                         </div>  
@@ -974,6 +999,8 @@ export default function Records(props:Props){
 
             {/* BULK DELETE DIALOG */}
             <DefaultDialog progress={progress} destructive updating={loading} title="Delete record(s)?" open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete}/>
+
+            <AddDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true} input1Value={civil_expiry}/>
 
 
                 </div>
