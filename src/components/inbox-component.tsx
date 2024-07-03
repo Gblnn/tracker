@@ -30,9 +30,14 @@ export default function InboxComponent(props:Props){
 
                 <div style={{display:"flex", gap:"1rem", alignItems:"center", border:'', padding:"0.15rem"}}>
 
-                    <div style={{border:"", color:props.priority=="low"?"dodgerblue":"goldenrod", display:"flex", alignItems:"flex-start",flex:1}}>
+                    {
+                        props.icon?
+                        <div style={{border:"", color:props.priority=="low"?"dodgerblue":"goldenrod", display:"flex", alignItems:"flex-start",flex:1}}>
                     {props.icon}
                     </div>
+                    :null
+                    }
+                    
 
                     <div style={{border:"", display:'flex', flexFlow:"column", width:"100%"}}>
 
