@@ -205,6 +205,7 @@ export default function Inbox(){
                         })
                         .map((record:any)=>(
                             <InboxComponent 
+                            
                             noArrow
                             onClick={()=>{}}
                             onRenewClick={()=>{
@@ -244,7 +245,7 @@ export default function Inbox(){
                                 )
                             }}
                             
-                             icon={<Info/>} priority="low" key={record.id} title={record.name+"'s doc expiry reminder"} 
+                              priority="low" key={record.id} title={record.name+"'s doc expiry reminder"} 
                              
                              civil_desc={
                                 record.civil_expiry&&
