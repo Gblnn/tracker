@@ -16,7 +16,10 @@ interface Props{
     noArrow?:boolean
     onReminderClick?:any
     onRenewClick?:any
+    hideButtons?:boolean
+    desc?:string
 }
+
 
 export default function InboxComponent(props:Props){
     return(
@@ -27,14 +30,13 @@ export default function InboxComponent(props:Props){
 
                 <div style={{display:"flex", gap:"1rem", alignItems:"center", border:'', padding:"0.15rem"}}>
 
-                    {/* <div style={{border:"", color:props.priority=="low"?"dodgerblue":"goldenrod", display:"flex", alignItems:"flex-start",flex:1}}>
+                    <div style={{border:"", color:props.priority=="low"?"dodgerblue":"goldenrod", display:"flex", alignItems:"flex-start",flex:1}}>
                     {props.icon}
-                    </div> */}
+                    </div>
 
                     <div style={{border:"", display:'flex', flexFlow:"column", width:"100%"}}>
 
                         <p style={{fontWeight:500, width:"100%", textAlign:"left", fontSize:"1rem", border:"", display:"flex", gap:"0.5rem"}}>
-                            
                             {props.title}
                         </p>
 
@@ -67,9 +69,19 @@ export default function InboxComponent(props:Props){
                             :null
 
                         }
-                        <p style={{height:"0.5rem"}}/>
 
-                        <div style={{display:"flex", width:"100%", justifyContent:"flex-start", gap:"0.5rem", fontSize:"1.25rem"}}>
+                        {
+                            props.desc?
+                            <p style={{opacity:0.5, fontSize:"0.8rem"}}>{props.desc}</p>
+                            :null
+                        }
+                        
+
+                        {
+                            !props.hideButtons?
+                            <div style={{display:"flex", width:"100%", justifyContent:"flex-start", gap:"0.5rem", fontSize:"1.25rem"}}>
+
+                            <p style={{height:"0.5rem"}}/>
 
                             <button onClick={props.onReminderClick} style={{display:"flex", width:"5rem", height:"2rem", fontSize:"0.8rem", border:''}}>
                                 <AtSign width={"1.1rem"} color='dodgerblue'/>
@@ -82,6 +94,9 @@ export default function InboxComponent(props:Props){
                             </button>
 
                         </div>
+                        :null
+                        }
+                        
                         
 
                         
