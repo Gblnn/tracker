@@ -7,7 +7,7 @@ import Medicals from "./pages/medicals";
 import Records from "./pages/records";
 import UserPage from "./pages/user";
 import Vehicles from "./pages/vehicles";
-import VehicleLog from './pages/vehicle-log';
+
 
 export default function App(){
   useEffect(()=>{
@@ -34,7 +34,6 @@ export default function App(){
       <Route path="/user" element={<UserPage/>}/>
       <Route path="/vehicles" element={<Vehicles/>}/>
       <Route path="/medicals" element={<Medicals/>}/>
-      <Route path='/vehicle-log' element={<VehicleLog/>}/>
     </Routes>
     
     
