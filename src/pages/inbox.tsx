@@ -1,17 +1,17 @@
+import AddDialog from "@/components/add-dialog";
 import Back from "@/components/back";
 import InboxComponent from "@/components/inbox-component";
 import SearchBar from "@/components/search-bar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { db } from "@/firebase";
 import { LoadingOutlined } from '@ant-design/icons';
+import emailjs from '@emailjs/browser';
+import { message } from "antd";
 import { collection, doc, getDocs, orderBy, query, updateDoc } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { Bell, Eye, Info, Mail, Mails, RefreshCcw, Sparkles } from "lucide-react";
+import { Bell, Eye, Mail, Mails, RefreshCcw, Sparkles } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
-import emailjs from '@emailjs/browser'
-import { message } from "antd";
-import AddDialog from "@/components/add-dialog";
 
 export default function Inbox(){
 
