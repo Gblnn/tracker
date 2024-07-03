@@ -36,8 +36,15 @@ export default function InboxComponent(props:Props){
 
                     <div style={{border:"", display:'flex', flexFlow:"column", width:"100%"}}>
 
-                        <p style={{fontWeight:500, width:"100%", textAlign:"left", fontSize:"1rem", border:"", display:"flex", gap:"0.5rem"}}>
-                            {props.title}
+                        <p style={{fontWeight:500, width:"100%", textAlign:"left", fontSize:"1rem", border:"", display:"flex", gap:"0.5rem", alignItems:"center"}}>
+                            
+                            <p style={{border:"", display:"flex", alignItems:"center"}}>{props.title}</p>
+                            {
+                                props.tag?
+                                <p style={{display:"flex", background:"rgba(100 100 100/ 20%)", fontSize:"0.8rem", alignItems:"center", padding:"", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", border:""}}>{props.tag}</p>
+                                :null
+                            }
+                            
                         </p>
 
         
@@ -72,7 +79,7 @@ export default function InboxComponent(props:Props){
 
                         {
                             props.desc?
-                            <p style={{opacity:0.5, fontSize:"0.8rem"}}>{props.desc}</p>
+                            <p style={{opacity:0.5, fontSize:"0.8rem", padding:"0.15rem"}}>{props.desc}</p>
                             :null
                         }
                         
