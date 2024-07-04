@@ -15,7 +15,7 @@ import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
 import TimeAgo from 'javascript-time-ago'
-import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Inbox, LucideMails, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Inbox, LucideMails, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import ReactTimeAgo from 'react-time-ago'
@@ -608,7 +608,11 @@ const RenewID = async () => {
                             <p style={{fontSize:"0.75rem"}} className="animate-ping">Fetching Data</p>
                         </div> */}
 
-                        <div className="loader"></div>
+                        <div style={{ border:"", display:"flex", alignItems:"center", justifyContent:"center"}}>
+                            
+                            <Cloud color="dodgerblue" width={"3rem"} height={"3rem"} style={{position:"absolute"}} className="animate-ping"/>
+                        </div>
+                        
 
 
                     </div>
