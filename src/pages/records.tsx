@@ -486,7 +486,7 @@ const RenewID = async () => {
         {
             status=="false"?
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-            <div style={{display:"flex", width:"100%", background:"#1a1a1a", height:"1.5rem", justifyContent:"center", alignItems:"center", position:"fixed", bottom:0, margin:"0"}}>
+            <div style={{display:"flex", width:"100%", background:"crimson", height:"1.5rem", justifyContent:"center", alignItems:"center", position:"fixed", bottom:0, margin:"0"}}>
 
                 <div style={{display:"flex", gap:"0.5rem", alignItems:"center"}}>
                     <RadioTower width={"0.75rem"}/>
