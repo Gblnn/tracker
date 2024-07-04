@@ -80,7 +80,6 @@ export default function Inbox(){
     const fetchData = async () => {
         try {
             setPageLoad(true)
-            
             const RecordCollection = collection(db, "records")
             const recordQuery = query(RecordCollection, orderBy("created_on"))
             const querySnapshot = await getDocs(recordQuery)
@@ -228,12 +227,12 @@ export default function Inbox(){
                                                 +" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")+"\n")
                                             
                                         
-                                        +
+                                        // +
                                            
-                                            ("Vehicle ID expiry in "+
-                                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"
-                                                +" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY"))
-                                            // :""
+                                        //     ("Vehicle ID expiry in "+
+                                        //         Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"
+                                        //         +" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY"))
+                            
                                         
                                     
                                     

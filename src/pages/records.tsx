@@ -12,7 +12,7 @@ import { db } from "@/firebase"
 import { LoadingOutlined } from '@ant-design/icons'
 import emailjs from '@emailjs/browser'
 import { message } from 'antd'
-import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
+import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
 import TimeAgo from 'javascript-time-ago'
 import { Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Inbox, LucideMails, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
@@ -135,6 +135,31 @@ export default function Records(props:Props){
     //     setAddDialog(true)
     //     :null
     // }
+
+    useEffect(()=>{
+        onSnapshot(query(collection(db, 'records')), (snapshot:any) => {
+            snapshot.docChanges().forEach((change:any) => {
+              if (change.type === "added") {
+                console.log("Added Data")
+                fetchData()   
+              }
+              if (change.type === "modified") {
+                  console.log("Modified Data")
+                  fetchData()
+              }
+              if (change.type === "removed") {
+                  console.log("Removed Data")
+                  fetchData()
+              }
+            });
+          });
+
+     
+    },[])
+
+    
+
+    
     
     const {flushHeldKeys} = useKeyboardShortcut(
         ["Control", "A"],
@@ -189,7 +214,8 @@ export default function Records(props:Props){
     
 
     useEffect(()=>{
-        console.log(checked)
+        console.log(checked, selectable)
+
     },[checked])
 
     // useEffect(()=>{
@@ -271,7 +297,9 @@ const RenewID = async () => {
         setUserDeletePrompt(false)
         setRecordSummary(false)
         setLoading(false)
+        
         fetchData()
+        
 
     }
 
@@ -515,7 +543,7 @@ const RenewID = async () => {
                 " ("+records.length+")"} 
                 extra={
                     !selectable?
-                    <div style={{display:"flex", gap:"0.5rem", height:"2.5rem"}}>
+                    <div style={{display:"flex", gap:"0.5rem", height:"2.75rem"}}>
                         
                         {/* <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><Upload width={"1rem"} color="dodgerblue"/></button> */}
                     
@@ -540,7 +568,7 @@ const RenewID = async () => {
                                 </>
                                 
                                 :
-                                <RefreshCcw color="dodgerblue"/>
+                                <RefreshCcw width={"1.25rem"} height={"1.25rem"} color="dodgerblue"/>
                             }
                             
 
@@ -566,7 +594,7 @@ const RenewID = async () => {
                         })
                         :setChecked([])
                         }} 
-                    style={{height:"2.25rem", border:"", width:"7.5rem", background:selectAll?"dodgerblue":"rgba(100 100 100/ 20%)", padding:"0.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", paddingLeft:"1rem", paddingRight:"1rem", borderRadius:"0.5rem", cursor:"pointer"}}>
+                    style={{height:"2.75rem", border:"", width:"7.5rem", background:selectAll?"dodgerblue":"rgba(100 100 100/ 20%)", padding:"0.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", paddingLeft:"1rem", paddingRight:"1rem", borderRadius:"0.5rem", cursor:"pointer"}}>
                         <p style={{opacity:0.75}}>Selected</p>
                         <p style={{ fontWeight:600}}>{checked.length}</p>
                     </div>
