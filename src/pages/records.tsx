@@ -15,7 +15,7 @@ import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
 import TimeAgo from 'javascript-time-ago'
-import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Inbox, LucideMails, MailCheck, PackageOpen, PenLine, Plus, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { Book, Car, CheckSquare2, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Inbox, LucideMails, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import ReactTimeAgo from 'react-time-ago'
@@ -174,6 +174,7 @@ export default function Records(props:Props){
         if(status=="true"){
             message.success("Connection Established")
             fetchData()
+            
         }
         
         
@@ -222,6 +223,7 @@ export default function Records(props:Props){
         } catch (error) {
             console.log(error)
             message.info(String(error))
+            setStatus("false")
         }   
     }
 
@@ -481,6 +483,21 @@ const RenewID = async () => {
 
     return(
         <>
+        {
+            status=="false"?
+            <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
+            <div style={{display:"flex", width:"100%", background:"#1a1a1a", height:"1.5rem", justifyContent:"center", alignItems:"center", position:"fixed", bottom:0, margin:"0"}}>
+
+                <div style={{display:"flex", gap:"0.5rem", alignItems:"center"}}>
+                    <RadioTower width={"0.75rem"}/>
+                    <p style={{fontSize:"0.75rem"}}>No Internet</p>
+                </div>
+            
+            </div>
+            </motion.div>
+            :null
+        }
+        
 
         {/* Main Container */}
         <div style={{padding:"1.25rem", height:"100svh", border:""}}>
@@ -567,15 +584,15 @@ const RenewID = async () => {
 
                 status=="false"?
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                    <div style={{width:"100%",height:"100svh", display:"flex", justifyContent:"center", alignItems:"center", border:"", flexFlow:"column"}}>
+                    <div style={{width:"100%",height:"75svh", display:"flex", justifyContent:"center", alignItems:"center", border:"", flexFlow:"column"}}>
 
                         <div style={{display:"flex", gap:"0.25rem", opacity:"0.5"}}>
-                            <PackageOpen width={"1rem"}/>
+                            <RadioTower width={"1rem"}/>
                             <p>No Internet Connection</p>
                             
                         </div>
                         <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                        <p style={{opacity:0.5, fontSize:"0.7rem"}}>Add a record using + Add Record</p>
+                        <p style={{opacity:0.5, fontSize:"0.7rem"}}>Please check your internet connectivity</p>
                         </motion.div>
 
 
