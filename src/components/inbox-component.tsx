@@ -91,9 +91,9 @@ export default function InboxComponent(props:Props){
 
                         {
                             !props.hideButtons?
-                            <div style={{display:"flex", width:"100%", justifyContent:"flex-start", gap:"0.5rem", fontSize:"1.25rem"}}>
+                            <div style={{display:"flex", width:"100%", justifyContent:"flex-start", gap:"0.5rem", fontSize:"1.25rem", paddingTop:"0.75rem"}}>
 
-                            <p style={{height:"0.5rem"}}/>
+                            
 
                             <button onClick={props.onReminderClick} style={{display:"flex", width:"5rem", height:"2rem", fontSize:"0.8rem", border:''}}>
                                 <AtSign width={"1.1rem"} color='dodgerblue'/>
