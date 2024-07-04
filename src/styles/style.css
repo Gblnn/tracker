@@ -34,6 +34,10 @@ button:hover {
   background: rgb(27, 128, 228);
 }
 
+.selectable {
+  background: rgba(30 144 255/ 10%);
+}
+
 h1 {
   font-weight: 600;
   font-size: 1.5rem;

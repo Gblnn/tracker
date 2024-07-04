@@ -546,7 +546,7 @@ const RenewID = async () => {
 
                             </button>
 
-                            <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem"}}>
+                            <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
                             <Inbox color="crimson"/>
                         </button>
             
@@ -647,9 +647,11 @@ const RenewID = async () => {
                     {/* Searchbar */}
                     <div style={{display:"flex", gap:"0.75rem", border:"", flex:1}}>
 
-                        <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable);setAddButtonModeSwap(!addButtonModeSwap);selectable && setChecked([]); !selectable && setSelected(false)
-                            //  selectable && fetchData()
-                             }}><CheckSquare2 color={selectable?"white":"dodgerblue"}/></button>
+                        <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable);setAddButtonModeSwap(!addButtonModeSwap);selectable && setChecked([]); !selectable && setSelected(false)}}>
+
+                                <CheckSquare2 color={selectable?"white":"dodgerblue"}/>
+
+                        </button>
 
                         <SearchBar placeholder="Search Records" onChange={(e:any)=>{setSearch(e.target.value.toLowerCase())}}/>
                     </div>
