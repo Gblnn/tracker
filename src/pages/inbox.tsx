@@ -7,7 +7,7 @@ import { db } from "@/firebase";
 import { LoadingOutlined } from '@ant-design/icons';
 import emailjs from '@emailjs/browser';
 import { message } from "antd";
-import { collection, doc, getDocs, orderBy, query, updateDoc } from "firebase/firestore";
+import { collection, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
 import { motion } from 'framer-motion';
 import { Bell, Eye, Mail, Mails, RefreshCcw, Sparkles } from "lucide-react";
 import moment from "moment";
@@ -108,6 +108,27 @@ export default function Inbox(){
         
     }
 
+    useEffect(()=>{
+        onSnapshot(query(collection(db, 'records')), (snapshot:any) => {
+            snapshot.docChanges().forEach((change:any) => {
+              if (change.type === "added") {
+                console.log("Added Data")
+                fetchData()   
+              }
+              if (change.type === "modified") {
+                  console.log("Modified Data")
+                  fetchData()
+              }
+              if (change.type === "removed") {
+                  console.log("Removed Data")
+                  fetchData()
+              }
+            });
+          });
+
+     
+    },[])
+
     const RenewID = async () => {
         await updateDoc(doc(db, "records", docID),{civil_expiry:newExpiry})
     }
@@ -124,7 +145,7 @@ export default function Inbox(){
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
                     <button style={{paddingLeft:"1rem", paddingRight:"1rem"}}><Mail width={"1rem"} color="dodgerblue"/></button>
-                    <button style={{paddingLeft:"1rem", paddingRight:"1rem", height:"2.5rem", width:"3rem"}} onClick={fetchData} >
+                    <button className="blue-glass" style={{paddingLeft:"1rem", paddingRight:"1rem", height:"2.5rem", width:"3rem"}} onClick={fetchData} >
                         {
                                 pageLoad?
                                 <LoadingOutlined style={{color:"dodgerblue"}} width={"1.5rem"}/>
