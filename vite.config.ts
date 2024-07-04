@@ -7,7 +7,10 @@ export default defineConfig({
   plugins: [react(),
     VitePWA({ 
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: "**/*",
+      workbox: {
+        globPatterns: ["**/*"],
+    },
       manifest: {
         name: 'Vite PWA Project',
         short_name: 'Vite PWA Project',
