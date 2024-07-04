@@ -19,7 +19,7 @@
     "dir":"auto",
     "lang":"en-US",
     "name":"Dashboard",
-    "short_name":"dashboard",
+    "short_name":"Dashboard",
     "start_url":"https://tracker-dev-session.netlify.app/",
     "scope":"https://tracker-dev-session.netlify.app",
     "description":"Maintain personal Records and get notified about important dates",
