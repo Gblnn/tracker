@@ -35,7 +35,7 @@ export default function Directive(props:Props){
                     {
                         props.selectable?
                         <div style={{display:"flex", justifyContent:"center", alignItems:"center"}}>
-                        <CheckSquare2 className="check-square" fill={selected?"dodgerblue":"rgba(100 100 100/ 50%)"} stroke={selected?"white":"none"}/>
+                        <CheckSquare2 className="check-square" fill={selected||props.selected?"dodgerblue":"rgba(100 100 100/ 50%)"} stroke={selected||props.selected?"white":"none"}/>
                         {
                             selected?
                             // <Check style={{position:"relative", width:"0.75rem"}} />

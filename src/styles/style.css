@@ -1,7 +1,7 @@
 * {
   margin: 0;
   padding: 0;
-  font-family: "Clash Grotesk", sans-serif;
+  font-family: "Clash Grotesk", system-ui;
   letter-spacing: 0.025rem;
   color-scheme: dark;
   user-select: none;

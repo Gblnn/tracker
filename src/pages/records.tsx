@@ -197,7 +197,7 @@ export default function Records(props:Props){
 
 
     //INITIAL DATA FETCH ON PAGE LOAD
-    const fetchData = async () => {
+    const fetchData = async (type?:any) => {
         
         try {
             
@@ -215,7 +215,9 @@ export default function Records(props:Props){
             setRecords(fetchedData)
             setChecked([])
             setSelectable(false)
+            type=="refresh"?
             message.success("Refreshed Feed")
+            :null
             
         } catch (error) {
             console.log(error)
@@ -511,7 +513,7 @@ const RenewID = async () => {
                         </button> */}
 
                         
-                        <button className="transitions" style={{paddingLeft:"1rem", paddingRight:"1rem", width:"3rem"}} onClick={fetchData} >
+                        <button className="transitions" style={{paddingLeft:"1rem", paddingRight:"1rem", width:"3rem"}} onClick={()=>{fetchData("refresh")}} >
 
                             {
                                 fetchingData?
@@ -537,7 +539,9 @@ const RenewID = async () => {
                     className="transitions" 
                     onClick={()=>{
                         setSelectAll(!selectAll)
+                        !selectAll?
                         setSelected(true)
+                        :setSelected(false)
                         !selectAll?
                         records.forEach((item:any)=>{
                             setChecked((data:any)=>[...data,item.id])
@@ -604,9 +608,9 @@ const RenewID = async () => {
                             <p>No Data</p>
                             
                         </div>
-                        <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
+                
                         <p style={{opacity:0.5, fontSize:"0.7rem"}}>Add a record using + Add Record</p>
-                        </motion.div>
+                        
 
 
                     </div>
@@ -632,7 +636,7 @@ const RenewID = async () => {
 
                     <p style={{height:"0.25rem"}}/>
                 
-                <div className="record-list" style={{display:"flex", gap:"0.6rem", flexFlow:"column", overflowY:"auto", height:"72svh", paddingTop:"0.25rem"}}>
+                <div className="record-list" style={{display:"flex", gap:"0.6rem", flexFlow:"column", overflowY:"auto", height:"72svh", paddingTop:"0.25rem", paddingRight:"0.5rem"}}>
                 {
                     // RECORD DATA MAPPING
                     records
