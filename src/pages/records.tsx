@@ -272,7 +272,7 @@ const RenewID = async () => {
         setRecordSummary(false)
         setLoading(false)
         fetchData()
-        window.location.reload()
+
     }
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */} 
