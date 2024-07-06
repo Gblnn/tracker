@@ -249,7 +249,7 @@ export default function Records(props:Props){
             setChecked([])
             setSelectable(false)
             type=="refresh"?
-            message.success("Refreshed Feed")
+            message.success("Refreshed")
             :null
             
         } catch (error) {
@@ -829,8 +829,8 @@ const RenewID = async () => {
 
 
             {/* ADD RECORD BUTTON */}
-            <AddRecordButton style={selectable?"crimson":""} title={addButtonModeSwap?"Delete Record(s)":"Add Record"} onClickSwap={addButtonModeSwap} onClick={()=>{setAddDialog(true); setName("")}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
-                icon={addButtonModeSwap?<Trash width="1rem"/>:<Plus color="dodgerblue" width="1rem"/>}/>
+            <AddRecordButton title={addButtonModeSwap?"Delete Record(s)":"Add Record"} onClickSwap={addButtonModeSwap} onClick={()=>{setAddDialog(true); setName("")}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
+                icon={addButtonModeSwap?<Trash color="crimson" width="1rem"/>:<Plus color="dodgerblue" width="1rem"/>}/>
 
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}

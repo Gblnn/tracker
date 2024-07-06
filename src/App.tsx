@@ -7,6 +7,7 @@ import Medicals from "./pages/medicals";
 import Records from "./pages/records";
 import UserPage from "./pages/user";
 import Vehicles from "./pages/vehicles";
+import History from './pages/history';
 
 
 export default function App(){
@@ -34,6 +35,7 @@ export default function App(){
       <Route path="/user" element={<UserPage/>}/>
       <Route path="/vehicles" element={<Vehicles/>}/>
       <Route path="/medicals" element={<Medicals/>}/>
+      <Route path='/history' element={<History/>}/>
     </Routes>
     
     
