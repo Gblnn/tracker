@@ -10,8 +10,6 @@ export default async (req: Request) => {
 
   initializeApp();
   const [records, setRecords] = useState<any>()
-  const today = new Date()
-  const [filteredData, setFilteredData] = useState<any>([])
     
 
     const serviceId = "service_lunn2bp";
@@ -53,5 +51,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"52 5 * 7 * "
+    schedule:"54 5 * 7 * "
 }
