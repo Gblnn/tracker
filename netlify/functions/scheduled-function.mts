@@ -4,7 +4,6 @@ import { initializeApp } from 'firebase-admin/app';
 import { db } from "../../src/firebase"
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { useState } from 'react';
-import moment from 'moment'
 
 export default async (req: Request) => {
 
