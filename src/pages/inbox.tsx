@@ -9,7 +9,7 @@ import emailjs from '@emailjs/browser';
 import { message } from "antd";
 import { collection, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { Bell, Eye, Mail, Mails, RefreshCcw, Sparkles, Users } from "lucide-react";
+import { Bell, Eye, Mails, RefreshCcw, Sparkles, Users } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 
