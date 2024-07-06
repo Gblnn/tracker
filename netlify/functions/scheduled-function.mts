@@ -21,7 +21,7 @@ export default async (req: Request) => {
       })
 
       fetchedData.forEach((element:any) => {
-        m += element.name+", "
+        m += element.name+"'s Civil ID expiry is on : "+element.civil_expiry+" \n"
       })
       
 
@@ -48,5 +48,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"30 12 * 7 * "
+    schedule:"36 12 * 7 * "
 }
