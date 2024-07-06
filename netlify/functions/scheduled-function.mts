@@ -28,7 +28,7 @@ export default async (req: Request) => {
       await emailjs.send(serviceId, templateId, {
         name: "Gokul",
         recipient: "Goblinn688@gmail.com",
-        message:""
+        message:m
       },{
         publicKey:"c8AePKR5BCK8UIn_E",
         privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
