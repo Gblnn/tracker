@@ -35,8 +35,15 @@ export default async (req: Request) => {
     
       })
 
+
       filteredData.forEach((element:any) => {
-        m += element.name+"'s Civil ID expiry is on : "+element.civil_expiry+" \n"
+        element.civil_expiry!=""?
+        m += element.name+"'s Civil ID expiry is on "+moment(element.civil_expiry.toDate(), 'DD/MM/YYYY')+" \n"
+        :null
+        element.vehicle_expiry!=""?
+        m += element.name+"'s Vehicle ID expiry is on "+moment(element.vehicle_expiry.toDate(), 'DD/MM/YYYY')+" \n"
+        :null
+
       })
       
 
