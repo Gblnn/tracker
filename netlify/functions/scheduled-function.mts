@@ -1,6 +1,5 @@
 import emailjs from '@emailjs/nodejs';
 import type { Config } from "@netlify/functions";
-import { initializeApp } from 'firebase-admin/app';
 import { db } from "../../src/firebase"
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { useState } from 'react';
@@ -8,8 +7,6 @@ import { useState } from 'react';
 const [records, setRecords] = useState<any>()
 
 export default async (req: Request) => {
-
-  initializeApp();
   
 
     const serviceId = "service_lunn2bp";
@@ -51,5 +48,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"01 6 * 7 * "
+    schedule:"06 6 * 7 * "
 }
