@@ -1,20 +1,23 @@
 import emailjs from '@emailjs/nodejs';
 import type { Config } from "@netlify/functions";
 import { initializeApp } from 'firebase-admin/app';
+import { db } from "../../src/firebase"
+import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { useState } from 'react';
+import moment from 'moment'
 
 export default async (req: Request) => {
 
   initializeApp();
+  const [records, setRecords] = useState<any>()
+  const today = new Date()
+  const [filteredData, setFilteredData] = useState<any>([])
     
 
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
 
     try {
-
-      
-        
-        
       await emailjs.send(serviceId, templateId, {
         name: "Gokul",
         recipient: "Goblinn688@gmail.com",
@@ -25,7 +28,23 @@ export default async (req: Request) => {
       }
     );
       console.log("email successfully sent");
-    } catch (error) {
+
+      const RecordCollection = collection(db, "records")
+      const recordQuery = query(RecordCollection, orderBy("created_on"))
+      const querySnapshot = await getDocs(recordQuery)
+      const fetchedData:any = [];
+
+      querySnapshot.forEach((doc:any)=>{
+        fetchedData.push({id: doc.id, ...doc.data()})        
+        setRecords(fetchedData)
+      })
+
+      console.log(records)
+
+    } 
+    
+    
+    catch (error) {
       console.log(error);
     }
     const { next_run } = await req.json()
@@ -34,5 +53,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"@monthly"
+    schedule:"50 9 * 7 * "
 }

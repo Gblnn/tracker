@@ -122,6 +122,8 @@ export default function Records(props:Props){
     const today = new Date()
     const usenavigate = useNavigate()
 
+    const [progressItem, setProgressItem] = useState("")
+
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
     
@@ -158,6 +160,8 @@ export default function Records(props:Props){
     },[])
 
     
+    
+
 
     
     
@@ -213,10 +217,10 @@ export default function Records(props:Props){
 
     
 
-    useEffect(()=>{
-        console.log(checked, selectable)
-
-    },[checked])
+    // useEffect(()=>{
+    //     console.log(checked, selectable)
+        
+    // },[checked])
 
     // useEffect(()=>{
     //     console.log(moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1)
@@ -237,7 +241,8 @@ export default function Records(props:Props){
             querySnapshot.forEach((doc:any)=>{
                 fetchedData.push({id: doc.id, ...doc.data()} as Record)
             })
-           
+
+
             setfetchingData(false)
             setRecords(fetchedData)
             setChecked([])
@@ -486,6 +491,7 @@ const RenewID = async () => {
                 await deleteDoc(doc(db, "records", item))
                 counts++
                 setProgress(String(percentage*counts)+"%")
+                setProgressItem(item)
             
 
                 if(checked.length==counts){
@@ -1053,7 +1059,7 @@ const RenewID = async () => {
             <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading} destructive/>
 
             {/* BULK DELETE DIALOG */}
-            <DefaultDialog progress={progress} destructive updating={loading} title="Delete record(s)?" open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete}/>
+            <DefaultDialog progressItem={progressItem} progress={progress} destructive updating={loading} title="Delete record(s)?" open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete}/>
 
             <AddDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true} input1Value={civil_expiry} input1Label="New Expiry : "/>
 

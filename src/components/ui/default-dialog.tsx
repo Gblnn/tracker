@@ -24,6 +24,7 @@ interface Props {
     created_on?:any
     progress?:string
     footerExtra?:any
+    progressItem?:string
 }
 
 export default function DefaultDialog(props:Props){
@@ -71,9 +72,15 @@ export default function DefaultDialog(props:Props){
 
                     {
                         props.progress?
-                            <div style={{width:"100%", height:"0.25rem", background:"rgba(100 100 100/ 20%)", borderRadius:"0.5rem"}}>
-                                <div style={{background:"brown", width:props.progress, height:"0.25rem", borderRadius:"0.5rem"}}></div>
+                            <div style={{display:"flex", flexFlow:"column", gap:"0.25rem", width:"100%"}}>
+                                <p style={{fontSize:"0.7rem", opacity:0.5}}>{props.progressItem}</p>
+
+                                <div style={{width:"100%", height:"0.25rem", background:"rgba(100 100 100/ 20%)", borderRadius:"0.5rem", display:"flex", flexFlow:"column"}}>
+                                    <div style={{background:"brown", width:props.progress, height:"0.25rem", borderRadius:"0.5rem"}}></div>
+                                </div>
+
                             </div>
+                            
                         :null
                     }
                     
