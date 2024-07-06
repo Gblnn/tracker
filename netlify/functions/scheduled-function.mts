@@ -6,6 +6,7 @@ import { db } from "../../src/firebase";
 export default async (req: Request) => {
 
     let records = []
+    let name = ""
 
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
@@ -27,7 +28,9 @@ export default async (req: Request) => {
 
       await emailjs.send(serviceId, templateId, {
         recipient: "Goblinn688@gmail.com",
-        message:records
+        message:records.map((e:any)=>{
+          e.name
+        })
       },{
         publicKey:"c8AePKR5BCK8UIn_E",
         privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
@@ -48,5 +51,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"49 11 * 7 * "
+    schedule:"58 11 * 7 * "
 }
