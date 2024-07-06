@@ -6,7 +6,6 @@ import { db } from "../../src/firebase";
 export default async (req: Request) => {
 
     let records = []
-    let name = ""
 
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
