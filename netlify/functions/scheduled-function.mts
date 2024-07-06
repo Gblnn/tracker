@@ -5,14 +5,14 @@ import { db } from "../../src/firebase";
 
 export default async (req: Request) => {
 
-    let m = []
+    let records = []
 
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
 
     try {
       
-      console.log("email successfully sent");
+      
 
       const RecordCollection = collection(db, "records")
       const recordQuery = query(RecordCollection, orderBy("created_on"))
@@ -23,17 +23,17 @@ export default async (req: Request) => {
         fetchedData.push({id: doc.id, ...doc.data()})        
       })
 
-      m = fetchedData.id
+      records = fetchedData
 
       await emailjs.send(serviceId, templateId, {
-        name: "Gokul",
         recipient: "Goblinn688@gmail.com",
-        message:m
+        message:records
       },{
         publicKey:"c8AePKR5BCK8UIn_E",
         privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
       }
     );
+    console.log("email successfully sent");
 
 
     } 
@@ -48,5 +48,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"45 11 * 7 * "
+    schedule:"49 11 * 7 * "
 }
