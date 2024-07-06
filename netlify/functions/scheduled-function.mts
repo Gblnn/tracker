@@ -51,6 +51,7 @@ export default async (req: Request) => {
 
       await emailjs.send(serviceId, templateId, {
         recipient: "Goblinn688@gmail.com",
+        subject:"Document Expiry Reminder",
         message:m
       },{
         publicKey:"c8AePKR5BCK8UIn_E",
@@ -74,5 +75,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"49 12 * 7 * "
+    schedule:"17 1 * 7 * "
 }

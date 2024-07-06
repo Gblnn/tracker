@@ -14,7 +14,7 @@ export default function Index(){
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
                 <Back icon={<Indent color="salmon"/>} title="Index" noback extra={
                     <div style={{display:"flex"}}>
-                        <button><History color="grey"/></button>
+                        <button style={{background:"none"}}><History color="grey"/></button>
                     </div>
                 }/>
                 <br/>

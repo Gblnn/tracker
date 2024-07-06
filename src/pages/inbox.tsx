@@ -9,7 +9,7 @@ import emailjs from '@emailjs/browser';
 import { message } from "antd";
 import { collection, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { Bell, Eye, Mail, Mails, RefreshCcw, Sparkles } from "lucide-react";
+import { Bell, Eye, Mail, Mails, RefreshCcw, Sparkles, Users } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 
@@ -145,7 +145,7 @@ export default function Inbox(){
             <Back title={"Inbox"+" ("+count+")"}
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
-                    <button style={{paddingLeft:"1rem", paddingRight:"1rem"}}><Mail width={"1rem"} color="dodgerblue"/></button>
+                    <button style={{paddingLeft:"1rem", paddingRight:"1rem"}}><Users width={"1rem"} color="dodgerblue"/></button>
                     <button className="blue-glass" style={{paddingLeft:"1rem", paddingRight:"1rem", height:"2.5rem", width:"3rem"}} onClick={fetchData} >
                         {
                                 pageLoad?
