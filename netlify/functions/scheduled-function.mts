@@ -44,9 +44,9 @@ export default async (req: Request) => {
     }
     const { next_run } = await req.json()
 
-    console.log("Received event! Next invocation at:", next_run)
+    console.log("Received event Next invocation at:", next_run)
 }
 
 export const config: Config = {
-    schedule:"11 12 * 7 * "
+    schedule:"21 12 * 7 * "
 }

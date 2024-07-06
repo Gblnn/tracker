@@ -869,7 +869,7 @@ const RenewID = async () => {
             <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>setRecordSummary(false)} 
             created_on={
     
-                <ReactTimeAgo date={moment(created_on, "DD/MM/YYYY").add(17, 'hours').toDate()} locale="en" timeStyle={"twitter"}/>
+                <ReactTimeAgo date={moment(created_on, "DD/MM/YYYY").toDate()} timeStyle={"twitter"}/>
                     
             } 
             title_extra={
