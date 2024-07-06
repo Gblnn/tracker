@@ -2,6 +2,7 @@ import emailjs from '@emailjs/nodejs';
 import type { Config } from "@netlify/functions";
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { db } from "../../src/firebase";
+import moment from 'moment'
 
 export default async (req: Request) => {
 
@@ -9,6 +10,8 @@ export default async (req: Request) => {
     const templateId = "template_1y0oq9l";
 
     let m = ""
+    let filteredData = []
+    const today = new Date()
 
     try {
       const RecordCollection = collection(db, "records")
@@ -20,7 +23,19 @@ export default async (req: Request) => {
         fetchedData.push({id: doc.id, ...doc.data()})        
       })
 
-      fetchedData.forEach((element:any) => {
+      filteredData = fetchedData.filter((e:any)=>{
+        return(
+          e.civil_expiry&&
+        Math.round(moment(e.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
+        ||
+        e.vehicle_expiry&&
+        Math.round(moment(e.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2
+        )
+            
+    
+      })
+
+      filteredData.forEach((element:any) => {
         m += element.name+"'s Civil ID expiry is on : "+element.civil_expiry+" \n"
       })
       
@@ -48,5 +63,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"36 12 * 7 * "
+    schedule:"42 12 * 7 * "
 }
