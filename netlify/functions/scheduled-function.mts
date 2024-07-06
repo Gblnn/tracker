@@ -47,6 +47,8 @@ export default async (req: Request) => {
       })
       
 
+      filteredData.length>1?
+
       await emailjs.send(serviceId, templateId, {
         recipient: "Goblinn688@gmail.com",
         message:m
@@ -54,8 +56,10 @@ export default async (req: Request) => {
         publicKey:"c8AePKR5BCK8UIn_E",
         privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
       }
-    );
-    console.log("email successfully sent");
+    )
+    :null
+
+    
 
 
     } 
@@ -70,5 +74,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"42 12 * 7 * "
+    schedule:"49 12 * 7 * "
 }
