@@ -39,16 +39,16 @@ export default async (req: Request) => {
       filteredData.forEach((element:any) => {
         element.civil_expiry!=""?
         m += element.name+"'s Civil ID is expiring on "+String(moment((element.civil_expiry).toDate()).format('DD/MM/YYYY'))+
-        // " in "
-        // +
-        // String(Math.round(moment((element.civil_expiry).toDate()).diff(moment(today), 'months')))
+        " in "
+        +
+        String(Math.round(moment((element.civil_expiry).toDate()).diff(moment(today), 'months')))
         +"\n\n"
         :null
         element.vehicle_expiry!=""?
         m += element.name+"'s Vehicle ID is expiring on "+String(moment((element.vehicle_expiry).toDate()).format("DD/MM/YYYY"))+
-        // " in "
-        // +
-        // String(Math.round(moment((element.vehicle_expiry).toDate()).diff(moment(today), 'months')))
+        " in "
+        +
+        String(Math.round(moment((element.vehicle_expiry).toDate()).diff(moment(today), 'months')))
         +
         "\n\n"
         :null
@@ -84,5 +84,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"00 14 * 7 * "
+    schedule:"04 14 * 7 * "
 }
