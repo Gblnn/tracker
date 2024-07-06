@@ -42,7 +42,7 @@ export default async (req: Request) => {
         // " in "
         // +
         // String(Math.round(moment((element.civil_expiry).toDate()).diff(moment(today), 'months')))
-        +" \n\n"
+        +"\n\n"
         :null
         element.vehicle_expiry!=""?
         m += element.name+"'s Vehicle ID is expiring on "+String(moment((element.vehicle_expiry).toDate()).format("DD/MM/YYYY"))+
@@ -50,7 +50,7 @@ export default async (req: Request) => {
         // +
         // String(Math.round(moment((element.vehicle_expiry).toDate()).diff(moment(today), 'months')))
         +
-        " \n\n"
+        "\n\n"
         :null
 
       })
@@ -84,5 +84,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"45 13 * 7 * "
+    schedule:"57 13 * 7 * "
 }
