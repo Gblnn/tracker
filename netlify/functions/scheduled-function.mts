@@ -56,7 +56,7 @@ export default async (req: Request) => {
       })
       
 
-      filteredData.length>1?
+      filteredData.length>=1?
 
       await emailjs.send(serviceId, templateId, {
         recipient: "Goblinn688@gmail.com",
@@ -84,5 +84,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"57 13 * 7 * "
+    schedule:"00 14 * 7 * "
 }
