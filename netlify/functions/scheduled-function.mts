@@ -8,6 +8,8 @@ export default async (req: Request) => {
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
 
+    let m = ""
+
     try {
       const RecordCollection = collection(db, "records")
       const recordQuery = query(RecordCollection, orderBy("created_on"))
@@ -18,15 +20,14 @@ export default async (req: Request) => {
         fetchedData.push({id: doc.id, ...doc.data()})        
       })
 
-      
-
+      fetchedData.forEach((element:any) => {
+        m += element.name+", "
+      })
       
 
       await emailjs.send(serviceId, templateId, {
         recipient: "Goblinn688@gmail.com",
-        message:fetchedData.forEach((element:any) => {
-          element.name
-        })
+        message:m
       },{
         publicKey:"c8AePKR5BCK8UIn_E",
         privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
@@ -47,5 +48,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"06 12 * 7 * "
+    schedule:"11 12 * 7 * "
 }
