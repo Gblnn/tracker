@@ -38,6 +38,10 @@ button:hover {
   background: rgba(30 144 255/ 10%);
 }
 
+.destructive {
+  background: crimson;
+}
+
 h1 {
   font-weight: 600;
   font-size: 1.5rem;

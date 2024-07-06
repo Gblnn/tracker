@@ -91,6 +91,7 @@ export default function Inbox(){
                 setRecords(fetchedData)
                 
             })
+            setLoading(false)
             setPageLoad(false)
             // console.log(records)
             // records.forEach((r:any)=>{
@@ -327,7 +328,7 @@ export default function Inbox(){
             }/>
 
             <DefaultDialog close back onCancel={()=>setMailPreview(false)} open={mailPreview} title={
-                <input onChange={(e)=>setMailTitle(e.target.value)} style={{background:"", fontSize:"1rem", border:""}} defaultValue={mailTitle}/>
+                <input onChange={(e)=>setMailTitle(e.target.value)} style={{background:"", fontSize:"1rem", border:"", width:"100%"}} defaultValue={mailTitle}/>
             } extra={
                 <div style={{opacity:0.75, paddingBottom:"0.5rem", border:"", width:"100%"}}>
                     <textarea rows={6} onChange={(e)=>setMailContent(e.target.value)} defaultValue={mailContent} style={{textAlign:"left", width:"100%", border:""}}></textarea>

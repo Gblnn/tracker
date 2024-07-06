@@ -112,6 +112,7 @@ export default function Records(props:Props){
 
     const [renewDocDialog, setRenewDocDialog] = useState(false)
     const [selectAll, setSelectAll] = useState(false)
+    const [renewVehicleDialog, setRenewVehicleDialog] = useState(false)
 
     const [newExpiry, setNewExpiry] = useState<any>()
 
@@ -828,8 +829,8 @@ const RenewID = async () => {
 
 
             {/* ADD RECORD BUTTON */}
-            <AddRecordButton title={addButtonModeSwap?"Delete Record(s)":"Add Record"} onClickSwap={addButtonModeSwap} onClick={()=>{setAddDialog(true); setName("")}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
-                icon={addButtonModeSwap?<Trash color="dodgerblue" width="1rem"/>:<Plus color="crimson" width="1rem"/>}/>
+            <AddRecordButton style={selectable?"crimson":""} title={addButtonModeSwap?"Delete Record(s)":"Add Record"} onClickSwap={addButtonModeSwap} onClick={()=>{setAddDialog(true); setName("")}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
+                icon={addButtonModeSwap?<Trash width="1rem"/>:<Plus color="dodgerblue" width="1rem"/>}/>
 
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
@@ -996,9 +997,8 @@ const RenewID = async () => {
 
                 {
                     moment(vehicle_expiry, "DD/MM/YYYY").diff(moment(today), 'months')<=2?
-                    <button className="" style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem", background:"goldenrod", color:"black"}}>
-                        <Sparkles width={"0.85rem"} color="black"/>
-                        
+                    <button onClick={()=>{setRenewVehicleDialog(true)}} className="" style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem", background:"goldenrod", color:"black"}}>
+                        <Sparkles width={"0.85rem"} color="black" />
                         Renew
                     </button>
                     :null
@@ -1063,8 +1063,9 @@ const RenewID = async () => {
 
             <AddDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true} input1Value={civil_expiry} input1Label="New Expiry : "/>
 
+            <AddDialog title="Renew Vehicle ID" open={renewVehicleDialog} onCancel={()=>setRenewVehicleDialog(false)} inputplaceholder="New Issue Date" input1Label="New Issue" input2placeholder="New Expiry" input2Label="New Expiry" input1Value={vehicle_issue} input2Value={vehicle_expiry} OkButtonText="Renew" OkButtonIcon={<Sparkles width={"1rem"}/>} disabled={loading}/>
 
-                </div>
+            </div>
             
     
         </>

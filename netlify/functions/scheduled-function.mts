@@ -4,7 +4,8 @@ import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { db } from "../../src/firebase";
 
 export default async (req: Request) => {
-  
+
+    let m = []
 
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
@@ -22,10 +23,12 @@ export default async (req: Request) => {
         fetchedData.push({id: doc.id, ...doc.data()})        
       })
 
+      m = fetchedData
+
       await emailjs.send(serviceId, templateId, {
         name: "Gokul",
         recipient: "Goblinn688@gmail.com",
-        message:fetchedData((r:any)=>{r.civil_expiry})
+        message:m
       },{
         publicKey:"c8AePKR5BCK8UIn_E",
         privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
