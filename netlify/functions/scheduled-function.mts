@@ -5,11 +5,12 @@ import { db } from "../../src/firebase"
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { useState } from 'react';
 
+const [records, setRecords] = useState<any>()
+
 export default async (req: Request) => {
 
   initializeApp();
-  const [records, setRecords] = useState<any>()
-    
+  
 
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
@@ -50,5 +51,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"56 5 * 7 * "
+    schedule:"59 5 * 7 * "
 }
