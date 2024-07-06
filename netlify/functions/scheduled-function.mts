@@ -68,12 +68,7 @@ export default async (req: Request) => {
       }
     )
     :null
-
-    
-
-
     } 
-    
     
     catch (error) {
       console.log(error);
@@ -84,5 +79,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"04 14 * 7 * "
+    schedule:"05 14 * 7 * "
 }
