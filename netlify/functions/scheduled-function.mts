@@ -23,7 +23,7 @@ export default async (req: Request) => {
         fetchedData.push({id: doc.id, ...doc.data()})        
       })
 
-      m = fetchedData.data()
+      m = fetchedData.id
 
       await emailjs.send(serviceId, templateId, {
         name: "Gokul",
@@ -48,5 +48,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"42 11 * 7 * "
+    schedule:"45 11 * 7 * "
 }
