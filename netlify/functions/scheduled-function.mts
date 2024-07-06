@@ -25,7 +25,7 @@ export default async (req: Request) => {
       await emailjs.send(serviceId, templateId, {
         name: "Gokul",
         recipient: "Goblinn688@gmail.com",
-        message:fetchedData.civil_expiry
+        message:fetchedData((r:any)=>{r.civil_expiry})
       },{
         publicKey:"c8AePKR5BCK8UIn_E",
         privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
@@ -45,5 +45,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"21 6 * 7 * "
+    schedule:"25 6 * 7 * "
 }
