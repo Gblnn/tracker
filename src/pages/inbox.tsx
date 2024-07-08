@@ -443,7 +443,7 @@ export default function Inbox(){
             }/>
 
             <DefaultDialog updating={loading} destructive title={"Remove Recipient?"}  open={removeRecipientDialog} onCancel={()=>setRemoveRecipientDialog(false)} OkButtonText="Remove" extra={<div style={{width:"100%", border:"3px dashed rgba(100 100 100/ 50%)", padding:"0.5rem", borderRadius:"0.75rem"}}>
-                <p style={{opacity:0.5}}>{selectedRecipient}</p>
+                <p>{selectedRecipient}</p>
             </div>} onOk={removeRecipient}/>
             
         </div>
