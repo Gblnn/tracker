@@ -432,7 +432,7 @@ export default function Inbox(){
 
                 <div style={{width:"100%", display:"flex", gap:"0.5rem"}}>
                     <input type="email" placeholder="Enter E-mail ID" onChange={(e)=>{setRecipient(e.target.value);}}/>
-                    <button style={{width:"3rem"}} className={recipient==""?"disabled":""} onClick={addRecipient}>
+                    <button style={{width:"3rem"}} className={recipient==""?"disabled":""} onClick={()=>recipient==""?null:addRecipient()}>
                         {
                          loading?
                          <LoadingOutlined color="dodgerblue"/>
