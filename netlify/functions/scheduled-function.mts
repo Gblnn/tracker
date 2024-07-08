@@ -12,7 +12,7 @@ export default async (req: Request) => {
     let m = ""
     let filteredData = []
     const today = new Date()
-    let recipients = []
+    let rp = ""
 
     try {
 
@@ -24,8 +24,6 @@ export default async (req: Request) => {
       Snapshot.forEach((doc:any)=>{
         Data.push({id: doc.id, ...doc.data()})        
       })
-
-      recipients = Data
 
 
 
@@ -48,6 +46,10 @@ export default async (req: Request) => {
         )
             
     
+      })
+
+      Data.forEach((r:any)=>{
+        rp += r.recipient+", "
       })
 
 
@@ -76,9 +78,7 @@ export default async (req: Request) => {
 
 
       await emailjs.send(serviceId, templateId, {
-        recipient: Data.forEach((recipient:any)=>{
-          recipient.recipient+","
-        }),
+        recipient: rp,
         subject:"Document Expiry Reminder",
         message:m
       },{
@@ -98,5 +98,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"21 7 * 7 * "
+    schedule:"26 7 * 7 * "
 }
