@@ -210,7 +210,7 @@ export default function Inbox(){
                                 pageLoad?
                                 <LoadingOutlined style={{color:"dodgerblue"}} width={"1.5rem"}/>
                                 :
-                                <RefreshCcw width="1.1rem" color="dodgerblue"/>
+                                <RefreshCcw  width="1.1rem" color="dodgerblue"/>
                             }
                         </button>
                     </div>
@@ -417,7 +417,9 @@ export default function Inbox(){
                     <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.35rem", maxHeight:"11.25rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem"}}>
                     {
                         recipientList.map((recipient:any)=>(
+                            <motion.div key={recipient.id} initial={{opacity:0}} whileInView={{opacity:1}}>
                             <Directive onClick={()=>{setRemoveRecipientDialog(true);setSelectedRecipient(recipient.recipient);setSelectedRecipientID(recipient.id)}} key={recipient.id} icon={<MinusSquareIcon className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} title={recipient.recipient} noArrow/>
+                            </motion.div>
                         ))
                     }
                     
