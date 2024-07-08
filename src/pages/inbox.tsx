@@ -199,11 +199,11 @@ export default function Inbox(){
     return(
         <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
         <div style={{margin:"1.25rem"}}>
-            <Back title={"Inbox"+" ("+count+")"}
+            <Back title={"Inbox"}
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
 
-                        <button onClick={()=>{setRecipientsDialog(true);fetchRecipients()}} style={{paddingLeft:"1rem", paddingRight:"1rem"}}><Users width={"1rem"} color="dodgerblue"/></button>
+                        <button onClick={()=>{setRecipientsDialog(true);fetchRecipients()}} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.85rem"}}><Users className="animate-pulse" width={"1rem"} color="salmon"/>Recipients</button>
 
                         <button className="blue-glass" style={{paddingLeft:"1rem", paddingRight:"1rem", height:"2.5rem", width:"3rem"}} onClick={fetchData} >
                             {
