@@ -442,7 +442,7 @@ export default function Inbox(){
                         
                     </button>
                 </div>
-                <div style={{width:"100%"}}>
+                <div style={{width:""}}>
                     {/* <div style={{textAlign:"left", fontSize:"0.7rem", display:"flex", alignItems:"center", gap:"0.5rem", width:"100%"}}><CalendarDaysIcon width={"1rem"} color="salmon"/><p style={{opacity:"0.75"}}>Database will be queried on the first day of every month.</p></div> */}
 
                     <div style={{textAlign:"left", fontSize:"0.7rem", display:"flex", alignItems:"center", gap:"0.5rem", width:"100%"}}><Info width={"1rem"} color="violet"/><p style={{opacity:"0.75"}}>If alerts are present the listed recipients will be notified.</p></div>
