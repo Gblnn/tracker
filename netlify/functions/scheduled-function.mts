@@ -12,8 +12,23 @@ export default async (req: Request) => {
     let m = ""
     let filteredData = []
     const today = new Date()
+    let recipients = []
 
     try {
+
+      const RecipientCollection = collection(db, "recipients")
+      const Query = query(RecipientCollection, orderBy("created_on"))
+      const Snapshot = await getDocs(Query)
+      const Data:any = [];
+
+      Snapshot.forEach((doc:any)=>{
+        Data.push({...doc.data()})        
+      })
+
+      recipients = Data
+
+
+
       const RecordCollection = collection(db, "records")
       const recordQuery = query(RecordCollection, orderBy("created_on"))
       const querySnapshot = await getDocs(recordQuery)
@@ -42,14 +57,14 @@ export default async (req: Request) => {
         String(moment((element.civil_expiry).toDate()).format('DD/MM/YYYY'))+
         " in "
         +
-        String(Math.round(moment((element.civil_expiry).toDate()).diff(moment(today), 'months')))+" months."
+        String(Math.round(moment((element.civil_expiry).toDate()).diff(moment(today), 'months')))+" month(s)."
         +"\n\n"
         :null
         element.vehicle_expiry!=""?
         m += element.name+"'s Vehicle ID is expiring on "+String(moment((element.vehicle_expiry).toDate()).format("DD/MM/YYYY"))+
         " in "
         +
-        String(Math.round(moment((element.vehicle_expiry).toDate()).diff(moment(today), 'months')))+" months."
+        String(Math.round(moment((element.vehicle_expiry).toDate()).diff(moment(today), 'months')))+" month(s)."
         +
         "\n\n"
         :null
@@ -60,7 +75,7 @@ export default async (req: Request) => {
       filteredData.length>=1?
 
       await emailjs.send(serviceId, templateId, {
-        recipient: "Goblinn688@gmail.com",
+        recipient: recipients,
         subject:"Document Expiry Reminder",
         message:m
       },{
@@ -80,5 +95,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"10 5 * 7 * "
+    schedule:"02 7 * 7 * "
 }

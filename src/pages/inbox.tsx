@@ -1,5 +1,6 @@
 import AddDialog from "@/components/add-dialog";
 import Back from "@/components/back";
+import Directive from "@/components/directive";
 import InboxComponent from "@/components/inbox-component";
 import SearchBar from "@/components/search-bar";
 import DefaultDialog from "@/components/ui/default-dialog";
@@ -7,9 +8,9 @@ import { db } from "@/firebase";
 import { LoadingOutlined } from '@ant-design/icons';
 import emailjs from '@emailjs/browser';
 import { message } from "antd";
-import { collection, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
+import { Timestamp, addDoc, collection, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { Bell, Eye, Mails, RefreshCcw, Sparkles, Users } from "lucide-react";
+import { AtSign, Bell, Eye, LucideMails, Mails, Plus, RefreshCcw, Sparkles, Users } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 
@@ -26,12 +27,17 @@ export default function Inbox(){
     const [email, setEmail] = useState("")
     const [mailContent, setMailContent] = useState<any>()
     const [loading, setLoading] = useState(false)
+    const [updating, setUpdating] = useState(false)
     const [mailTitle, setMailTitle] = useState("")
     const [mailPreview, setMailPreview] = useState(false)
     const [renewDocDialog, setRenewDocDialog] = useState(false)
     const [docID, setDocID] = useState("")
-
+    const [recipientsDialog, setRecipientsDialog] = useState(false)
     const [newExpiry, setNewExpiry] = useState<any>()
+    const [recipient, setRecipient] = useState("")
+    const [recipientList, setRecipientList] = useState<any>([])
+    const [disabled, setDisabled] = useState(false)
+    
 
       // MAILJS VARIABLES
       const serviceId = "service_lunn2bp";
@@ -40,6 +46,7 @@ export default function Inbox(){
 
     useEffect(()=>{
         fetchData()
+        
     },[])
 
     useEffect(()=>{
@@ -133,6 +140,40 @@ export default function Inbox(){
     const RenewID = async () => {
         await updateDoc(doc(db, "records", docID),{civil_expiry:newExpiry})
     }
+
+
+    const addRecipient = async () => {
+        try {
+            setLoading(true)
+            await addDoc(collection(db, 'recipients'),{created_on:Timestamp.fromDate(today), recipient:recipient})    
+            setLoading(false)
+            message.success("Added recipient")
+            fetchRecipients()
+        } catch (error) {
+            message.error(String(error))
+            setLoading(false)
+        }
+        
+    }
+
+    const fetchRecipients = async () => {
+        try {
+            setUpdating(true)
+            const RecordCollection = collection(db, "recipients")
+            const recordQuery = query(RecordCollection, orderBy("created_on"))
+            const querySnapshot = await getDocs(recordQuery)
+            const fetchedData:any = [];
+
+            querySnapshot.forEach((doc:any)=>{
+                fetchedData.push({id: doc.id, ...doc.data()})
+                setRecipientList(fetchedData)
+                
+            })
+            setUpdating(false)
+        } catch (error) {
+            message.error(String(error))
+        }
+    }
     
 
     // const Evaluate = () => {
@@ -145,16 +186,17 @@ export default function Inbox(){
             <Back title={"Inbox"+" ("+count+")"}
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
-                    <button style={{paddingLeft:"1rem", paddingRight:"1rem"}}><Users width={"1rem"} color="dodgerblue"/></button>
-                    <button className="blue-glass" style={{paddingLeft:"1rem", paddingRight:"1rem", height:"2.5rem", width:"3rem"}} onClick={fetchData} >
-                        {
+
+                        <button onClick={()=>{setRecipientsDialog(true);fetchRecipients()}} style={{paddingLeft:"1rem", paddingRight:"1rem"}}><Users width={"1rem"} color="dodgerblue"/></button>
+
+                        <button className="blue-glass" style={{paddingLeft:"1rem", paddingRight:"1rem", height:"2.5rem", width:"3rem"}} onClick={fetchData} >
+                            {
                                 pageLoad?
                                 <LoadingOutlined style={{color:"dodgerblue"}} width={"1.5rem"}/>
                                 :
                                 <RefreshCcw width="1.1rem" color="dodgerblue"/>
                             }
-
-                    </button>
+                        </button>
                     </div>
                     
                 }/>
@@ -337,6 +379,52 @@ export default function Inbox(){
             }/>
 
             <AddDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true}/>
+
+            <DefaultDialog 
+            title_extra={
+            <button onClick={fetchRecipients} style={{width:"3rem", height:"2.5rem"}}>
+                {
+                    updating?
+                    <LoadingOutlined style={{color:"dodgerblue"}}/>
+                    :
+                    <RefreshCcw color="dodgerblue" width={"1rem"}/>
+                }
+                
+            </button>} titleIcon={<LucideMails color="dodgerblue"/>} title="Recipients" open={recipientsDialog} onCancel={()=>setRecipientsDialog(false)} close 
+            extra={
+                <>
+
+                {
+                    recipientList.length==0?
+                    <div style={{width:"100%", border:"3px dashed rgba(100 100 100/ 50%)", height:"2.5rem",borderRadius:"0.5rem"}}></div>
+                    :
+                    <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.35rem", maxHeight:"11.25rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem"}}>
+                    {
+                        recipientList.map((recipient:any)=>(
+                            <Directive key={recipient.id} icon={<AtSign className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} title={recipient.recipient} noArrow/>
+                        ))
+                    }
+                    
+                </div>
+                }
+                
+
+
+                <div style={{width:"100%", display:"flex", gap:"0.5rem"}}>
+                    <input type="email" placeholder="Enter E-mail ID" onChange={(e)=>{setRecipient(e.target.value);recipient!=""?setDisabled(false):setDisabled(true)}}/>
+                    <button style={{width:"3rem"}} className={disabled?"disabled":""} onClick={addRecipient}>
+                        {
+                         loading?
+                         <LoadingOutlined color="dodgerblue"/>
+                         :
+                         <Plus color="dodgerblue"/>
+                        }
+                        
+                    </button>
+                </div>
+                </>
+                
+            }/>
 
             
         </div>
