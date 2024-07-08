@@ -8,9 +8,9 @@ import { db } from "@/firebase";
 import { LoadingOutlined } from '@ant-design/icons';
 import emailjs from '@emailjs/browser';
 import { message } from "antd";
-import { Timestamp, addDoc, collection, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
+import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { AtSign, Bell, Eye, LucideMails, Mails, Plus, RefreshCcw, Sparkles, Users } from "lucide-react";
+import { Bell, Eye, LucideMails, Mails, MinusSquareIcon, Plus, RefreshCcw, Sparkles, Users } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 
@@ -37,7 +37,9 @@ export default function Inbox(){
     const [recipient, setRecipient] = useState("")
     const [recipientList, setRecipientList] = useState<any>([])
     const [disabled, setDisabled] = useState(false)
-    
+    const [removeRecipientDialog, setRemoveRecipientDialog] = useState(false)
+    const [selectedRecipient, setSelectedRecipient] = useState("")
+    const [selectedRecipientID, setSelectedRecipientID] = useState("")
 
       // MAILJS VARIABLES
       const serviceId = "service_lunn2bp";
@@ -172,6 +174,20 @@ export default function Inbox(){
             setUpdating(false)
         } catch (error) {
             message.error(String(error))
+        }
+    }
+
+    const removeRecipient = async () => {
+        try {
+            setLoading(true)
+            await deleteDoc(doc(db, 'recipients', selectedRecipientID))
+            setLoading(false)
+            setRemoveRecipientDialog(false)
+            fetchRecipients()
+
+        } catch (error) {
+            message.error(String(error))
+            setLoading(false)
         }
     }
     
@@ -401,7 +417,7 @@ export default function Inbox(){
                     <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.35rem", maxHeight:"11.25rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem"}}>
                     {
                         recipientList.map((recipient:any)=>(
-                            <Directive key={recipient.id} icon={<AtSign className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} title={recipient.recipient} noArrow/>
+                            <Directive onClick={()=>{setRemoveRecipientDialog(true);setSelectedRecipient(recipient.recipient);setSelectedRecipientID(recipient.id)}} key={recipient.id} icon={<MinusSquareIcon className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} title={recipient.recipient} noArrow/>
                         ))
                     }
                     
@@ -426,6 +442,9 @@ export default function Inbox(){
                 
             }/>
 
+            <DefaultDialog updating={loading} destructive title={"Remove Recipient?"}  open={removeRecipientDialog} onCancel={()=>setRemoveRecipientDialog(false)} OkButtonText="Remove" extra={<div style={{width:"100%", border:"3px dashed rgba(100 100 100/ 50%)", padding:"0.5rem", borderRadius:"0.75rem"}}>
+                <p style={{opacity:0.5}}>{selectedRecipient}</p>
+            </div>} onOk={removeRecipient}/>
             
         </div>
         </motion.div>

@@ -55,18 +55,20 @@ export default async (req: Request) => {
 
       filteredData.forEach((element:any) => {
         element.civil_expiry!=""?
-        m += element.name+"'s Civil ID is expiring on "+
-        String(moment((element.civil_expiry).toDate()).format('DD/MM/YYYY'))+
-        " in "
+        m += element.name+"'s Civil ID is expiring"+" in "
         +
-        String(Math.round(moment((element.civil_expiry).toDate()).diff(moment(today), 'months')))+" month(s)."
+        String(Math.round(moment((element.civil_expiry).toDate()).diff(moment(today), 'months')))+" month(s)"
+        +" on "+
+        String(moment((element.civil_expiry).toDate()).format('DD/MM/YYYY'))+
         +"\n\n"
         :null
+
         element.vehicle_expiry!=""?
-        m += element.name+"'s Vehicle ID is expiring on "+String(moment((element.vehicle_expiry).toDate()).format("DD/MM/YYYY"))+
-        " in "
+        m += element.name+"'s Vehicle ID is expiring in "
         +
-        String(Math.round(moment((element.vehicle_expiry).toDate()).diff(moment(today), 'months')))+" month(s)."
+        String(Math.round(moment((element.vehicle_expiry).toDate()).diff(moment(today), 'months')))+" month(s)"
+        +" on "
+        +String(moment((element.vehicle_expiry).toDate()).format("DD/MM/YYYY"))
         +
         "\n\n"
         :null

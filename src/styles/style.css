@@ -19,8 +19,8 @@ button {
   transition: 0.3s;
   gap: 0.5rem;
   font-size: 1rem;
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px) contrast(100%);
+  backdrop-filter: blur(16px) contrast(100%);
 }
 
 button:hover {
