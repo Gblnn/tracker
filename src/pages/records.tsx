@@ -582,8 +582,9 @@ const RenewID = async () => {
                             </button>
 
                             <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
-                            <Inbox color="crimson"/>
-                        </button>
+                                {/* <Inbox style={{position:"absolute"}} className="animate-ping" color="crimson"/> */}
+                                <Inbox className="" color="crimson"/>
+                            </button>
             
                     </div>
                     :

@@ -10,7 +10,7 @@ import emailjs from '@emailjs/browser';
 import { message } from "antd";
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { Bell, Eye, LucideMails, Mails, MinusSquareIcon, Plus, RefreshCcw, Sparkles, Users } from "lucide-react";
+import { Bell, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, Users } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 
@@ -36,10 +36,11 @@ export default function Inbox(){
     const [newExpiry, setNewExpiry] = useState<any>()
     const [recipient, setRecipient] = useState("")
     const [recipientList, setRecipientList] = useState<any>([])
-    const [disabled, setDisabled] = useState(false)
     const [removeRecipientDialog, setRemoveRecipientDialog] = useState(false)
     const [selectedRecipient, setSelectedRecipient] = useState("")
     const [selectedRecipientID, setSelectedRecipientID] = useState("")
+
+
 
       // MAILJS VARIABLES
       const serviceId = "service_lunn2bp";
@@ -371,7 +372,7 @@ export default function Inbox(){
                 setMailTitle("");
                 setMailContent("");
             }} titleIcon={<Mails color="dodgerblue"/>} title="Notify via Mail" updating={loading} onOk={sendMail} disabled={email==""||loading}
-            title_extra={<button onClick={()=>setMailPreview(true)} style={{fontSize:"0.8rem", height:"2rem"}}><Eye width={"1rem"} color="dodgerblue"/>Preview</button>}
+            title_extra={<button onClick={()=>setMailPreview(true)} style={{fontSize:"0.8rem", height:"2rem"}}><PenLine width={"1rem"} color="dodgerblue"/>Compose</button>}
              extra={
                 <div style={{display:"flex", width:"100%", border:'', flexFlow:"column", gap:"0.5rem"}}>
                     
@@ -409,7 +410,8 @@ export default function Inbox(){
             </button>} titleIcon={<LucideMails color="dodgerblue"/>} title="Recipients" open={recipientsDialog} onCancel={()=>setRecipientsDialog(false)} close 
             extra={
                 <>
-
+                
+                
                 {
                     recipientList.length==0?
                     <div style={{width:"100%", border:"3px dashed rgba(100 100 100/ 50%)", height:"2.5rem",borderRadius:"0.5rem"}}></div>
@@ -418,7 +420,7 @@ export default function Inbox(){
                     {
                         recipientList.map((recipient:any)=>(
                             <motion.div key={recipient.id} initial={{opacity:0}} whileInView={{opacity:1}}>
-                            <Directive onClick={()=>{setRemoveRecipientDialog(true);setSelectedRecipient(recipient.recipient);setSelectedRecipientID(recipient.id)}} key={recipient.id} icon={<MinusSquareIcon className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} title={recipient.recipient} noArrow/>
+                            <Directive key={recipient.id} icon={<MinusSquareIcon onClick={()=>{setRemoveRecipientDialog(true);setSelectedRecipient(recipient.recipient);setSelectedRecipientID(recipient.id)}} className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} title={recipient.recipient} noArrow/>
                             </motion.div>
                         ))
                     }
@@ -429,8 +431,8 @@ export default function Inbox(){
 
 
                 <div style={{width:"100%", display:"flex", gap:"0.5rem"}}>
-                    <input type="email" placeholder="Enter E-mail ID" onChange={(e)=>{setRecipient(e.target.value);recipient!=""?setDisabled(false):setDisabled(true)}}/>
-                    <button style={{width:"3rem"}} className={disabled?"disabled":""} onClick={addRecipient}>
+                    <input type="email" placeholder="Enter E-mail ID" onChange={(e)=>{setRecipient(e.target.value);}}/>
+                    <button style={{width:"3rem"}} className={recipient==""?"disabled":""} onClick={addRecipient}>
                         {
                          loading?
                          <LoadingOutlined color="dodgerblue"/>
@@ -439,6 +441,12 @@ export default function Inbox(){
                         }
                         
                     </button>
+                </div>
+                <div style={{width:"100%"}}>
+                    {/* <div style={{textAlign:"left", fontSize:"0.7rem", display:"flex", alignItems:"center", gap:"0.5rem", width:"100%"}}><CalendarDaysIcon width={"1rem"} color="salmon"/><p style={{opacity:"0.75"}}>Database will be queried on the first day of every month.</p></div> */}
+
+                    <div style={{textAlign:"left", fontSize:"0.7rem", display:"flex", alignItems:"center", gap:"0.5rem", width:"100%"}}><Info width={"1rem"} color="violet"/><p style={{opacity:"0.75"}}>If alerts are present the listed recipients will be notified.</p></div>
+
                 </div>
                 </>
                 

@@ -97,12 +97,12 @@ export default function InboxComponent(props:Props){
 
                             <button onClick={props.onReminderClick} style={{display:"flex", width:"5rem", height:"2rem", fontSize:"0.8rem", border:''}}>
                                 <AtSign width={"1.1rem"} color='dodgerblue'/>
-                                <p>Notify</p>
+                                Notify
                             </button>
 
                             <button onClick={props.onRenewClick} style={{display:"flex", width:"5.5rem", height:"2rem", fontSize:"0.8rem", border:''}}>
                                 <Sparkles width={"1rem"} color='goldenrod' fill='goldenrod'/>
-                                <p>Renew</p>
+                                Renew
                             </button>
 
                         </div>

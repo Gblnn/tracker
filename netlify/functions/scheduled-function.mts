@@ -39,10 +39,10 @@ export default async (req: Request) => {
       filteredData = fetchedData.filter((e:any)=>{
         return(
           e.civil_expiry&&
-        Math.round(moment(e.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
-        ||
-        e.vehicle_expiry&&
-        Math.round(moment(e.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2
+          Math.round(moment(e.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
+          ||
+          e.vehicle_expiry&&
+          Math.round(moment(e.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2
         )
             
     
