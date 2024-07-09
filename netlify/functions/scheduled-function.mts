@@ -48,7 +48,7 @@ export default async (req: Request) => {
           Math.round(moment(e.medical_due_on.toDate()).diff(moment(today), 'months'))<=2
           ||
           e.passportExpiry&&
-          Math.round(moment(e.medical_due_on.toDate()).diff(moment(today), 'months'))<=6
+          Math.round(moment(e.passportExpiry.toDate()).diff(moment(today), 'months'))<=6
         )
             
     
@@ -119,5 +119,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"11 14 * 7 * "
+    schedule:"17 14 * 7 * "
 }
