@@ -270,7 +270,10 @@ export default function Inbox(){
                                 Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
                                 ||
                                 record.vehicle_expiry&&
-                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2    
+                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2  
+                                ||
+                                record.medical_due_on&&
+                                Math.round(moment(record.medical_due_on.toDate()).diff(moment(today), 'months'))<=2    
                             )
                         })
                         .filter((post:any)=>{
@@ -348,6 +351,15 @@ export default function Inbox(){
                                 ("Vehicle ID expiry in "+
                                     Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"
                                     +" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY"))
+                                    :""
+                            }
+
+                            medical_desc={
+                                record.medical_due_on&&
+                                Math.round(moment(record.medical_due_on.toDate()).diff(moment(today), 'months'))<=2?
+                                ("Medical ID expiry in "+
+                                    Math.round(moment(record.medical_due_on.toDate()).diff(moment(today), 'months'))+" month(s)"
+                                    +" on "+moment(record.medical_due_on.toDate()).format("DD/MM/YYYY"))
                                     :""
                             }
                             

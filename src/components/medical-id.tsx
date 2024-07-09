@@ -1,15 +1,13 @@
 import {motion} from 'framer-motion'
+import { HeartPulse } from 'lucide-react'
 
 interface Props{
-    make?:string
-    issuedate?:String 
-    expirydate?:string
     name?:string
-    reg_no?:string
-    year?:string
+    completedOn?:string
+    dueOn?:string
 }
 
-export default function VehicleID(props:Props){
+export default function MedicalID(props:Props){
     return(
         <motion.div initial={{opacity:0}} whileInView={{opacity:1}} transition={{delay:0.15}}>
         <div className="civil-id" style={{width:"32ch", height:"19ch", background:"rgba(100 100 100/ 15%)", borderRadius:"0.75rem",  cursor:"pointer", zIndex:0, display:"flex", flexFlow:"column", justifyContent:"space-between"}}>
@@ -17,35 +15,37 @@ export default function VehicleID(props:Props){
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", paddingLeft:"1.5rem", borderBottom:"1px solid rgba(100 100 100/50%)"}}>
                 <div>
                 <p style={{textTransform:"uppercase", textAlign:"left"}}>{props.name}</p>
-                <p style={{fontSize:"0.75rem", color:"crimson", fontWeight:600}}>MOTOR VEHICLE LICENSE</p>
+                <p style={{fontSize:"0.75rem", color:"tomato", fontWeight:"600"}}>Medical Card</p>
+                </div>
+                <div style={{border:"", padding:"1rem"}}>
+                <HeartPulse color='tomato' width={"2rem"}/>
                 </div>
                 
-                <img src="/rop_logo.png" style={{width:"3rem", height:"3rem", margin:"0.75rem"}}/>
             </div>
 
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", paddingLeft:"1.25rem", borderBottom:"", height:"100%", gap:"0.5rem", border:""}}>
 
                 
-                <div style={{display:"flex", flexFlow:"column", gap:"0.5rem"}}>
+                {/* <div style={{display:"flex", flexFlow:"column", gap:"0.5rem"}}>
 
                 <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
                         <p style={{fontSize:"0.75rem"}}>PLATE NO : </p>
-                        <p style={{fontWeight:600, fontSize:"0.8rem", textTransform:"uppercase"}}>{props.reg_no}</p>
+                        <p style={{fontWeight:600, fontSize:"0.8rem", textTransform:"uppercase"}}>{}</p>
                     </div>
 
                     <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
                         <p style={{fontSize:"0.75rem"}}>MAKE : </p>
-                        <p style={{fontWeight:600, fontSize:"0.8rem", textTransform:"uppercase"}}>{props.make}</p>
+                        <p style={{fontWeight:600, fontSize:"0.8rem", textTransform:"uppercase"}}>{}</p>
                     </div>
 
-                </div>
+                </div> */}
 
                 
 
-                <div style={{display:"flex", alignItems:"center", gap:"0.5rem", marginRight:"1.25rem"}}>
+                {/* <div style={{display:"flex", alignItems:"center", gap:"0.5rem", marginRight:"1.25rem"}}>
                 <p style={{fontSize:"0.75rem"}}>YEAR : </p>
-                <p style={{fontWeight:600, fontSize:"0.8rem", textTransform:"uppercase"}}>{props.year?props.year:"XXXX"}</p>
-                </div>
+                <p style={{fontWeight:600, fontSize:"0.8rem", textTransform:"uppercase"}}>{}</p>
+                </div> */}
                 
             </div>
 
@@ -58,13 +58,13 @@ export default function VehicleID(props:Props){
 
                 <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", width:'100%', margin:"1rem"}}>
                 <div id="civil-no" style={{display:"flex", alignItems:'center', gap:"0.5rem"}}>
-                    <p style={{fontSize:"0.7rem", }}>ISSUED ON : </p>
-                    <p style={{fontWeight:600, fontSize:"0.8rem"}}>{props.issuedate}</p>
+                    <p style={{fontSize:"0.7rem", }}>COMPLETED : </p>
+                    <p style={{fontWeight:600, fontSize:"0.8rem"}}>{props.completedOn}</p>
                 </div>
 
                 <div id="civil-no" style={{display:"flex", alignItems:'center', gap:"0.5rem"}}>
-                    <p style={{fontSize:"0.7rem"}}>EXPIRY : </p>
-                    <p style={{fontWeight:600,fontSize:"0.8rem"}}>{props.expirydate}</p>
+                    <p style={{fontSize:"0.7rem"}}>DUE : </p>
+                    <p style={{fontWeight:600,fontSize:"0.8rem"}}>{props.dueOn}</p>
                 </div>
                 </div>
 

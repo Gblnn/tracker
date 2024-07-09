@@ -23,6 +23,7 @@ import useKeyboardShortcut from 'use-keyboard-shortcut'
 
 import en from 'javascript-time-ago/locale/en'
 import { useNavigate } from "react-router-dom"
+import MedicalID from "@/components/medical-id"
 
 TimeAgo.addDefaultLocale(en)
 
@@ -54,6 +55,7 @@ export default function Records(props:Props){
     const [created_on, setCreatedOn] = useState("")
     const [loading, setLoading] = useState(false)
     const [addButtonModeSwap, setAddButtonModeSwap] = useState(false)
+    const [deleteMedicalIDdialog, setDeleteMedicalIDdialog] = useState(false)
 
     // CIVIL ID VARIABLES
     const [civil_number, setCivilNumber] = useState<any>()
@@ -73,11 +75,16 @@ export default function Records(props:Props){
     const [edited_vehicle_expiry, setEditedVehicleExpiry] = useState("")
     const [edited_vehicle_year, setEditedVehicleYear] = useState("")
 
+    const [editedCompletedOn, setEditedCompletedOn] = useState("")
+    const [editedDueOn, setEditedDueOn] = useState<any>()
+
     //MAIL CONFIG VARIABLES
     const [addDialog, setAddDialog] = useState(false)
     const [userDeletePrompt, setUserDeletePrompt] = useState(false)
     const [userEditPrompt, setUserEditPrompt] = useState(false)
     const [editcivilprompt, setEditcivilprompt] = useState(false)
+    const [valeTrainingDialog, setValeTrainingDialog] = useState(false)
+    const [renewMedicalIDdialog, setRenewMedicalIDdialog] = useState(false)
 
     //MAIL CONFIG VALUES
     const [mailconfigdialog, setMailConfigDialog] = useState(false)
@@ -90,8 +97,13 @@ export default function Records(props:Props){
     const [vehicle_expiry, setVehicleExpiry] = useState<any>()
     const [vehicle_year, setVehicleYear] = useState("")
 
+    const [medical_completed_on, setCompletedOn] = useState("")
+    const [medical_due_on, setDueOn] = useState<any>()
+    const [MedicalIDdialog, setMedicalIDdialog] = useState(false)
+
     const [vehicleIdDelete, setVehicleIdDelete] = useState(false)
     const [edit_vehicle_id_prompt, setEditVehicleIDprompt] = useState(false)
+    const [editMedicalIDdialog, setEditMedicalIDdialog] = useState(false)
 
     const [add_vehicle_id, setAddVehicleID] = useState(false)
 
@@ -276,7 +288,7 @@ const RenewID = async () => {
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
         setLoading(true)
-        await addDoc(collection(db, "records"), {name:name, created_on:Timestamp.fromDate(today), civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:""})
+        await addDoc(collection(db, "records"), {name:name, created_on:Timestamp.fromDate(today), civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:""})
         setAddDialog(false)
         setLoading(false)
         fetchData()
@@ -417,6 +429,17 @@ const RenewID = async () => {
         fetchData()
     } 
 
+    // FUNCTION TO DELETE A MEDICAL ID
+    const deleteMedicalID = async () => {
+        setLoading(true)
+        await updateDoc(doc(db, "records", id),{medical_completed_on:"", medical_due_on:""})
+        setDeleteMedicalIDdialog(false)
+        setLoading(false)
+        setCompletedOn("")
+        setDueOn("")
+        fetchData()
+    } 
+
     //FUNCTION TO EDIT VEHICLE ID
     const EditVehicleID = async () => {
         setLoading(true)
@@ -454,6 +477,40 @@ const RenewID = async () => {
         } catch (error) {
             message.error(String(error))
             setLoading(false)
+        }
+    }
+    const addMedicalID = async () => {
+        setMedicalIDdialog(false)
+        setLoading(true)
+        try {
+            await updateDoc(doc(db, "records", id),{medical_completed_on:medical_completed_on, 
+            medical_due_on:TimeStamper(medical_due_on)})
+
+            setLoading(false)
+            fetchData()
+            
+            
+        }
+         catch (error) {
+            console.log(error)
+            setCompletedOn("")
+            setDueOn("")
+            setLoading(false)
+            message.info("ID generation failed "+String(error))
+        }
+    }
+
+    const EditMedicalID = async () => {
+        setLoading(true)
+        try {
+            await updateDoc(doc(db, 'records', id),{medical_completed_on:editedCompletedOn?editedCompletedOn:medical_completed_on, medical_due_on:editedDueOn?TimeStamper(editedDueOn):TimeStamper(medical_due_on)})
+            setDueOn(editedDueOn?editedDueOn:medical_due_on)
+            setCompletedOn(editedCompletedOn?editedCompletedOn:medical_completed_on)
+            setLoading(false)
+            setEditMedicalIDdialog(false)
+            
+        } catch (error) {
+            message.error(String(error))
         }
     }
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
@@ -737,26 +794,14 @@ const RenewID = async () => {
                                 
                                 tag={
 
-                                    post.civil_expiry != "" || post.vehicle_expiry != ""?
-
-                                    Math.round(moment(new Date(post.civil_expiry)).diff(moment(), 'months'))<=2
-                                    ||
-                                    Math.round(moment(new Date(post.vehicle_expiry)).diff(moment(), 'months'))<=2
-                                    ?
-                                    "Expiring"
-                                    :"Available"
+                                    post.civil_expiry != "" || post.vehicle_expiry != "" || post.medical_due_on != ""?
 
                                     
-
+                                    "Available"
                                     :"No Data"
+
                                     
-                                    
-                                    
-                                    // Math.round(moment(new Date(post.civil_expiry)).diff(moment(today), 'months'))+1<=3
-                                    // ||
-                                    // Math.round(moment(new Date(post.vehicle_expiry)).diff(moment(today), 'months'))+1<=3?
-                                    // "Expiring"
-                                    // :""
+
 
 
                                     // ||
@@ -795,7 +840,8 @@ const RenewID = async () => {
                                     setCivilNumber(post.civil_number);
                                     setCivilExpiry(post.civil_expiry?moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"):null);
                                     setCivilDOB(post.civil_DOB)
-
+                                    setCompletedOn(post.medical_completed_on)
+                                    setDueOn(post.medical_due_on?moment((post.medical_due_on).toDate()).format("DD/MM/YYYY"):null)
                                     setVehicleMake(post.vehicle_make)
                                     setVehicleExpiry(post.vehicle_expiry?moment((post.vehicle_expiry).toDate()).format("DD/MM/YYYY"):"")
                                     setVehicleIssue(post.vehicle_issue)
@@ -912,7 +958,10 @@ const RenewID = async () => {
                         false
                         :true
                     }/>
-                    <Directive onClick={()=>setHealthDialog(true)} icon={<HeartPulse color="tomato"/>} title="Medical"/>
+                    <Directive tag={medical_due_on} onClick={()=>setHealthDialog(true)} icon={<HeartPulse color="tomato"/>} title="Medical" status={
+                        moment(medical_due_on, "DD/MM/YYYY").diff(moment(today),'months')+1<=3?
+                        false:true
+                    }/>
                     <Directive onClick={()=>{setTrainingDialog(true)}} icon={<GraduationCap color="lightgreen"/>} title="Training"/>
                     <Directive icon={<Book color="goldenrod"/>} title="Passport"/>
                     
@@ -1062,7 +1111,7 @@ const RenewID = async () => {
                         </div>
                         :
                         <div>
-                        <VehicleID name={name} expirydate={vehicle_expiry} make={vehicle_make?vehicle_make:vehicle_make} issuedate={vehicle_issue} reg_no="XXXX"/>
+                        <VehicleID name={name} expirydate={vehicle_expiry} make={vehicle_make?vehicle_make:vehicle_make} issuedate={vehicle_issue} reg_no="XXXX" year={vehicle_year}/>
                         {/* <br/>
                         <button style={{width:"100%"}}>Edit</button> */}
                         </div>  
@@ -1087,21 +1136,105 @@ const RenewID = async () => {
             {/* BULK DELETE DIALOG */}
             <DefaultDialog progressItem={progressItem} progress={progress} destructive updating={loading} title="Delete record(s)?" open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete}/>
 
+            {/* RENEW CIVIL ID */}
             <AddDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true} input1Value={civil_expiry} input1Label="New Expiry : " OkButtonIcon={<Sparkles width={"1rem"}/>}/>
 
+            {/* RENEW VEHICLE ID DIALOG */}
             <AddDialog title="Renew Vehicle ID" open={renewVehicleDialog} onCancel={()=>setRenewVehicleDialog(false)} inputplaceholder="New Issue Date" input1Label="New Issue" input2placeholder="New Expiry" input2Label="New Expiry" input1Value={vehicle_issue} input2Value={vehicle_expiry} OkButtonText="Renew" OkButtonIcon={<Sparkles width={"1rem"}/>} disabled={loading} onOk={renewVehicleID} inputOnChange={(e:any)=>setEditedVehicleIssue(e.target.value)} input2OnChange={(e:any)=>setEditedVehicleExpiry(e.target.value)} updating={loading}/>
 
+            {/* TRAINING DIALOG */}
             <DefaultDialog close back open={trainingDialog} onCancel={()=>setTrainingDialog(false)} title={"Training"} titleIcon={<GraduationCap color="lightgreen"/>} 
             extra={
                 <div style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.5rem"}}>
-                    <Directive icon={<img src="/vale-logo.png" style={{width:"1.25rem"}}/>} title="Vale Training"/>
+                    <Directive icon={<img src="/vale-logo.png" style={{width:"1.25rem", paddingBottom:"0.25rem"}}/>} title="Vale Training" onClick={()=>{setValeTrainingDialog(true)}}/>
                     <Directive icon={<Globe width={"1rem"} color="grey"/>} title="Other"/>
                 </div>
             }/>
 
-            <DefaultDialog close back titleIcon={<HeartPulse color="tomato"/>} title={"Medical"} open={healthDialog} onCancel={()=>setHealthDialog(false)}/>
+            {/* <DefaultDialog close back titleIcon={<HeartPulse color="tomato"/>} title={"Medical"} open={healthDialog} onCancel={()=>setHealthDialog(false)} extra={
+                <div>
+
+                </div>
+            }/> */}
+
+
+            {/* MEDICAL ID DIALOG */}
+            <DefaultDialog close titleIcon={<HeartPulse color="tomato"/>} title="Medical ID" open={healthDialog} onCancel={()=>setHealthDialog(false)} back
+
+            title_extra=
+            {medical_completed_on?
+
+                <div style={{display:"flex", gap:"0.5rem", height:"2.25rem"}}>
+
+                {
+                    moment(medical_due_on, "DD/MM/YYYY").diff(moment(today), 'months')<=2?
+                    <button onClick={()=>{setRenewMedicalIDdialog(true)}} className="" style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem", background:"goldenrod", color:"black"}}>
+                        <Sparkles width={"0.85rem"} color="black" />
+                        Renew
+                    </button>
+                    :null
+                }
+
+                {/* <DropDown onDelete={()=>{setVehicleIdDelete(true)}} 
+                onEdit={()=>{setEditVehicleIDprompt(true)}} 
+                trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} */}
+
+                <DropDown onDelete={()=>{setDeleteMedicalIDdialog(true)}} onEdit={()=>{setEditMedicalIDdialog(true)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} />
+
+                </div>
+                :null
+            }    
+                
+                
+            extra={
+                <div style={{width:"100%", display:"flex", justifyContent:'center', paddingBottom:"1rem"}}>
+                    {
+                        !medical_completed_on || loading?
+                        <div style={{height:"19ch", width:"32ch", display:"flex"}}>
+                            
+                            <button onClick={()=>setMedicalIDdialog(true)} style={{width:"100%",border:"2px solid rgba(100 100 100/ 50%)"}}>
+                            {
+                                !loading?
+                                <>
+                                <Plus width={"1rem"}/>
+                                    Add ID
+                                </>
+                                
+                                :
+                                <>
+                                <LoadingOutlined/>
+                                    Generating ID
+                                </>
+                            }
+                            
+                            </button>
+                        </div>
+                        :
+                        <div>
+                        <MedicalID name={name} completedOn={medical_completed_on} dueOn={medical_due_on}/>
+                        {/* <br/>
+                        <button style={{width:"100%"}}>Edit</button> */}
+                        </div>  
+                    }
+                    <br/>         
+                </div>
+            }/>
+
+            {/* ADD MEDICAL ID DIALOG */}
+            <AddDialog open={MedicalIDdialog} OkButtonText="Add" onCancel={()=>setMedicalIDdialog(false)} title="Add Medical ID" titleIcon={<HeartPulse color="tomato"/>} inputplaceholder="Completed On" input2placeholder="Due On" inputOnChange={(e:any)=>setCompletedOn(e.target.value)} input2OnChange={(e:any)=>setDueOn(e.target.value)} onOk={addMedicalID} updating={loading}/>
 
              
+            {/* EDIT MEDICAl ID DIALOG */}
+            <AddDialog open={editMedicalIDdialog} title="Edit Medical ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditMedicalIDdialog(false)}} inputplaceholder="Completed On" input2placeholder="Due on" inputOnChange={(e:any)=>setEditedCompletedOn(e.target.value)} input2OnChange={(e:any)=>{setEditedDueOn(e.target.value)}} onOk={EditMedicalID} updating={loading} disabled={loading} input1Value={medical_completed_on} input2Value={medical_due_on} input3Value={vehicle_issue} input1Label="Completed : " input2Label="Due On : "/>
+
+            {/* DELETE MEDICAL ID */}
+            <DefaultDialog title={"Delete Medical ID?"} destructive OkButtonText="Delete" open={deleteMedicalIDdialog} onCancel={()=>setDeleteMedicalIDdialog(false)} updating={loading} disabled={loading} onOk={deleteMedicalID}/>
+
+            {/* RENEW MEDICAL ID DIALOG */}
+            <AddDialog titleIcon={<Sparkles color="goldenrod"/>} title="Renew Medical ID" open={renewMedicalIDdialog} onCancel={()=>setRenewMedicalIDdialog(false)} inputplaceholder="Completed On" input1Label="Completed : " input2placeholder="New Due" input2Label="New Due : " OkButtonIcon={<Sparkles width={"1rem"}/>} OkButtonText="Renew" input1Value={medical_completed_on} input2Value={medical_due_on}/>
+            
+            {/* VALE TRAINING DIALOG */}
+            <DefaultDialog open={valeTrainingDialog} titleIcon={<img src="/vale-logo.png" style={{width:"1.75rem", paddingBottom:"0.5rem"}}/>} title={"Vale Training"} onCancel={()=>setValeTrainingDialog(false)} close back/>
 
             </div>
             

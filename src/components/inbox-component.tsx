@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { AtSign, Car, CreditCard, Sparkles } from "lucide-react"
+import { AtSign, Car, CreditCard, HeartPulse, Sparkles } from "lucide-react"
 import { Link } from "react-router-dom"
 
 interface Props{
@@ -12,6 +12,7 @@ interface Props{
     priority?:string
     civil_desc?:string
     vehicle_desc?:string
+    medical_desc?:string
     hidden?:boolean
     noArrow?:boolean
     onReminderClick?:any
@@ -76,6 +77,19 @@ export default function InboxComponent(props:Props){
                                     {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
                                     <Car width={"0.8rem"} color="violet" style={{border:''}}/>   
                                     <p style={{textAlign:"left", opacity:0.75}}>{props.vehicle_desc}</p>
+                                </div>
+                            
+                            :null
+
+                        }
+
+{
+                            props.medical_desc?
+                
+                                <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
+                                    {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
+                                    <HeartPulse width={"0.8rem"} color="tomato" style={{border:''}}/>   
+                                    <p style={{textAlign:"left", opacity:0.75}}>{props.medical_desc}</p>
                                 </div>
                             
                             :null
