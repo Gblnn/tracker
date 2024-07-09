@@ -15,7 +15,7 @@ import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
 import TimeAgo from 'javascript-time-ago'
-import { Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, GraduationCap, HeartPulse, Inbox, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, Globe, GraduationCap, HeartPulse, Inbox, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import ReactTimeAgo from 'react-time-ago'
@@ -71,7 +71,7 @@ export default function Records(props:Props){
     const [edited_vehicle_make, setEditedVehicleMake] = useState("")
     const [edited_vehicle_issue, setEditedVehicleIssue] = useState("")
     const [edited_vehicle_expiry, setEditedVehicleExpiry] = useState("")
-    
+    const [edited_vehicle_year, setEditedVehicleYear] = useState("")
 
     //MAIL CONFIG VARIABLES
     const [addDialog, setAddDialog] = useState(false)
@@ -88,6 +88,7 @@ export default function Records(props:Props){
     const [vehicle_make, setVehicleMake] = useState("")
     const [vehicle_issue, setVehicleIssue] = useState("")
     const [vehicle_expiry, setVehicleExpiry] = useState<any>()
+    const [vehicle_year, setVehicleYear] = useState("")
 
     const [vehicleIdDelete, setVehicleIdDelete] = useState(false)
     const [edit_vehicle_id_prompt, setEditVehicleIDprompt] = useState(false)
@@ -124,7 +125,8 @@ export default function Records(props:Props){
     const usenavigate = useNavigate()
 
     const [progressItem, setProgressItem] = useState("")
-
+    const [trainingDialog, setTrainingDialog] = useState(false)
+    const [healthDialog, setHealthDialog] = useState(false)
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
     
@@ -382,7 +384,7 @@ const RenewID = async () => {
         setLoading(true)
         try {
             await updateDoc(doc(db, "records", id),{vehicle_make:vehicle_make, 
-            vehicle_expiry:TimeStamper(vehicle_expiry), vehicle_issue:vehicle_issue})
+            vehicle_expiry:TimeStamper(vehicle_expiry), vehicle_issue:vehicle_issue, vehicle_year:vehicle_year})
 
             setLoading(false)
             fetchData()
@@ -396,6 +398,7 @@ const RenewID = async () => {
             setCivilDOB("")
             setNewCivilExpiry("")
             setNewCivilNumber("")
+            setVehicleYear("")
             setLoading(false)
             message.info("ID generation failed "+String(error))
         }
@@ -419,11 +422,12 @@ const RenewID = async () => {
         setLoading(true)
         try {
             
-            await updateDoc(doc(db, "records", id),{vehicle_make:edited_vehicle_make?edited_vehicle_make:vehicle_make, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), vehicle_issue:edited_vehicle_issue?edited_civil_DOB:vehicle_issue})
+            await updateDoc(doc(db, "records", id),{vehicle_make:edited_vehicle_make?edited_vehicle_make:vehicle_make, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), vehicle_issue:edited_vehicle_issue?edited_vehicle_issue:vehicle_issue, vehicle_year:edited_vehicle_year?edited_vehicle_year:vehicle_year})
 
             setVehicleMake(edited_vehicle_make?edited_vehicle_make:vehicle_make)
             setVehicleExpiry(edited_vehicle_expiry?edited_vehicle_expiry:vehicle_expiry)
             setVehicleIssue(edited_vehicle_issue?edited_vehicle_issue:vehicle_issue)
+            setVehicleYear(edited_vehicle_year?edited_vehicle_year:vehicle_year)
 
             setEditVehicleIDprompt(false)
             setLoading(false)
@@ -433,6 +437,23 @@ const RenewID = async () => {
             console.log(error)  
             setLoading(false)   
             message.info(String(error))
+        }
+    }
+
+    const renewVehicleID = async () => {
+        setLoading(true)
+        try {
+
+            await updateDoc(doc(db, "records", id),{vehicle_issue:edited_vehicle_issue, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry)})
+            setVehicleIssue(edited_vehicle_issue?edited_vehicle_issue:vehicle_issue)
+            setVehicleExpiry(edited_vehicle_expiry?edited_vehicle_expiry:vehicle_expiry)
+            setLoading(false)
+            setRenewVehicleDialog(false)
+            fetchData()
+            
+        } catch (error) {
+            message.error(String(error))
+            setLoading(false)
         }
     }
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
@@ -891,8 +912,8 @@ const RenewID = async () => {
                         false
                         :true
                     }/>
-                    <Directive icon={<HeartPulse color="tomato"/>} title="Medical"/>
-                    <Directive icon={<GraduationCap color="lightgreen"/>} title="Training"/>
+                    <Directive onClick={()=>setHealthDialog(true)} icon={<HeartPulse color="tomato"/>} title="Medical"/>
+                    <Directive onClick={()=>{setTrainingDialog(true)}} icon={<GraduationCap color="lightgreen"/>} title="Training"/>
                     <Directive icon={<Book color="goldenrod"/>} title="Passport"/>
                     
                 </div>
@@ -1051,10 +1072,14 @@ const RenewID = async () => {
             }/>
 
             {/* ADD VEHICLE ID DIALOG */}
-            <AddDialog open={add_vehicle_id} title="Add Vehicle ID" titleIcon={<Car/>} inputplaceholder="Vehicle Make" input2placeholder="Expiry Date" input3placeholder="Issue Date" OkButtonText="Add" onCancel={()=>setAddVehicleID(false)} onOk={addVehicleID} inputOnChange={(e:any)=>setVehicleMake(e.target.value)} input2OnChange={(e:any)=>setVehicleExpiry(e.target.value)} input3OnChange={(e:any)=>setVehicleIssue(e.target.value)} updating={loading} disabled={loading}/>
+            <AddDialog open={add_vehicle_id} title="Add Vehicle ID" titleIcon={<Car/>} inputplaceholder="Vehicle Make" input2placeholder="Expiry Date" input3placeholder="Issue Date" OkButtonText="Add" 
+            onCancel={()=>{
+                setAddVehicleID(false)
+            }} onOk={addVehicleID} inputOnChange={(e:any)=>setVehicleMake(e.target.value)} input2OnChange={(e:any)=>setVehicleExpiry(e.target.value)} input3OnChange={(e:any)=>setVehicleIssue(e.target.value)} updating={loading} disabled={loading}
+            input4OnChange={(e:any)=>setVehicleYear(e.target.value)} input4placeholder="Manufacture Year"/>
 
             {/* EDIT VEHICLE ID DIALOG */}
-            <AddDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditVehicleIDprompt(false)}} inputplaceholder="Enter Vehicle Make" input2placeholder="Enter Expiry Date" input3placeholder="Enter Issue Date" inputOnChange={(e:any)=>setEditedVehicleMake(e.target.value)} input2OnChange={(e:any)=>{setEditedVehicleExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedVehicleIssue(e.target.value)} onOk={EditVehicleID} updating={loading} disabled={loading} input1Value={vehicle_make} input2Value={vehicle_expiry} input3Value={vehicle_issue} input1Label="Vehicle Make : " input2Label="Expiry Date" input3Label="Issue Date"/>
+            <AddDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditVehicleIDprompt(false)}} inputplaceholder="Enter Vehicle Make" input2placeholder="Enter Expiry Date" input3placeholder="Enter Issue Date" inputOnChange={(e:any)=>setEditedVehicleMake(e.target.value)} input2OnChange={(e:any)=>{setEditedVehicleExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedVehicleIssue(e.target.value)} onOk={EditVehicleID} updating={loading} disabled={loading} input1Value={vehicle_make} input2Value={vehicle_expiry} input3Value={vehicle_issue} input1Label="Vehicle Make : " input2Label="Expiry Date" input3Label="Issue Date" input4placeholder="Enter Year : " input4Label="Enter Year : " input4OnChange={(e:any)=>setEditedVehicleYear(e.target.value)} input4Value={vehicle_year}/>
 
             {/* DELETE VEHICLE ID DIALOG */}
             <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading} destructive/>
@@ -1062,9 +1087,19 @@ const RenewID = async () => {
             {/* BULK DELETE DIALOG */}
             <DefaultDialog progressItem={progressItem} progress={progress} destructive updating={loading} title="Delete record(s)?" open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete}/>
 
-            <AddDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true} input1Value={civil_expiry} input1Label="New Expiry : "/>
+            <AddDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true} input1Value={civil_expiry} input1Label="New Expiry : " OkButtonIcon={<Sparkles width={"1rem"}/>}/>
 
-            <AddDialog title="Renew Vehicle ID" open={renewVehicleDialog} onCancel={()=>setRenewVehicleDialog(false)} inputplaceholder="New Issue Date" input1Label="New Issue" input2placeholder="New Expiry" input2Label="New Expiry" input1Value={vehicle_issue} input2Value={vehicle_expiry} OkButtonText="Renew" OkButtonIcon={<Sparkles width={"1rem"}/>} disabled={loading}/>
+            <AddDialog title="Renew Vehicle ID" open={renewVehicleDialog} onCancel={()=>setRenewVehicleDialog(false)} inputplaceholder="New Issue Date" input1Label="New Issue" input2placeholder="New Expiry" input2Label="New Expiry" input1Value={vehicle_issue} input2Value={vehicle_expiry} OkButtonText="Renew" OkButtonIcon={<Sparkles width={"1rem"}/>} disabled={loading} onOk={renewVehicleID} inputOnChange={(e:any)=>setEditedVehicleIssue(e.target.value)} input2OnChange={(e:any)=>setEditedVehicleExpiry(e.target.value)} updating={loading}/>
+
+            <DefaultDialog close back open={trainingDialog} onCancel={()=>setTrainingDialog(false)} title={"Training"} titleIcon={<GraduationCap color="lightgreen"/>} 
+            extra={
+                <div style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.5rem"}}>
+                    <Directive icon={<img src="/vale-logo.png" style={{width:"1.25rem"}}/>} title="Vale Training"/>
+                    <Directive icon={<Globe width={"1rem"} color="grey"/>} title="Other"/>
+                </div>
+            }/>
+
+            <DefaultDialog close back titleIcon={<HeartPulse color="tomato"/>} title={"Medical"} open={healthDialog} onCancel={()=>setHealthDialog(false)}/>
 
              
 

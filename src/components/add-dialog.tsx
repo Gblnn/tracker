@@ -17,16 +17,20 @@ interface Props {
     input2OnChange?:any
     input2placeholder?:string
     input3OnChange?:any
+    input4OnChange?:any
     input3placeholder?:string
+    input4placeholder?:string
     disabled?:boolean
     OkButtonIcon?:any
     updating?:boolean
     input1Value?:string
     input2Value?:string
     input3Value?:string
+    input4Value?:string
     input1Label?:string
     input2Label?:string
     input3Label?:string
+    input4Label?:string
 }
 
 export default function AddDialog(props:Props){
@@ -78,7 +82,7 @@ export default function AddDialog(props:Props){
                         :null
                     }
 
-{
+                    {
                         props.input3placeholder?
                         <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
                             {
@@ -90,6 +94,23 @@ export default function AddDialog(props:Props){
                             }
                             
                             <input defaultValue={props.input3Value} placeholder={props.input3placeholder} onChange={props.input3OnChange}/>
+                        </div>
+                        
+                        :null
+                    }
+
+{
+                        props.input4placeholder?
+                        <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
+                            {
+                                props.input4Label?
+                                <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                    {props.input4Label}
+                                </p>
+                                :null
+                            }
+                            
+                            <input defaultValue={props.input4Value} placeholder={props.input4placeholder} onChange={props.input4OnChange}/>
                         </div>
                         
                         :null
