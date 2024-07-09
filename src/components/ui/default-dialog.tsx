@@ -25,6 +25,7 @@ interface Props {
     progress?:string
     footerExtra?:any
     progressItem?:string
+    bigDate?:any
 }
 
 export default function DefaultDialog(props:Props){
@@ -41,7 +42,7 @@ export default function DefaultDialog(props:Props){
                             <div style={{display:"flex", alignItems:"center", gap:"0.75rem", border:"", width:"100%"}}>
                                 {props.titleIcon}
                                 {props.title}
-                                <p style={{fontWeight:400, fontSize:"1rem", opacity:0.5, letterSpacing:"0.075rem", display:"flex", gap:"0.5rem"}}>
+                                <p onClick={props.bigDate} style={{fontWeight:400, fontSize:"1rem", opacity:0.5, letterSpacing:"0.075rem", display:"flex", gap:"0.5rem"}}>
                                     
                                     {props.created_on}
                                     

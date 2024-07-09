@@ -14,18 +14,16 @@ import emailjs from '@emailjs/browser'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import TimeAgo from 'javascript-time-ago'
 import { Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, EllipsisVerticalIcon, FilePlus, Globe, GraduationCap, HeartPulse, Inbox, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import ReactTimeAgo from 'react-time-ago'
 import useKeyboardShortcut from 'use-keyboard-shortcut'
-
-import en from 'javascript-time-ago/locale/en'
 import { useNavigate } from "react-router-dom"
 import MedicalID from "@/components/medical-id"
+import Passport from "@/components/passport"
 
-TimeAgo.addDefaultLocale(en)
+
 
 type Record = {
     id:string,
@@ -52,7 +50,7 @@ export default function Records(props:Props){
     const [civil, setCivil] = useState(false)
     const [vehicle, setVehicle] = useState(false)
     const [addcivil, setAddcivil] = useState(false)
-    const [created_on, setCreatedOn] = useState("")
+    const [created_on, setCreatedOn] = useState<any>()
     const [loading, setLoading] = useState(false)
     const [addButtonModeSwap, setAddButtonModeSwap] = useState(false)
     const [deleteMedicalIDdialog, setDeleteMedicalIDdialog] = useState(false)
@@ -74,6 +72,12 @@ export default function Records(props:Props){
     const [edited_vehicle_issue, setEditedVehicleIssue] = useState("")
     const [edited_vehicle_expiry, setEditedVehicleExpiry] = useState("")
     const [edited_vehicle_year, setEditedVehicleYear] = useState("")
+
+    const [editedPassportID, setEditedPassportID] = useState("")
+    const [editedPassportIssue, setEditedPassportIssue] = useState("")
+    const [editedPassportExpiry, setEditedPassportExpiry] = useState<any>()
+
+    const [passportDialog, setPassportDialog] = useState(false)
 
     const [editedCompletedOn, setEditedCompletedOn] = useState("")
     const [editedDueOn, setEditedDueOn] = useState<any>()
@@ -101,9 +105,16 @@ export default function Records(props:Props){
     const [medical_due_on, setDueOn] = useState<any>()
     const [MedicalIDdialog, setMedicalIDdialog] = useState(false)
 
+    const [passportID, setPassportID] = useState("")
+    const [passportIssue, setPassportIssue] = useState("")
+    const [passportExpiry, setPassportExpiry] = useState<any>()
+
+    const [addPassportDialog, setAddPassportDialog] = useState(false)
+
     const [vehicleIdDelete, setVehicleIdDelete] = useState(false)
     const [edit_vehicle_id_prompt, setEditVehicleIDprompt] = useState(false)
     const [editMedicalIDdialog, setEditMedicalIDdialog] = useState(false)
+    const [editPassportDialog, setEditPassportDialog] = useState(false)
 
     const [add_vehicle_id, setAddVehicleID] = useState(false)
 
@@ -157,15 +168,15 @@ export default function Records(props:Props){
         onSnapshot(query(collection(db, 'records')), (snapshot:any) => {
             snapshot.docChanges().forEach((change:any) => {
               if (change.type === "added") {
-                console.log("Added Data")
+                // console.log("Added Data")
                 fetchData()   
               }
               if (change.type === "modified") {
-                  console.log("Modified Data")
+                //   console.log("Modified Data")
                   fetchData()
               }
               if (change.type === "removed") {
-                  console.log("Removed Data")
+                //   console.log("Removed Data")
                   fetchData()
               }
             });
@@ -288,7 +299,7 @@ const RenewID = async () => {
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
         setLoading(true)
-        await addDoc(collection(db, "records"), {name:name, created_on:Timestamp.fromDate(today), civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:""})
+        await addDoc(collection(db, "records"), {name:name, created_on:Timestamp.fromDate(new Date()), civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:""})
         setAddDialog(false)
         setLoading(false)
         fetchData()
@@ -511,6 +522,57 @@ const RenewID = async () => {
             
         } catch (error) {
             message.error(String(error))
+        }
+    }
+
+    const EditPassport = async () => {
+        setLoading(true)
+        try {
+            await updateDoc(doc(db, 'records', id),{passportID:editedPassportID?editedPassportID:passportID, passportIssue:editedPassportIssue?editedPassportIssue:passportIssue, passportExpiry:editedPassportExpiry?TimeStamper(editedPassportExpiry):TimeStamper(passportExpiry)})
+            setPassportID(editedPassportID?editedPassportID:passportID)
+            setPassportIssue(editedPassportIssue?editedPassportIssue:passportIssue)
+            setPassportExpiry(editedPassportExpiry?editedPassportExpiry:passportExpiry)
+            setLoading(false)
+            setEditPassportDialog(false)
+            
+        } catch (error) {
+            message.error(String(error))
+            setLoading(false)
+            
+        }
+    }
+
+    const renewMedicalID = async () => {
+        setLoading(true)
+        try {
+
+            await updateDoc(doc(db, "records", id),{medical_completed_on:editedCompletedOn?editedCompletedOn:medical_completed_on, medical_due_on:editedDueOn?TimeStamper(editedDueOn):TimeStamper(medical_due_on)})
+
+            setCompletedOn(editedCompletedOn?editedCompletedOn:medical_completed_on)
+            setDueOn(editedDueOn?editedDueOn:medical_due_on)
+            
+            setLoading(false)
+            setRenewMedicalIDdialog(false)
+            fetchData()
+            
+        } catch (error) {
+            message.error(String(error))
+            setLoading(false)
+        }
+    }
+
+    const addPassport = async () => {
+        setAddPassportDialog(false)
+        setLoading(true)
+        try {
+            await updateDoc(doc(db, "records", id),{passportID:passportID, 
+            passportIssue:passportIssue, passportExpiry:TimeStamper(passportExpiry)})
+            setLoading(false)
+            
+            
+        } catch (error) {
+            message.error(String(error))
+            setLoading(false)
         }
     }
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
@@ -794,7 +856,7 @@ const RenewID = async () => {
                                 
                                 tag={
 
-                                    post.civil_expiry != "" || post.vehicle_expiry != "" || post.medical_due_on != ""?
+                                    post.civil_expiry != "" || post.vehicle_expiry != "" || post.medical_due_on != "" || post.passportID != ""?
 
                                     
                                     "Available"
@@ -845,8 +907,10 @@ const RenewID = async () => {
                                     setVehicleMake(post.vehicle_make)
                                     setVehicleExpiry(post.vehicle_expiry?moment((post.vehicle_expiry).toDate()).format("DD/MM/YYYY"):"")
                                     setVehicleIssue(post.vehicle_issue)
-
-                                    setCreatedOn(post.created_on?moment((post.created_on).toDate()).format("DD/MM/YYYY"):"")
+                                    setCreatedOn(post.created_on?moment((post.created_on).toDate()):"")
+                                    setPassportID(post.passportID)
+                                    setPassportIssue(post.passportIssue)
+                                    setPassportExpiry(post.passportExpiry?moment((post.passportExpiry).toDate()).format("DD/MM/YYYY"):null)
                     
                                     
                                 }}                        
@@ -935,9 +999,10 @@ const RenewID = async () => {
 
             {/* DISPLAY RECORD DIALOG */}
             <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>setRecordSummary(false)} 
+            bigDate={()=>message.info(String(new Date(created_on)))}
             created_on={
     
-                <ReactTimeAgo date={moment(created_on, "DD/MM/YYYY").toDate()} timeStyle={"twitter"}/>
+                <ReactTimeAgo date={moment(created_on, "DD/MM/YYYY").toDate()} timeStyle={ "twitter"} locale="en-us"/>
                     
             } 
             title_extra={
@@ -963,7 +1028,11 @@ const RenewID = async () => {
                         false:true
                     }/>
                     <Directive onClick={()=>{setTrainingDialog(true)}} icon={<GraduationCap color="lightgreen"/>} title="Training"/>
-                    <Directive icon={<Book color="goldenrod"/>} title="Passport"/>
+
+                    <Directive tag={passportExpiry} onClick={()=>setPassportDialog(true)} icon={<Book color="goldenrod"/>} title="Passport" status={
+                        moment(passportExpiry, "DD/MM/YYYY").diff(moment(today),'months')+1<=6?
+                        false:true
+                    }/>
                     
                 </div>
             
@@ -1134,7 +1203,7 @@ const RenewID = async () => {
             <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading} destructive/>
 
             {/* BULK DELETE DIALOG */}
-            <DefaultDialog progressItem={progressItem} progress={progress} destructive updating={loading} title="Delete record(s)?" open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete}/>
+            <DefaultDialog progressItem={progressItem} progress={progress} destructive updating={loading} title="Delete record(s)?" open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete} disabled={loading}/>
 
             {/* RENEW CIVIL ID */}
             <AddDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true} input1Value={civil_expiry} input1Label="New Expiry : " OkButtonIcon={<Sparkles width={"1rem"}/>}/>
@@ -1231,10 +1300,78 @@ const RenewID = async () => {
             <DefaultDialog title={"Delete Medical ID?"} destructive OkButtonText="Delete" open={deleteMedicalIDdialog} onCancel={()=>setDeleteMedicalIDdialog(false)} updating={loading} disabled={loading} onOk={deleteMedicalID}/>
 
             {/* RENEW MEDICAL ID DIALOG */}
-            <AddDialog titleIcon={<Sparkles color="goldenrod"/>} title="Renew Medical ID" open={renewMedicalIDdialog} onCancel={()=>setRenewMedicalIDdialog(false)} inputplaceholder="Completed On" input1Label="Completed : " input2placeholder="New Due" input2Label="New Due : " OkButtonIcon={<Sparkles width={"1rem"}/>} OkButtonText="Renew" input1Value={medical_completed_on} input2Value={medical_due_on}/>
+            <AddDialog titleIcon={<Sparkles color="goldenrod"/>} title="Renew Medical ID" open={renewMedicalIDdialog} onCancel={()=>setRenewMedicalIDdialog(false)} inputplaceholder="Completed On" input1Label="Completed : " input2placeholder="New Due" input2Label="New Due : " OkButtonIcon={<Sparkles width={"1rem"}/>} OkButtonText="Renew" input1Value={medical_completed_on} input2Value={medical_due_on} onOk={renewMedicalID} updating={loading} inputOnChange={(e:any)=>setEditedCompletedOn(e.target.value)} input2OnChange={(e:any)=>setEditedDueOn(e.target.value)} disabled={loading}/>
             
             {/* VALE TRAINING DIALOG */}
             <DefaultDialog open={valeTrainingDialog} titleIcon={<img src="/vale-logo.png" style={{width:"1.75rem", paddingBottom:"0.5rem"}}/>} title={"Vale Training"} onCancel={()=>setValeTrainingDialog(false)} close back/>
+
+            <DefaultDialog close titleIcon={<Book color="goldenrod"/>} title="Passport" open={passportDialog} onCancel={()=>setPassportDialog(false)} back
+
+            title_extra=
+            {passportExpiry?
+
+                <div style={{display:"flex", gap:"0.5rem", height:"2.25rem"}}>
+
+                {
+                    moment(passportExpiry, "DD/MM/YYYY").diff(moment(today), 'months')<=6?
+                    <button onClick={()=>{setRenewMedicalIDdialog(true)}} className="" style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem", background:"goldenrod", color:"black"}}>
+                        <Sparkles width={"0.85rem"} color="black" />
+                        Renew
+                    </button>
+                    :null
+                }
+
+                {/* <DropDown onDelete={()=>{setVehicleIdDelete(true)}} 
+                onEdit={()=>{setEditVehicleIDprompt(true)}} 
+                trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} */}
+
+                <DropDown onDelete={()=>{setDeleteMedicalIDdialog(true)}} onEdit={()=>{setEditPassportDialog(true)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} />
+
+                </div>
+                :null
+            }    
+                
+                
+            extra={
+                <div style={{width:"100%", display:"flex", justifyContent:'center', paddingBottom:"1rem"}}>
+                    {
+                        !passportID || loading?
+                        <div style={{height:"19ch", width:"32ch", display:"flex"}}>
+                            
+                            <button onClick={()=>setAddPassportDialog(true)} style={{width:"100%",border:"2px solid rgba(100 100 100/ 50%)"}}>
+                            {
+                                !loading?
+                                <>
+                                <Plus width={"1rem"}/>
+                                    Add Passport
+                                </>
+                                
+                                :
+                                <>
+                                <LoadingOutlined/>
+                                    Generating Passport
+                                </>
+                            }
+                            
+                            </button>
+                        </div>
+                        :
+                        <div>
+                        <Passport name={name} passport_id={passportID} issue={passportIssue} expiry={passportExpiry}/>
+                        {/* <br/>
+                        <button style={{width:"100%"}}>Edit</button> */}
+                        </div>  
+                    }
+                    <br/>         
+                </div>
+            }/>
+
+            {/* ADD PASSPORT ID DIALOG */}
+            <AddDialog open={addPassportDialog} OkButtonText="Add" onCancel={()=>setAddPassportDialog(false)} title="Add Passport" titleIcon={<Book color="goldenrod"/>} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setPassportID(e.target.value)} input2OnChange={(e:any)=>setPassportIssue(e.target.value)} input3OnChange={(e:any)=>setPassportExpiry(e.target.value)} onOk={addPassport} updating={loading}/>
+
+             
+            {/* EDIT PASSPORT DIALOG */}
+            <AddDialog open={editPassportDialog} title="Edit Passport" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditPassportDialog(false)}} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setEditedPassportID(e.target.value)} input2OnChange={(e:any)=>{setEditedPassportIssue(e.target.value)}} input3OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} onOk={EditPassport} updating={loading} disabled={loading} input1Value={passportID} input2Value={passportIssue} input3Value={passportExpiry} input1Label="Passport ID : " input2Label="Issue Date : " input3Label="Expiry Date" />
 
             </div>
             

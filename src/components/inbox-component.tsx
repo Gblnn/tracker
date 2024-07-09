@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { AtSign, Car, CreditCard, HeartPulse, Sparkles } from "lucide-react"
+import { AtSign, Book, Car, CreditCard, HeartPulse, Sparkles } from "lucide-react"
 import { Link } from "react-router-dom"
 
 interface Props{
@@ -13,12 +13,14 @@ interface Props{
     civil_desc?:string
     vehicle_desc?:string
     medical_desc?:string
+    passport_desc?:string
     hidden?:boolean
     noArrow?:boolean
     onReminderClick?:any
     onRenewClick?:any
     hideButtons?:boolean
     desc?:string
+
 }
 
 
@@ -58,14 +60,11 @@ export default function InboxComponent(props:Props){
                         {
                             props.civil_desc?
                 
-                                <div style={{display:"flex", gap:"0.5rem", alignItems:"center", fontWeight:400, fontSize:"0.8rem", border:""}}>
-                                    {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
-                                    <div style={{display:"flex", alignItems:"flex-start", border:""}}>
-                                    <CreditCard width={"1rem"} color="dodgerblue" style={{border:'', display:"flex", height:"fit-content"}}/>
-                                    </div>
-                                    
-                                    <p style={{textAlign:"left", opacity:0.75}}>{props.civil_desc}</p>
-                                </div>
+                            <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
+                            {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
+                            <CreditCard width={"0.8rem"} color="dodgerblue" style={{border:''}}/>   
+                            <p style={{textAlign:"left", opacity:0.75}}>{props.civil_desc}</p>
+                            </div>
                         
                             :null
                         }
@@ -83,13 +82,26 @@ export default function InboxComponent(props:Props){
 
                         }
 
-{
+                        {
                             props.medical_desc?
                 
                                 <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
                                     {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
                                     <HeartPulse width={"0.8rem"} color="tomato" style={{border:''}}/>   
                                     <p style={{textAlign:"left", opacity:0.75}}>{props.medical_desc}</p>
+                                </div>
+                            
+                            :null
+
+                        }
+
+                        {   
+                            props.passport_desc?
+                
+                                <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
+                                    {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
+                                    <Book width={"0.8rem"} color="goldenrod" style={{border:''}}/>   
+                                    <p style={{textAlign:"left", opacity:0.75}}>{props.passport_desc}</p>
                                 </div>
                             
                             :null

@@ -123,15 +123,15 @@ export default function Inbox(){
         onSnapshot(query(collection(db, 'records')), (snapshot:any) => {
             snapshot.docChanges().forEach((change:any) => {
               if (change.type === "added") {
-                console.log("Added Data")
+                // console.log("Added Data")
                 fetchData()   
               }
               if (change.type === "modified") {
-                  console.log("Modified Data")
+                //   console.log("Modified Data")
                   fetchData()
               }
               if (change.type === "removed") {
-                  console.log("Removed Data")
+                //   console.log("Removed Data")
                   fetchData()
               }
             });
@@ -255,7 +255,7 @@ export default function Inbox(){
                         setMailContent("There are several documents expiring soon which requires your attention.")
                         }} 
                         style={{width:"6.5rem"}}>
-                        <Bell width={"1rem"} color="salmon"/>
+                        <Bell width={"1rem"} color="violet"/>
                         <p style={{fontSize:"0.8rem"}}>Notify</p>
                     </button>
                 </div>
@@ -273,7 +273,10 @@ export default function Inbox(){
                                 Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2  
                                 ||
                                 record.medical_due_on&&
-                                Math.round(moment(record.medical_due_on.toDate()).diff(moment(today), 'months'))<=2    
+                                Math.round(moment(record.medical_due_on.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.passportExpiry&&
+                                Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))<=6        
                             )
                         })
                         .filter((post:any)=>{
@@ -362,6 +365,17 @@ export default function Inbox(){
                                     +" on "+moment(record.medical_due_on.toDate()).format("DD/MM/YYYY"))
                                     :""
                             }
+
+                            passport_desc={
+                                record.passportExpiry&&
+                                Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))<=5?
+                                ("Passport expiry in "+
+                                    Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))+" month(s)"
+                                    +" on "+moment(record.passportExpiry.toDate()).format("DD/MM/YYYY"))
+                                    :""
+                            }
+
+                        
                             
                             />
                         ))
@@ -443,7 +457,7 @@ export default function Inbox(){
 
 
                 <div style={{width:"100%", display:"flex", gap:"0.5rem"}}>
-                    <input type="email" placeholder="Enter E-mail ID" onChange={(e)=>{setRecipient(e.target.value);}}/>
+                    <input id="recipient-id" type="email" placeholder="Enter E-mail ID" onChange={(e)=>{setRecipient(e.target.value);}}/>
                     <button style={{width:"3rem"}} className={recipient==""?"disabled":""} onClick={()=>recipient==""?null:addRecipient()}>
                         {
                          loading?
@@ -464,7 +478,7 @@ export default function Inbox(){
                 
             }/>
 
-            <DefaultDialog updating={loading} destructive title={"Remove Recipient?"}  open={removeRecipientDialog} onCancel={()=>setRemoveRecipientDialog(false)} OkButtonText="Remove" extra={<div style={{width:"100%", border:"3px dashed rgba(100 100 100/ 50%)", padding:"0.5rem", borderRadius:"0.75rem"}}>
+            <DefaultDialog disabled={loading} updating={loading} destructive title={"Remove Recipient?"}  open={removeRecipientDialog} onCancel={()=>setRemoveRecipientDialog(false)} OkButtonText="Remove" extra={<div style={{width:"100%", border:"3px dashed rgba(100 100 100/ 50%)", padding:"0.5rem", borderRadius:"0.75rem"}}>
                 <p>{selectedRecipient}</p>
             </div>} onOk={removeRecipient}/>
             

@@ -43,6 +43,12 @@ export default async (req: Request) => {
           ||
           e.vehicle_expiry&&
           Math.round(moment(e.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2
+          ||
+          e.medical_due_on&&
+          Math.round(moment(e.medical_due_on.toDate()).diff(moment(today), 'months'))<=2
+          ||
+          e.passportExpiry&&
+          Math.round(moment(e.medical_due_on.toDate()).diff(moment(today), 'months'))<=6
         )
             
     
@@ -68,6 +74,22 @@ export default async (req: Request) => {
         String(Math.round(moment((element.vehicle_expiry).toDate()).diff(moment(today), 'months')))+" month(s)"
         +" on "
         +String(moment((element.vehicle_expiry).toDate()).format("DD/MM/YYYY"))+"\n\n"
+        :null
+
+        element.medical_due_on!=""?
+        m += element.name+"'s Medical ID is expiring in "
+        +
+        String(Math.round(moment((element.medical_due_on).toDate()).diff(moment(today), 'months')))+" month(s)"
+        +" on "
+        +String(moment((element.medical_due_on).toDate()).format("DD/MM/YYYY"))+"\n\n"
+        :null
+
+        element.passportExpiry!=""?
+        m += element.name+"'s Passport is expiring in "
+        +
+        String(Math.round(moment((element.passportExpiry).toDate()).diff(moment(today), 'months')))+" month(s)"
+        +" on "
+        +String(moment((element.passportExpiry).toDate()).format("DD/MM/YYYY"))+"\n\n"
         :null
 
       })
@@ -97,5 +119,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"00 04 1 * * "
+    schedule:" 09 14 * * "
 }

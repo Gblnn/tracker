@@ -6,6 +6,10 @@ import { ThemeProvider } from './components/theme-provider.tsx'
 import './styles/style.css'
 import './styles/utils.css'
 import './WEB/css/clash-grotesk.css'
+import TimeAgo from 'javascript-time-ago'
+import en from 'javascript-time-ago/locale/en'
+
+TimeAgo.addDefaultLocale(en)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   
