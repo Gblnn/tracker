@@ -1026,7 +1026,7 @@ const RenewID = async () => {
 
             {/* DISPLAY RECORD DIALOG */}
             <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>setRecordSummary(false)} 
-            bigDate={()=>message.info(String(new Date(created_on)))}
+            bigDate={()=>message.info(String(moment(new Date(created_on)).format("LLLL")))}
             created_on={
     
                 <ReactTimeAgo date={moment(created_on, "DD/MM/YYYY").toDate()} timeStyle={ "twitter"} locale="en-us"/>

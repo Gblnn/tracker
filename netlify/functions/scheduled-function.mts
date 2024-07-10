@@ -59,25 +59,25 @@ export default async (req: Request) => {
 
       filteredData.forEach((element:any) => {
         element.civil_expiry!=""?
-        m += element.name+"'s Civil ID is expiring in "
+        m += element.name+"'s Civil ID expiry "
         +
-        String(Math.round(moment((element.civil_expiry).toDate()).diff(moment(today), 'months')))+" month(s)"
+        moment((element.civil_expiry).toDate()).startOf('day').fromNow()
         +" on "+
         String(moment((element.civil_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))+"\n\n"
         :null
 
         element.vehicle_expiry!=""?
-        m += element.name+"'s Vehicle ID is expiring in "
+        m += element.name+"'s Vehicle ID is expiry  "
         +
-        String(Math.round(moment((element.vehicle_expiry).toDate()).diff(moment(today), 'months')))+" month(s)"
+        moment((element.vehicle_expiry).toDate()).startOf('day').fromNow()
         +" on "
         +String(moment((element.vehicle_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))+"\n\n"
         :null
 
         element.medical_due_on!=""?
-        m += element.name+"'s Medical ID is expiring in "
+        m += element.name+"'s Medical ID is expiry "
         +
-        String(Math.round(moment((element.medical_due_on).toDate()).diff(moment(today), 'months')))+" month(s)"
+        moment((element.medical_due_on).toDate()).startOf('day').fromNow()
         +" on "
         +String(moment((element.medical_due_on).toDate()).add(1, 'day').format("DD/MM/YYYY"))+"\n\n"
         :null
@@ -85,7 +85,7 @@ export default async (req: Request) => {
         element.passportExpiry!=""?
         m += element.name+"'s Passport is expiring in "
         +
-        String(Math.round(moment((element.passportExpiry).toDate()).diff(moment(today), 'months')))+" month(s)"
+        moment((element.passportExpiry).toDate()).startOf('day').fromNow()
         +" on "
         +String(moment((element.passportExpiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))+"\n\n"
         :null
@@ -117,5 +117,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"08 06 * 7 * "
+    schedule:"52 08 * 7 * "
 }
