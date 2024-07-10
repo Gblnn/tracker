@@ -67,7 +67,7 @@ export default async (req: Request) => {
         :null
 
         element.vehicle_expiry!=""?
-        m += element.name+"'s Vehicle ID is expiry  "
+        m += element.name+"'s Vehicle ID expiry  "
         +
         moment((element.vehicle_expiry).toDate()).startOf('day').fromNow()
         +" on "
@@ -75,7 +75,7 @@ export default async (req: Request) => {
         :null
 
         element.medical_due_on!=""?
-        m += element.name+"'s Medical ID is expiry "
+        m += element.name+"'s Medical ID expiry "
         +
         moment((element.medical_due_on).toDate()).startOf('day').fromNow()
         +" on "
@@ -83,7 +83,7 @@ export default async (req: Request) => {
         :null
 
         element.passportExpiry!=""?
-        m += element.name+"'s Passport is expiring in "
+        m += element.name+"'s Passport expiry "
         +
         moment((element.passportExpiry).toDate()).startOf('day').fromNow()
         +" on "
