@@ -65,7 +65,7 @@ export default async (req: Request) => {
         +
         String(Math.round(moment((element.civil_expiry).toDate()).diff(moment(today), 'months')))+" month(s)"
         +" on "+
-        String(moment((element.civil_expiry).toDate()).format('DD/MM/YYYY'))+"\n\n"
+        String(moment((element.civil_expiry).toDate(), "DD/MM/YYYY"))+"\n\n"
         :null
 
         element.vehicle_expiry!=""?
@@ -73,7 +73,7 @@ export default async (req: Request) => {
         +
         String(Math.round(moment((element.vehicle_expiry).toDate()).diff(moment(today), 'months')))+" month(s)"
         +" on "
-        +String(moment((element.vehicle_expiry).toDate()).format("DD/MM/YYYY"))+"\n\n"
+        +String(moment((element.vehicle_expiry).toDate(),"DD/MM/YYYY"))+"\n\n"
         :null
 
         element.medical_due_on!=""?
@@ -119,5 +119,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"04 05 * 7 * "
+    schedule:"09 05 * 7 * "
 }
