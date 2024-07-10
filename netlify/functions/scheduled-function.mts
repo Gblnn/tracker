@@ -50,8 +50,6 @@ export default async (req: Request) => {
           e.passportExpiry&&
           Math.round(moment(e.passportExpiry.toDate()).diff(moment(today), 'months'))<=6
         )
-            
-    
       })
 
       Data.forEach((r:any)=>{
@@ -81,7 +79,7 @@ export default async (req: Request) => {
         +
         String(Math.round(moment((element.medical_due_on).toDate()).diff(moment(today), 'months')))+" month(s)"
         +" on "
-        +String(moment((element.medical_due_on).toDate()).format("DD/MM/YYYY"))+"\n\n"
+        +String(moment((element.medical_due_on).toDate()).add(1, 'day').format("DD/MM/YYYY"))+"\n\n"
         :null
 
         element.passportExpiry!=""?
@@ -89,7 +87,7 @@ export default async (req: Request) => {
         +
         String(Math.round(moment((element.passportExpiry).toDate()).diff(moment(today), 'months')))+" month(s)"
         +" on "
-        +String(moment((element.passportExpiry).toDate()).format("DD/MM/YYYY"))+"\n\n"
+        +String(moment((element.passportExpiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))+"\n\n"
         :null
 
       })

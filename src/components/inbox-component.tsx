@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { AtSign, Book, Car, CreditCard, HeartPulse, Sparkles } from "lucide-react"
+import { AtSign, Book, Car, CreditCard, HeartPulse } from "lucide-react"
 import { Link } from "react-router-dom"
 
 interface Props{
@@ -11,9 +11,13 @@ interface Props{
     onClick?:any
     priority?:string
     civil_desc?:string
+    civil_overdue?:boolean
     vehicle_desc?:string
+    vehicle_overdue?:boolean
     medical_desc?:string
+    medical_overdue?:boolean
     passport_desc?:string
+    passport_overdue?:boolean
     hidden?:boolean
     noArrow?:boolean
     onReminderClick?:any
@@ -42,18 +46,18 @@ export default function InboxComponent(props:Props){
                     }
                     
 
-                    <div style={{border:"", display:'flex', flexFlow:"column", width:"100%"}}>
+                    <div style={{border:"", display:'flex', flexFlow:"column", width:"100%", gap:"0.25rem"}}>
 
-                        <p style={{fontWeight:500, width:"100%", textAlign:"left", fontSize:"1rem", border:"", display:"flex", gap:"0.5rem", alignItems:"center"}}>
+                        <div style={{fontWeight:500, width:"100%", textAlign:"left", fontSize:"1rem", border:"", display:"flex", gap:"0.5rem", alignItems:"center"}}>
                             
-                            <p style={{border:"", display:"flex", alignItems:"center"}}>{props.title}</p>
+                            <div style={{border:"", display:"flex", alignItems:"center", fontSize:"1.1rem", fontWeight:500}}>{props.title}</div>
                             {
                                 props.tag?
                                 <p style={{display:"flex", background:"rgba(100 100 100/ 20%)", fontSize:"0.8rem", alignItems:"center", padding:"", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", border:""}}>{props.tag}</p>
                                 :null
                             }
                             
-                        </p>
+                        </div>
 
         
 
@@ -62,8 +66,8 @@ export default function InboxComponent(props:Props){
                 
                             <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
                             {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
-                            <CreditCard width={"0.8rem"} color="dodgerblue" style={{border:''}}/>   
-                            <p style={{textAlign:"left", opacity:0.75}}>{props.civil_desc}</p>
+                            <CreditCard width={"0.6rem"} color="dodgerblue" style={{border:''}}/>   
+                            <p style={{textAlign:"left", opacity:0.75, color:props.civil_overdue?"lightcoral":"white", fontWeight:props.civil_overdue?600:400}}>{props.civil_desc}</p>
                             </div>
                         
                             :null
@@ -74,8 +78,8 @@ export default function InboxComponent(props:Props){
                 
                                 <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
                                     {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
-                                    <Car width={"0.8rem"} color="violet" style={{border:''}}/>   
-                                    <p style={{textAlign:"left", opacity:0.75}}>{props.vehicle_desc}</p>
+                                    <Car width={"0.6rem"} color="violet" style={{border:''}}/>   
+                                    <p style={{textAlign:"left", opacity:0.75, color:props.vehicle_overdue?"lightcoral":"white", fontWeight:props.vehicle_overdue?600:400}}>{props.vehicle_desc}</p>
                                 </div>
                             
                             :null
@@ -87,8 +91,8 @@ export default function InboxComponent(props:Props){
                 
                                 <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
                                     {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
-                                    <HeartPulse width={"0.8rem"} color="tomato" style={{border:''}}/>   
-                                    <p style={{textAlign:"left", opacity:0.75}}>{props.medical_desc}</p>
+                                    <HeartPulse width={"0.6rem"} color="tomato" style={{border:''}}/>   
+                                    <p style={{textAlign:"left", opacity:0.75, color:props.medical_overdue?"lightcoral":"white", fontWeight:props.medical_overdue?600:400}}>{props.medical_desc}</p>
                                 </div>
                             
                             :null
@@ -100,8 +104,8 @@ export default function InboxComponent(props:Props){
                 
                                 <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
                                     {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
-                                    <Book width={"0.8rem"} color="goldenrod" style={{border:''}}/>   
-                                    <p style={{textAlign:"left", opacity:0.75}}>{props.passport_desc}</p>
+                                    <Book width={"0.6rem"} color="goldenrod" style={{border:''}}/>   
+                                    <p style={{textAlign:"left", opacity:0.75, color:props.passport_overdue?"lightcoral":"white", fontWeight:props.passport_overdue?600:400}}>{props.passport_desc}</p>
                                 </div>
                             
                             :null
@@ -121,15 +125,15 @@ export default function InboxComponent(props:Props){
 
                             
 
-                            <button onClick={props.onReminderClick} style={{display:"flex", width:"5rem", height:"2rem", fontSize:"0.8rem", border:''}}>
+                            <button onClick={props.onReminderClick} style={{display:"flex", height:"2rem", fontSize:"0.8rem", border:'', paddingRight:"0.75rem", paddingLeft:"0.5rem"}}>
                                 <AtSign width={"1.1rem"} color='dodgerblue'/>
-                                Notify
+                                Notify Document Holder
                             </button>
 
-                            <button onClick={props.onRenewClick} style={{display:"flex", width:"5.5rem", height:"2rem", fontSize:"0.8rem", border:''}}>
+                            {/* <button onClick={props.onRenewClick} style={{display:"flex", width:"5.5rem", height:"2rem", fontSize:"0.8rem", border:''}}>
                                 <Sparkles width={"1rem"} color='goldenrod' fill='goldenrod'/>
                                 Renew
-                            </button>
+                            </button> */}
 
                         </div>
                         :null

@@ -89,6 +89,7 @@ export default function Records(props:Props){
     const [editcivilprompt, setEditcivilprompt] = useState(false)
     const [valeTrainingDialog, setValeTrainingDialog] = useState(false)
     const [renewMedicalIDdialog, setRenewMedicalIDdialog] = useState(false)
+    const [renewPassportDialog, setRenewPassportDialog] = useState(false)
 
     //MAIL CONFIG VALUES
     const [mailconfigdialog, setMailConfigDialog] = useState(false)
@@ -115,6 +116,8 @@ export default function Records(props:Props){
     const [edit_vehicle_id_prompt, setEditVehicleIDprompt] = useState(false)
     const [editMedicalIDdialog, setEditMedicalIDdialog] = useState(false)
     const [editPassportDialog, setEditPassportDialog] = useState(false)
+
+    const [DeletePassportDialog, setDeletePassportDialog] = useState(false)
 
     const [add_vehicle_id, setAddVehicleID] = useState(false)
 
@@ -574,6 +577,30 @@ const RenewID = async () => {
             message.error(String(error))
             setLoading(false)
         }
+    }
+
+    const deletePassport = async () => {
+        setLoading(true)
+        await updateDoc(doc(db, "records", id),{passportID:"", passportExpiry:"", passportIssue:""})
+        setDeletePassportDialog(false)
+        setLoading(false)
+        setPassportID("")
+        setPassportExpiry("")
+        setPassportIssue("")
+        fetchData()
+    }
+    
+    const renewPassport = async () => {
+        setLoading(true)
+        await updateDoc(doc(db, "records", id),{passportExpiry:TimeStamper(editedPassportExpiry?editedPassportExpiry:passportExpiry), passportIssue:editedPassportIssue?editedPassportIssue:passportIssue
+            
+        })
+        setPassportIssue(editedPassportIssue?editedPassportIssue:passportIssue)
+        setPassportExpiry(editedPassportExpiry?editedPassportExpiry:passportExpiry)
+        setLoading(false)
+        setRenewPassportDialog(false)
+        fetchData()
+    
     }
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
@@ -1313,8 +1340,8 @@ const RenewID = async () => {
                 <div style={{display:"flex", gap:"0.5rem", height:"2.25rem"}}>
 
                 {
-                    moment(passportExpiry, "DD/MM/YYYY").diff(moment(today), 'months')<=6?
-                    <button onClick={()=>{setRenewMedicalIDdialog(true)}} className="" style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem", background:"goldenrod", color:"black"}}>
+                    moment(passportExpiry, "DD/MM/YYYY").diff(moment(today), 'months')<=6 && !loading?
+                    <button onClick={()=>{setRenewPassportDialog(true)}} className="" style={{fontSize:"0.85rem", width:"6rem", display:"flex", gap:"0.5rem", background:"goldenrod", color:"black"}}>
                         <Sparkles width={"0.85rem"} color="black" />
                         Renew
                     </button>
@@ -1325,7 +1352,7 @@ const RenewID = async () => {
                 onEdit={()=>{setEditVehicleIDprompt(true)}} 
                 trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} */}
 
-                <DropDown onDelete={()=>{setDeleteMedicalIDdialog(true)}} onEdit={()=>{setEditPassportDialog(true)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} />
+                <DropDown onDelete={()=>{setDeletePassportDialog(true)}} onEdit={()=>{setEditPassportDialog(true)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} />
 
                 </div>
                 :null
@@ -1372,6 +1399,11 @@ const RenewID = async () => {
              
             {/* EDIT PASSPORT DIALOG */}
             <AddDialog open={editPassportDialog} title="Edit Passport" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditPassportDialog(false)}} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setEditedPassportID(e.target.value)} input2OnChange={(e:any)=>{setEditedPassportIssue(e.target.value)}} input3OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} onOk={EditPassport} updating={loading} disabled={loading} input1Value={passportID} input2Value={passportIssue} input3Value={passportExpiry} input1Label="Passport ID : " input2Label="Issue Date : " input3Label="Expiry Date" />
+
+            <DefaultDialog title={"Delete Passport?"} destructive OkButtonText="Delete" open={DeletePassportDialog} onCancel={()=>setDeletePassportDialog(false)} updating={loading} disabled={loading} onOk={deletePassport}/>
+
+            {/* RENEW PASSPORT DIALOG */}
+            <AddDialog titleIcon={<Sparkles color="goldenrod"/>} title="Renew Passport" open={renewPassportDialog} onCancel={()=>setRenewPassportDialog(false)} inputplaceholder="New Issue Date" input1Label="New Issue : " input2placeholder="New Expiry" input2Label="New Expiry : " OkButtonIcon={<Sparkles width={"1rem"}/>} OkButtonText="Renew" input1Value={passportIssue} input2Value={passportExpiry} onOk={renewPassport} updating={loading} inputOnChange={(e:any)=>setEditedPassportIssue(e.target.value)} input2OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} disabled={loading}/>
 
             </div>
             

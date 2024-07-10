@@ -334,19 +334,33 @@ export default function Inbox(){
                               priority="low" key={record.id} title={record.name+"'s doc expiry reminder"} 
                              
                              civil_desc={
+
                                 record.civil_expiry&&
+
                                 Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2?
+
                                 ("Civil ID expiry in "+
                                 Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))+
-                                
                                 " month(s)"
-                                +" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")):""
-                                // ||
-                                // (record.vehicle_expiry)?"Vehicle ID expiring on "+record.vehicle_expiry.toDate():""
+                                +" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY"))
+                                
+                                :
+                                // Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=0?
+                                // ("Civil ID expired on "+ 
+                                // moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")
+                                // )
+                                // :
+                                ""
 
                                 
 
                             }
+
+                            civil_overdue={
+                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'days'))<=0?true:false
+                            }
+
+
                             vehicle_desc={
                                 
                                 record.vehicle_expiry&&
@@ -355,6 +369,10 @@ export default function Inbox(){
                                     Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"
                                     +" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY"))
                                     :""
+                            }
+
+                            vehicle_overdue={
+                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'days'))<=0?true:false
                             }
 
                             medical_desc={
@@ -366,6 +384,10 @@ export default function Inbox(){
                                     :""
                             }
 
+                            medical_overdue={
+                                Math.round(moment(record.medical_due_on.toDate()).diff(moment(today), 'days'))<=0?true:false
+                            }
+
                             passport_desc={
                                 record.passportExpiry&&
                                 Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))<=6?
@@ -373,6 +395,10 @@ export default function Inbox(){
                                     Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))+" month(s)"
                                     +" on "+moment(record.passportExpiry.toDate()).format("DD/MM/YYYY"))
                                     :""
+                            }
+
+                            passport_overdue={
+                                Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))<=0?true:false
                             }
 
                         
