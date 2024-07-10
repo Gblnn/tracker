@@ -29,6 +29,9 @@ interface Props{
 
 
 export default function InboxComponent(props:Props){
+
+    const overdue_color = "lightcoral"
+
     return(
         <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
         <Link className={props.hidden==true?"hidden":"visible"} to={props.to}>
@@ -67,7 +70,7 @@ export default function InboxComponent(props:Props){
                             <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
                             {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
                             <CreditCard width={"0.6rem"} color="dodgerblue" style={{border:''}}/>   
-                            <p style={{textAlign:"left", opacity:0.75, color:props.civil_overdue?"lightcoral":"white", fontWeight:props.civil_overdue?600:400}}>{props.civil_desc}</p>
+                            <p style={{textAlign:"left", opacity:0.75, color:props.civil_overdue?overdue_color:"white", fontWeight:props.civil_overdue?600:400}}>{props.civil_desc}</p>
                             </div>
                         
                             :null
@@ -79,7 +82,7 @@ export default function InboxComponent(props:Props){
                                 <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
                                     {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
                                     <Car width={"0.6rem"} color="violet" style={{border:''}}/>   
-                                    <p style={{textAlign:"left", opacity:0.75, color:props.vehicle_overdue?"lightcoral":"white", fontWeight:props.vehicle_overdue?600:400}}>{props.vehicle_desc}</p>
+                                    <p style={{textAlign:"left", opacity:0.75, color:props.vehicle_overdue?overdue_color:"white", fontWeight:props.vehicle_overdue?600:400}}>{props.vehicle_desc}</p>
                                 </div>
                             
                             :null
@@ -92,7 +95,7 @@ export default function InboxComponent(props:Props){
                                 <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
                                     {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
                                     <HeartPulse width={"0.6rem"} color="tomato" style={{border:''}}/>   
-                                    <p style={{textAlign:"left", opacity:0.75, color:props.medical_overdue?"lightcoral":"white", fontWeight:props.medical_overdue?600:400}}>{props.medical_desc}</p>
+                                    <p style={{textAlign:"left", opacity:0.75, color:props.medical_overdue?overdue_color:"white", fontWeight:props.medical_overdue?600:400}}>{props.medical_desc}</p>
                                 </div>
                             
                             :null
@@ -105,7 +108,7 @@ export default function InboxComponent(props:Props){
                                 <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
                                     {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
                                     <Book width={"0.6rem"} color="goldenrod" style={{border:''}}/>   
-                                    <p style={{textAlign:"left", opacity:0.75, color:props.passport_overdue?"lightcoral":"white", fontWeight:props.passport_overdue?600:400}}>{props.passport_desc}</p>
+                                    <p style={{textAlign:"left", opacity:0.75, color:props.passport_overdue?overdue_color:"white", fontWeight:props.passport_overdue?600:400}}>{props.passport_desc}</p>
                                 </div>
                             
                             :null

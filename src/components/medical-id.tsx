@@ -12,7 +12,7 @@ export default function MedicalID(props:Props){
         <motion.div initial={{opacity:0}} whileInView={{opacity:1}} transition={{delay:0.15}}>
         <div className="civil-id" style={{width:"32ch", height:"19ch", background:"rgba(100 100 100/ 15%)", borderRadius:"0.75rem",  cursor:"pointer", zIndex:0, display:"flex", flexFlow:"column", justifyContent:"space-between"}}>
 
-            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", paddingLeft:"1.5rem", borderBottom:"1px solid rgba(100 100 100/50%)"}}>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", paddingLeft:"0.75rem", borderBottom:"1px solid rgba(100 100 100/50%)"}}>
                 <div>
                 <p style={{textTransform:"uppercase", textAlign:"left"}}>{props.name}</p>
                 <p style={{fontSize:"0.75rem", color:"tomato", fontWeight:"600"}}>Medical Card</p>

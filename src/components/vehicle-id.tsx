@@ -28,14 +28,16 @@ export default function VehicleID(props:Props){
                 
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem"}}>
 
-                <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
-                        <p style={{fontSize:"0.75rem"}}>PLATE NO : </p>
-                        <p style={{fontWeight:600, fontSize:"0.8rem", textTransform:"uppercase"}}>{props.reg_no}</p>
-                    </div>
+                    
 
                     <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
                         <p style={{fontSize:"0.75rem"}}>MAKE : </p>
                         <p style={{fontWeight:600, fontSize:"0.8rem", textTransform:"uppercase"}}>{props.make}</p>
+                    </div>
+
+                    <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
+                        <p style={{fontSize:"0.75rem"}}>PLATE NO : </p>
+                        <p style={{fontWeight:600, fontSize:"0.8rem", textTransform:"uppercase"}}>{props.reg_no}</p>
                     </div>
 
                 </div>
