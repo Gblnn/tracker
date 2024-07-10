@@ -18,11 +18,11 @@
     "display":"standalone",
     "dir":"auto",
     "lang":"en-US",
-    "name":"Dashboard",
-    "short_name":"Dashboard",
+    "name":"Utility",
+    "short_name":"Utility",
     "start_url":"https://tracker-dev-session.netlify.app/",
     "scope":"https://tracker-dev-session.netlify.app",
-    "description":"Maintain personal Records and get notified about important dates",
+    "description":"Maintain personal records and get notified about important dates",
     "screenshots": [    
    {
 
