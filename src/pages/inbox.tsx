@@ -368,7 +368,7 @@ export default function Inbox(){
 
                             passport_desc={
                                 record.passportExpiry&&
-                                Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))<=5?
+                                Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))<=6?
                                 ("Passport expiry in "+
                                     Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))+" month(s)"
                                     +" on "+moment(record.passportExpiry.toDate()).format("DD/MM/YYYY"))

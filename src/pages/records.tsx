@@ -1013,24 +1013,24 @@ const RenewID = async () => {
                     
                     <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={civil_expiry} 
                     status={
-                        moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1<=3?
+                        moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
                         false:true
                     }/>
 
                     <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="Vehicle" 
                     status={
-                        moment(vehicle_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1<=3?
+                        moment(vehicle_expiry, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
                         false
                         :true
                     }/>
                     <Directive tag={medical_due_on} onClick={()=>setHealthDialog(true)} icon={<HeartPulse color="tomato"/>} title="Medical" status={
-                        moment(medical_due_on, "DD/MM/YYYY").diff(moment(today),'months')+1<=3?
+                        moment(medical_due_on, "DD/MM/YYYY").diff(moment(today),'months')<=3?
                         false:true
                     }/>
                     <Directive onClick={()=>{setTrainingDialog(true)}} icon={<GraduationCap color="lightgreen"/>} title="Training"/>
 
                     <Directive tag={passportExpiry} onClick={()=>setPassportDialog(true)} icon={<Book color="goldenrod"/>} title="Passport" status={
-                        moment(passportExpiry, "DD/MM/YYYY").diff(moment(today),'months')+1<=6?
+                        moment(passportExpiry, "DD/MM/YYYY").diff(moment(today),'months')<=6?
                         false:true
                     }/>
                     
