@@ -6,6 +6,7 @@ interface Props{
     trigger?:any
     onDelete?:any
     onEdit?:any
+    className?:any
 }
 
 export default function DropDown(props:Props){
@@ -13,7 +14,7 @@ export default function DropDown(props:Props){
         <>
         <DropdownMenu>
 
-            <DropdownMenuTrigger style={{outline:"none"}}>
+            <DropdownMenuTrigger className={props.className} style={{outline:"none"}}>
                 {props.trigger}
             </DropdownMenuTrigger>
 

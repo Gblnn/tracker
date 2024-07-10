@@ -293,3 +293,7 @@ input:focus {
   backdrop-filter: blur(16px);
   z-index: 10;
 }
+
+.no-bg {
+  background: none;
+}

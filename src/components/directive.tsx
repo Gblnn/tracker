@@ -1,6 +1,7 @@
-import { CheckSquare2, ChevronRight } from "lucide-react"
+import { CheckSquare2, ChevronRight, EllipsisVerticalIcon } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import DropDown from "./dropdown"
 
 interface Props{
     title?:string
@@ -14,6 +15,9 @@ interface Props{
     onSelect?:any
     noArrow?:boolean
     selected?:boolean
+    extra?:any
+    extraOnDelete?:any
+    extraOnEdit?:any
 }
 
 export default function Directive(props:Props){
@@ -83,8 +87,16 @@ export default function Directive(props:Props){
                 }
                 {
                     props.selectable||props.noArrow?
-                    <div style={{width:"1rem"}}></div>
-                    :<ChevronRight width={"1rem"}/>
+                    <div style={{width:"1rem"}}>
+                       
+                    </div>
+                    :
+                    props.extra?
+                    <DropDown className={"no-bg"} onDelete={props.extraOnDelete} onEdit={props.extraOnEdit} trigger={<EllipsisVerticalIcon width={"0.8rem"} height={"0.75rem"}/>} />
+                    :
+                    <ChevronRight width={"1rem"}/>
+
+                    
                 }
                 
             </div>
