@@ -7,6 +7,7 @@ import DropDown from "@/components/dropdown"
 import FileInput from "@/components/file-input"
 import MedicalID from "@/components/medical-id"
 import Passport from "@/components/passport"
+import { ResponsiveDrawer } from "@/components/responsive-drawer"
 import SearchBar from "@/components/search-bar"
 import DefaultDialog from "@/components/ui/default-dialog"
 import VehicleID from "@/components/vehicle-id"
@@ -1017,6 +1018,9 @@ const RenewID = async () => {
                 icon={addButtonModeSwap?<Trash color="crimson" width="1rem"/>:<Plus color="dodgerblue" width="1rem"/>}/>
 
 
+            
+
+
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
             {/* Dialog Boxes 👇*/}
@@ -1036,10 +1040,6 @@ const RenewID = async () => {
                 <div style={{display:"flex", border:"", width:"100%", flexFlow:"column", gap:"0.5rem"}}>
                     <input placeholder="Enter E-Mail Address" onChange={(e)=>setRecipient(e.target.value)}/>
                     <textarea onChange={(e:any)=>setTestMessage(e.target.value)} placeholder="Message..." rows={4}/>
-                {/* <Button variant={"ghost"} style={{flex:1}} onClick={()=>{setRecipientsDialog(true)}}>
-                    <Plus style={{width:"1rem"}} color="dodgerblue"/>
-                    Add Recipient
-                </Button> */}
                 </div>
                 
                 }/>
@@ -1058,7 +1058,11 @@ const RenewID = async () => {
                     
             } 
             title_extra={
-            <DropDown onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>setUserEditPrompt(true)} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
+                <div style={{display:"flex", gap:"0.5rem"}}>
+                    <ResponsiveDrawer/>
+                    <DropDown onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>setUserEditPrompt(true)} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
+                </div>
+                
             }
             close extra={
                 <div style={{border:"", width:"100%", display:"flex", flexFlow:"column", gap:"0.5rem", paddingBottom:"1rem", paddingTop:"1rem"}}>
@@ -1079,12 +1083,13 @@ const RenewID = async () => {
                         moment(medical_due_on, "DD/MM/YYYY").diff(moment(today),'months')<=3?
                         false:true
                     }/>
-                    <Directive onClick={()=>{setTrainingDialog(true)}} icon={<GraduationCap color="lightgreen"/>} title="Training"/>
 
                     <Directive tag={passportExpiry} onClick={()=>setPassportDialog(true)} icon={<Book color="goldenrod"/>} title="Passport" status={
                         moment(passportExpiry, "DD/MM/YYYY").diff(moment(today),'months')<=6?
                         false:true
                     }/>
+
+                    <Directive onClick={()=>{setTrainingDialog(true)}} icon={<GraduationCap color="lightgreen"/>} title="Training"/>
                     
                 </div>
             
@@ -1444,6 +1449,8 @@ const RenewID = async () => {
             <AddDialog titleIcon={<Sparkles color="goldenrod"/>} title="Renew Passport" open={renewPassportDialog} onCancel={()=>setRenewPassportDialog(false)} inputplaceholder="New Issue Date" input1Label="New Issue : " input2placeholder="New Expiry" input2Label="New Expiry : " OkButtonIcon={<Sparkles width={"1rem"}/>} OkButtonText="Renew" input1Value={passportIssue} input2Value={passportExpiry} onOk={renewPassport} updating={loading} inputOnChange={(e:any)=>setEditedPassportIssue(e.target.value)} input2OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} disabled={loading}/>
 
             <AddDialog open={trainingAddDialog} onCancel={()=>{setTrainingAddDialog(false);setTrainingAddDialogInput("")}} title={trainingAddDialogTitle} inputplaceholder="Expiry Date" OkButtonText="Add" inputOnChange={(e:any)=>setTrainingAddDialogInput(e.target.value)} OkButtonIcon={<Plus width={"1rem"}/>}/>
+
+            
 
             </div>
             
