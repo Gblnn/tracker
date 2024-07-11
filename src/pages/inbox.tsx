@@ -200,7 +200,7 @@ export default function Inbox(){
     return(
         <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
         <div style={{margin:"1.25rem"}}>
-            <Back title={"Inbox"}
+            <Back title={"Alerts"}
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
 
