@@ -69,9 +69,11 @@ export default async (req: Request) => {
         m += element.name+"'s Civil ID expiry "
         +
         moment((element.civil_expiry).toDate()).startOf('day').fromNow()
-        +" on "+
-        String(moment((element.civil_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))+"\n\n"
+        +" on "
+        +String(moment((element.civil_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
         +String(Math.round(moment(element.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days'))<=0?" (Overdue)":"")
+        +"\n\n"
+        
         :null
 
         element.vehicle_expiry!=""?
@@ -79,7 +81,9 @@ export default async (req: Request) => {
         +
         moment((element.vehicle_expiry).toDate()).startOf('day').fromNow()
         +" on "
-        +String(moment((element.vehicle_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))+"\n\n"
+        +String(moment((element.vehicle_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(Math.round(moment(element.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days'))<=0?" (Overdue)":"")
+        +"\n\n"
         :null
 
         element.medical_due_on!=""?
@@ -87,7 +91,9 @@ export default async (req: Request) => {
         +
         moment((element.medical_due_on).toDate()).startOf('day').fromNow()
         +" on "
-        +String(moment((element.medical_due_on).toDate()).add(1, 'day').format("DD/MM/YYYY"))+"\n\n"
+        +String(moment((element.medical_due_on).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(Math.round(moment(element.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days'))<=0?" (Overdue)":"")
+        +"\n\n"
         :null
 
         element.passportExpiry!=""?
@@ -95,7 +101,9 @@ export default async (req: Request) => {
         +
         moment((element.passportExpiry).toDate()).startOf('day').fromNow()
         +" on "
-        +String(moment((element.passportExpiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))+"\n\n"
+        +String(moment((element.passportExpiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(Math.round(moment(element.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days'))<=0?" (Overdue)":"")
+        +"\n\n"
         :null
 
       })
@@ -128,5 +136,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"59 05 * * * "
+    schedule:"04 06 * * * "
 }
