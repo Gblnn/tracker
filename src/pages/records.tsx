@@ -1036,7 +1036,7 @@ const RenewID = async () => {
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
             {/* DISPLAY RECORD DIALOG */}
-            <DefaultDialog titleIcon={<UserCircle/>} title={name} subtitle={email} open={recordSummary} onCancel={()=>setRecordSummary(false)} 
+            <DefaultDialog titleIcon={<UserCircle/>} title={name} subtitle={email} open={recordSummary} onCancel={()=>{setRecordSummary(false);setEmail("")}} 
             bigDate={()=>message.info(String(moment(new Date(created_on)).format("LLLL")))}
             created_on={
     
