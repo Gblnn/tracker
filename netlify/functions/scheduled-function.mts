@@ -14,7 +14,7 @@ export default async (req: Request) => {
     const today = new Date()
     let rp = ""
     let emails = ""
-    let emailsArray:any = []
+  
 
     try {
 
@@ -143,5 +143,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"42 06 * * * "
+    schedule:"45 06 * * * "
 }
