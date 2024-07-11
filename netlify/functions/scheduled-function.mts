@@ -92,7 +92,7 @@ export default async (req: Request) => {
         moment((element.medical_due_on).toDate()).startOf('day').fromNow()
         +" on "
         +String(moment((element.medical_due_on).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(element.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
+        +String(moment(element.medical_due_on.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
         +"\n\n"
         :null
 
@@ -102,7 +102,7 @@ export default async (req: Request) => {
         moment((element.passportExpiry).toDate()).startOf('day').fromNow()
         +" on "
         +String(moment((element.passportExpiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(element.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
+        +String(moment(element.passportExpiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
         +"\n\n"
         :null
 

@@ -1,7 +1,8 @@
-import AddDialog from "@/components/add-dialog";
+
 import Back from "@/components/back";
 import Directive from "@/components/directive";
 import InboxComponent from "@/components/inbox-component";
+import InputDialog from "@/components/input-dialog";
 import SearchBar from "@/components/search-bar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { db } from "@/firebase";
@@ -200,7 +201,7 @@ export default function Inbox(){
     return(
         <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
         <div style={{margin:"1.25rem"}}>
-            <Back title={"Inbox"}
+            <Back title={"Alerts"}
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
 
@@ -439,7 +440,7 @@ export default function Inbox(){
                 
             }/>
 
-            <AddDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true}/>
+            <InputDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true}/>
 
             <DefaultDialog 
             title_extra={

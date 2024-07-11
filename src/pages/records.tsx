@@ -1,10 +1,10 @@
-import AddDialog from "@/components/add-dialog"
 import AddRecordButton from "@/components/add-record-button"
 import Back from "@/components/back"
 import CivilID from "@/components/civil-id"
 import Directive from "@/components/directive"
 import DropDown from "@/components/dropdown"
 import FileInput from "@/components/file-input"
+import InputDialog from "@/components/input-dialog"
 import MedicalID from "@/components/medical-id"
 import Passport from "@/components/passport"
 import SearchBar from "@/components/search-bar"
@@ -305,15 +305,19 @@ const RenewID = async () => {
     setRenewDocDialog(false)
     fetchData()
     setNewExpiry("")
+    setCreatedOn(new Date())
 }
 
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
         setLoading(true)
-        await addDoc(collection(db, "records"), {name:name, email:email?email:"", created_on:Timestamp.fromDate(new Date()), civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:""})
+        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:""})
         setAddDialog(false)
+        setName(editedName?editedName:name)
+        setEmail(editedEmail?editedEmail:email)
         setLoading(false)
         fetchData()
+        setCreatedOn(new Date())
     }
 
     // FUNCTION TO EDIT RECORD
@@ -325,6 +329,7 @@ const RenewID = async () => {
         setEmail(editedEmail?editedEmail:email)
         setLoading(false)
         fetchData()
+        setCreatedOn(new Date())
     }
 
     // FUNCTION TO DELETE RECORD
@@ -341,7 +346,6 @@ const RenewID = async () => {
         setUserDeletePrompt(false)
         setRecordSummary(false)
         setLoading(false)
-        
         fetchData()
         
 
@@ -355,11 +359,14 @@ const RenewID = async () => {
         setAddcivil(false)
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{civil_number:civil_number, 
-                civil_expiry:civil_expiry?TimeStamper(civil_expiry):"", civil_DOB:civil_DOB, created_on:Timestamp.fromDate(new Date)})
-            
+            await updateDoc(doc(db, "records", id),{civil_number:edited_civil_number, 
+                civil_expiry:edited_civil_expiry?TimeStamper(edited_civil_expiry):"", civil_DOB:edited_civil_DOB, created_on:Timestamp.fromDate(new Date)})
+            setCivilNumber(edited_civil_number)
+            setCivilExpiry(edited_civil_expiry)
+            setCivilDOB(edited_civil_DOB)
             setLoading(false)
             fetchData()
+            setCreatedOn(new Date())
             props.onUpdate
             
         } catch (error) {
@@ -388,6 +395,7 @@ const RenewID = async () => {
         setNewCivilExpiry("")
         setNewCivilNumber("")
         fetchData()
+        setCreatedOn(new Date())
     }
 
     // FUNCTION TO EDIT A CIVIL ID
@@ -403,6 +411,7 @@ const RenewID = async () => {
             setEditcivilprompt(false)
             setLoading(false)
             fetchData()
+            setCreatedOn(new Date())
 
         } catch (error) {
             console.log(error)  
@@ -424,6 +433,7 @@ const RenewID = async () => {
 
             setLoading(false)
             fetchData()
+            setCreatedOn(new Date())
             
             
         }
@@ -451,6 +461,7 @@ const RenewID = async () => {
         setVehicleExpiry("")
         setVehicleIssue("")
         fetchData()
+        setCreatedOn(new Date())
     } 
 
     // FUNCTION TO DELETE A MEDICAL ID
@@ -462,6 +473,7 @@ const RenewID = async () => {
         setCompletedOn("")
         setDueOn("")
         fetchData()
+        setCreatedOn(new Date())
     } 
 
     //FUNCTION TO EDIT VEHICLE ID
@@ -479,6 +491,7 @@ const RenewID = async () => {
             setEditVehicleIDprompt(false)
             setLoading(false)
             fetchData()
+            setCreatedOn(new Date())
 
         } catch (error) {
             console.log(error)  
@@ -497,6 +510,7 @@ const RenewID = async () => {
             setLoading(false)
             setRenewVehicleDialog(false)
             fetchData()
+            setCreatedOn(new Date())
             
         } catch (error) {
             message.error(String(error))
@@ -512,6 +526,7 @@ const RenewID = async () => {
 
             setLoading(false)
             fetchData()
+            setCreatedOn(new Date())
             
             
         }
@@ -528,10 +543,13 @@ const RenewID = async () => {
         setLoading(true)
         try {
             await updateDoc(doc(db, 'records', id),{medical_completed_on:editedCompletedOn?editedCompletedOn:medical_completed_on, medical_due_on:editedDueOn?TimeStamper(editedDueOn):TimeStamper(medical_due_on), created_on:Timestamp.fromDate(new Date)})
+
             setDueOn(editedDueOn?editedDueOn:medical_due_on)
             setCompletedOn(editedCompletedOn?editedCompletedOn:medical_completed_on)
             setLoading(false)
             setEditMedicalIDdialog(false)
+            fetchData()
+            setCreatedOn(new Date())
             
         } catch (error) {
             message.error(String(error))
@@ -547,6 +565,8 @@ const RenewID = async () => {
             setPassportExpiry(editedPassportExpiry?editedPassportExpiry:passportExpiry)
             setLoading(false)
             setEditPassportDialog(false)
+            fetchData()
+            setCreatedOn(new Date())
             
         } catch (error) {
             message.error(String(error))
@@ -567,6 +587,7 @@ const RenewID = async () => {
             setLoading(false)
             setRenewMedicalIDdialog(false)
             fetchData()
+            setCreatedOn(new Date())
             
         } catch (error) {
             message.error(String(error))
@@ -581,6 +602,8 @@ const RenewID = async () => {
             await updateDoc(doc(db, "records", id),{passportID:passportID, 
             passportIssue:passportIssue, passportExpiry:TimeStamper(passportExpiry), created_on:Timestamp.fromDate(new Date)})
             setLoading(false)
+            fetchData()
+            setCreatedOn(new Date())
             
             
         } catch (error) {
@@ -598,6 +621,7 @@ const RenewID = async () => {
         setPassportExpiry("")
         setPassportIssue("")
         fetchData()
+        setCreatedOn(new Date())
     }
     
     const renewPassport = async () => {
@@ -610,6 +634,7 @@ const RenewID = async () => {
         setLoading(false)
         setRenewPassportDialog(false)
         fetchData()
+        setCreatedOn(new Date())
     
     }
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
@@ -1077,11 +1102,13 @@ const RenewID = async () => {
             }/>
 
             {/* ADD RECORD DIALOG */}
-            <AddDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setName(e.target.value)} } inputplaceholder="Enter Full Name" disabled={loading||!name?true:false} updating={loading} input2placeholder="Enter Email" input2OnChange={(e:any)=>setEmail(e.target.value)}/>
+            <InputDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setEditedName(e.target.value)} } inputplaceholder="Enter Full Name" disabled={loading||!editedName?true:false} updating={loading} input2placeholder="Enter Email" input2OnChange={(e:any)=>setEditedEmail(e.target.value)}/>
+
+           
 
 
             {/* EDIT RECORD DIALOG */}
-            <AddDialog open={userEditPrompt} titleIcon={<PenLine/>} title="Edit Record Name" inputplaceholder="Enter New Name" OkButtonText="Update" OkButtonIcon={<TextCursor width={"1rem"}/>} onCancel={()=>setUserEditPrompt(false)} onOk={EditRecordName} inputOnChange={(e:any)=>setEditedName(e.target.value)} updating={loading} disabled={loading} input1Value={name} input2placeholder="Email Address" input2Value={email} input2OnChange={(e:any)=>setEditedEmail(e.target.value)}/>
+            <InputDialog open={userEditPrompt} titleIcon={<PenLine/>} title="Edit Record Name" inputplaceholder="Enter New Name" OkButtonText="Update" OkButtonIcon={<TextCursor width={"1rem"}/>} onCancel={()=>setUserEditPrompt(false)} onOk={EditRecordName} inputOnChange={(e:any)=>setEditedName(e.target.value)} updating={loading} disabled={loading} input1Value={name} input2placeholder="Email Address" input2Value={email} input2OnChange={(e:any)=>setEditedEmail(e.target.value)}/>
 
             {/* DELETE RECORD DIALOG */}
             <DefaultDialog open={userDeletePrompt} titleIcon={<X/>} destructive title="Delete Record?" OkButtonText="Delete" onCancel={()=>setUserDeletePrompt(false)} onOk={deleteRecord} updating={loading} disabled={loading}/>
@@ -1154,11 +1181,11 @@ const RenewID = async () => {
             />
 
             {/* ADD CIVIL ID DIALOG */}
-            <AddDialog open={addcivil} title="Add Civil ID" titleIcon={<CreditCard/>} inputplaceholder="Civil Number" input2placeholder="Expiry Date" input3placeholder="Date of Birth" OkButtonText="Add" onCancel={()=>setAddcivil(false)} onOk={addCivilID} inputOnChange={(e:any)=>setCivilNumber(e.target.value)} input2OnChange={(e:any)=>setCivilExpiry(e.target.value)} input3OnChange={(e:any)=>setCivilDOB(e.target.value)} updating={loading} disabled={loading}/>
+            <InputDialog open={addcivil} title="Add Civil ID" titleIcon={<CreditCard/>} inputplaceholder="Civil Number" input2placeholder="Expiry Date" input3placeholder="Date of Birth" OkButtonText="Add" onCancel={()=>setAddcivil(false)} onOk={addCivilID} inputOnChange={(e:any)=>setEditedCivilNumber(e.target.value)} input2OnChange={(e:any)=>setEditedCivilExpiry(e.target.value)} input3OnChange={(e:any)=>setEditedCivilDOB(e.target.value)} updating={loading} disabled={loading}/>
 
 
             {/* EDIT CIVIL ID DIALOG */}
-            <AddDialog open={editcivilprompt} title="Edit Civil ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setEditedCivilNumber("");setEditedCivilExpiry(null);setEditedCivilDOB("")}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setEditedCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setEditedCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={civil_number} input2Value={civil_expiry} input3Value={civil_DOB} input1Label="Civil Number : " input2Label="Expiry Date : " input3Label="Date of Birth : "/>
+            <InputDialog open={editcivilprompt} title="Edit Civil ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditcivilprompt(false);setEditedCivilNumber("");setEditedCivilExpiry(null);setEditedCivilDOB("")}} inputplaceholder="Enter New Civil ID" input2placeholder="Enter Expiry Date" input3placeholder="Enter Date of Birth" inputOnChange={(e:any)=>setEditedCivilNumber(e.target.value)} input2OnChange={(e:any)=>{setEditedCivilExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedCivilDOB(e.target.value)} onOk={EditCivilID} updating={loading} disabled={loading} input1Value={civil_number} input2Value={civil_expiry} input3Value={civil_DOB} input1Label="Civil Number : " input2Label="Expiry Date : " input3Label="Date of Birth : "/>
 
             {/* DELETE CIVIL ID DIALOG */}
             <DefaultDialog destructive updating={loading} open={civilDelete} title="Delete Civil ID?" OkButtonText="Delete" onCancel={()=>setCivilDelete(false)} onOk={deleteCivilID} disabled={loading}/>
@@ -1228,13 +1255,13 @@ const RenewID = async () => {
             }/>
 
             {/* ADD VEHICLE ID DIALOG */}
-            <AddDialog open={add_vehicle_id} title="Add Vehicle ID" titleIcon={<Car/>} inputplaceholder="Vehicle Number" input2placeholder="Expiry Date" input3placeholder="Issue Date" OkButtonText="Add" 
+            <InputDialog open={add_vehicle_id} title="Add Vehicle ID" titleIcon={<Car/>} inputplaceholder="Vehicle Number" input2placeholder="Expiry Date" input3placeholder="Issue Date" OkButtonText="Add" 
             onCancel={()=>{
                 setAddVehicleID(false)
             }} onOk={addVehicleID} inputOnChange={(e:any)=>setVehicleNumber(e.target.value)} input2OnChange={(e:any)=>setVehicleExpiry(e.target.value)} input3OnChange={(e:any)=>setVehicleIssue(e.target.value)} updating={loading} disabled={loading}/>
 
             {/* EDIT VEHICLE ID DIALOG */}
-            <AddDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditVehicleIDprompt(false)}} inputplaceholder="Enter Vehicle Number" input2placeholder="Enter Expiry Date" input3placeholder="Enter Issue Date" inputOnChange={(e:any)=>setEditedVehicleNumber(e.target.value)} input2OnChange={(e:any)=>{setEditedVehicleExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedVehicleIssue(e.target.value)} onOk={EditVehicleID} updating={loading} disabled={loading} input1Value={vehicle_number} input2Value={vehicle_expiry} input3Value={vehicle_issue} input1Label="Vehicle No : " input2Label="Expiry Date" input3Label="Issue Date"/>
+            <InputDialog open={edit_vehicle_id_prompt} title="Edit Vehicle ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditVehicleIDprompt(false)}} inputplaceholder="Enter Vehicle Number" input2placeholder="Enter Expiry Date" input3placeholder="Enter Issue Date" inputOnChange={(e:any)=>setEditedVehicleNumber(e.target.value)} input2OnChange={(e:any)=>{setEditedVehicleExpiry(e.target.value)}} input3OnChange={(e:any)=>setEditedVehicleIssue(e.target.value)} onOk={EditVehicleID} updating={loading} disabled={loading} input1Value={vehicle_number} input2Value={vehicle_expiry} input3Value={vehicle_issue} input1Label="Vehicle No : " input2Label="Expiry Date" input3Label="Issue Date"/>
 
             {/* DELETE VEHICLE ID DIALOG */}
             <DefaultDialog updating={loading} open={vehicleIdDelete} title="Delete Vehicle ID?" OkButtonText="Delete" onCancel={()=>setVehicleIdDelete(false)} onOk={deleteVehicleID} disabled={loading} destructive/>
@@ -1243,10 +1270,10 @@ const RenewID = async () => {
             <DefaultDialog progressItem={progressItem} progress={progress} destructive updating={loading} title="Delete record(s)?" open={bulkDeleteDialog} OkButtonText="Confirm" onCancel={()=>setBulkDeleteDialog(false)} onOk={handleBulkDelete} disabled={loading}/>
 
             {/* RENEW CIVIL ID */}
-            <AddDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true} input1Value={civil_expiry} input1Label="New Expiry : " OkButtonIcon={<Sparkles width={"1rem"}/>}/>
+            <InputDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true} input1Value={civil_expiry} input1Label="New Expiry : " OkButtonIcon={<Sparkles width={"1rem"}/>}/>
 
             {/* RENEW VEHICLE ID DIALOG */}
-            <AddDialog title="Renew Vehicle ID" open={renewVehicleDialog} onCancel={()=>setRenewVehicleDialog(false)} inputplaceholder="New Issue Date" input1Label="New Issue" input2placeholder="New Expiry" input2Label="New Expiry" input1Value={vehicle_issue} input2Value={vehicle_expiry} OkButtonText="Renew" OkButtonIcon={<Sparkles width={"1rem"}/>} disabled={loading} onOk={renewVehicleID} inputOnChange={(e:any)=>setEditedVehicleIssue(e.target.value)} input2OnChange={(e:any)=>setEditedVehicleExpiry(e.target.value)} updating={loading}/>
+            <InputDialog title="Renew Vehicle ID" open={renewVehicleDialog} onCancel={()=>setRenewVehicleDialog(false)} inputplaceholder="New Issue Date" input1Label="New Issue" input2placeholder="New Expiry" input2Label="New Expiry" input1Value={vehicle_issue} input2Value={vehicle_expiry} OkButtonText="Renew" OkButtonIcon={<Sparkles width={"1rem"}/>} disabled={loading} onOk={renewVehicleID} inputOnChange={(e:any)=>setEditedVehicleIssue(e.target.value)} input2OnChange={(e:any)=>setEditedVehicleExpiry(e.target.value)} updating={loading}/>
 
             {/* TRAINING DIALOG */}
             <DefaultDialog close back open={trainingDialog} onCancel={()=>setTrainingDialog(false)} title={"Training"} titleIcon={<GraduationCap color="lightgreen"/>} 
@@ -1327,21 +1354,21 @@ const RenewID = async () => {
             }/>
 
             {/* ADD MEDICAL ID DIALOG */}
-            <AddDialog open={MedicalIDdialog} OkButtonText="Add" onCancel={()=>setMedicalIDdialog(false)} title="Add Medical ID" titleIcon={<HeartPulse color="tomato"/>} inputplaceholder="Completed On" input2placeholder="Due On" inputOnChange={(e:any)=>setCompletedOn(e.target.value)} input2OnChange={(e:any)=>setDueOn(e.target.value)} onOk={addMedicalID} updating={loading}/>
+            <InputDialog open={MedicalIDdialog} OkButtonText="Add" onCancel={()=>setMedicalIDdialog(false)} title="Add Medical ID" titleIcon={<HeartPulse color="tomato"/>} inputplaceholder="Completed On" input2placeholder="Due On" inputOnChange={(e:any)=>setCompletedOn(e.target.value)} input2OnChange={(e:any)=>setDueOn(e.target.value)} onOk={addMedicalID} updating={loading}/>
 
              
             {/* EDIT MEDICAl ID DIALOG */}
-            <AddDialog open={editMedicalIDdialog} title="Edit Medical ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditMedicalIDdialog(false)}} inputplaceholder="Completed On" input2placeholder="Due on" inputOnChange={(e:any)=>setEditedCompletedOn(e.target.value)} input2OnChange={(e:any)=>{setEditedDueOn(e.target.value)}} onOk={EditMedicalID} updating={loading} disabled={loading} input1Value={medical_completed_on} input2Value={medical_due_on} input3Value={vehicle_issue} input1Label="Completed : " input2Label="Due On : "/>
+            <InputDialog open={editMedicalIDdialog} title="Edit Medical ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditMedicalIDdialog(false)}} inputplaceholder="Completed On" input2placeholder="Due on" inputOnChange={(e:any)=>setEditedCompletedOn(e.target.value)} input2OnChange={(e:any)=>{setEditedDueOn(e.target.value)}} onOk={EditMedicalID} updating={loading} disabled={loading} input1Value={medical_completed_on} input2Value={medical_due_on} input3Value={vehicle_issue} input1Label="Completed : " input2Label="Due On : "/>
 
             {/* DELETE MEDICAL ID */}
             <DefaultDialog title={"Delete Medical ID?"} destructive OkButtonText="Delete" open={deleteMedicalIDdialog} onCancel={()=>setDeleteMedicalIDdialog(false)} updating={loading} disabled={loading} onOk={deleteMedicalID}/>
 
             {/* RENEW MEDICAL ID DIALOG */}
-            <AddDialog titleIcon={<Sparkles color="goldenrod"/>} title="Renew Medical ID" open={renewMedicalIDdialog} onCancel={()=>setRenewMedicalIDdialog(false)} inputplaceholder="Completed On" input1Label="Completed : " input2placeholder="New Due" input2Label="New Due : " OkButtonIcon={<Sparkles width={"1rem"}/>} OkButtonText="Renew" input1Value={medical_completed_on} input2Value={medical_due_on} onOk={renewMedicalID} updating={loading} inputOnChange={(e:any)=>setEditedCompletedOn(e.target.value)} input2OnChange={(e:any)=>setEditedDueOn(e.target.value)} disabled={loading}/>
+            <InputDialog titleIcon={<Sparkles color="goldenrod"/>} title="Renew Medical ID" open={renewMedicalIDdialog} onCancel={()=>setRenewMedicalIDdialog(false)} inputplaceholder="Completed On" input1Label="Completed : " input2placeholder="New Due" input2Label="New Due : " OkButtonIcon={<Sparkles width={"1rem"}/>} OkButtonText="Renew" input1Value={medical_completed_on} input2Value={medical_due_on} onOk={renewMedicalID} updating={loading} inputOnChange={(e:any)=>setEditedCompletedOn(e.target.value)} input2OnChange={(e:any)=>setEditedDueOn(e.target.value)} disabled={loading}/>
             
             {/* VALE TRAINING DIALOG */}
             <DefaultDialog open={valeTrainingDialog} titleIcon={<img src="/vale-logo.png" style={{width:"1.75rem", paddingBottom:"0.5rem"}}/>} title={"Vale Training"} onCancel={()=>setValeTrainingDialog(false)} close back extra={
-                <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.45rem", maxHeight:"11.25rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem"}}>
+                <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.45rem", maxHeight:"12.75rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem"}}>
                     <Directive extra onClick={()=>{setTrainingAddDialogTitle("HSE Induction");setTrainingAddDialog(true)}} tag={"11/12/2024"} status icon={<Disc color="dodgerblue"/>} title="HSE Induction"/>
                     <Directive tag={"10/12/2024"} status={true} extra icon={<Disc color="dodgerblue"/>} title="CAR - 1"/>
                     <Directive extra icon={<Disc color="dodgerblue" />} title="CAR - 2"/>
@@ -1418,18 +1445,18 @@ const RenewID = async () => {
             }/>
 
             {/* ADD PASSPORT ID DIALOG */}
-            <AddDialog open={addPassportDialog} OkButtonText="Add" onCancel={()=>setAddPassportDialog(false)} title="Add Passport" titleIcon={<Book color="goldenrod"/>} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setPassportID(e.target.value)} input2OnChange={(e:any)=>setPassportIssue(e.target.value)} input3OnChange={(e:any)=>setPassportExpiry(e.target.value)} onOk={addPassport} updating={loading}/>
+            <InputDialog open={addPassportDialog} OkButtonText="Add" onCancel={()=>setAddPassportDialog(false)} title="Add Passport" titleIcon={<Book color="goldenrod"/>} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setPassportID(e.target.value)} input2OnChange={(e:any)=>setPassportIssue(e.target.value)} input3OnChange={(e:any)=>setPassportExpiry(e.target.value)} onOk={addPassport} updating={loading}/>
 
              
             {/* EDIT PASSPORT DIALOG */}
-            <AddDialog open={editPassportDialog} title="Edit Passport" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditPassportDialog(false)}} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setEditedPassportID(e.target.value)} input2OnChange={(e:any)=>{setEditedPassportIssue(e.target.value)}} input3OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} onOk={EditPassport} updating={loading} disabled={loading} input1Value={passportID} input2Value={passportIssue} input3Value={passportExpiry} input1Label="Passport ID : " input2Label="Issue Date : " input3Label="Expiry Date" />
+            <InputDialog open={editPassportDialog} title="Edit Passport" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditPassportDialog(false)}} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setEditedPassportID(e.target.value)} input2OnChange={(e:any)=>{setEditedPassportIssue(e.target.value)}} input3OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} onOk={EditPassport} updating={loading} disabled={loading} input1Value={passportID} input2Value={passportIssue} input3Value={passportExpiry} input1Label="Passport ID : " input2Label="Issue Date : " input3Label="Expiry Date" />
 
             <DefaultDialog title={"Delete Passport?"} destructive OkButtonText="Delete" open={DeletePassportDialog} onCancel={()=>setDeletePassportDialog(false)} updating={loading} disabled={loading} onOk={deletePassport}/>
 
             {/* RENEW PASSPORT DIALOG */}
-            <AddDialog titleIcon={<Sparkles color="goldenrod"/>} title="Renew Passport" open={renewPassportDialog} onCancel={()=>setRenewPassportDialog(false)} inputplaceholder="New Issue Date" input1Label="New Issue : " input2placeholder="New Expiry" input2Label="New Expiry : " OkButtonIcon={<Sparkles width={"1rem"}/>} OkButtonText="Renew" input1Value={passportIssue} input2Value={passportExpiry} onOk={renewPassport} updating={loading} inputOnChange={(e:any)=>setEditedPassportIssue(e.target.value)} input2OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} disabled={loading}/>
+            <InputDialog titleIcon={<Sparkles color="goldenrod"/>} title="Renew Passport" open={renewPassportDialog} onCancel={()=>setRenewPassportDialog(false)} inputplaceholder="New Issue Date" input1Label="New Issue : " input2placeholder="New Expiry" input2Label="New Expiry : " OkButtonIcon={<Sparkles width={"1rem"}/>} OkButtonText="Renew" input1Value={passportIssue} input2Value={passportExpiry} onOk={renewPassport} updating={loading} inputOnChange={(e:any)=>setEditedPassportIssue(e.target.value)} input2OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} disabled={loading}/>
 
-            <AddDialog open={trainingAddDialog} onCancel={()=>{setTrainingAddDialog(false);setTrainingAddDialogInput("")}} title={trainingAddDialogTitle} inputplaceholder="Expiry Date" OkButtonText="Add" inputOnChange={(e:any)=>setTrainingAddDialogInput(e.target.value)} OkButtonIcon={<Plus width={"1rem"}/>}/>
+            <InputDialog open={trainingAddDialog} onCancel={()=>{setTrainingAddDialog(false);setTrainingAddDialogInput("")}} title={trainingAddDialogTitle} inputplaceholder="Expiry Date" OkButtonText="Add" inputOnChange={(e:any)=>setTrainingAddDialogInput(e.target.value)} OkButtonIcon={<Plus width={"1rem"}/>}/>
 
             </div>
             

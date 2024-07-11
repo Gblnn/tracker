@@ -1,9 +1,8 @@
-import { DialogTitle } from "@radix-ui/react-dialog";
+import { LoadingOutlined } from '@ant-design/icons';
 import { Button } from "./ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader } from './ui/dialog';
-import {LoadingOutlined} from '@ant-design/icons'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 
-interface Props {
+interface Props{
     open?: boolean
     title?: string
     titleIcon?:any
@@ -33,38 +32,33 @@ interface Props {
     input4Label?:string
 }
 
-export default function AddDialog(props:Props){
-    
+export default function InputDialog(props:Props){
     return(
-        <>
         <Dialog open={props.open}>
-
-            <DialogContent onOpenAutoFocus={(e)=>e.preventDefault()} style={{}}>
-
-                <DialogHeader style={{}}>
+            <DialogContent onOpenAutoFocus={(e)=>e.preventDefault()}>
+                <DialogHeader>
                     <DialogTitle className="heading" style={{userSelect:"none", width:"100%", display:"flex"}}>
                         <div className="flex">
-                        {props.titleIcon}
-                        {props.title}
+                            {props.titleIcon}
+                            {props.title}
                         </div>
-                        
                     </DialogTitle>
+
                     <div style={{display:'flex', flexFlow:"column", width:"100%", gap:"0.5rem", paddingBottom:"0.5rem"}}>
 
+                        <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
+                            {
+                                props.input1Label?
+                                <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                    {props.input1Label}
+                                </p>
+                                :null
+                            }
+                        
+                            <input id='input-1' defaultValue={props.input1Value} placeholder={props.inputplaceholder} onChange={props.inputOnChange}/>
 
-                    <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
+                        </div>
                         {
-                            props.input1Label?
-                            <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
-                                {props.input1Label}
-                            </p>
-                            :null
-                        }
-                    
-                    <input defaultValue={props.input1Value} placeholder={props.inputplaceholder} onChange={props.inputOnChange}/>
-                    </div>
-                    
-                    {
                         props.input2placeholder?
                         <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
 
@@ -76,13 +70,13 @@ export default function AddDialog(props:Props){
                                 :null
                             }
                             
-                            <input defaultValue={props.input2Value} placeholder={props.input2placeholder} onChange={props.input2OnChange}/>
+                            <input id='input-2' defaultValue={props.input2Value} placeholder={props.input2placeholder} onChange={props.input2OnChange}/>
                         </div>
                         
                         :null
                     }
 
-                    {
+{
                         props.input3placeholder?
                         <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
                             {
@@ -93,7 +87,7 @@ export default function AddDialog(props:Props){
                                 :null
                             }
                             
-                            <input defaultValue={props.input3Value} placeholder={props.input3placeholder} onChange={props.input3OnChange}/>
+                            <input id='input-3' defaultValue={props.input3Value} placeholder={props.input3placeholder} onChange={props.input3OnChange}/>
                         </div>
                         
                         :null
@@ -110,19 +104,16 @@ export default function AddDialog(props:Props){
                                 :null
                             }
                             
-                            <input defaultValue={props.input4Value} placeholder={props.input4placeholder} onChange={props.input4OnChange}/>
+                            <input id='input-4' defaultValue={props.input4Value} placeholder={props.input4placeholder} onChange={props.input4OnChange}/>
                         </div>
                         
                         :null
                     }
-                    
+
                     </div>
-                    
                 </DialogHeader>
 
-                <DialogContent>
-                    
-                </DialogContent>
+                
 
                 <DialogFooter>
                     <div style={{width:"100%", display:"flex", gap:"0.5rem", justifyContent:"center"}}>
@@ -144,9 +135,8 @@ export default function AddDialog(props:Props){
                         </Button>
                     </div>
                 </DialogFooter>
-
             </DialogContent>
+            
         </Dialog>
-        </>
     )
 }

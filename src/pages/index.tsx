@@ -23,6 +23,8 @@ export default function Index(){
 
                     <Directive to="/records" title="Personal Records" icon={<File color="dodgerblue" width={"1.1rem"} height={"1.1rem"}/>}/>
 
+                    <Directive to="/records" title="Vale Records" icon={<img src="/vale-logo.png" style={{width:"1.25rem", paddingBottom:"0.25rem"}}/>}/>
+
                     {/* <Directive onClick={()=>{setRequestDialog(true)}} title="Request Feature" icon={<Plus color="grey" width={"1.1rem"} height={"1.1rem"}/>}/> */}
 
                 </div>
