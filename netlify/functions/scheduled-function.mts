@@ -54,10 +54,6 @@ export default async (req: Request) => {
         )
       })
 
-      filteredData.forEach((e:any)=>{
-        emails += e.email+", "
-      })
-
       Data.forEach((r:any)=>{
         rp += r.recipient+", "
       })
@@ -71,10 +67,8 @@ export default async (req: Request) => {
         moment((element.civil_expiry).toDate()).startOf('day').fromNow()
         +" on "
         +String(moment((element.civil_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(element.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+        +String(moment((element.civil_expiry).toDate()).diff(moment(today).startOf('day'), 'days')<=0?
         " (Overdue) "
-        +String(moment(element.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days'))
-        
         :"")
         +"\n\n"
         
@@ -126,12 +120,7 @@ export default async (req: Request) => {
         privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
       }
     )
-
     :null
-
-
-
-
     } 
     
     catch (error) {
@@ -143,5 +132,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"45 06 * * * "
+    schedule:"49 06 * * * "
 }
