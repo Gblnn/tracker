@@ -7,6 +7,7 @@ import DropDown from "@/components/dropdown"
 import FileInput from "@/components/file-input"
 import MedicalID from "@/components/medical-id"
 import Passport from "@/components/passport"
+import { ResponsiveDrawer } from "@/components/responsive-drawer"
 import SearchBar from "@/components/search-bar"
 import DefaultDialog from "@/components/ui/default-dialog"
 import VehicleID from "@/components/vehicle-id"
@@ -1058,7 +1059,7 @@ const RenewID = async () => {
             } 
             title_extra={
                 <div style={{display:"flex", gap:"0.5rem"}}>
-                    
+                    <ResponsiveDrawer/>
                     <DropDown onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>setUserEditPrompt(true)} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
                 </div>
                 
