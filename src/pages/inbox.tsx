@@ -301,6 +301,7 @@ export default function Inbox(){
                             }}
                             onReminderClick={()=>{
                                 setReminderDialog(true);
+                                setEmail(record.email)
                                 setMailTitle(record.name+"'s document expiry reminder");
                                 setMailContent(
                                 
@@ -421,7 +422,7 @@ export default function Inbox(){
                 <div style={{display:"flex", width:"100%", border:'', flexFlow:"column", gap:"0.5rem"}}>
                     
                     <div style={{display:"flex", width:"100%", gap:"0.5rem"}}>
-                    <input type="email" placeholder="Recipient E-Mail Address" onChange={(e)=>setEmail(e.target.value)}/>
+                    <input type="email" placeholder="Recipient E-Mail Address" defaultValue={email} onChange={(e)=>setEmail(e.target.value)}/>
                     {/* <button style={{width:"8rem"}}>
                         <MailCheck width={"1rem"} color="dodgerblue"/>
                         Send </button> */}
