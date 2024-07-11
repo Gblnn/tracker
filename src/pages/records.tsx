@@ -54,6 +54,9 @@ export default function Records(props:Props){
     const [loading, setLoading] = useState(false)
     const [addButtonModeSwap, setAddButtonModeSwap] = useState(false)
     const [deleteMedicalIDdialog, setDeleteMedicalIDdialog] = useState(false)
+    const [email, setEmail] = useState("")
+    const [editedEmail, setEditedEmail] = useState("")
+    const [editedName, setEditedName] = useState("")
 
     // CIVIL ID VARIABLES
     const [civil_number, setCivilNumber] = useState<any>()
@@ -307,7 +310,7 @@ const RenewID = async () => {
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
         setLoading(true)
-        await addDoc(collection(db, "records"), {name:name, created_on:Timestamp.fromDate(new Date()), civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:""})
+        await addDoc(collection(db, "records"), {name:name, email:email?email:"", created_on:Timestamp.fromDate(new Date()), civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:""})
         setAddDialog(false)
         setLoading(false)
         fetchData()
@@ -316,8 +319,10 @@ const RenewID = async () => {
     // FUNCTION TO EDIT RECORD
     const EditRecordName = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", id), {name:name})
+        await updateDoc(doc(db, "records", id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email})
         setUserEditPrompt(false)
+        setName(editedName?editedName:name)
+        setEmail(editedEmail?editedEmail:email)
         setLoading(false)
         fetchData()
     }
@@ -943,6 +948,7 @@ const RenewID = async () => {
                                     setPassportID(post.passportID)
                                     setPassportIssue(post.passportIssue)
                                     setPassportExpiry(post.passportExpiry?moment((post.passportExpiry).toDate()).format("DD/MM/YYYY"):null)
+                                    setEmail(post.email)
                     
                                     
                                 }}                        
@@ -1030,7 +1036,7 @@ const RenewID = async () => {
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
             {/* DISPLAY RECORD DIALOG */}
-            <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>setRecordSummary(false)} 
+            <DefaultDialog titleIcon={<UserCircle/>} title={name} subtitle={email} open={recordSummary} onCancel={()=>setRecordSummary(false)} 
             bigDate={()=>message.info(String(moment(new Date(created_on)).format("LLLL")))}
             created_on={
     
@@ -1071,11 +1077,11 @@ const RenewID = async () => {
             }/>
 
             {/* ADD RECORD DIALOG */}
-            <AddDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setName(e.target.value)} } inputplaceholder="Enter Full Name" disabled={loading||!name?true:false} updating={loading}/>
+            <AddDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setName(e.target.value)} } inputplaceholder="Enter Full Name" disabled={loading||!name?true:false} updating={loading} input2placeholder="Enter Email" input2OnChange={(e:any)=>setEmail(e.target.value)}/>
 
 
             {/* EDIT RECORD DIALOG */}
-            <AddDialog open={userEditPrompt} titleIcon={<PenLine/>} title="Edit Record Name" inputplaceholder="Enter New Name" OkButtonText="Rename" OkButtonIcon={<TextCursor width={"1rem"}/>} onCancel={()=>setUserEditPrompt(false)} onOk={EditRecordName} inputOnChange={(e:any)=>setName(e.target.value)} updating={loading} disabled={loading} input1Value={name}/>
+            <AddDialog open={userEditPrompt} titleIcon={<PenLine/>} title="Edit Record Name" inputplaceholder="Enter New Name" OkButtonText="Update" OkButtonIcon={<TextCursor width={"1rem"}/>} onCancel={()=>setUserEditPrompt(false)} onOk={EditRecordName} inputOnChange={(e:any)=>setEditedName(e.target.value)} updating={loading} disabled={loading} input1Value={name} input2placeholder="Email Address" input2Value={email} input2OnChange={(e:any)=>setEditedEmail(e.target.value)}/>
 
             {/* DELETE RECORD DIALOG */}
             <DefaultDialog open={userDeletePrompt} titleIcon={<X/>} destructive title="Delete Record?" OkButtonText="Delete" onCancel={()=>setUserDeletePrompt(false)} onOk={deleteRecord} updating={loading} disabled={loading}/>

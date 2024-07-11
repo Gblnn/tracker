@@ -292,7 +292,7 @@ export default function Inbox(){
                         })
                         .map((record:any)=>(
                             <InboxComponent 
-                            
+                            mail={record.email}
                             noArrow
                             onClick={()=>{}}
                             onRenewClick={()=>{

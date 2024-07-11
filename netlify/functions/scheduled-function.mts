@@ -13,6 +13,8 @@ export default async (req: Request) => {
     let filteredData = []
     const today = new Date()
     let rp = ""
+    let emails = ""
+    let emailsArray:any = []
 
     try {
 
@@ -52,9 +54,14 @@ export default async (req: Request) => {
         )
       })
 
+      filteredData.forEach((e:any)=>{
+        emails += e.email+", "
+      })
+
       Data.forEach((r:any)=>{
         rp += r.recipient+", "
       })
+
 
 
       filteredData.forEach((element:any) => {
@@ -64,6 +71,7 @@ export default async (req: Request) => {
         moment((element.civil_expiry).toDate()).startOf('day').fromNow()
         +" on "+
         String(moment((element.civil_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))+"\n\n"
+        +String(Math.round(moment(element.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days'))<=0?" (Overdue)":"")
         :null
 
         element.vehicle_expiry!=""?
@@ -95,7 +103,6 @@ export default async (req: Request) => {
 
       filteredData.length>=1?
 
-
       await emailjs.send(serviceId, templateId, {
         recipient: rp,
         subject:"Document Expiry Reminder",
@@ -105,7 +112,11 @@ export default async (req: Request) => {
         privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
       }
     )
+
     :null
+
+
+
     } 
     
     catch (error) {
@@ -117,5 +128,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"00 08 1 * * "
+    schedule:"57 05 * * * "
 }

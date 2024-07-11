@@ -24,6 +24,7 @@ interface Props{
     onRenewClick?:any
     hideButtons?:boolean
     desc?:string
+    mail?:string
 
 }
 
@@ -49,7 +50,7 @@ export default function InboxComponent(props:Props){
                     }
                     
 
-                    <div style={{border:"", display:'flex', flexFlow:"column", width:"100%", gap:"0.25rem"}}>
+                    <div style={{border:"", display:'flex', flexFlow:"column", width:"100%", gap:"0.15rem"}}>
 
                         <div style={{fontWeight:500, width:"100%", textAlign:"left", fontSize:"1rem", border:"", display:"flex", gap:"0.5rem", alignItems:"center"}}>
                             
@@ -69,7 +70,7 @@ export default function InboxComponent(props:Props){
                 
                             <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
                             {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
-                            <CreditCard width={"0.6rem"} color="dodgerblue" style={{border:''}}/>   
+                            <CreditCard width={"0.75rem"} color="dodgerblue" style={{border:''}}/>   
                             <p style={{textAlign:"left", opacity:0.75, color:props.civil_overdue?overdue_color:"white", fontWeight:props.civil_overdue?600:400}}>{props.civil_desc}</p>
                             </div>
                         
@@ -81,7 +82,7 @@ export default function InboxComponent(props:Props){
                 
                                 <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
                                     {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
-                                    <Car width={"0.6rem"} color="violet" style={{border:''}}/>   
+                                    <Car width={"0.75rem"} color="violet" style={{border:''}}/>   
                                     <p style={{textAlign:"left", opacity:0.75, color:props.vehicle_overdue?overdue_color:"white", fontWeight:props.vehicle_overdue?600:400}}>{props.vehicle_desc}</p>
                                 </div>
                             
@@ -94,7 +95,7 @@ export default function InboxComponent(props:Props){
                 
                                 <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
                                     {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
-                                    <HeartPulse width={"0.6rem"} color="tomato" style={{border:''}}/>   
+                                    <HeartPulse width={"0.75rem"} color="tomato" style={{border:''}}/>   
                                     <p style={{textAlign:"left", opacity:0.75, color:props.medical_overdue?overdue_color:"white", fontWeight:props.medical_overdue?600:400}}>{props.medical_desc}</p>
                                 </div>
                             
@@ -107,7 +108,7 @@ export default function InboxComponent(props:Props){
                 
                                 <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
                                     {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
-                                    <Book width={"0.6rem"} color="goldenrod" style={{border:''}}/>   
+                                    <Book width={"0.75rem"} color="goldenrod" style={{border:''}}/>   
                                     <p style={{textAlign:"left", opacity:0.75, color:props.passport_overdue?overdue_color:"white", fontWeight:props.passport_overdue?600:400}}>{props.passport_desc}</p>
                                 </div>
                             
@@ -130,7 +131,7 @@ export default function InboxComponent(props:Props){
 
                             <button onClick={props.onReminderClick} style={{display:"flex", height:"2rem", fontSize:"0.8rem", border:'', paddingRight:"0.75rem", paddingLeft:"0.5rem"}}>
                                 <AtSign width={"1.1rem"} color='dodgerblue'/>
-                                Notify Document Holder
+                                {props.mail}
                             </button>
 
                             {/* <button onClick={props.onRenewClick} style={{display:"flex", width:"5.5rem", height:"2rem", fontSize:"0.8rem", border:''}}>

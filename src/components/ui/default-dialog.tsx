@@ -26,6 +26,7 @@ interface Props {
     footerExtra?:any
     progressItem?:string
     bigDate?:any
+    subtitle?:string
 }
 
 export default function DefaultDialog(props:Props){
@@ -42,11 +43,12 @@ export default function DefaultDialog(props:Props){
                             <div style={{display:"flex", alignItems:"center", gap:"0.75rem", border:"", width:"100%"}}>
                                 {props.titleIcon}
                                 {props.title}
-                                <p onClick={props.bigDate} style={{fontWeight:400, fontSize:"1rem", opacity:0.5, letterSpacing:"0.075rem", display:"flex", gap:"0.5rem"}}>
-                                    
+                            
+                                
+                                
+                                
+                                <p onClick={props.bigDate} style={{fontWeight:400, fontSize:"1rem", opacity:0.5, letterSpacing:"0.075rem", display:"flex", gap:"0.5rem"}}>    
                                     {props.created_on}
-                                    
-                                    
                                 </p>
                             </div>
 
@@ -54,6 +56,9 @@ export default function DefaultDialog(props:Props){
 
                             
                         
+                        </div>
+                        <div style={{border:"", display:"flex", fontWeight:"600", fontSize:"0.8rem", color:"dodgerblue"}}>
+                            <p style={{paddingLeft:"0.5rem",paddingRight:"0.5rem", borderRadius:"0.5rem", background:"rgba(100 100 100/ 20%)", marginLeft:"0.5rem"}}>{props.subtitle}</p>
                         </div>
                         
                     </DialogTitle>
