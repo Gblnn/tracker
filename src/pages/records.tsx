@@ -301,7 +301,6 @@ const RenewID = async () => {
     setLoading(true)
     await updateDoc(doc(db, "records", id),{civil_expiry:TimeStamper(newExpiry), created_on:Timestamp.fromDate(new Date())})
     setCivilExpiry(newExpiry)
-    setCreatedOn(new Date())
     setLoading(false)
     setRenewDocDialog(false)
     fetchData()
@@ -325,7 +324,6 @@ const RenewID = async () => {
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
         setLoading(false)
-        setCreatedOn(new Date())
         fetchData()
     }
 
@@ -343,6 +341,7 @@ const RenewID = async () => {
         setUserDeletePrompt(false)
         setRecordSummary(false)
         setLoading(false)
+        
         fetchData()
         
 
@@ -360,7 +359,6 @@ const RenewID = async () => {
                 civil_expiry:civil_expiry?TimeStamper(civil_expiry):"", civil_DOB:civil_DOB, created_on:Timestamp.fromDate(new Date)})
             
             setLoading(false)
-            setCreatedOn(new Date())
             fetchData()
             props.onUpdate
             
@@ -371,7 +369,6 @@ const RenewID = async () => {
             setCivilDOB("")
             setNewCivilExpiry("")
             setNewCivilNumber("")
-            
             setLoading(false)
             message.info("ID generation failed "+String(error))
         }
@@ -390,7 +387,6 @@ const RenewID = async () => {
         setCivilDOB("")
         setNewCivilExpiry("")
         setNewCivilNumber("")
-        setCreatedOn(new Date())
         fetchData()
     }
 
@@ -403,7 +399,7 @@ const RenewID = async () => {
             setCivilNumber(edited_civil_number?edited_civil_number:civil_number)
             setCivilExpiry(edited_civil_expiry?edited_civil_expiry:civil_expiry)
             setCivilDOB(edited_civil_DOB?edited_civil_DOB:civil_DOB)
-            setCreatedOn(new Date())
+
             setEditcivilprompt(false)
             setLoading(false)
             fetchData()
@@ -425,10 +421,10 @@ const RenewID = async () => {
         try {
             await updateDoc(doc(db, "records", id),{vehicle_number:vehicle_number, 
             vehicle_expiry:TimeStamper(vehicle_expiry), vehicle_issue:vehicle_issue, vehicle_year:vehicle_year, created_on:Timestamp.fromDate(new Date)})
-            setCreatedOn(new Date())
+
             setLoading(false)
             fetchData()
-           
+            
             
         }
          catch (error) {
@@ -454,9 +450,7 @@ const RenewID = async () => {
         setVehicleNumber("")
         setVehicleExpiry("")
         setVehicleIssue("")
-        setCreatedOn(new Date())
         fetchData()
-        
     } 
 
     // FUNCTION TO DELETE A MEDICAL ID
@@ -467,9 +461,7 @@ const RenewID = async () => {
         setLoading(false)
         setCompletedOn("")
         setDueOn("")
-        setCreatedOn(new Date())
         fetchData()
-
     } 
 
     //FUNCTION TO EDIT VEHICLE ID
@@ -482,7 +474,7 @@ const RenewID = async () => {
             setVehicleNumber(edited_vehicle_number?edited_vehicle_number:vehicle_number)
             setVehicleExpiry(edited_vehicle_expiry?edited_vehicle_expiry:vehicle_expiry)
             setVehicleIssue(edited_vehicle_issue?edited_vehicle_issue:vehicle_issue)
-            setCreatedOn(new Date())
+            
 
             setEditVehicleIDprompt(false)
             setLoading(false)
@@ -504,7 +496,6 @@ const RenewID = async () => {
             setVehicleExpiry(edited_vehicle_expiry?edited_vehicle_expiry:vehicle_expiry)
             setLoading(false)
             setRenewVehicleDialog(false)
-            setCreatedOn(new Date())
             fetchData()
             
         } catch (error) {
@@ -518,7 +509,7 @@ const RenewID = async () => {
         try {
             await updateDoc(doc(db, "records", id),{medical_completed_on:medical_completed_on, 
             medical_due_on:TimeStamper(medical_due_on), created_on:Timestamp.fromDate(new Date)})
-            setCreatedOn(new Date())
+
             setLoading(false)
             fetchData()
             
@@ -541,7 +532,6 @@ const RenewID = async () => {
             setCompletedOn(editedCompletedOn?editedCompletedOn:medical_completed_on)
             setLoading(false)
             setEditMedicalIDdialog(false)
-            setCreatedOn(new Date())
             
         } catch (error) {
             message.error(String(error))
@@ -557,7 +547,6 @@ const RenewID = async () => {
             setPassportExpiry(editedPassportExpiry?editedPassportExpiry:passportExpiry)
             setLoading(false)
             setEditPassportDialog(false)
-            setCreatedOn(new Date())
             
         } catch (error) {
             message.error(String(error))
@@ -574,7 +563,7 @@ const RenewID = async () => {
 
             setCompletedOn(editedCompletedOn?editedCompletedOn:medical_completed_on)
             setDueOn(editedDueOn?editedDueOn:medical_due_on)
-            setCreatedOn(new Date())
+            
             setLoading(false)
             setRenewMedicalIDdialog(false)
             fetchData()
@@ -592,7 +581,6 @@ const RenewID = async () => {
             await updateDoc(doc(db, "records", id),{passportID:passportID, 
             passportIssue:passportIssue, passportExpiry:TimeStamper(passportExpiry), created_on:Timestamp.fromDate(new Date)})
             setLoading(false)
-            setCreatedOn(new Date())
             
             
         } catch (error) {
@@ -609,7 +597,6 @@ const RenewID = async () => {
         setPassportID("")
         setPassportExpiry("")
         setPassportIssue("")
-        setCreatedOn(new Date())
         fetchData()
     }
     
@@ -622,7 +609,6 @@ const RenewID = async () => {
         setPassportExpiry(editedPassportExpiry?editedPassportExpiry:passportExpiry)
         setLoading(false)
         setRenewPassportDialog(false)
-        setCreatedOn(new Date())
         fetchData()
     
     }
