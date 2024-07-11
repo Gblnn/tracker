@@ -132,5 +132,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"52 06 * * * "
+    schedule:"14 07 * * * "
 }
