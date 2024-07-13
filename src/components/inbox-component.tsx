@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { AtSign, Book, Car, CreditCard, HeartPulse } from "lucide-react"
+import { Book, Car, CreditCard, HeartPulse } from "lucide-react"
 import { Link } from "react-router-dom"
 
 interface Props{
@@ -25,7 +25,8 @@ interface Props{
     hideButtons?:boolean
     desc?:string
     mail?:string
-
+    type?:string
+    typeColor?:string
 }
 
 
@@ -62,6 +63,7 @@ export default function InboxComponent(props:Props){
                             }
                             
                         </div>
+                        
 
         
 
@@ -129,10 +131,12 @@ export default function InboxComponent(props:Props){
 
                             
 
-                            <button onClick={props.onReminderClick} style={{display:"flex", height:"2rem", fontSize:"0.8rem", border:'', paddingRight:"0.75rem", paddingLeft:"0.5rem"}}>
-                                <AtSign width={"1.1rem"} color='dodgerblue'/>
-                                {props.mail}
-                            </button>
+                                {/* <button onClick={props.onReminderClick} style={{display:"flex", height:"2rem", fontSize:"0.8rem", border:'', paddingRight:"0.75rem", paddingLeft:"0.5rem"}}>
+                                    <AtSign width={"1.1rem"} color='dodgerblue'/>
+                                    {props.mail}
+                                </button> */}
+
+                                <p style={{fontWeight:600, fontSize:"0.8rem", color:props.typeColor, borderRadius:"0.5rem", background:"rgba(100 100 100/ 20%)", width:"fit-content",paddingLeft:"1rem", paddingRight:"1rem", alignItems:"center", display:"flex", height:"2rem"}}>{props.type}</p>
 
                             {/* <button onClick={props.onRenewClick} style={{display:"flex", width:"5.5rem", height:"2rem", fontSize:"0.8rem", border:''}}>
                                 <Sparkles width={"1rem"} color='goldenrod' fill='goldenrod'/>

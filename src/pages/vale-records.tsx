@@ -16,7 +16,7 @@ import emailjs from '@emailjs/browser'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, FilePlus, Globe, GraduationCap, HeartPulse, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, FilePlus, Globe, GraduationCap, HeartPulse, Inbox, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -38,7 +38,7 @@ interface Props{
 }
 
 
-export default function Records(props:Props){
+export default function ValeRecords(props:Props){
 
 
     // BASIC PAGE VARIABLES
@@ -161,23 +161,45 @@ export default function Records(props:Props){
     const [healthDialog, setHealthDialog] = useState(false)
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
+    
+    // useEffect(()=>{
+    //     document.addEventListener("keydown", detectKeyDown, true)
+    // },[])
+
+    // const detectKeyDown = (e:any) => {
+    //     console.log(e.key)
+    //     e.key == "Enter"?
+    //     setAddDialog(true)
+    //     :null
+    // }
+
     useEffect(()=>{
-        onSnapshot(query(collection(db, 'records')), (snapshot:any) => {
+        onSnapshot(query(collection(db, 'vale-records')), (snapshot:any) => {
             snapshot.docChanges().forEach((change:any) => {
               if (change.type === "added") {
+                // console.log("Added Data")
                 fetchData()   
               }
               if (change.type === "modified") {
+                //   console.log("Modified Data")
                   fetchData()
               }
               if (change.type === "removed") {
+                //   console.log("Removed Data")
                   fetchData()
               }
             });
           });
 
         console.log(trainingAddDialogInput)
+
+     
     },[])
+
+    
+    
+
+
     
     
     const {flushHeldKeys} = useKeyboardShortcut(
@@ -194,6 +216,7 @@ export default function Records(props:Props){
         return Timestamp.fromDate(moment(date, "DD/MM/YYYY").toDate())  
     }
 
+    
 
     // PAGE LOAD HANDLER
     useEffect(() =>{
@@ -229,13 +252,25 @@ export default function Records(props:Props){
     },[status])
 
 
+    
+
+    // useEffect(()=>{
+    //     console.log(checked, selectable)
+        
+    // },[checked])
+
+    // useEffect(()=>{
+    //     console.log(moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')+1)
+    // },[civil_expiry])
+
+
     //INITIAL DATA FETCH ON PAGE LOAD
     const fetchData = async (type?:any) => {
         
         try {
             
             setfetchingData(true)
-            const RecordCollection = collection(db, "records")
+            const RecordCollection = collection(db, "vale-records")
             const recordQuery = query(RecordCollection, orderBy("created_on"))
             const querySnapshot = await getDocs(recordQuery)
             const fetchedData: Array<Record> = [];
@@ -264,7 +299,7 @@ export default function Records(props:Props){
 
 const RenewID = async () => {
     setLoading(true)
-    await updateDoc(doc(db, "records", id),{civil_expiry:TimeStamper(newExpiry), modified_on:Timestamp.fromDate(new Date())})
+    await updateDoc(doc(db, "vale-records", id),{civil_expiry:TimeStamper(newExpiry), modified_on:Timestamp.fromDate(new Date())})
     setCivilExpiry(newExpiry)
     setLoading(false)
     setRenewDocDialog(false)
@@ -276,7 +311,7 @@ const RenewID = async () => {
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
         setLoading(true)
-        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:"personal", civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:""})
+        await addDoc(collection(db, "vale-records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:"vale", civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:""})
         setAddDialog(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -288,7 +323,7 @@ const RenewID = async () => {
     // FUNCTION TO EDIT RECORD
     const EditRecordName = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email, modified_on:Timestamp.fromDate(new Date)})
+        await updateDoc(doc(db, "vale-records", id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email, modified_on:Timestamp.fromDate(new Date)})
         setUserEditPrompt(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -300,7 +335,7 @@ const RenewID = async () => {
     // FUNCTION TO DELETE RECORD
     const deleteRecord = async () => {
         setLoading(true)
-        await deleteDoc(doc(db, "records", id))
+        await deleteDoc(doc(db, "vale-records", id))
         setCivilNumber("")
         setCivilNumber("")
         setCivilExpiry("")
@@ -324,7 +359,7 @@ const RenewID = async () => {
         setAddcivil(false)
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{civil_number:edited_civil_number, 
+            await updateDoc(doc(db, "vale-records", id),{civil_number:edited_civil_number, 
                 civil_expiry:edited_civil_expiry?TimeStamper(edited_civil_expiry):"", civil_DOB:edited_civil_DOB, modified_on:Timestamp.fromDate(new Date)})
             setCivilNumber(edited_civil_number)
             setCivilExpiry(edited_civil_expiry)
@@ -350,7 +385,7 @@ const RenewID = async () => {
     // FUNCTION TO DELETE A CIVIL ID
     const deleteCivilID = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", id),{civil_number:"", civil_expiry:"", civil_DOB:"", modified_on:Timestamp.fromDate(new Date)})
+        await updateDoc(doc(db, "vale-records", id),{civil_number:"", civil_expiry:"", civil_DOB:"", modified_on:Timestamp.fromDate(new Date)})
         setCivilDelete(false)
         setLoading(false)
         setCivilNumber("")
@@ -367,7 +402,7 @@ const RenewID = async () => {
     const EditCivilID = async () => {
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{civil_number:edited_civil_number?edited_civil_number:civil_number, civil_expiry:edited_civil_expiry?TimeStamper(edited_civil_expiry):TimeStamper(civil_expiry), civil_DOB:edited_civil_DOB?edited_civil_DOB:civil_DOB, modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, "vale-records", id),{civil_number:edited_civil_number?edited_civil_number:civil_number, civil_expiry:edited_civil_expiry?TimeStamper(edited_civil_expiry):TimeStamper(civil_expiry), civil_DOB:edited_civil_DOB?edited_civil_DOB:civil_DOB, modified_on:Timestamp.fromDate(new Date)})
             
             setCivilNumber(edited_civil_number?edited_civil_number:civil_number)
             setCivilExpiry(edited_civil_expiry?edited_civil_expiry:civil_expiry)
@@ -393,7 +428,7 @@ const RenewID = async () => {
         setAddVehicleID(false)
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{vehicle_number:vehicle_number, 
+            await updateDoc(doc(db, "vale-records", id),{vehicle_number:vehicle_number, 
             vehicle_expiry:TimeStamper(vehicle_expiry), vehicle_issue:vehicle_issue, vehicle_year:vehicle_year, modified_on:Timestamp.fromDate(new Date)})
 
             setLoading(false)
@@ -419,7 +454,7 @@ const RenewID = async () => {
     // FUNCTION TO DELETE A VEHICLE ID
     const deleteVehicleID = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", id),{vehicle_number:"", vehicle_expiry:"", vehicle_issue:"", modified_on:Timestamp.fromDate(new Date)})
+        await updateDoc(doc(db, "vale-records", id),{vehicle_number:"", vehicle_expiry:"", vehicle_issue:"", modified_on:Timestamp.fromDate(new Date)})
         setVehicleIdDelete(false)
         setLoading(false)
         setVehicleNumber("")
@@ -432,7 +467,7 @@ const RenewID = async () => {
     // FUNCTION TO DELETE A MEDICAL ID
     const deleteMedicalID = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", id),{medical_completed_on:"", medical_due_on:"", modified_on:Timestamp.fromDate(new Date)})
+        await updateDoc(doc(db, "vale-records", id),{medical_completed_on:"", medical_due_on:"", modified_on:Timestamp.fromDate(new Date)})
         setDeleteMedicalIDdialog(false)
         setLoading(false)
         setCompletedOn("")
@@ -446,7 +481,7 @@ const RenewID = async () => {
         setLoading(true)
         try {
             
-            await updateDoc(doc(db, "records", id),{vehicle_number:edited_vehicle_number?edited_vehicle_number:vehicle_number, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), vehicle_issue:edited_vehicle_issue?edited_vehicle_issue:vehicle_issue, modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, "vale-records", id),{vehicle_number:edited_vehicle_number?edited_vehicle_number:vehicle_number, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), vehicle_issue:edited_vehicle_issue?edited_vehicle_issue:vehicle_issue, modified_on:Timestamp.fromDate(new Date)})
 
             setVehicleNumber(edited_vehicle_number?edited_vehicle_number:vehicle_number)
             setVehicleExpiry(edited_vehicle_expiry?edited_vehicle_expiry:vehicle_expiry)
@@ -469,7 +504,7 @@ const RenewID = async () => {
         setLoading(true)
         try {
 
-            await updateDoc(doc(db, "records", id),{vehicle_issue:edited_vehicle_issue, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, "vale-records", id),{vehicle_issue:edited_vehicle_issue, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), modified_on:Timestamp.fromDate(new Date)})
             setVehicleIssue(edited_vehicle_issue?edited_vehicle_issue:vehicle_issue)
             setVehicleExpiry(edited_vehicle_expiry?edited_vehicle_expiry:vehicle_expiry)
             setLoading(false)
@@ -482,12 +517,11 @@ const RenewID = async () => {
             setLoading(false)
         }
     }
-
     const addMedicalID = async () => {
         setMedicalIDdialog(false)
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{medical_completed_on:medical_completed_on, 
+            await updateDoc(doc(db, "vale-records", id),{medical_completed_on:medical_completed_on, 
             medical_due_on:TimeStamper(medical_due_on), modified_on:Timestamp.fromDate(new Date)})
 
             setLoading(false)
@@ -508,7 +542,7 @@ const RenewID = async () => {
     const EditMedicalID = async () => {
         setLoading(true)
         try {
-            await updateDoc(doc(db, 'records', id),{medical_completed_on:editedCompletedOn?editedCompletedOn:medical_completed_on, medical_due_on:editedDueOn?TimeStamper(editedDueOn):TimeStamper(medical_due_on), modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, 'vale-records', id),{medical_completed_on:editedCompletedOn?editedCompletedOn:medical_completed_on, medical_due_on:editedDueOn?TimeStamper(editedDueOn):TimeStamper(medical_due_on), modified_on:Timestamp.fromDate(new Date)})
 
             setDueOn(editedDueOn?editedDueOn:medical_due_on)
             setCompletedOn(editedCompletedOn?editedCompletedOn:medical_completed_on)
@@ -525,7 +559,7 @@ const RenewID = async () => {
     const EditPassport = async () => {
         setLoading(true)
         try {
-            await updateDoc(doc(db, 'records', id),{passportID:editedPassportID?editedPassportID:passportID, passportIssue:editedPassportIssue?editedPassportIssue:passportIssue, passportExpiry:editedPassportExpiry?TimeStamper(editedPassportExpiry):TimeStamper(passportExpiry), modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, 'vale-records', id),{passportID:editedPassportID?editedPassportID:passportID, passportIssue:editedPassportIssue?editedPassportIssue:passportIssue, passportExpiry:editedPassportExpiry?TimeStamper(editedPassportExpiry):TimeStamper(passportExpiry), modified_on:Timestamp.fromDate(new Date)})
             setPassportID(editedPassportID?editedPassportID:passportID)
             setPassportIssue(editedPassportIssue?editedPassportIssue:passportIssue)
             setPassportExpiry(editedPassportExpiry?editedPassportExpiry:passportExpiry)
@@ -545,7 +579,7 @@ const RenewID = async () => {
         setLoading(true)
         try {
 
-            await updateDoc(doc(db, "records", id),{medical_completed_on:editedCompletedOn?editedCompletedOn:medical_completed_on, medical_due_on:editedDueOn?TimeStamper(editedDueOn):TimeStamper(medical_due_on), modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, "vale-records", id),{medical_completed_on:editedCompletedOn?editedCompletedOn:medical_completed_on, medical_due_on:editedDueOn?TimeStamper(editedDueOn):TimeStamper(medical_due_on), modified_on:Timestamp.fromDate(new Date)})
 
             setCompletedOn(editedCompletedOn?editedCompletedOn:medical_completed_on)
             setDueOn(editedDueOn?editedDueOn:medical_due_on)
@@ -565,7 +599,7 @@ const RenewID = async () => {
         setAddPassportDialog(false)
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{passportID:passportID, 
+            await updateDoc(doc(db, "vale-records", id),{passportID:passportID, 
             passportIssue:passportIssue, passportExpiry:TimeStamper(passportExpiry), modified_on:Timestamp.fromDate(new Date)})
             setLoading(false)
             fetchData()
@@ -580,7 +614,7 @@ const RenewID = async () => {
 
     const deletePassport = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", id),{passportID:"", passportExpiry:"", passportIssue:"", modified_on:Timestamp.fromDate(new Date)})
+        await updateDoc(doc(db, "vale-records", id),{passportID:"", passportExpiry:"", passportIssue:"", modified_on:Timestamp.fromDate(new Date)})
         setDeletePassportDialog(false)
         setLoading(false)
         setPassportID("")
@@ -592,7 +626,7 @@ const RenewID = async () => {
     
     const renewPassport = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", id),{passportExpiry:TimeStamper(editedPassportExpiry?editedPassportExpiry:passportExpiry), passportIssue:editedPassportIssue?editedPassportIssue:passportIssue, modified_on:Timestamp.fromDate(new Date)
+        await updateDoc(doc(db, "vale-records", id),{passportExpiry:TimeStamper(editedPassportExpiry?editedPassportExpiry:passportExpiry), passportIssue:editedPassportIssue?editedPassportIssue:passportIssue, modified_on:Timestamp.fromDate(new Date)
             
         })
         setPassportIssue(editedPassportIssue?editedPassportIssue:passportIssue)
@@ -657,7 +691,7 @@ const RenewID = async () => {
             setLoading(true)
             
             await checked.forEach(async (item:any) => {
-                await deleteDoc(doc(db, "records", item))
+                await deleteDoc(doc(db, "vale-records", item))
                 counts++
                 setProgress(String(percentage*counts)+"%")
                 setProgressItem(item)
@@ -713,7 +747,7 @@ const RenewID = async () => {
 
             </div>
                 {/* BACK BUTTON */}
-                <Back title={"Records"+
+                <Back title={"Vale"+
                 
                 " ("+records.length+")"} 
                 extra={
@@ -733,7 +767,7 @@ const RenewID = async () => {
                         </button> */}
 
                         
-                        <button className="transitions blue-glass" style={{paddingLeft:"1rem", paddingRight:"1rem", width:"3rem"}} onClick={()=>{fetchData("refresh")}} >
+                        <button className="transitions" style={{paddingLeft:"1rem", paddingRight:"1rem", width:"3rem"}} onClick={()=>{fetchData("refresh")}} >
 
                             {
                                 fetchingData?
@@ -749,7 +783,10 @@ const RenewID = async () => {
 
                             </button>
 
-                            
+                            <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
+                                {/* <Inbox style={{position:"absolute"}} className="animate-ping" color="crimson"/> */}
+                                <Inbox className="" color="crimson"/>
+                            </button>
             
                     </div>
                     :

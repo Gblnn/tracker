@@ -8,6 +8,7 @@ import Records from "./pages/records";
 import UserPage from "./pages/user";
 import Vehicles from "./pages/vehicles";
 import History from './pages/history';
+import ValeRecords from './pages/vale-records';
 
 
 export default function App(){
@@ -31,7 +32,8 @@ export default function App(){
     <Routes>
       <Route path="/" element={<Index/>}/>
       <Route path="/inbox" element={<Inbox/>}/>
-      <Route path="/records" element={<Records onUpdate/>}/>
+      <Route path="/records" element={<Records/>}/>
+      <Route path="/vale-records" element={<ValeRecords/>}/>
       <Route path="/user" element={<UserPage/>}/>
       <Route path="/vehicles" element={<Vehicles/>}/>
       <Route path="/medicals" element={<Medicals/>}/>

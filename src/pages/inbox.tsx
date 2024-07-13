@@ -1,5 +1,6 @@
 
 import Back from "@/components/back";
+import CustomDropDown from "@/components/custom-dropdown";
 import Directive from "@/components/directive";
 import InboxComponent from "@/components/inbox-component";
 import InputDialog from "@/components/input-dialog";
@@ -11,7 +12,7 @@ import emailjs from '@emailjs/browser';
 import { message } from "antd";
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { Bell, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, Users } from "lucide-react";
+import { File, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, Users } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 
@@ -249,7 +250,7 @@ export default function Inbox(){
                         
                     </button> */}
                     <SearchBar placeholder="Search by name" onChange={(e:any)=>setSearch(e.target.value.toLowerCase())}/>
-                    <button 
+                    {/* <button 
                     onClick={()=>{
                         setReminderDialog(true)
                         setMailTitle("Document expiry Reminder")
@@ -258,7 +259,14 @@ export default function Inbox(){
                         style={{width:"6.5rem"}}>
                         <Bell width={"1rem"} color="violet"/>
                         <p style={{fontSize:"0.8rem"}}>Notify</p>
-                    </button>
+                    </button> */}
+                    <CustomDropDown trigger={<Filter color="salmon" width={"1.1rem"}/>}
+                    option1Text="Personal Records"
+                    option1Icon={<File color="dodgerblue"/>}
+                    option2Text="Vale Records"
+                    option2Icon={<img src="/vale-logo.png" style={{width:"1.25rem", paddingBottom:"0.45rem"}}/>}
+                    />
+                    
                 </div>
                 
                 <p style={{height:"1.5rem"}}></p>
@@ -293,6 +301,8 @@ export default function Inbox(){
                         })
                         .map((record:any)=>(
                             <InboxComponent 
+                            type={record.type=="personal"?"Personal Record":record.type=="vale"?"Vale Record":""}
+                            typeColor={record.type=="personal"?"dodgerblue":record.type=="vale"?"lightgreen":""}
                             mail={record.email}
                             noArrow
                             onClick={()=>{}}

@@ -93,7 +93,7 @@ export default function InputDialog(props:Props){
                         :null
                     }
 
-{
+                    {
                         props.input4placeholder?
                         <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
                             {
@@ -109,6 +109,14 @@ export default function InputDialog(props:Props){
                         
                         :null
                     }
+
+                    {/* {
+                        props.combo1?
+                        <div>
+
+                        </div>
+                        :null
+                    } */}
 
                     </div>
                 </DialogHeader>
