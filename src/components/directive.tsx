@@ -1,4 +1,4 @@
-import { CheckSquare2, ChevronRight, EllipsisVerticalIcon } from "lucide-react"
+import { BellOff, CheckSquare2, ChevronRight, EllipsisVerticalIcon } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import DropDown from "./dropdown"
@@ -18,6 +18,7 @@ interface Props{
     extra?:any
     extraOnDelete?:any
     extraOnEdit?:any
+    notify?:boolean
 }
 
 export default function Directive(props:Props){
@@ -73,6 +74,13 @@ export default function Directive(props:Props){
                         </p>
                         :null
                     }
+
+                    {
+                        props.notify?
+                        <BellOff width={"1rem"} color="grey"/>
+                        :null
+                    }
+                    
                 {
                 props.selectable?
                 null
@@ -85,6 +93,7 @@ export default function Directive(props:Props){
                     </p>
                 :null
                 }
+                
                 {
                     props.selectable||props.noArrow?
                     <div style={{width:"1rem"}}>

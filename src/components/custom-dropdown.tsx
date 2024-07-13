@@ -1,5 +1,6 @@
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem } from "./ui/dropdown-menu";
+import { X } from "lucide-react";
 
 interface Props{
     trigger?:any
@@ -33,6 +34,11 @@ export default function CustomDropDown(props:Props){
           <DropdownMenuItem onClick={props.onOption2}>
             {props.option2Icon}
             <span style={{width:"100%"}} >{props.option2Text}</span>  
+          </DropdownMenuItem>
+
+          <DropdownMenuItem onClick={props.onOption2}>
+            <X/>
+            <span style={{width:"100%"}} >Clear</span>  
           </DropdownMenuItem>
           
         </DropdownMenuGroup>
