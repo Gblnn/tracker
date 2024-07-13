@@ -301,6 +301,7 @@ export default function Inbox(){
                         })
                         .map((record:any)=>(
                             <InboxComponent 
+                            notify={!record.notify}
                             type={record.type=="personal"?"Personal Record":record.type=="vale"?"Vale Record":""}
                             typeIcon={record.type=="personal"?<File color="dodgerblue" width={"1rem"}/>:record.type=="vale"?<img src="/vale-logo.png" style={{width:"1.25rem", paddingBottom:"0.45rem"}}/>:""}
                             mail={record.email}

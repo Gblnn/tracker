@@ -57,9 +57,9 @@ export default function Directive(props:Props){
                     
 
 
-                    <p style={{fontWeight:400, width:"", textAlign:"left"}}>
+                    <span style={{fontWeight:400, width:"fit-content", textAlign:"left"}}>
                         {props.title}
-                    </p>
+                    </span>
 
                     
                     

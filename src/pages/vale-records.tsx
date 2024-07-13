@@ -16,7 +16,7 @@ import emailjs from '@emailjs/browser'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, FilePlus, Globe, GraduationCap, HeartPulse, InboxIcon, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { BellOff, BellRing, Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, FilePlus, Globe, GraduationCap, HeartPulse, InboxIcon, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -43,6 +43,7 @@ export default function ValeRecords(props:Props){
     const usenavigate = useNavigate()
     // BASIC PAGE VARIABLES
     // const [pageLoad, setPageLoad] = useState(false)
+    const [notify, setNotify] = useState(true)
     const [records, setRecords] = useState<any>([])
     const [name, setName] = useState("")
     const [id, setID] = useState("")
@@ -159,6 +160,8 @@ export default function ValeRecords(props:Props){
     const [progressItem, setProgressItem] = useState("")
     const [trainingDialog, setTrainingDialog] = useState(false)
     const [healthDialog, setHealthDialog] = useState(false)
+
+    const [notifyLoading, setNotifyLoading] = useState(false)
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
     useEffect(()=>{
@@ -276,7 +279,7 @@ const RenewID = async () => {
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
         setLoading(true)
-        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:"vale", notify:true, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:""})
+        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:"personal", notify:true, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:""})
         setAddDialog(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -682,6 +685,17 @@ const RenewID = async () => {
         }
     }
 
+    const handleNotify = async () => {
+        setNotifyLoading(true)
+        await updateDoc(doc(db, 'records', id),{notify:!notify})
+        setNotify(!notify)
+        setNotifyLoading(false)
+        notify==true?
+        message.info("Notifications Disabled")
+        :
+        message.success("Notifications Enabled")
+    }
+
     
 
     return(
@@ -883,7 +897,7 @@ const RenewID = async () => {
                         <motion.div key={post.id} initial={{opacity:0}} whileInView={{opacity:1}}>
 
                             <Directive 
-                                
+                                notify={(!post.notify)}
                                 tag={
 
                                     post.civil_expiry != "" || post.vehicle_expiry != "" || post.medical_due_on != "" || post.passportID != ""?
@@ -942,7 +956,7 @@ const RenewID = async () => {
                                     setPassportIssue(post.passportIssue)
                                     setPassportExpiry(post.passportExpiry?moment((post.passportExpiry).toDate()).format("DD/MM/YYYY"):null)
                                     setEmail(post.email)
-                    
+                                    setNotify(post.notify)
                                     
                                 }}                        
 
@@ -1029,7 +1043,7 @@ const RenewID = async () => {
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
             {/* DISPLAY RECORD DIALOG */}
-            <DefaultDialog titleIcon={<UserCircle/>} title={name} subtitle={email} open={recordSummary} onCancel={()=>{setRecordSummary(false);setEmail("")}} 
+            <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>{setRecordSummary(false);setEmail("")}} 
             bigDate={()=>message.info("Last Modified : "+String(moment(new Date(modified_on)).format("LLL")))}
             created_on={
     
@@ -1037,7 +1051,21 @@ const RenewID = async () => {
                     
             } 
             title_extra={
-            <DropDown onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>setUserEditPrompt(true)} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
+                <div style={{display:"flex", gap:"0.5rem"}}>
+                    <button onClick={handleNotify} style={{paddingLeft:"1rem", paddingRight:"1rem"}}>
+                        {
+                            notifyLoading?
+                            <LoadingOutlined color="dodgerblue"/>
+                            :
+                            notify?
+                            <BellRing color="dodgerblue" width={"1rem"} fill="dodgerblue"/>
+                            :<BellOff width={"1rem"} color="dodgerblue"/>
+                        }
+                        
+                    </button>
+                    <DropDown onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>setUserEditPrompt(true)} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
+                </div>
+            
             }
             close extra={
                 <div style={{border:"", width:"100%", display:"flex", flexFlow:"column", gap:"0.5rem", paddingBottom:"1rem", paddingTop:"1rem"}}>

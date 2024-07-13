@@ -1,5 +1,6 @@
+import { Tooltip } from 'antd'
 import { motion } from 'framer-motion'
-import { Book, Car, CreditCard, HeartPulse } from "lucide-react"
+import { BellOff, Book, Car, CreditCard, HeartPulse } from "lucide-react"
 import { Link } from "react-router-dom"
 
 interface Props{
@@ -28,6 +29,7 @@ interface Props{
     type?:string
     typeColor?:string
     typeIcon?:any
+    notify?:boolean
 }
 
 
@@ -56,7 +58,7 @@ export default function InboxComponent(props:Props){
 
                         <div style={{fontWeight:500, width:"100%", textAlign:"left", fontSize:"1rem", border:"", display:"flex", gap:"0.5rem", alignItems:"center"}}>
                             
-                            <div style={{border:"", display:"flex", alignItems:"center", fontSize:"1.1rem", fontWeight:500}}>{props.title}</div>
+                            <div style={{border:"", display:"flex", alignItems:"center", fontSize:"1.1rem", fontWeight:500}}><p>{props.title}</p></div>
                             {
                                 props.tag?
                                 <p style={{display:"flex", background:"rgba(100 100 100/ 20%)", fontSize:"0.8rem", alignItems:"center", padding:"", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", border:""}}>{props.tag}</p>
@@ -128,7 +130,7 @@ export default function InboxComponent(props:Props){
 
                         {
                             !props.hideButtons?
-                            <div style={{display:"flex", width:"100%", justifyContent:"flex-start", gap:"0.5rem", fontSize:"1.25rem", paddingTop:"0.75rem"}}>
+                            <div style={{display:"flex", width:"100%", justifyContent:"flex-start", gap:"0.5rem", fontSize:"1.25rem", paddingTop:"0.75rem", alignItems:"center"}}>
 
                             
 
@@ -139,7 +141,25 @@ export default function InboxComponent(props:Props){
 
                                 <div style={{fontWeight:500, fontSize:"0.8rem", color:props.typeColor, borderRadius:"0.5rem", background:"rgba(100 100 100/ 20%)", width:"fit-content",paddingLeft:"0.5rem", paddingRight:"0.75rem", alignItems:"center", display:"flex", height:"2rem", gap:"0.5rem"}}>
                                 {props.typeIcon}
-                                <p>{props.type}</p></div>
+                                    <p>
+                                        {props.type}
+                                    </p>
+                                    
+                                </div>
+                                
+                                {
+                                    props.notify?
+                                    <Tooltip title="This person will not be notified">
+                                        <button style={{height:"2rem"}}>
+                                        <BellOff width={"1rem"} color='grey'/>
+                                    </button>
+                                    </Tooltip>
+                                    
+                                    
+                                    :null
+                                }
+                                
+                                
 
                             {/* <button onClick={props.onRenewClick} style={{display:"flex", width:"5.5rem", height:"2rem", fontSize:"0.8rem", border:''}}>
                                 <Sparkles width={"1rem"} color='goldenrod' fill='goldenrod'/>

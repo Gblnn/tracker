@@ -693,7 +693,7 @@ const RenewID = async () => {
         notify==true?
         message.info("Notifications Disabled")
         :
-        message.success("Notifications Active")
+        message.success("Notifications Enabled")
     }
 
     
@@ -1043,7 +1043,7 @@ const RenewID = async () => {
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
             {/* DISPLAY RECORD DIALOG */}
-            <DefaultDialog titleIcon={<UserCircle/>} title={name} subtitle={email} open={recordSummary} onCancel={()=>{setRecordSummary(false);setEmail("")}} 
+            <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>{setRecordSummary(false);setEmail("")}} 
             bigDate={()=>message.info("Last Modified : "+String(moment(new Date(modified_on)).format("LLL")))}
             created_on={
     
