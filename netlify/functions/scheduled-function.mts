@@ -60,7 +60,6 @@ export default async (req: Request) => {
 
 
       filteredData.forEach((element:any) => {
-        m = "This is a reminder regarding some of the documents expiring soon. Listed below are some documents which require your attention. \n\n"
         element.civil_expiry!=""?
         m += element.name+"'s Civil ID expiry "
         +
@@ -114,9 +113,9 @@ export default async (req: Request) => {
     // INDIVIDUAL MAIL SEND
     filteredData.forEach(async (e:any) => {
       p=""
-      p="This is a gentle reminder regarding some of your document's expiry. Listed below are some of the documents which require your attention.\n\n"
+      p+="This is a reminder regarding some of your document's expiry. Listed below are some documents which require your attention\n\n"
       e.civil_expiry!=""?
-        "Civil ID expiry "
+        p+="Civil ID expiry "
         +
         moment((e.civil_expiry).toDate()).startOf('day').fromNow()
         +" on "
@@ -129,7 +128,7 @@ export default async (req: Request) => {
         :null
 
         e.vehicle_expiry!=""?
-        "Vehicle ID expiry  "
+        p+="Vehicle ID expiry  "
         +
         moment((e.vehicle_expiry).toDate()).startOf('day').fromNow()
         +" on "
@@ -141,7 +140,7 @@ export default async (req: Request) => {
         :null
 
         e.medical_due_on!=""?
-        "Medical ID expiry "
+        p+="Medical ID expiry "
         +
         moment((e.medical_due_on).toDate()).startOf('day').fromNow()
         +" on "
@@ -151,7 +150,7 @@ export default async (req: Request) => {
         :null
 
         e.passportExpiry!=""?
-        "Passport expiry "
+        p+="Passport expiry "
         +
         moment((e.passportExpiry).toDate()).startOf('day').fromNow()
         +" on "
@@ -201,5 +200,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"59 11 * * * "
+    schedule:"06 12 * * * "
 }
