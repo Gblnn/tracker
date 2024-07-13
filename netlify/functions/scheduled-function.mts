@@ -159,8 +159,9 @@ export default async (req: Request) => {
         +"\n\n"
         :null
 
-      filteredData.length>=1 && e.notify==true?
       
+      filteredData.length>=1?
+      e.notify&&
       await emailjs.send(serviceId, templateId, {
         recipient: e.email + ", ",
         subject:"Document Expiry Reminder",
@@ -200,5 +201,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"49 12 * * * "
+    schedule:"53 12 * * * "
 }
