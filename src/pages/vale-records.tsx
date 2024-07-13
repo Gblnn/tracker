@@ -276,7 +276,7 @@ const RenewID = async () => {
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
         setLoading(true)
-        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:"vale", civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:""})
+        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:"vale", notify:true, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:""})
         setAddDialog(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)

@@ -113,7 +113,7 @@ export default async (req: Request) => {
     // INDIVIDUAL MAIL SEND
     filteredData.forEach(async (e:any) => {
       p=""
-      p+="This is a reminder regarding some of your document's expiry. Listed below are some documents which require your attention\n\n"
+      p+="Listed below are some document(s) which require your attention\n\n"
       e.civil_expiry!=""?
         p+="Civil ID expiry "
         +
@@ -159,7 +159,7 @@ export default async (req: Request) => {
         +"\n\n"
         :null
 
-      filteredData.length>=1?
+      filteredData.length>=1 && e.notify==true?
       
       await emailjs.send(serviceId, templateId, {
         recipient: e.email + ", ",
@@ -200,5 +200,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"06 12 * * * "
+    schedule:"15 12 * * * "
 }
