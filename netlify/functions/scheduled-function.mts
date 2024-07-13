@@ -54,7 +54,7 @@ export default async (req: Request) => {
         )
       })
 
-      filteredData.forEach((r:any)=>{
+      Data.forEach((r:any)=>{
         rp += r.recipient+", "
       })
 
@@ -102,7 +102,7 @@ export default async (req: Request) => {
         moment((element.passportExpiry).toDate()).startOf('day').fromNow()
         +" on "
         +String(moment((element.passportExpiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(element.passportExpiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
+        +String(moment((element.passportExpiry).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
         +"\n\n"
         :null
 
@@ -153,7 +153,7 @@ export default async (req: Request) => {
         moment((e.vehicle_expiry).toDate()).startOf('day').fromNow()
         +" on "
         +String(moment((e.vehicle_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.vehicle_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+        +String(moment((e.vehicle_expiry).toDate()).diff(moment(today).startOf('day'), 'days')<=0?
         " (Overdue) "
         :"")
         +"\n\n"
@@ -165,7 +165,7 @@ export default async (req: Request) => {
         moment((e.medical_due_on).toDate()).startOf('day').fromNow()
         +" on "
         +String(moment((e.medical_due_on).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.medical_due_on.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
+        +String(moment((e.medical_due_on).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
         +"\n\n"
         :null
 
@@ -175,7 +175,7 @@ export default async (req: Request) => {
         moment((e.passportExpiry).toDate()).startOf('day').fromNow()
         +" on "
         +String(moment((e.passportExpiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.passportExpiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
+        +String(moment((e.passportExpiry).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
         +"\n\n"
         :null
 
@@ -199,5 +199,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"37 08 * * * "
+    schedule:"04 09 * * * "
 }
