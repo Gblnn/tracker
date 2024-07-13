@@ -14,8 +14,6 @@ export default async (req: Request) => {
     const today = new Date()
     let rp = ""
 
-  
-
     try {
 
       const RecipientCollection = collection(db, "recipients")
@@ -107,25 +105,6 @@ export default async (req: Request) => {
         :null
 
       })
-      
-
-
-      // GENERAL MAIL SEND
-      filteredData.length>=1?
-
-      await emailjs.send(serviceId, templateId, {
-        recipient: rp,
-        subject:"Document Expiry Reminder",
-        message:m
-      },{
-        publicKey:"c8AePKR5BCK8UIn_E",
-        privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
-      }
-    )
-    :null
-
-
-
 
     // INDIVIDUAL MAIL SEND
     filteredData.forEach(async (e:any) => {
@@ -186,6 +165,21 @@ export default async (req: Request) => {
       }
     ):null
     })
+
+
+    // GENERAL MAIL SEND
+    filteredData.length>=1?
+
+    await emailjs.send(serviceId, templateId, {
+      recipient: rp,
+      subject:"Document Expiry Reminder",
+      message:m
+    },{
+      publicKey:"c8AePKR5BCK8UIn_E",
+      privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
+    }
+  )
+  :null
   
 
     } 
@@ -199,5 +193,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"05 09 * * * "
+    schedule:"10 11 * * * "
 }
