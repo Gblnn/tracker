@@ -10,6 +10,7 @@ export default async (req: Request) => {
     const templateId = "template_1y0oq9l";
 
     let m = ""
+    let p = ""
     let filteredData = []
     const today = new Date()
     let rp = ""
@@ -108,15 +109,10 @@ export default async (req: Request) => {
 
     // INDIVIDUAL MAIL SEND
     filteredData.forEach(async (e:any) => {
-      filteredData.length>=1?
-      await emailjs.send(serviceId, templateId, {
-        recipient: e.email + ", ",
-        subject:"Document Expiry Reminder",
-
-        message:
-
-        e.civil_expiry!=""?
-        "Civil ID expiry "+
+      p=""
+      e.civil_expiry!=""?
+        p += e.name+"'s Civil ID expiry "
+        +
         moment((e.civil_expiry).toDate()).startOf('day').fromNow()
         +" on "
         +String(moment((e.civil_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
@@ -124,32 +120,33 @@ export default async (req: Request) => {
         " (Overdue) "
         :"")
         +"\n\n"
+        
         :null
 
-        +e.vehicle_expiry!=""?
-        "Vehicle ID expiry  "
+        e.vehicle_expiry!=""?
+        p += e.name+"'s Vehicle ID expiry  "
         +
         moment((e.vehicle_expiry).toDate()).startOf('day').fromNow()
         +" on "
         +String(moment((e.vehicle_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((e.vehicle_expiry).toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+        +String(moment(e.vehicle_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
         " (Overdue) "
         :"")
         +"\n\n"
         :null
-        
-        +e.medical_due_on!=""?
-        "Medical ID expiry "
+
+        e.medical_due_on!=""?
+        p += e.name+"'s Medical ID expiry "
         +
         moment((e.medical_due_on).toDate()).startOf('day').fromNow()
         +" on "
         +String(moment((e.medical_due_on).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((e.medical_due_on).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
+        +String(moment(e.medical_due_on.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
         +"\n\n"
         :null
 
-        +e.passportExpiry!=""?
-        e.name+"'s Passport expiry "
+        e.passportExpiry!=""?
+        p += e.name+"'s Passport expiry "
         +
         moment((e.passportExpiry).toDate()).startOf('day').fromNow()
         +" on "
@@ -158,12 +155,18 @@ export default async (req: Request) => {
         +"\n\n"
         :null
 
-        
+      filteredData.length>=1?
+      
+      await emailjs.send(serviceId, templateId, {
+        recipient: e.email + ", ",
+        subject:"Document Expiry Reminder",
+        message:p
       },{
         publicKey:"c8AePKR5BCK8UIn_E",
         privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
       }
-    ):null
+    )
+    :null
     })
 
 
@@ -193,5 +196,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"18 11 * * * "
+    schedule:"26 11 * * * "
 }
