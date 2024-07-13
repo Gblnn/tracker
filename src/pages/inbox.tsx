@@ -302,7 +302,7 @@ export default function Inbox(){
                         .map((record:any)=>(
                             <InboxComponent 
                             type={record.type=="personal"?"Personal Record":record.type=="vale"?"Vale Record":""}
-                            typeColor={record.type=="personal"?"dodgerblue":record.type=="vale"?"lightgreen":""}
+                            typeIcon={record.type=="personal"?<File color="dodgerblue" width={"1rem"}/>:record.type=="vale"?<img src="/vale-logo.png" style={{width:"1.25rem", paddingBottom:"0.45rem"}}/>:""}
                             mail={record.email}
                             noArrow
                             onClick={()=>{}}

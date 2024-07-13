@@ -13,7 +13,7 @@ export default async (req: Request) => {
     let filteredData = []
     const today = new Date()
     let rp = ""
-    let emails = ""
+
   
 
     try {
@@ -54,7 +54,7 @@ export default async (req: Request) => {
         )
       })
 
-      Data.forEach((r:any)=>{
+      filteredData.forEach((r:any)=>{
         rp += r.recipient+", "
       })
 
@@ -109,6 +109,8 @@ export default async (req: Request) => {
       })
       
 
+
+      // GENERAL MAIL SEND
       filteredData.length>=1?
 
       await emailjs.send(serviceId, templateId, {
@@ -121,6 +123,71 @@ export default async (req: Request) => {
       }
     )
     :null
+
+
+
+
+    // INDIVIDUAL MAIL SEND
+    filteredData.forEach(async (e:any) => {
+      filteredData.length>=1?
+      await emailjs.send(serviceId, templateId, {
+        recipient: e.email,
+        subject:"Document Expiry Reminder",
+
+        message:
+
+        e.civil_expiry!=""?
+        "Civil ID expiry "+
+        moment((e.civil_expiry).toDate()).startOf('day').fromNow()
+        +" on "
+        +String(moment((e.civil_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(moment((e.civil_expiry).toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+        " (Overdue) "
+        :"")
+        +"\n\n"
+        :null
+
+        +e.vehicle_expiry!=""?
+        "Vehicle ID expiry  "
+        +
+        moment((e.vehicle_expiry).toDate()).startOf('day').fromNow()
+        +" on "
+        +String(moment((e.vehicle_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(moment(e.vehicle_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+        " (Overdue) "
+        :"")
+        +"\n\n"
+        :null
+        
+        +e.medical_due_on!=""?
+        "Medical ID expiry "
+        +
+        moment((e.medical_due_on).toDate()).startOf('day').fromNow()
+        +" on "
+        +String(moment((e.medical_due_on).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(moment(e.medical_due_on.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
+        +"\n\n"
+        :null
+
+        +e.passportExpiry!=""?
+        e.name+"'s Passport expiry "
+        +
+        moment((e.passportExpiry).toDate()).startOf('day').fromNow()
+        +" on "
+        +String(moment((e.passportExpiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(moment(e.passportExpiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
+        +"\n\n"
+        :null
+
+        
+      },{
+        publicKey:"c8AePKR5BCK8UIn_E",
+        privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
+      }
+    ):null
+    })
+  
+
     } 
     
     catch (error) {
@@ -132,5 +199,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"18 07 * * * "
+    schedule:"33 08 * * * "
 }

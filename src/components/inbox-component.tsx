@@ -27,6 +27,7 @@ interface Props{
     mail?:string
     type?:string
     typeColor?:string
+    typeIcon?:any
 }
 
 
@@ -70,11 +71,11 @@ export default function InboxComponent(props:Props){
                         {
                             props.civil_desc?
                 
-                            <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
-                            {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
-                            <CreditCard width={"0.75rem"} color="dodgerblue" style={{border:''}}/>   
-                            <p style={{textAlign:"left", opacity:0.75, color:props.civil_overdue?overdue_color:"white", fontWeight:props.civil_overdue?600:400}}>{props.civil_desc}</p>
-                            </div>
+                                <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
+                                    {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
+                                    <CreditCard width={"0.75rem"} color="dodgerblue" style={{border:''}}/>   
+                                    <p style={{textAlign:"left", opacity:0.75, color:props.civil_overdue?overdue_color:"white", fontWeight:props.civil_overdue?600:400}}>{props.civil_desc}</p>
+                                </div>
                         
                             :null
                         }
@@ -136,7 +137,9 @@ export default function InboxComponent(props:Props){
                                     {props.mail}
                                 </button> */}
 
-                                <p style={{fontWeight:600, fontSize:"0.8rem", color:props.typeColor, borderRadius:"0.5rem", background:"rgba(100 100 100/ 20%)", width:"fit-content",paddingLeft:"1rem", paddingRight:"1rem", alignItems:"center", display:"flex", height:"2rem"}}>{props.type}</p>
+                                <div style={{fontWeight:500, fontSize:"0.8rem", color:props.typeColor, borderRadius:"0.5rem", background:"rgba(100 100 100/ 20%)", width:"fit-content",paddingLeft:"0.5rem", paddingRight:"0.75rem", alignItems:"center", display:"flex", height:"2rem", gap:"0.5rem"}}>
+                                {props.typeIcon}
+                                <p>{props.type}</p></div>
 
                             {/* <button onClick={props.onRenewClick} style={{display:"flex", width:"5.5rem", height:"2rem", fontSize:"0.8rem", border:''}}>
                                 <Sparkles width={"1rem"} color='goldenrod' fill='goldenrod'/>

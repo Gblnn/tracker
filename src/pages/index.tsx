@@ -2,23 +2,17 @@ import Back from "@/components/back";
 import Directive from "@/components/directive";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { motion } from 'framer-motion';
-import { File, InboxIcon, Indent, Mail } from "lucide-react";
+import { File, Indent, Mail } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 export default function Index(){
 
     const [requestDialog, setRequestDialog] = useState(false)
-    const usenavigate = useNavigate()
 
     return(
         <div style={{margin:"1.5rem"}}>
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                <Back icon={<Indent color="salmon"/>} title="Index" noback extra={
-                    <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
-                    <InboxIcon className="" color="crimson"/>
-                </button>
-                }/>
+                <Back icon={<Indent color="salmon"/>} title="Index" noback/>
                 <br/>
 
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem"}}>

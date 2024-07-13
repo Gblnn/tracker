@@ -14,9 +14,9 @@ import { db } from "@/firebase"
 import { LoadingOutlined } from '@ant-design/icons'
 import emailjs from '@emailjs/browser'
 import { message } from 'antd'
-import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore'
+import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, FilePlus, Globe, GraduationCap, HeartPulse, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, FilePlus, Globe, GraduationCap, HeartPulse, InboxIcon, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -40,7 +40,7 @@ interface Props{
 
 export default function Records(props:Props){
 
-
+    const usenavigate = useNavigate()
     // BASIC PAGE VARIABLES
     // const [pageLoad, setPageLoad] = useState(false)
     const [records, setRecords] = useState<any>([])
@@ -154,7 +154,7 @@ export default function Records(props:Props){
     const templateId = "template_1y0oq9l";
 
     const today = new Date()
-    const usenavigate = useNavigate()
+
 
     const [progressItem, setProgressItem] = useState("")
     const [trainingDialog, setTrainingDialog] = useState(false)
@@ -236,7 +236,7 @@ export default function Records(props:Props){
             
             setfetchingData(true)
             const RecordCollection = collection(db, "records")
-            const recordQuery = query(RecordCollection, orderBy("created_on"))
+            const recordQuery = query(RecordCollection, orderBy("created_on"), where("type", "==", "personal"))
             const querySnapshot = await getDocs(recordQuery)
             const fetchedData: Array<Record> = [];
 
@@ -748,6 +748,11 @@ const RenewID = async () => {
                             
 
                             </button>
+
+
+                            <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
+                        <InboxIcon className="" color="crimson"/>
+                    </button>
 
                             
             
