@@ -131,7 +131,7 @@ export default async (req: Request) => {
     filteredData.forEach(async (e:any) => {
       filteredData.length>=1?
       await emailjs.send(serviceId, templateId, {
-        recipient: e.email,
+        recipient: e.email + ", ",
         subject:"Document Expiry Reminder",
 
         message:
@@ -199,5 +199,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"04 09 * * * "
+    schedule:"05 09 * * * "
 }
