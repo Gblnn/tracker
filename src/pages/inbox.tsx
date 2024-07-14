@@ -206,7 +206,7 @@ export default function Inbox(){
 
     return(
         <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-        <div style={{padding:"1.25rem", background:"linear-gradient(rgba(209 20 58/ 20%), rgba(100 100 100/ 0%)"}}>
+        <div style={{padding:"1.25rem", background:"linear-gradient(rgba(209 20 58/ 15%), rgba(100 100 100/ 0%)"}}>
             <Back title={"Alerts"}
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
