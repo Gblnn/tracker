@@ -16,7 +16,7 @@ import emailjs from '@emailjs/browser'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { BellOff, BellRing, Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, FilePlus, Globe, GraduationCap, HeartPulse, InboxIcon, Info, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { BellOff, BellRing, Book, Car, CheckSquare2, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, FilePlus, Globe, GraduationCap, HeartPulse, InboxIcon, Info, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -718,7 +718,7 @@ const RenewID = async () => {
 
         {/* Main Container */}
         <div style={{padding:"1.25rem", height:"100svh", border:"", 
-            background:"linear-gradient(rgba(21 145 134 / 20%), rgba(235 173 28/ 15%)"}}>
+            background:"linear-gradient(rgba(21 145 134 / 20%), rgba(235 173 28/ 0%)"}}>
 
 
             {/* Main Component */}
@@ -831,7 +831,8 @@ const RenewID = async () => {
 
                         <div style={{ border:"", display:"flex", alignItems:"center", justifyContent:"center"}}>
                             
-                            <Cloud color="dodgerblue" width={"3rem"} height={"3rem"} style={{position:"absolute"}} className="animate-ping"/>
+                            {/* <Cloud color="dodgerblue" width={"3rem"} height={"3rem"} style={{position:"absolute"}} className="animate-ping"/> */}
+                            <img src="/vale-logo.png" width={"40rem"} className="animate-ping"/>
                         </div>
                         
 
