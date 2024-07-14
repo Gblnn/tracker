@@ -717,7 +717,8 @@ const RenewID = async () => {
         
 
         {/* Main Container */}
-        <div style={{padding:"1.25rem", height:"100svh", border:""}}>
+        <div style={{padding:"1.25rem", height:"100svh", border:"", 
+            background:"linear-gradient(rgba(21 145 134 / 20%), rgba(235 173 28/ 15%)"}}>
 
 
             {/* Main Component */}
