@@ -1092,7 +1092,7 @@ const RenewID = async () => {
                         false:true
                     }/>
 
-                    <Directive onClick={()=>{setTrainingDialog(true)}} icon={<GraduationCap color="lightgreen"/>} title="Training"/>
+                    <Directive onClick={()=>{setValeTrainingDialog(true)}} icon={<GraduationCap color="lightgreen"/>} title="Training"/>
                     
                 </div>
             
@@ -1370,7 +1370,11 @@ const RenewID = async () => {
             <InputDialog titleIcon={<Sparkles color="goldenrod"/>} title="Renew Medical ID" open={renewMedicalIDdialog} onCancel={()=>setRenewMedicalIDdialog(false)} inputplaceholder="Completed On" input1Label="Completed : " input2placeholder="New Due" input2Label="New Due : " OkButtonIcon={<Sparkles width={"1rem"}/>} OkButtonText="Renew" input1Value={medical_completed_on} input2Value={medical_due_on} onOk={renewMedicalID} updating={loading} inputOnChange={(e:any)=>setEditedCompletedOn(e.target.value)} input2OnChange={(e:any)=>setEditedDueOn(e.target.value)} disabled={loading}/>
             
             {/* VALE TRAINING DIALOG */}
-            <DefaultDialog open={valeTrainingDialog} titleIcon={<img src="/vale-logo.png" style={{width:"1.75rem", paddingBottom:"0.5rem"}}/>} title={"Vale Training"} onCancel={()=>setValeTrainingDialog(false)} close back extra={
+            <DefaultDialog open={valeTrainingDialog} titleIcon={<img src="/vale-logo.png" style={{width:"1.75rem", paddingBottom:"0.5rem"}}/>} title={"Vale Training"} onCancel={()=>setValeTrainingDialog(false)} close back title_extra={
+                <>
+                <button style={{fontSize:"0.8rem"}}><Plus color="dodgerblue"/></button>
+                </>
+            } extra={
                 <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.45rem", maxHeight:"12.75rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem"}}>
                     <Directive extra onClick={()=>{setTrainingAddDialogTitle("HSE Induction");setTrainingAddDialog(true)}} tag={"11/12/2024"} status icon={<Disc color="dodgerblue"/>} title="HSE Induction"/>
                     <Directive tag={"10/12/2024"} status={true} extra icon={<Disc color="dodgerblue"/>} title="CAR - 1"/>

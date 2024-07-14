@@ -206,7 +206,7 @@ export default function Inbox(){
 
     return(
         <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-        <div style={{margin:"1.25rem"}}>
+        <div style={{padding:"1.25rem", background:"linear-gradient(rgba(209 20 58/ 20%), rgba(100 100 100/ 0%)"}}>
             <Back title={"Alerts"}
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
@@ -265,7 +265,7 @@ export default function Inbox(){
                         <Bell width={"1rem"} color="violet"/>
                         <p style={{fontSize:"0.8rem"}}>Notify</p>
                     </button> */}
-                    <CustomDropDown trigger={<div className="transitions" style={{display:"flex", gap:"0.25rem", paddingLeft:"0.25rem", paddingRight:"0.25rem", alignItems:"center", minWidth:"3rem", justifyContent:"center"}}><Filter color="salmon" fill={filterState!=""?"salmon":"#1a1a1a"} width={"1.25rem"}/><p style={{textTransform:"capitalize", fontSize:"0.8rem", opacity:0.75}}>{filterState==""?"filter":filterState}</p><ChevronDown width={"1rem"}/></div>}
+                    <CustomDropDown trigger={<div className="transitions" style={{display:"flex", gap:"0.25rem", paddingLeft:"0.25rem", paddingRight:"0.25rem", alignItems:"center", minWidth:"3rem", justifyContent:"center"}}><Filter color="salmon" fill={filterState!=""?"salmon":"#2a2a2a"} width={"1.25rem"}/><p style={{textTransform:"capitalize", fontSize:"0.8rem", opacity:0.75}}>{filterState==""?"filter":filterState}</p><ChevronDown color="rgba(150 150 150/ 50%)" width={"1rem"}/></div>}
                     option1Text="Personal"
                     onOption1={()=>setFilterState("personal")}
                 

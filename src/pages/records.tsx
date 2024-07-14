@@ -717,7 +717,7 @@ const RenewID = async () => {
         
 
         {/* Main Container */}
-        <div style={{padding:"1.25rem", height:"100svh", border:""}}>
+        <div style={{padding:"1.25rem", height:"100svh", border:"", background:"linear-gradient(rgba(18 18 80/ 40%), rgba(100 100 100/ 0%)"}}>
 
 
             {/* Main Component */}
@@ -1281,7 +1281,7 @@ const RenewID = async () => {
             <DefaultDialog close back open={trainingDialog} onCancel={()=>setTrainingDialog(false)} title={"Training"} titleIcon={<GraduationCap color="lightgreen"/>} 
             extra={
                 <div style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.5rem"}}>
-                    <Directive icon={<img src="/vale-logo.png" style={{width:"1.25rem", paddingBottom:"0.25rem"}}/>} title="Vale Training" onClick={()=>{setValeTrainingDialog(true)}}/>
+                    
                     <Directive icon={<Globe width={"1rem"} color="grey"/>} title="Other"/>
                 </div>
             }/>
