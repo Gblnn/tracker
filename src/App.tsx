@@ -9,6 +9,7 @@ import UserPage from "./pages/user";
 import Vehicles from "./pages/vehicles";
 import History from './pages/history';
 import ValeRecords from './pages/vale-records';
+import PageNotFound from './pages/page-not-found';
 
 
 export default function App(){
@@ -38,6 +39,7 @@ export default function App(){
       <Route path="/vehicles" element={<Vehicles/>}/>
       <Route path="/medicals" element={<Medicals/>}/>
       <Route path='/history' element={<History/>}/>
+      <Route path='*' element={<PageNotFound/>}/>
     </Routes>
     
     

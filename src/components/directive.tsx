@@ -75,16 +75,17 @@ export default function Directive(props:Props){
                         :null
                     }
 
-                    {
+                {props.selectable?
+                null
+                :
                         props.notify?
                         <BellOff width={"1rem"} color="grey"/>
                         :null
                     }
                     
                 {
-                props.selectable?
-                null
-                :
+                
+                
                 props.tag?
                 
                 <p style={{background:"rgba(100 100 100/ 25%)",fontSize:"0.8rem", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", color:props.tag=="Expiring"?"violet":props.tag=="Available"?"lightgreen":props.status?"lightblue":"salmon", width:"", fontWeight:600, display:"flex", alignItems:"center", gap:"0.5rem"}}>
