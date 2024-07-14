@@ -12,7 +12,7 @@ import emailjs from '@emailjs/browser';
 import { message } from "antd";
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { File, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, Users } from "lucide-react";
+import { ChevronDown, File, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, Users } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 
@@ -153,7 +153,8 @@ export default function Inbox(){
             await addDoc(collection(db, 'recipients'),{created_on:Timestamp.fromDate(today), recipient:recipient})    
             setLoading(false)
             message.success("Added recipient")
-            fetchRecipients()
+            await fetchRecipients()
+            setRecipient("")
         } catch (error) {
             message.error(String(error))
             setLoading(false)
@@ -264,7 +265,7 @@ export default function Inbox(){
                         <Bell width={"1rem"} color="violet"/>
                         <p style={{fontSize:"0.8rem"}}>Notify</p>
                     </button> */}
-                    <CustomDropDown trigger={<Filter color="salmon" fill={filterState!=""?"salmon":"#1a1a1a"} width={"1.1rem"}/>}
+                    <CustomDropDown trigger={<div className="transitions" style={{display:"flex", gap:"0.25rem", paddingLeft:"0.25rem", paddingRight:"0.25rem", alignItems:"center", minWidth:"3rem", justifyContent:"center"}}><Filter color="salmon" fill={filterState!=""?"salmon":"#1a1a1a"} width={"1.25rem"}/><p style={{textTransform:"capitalize", fontSize:"0.8rem", opacity:0.75}}>{filterState==""?"filter":filterState}</p><ChevronDown width={"1rem"}/></div>}
                     option1Text="Personal"
                     onOption1={()=>setFilterState("personal")}
                 
@@ -498,8 +499,9 @@ export default function Inbox(){
 
 
                 <div style={{width:"100%", display:"flex", gap:"0.5rem"}}>
-                    <input id="recipient-id" type="email" placeholder="Enter E-mail ID" onChange={(e)=>{setRecipient(e.target.value);}}/>
-                    <button style={{width:"3rem"}} className={recipient==""?"disabled":""} onClick={()=>recipient==""?null:addRecipient()}>
+                    <input value={recipient} id="recipient-id" type="email" placeholder="Enter E-mail ID" onChange={(e)=>{setRecipient(e.target.value);}} />
+
+                    <button style={{width:"3rem"}} className={recipient==""?"disabled":""} onClick={()=>{recipient==""?null:addRecipient();}}>
                         {
                          loading?
                          <LoadingOutlined color="dodgerblue"/>
