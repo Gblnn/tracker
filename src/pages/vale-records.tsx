@@ -124,7 +124,8 @@ export default function ValeRecords(props:Props){
 
     const [trainingAddDialog, setTrainingAddDialog] = useState(false)
     const [trainingAddDialogTitle, setTrainingAddDialogTitle] = useState("")
-    const [trainingAddDialogInput, setTrainingAddDialogInput] = useState("")
+    const [EditedTrainingAddDialogInput, setEditedTrainingAddDialogInput] = useState("")
+    const [trainingAddDialogInputValue, setTrainingAddDialogInputValue] = useState("")
 
     const [add_vehicle_id, setAddVehicleID] = useState(false)
 
@@ -162,6 +163,20 @@ export default function ValeRecords(props:Props){
     const [healthDialog, setHealthDialog] = useState(false)
 
     const [notifyLoading, setNotifyLoading] = useState(false)
+
+    const [trainingType, setTrainingType] = useState("")
+
+    const [vt_hse_induction, setHseInduction] = useState<any>()
+    const [vt_car_1, setVtCar1] = useState<any>()
+    const [vt_car_2, setVtCar2] = useState<any>()
+    const [vt_car_3, setVtCar3] = useState<any>()
+    const [vt_car_4, setVtCar4] = useState<any>()
+    const [vt_car_5, setVtCar5] = useState<any>()
+    const [vt_car_6, setVtCar6] = useState<any>()
+    const [vt_car_7, setVtCar7] = useState<any>()
+    const [vt_car_8, setVtCar8] = useState<any>()
+    const [vt_car_9, setVtCar9] = useState<any>()
+    const [vt_car_10, setVtCar10] = useState<any>()
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
     useEffect(()=>{
@@ -179,7 +194,7 @@ export default function ValeRecords(props:Props){
             });
           });
 
-        console.log(trainingAddDialogInput)
+        
     },[])
     
     
@@ -279,7 +294,7 @@ const RenewID = async () => {
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
         setLoading(true)
-        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:"vale", notify:true, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:""})
+        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:"vale", notify:true, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:""})
         setAddDialog(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -696,6 +711,51 @@ const RenewID = async () => {
         message.success("Notifications Enabled")
     }
 
+    const addTraining = async (type:any) => {
+        setLoading(true)
+        type=="hse_induction"&&
+        await updateDoc(doc(db, 'records', id), {vt_hse_induction:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+        setHseInduction(EditedTrainingAddDialogInput)
+
+        type=="car_1"&&
+        await updateDoc(doc(db, 'records', id), {vt_car_1:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+        
+
+        type=="car_2"&&
+        await updateDoc(doc(db, 'records', id), {vt_car_2:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+
+        type=="car_3"&&
+        await updateDoc(doc(db, 'records', id), {vt_car_3:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+
+        type=="car_4"&&
+        await updateDoc(doc(db, 'records', id), {vt_car_4:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+
+        type=="car_5"&&
+        await updateDoc(doc(db, 'records', id), {vt_car_5:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+
+        type=="car_6"&&
+        await updateDoc(doc(db, 'records', id), {vt_car_6:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+
+        type=="car_7"&&
+        await updateDoc(doc(db, 'records', id), {vt_car_7:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+
+        type=="car_8"&&
+        await updateDoc(doc(db, 'records', id), {vt_car_8:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+
+        type=="car_9"&&
+        await updateDoc(doc(db, 'records', id), {vt_car_9:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+
+        type=="car_10"&&
+        await updateDoc(doc(db, 'records', id), {vt_car_10:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+
+
+        
+        setLoading(false)
+        setModifiedOn(new Date())
+        setTrainingAddDialog(false)
+        fetchData()
+    }
+
     
 
     return(
@@ -959,6 +1019,28 @@ const RenewID = async () => {
                                     setPassportExpiry(post.passportExpiry?moment((post.passportExpiry).toDate()).format("DD/MM/YYYY"):null)
                                     setEmail(post.email)
                                     setNotify(post.notify)
+
+                                    setHseInduction(post.vt_hse_induction?moment(post.vt_hse_induction.toDate()).format("DD/MM/YYYY"):null)
+
+                                    setVtCar1(post.vt_car_1?moment(post.vt_car_1.toDate()).format("DD/MM/YYYY"):null)
+
+                                    setVtCar2(post.vt_car_2?moment(post.vt_car_2.toDate()).format("DD/MM/YYYY"):null)
+
+                                    setVtCar3(post.vt_car_3?moment(post.vt_car_3.toDate()).format("DD/MM/YYYY"):null)
+
+                                    setVtCar4(post.vt_car_4?moment(post.vt_car_4.toDate()).format("DD/MM/YYYY"):null)
+
+                                    setVtCar5(post.vt_car_5?moment(post.vt_car_5.toDate()).format("DD/MM/YYYY"):null)
+
+                                    setVtCar6(post.vt_car_6?moment(post.vt_car_6.toDate()).format("DD/MM/YYYY"):null)
+
+                                    setVtCar7(post.vt_car_7?moment(post.vt_car_7.toDate()).format("DD/MM/YYYY"):null)
+
+                                    setVtCar8(post.vt_car_8?moment(post.vt_car_8.toDate()).format("DD/MM/YYYY"):null)
+
+                                    setVtCar9(post.vt_car_9?moment(post.vt_car_9.toDate()).format("DD/MM/YYYY"):null)
+
+                                    setVtCar10(post.vt_car_10?moment(post.vt_car_10.toDate()).format("DD/MM/YYYY"):null)
                                     
                                 }}                        
 
@@ -1094,7 +1176,37 @@ const RenewID = async () => {
                         false:true
                     }/>
 
-                    <Directive onClick={()=>{setValeTrainingDialog(true)}} icon={<GraduationCap color="lightgreen"/>} title="Training"/>
+                    <Directive
+                    tag={
+                        moment(vt_hse_induction, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        ||
+                        moment(vt_car_1, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        ||
+                        moment(vt_car_2, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        ||
+                        moment(vt_car_3, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        ||
+                        moment(vt_car_4, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        ||
+                        moment(vt_car_5, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        ||
+                        moment(vt_car_6, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        ||
+                        moment(vt_car_7, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        ||
+                        moment(vt_car_8, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        ||
+                        moment(vt_car_9, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        ||
+                        moment(vt_car_10, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        ?
+                        "Expiring Soon"
+                        :
+                        ""                                           
+                    } 
+                    onClick={()=>{
+                        setValeTrainingDialog(true)
+                    }} icon={<GraduationCap color="lightgreen"/>} title="Training"/>
                     
                 </div>
             
@@ -1374,21 +1486,99 @@ const RenewID = async () => {
             {/* VALE TRAINING DIALOG */}
             <DefaultDialog open={valeTrainingDialog} titleIcon={<img src="/vale-logo.png" style={{width:"1.75rem", paddingBottom:"0.5rem"}}/>} title={"Vale Training"} onCancel={()=>setValeTrainingDialog(false)} close back title_extra={
                 <>
-                <button style={{fontSize:"0.8rem"}}><Plus color="dodgerblue"/></button>
+                {/* <button style={{fontSize:"0.8rem"}}><Plus color="dodgerblue"/></button> */}
                 </>
             } extra={
-                <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.45rem", maxHeight:"12.75rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem"}}>
-                    <Directive extra onClick={()=>{setTrainingAddDialogTitle("HSE Induction");setTrainingAddDialog(true)}} tag={"11/12/2024"} status icon={<Disc color="dodgerblue"/>} title="HSE Induction"/>
-                    <Directive tag={"10/12/2024"} status={true} extra icon={<Disc color="dodgerblue"/>} title="CAR - 1"/>
-                    <Directive extra icon={<Disc color="dodgerblue" />} title="CAR - 2"/>
-                    <Directive extra icon={<Disc color="dodgerblue" />} title="CAR - 3"/>
-                    <Directive extra icon={<Disc color="dodgerblue" />} title="CAR - 4"/>
-                    <Directive extra icon={<Disc color="dodgerblue" />} title="CAR - 5"/>
-                    <Directive extra icon={<Disc color="dodgerblue" />} title="CAR - 6"/>
-                    <Directive extra icon={<Disc color="dodgerblue" />} title="CAR - 7"/>
-                    <Directive extra icon={<Disc color="dodgerblue" />} title="CAR - 8"/>
-                    <Directive extra icon={<Disc color="dodgerblue" />} title="CAR - 9"/>
-                    <Directive extra icon={<Disc color="dodgerblue" />} title="CAR - 10"/>
+                <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.45rem", maxHeight:"17.5rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem"}}>
+
+                    <Directive tag={vt_hse_induction}  icon={<Disc color="dodgerblue"/>} title="HSE Induction" onClick={()=>{setTrainingAddDialogTitle("HSE Induction");setTrainingAddDialog(true); setTrainingType("hse_induction"); setTrainingAddDialogInputValue(vt_hse_induction)}} 
+                    status={
+                        moment(vt_hse_induction, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
+                        false
+                        :true
+                    }
+                    />
+
+                    <Directive tag={vt_car_1}  icon={<Disc color="dodgerblue"/>} title="CAR - 1" onClick={()=>{setTrainingAddDialogTitle("CAR - 1"); setTrainingAddDialog(true); setTrainingType("car_1"); setTrainingAddDialogInputValue(vt_car_1)}}
+                    status={
+                        moment(vt_car_1, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
+                        false
+                        :true
+                    }
+                    />
+
+                    <Directive tag={vt_car_2}  icon={<Disc color="dodgerblue" />} title="CAR - 2" onClick={()=>{setTrainingAddDialogTitle("CAR - 2"); setTrainingAddDialog(true); setTrainingType("car_2"); setTrainingAddDialogInputValue(vt_car_2)}}
+                    status={
+                        moment(vt_car_2, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
+                        false
+                        :true
+                    }
+                    />
+
+                    <Directive tag={vt_car_3}  icon={<Disc color="dodgerblue" />} title="CAR - 3" onClick={()=>{setTrainingAddDialogTitle("CAR - 3"); setTrainingAddDialog(true); setTrainingType("car_3"); setTrainingAddDialogInputValue(vt_car_3)}}
+                    status={
+                        moment(vt_car_3, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
+                        false
+                        :true
+                    }
+                    />
+
+                    <Directive tag={vt_car_4}  icon={<Disc color="dodgerblue" />} title="CAR - 4" onClick={()=>{setTrainingAddDialogTitle("CAR - 4"); setTrainingAddDialog(true); setTrainingType("car_4"); setTrainingAddDialogInputValue(vt_car_4)}}
+                    status={
+                        moment(vt_car_4, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
+                        false
+                        :true
+                    }
+                    />
+
+                    <Directive tag={vt_car_5}  icon={<Disc color="dodgerblue" />} title="CAR - 5" onClick={()=>{setTrainingAddDialogTitle("CAR - 5"); setTrainingAddDialog(true); setTrainingType("car_5"); setTrainingAddDialogInputValue(vt_car_5)}}
+                    status={
+                        moment(vt_car_5, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
+                        false
+                        :true
+                    }
+                    />
+
+                    <Directive tag={vt_car_6}  icon={<Disc color="dodgerblue" />} title="CAR - 6" onClick={()=>{setTrainingAddDialogTitle("CAR - 6"); setTrainingAddDialog(true); setTrainingType("car_6"); setTrainingAddDialogInputValue(vt_car_6)}}
+                    status={
+                        moment(vt_car_6, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
+                        false
+                        :true
+                    }
+                    />
+
+                    <Directive tag={vt_car_7}  icon={<Disc color="dodgerblue" />} title="CAR - 7" onClick={()=>{setTrainingAddDialogTitle("CAR - 7"); setTrainingAddDialog(true); setTrainingType("car_7"); setTrainingAddDialogInputValue(vt_car_7)}}
+                    status={
+                        moment(vt_car_7, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
+                        false
+                        :true
+                    }
+                    />
+
+                    <Directive tag={vt_car_8}  icon={<Disc color="dodgerblue" />} title="CAR - 8" onClick={()=>{setTrainingAddDialogTitle("CAR - 8"); setTrainingAddDialog(true); setTrainingType("car_8"); setTrainingAddDialogInputValue(vt_car_8)}}
+                    status={
+                        moment(vt_car_8, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
+                        false
+                        :true
+                    }
+                    />
+
+                    <Directive tag={vt_car_9}  icon={<Disc color="dodgerblue" />} title="CAR - 9" onClick={()=>{setTrainingAddDialogTitle("CAR - 9"); setTrainingAddDialog(true); setTrainingType("car_9"); setTrainingAddDialogInputValue(vt_car_9)}}
+                    status={
+                        moment(vt_car_9, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
+                        false
+                        :true
+                    }
+                    />
+
+                    <Directive tag={vt_car_10}  icon={<Disc color="dodgerblue" />} title="CAR - 10" onClick={()=>{setTrainingAddDialogTitle("CAR - 10"); setTrainingAddDialog(true); setTrainingType("car_10"); setTrainingAddDialogInputValue(vt_car_10)}}
+                    status={
+                        moment(vt_car_10, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
+                        false
+                        :true
+                    }
+                    />
+
                 </div> 
             }/>
 
@@ -1465,7 +1655,7 @@ const RenewID = async () => {
             {/* RENEW PASSPORT DIALOG */}
             <InputDialog titleIcon={<Sparkles color="goldenrod"/>} title="Renew Passport" open={renewPassportDialog} onCancel={()=>setRenewPassportDialog(false)} inputplaceholder="New Issue Date" input1Label="New Issue : " input2placeholder="New Expiry" input2Label="New Expiry : " OkButtonIcon={<Sparkles width={"1rem"}/>} OkButtonText="Renew" input1Value={passportIssue} input2Value={passportExpiry} onOk={renewPassport} updating={loading} inputOnChange={(e:any)=>setEditedPassportIssue(e.target.value)} input2OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} disabled={loading}/>
 
-            <InputDialog open={trainingAddDialog} onCancel={()=>{setTrainingAddDialog(false);setTrainingAddDialogInput("")}} title={trainingAddDialogTitle} inputplaceholder="Expiry Date" OkButtonText="Add" inputOnChange={(e:any)=>setTrainingAddDialogInput(e.target.value)} OkButtonIcon={<Plus width={"1rem"}/>}/>
+            <InputDialog open={trainingAddDialog} onOk={()=>{addTraining(trainingType)}} onCancel={()=>{setTrainingAddDialog(false);setEditedTrainingAddDialogInput("")}} title={trainingAddDialogTitle} inputplaceholder="Expiry Date" OkButtonText="Update" inputOnChange={(e:any)=>setEditedTrainingAddDialogInput(e.target.value)} OkButtonIcon={<RefreshCcw width={"1rem"}/>} updating={loading} disabled={loading||!EditedTrainingAddDialogInput?true:false} input1Value={trainingAddDialogInputValue}/>
 
             </div>
             
