@@ -16,7 +16,7 @@ import emailjs from '@emailjs/browser'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { BellOff, BellRing, Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, FilePlus, Globe, GraduationCap, HeartPulse, InboxIcon, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { BellOff, BellRing, Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, FilePlus, Globe, GraduationCap, HeartPulse, InboxIcon, Info, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -1099,7 +1099,12 @@ const RenewID = async () => {
             }/>
 
             {/* ADD RECORD DIALOG */}
-            <InputDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setEditedName(e.target.value)} } inputplaceholder="Enter Full Name" disabled={loading||!editedName?true:false} updating={loading} input2placeholder="Enter Email" input2OnChange={(e:any)=>setEditedEmail(e.target.value)}/>
+            <InputDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setEditedName(e.target.value)} } inputplaceholder="Enter Full Name" disabled={loading||!editedName?true:false} updating={loading} input2placeholder="Enter Email" input2OnChange={(e:any)=>setEditedEmail(e.target.value)} 
+            extra={
+
+
+                <div style={{textAlign:"center", fontSize:"0.7rem", display:"flex", alignItems:"center", gap:"0.5rem", width:"100%", border:"", justifyContent:"center", padding:"0.25rem",background:"linear-gradient(90deg, rgba(100 100 100/ 0%), rgba(100 100 100/ 20%),rgba(100 100 100/ 20%), rgba(100 100 100/ 0%))"}}><Info width={"1rem"} color="violet"/><p style={{opacity:"0.75"}}>We require email to notify the document holder</p></div>
+                }/>
 
            
 

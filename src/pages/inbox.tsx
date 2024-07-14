@@ -41,7 +41,7 @@ export default function Inbox(){
     const [removeRecipientDialog, setRemoveRecipientDialog] = useState(false)
     const [selectedRecipient, setSelectedRecipient] = useState("")
     const [selectedRecipientID, setSelectedRecipientID] = useState("")
-
+    const [filterState, setFilterState] = useState("")
 
 
       // MAILJS VARIABLES
@@ -188,6 +188,10 @@ export default function Inbox(){
             setRemoveRecipientDialog(false)
             fetchRecipients()
 
+            recipientList.length==1&&
+            setRecipientList([])
+
+
         } catch (error) {
             message.error(String(error))
             setLoading(false)
@@ -260,11 +264,13 @@ export default function Inbox(){
                         <Bell width={"1rem"} color="violet"/>
                         <p style={{fontSize:"0.8rem"}}>Notify</p>
                     </button> */}
-                    <CustomDropDown trigger={<Filter color="salmon" width={"1.1rem"}/>}
-                    option1Text="Personal Records"
-                    option1Icon={<File color="dodgerblue"/>}
-                    option2Text="Vale Records"
-                    option2Icon={<img src="/vale-logo.png" style={{width:"1.25rem", paddingBottom:"0.45rem"}}/>}
+                    <CustomDropDown trigger={<Filter color="salmon" fill={filterState!=""?"salmon":"#1a1a1a"} width={"1.1rem"}/>}
+                    option1Text="Personal"
+                    onOption1={()=>setFilterState("personal")}
+                
+                    onOption2={()=>setFilterState("vale")}
+                    onClear={()=>setFilterState("")}
+                    option2Text="Vale"
                     />
                     
                 </div>
@@ -298,6 +304,10 @@ export default function Inbox(){
                             ((post.name).toLowerCase()).includes(search.toLowerCase())
                             
                         
+                        })
+                        .filter((e:any)=>{
+                            return e.type&&
+                            ((e.type).toLowerCase()).includes(filterState.toLowerCase())
                         })
                         .map((record:any)=>(
                             <InboxComponent 
@@ -453,7 +463,8 @@ export default function Inbox(){
 
             <InputDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true}/>
 
-            <DefaultDialog 
+            <DefaultDialog
+            created_on={recipientList.length} 
             title_extra={
             <button onClick={fetchRecipients} style={{width:"3rem", height:"2.5rem"}}>
                 {

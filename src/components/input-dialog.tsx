@@ -30,6 +30,7 @@ interface Props{
     input2Label?:string
     input3Label?:string
     input4Label?:string
+    extra?:any
 }
 
 export default function InputDialog(props:Props){
@@ -120,6 +121,14 @@ export default function InputDialog(props:Props){
 
                     </div>
                 </DialogHeader>
+
+                {
+                        props.extra?
+                        
+                            props.extra
+                        
+                        :null 
+                    }
 
                 
 
