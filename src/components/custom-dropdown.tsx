@@ -38,7 +38,7 @@ export default function CustomDropDown(props:Props){
 
           <DropdownMenuItem onClick={props.onClear}>
             
-            <span style={{width:"100%"}} >Clear</span>  
+            <span style={{width:"100%"}} >Show All</span>  
           </DropdownMenuItem>
           
         </DropdownMenuGroup>
