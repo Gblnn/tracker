@@ -322,10 +322,10 @@ export default async (req: Request) => {
         e.vt_car_2!=""?
         p+="CAR - 2 Training expiry "
         +
-        moment((e.medical_due_on).toDate()).startOf('day').fromNow()
+        moment((e.vt_car_2).toDate()).startOf('day').fromNow()
         +" on "
-        +String(moment((e.medical_due_on).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.medical_due_on.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
+        +String(moment((e.vt_car_2).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(moment(e.vt_car_2.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
         +"\n\n"
         :null
 
@@ -451,5 +451,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"21 14 * * * "
+    schedule:"25 14 * * * "
 }
