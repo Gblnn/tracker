@@ -1,7 +1,8 @@
 import { Tooltip } from 'antd'
 import { motion } from 'framer-motion'
-import { BellOff, Book, Car, CreditCard, HeartPulse } from "lucide-react"
+import { BellOff, Book, Car, CreditCard, Disc, HeartPulse } from "lucide-react"
 import { Link } from "react-router-dom"
+import InboxComponentDesc from './inbox-component-desc'
 
 interface Props{
     title?:string
@@ -19,6 +20,28 @@ interface Props{
     medical_overdue?:boolean
     passport_desc?:string
     passport_overdue?:boolean
+    vt_hse_induction_desc?:string
+    vt_hse_induction_overdue?:boolean
+    vt_car_1_desc?:string
+    vt_car_1_overdue?:boolean
+    vt_car_2_desc?:string
+    vt_car_2_overdue?:boolean
+    vt_car_3_desc?:string
+    vt_car_3_overdue?:boolean
+    vt_car_4_desc?:string
+    vt_car_4_overdue?:boolean
+    vt_car_5_desc?:string
+    vt_car_5_overdue?:boolean
+    vt_car_6_desc?:string
+    vt_car_6_overdue?:boolean
+    vt_car_7_desc?:string
+    vt_car_7_overdue?:boolean
+    vt_car_8_desc?:string
+    vt_car_8_overdue?:boolean
+    vt_car_9_desc?:string
+    vt_car_9_overdue?:boolean
+    vt_car_10_desc?:string
+    vt_car_10_overdue?:boolean
     hidden?:boolean
     noArrow?:boolean
     onReminderClick?:any
@@ -34,8 +57,6 @@ interface Props{
 
 
 export default function InboxComponent(props:Props){
-
-    const overdue_color = "lightcoral"
 
     return(
         <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
@@ -73,23 +94,16 @@ export default function InboxComponent(props:Props){
                         {
                             props.civil_desc?
                 
-                                <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
-                                    {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
-                                    <CreditCard width={"0.75rem"} color="dodgerblue" style={{border:''}}/>   
-                                    <p style={{textAlign:"left", opacity:0.75, color:props.civil_overdue?overdue_color:"white", fontWeight:props.civil_overdue?600:400}}>{props.civil_desc}</p>
-                                </div>
+                            <InboxComponentDesc icon={<CreditCard width={"0.75rem"} color="dodgerblue"/>} desc={props.civil_desc} overdue={props.civil_overdue}/>
                         
                             :null
                         }
+                        
 
                         {
                             props.vehicle_desc?
-                
-                                <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
-                                    {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
-                                    <Car width={"0.75rem"} color="violet" style={{border:''}}/>   
-                                    <p style={{textAlign:"left", opacity:0.75, color:props.vehicle_overdue?overdue_color:"white", fontWeight:props.vehicle_overdue?600:400}}>{props.vehicle_desc}</p>
-                                </div>
+
+                            <InboxComponentDesc icon={<Car width={"0.75rem"} color="violet"/>} desc={props.vehicle_desc} overdue={props.vehicle_overdue}/>
                             
                             :null
 
@@ -98,11 +112,7 @@ export default function InboxComponent(props:Props){
                         {
                             props.medical_desc?
                 
-                                <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
-                                    {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
-                                    <HeartPulse width={"0.75rem"} color="tomato" style={{border:''}}/>   
-                                    <p style={{textAlign:"left", opacity:0.75, color:props.medical_overdue?overdue_color:"white", fontWeight:props.medical_overdue?600:400}}>{props.medical_desc}</p>
-                                </div>
+                                <InboxComponentDesc icon={<HeartPulse width={"0.75rem"} color="tomato"/>} desc={props.medical_desc} overdue={props.medical_overdue}/>
                             
                             :null
 
@@ -111,15 +121,105 @@ export default function InboxComponent(props:Props){
                         {   
                             props.passport_desc?
                 
-                                <div style={{display:"flex", gap:"0.5rem", alignItems:"center",textAlign:"left", fontWeight:400, fontSize:"0.8rem"}}>
-                                    {/* <p style={{fontSize:"1rem", color:"lightblue"}}>•</p> */}
-                                    <Book width={"0.75rem"} color="goldenrod" style={{border:''}}/>   
-                                    <p style={{textAlign:"left", opacity:0.75, color:props.passport_overdue?overdue_color:"white", fontWeight:props.passport_overdue?600:400}}>{props.passport_desc}</p>
-                                </div>
+                            <InboxComponentDesc icon={<Book width={"0.75rem"} color="goldenrod"/>} desc={props.passport_desc} overdue={props.passport_overdue}/>
                             
                             :null
 
                         }
+
+                        
+
+{   
+                            props.vt_hse_induction_desc?
+                
+                                <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue"/>} desc={props.vt_hse_induction_desc} overdue={props.vt_hse_induction_overdue}/>
+                            
+                            :null
+
+                        }
+
+                        {   
+                            props.vt_car_1_desc?
+                
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue"/>} desc={props.vt_car_1_desc} overdue={props.vt_car_1_overdue}/>
+                            
+                            :null
+
+                        }
+
+                        {   
+                            props.vt_car_2_desc?
+                
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_2_desc} overdue={props.vt_car_2_overdue}/>
+                            
+                            :null
+
+                        }
+                        {   
+                            props.vt_car_3_desc?
+                
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_3_desc} overdue={props.vt_car_3_overdue}/>
+                            
+                            :null
+
+                        }
+                        {   
+                            props.vt_car_4_desc?
+                
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_4_desc} overdue={props.vt_car_4_overdue}/>
+                            
+                            :null
+
+                        }
+                        {   
+                            props.vt_car_5_desc?
+                
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_5_desc} overdue={props.vt_car_5_overdue}/>
+                            
+                            :null
+
+                        }
+                        {   
+                            props.vt_car_6_desc?
+                
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_6_desc} overdue={props.vt_car_6_overdue}/>
+                            
+                            :null
+
+                        }
+                        {   
+                            props.vt_car_7_desc?
+                
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_7_desc} overdue={props.vt_car_7_overdue}/>
+                            
+                            :null
+
+                        }
+                        {   
+                            props.vt_car_8_desc?
+                
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_8_desc} overdue={props.vt_car_8_overdue}/>
+                            
+                            :null
+
+                        }
+                        {   
+                            props.vt_car_9_desc?
+                
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_9_desc} overdue={props.vt_car_9_overdue}/>
+                            
+                            :null
+
+                        }
+                        {   
+                            props.vt_car_10_desc?
+                
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_10_desc} overdue={props.vt_car_10_overdue}/>
+                            
+                            :null
+
+                        }
+                        
 
                         {
                             props.desc?

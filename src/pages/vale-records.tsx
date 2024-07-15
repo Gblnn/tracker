@@ -713,41 +713,69 @@ const RenewID = async () => {
 
     const addTraining = async (type:any) => {
         setLoading(true)
-        type=="hse_induction"&&
-        await updateDoc(doc(db, 'records', id), {vt_hse_induction:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
-        setHseInduction(EditedTrainingAddDialogInput)
 
-        type=="car_1"&&
-        await updateDoc(doc(db, 'records', id), {vt_car_1:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+        if (type=="hse_induction"){        
+            await updateDoc(doc(db, 'records', id), {vt_hse_induction:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+            setHseInduction(EditedTrainingAddDialogInput)
+        }
+
+        if(type=="car_1"){
+            await updateDoc(doc(db, 'records', id), {vt_car_1:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+            setVtCar1(EditedTrainingAddDialogInput)
+        }
         
 
-        type=="car_2"&&
-        await updateDoc(doc(db, 'records', id), {vt_car_2:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+        if(type=="car_2"){
+            await updateDoc(doc(db, 'records', id), {vt_car_2:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+            setVtCar2(EditedTrainingAddDialogInput)
+        }
+        
 
-        type=="car_3"&&
-        await updateDoc(doc(db, 'records', id), {vt_car_3:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+        if(type=="car_3"){
+            await updateDoc(doc(db, 'records', id), {vt_car_3:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+            setVtCar3(EditedTrainingAddDialogInput)
+        }
+        
 
-        type=="car_4"&&
-        await updateDoc(doc(db, 'records', id), {vt_car_4:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+        if(type=="car_4"){
+            await updateDoc(doc(db, 'records', id), {vt_car_4:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+            setVtCar4(EditedTrainingAddDialogInput)
+        }
+        
+        if(type=="car_5"){
+            await updateDoc(doc(db, 'records', id), {vt_car_5:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+            setVtCar5(EditedTrainingAddDialogInput)
+        }
+        
 
-        type=="car_5"&&
-        await updateDoc(doc(db, 'records', id), {vt_car_5:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+        if(type=="car_6"){
+            await updateDoc(doc(db, 'records', id), {vt_car_6:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+            setVtCar6(EditedTrainingAddDialogInput)
+        }
+        
 
-        type=="car_6"&&
-        await updateDoc(doc(db, 'records', id), {vt_car_6:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+        if(type=="car_7"){
+            await updateDoc(doc(db, 'records', id), {vt_car_7:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+            setVtCar7(EditedTrainingAddDialogInput)
+        }
+        
 
-        type=="car_7"&&
-        await updateDoc(doc(db, 'records', id), {vt_car_7:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+        if(type=="car_8"){
+            await updateDoc(doc(db, 'records', id), {vt_car_8:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+            setVtCar8(EditedTrainingAddDialogInput)
+        }
+        
 
-        type=="car_8"&&
-        await updateDoc(doc(db, 'records', id), {vt_car_8:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
-
-        type=="car_9"&&
-        await updateDoc(doc(db, 'records', id), {vt_car_9:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
-
-        type=="car_10"&&
-        await updateDoc(doc(db, 'records', id), {vt_car_10:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
-
+        if(type=="car_9"){
+            await updateDoc(doc(db, 'records', id), {vt_car_9:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+            setVtCar9(EditedTrainingAddDialogInput)
+        }
+        
+        if(type=="car_10"){
+            await updateDoc(doc(db, 'records', id), {vt_car_10:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+            setVtCar10(EditedTrainingAddDialogInput)
+        }
+        
 
         
         setLoading(false)
@@ -962,7 +990,9 @@ const RenewID = async () => {
                                 notify={(!post.notify)}
                                 tag={
 
-                                    post.civil_expiry != "" || post.vehicle_expiry != "" || post.medical_due_on != "" || post.passportID != ""?
+                                    post.civil_expiry != "" || post.vehicle_expiry != "" || post.medical_due_on != "" || post.passportID != ""||post.vt_hse_induction != "" || post.vt_car_1 != "" || post.vt_car_2 != "" || post.vt_car_3 != "" || post.vt_car_4 != ""|| post.vt_car_5 != ""|| post.vt_car_6 != ""|| post.vt_car_7 != ""|| post.vt_car_8 != ""|| post.vt_car_9 != ""|| post.vt_car_10 != ""
+                                    ?
+                                    
 
                                     
                                     "Available"
@@ -1202,7 +1232,7 @@ const RenewID = async () => {
                         ?
                         "Expiring Soon"
                         :
-                        ""                                           
+                        "Available"                                           
                     } 
                     onClick={()=>{
                         setValeTrainingDialog(true)

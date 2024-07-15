@@ -198,6 +198,24 @@ export default function Inbox(){
             setLoading(false)
         }
     }
+
+    const DescGenerator = (date:any, months:number, name:string) => {
+        return(
+            date&&
+            Math.round(moment(date.toDate()).diff(moment(new Date()), 'months'))
+            <=months&&
+                (name+" expiry "+
+                moment((date).toDate()).startOf('day').fromNow()
+                +" on "+moment(date.toDate()).format("DD/MM/YYYY"))
+        )
+    }
+
+    const OverdueGenerator = (date:any) => {
+        return(
+            date&&
+            Math.round(moment(date.toDate()).diff(moment(today).startOf('day'), 'days'))<=0?true:false
+        )
+    }
     
 
     // const Evaluate = () => {
@@ -280,18 +298,18 @@ export default function Inbox(){
                         
                     </div>}
                     option1Text="Personal"
+                    option2Text="Vale"
                     onOption1={()=>setFilterState("personal")}
-                
                     onOption2={()=>setFilterState("vale")}
                     onClear={()=>setFilterState("")}
-                    option2Text="Vale"
+                    
                     />
                     
                 </div>
                 
                 <p style={{height:"1.5rem"}}></p>
 
-                <div className="record-list" id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.75rem", height:"75svh", border:"", overflow:"auto", paddingRight:"", paddingBottom:"1rem"}}>
+                <div className="record-list" id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.75rem", height:"75svh", border:"", overflow:"auto", paddingRight:"0.5rem", paddingBottom:"1rem"}}>
                     {
                         records
                         .filter((record:any)=>{
@@ -306,7 +324,40 @@ export default function Inbox(){
                                 Math.round(moment(record.medical_due_on.toDate()).diff(moment(today), 'months'))<=2
                                 ||
                                 record.passportExpiry&&
-                                Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))<=6        
+                                Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))<=6
+                                ||
+                                record.vt_hse_induction&&
+                                Math.round(moment(record.vt_hse_induction.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.vt_car_1&&
+                                Math.round(moment(record.vt_car_1.toDate()).diff(moment(today), 'months'))<=2   
+                                ||
+                                record.vt_car_2&&
+                                Math.round(moment(record.vt_car_2.toDate()).diff(moment(today), 'months'))<=2    
+                                ||
+                                record.vt_car_3&&
+                                Math.round(moment(record.vt_car_3.toDate()).diff(moment(today), 'months'))<=2 
+                                ||
+                                record.vt_car_4&&
+                                Math.round(moment(record.vt_car_4.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.vt_car_5&&
+                                Math.round(moment(record.vt_car_5.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.vt_car_6&&
+                                Math.round(moment(record.vt_car_6.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.vt_car_7&&
+                                Math.round(moment(record.vt_car_7.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.vt_car_8&&
+                                Math.round(moment(record.vt_car_8.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.vt_car_9&&
+                                Math.round(moment(record.vt_car_9.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.vt_car_10&&
+                                Math.round(moment(record.vt_car_10.toDate()).diff(moment(today), 'months'))<=2
                             )
                         })
                         .filter((post:any)=>{
@@ -339,97 +390,65 @@ export default function Inbox(){
                                 setReminderDialog(true);
                                 setMailTitle(record.name+"'s document expiry reminder");
                                 setMailContent(
+                                    "This is a gentle reminder regarding some of "+record.name+"'s"+" document(s) expiring soon :  \n\n"+
+                                                                            
+                                    ("Civil ID expiry in "+
+                                    Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))+
                                 
-                                    
-                                        "This is a gentle reminder regarding some of "+record.name+"'s"+" document(s) expiring soon :  \n\n"+
-                                    
-                                        
-                                            ("Civil ID expiry in "+
-                                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))+
-                                
-                                                " month(s)"
-                                                +" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")+"\n")
-                                            
-                                        
-                                        // +
-                                           
-                                        //     ("Vehicle ID expiry in "+
-                                        //         Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))+" month(s)"
-                                        //         +" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY"))
-                            
-                                        
-                                    
-                                    
-                                    
-                                        
-                                    
-                                    
-
+                                    " month(s)"
+                                    +" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")+"\n")
                                 )
                             }}
                             
-                              priority="low" key={record.id} title={record.name+"'s doc expiry reminder"} 
+                            key={record.id} 
+                            title={record.name+"'s doc expiry reminder"}
+
                              
-                             civil_desc={
-                                record.civil_expiry&&
-                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2&&
-                                ("Civil ID expiry "+
-                                moment((record.civil_expiry).toDate()).startOf('day').fromNow()
-                                +" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY"))
-                                
-                            }
+                            civil_desc={DescGenerator(record.civil_expiry, 2, "Civil ID")}
+                            civil_overdue={OverdueGenerator(record.civil_expiry)}
 
-                            civil_overdue={
-                                record.civil_expiry&&
-                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days'))<=0?true:false
-                            }
+                            vehicle_desc={DescGenerator(record.vehicle_expiry, 2, "Vehicle ID")}
+                            vehicle_overdue={OverdueGenerator(record.vehicle_expiry)}
 
+                            medical_desc={DescGenerator(record.medical_due_on, 2, "Medical ID")}
+                            medical_overdue={OverdueGenerator(record.medical_due_on)}
 
-                            vehicle_desc={
-                                
-                                record.vehicle_expiry&&
-                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2&&
-                                ("Vehicle ID expiry "+
-                                    moment((record.vehicle_expiry).toDate()).startOf('day').fromNow()
-                                    +" on "+moment(record.vehicle_expiry.toDate()).format("DD/MM/YYYY"))
-                                    
-                            }
+                            passport_desc={DescGenerator(record.passportExpiry, 6, "Passport")}
+                            passport_overdue={OverdueGenerator(record.passportExpiry)}
 
-                            vehicle_overdue={
-                                record.vehicle_expiry&&
-                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today).startOf('day'), 'days'))<=0?true:false
-                            }
+                            vt_hse_induction_desc={DescGenerator(record.vt_hse_induction, 2, "HSE Induction Training")}
+                            vt_hse_induction_overdue={OverdueGenerator(record.vt_hse_induction)}
 
-                            medical_desc={
-                                record.medical_due_on&&
-                                Math.round(moment(record.medical_due_on.toDate()).diff(moment(today), 'months'))<=2&&
-                                ("Medical ID expiry "+
-                                    moment((record.medical_due_on).toDate()).startOf('day').fromNow()
-                                    +" on "+moment(record.medical_due_on.toDate()).format("DD/MM/YYYY"))
-                                    
-                            }
+                            vt_car_1_desc={DescGenerator(record.vt_car_1, 2, "CAR - 1 Training")}
+                            vt_car_1_overdue={OverdueGenerator(record.vt_car_1)}
+                            
+                            vt_car_2_desc={DescGenerator(record.vt_car_2, 2, "CAR - 2 Training")}
+                            vt_car_2_overdue={OverdueGenerator(record.vt_car_2)}
 
-                            medical_overdue={
-                                record.medical_due_on&&
-                                Math.round(moment(record.medical_due_on.toDate()).diff(moment(today).startOf('day'), 'days'))<=0?true:false
-                            }
+                            vt_car_3_desc={DescGenerator(record.vt_car_3, 2, "CAR - 3 Training")}
+                            vt_car_3_overdue={OverdueGenerator(record.vt_car_3)}
 
-                            passport_desc={
-                                
-                                record.passportExpiry&&
-                                Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))<=6&&
-                                ("Passport expiry "+
-                                    moment((record.passportExpiry).toDate()).startOf('day').fromNow()
-                                    +" on "+moment(record.passportExpiry.toDate()).format("DD/MM/YYYY"))
-                                    
-                            }
+                            vt_car_4_desc={DescGenerator(record.vt_car_4, 2, "CAR - 4 Training")}
+                            vt_car_4_overdue={OverdueGenerator(record.vt_car_4)}
 
-                            passport_overdue={
-                                record.passportExpiry&&
-                                Math.round(moment(record.passportExpiry.toDate()).diff(moment(today).startOf('day'), 'days'))<=0?true:false
-                            }
+                            vt_car_5_desc={DescGenerator(record.vt_car_5, 2, "CAR - 5 Training")}
+                            vt_car_5_overdue={OverdueGenerator(record.vt_car_5)}
 
-                        
+                            vt_car_6_desc={DescGenerator(record.vt_car_6, 2, "CAR - 6 Training")}
+                            vt_car_6_overdue={OverdueGenerator(record.vt_car_6)}
+
+                            vt_car_7_desc={DescGenerator(record.vt_car_7, 2, "CAR - 7 Training")}
+                            vt_car_7_overdue={OverdueGenerator(record.vt_car_7)}
+
+                            vt_car_8_desc={DescGenerator(record.vt_car_8, 2, "CAR - 8 Training")}
+                            vt_car_8_overdue={OverdueGenerator(record.vt_car_8)}
+
+                            vt_car_9_desc={DescGenerator(record.vt_car_9, 2, "CAR - 9 Training")}
+                            vt_car_9_overdue={OverdueGenerator(record.vt_car_9)}
+
+                            vt_car_10_desc={DescGenerator(record.vt_car_10, 2, "CAR - 10 Training")}
+                            vt_car_10_overdue={OverdueGenerator(record.vt_car_10)}
+
                             
                             />
                         ))

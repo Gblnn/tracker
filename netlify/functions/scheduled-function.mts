@@ -15,6 +15,20 @@ export default async (req: Request) => {
     const today = new Date()
     let rp = ""
 
+    const DescGenerator = (name:string, date:any) => {
+      return(
+        m += name+"'s Civil ID expiry "
+        +
+        moment((date).toDate()).startOf('day').fromNow()
+        +" on "
+        +String(moment((date).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(moment((date).toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+        " (Overdue) "
+        :"")
+        +"\n\n"
+      )
+    }
+
     try {
 
       const RecipientCollection = collection(db, "recipients")
@@ -50,6 +64,42 @@ export default async (req: Request) => {
           ||
           e.passportExpiry&&
           Math.round(moment(e.passportExpiry.toDate()).diff(moment(today), 'months'))<=6
+          ||
+          e.vt_hse_induction&&
+          Math.round(moment(e.vt_hse_induction.toDate()).diff(moment(today), 'months'))<=2
+          ||
+          e.vt_hse_induction&&
+          Math.round(moment(e.vt_hse_induction.toDate()).diff(moment(today), 'months'))<=2
+          ||
+          e.vt_car_1&&
+          Math.round(moment(e.vt_car_1.toDate()).diff(moment(today), 'months'))<=2   
+          ||
+          e.vt_car_2&&
+          Math.round(moment(e.vt_car_2.toDate()).diff(moment(today), 'months'))<=2    
+          ||
+          e.vt_car_3&&
+          Math.round(moment(e.vt_car_3.toDate()).diff(moment(today), 'months'))<=2 
+          ||
+          e.vt_car_4&&
+          Math.round(moment(e.vt_car_4.toDate()).diff(moment(today), 'months'))<=2
+          ||
+          e.vt_car_5&&
+          Math.round(moment(e.vt_car_5.toDate()).diff(moment(today), 'months'))<=2
+          ||
+          e.vt_car_6&&
+          Math.round(moment(e.vt_car_6.toDate()).diff(moment(today), 'months'))<=2
+          ||
+          e.vt_car_7&&
+          Math.round(moment(e.vt_car_7.toDate()).diff(moment(today), 'months'))<=2
+          ||
+          e.vt_car_8&&
+          Math.round(moment(e.vt_car_8.toDate()).diff(moment(today), 'months'))<=2
+          ||
+          e.vt_car_9&&
+          Math.round(moment(e.vt_car_9.toDate()).diff(moment(today), 'months'))<=2
+          ||
+          e.vt_car_10&&
+          Math.round(moment(e.vt_car_10.toDate()).diff(moment(today), 'months'))<=2
         )
       })
 
@@ -61,16 +111,7 @@ export default async (req: Request) => {
 
       filteredData.forEach((element:any) => {
         element.civil_expiry!=""?
-        m += element.name+"'s Civil ID expiry "
-        +
-        moment((element.civil_expiry).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.civil_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((element.civil_expiry).toDate()).diff(moment(today).startOf('day'), 'days')<=0?
-        " (Overdue) "
-        :"")
-        +"\n\n"
-        
+        DescGenerator(element.name, element.civil_expiry)
         :null
 
         element.vehicle_expiry!=""?
@@ -102,6 +143,16 @@ export default async (req: Request) => {
         +" on "
         +String(moment((element.passportExpiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
         +String(moment((element.passportExpiry).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
+        +"\n\n"
+        :null
+
+        element.vt_hse_induction!=""?
+        m += element.name+"'s HSE Induction Training expiry "
+        +
+        moment((element.vt_hse_induction).toDate()).startOf('day').fromNow()
+        +" on "
+        +String(moment((element.vt_hse_induction).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(moment((element.vt_hse_induction).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
         +"\n\n"
         :null
 
@@ -201,5 +252,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"53 12 * * * "
+    schedule:"45 7 * * * "
 }
