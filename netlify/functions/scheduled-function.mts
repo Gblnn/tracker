@@ -15,20 +15,6 @@ export default async (req: Request) => {
     const today = new Date()
     let rp = ""
 
-    // const DescGenerator = (name:string, date:any, push:any, id:string) => {
-    //   return(
-    //     push += name+"'s "+id+" expiry "
-    //     +
-    //     moment((date).toDate()).startOf('day').fromNow()
-    //     +" on "
-    //     +String(moment((date).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-    //     +String(moment((date).toDate()).diff(moment(today).startOf('day'), 'days')<=0?
-    //     " (Overdue) "
-    //     :"")
-    //     +"\n\n"
-    //   )
-    // }
-
     try {
 
       const RecipientCollection = collection(db, "recipients")
@@ -465,5 +451,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"04 9 * * * "
+    schedule:"16 13 * * * "
 }
