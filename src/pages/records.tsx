@@ -280,7 +280,7 @@ const RenewID = async () => {
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
         setLoading(true)
-        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:"personal", notify:true, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:""})
+        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:"personal", notify:true, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:""})
         setAddDialog(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)

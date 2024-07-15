@@ -91,6 +91,7 @@ export default async (req: Request) => {
 
 
       filteredData.forEach((element:any) => {
+
         element.civil_expiry!=""?
         m += element.name+"'s Civil ID expiry  "
         +
@@ -450,5 +451,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"58 13 * * * "
+    schedule:"13 14 * * * "
 }
