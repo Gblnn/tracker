@@ -67,39 +67,36 @@ export default async (req: Request) => {
           ||
           e.vt_hse_induction&&
           Math.round(moment(e.vt_hse_induction.toDate()).diff(moment(today), 'months'))<=2
-          ||
-          e.vt_hse_induction&&
-          Math.round(moment(e.vt_hse_induction.toDate()).diff(moment(today), 'months'))<=2
-          ||
-          e.vt_car_1&&
-          Math.round(moment(e.vt_car_1.toDate()).diff(moment(today), 'months'))<=2   
-          ||
-          e.vt_car_2&&
-          Math.round(moment(e.vt_car_2.toDate()).diff(moment(today), 'months'))<=2    
-          ||
-          e.vt_car_3&&
-          Math.round(moment(e.vt_car_3.toDate()).diff(moment(today), 'months'))<=2 
-          ||
-          e.vt_car_4&&
-          Math.round(moment(e.vt_car_4.toDate()).diff(moment(today), 'months'))<=2
-          ||
-          e.vt_car_5&&
-          Math.round(moment(e.vt_car_5.toDate()).diff(moment(today), 'months'))<=2
-          ||
-          e.vt_car_6&&
-          Math.round(moment(e.vt_car_6.toDate()).diff(moment(today), 'months'))<=2
-          ||
-          e.vt_car_7&&
-          Math.round(moment(e.vt_car_7.toDate()).diff(moment(today), 'months'))<=2
-          ||
-          e.vt_car_8&&
-          Math.round(moment(e.vt_car_8.toDate()).diff(moment(today), 'months'))<=2
-          ||
-          e.vt_car_9&&
-          Math.round(moment(e.vt_car_9.toDate()).diff(moment(today), 'months'))<=2
-          ||
-          e.vt_car_10&&
-          Math.round(moment(e.vt_car_10.toDate()).diff(moment(today), 'months'))<=2
+          // ||
+          // e.vt_car_1&&
+          // Math.round(moment(e.vt_car_1.toDate()).diff(moment(today), 'months'))<=2   
+          // ||
+          // e.vt_car_2&&
+          // Math.round(moment(e.vt_car_2.toDate()).diff(moment(today), 'months'))<=2    
+          // ||
+          // e.vt_car_3&&
+          // Math.round(moment(e.vt_car_3.toDate()).diff(moment(today), 'months'))<=2 
+          // ||
+          // e.vt_car_4&&
+          // Math.round(moment(e.vt_car_4.toDate()).diff(moment(today), 'months'))<=2
+          // ||
+          // e.vt_car_5&&
+          // Math.round(moment(e.vt_car_5.toDate()).diff(moment(today), 'months'))<=2
+          // ||
+          // e.vt_car_6&&
+          // Math.round(moment(e.vt_car_6.toDate()).diff(moment(today), 'months'))<=2
+          // ||
+          // e.vt_car_7&&
+          // Math.round(moment(e.vt_car_7.toDate()).diff(moment(today), 'months'))<=2
+          // ||
+          // e.vt_car_8&&
+          // Math.round(moment(e.vt_car_8.toDate()).diff(moment(today), 'months'))<=2
+          // ||
+          // e.vt_car_9&&
+          // Math.round(moment(e.vt_car_9.toDate()).diff(moment(today), 'months'))<=2
+          // ||
+          // e.vt_car_10&&
+          // Math.round(moment(e.vt_car_10.toDate()).diff(moment(today), 'months'))<=2
         )
       })
 
@@ -252,5 +249,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"45 7 * * * "
+    schedule:"48 7 * * * "
 }
