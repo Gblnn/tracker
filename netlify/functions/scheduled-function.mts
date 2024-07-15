@@ -48,9 +48,9 @@ export default async (req: Request) => {
           ||
           e.passportExpiry&&
           Math.round(moment(e.passportExpiry.toDate()).diff(moment(today), 'months'))<=6
-        //   ||
-        //   e.vt_hse_induction&&
-        //   Math.round(moment(e.vt_hse_induction.toDate()).diff(moment(today), 'months'))<=2
+          ||
+          e.vt_hse_induction&&
+          Math.round(moment(e.vt_hse_induction.toDate()).diff(moment(today), 'months'))<=2
         //   ||
         //   e.vt_car_1&&
         //   Math.round(moment(e.vt_car_1.toDate()).diff(moment(today), 'months'))<=2   
@@ -450,5 +450,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"44 13 * * * "
+    schedule:"47 13 * * * "
 }
