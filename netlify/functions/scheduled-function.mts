@@ -15,19 +15,19 @@ export default async (req: Request) => {
     const today = new Date()
     let rp = ""
 
-    // const DescGenerator = (name:string, date:any, push:string, id:string) => {
-    //   return(
-    //     push += name+"'s "+id+" expiry "
-    //     +
-    //     moment((date).toDate()).startOf('day').fromNow()
-    //     +" on "
-    //     +String(moment((date).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-    //     +String(moment((date).toDate()).diff(moment(today).startOf('day'), 'days')<=0?
-    //     " (Overdue) "
-    //     :"")
-    //     +"\n\n"
-    //   )
-    // }
+    const DescGenerator = (name:string, date:any, push:string, id:string) => {
+      return(
+        push += name+"'s "+id+" expiry "
+        +
+        moment((date).toDate()).startOf('day').fromNow()
+        +" on "
+        +String(moment((date).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(moment((date).toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+        " (Overdue) "
+        :"")
+        +"\n\n"
+      )
+    }
 
     try {
 
@@ -39,8 +39,6 @@ export default async (req: Request) => {
       Snapshot.forEach((doc:any)=>{
         Data.push({id: doc.id, ...doc.data()})        
       })
-
-
 
       const RecordCollection = collection(db, "records")
       const recordQuery = query(RecordCollection, orderBy("created_on"))
@@ -108,15 +106,7 @@ export default async (req: Request) => {
 
       filteredData.forEach((element:any) => {
         element.civil_expiry!=""?
-        m += element.name+"'s Civil ID expiry  "
-        +
-        moment((element.civil_expiry).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.civil_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(element.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
-        " (Overdue) "
-        :"")
-        +"\n\n"
+        DescGenerator(element.name, element.civil_expiry, m, "Civil ID")
         :null
 
         element.vehicle_expiry!=""?
@@ -151,16 +141,16 @@ export default async (req: Request) => {
         +"\n\n"
         :null
 
-        element.vt_hse_induction!=""?
-        m += element.name+"'s HSE Induction Training expiry "
-        +
-        moment((element.vt_hse_induction).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.vt_hse_induction).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((element.vt_hse_induction).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
-        m+="\n\n"
+        // element.vt_hse_induction!=""?
+        // m += element.name+"'s HSE Induction Training expiry "
+        // +
+        // moment((element.vt_hse_induction).toDate()).startOf('day').fromNow()
+        // +" on "
+        // +String(moment((element.vt_hse_induction).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        // +String(moment((element.vt_hse_induction).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
+        // +"\n\n"
+        // :null
+        // m+="\n\n"
       })
 
     // INDIVIDUAL MAIL SEND
@@ -168,15 +158,7 @@ export default async (req: Request) => {
       p=""
       p+="Listed below are some document(s) which require your attention\n\n"
       e.civil_expiry!=""?
-      p+="Civil ID expiry  "
-        +
-        moment((e.civil_expiry).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.civil_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
-        " (Overdue) "
-        :"")
-        +"\n\n"
+      DescGenerator(e.name, e.civil_expiry, p, "Civil ID")
         :null
 
         e.vehicle_expiry!=""?
@@ -253,5 +235,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"26 8 * * * "
+    schedule:"40 8 * * * "
 }
