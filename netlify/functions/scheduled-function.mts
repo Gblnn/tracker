@@ -15,7 +15,7 @@ export default async (req: Request) => {
     const today = new Date()
     let rp = ""
 
-    const DescGenerator = (name:string, date:any, push:string, id:string) => {
+    const DescGenerator = (name:string, date:any, push:any, id:string) => {
       return(
         push += name+"'s "+id+" expiry "
         +
@@ -235,5 +235,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"40 8 * * * "
+    schedule:"45 8 * * * "
 }
