@@ -135,15 +135,15 @@ export default async (req: Request) => {
         +"\n\n"
         :null
 
-        // element.vt_hse_induction!=""?
-        // m += element.name+"'s HSE Induction Training expiry "
-        // +
-        // moment((element.vt_hse_induction).toDate()).startOf('day').fromNow()
-        // +" on "
-        // +String(moment((element.vt_hse_induction).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        // +String(moment((element.vt_hse_induction).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        // +"\n\n"
-        // :null
+        element.vt_hse_induction!=""?
+        m += element.name+"'s HSE Induction Training expiry "
+        +
+        moment((element.vt_hse_induction).toDate()).startOf('day').fromNow()
+        +" on "
+        +String(moment((element.vt_hse_induction).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(moment((element.vt_hse_induction).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
+        +"\n\n"
+        :null
 
         // element.vt_car_1!=""?
         // m += element.name+"'s CAR - 1 Training expiry "
@@ -298,15 +298,15 @@ export default async (req: Request) => {
         +"\n\n"
         :null
 
-        // e.vt_hse_induction!=""?
-        // p+="HSE Induction Training expiry "
-        // +
-        // moment((e.vt_hse_induction).toDate()).startOf('day').fromNow()
-        // +" on "
-        // +String(moment((e.vt_hse_induction).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        // +String(moment(e.vt_hse_induction.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        // +"\n\n"
-        // :null
+        e.vt_hse_induction!=""?
+        p+="HSE Induction Training expiry "
+        +
+        moment((e.vt_hse_induction).toDate()).startOf('day').fromNow()
+        +" on "
+        +String(moment((e.vt_hse_induction).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(moment(e.vt_hse_induction.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
+        +"\n\n"
+        :null
 
         // e.vt_car_1!=""?
         // p+="CAR - 1 Training expiry "
@@ -450,5 +450,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"38 13 * * * "
+    schedule:"44 13 * * * "
 }
