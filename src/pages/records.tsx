@@ -8,6 +8,7 @@ import InputDialog from "@/components/input-dialog"
 import MedicalID from "@/components/medical-id"
 import Passport from "@/components/passport"
 import SearchBar from "@/components/search-bar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import DefaultDialog from "@/components/ui/default-dialog"
 import VehicleID from "@/components/vehicle-id"
 import { db } from "@/firebase"
@@ -280,7 +281,7 @@ const RenewID = async () => {
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
         setLoading(true)
-        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:"personal", notify:true, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:""})
+        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:"personal", notify:true, profile:"", civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:""})
         setAddDialog(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -1046,7 +1047,12 @@ const RenewID = async () => {
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
             {/* DISPLAY RECORD DIALOG */}
-            <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>{setRecordSummary(false);setEmail("")}} 
+            <DefaultDialog titleIcon={
+
+            <Avatar>
+                <AvatarFallback>{Array.from(name)[0]}</AvatarFallback>
+            </Avatar>
+        } title={name} open={recordSummary} onCancel={()=>{setRecordSummary(false);setEmail("")}} 
             bigDate={()=>message.info("Last Modified : "+String(moment(new Date(modified_on)).format("LLL")))}
             created_on={
     

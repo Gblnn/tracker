@@ -1,6 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
+import { ImageIcon } from 'lucide-react';
 
 interface Props{
     open?: boolean
@@ -31,6 +32,7 @@ interface Props{
     input3Label?:string
     input4Label?:string
     extra?:any
+    image?:any
 }
 
 export default function InputDialog(props:Props){
@@ -38,8 +40,12 @@ export default function InputDialog(props:Props){
         <Dialog open={props.open}>
             <DialogContent onOpenAutoFocus={(e)=>e.preventDefault()}>
                 <DialogHeader>
-                    <DialogTitle className="heading" style={{userSelect:"none", width:"100%", display:"flex"}}>
-                        <div className="flex">
+                    <DialogTitle className="heading" style={{userSelect:"none", width:"100%", display:"flex", flexFlow:"column"}}>
+
+                        
+                        
+                        
+                        <div className="flex" style={{border:"", textAlign:"left", display:"flex", justifyContent:"flex-start"}}>
                             {props.titleIcon}
                             {props.title}
                         </div>
@@ -47,7 +53,17 @@ export default function InputDialog(props:Props){
 
                     <div style={{display:'flex', flexFlow:"column", width:"100%", gap:"0.5rem", paddingBottom:"0.5rem"}}>
 
+                    {
+                            props.image?
+                            <div style={{display:"flex", marginBottom:"1rem", alignItems:"center", gap:"0.5rem"}}>
+                                <ImageIcon/>
+                                {props.image}
+                            </div>
+                            :null
+                        }
+
                         <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
+                            
                             {
                                 props.input1Label?
                                 <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>

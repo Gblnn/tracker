@@ -8,15 +8,23 @@ import InputDialog from "@/components/input-dialog"
 import MedicalID from "@/components/medical-id"
 import Passport from "@/components/passport"
 import SearchBar from "@/components/search-bar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import DefaultDialog from "@/components/ui/default-dialog"
 import VehicleID from "@/components/vehicle-id"
-import { db } from "@/firebase"
+import { db, storage } from "@/firebase"
 import { LoadingOutlined } from '@ant-design/icons'
 import emailjs from '@emailjs/browser'
 import { message } from 'antd'
-import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, Timestamp, updateDoc, where } from 'firebase/firestore'
+import {
+    deleteObject,
+    getDownloadURL,
+    ref,
+    ref as storageRef,
+    uploadBytes,
+} from "firebase/storage"
 import { motion } from 'framer-motion'
-import { BellOff, BellRing, Book, Car, CheckSquare2, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, FilePlus, Globe, GraduationCap, HeartPulse, InboxIcon, Info, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { BellOff, BellRing, Book, Car, CheckSquare2, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, Globe, GraduationCap, HeartPulse, InboxIcon, Info, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -58,6 +66,7 @@ export default function ValeRecords(props:Props){
     const [email, setEmail] = useState("")
     const [editedEmail, setEditedEmail] = useState("")
     const [editedName, setEditedName] = useState("")
+    const [image, setImage] = useState("")
 
     // CIVIL ID VARIABLES
     const [civil_number, setCivilNumber] = useState<any>()
@@ -177,6 +186,11 @@ export default function ValeRecords(props:Props){
     const [vt_car_8, setVtCar8] = useState<any>()
     const [vt_car_9, setVtCar9] = useState<any>()
     const [vt_car_10, setVtCar10] = useState<any>()
+
+    const [imageUpload, setImageUpload] = useState(null);
+    const [fileName, setFileName] = useState("")
+    const [imageUrl, setImageUrl] = useState("")
+    const [profileName, setProfileName] = useState("")
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
     useEffect(()=>{
@@ -246,6 +260,31 @@ export default function ValeRecords(props:Props){
         
     },[status])
 
+    const uploadFile = async () => {
+        if (imageUpload === null) {
+          message.info("Please select an image");
+          return;
+        }
+        const imageRef = storageRef(storage, fileName);
+    
+        await uploadBytes(imageRef, imageUpload)
+          .then(async (snapshot) => {
+            await getDownloadURL(snapshot.ref)
+              .then((url:any) => {
+                setImageUrl(String(url))
+                console.log("Upload Complete : ", url)
+              })
+              .catch((error) => {
+                message.error(error.message);
+                console.log(error.message)
+              });
+          })
+          .catch((error) => {
+            message.error(error.message);
+            console.log(error.message)
+          });
+      };
+
 
     //INITIAL DATA FETCH ON PAGE LOAD
     const fetchData = async (type?:any) => {
@@ -294,7 +333,9 @@ const RenewID = async () => {
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
         setLoading(true)
-        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:"vale", notify:true, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:""})
+        await uploadFile()
+        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:"vale", notify:true, profile:imageUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:""})
+        console.log("Added Record : ", imageUrl)
         setAddDialog(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -319,6 +360,7 @@ const RenewID = async () => {
     const deleteRecord = async () => {
         setLoading(true)
         await deleteDoc(doc(db, "records", id))
+        await deleteObject(ref(storage, profileName))
         setCivilNumber("")
         setCivilNumber("")
         setCivilExpiry("")
@@ -1071,6 +1113,9 @@ const RenewID = async () => {
                                     setVtCar9(post.vt_car_9?moment(post.vt_car_9.toDate()).format("DD/MM/YYYY"):null)
 
                                     setVtCar10(post.vt_car_10?moment(post.vt_car_10.toDate()).format("DD/MM/YYYY"):null)
+
+                                    setImage(post.profile)
+                                    setProfileName(post.profile_name)
                                     
                                 }}                        
 
@@ -1157,7 +1202,12 @@ const RenewID = async () => {
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
             {/* DISPLAY RECORD DIALOG */}
-            <DefaultDialog titleIcon={<UserCircle/>} title={name} open={recordSummary} onCancel={()=>{setRecordSummary(false);setEmail("")}} 
+            <DefaultDialog titleIcon={
+                <Avatar style={{display:"flex", justifyContent:"center", alignItems:"center"}}>
+                    <AvatarImage src={image}/>
+                    <AvatarFallback >{Array.from(name)[0]}</AvatarFallback>
+                </Avatar>
+            } title={name} open={recordSummary} onCancel={()=>{setRecordSummary(false);setEmail("")}} 
             bigDate={()=>message.info("Last Modified : "+String(moment(new Date(modified_on)).format("LLL")))}
             created_on={
     
@@ -1243,7 +1293,12 @@ const RenewID = async () => {
             }/>
 
             {/* ADD RECORD DIALOG */}
-            <InputDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setEditedName(e.target.value)} } inputplaceholder="Enter Full Name" disabled={loading||!editedName?true:false} updating={loading} input2placeholder="Enter Email" input2OnChange={(e:any)=>setEditedEmail(e.target.value)}
+            <InputDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} 
+            image={<input type="file" style={{fontSize:"0.8rem"}} onChange={(e:any)=>{setImageUpload(e.target.files[0]); setFileName(e.target.files[0].name)}}/>}
+
+         title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setEditedName(e.target.value)} } inputplaceholder="Enter Full Name" disabled={loading||!editedName?true:false} updating={loading} input2placeholder="Enter Email" input2OnChange={(e:any)=>setEditedEmail(e.target.value)}
+
+            
             extra={
 
 
@@ -1255,7 +1310,7 @@ const RenewID = async () => {
 
 
             {/* EDIT RECORD DIALOG */}
-            <InputDialog open={userEditPrompt} titleIcon={<PenLine/>} title="Edit Record Name" inputplaceholder="Enter New Name" OkButtonText="Update" OkButtonIcon={<TextCursor width={"1rem"}/>} onCancel={()=>setUserEditPrompt(false)} onOk={EditRecordName} inputOnChange={(e:any)=>setEditedName(e.target.value)} updating={loading} disabled={loading} input1Value={name} input2placeholder="Email Address" input2Value={email} input2OnChange={(e:any)=>setEditedEmail(e.target.value)}/>
+            <InputDialog open={userEditPrompt} titleIcon={<PenLine/>} title="Edit Record Name" inputplaceholder="Enter New Name" OkButtonText="Update" OkButtonIcon={<TextCursor width={"1rem"}/>} onCancel={()=>setUserEditPrompt(false)} onOk={EditRecordName} inputOnChange={(e:any)=>setEditedName(e.target.value)} updating={loading} disabled={loading} input1Value={name} input2placeholder="Email Address" input2Value={email} input2OnChange={(e:any)=>setEditedEmail(e.target.value)} image={<input type="file" style={{fontSize:"0.8rem"}}/>} input1Label="Enter Name : " input2Label="Enter Email : "/>
 
             {/* DELETE RECORD DIALOG */}
             <DefaultDialog open={userDeletePrompt} titleIcon={<X/>} destructive title="Delete Record?" OkButtonText="Delete" onCancel={()=>setUserDeletePrompt(false)} onOk={deleteRecord} updating={loading} disabled={loading}/>

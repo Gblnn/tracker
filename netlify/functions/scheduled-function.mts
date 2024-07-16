@@ -92,6 +92,8 @@ export default async (req: Request) => {
 
       filteredData.forEach((element:any) => {
 
+        m+="This is a gentle reminder regarding a few document(s) expiring soon in your records : \n\n"
+
         element.civil_expiry!=""?
         m += element.name+"'s Civil ID expiry  "
         +
@@ -252,7 +254,7 @@ export default async (req: Request) => {
     // INDIVIDUAL MAIL SEND
     filteredData.forEach(async (e:any) => {
       p=""
-      p+="Listed below are some document(s) which require your attention\n\n"
+      p+="Listed below are some document(s) which require your attention : \n\n"
 
 
       e.civil_expiry!=""?
