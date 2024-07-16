@@ -1116,7 +1116,9 @@ const RenewID = async () => {
 
                                     setImage(post.profile)
                                     setProfileName(post.profile_name)
-                                    
+                                    setCivilNumber(post.civil_number)
+                                    setVehicleNumber(post.vehicle_number)
+                                    setPassportID(post.passportID)
                                 }}                        
 
                             key={post.id} title={post.name} icon={<UserCircle color="dodgerblue" />} />
@@ -1202,10 +1204,16 @@ const RenewID = async () => {
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
             {/* DISPLAY RECORD DIALOG */}
-            <DefaultDialog titleIcon={
+            <DefaultDialog 
+            code="1234567"
+            tags
+            titleIcon={
                 <Avatar style={{display:"flex", justifyContent:"center", alignItems:"center"}}>
                     <AvatarImage src={image}/>
-                    <AvatarFallback >{Array.from(name)[0]}</AvatarFallback>
+                    <AvatarFallback>
+                        <p style={{paddingTop:"0.2rem"}}>{Array.from(name)[0]}</p>
+                        
+                    </AvatarFallback>
                 </Avatar>
             } title={name} open={recordSummary} onCancel={()=>{setRecordSummary(false);setEmail("")}} 
             bigDate={()=>message.info("Last Modified : "+String(moment(new Date(modified_on)).format("LLL")))}
@@ -1240,21 +1248,26 @@ const RenewID = async () => {
                         false:true
                     }/>
 
-                    <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="Vehicle" 
+                    <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="License" 
                     status={
                         moment(vehicle_expiry, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
                         false
                         :true
-                    }/>
-                    <Directive tag={medical_due_on} onClick={()=>setHealthDialog(true)} icon={<HeartPulse color="tomato"/>} title="Medical" status={
-                        moment(medical_due_on, "DD/MM/YYYY").diff(moment(today),'months')<=3?
-                        false:true
                     }/>
 
                     <Directive tag={passportExpiry} onClick={()=>setPassportDialog(true)} icon={<Book color="goldenrod"/>} title="Passport" status={
                         moment(passportExpiry, "DD/MM/YYYY").diff(moment(today),'months')<=6?
                         false:true
                     }/>
+
+                    {/* <br/>
+
+                    <Directive tag={medical_due_on} onClick={()=>setHealthDialog(true)} icon={<HeartPulse color="tomato"/>} title="Medical" status={
+                        moment(medical_due_on, "DD/MM/YYYY").diff(moment(today),'months')<=3?
+                        false:true
+                    }/>
+
+                    
 
                     <Directive
                     tag={
@@ -1286,7 +1299,7 @@ const RenewID = async () => {
                     } 
                     onClick={()=>{
                         setValeTrainingDialog(true)
-                    }} icon={<GraduationCap color="lightgreen"/>} title="Training"/>
+                    }} icon={<GraduationCap color="lightgreen"/>} title="Training"/> */}
                     
                 </div>
             

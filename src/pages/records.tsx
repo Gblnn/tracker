@@ -1047,10 +1047,12 @@ const RenewID = async () => {
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
             {/* DISPLAY RECORD DIALOG */}
-            <DefaultDialog titleIcon={
-
+            <DefaultDialog code="292826" tags titleIcon={
+        
             <Avatar>
-                <AvatarFallback>{Array.from(name)[0]}</AvatarFallback>
+                <AvatarFallback>
+                <p style={{paddingTop:"0.2rem"}}>{Array.from(name)[0]}</p>
+                </AvatarFallback>
             </Avatar>
         } title={name} open={recordSummary} onCancel={()=>{setRecordSummary(false);setEmail("")}} 
             bigDate={()=>message.info("Last Modified : "+String(moment(new Date(modified_on)).format("LLL")))}
@@ -1091,15 +1093,18 @@ const RenewID = async () => {
                         false
                         :true
                     }/>
-                    <Directive tag={medical_due_on} onClick={()=>setHealthDialog(true)} icon={<HeartPulse color="tomato"/>} title="Medical" status={
-                        moment(medical_due_on, "DD/MM/YYYY").diff(moment(today),'months')<=3?
-                        false:true
-                    }/>
 
                     <Directive tag={passportExpiry} onClick={()=>setPassportDialog(true)} icon={<Book color="goldenrod"/>} title="Passport" status={
                         moment(passportExpiry, "DD/MM/YYYY").diff(moment(today),'months')<=6?
                         false:true
                     }/>
+
+                    <Directive tag={medical_due_on} onClick={()=>setHealthDialog(true)} icon={<HeartPulse color="tomato"/>} title="Medical" status={
+                        moment(medical_due_on, "DD/MM/YYYY").diff(moment(today),'months')<=3?
+                        false:true
+                    }/>
+
+                    
 
                     {/* <Directive onClick={()=>{setTrainingDialog(true)}} icon={<GraduationCap color="lightgreen"/>} title="Training"/> */}
                     

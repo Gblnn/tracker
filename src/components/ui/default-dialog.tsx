@@ -1,6 +1,6 @@
 import { LoadingOutlined } from "@ant-design/icons";
 import { DialogTitle } from "@radix-ui/react-dialog";
-import { ChevronLeft, X } from "lucide-react";
+import { ChevronLeft, Hash, X } from "lucide-react";
 import { Button } from "./button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from "./dialog";
 
@@ -27,7 +27,10 @@ interface Props {
     progressItem?:string
     bigDate?:any
     subtitle?:string
+    code?:string
+    tags?:boolean
 }
+
 
 export default function DefaultDialog(props:Props){
     
@@ -40,16 +43,36 @@ export default function DefaultDialog(props:Props){
                 <DialogHeader>
                     <DialogTitle className="heading" style={{userSelect:"none", width:"100%"}}>
                         <div className="flex" style={{border:"", justifyContent:"space-between"}}>
-                            <div style={{display:"flex", alignItems:"center", gap:"0.75rem", border:"", width:"100%"}}>
+                            <div style={{display:"flex", alignItems:"center", gap:"1rem", border:"", width:"100%"}}>
+                                <div style={{border:"", height:"100%", display:"flex"}}>
                                 {props.titleIcon}
-                                {props.title}
+                                </div>
+                                
+                                
+                                <div style={{display:"flex", flexFlow:"column", border:""}}>
+                                    <div style={{display:"flex", alignItems:"center", border:"", gap:"0.75rem"}}>
+                                        {props.title}
+                                        <p onClick={props.bigDate} style={{fontWeight:400, fontSize:"1rem", opacity:0.5, letterSpacing:"0.075rem", display:"flex", gap:"0.5rem"}}>    
+                                            {props.created_on}
+                                        </p>
+                                    </div>
+                                
+                                {
+                                    props.code?
+                                    <p style={{fontSize:"0.8rem", fontWeight:400, border:"1px solid rgba(100 100 100)",borderRadius:"0.5rem",paddingLeft:"0.25rem", textAlign:"left", opacity:"0.75", display:'flex', gap:"0.5rem",alignItems:"center"}}>
+                                        <Hash color="dodgerblue" width={"0.8rem"}/>
+                                        {props.code}
+                                    </p>
+                                    :null
+                                }
+                                
+                                </div>
+                                
                             
                                 
                                 
                                 
-                                <p onClick={props.bigDate} style={{fontWeight:400, fontSize:"1rem", opacity:0.5, letterSpacing:"0.075rem", display:"flex", gap:"0.5rem"}}>    
-                                    {props.created_on}
-                                </p>
+                                
                             </div>
 
                             {props.title_extra}
@@ -62,6 +85,44 @@ export default function DefaultDialog(props:Props){
                         </div>
                         
                     </DialogTitle>
+                    {
+                        props.tags?
+                        <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", border:"", width:"100%"}}>
+                        <div style={{height:"2rem", border:"", width:"100%", display:'flex', gap:"0.5rem"}}>
+
+                            <div style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", opacity:0.5, gap:"0.25rem", flex:1, justifyContent:"center"}}>
+                            <p>
+                            Joined : 
+                            </p>
+                            <b>XXXX</b>
+                            </div>
+
+                            <div style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", opacity:0.5, gap:"0.25rem", flex:1, justifyContent:"center"}}>Basic Salary: <b>XXXX</b>
+                            </div>
+
+                        </div>
+
+                        <div style={{height:"2rem", border:"", width:"100%", display:'flex', gap:"0.5rem"}}>
+
+                            <div style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", opacity:0.5, gap:"0.25rem", flex:1, justifyContent:"center"}}>
+                            <p>
+                            Allowance : 
+                            </p>
+                            <b>XX</b>
+                            </div>
+
+                            <div style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", opacity:0.5, gap:"0.25rem", flex:1, justifyContent:"center"}}>Leaves : <b>XX</b>
+                            </div>
+                            
+                        </div>
+                        </div>
+                        
+                        
+
+                    
+                    :null
+                    }
+                    
                     {
                         props.desc?
                         <p style={{textAlign:"left",width:"100%", fontSize:"0.9rem", opacity:0.5, height:"2rem", marginBottom:""}}>{props.desc}</p>

@@ -19,6 +19,7 @@ interface Props{
     extraOnDelete?:any
     extraOnEdit?:any
     notify?:boolean
+    id_subtitle?:string
 }
 
 export default function Directive(props:Props){
@@ -56,10 +57,13 @@ export default function Directive(props:Props){
                     }
                     
 
-
-                    <span style={{fontWeight:400, width:"fit-content", textAlign:"left"}}>
+                    <div style={{border:'', width:""}}>
+                    <p style={{fontWeight:400, textAlign:"left", border:"", width:"", fontSize:"0.9rem"}}>
                         {props.title}
-                    </span>
+                    </p>
+                    <p style={{fontSize:"0.9rem", textAlign:"left", color:"lightblue",opacity:"0.75", background:"", borderRadius:"0.5rem", paddingRight:"0.25rem", paddingLeft:""}}>{props.id_subtitle}</p>
+                    </div>
+                    
 
                     
                     
