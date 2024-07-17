@@ -1,6 +1,6 @@
 import { LoadingOutlined } from "@ant-design/icons";
 import { DialogTitle } from "@radix-ui/react-dialog";
-import { ChevronLeft, Hash, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Hash, X } from "lucide-react";
 import { Button } from "./button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from "./dialog";
 
@@ -29,6 +29,7 @@ interface Props {
     subtitle?:string
     code?:string
     tags?:boolean
+    tag1OnClick?:any
 }
 
 
@@ -41,7 +42,7 @@ export default function DefaultDialog(props:Props){
             <DialogContent onOpenAutoFocus={(e)=>e.preventDefault()}>
 
                 <DialogHeader>
-                    <DialogTitle className="heading" style={{userSelect:"none", width:"100%"}}>
+                    <DialogTitle className="heading" style={{userSelect:"none", width:"100%", borderBottom:"1px solid rgba(100 100 100/ 50%)", paddingBottom:"1rem"}}>
                         <div className="flex" style={{border:"", justifyContent:"space-between"}}>
                             <div style={{display:"flex", alignItems:"center", gap:"1rem", border:"", width:"100%"}}>
                                 <div style={{border:"", height:"100%", display:"flex"}}>
@@ -59,7 +60,7 @@ export default function DefaultDialog(props:Props){
                                 
                                 {
                                     props.code?
-                                    <p style={{fontSize:"0.8rem", fontWeight:400, border:"1px solid rgba(100 100 100)",borderRadius:"0.5rem",paddingLeft:"0.25rem", textAlign:"left", opacity:"0.75", display:'flex', gap:"0.5rem",alignItems:"center"}}>
+                                    <p style={{fontSize:"0.8rem", fontWeight:400, border:"1px solid rgba(100 100 100)",borderRadius:"0.5rem",paddingLeft:"0.25rem", textAlign:"left", opacity:"0.75", display:'flex', gap:"0.5rem",alignItems:"center", paddingRight:"0.5rem"}}>
                                         <Hash color="dodgerblue" width={"0.8rem"}/>
                                         {props.code}
                                     </p>
@@ -85,36 +86,49 @@ export default function DefaultDialog(props:Props){
                         </div>
                         
                     </DialogTitle>
+                    
                     {
                         props.tags?
                         <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", border:"", width:"100%"}}>
                         <div style={{height:"2rem", border:"", width:"100%", display:'flex', gap:"0.5rem"}}>
 
                             <div style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", opacity:0.5, gap:"0.25rem", flex:1, justifyContent:"center"}}>
+                            <p>Sohar Star United</p>
+                            
+                            </div>
+
+                            <div style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", opacity:0.5, gap:"0.25rem", flex:1, justifyContent:"center"}}>
+
                             <p>
                             Joined : 
                             </p>
                             <b>XXXX</b>
-                            </div>
 
-                            <div style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", opacity:0.5, gap:"0.25rem", flex:1, justifyContent:"center"}}>Basic Salary: <b>XXXX</b>
+                            
                             </div>
 
                         </div>
 
                         <div style={{height:"2rem", border:"", width:"100%", display:'flex', gap:"0.5rem"}}>
 
-                            <div style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", opacity:0.5, gap:"0.25rem", flex:1, justifyContent:"center"}}>
+                            <div onClick={props.tag1OnClick} style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", opacity:0.5, gap:"0.25rem", flex:1, justifyContent:"center"}}>
+
+                            <p>Basic : </p><b>XXXX</b>                            
+
+                            
+                            </div>
+
+                            <div style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.75rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", opacity:0.5, gap:"0.25rem", flex:1, justifyContent:"center"}}>
+
                             <p>
                             Allowance : 
                             </p>
-                            <b>XX</b>
-                            </div>
-
-                            <div style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", opacity:0.5, gap:"0.25rem", flex:1, justifyContent:"center"}}>Leaves : <b>XX</b>
+                            <b>XXXX</b>
+                            
                             </div>
                             
                         </div>
+
                         </div>
                         
                         
@@ -138,6 +152,26 @@ export default function DefaultDialog(props:Props){
                     }
 
                     {
+                        props.tags?
+                        <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", border:"", width:"100%", borderTop:"1px solid rgba(100 100 100/ 50%)", paddingTop:"1rem"}}>
+                        <div style={{height:"2rem", border:"", width:"100%", display:'flex', gap:"0.5rem"}}>
+
+                            <div style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"1rem", borderRadius:"0.5rem", opacity:0.75, gap:"0.25rem", flex:1, justifyContent:"space-between"}}>
+                            <p>Leaves</p>
+                            <ChevronRight width={"0.8rem"}/>
+                            
+                            </div>
+
+                        </div>
+
+                        
+                        </div>
+                        :null
+
+                    }
+
+                    
+                    {
                         props.progress?
                             <div style={{display:"flex", flexFlow:"column", gap:"0.25rem", width:"100%"}}>
                                 <p style={{fontSize:"0.7rem", opacity:0.5}}>{props.progressItem}</p>
@@ -150,6 +184,8 @@ export default function DefaultDialog(props:Props){
                             
                         :null
                     }
+
+                    
                     
                     
                     

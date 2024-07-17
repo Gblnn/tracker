@@ -24,7 +24,7 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { BellOff, BellRing, Book, Car, CheckSquare2, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, Globe, GraduationCap, HeartPulse, InboxIcon, Info, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, Globe, GraduationCap, HeartPulse, InboxIcon, Info, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -191,6 +191,8 @@ export default function ValeRecords(props:Props){
     const [fileName, setFileName] = useState("")
     const [imageUrl, setImageUrl] = useState("")
     const [profileName, setProfileName] = useState("")
+
+    const [salaryDialog, setSalaryDialog] = useState(false)
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
     useEffect(()=>{
@@ -1205,10 +1207,11 @@ const RenewID = async () => {
 
             {/* DISPLAY RECORD DIALOG */}
             <DefaultDialog 
-            code="1234567"
+            code="123456798"
             tags
+            tag1OnClick={()=>setSalaryDialog(true)}
             titleIcon={
-                <Avatar style={{display:"flex", justifyContent:"center", alignItems:"center"}}>
+                <Avatar style={{width:"3.5rem", height:"3.5rem"}}>
                     <AvatarImage src={image}/>
                     <AvatarFallback>
                         <p style={{paddingTop:"0.2rem"}}>{Array.from(name)[0]}</p>
@@ -1240,7 +1243,7 @@ const RenewID = async () => {
             
             }
             close extra={
-                <div style={{border:"", width:"100%", display:"flex", flexFlow:"column", gap:"0.5rem", paddingBottom:"1rem", paddingTop:"1rem"}}>
+                <div style={{border:"", width:"100%", display:"flex", flexFlow:"column", gap:"0.5rem", paddingBottom:"", paddingTop:""}}>
                     
                     <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={civil_expiry} 
                     status={
@@ -1259,8 +1262,6 @@ const RenewID = async () => {
                         moment(passportExpiry, "DD/MM/YYYY").diff(moment(today),'months')<=6?
                         false:true
                     }/>
-
-                    {/* <br/>
 
                     <Directive tag={medical_due_on} onClick={()=>setHealthDialog(true)} icon={<HeartPulse color="tomato"/>} title="Medical" status={
                         moment(medical_due_on, "DD/MM/YYYY").diff(moment(today),'months')<=3?
@@ -1295,11 +1296,11 @@ const RenewID = async () => {
                         ?
                         "Expiring Soon"
                         :
-                        "Available"                                           
+                        ""                                           
                     } 
                     onClick={()=>{
                         setValeTrainingDialog(true)
-                    }} icon={<GraduationCap color="lightgreen"/>} title="Training"/> */}
+                    }} icon={<GraduationCap color="lightgreen"/>} title="Training"/>
                     
                 </div>
             
@@ -1754,6 +1755,8 @@ const RenewID = async () => {
             <InputDialog titleIcon={<Sparkles color="goldenrod"/>} title="Renew Passport" open={renewPassportDialog} onCancel={()=>setRenewPassportDialog(false)} inputplaceholder="New Issue Date" input1Label="New Issue : " input2placeholder="New Expiry" input2Label="New Expiry : " OkButtonIcon={<Sparkles width={"1rem"}/>} OkButtonText="Renew" input1Value={passportIssue} input2Value={passportExpiry} onOk={renewPassport} updating={loading} inputOnChange={(e:any)=>setEditedPassportIssue(e.target.value)} input2OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} disabled={loading}/>
 
             <InputDialog open={trainingAddDialog} onOk={()=>{addTraining(trainingType)}} onCancel={()=>{setTrainingAddDialog(false);setEditedTrainingAddDialogInput("")}} title={trainingAddDialogTitle} inputplaceholder="Expiry Date" OkButtonText="Update" inputOnChange={(e:any)=>setEditedTrainingAddDialogInput(e.target.value)} OkButtonIcon={<RefreshCcw width={"1rem"}/>} updating={loading} disabled={loading||!EditedTrainingAddDialogInput?true:false} input1Value={trainingAddDialogInputValue}/>
+
+            <DefaultDialog close title={"Basic Salary"} titleIcon={<CircleDollarSign/>} open={salaryDialog} onCancel={()=>setSalaryDialog(false)}/>
 
             </div>
             

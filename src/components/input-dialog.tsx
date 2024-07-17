@@ -18,8 +18,14 @@ interface Props{
     input2placeholder?:string
     input3OnChange?:any
     input4OnChange?:any
+    input5OnChange?:any
+    input6OnChange?:any
+    input7OnChange?:any
     input3placeholder?:string
     input4placeholder?:string
+    input5placeholder?:string
+    input6placeholder?:string
+    input7placeholder?:string
     disabled?:boolean
     OkButtonIcon?:any
     updating?:boolean
@@ -27,10 +33,16 @@ interface Props{
     input2Value?:string
     input3Value?:string
     input4Value?:string
+    input5Value?:string
+    input6Value?:string
+    input7Value?:string
     input1Label?:string
     input2Label?:string
     input3Label?:string
     input4Label?:string
+    input5Label?:string
+    input6Label?:string
+    input7Label?:string
     extra?:any
     image?:any
 }
@@ -122,6 +134,57 @@ export default function InputDialog(props:Props){
                             }
                             
                             <input id='input-4' defaultValue={props.input4Value} placeholder={props.input4placeholder} onChange={props.input4OnChange}/>
+                        </div>
+                        
+                        :null
+                    }
+
+                    {
+                        props.input5placeholder?
+                        <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
+                            {
+                                props.input5Label?
+                                <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                    {props.input5Label}
+                                </p>
+                                :null
+                            }
+                            
+                            <input id='input-5' defaultValue={props.input5Value} placeholder={props.input5placeholder} onChange={props.input5OnChange}/>
+                        </div>
+                        
+                        :null
+                    }
+
+{
+                        props.input6placeholder?
+                        <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
+                            {
+                                props.input6Label?
+                                <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                    {props.input6Label}
+                                </p>
+                                :null
+                            }
+                            
+                            <input id='input-6' defaultValue={props.input6Value} placeholder={props.input6placeholder} onChange={props.input6OnChange}/>
+                        </div>
+                        
+                        :null
+                    }
+
+                    {
+                        props.input7placeholder?
+                        <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
+                            {
+                                props.input7Label?
+                                <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                    {props.input7Label}
+                                </p>
+                                :null
+                            }
+                            
+                            <input id='input-7' defaultValue={props.input7Value} placeholder={props.input7placeholder} onChange={props.input7OnChange}/>
                         </div>
                         
                         :null

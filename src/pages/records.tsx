@@ -17,7 +17,7 @@ import emailjs from '@emailjs/browser'
 import { message } from 'antd'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore'
 import { motion } from 'framer-motion'
-import { BellOff, BellRing, Book, Car, CheckSquare2, Cloud, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, FilePlus, Globe, GraduationCap, HeartPulse, InboxIcon, Info, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { BellOff, BellRing, Book, Car, CheckSquare2, Cloud, CloudDownload, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, File, FilePlus, Globe, GraduationCap, HeartPulse, InboxIcon, Info, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -163,6 +163,9 @@ export default function Records(props:Props){
     const [healthDialog, setHealthDialog] = useState(false)
 
     const [notifyLoading, setNotifyLoading] = useState(false)
+
+    const [imageUpload, setImageUpload] = useState(null);
+    const [fileName, setFileName] = useState("")
 
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
@@ -1047,9 +1050,9 @@ const RenewID = async () => {
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
             {/* DISPLAY RECORD DIALOG */}
-            <DefaultDialog code="292826" tags titleIcon={
+            <DefaultDialog code="2928267345" tags titleIcon={
         
-            <Avatar>
+            <Avatar style={{width:"3.5rem", height:"3.5rem"}}>
                 <AvatarFallback>
                 <p style={{paddingTop:"0.2rem"}}>{Array.from(name)[0]}</p>
                 </AvatarFallback>
@@ -1079,7 +1082,7 @@ const RenewID = async () => {
             
             }
             close extra={
-                <div style={{border:"", width:"100%", display:"flex", flexFlow:"column", gap:"0.5rem", paddingBottom:"1rem", paddingTop:"1rem"}}>
+                <div style={{border:"", width:"100%", display:"flex", flexFlow:"column", gap:"0.5rem", paddingBottom:"", paddingTop:""}}>
                     
                     <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={civil_expiry} 
                     status={
@@ -1087,7 +1090,7 @@ const RenewID = async () => {
                         false:true
                     }/>
 
-                    <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="Vehicle" 
+                    <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="License" 
                     status={
                         moment(vehicle_expiry, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
                         false
@@ -1113,7 +1116,7 @@ const RenewID = async () => {
             }/>
 
             {/* ADD RECORD DIALOG */}
-            <InputDialog open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setEditedName(e.target.value)} } inputplaceholder="Enter Full Name" disabled={loading||!editedName?true:false} updating={loading} input2placeholder="Enter Email" input2OnChange={(e:any)=>setEditedEmail(e.target.value)} 
+            <InputDialog image={<input type="file" style={{fontSize:"0.8rem"}} onChange={(e:any)=>{setImageUpload(e.target.files[0]); setFileName(e.target.files[0].name)}}/>} open={addDialog} OkButtonIcon={<Plus width={"1rem"}/>} titleIcon={<FilePlus color="dodgerblue"/>} title="Add Record" OkButtonText="Add" onCancel={()=>setAddDialog(false)} onOk={addRecord} inputOnChange={(e:any)=>{setEditedName(e.target.value)} } inputplaceholder="Full Name" disabled={loading||!editedName?true:false} updating={loading} input2placeholder="Email Address" input2OnChange={(e:any)=>setEditedEmail(e.target.value)} input3placeholder="Employee Code" input4placeholder="Name of Company" input5placeholder="Date of Joining" input6placeholder="Salary Basic"
             extra={
 
 
@@ -1134,7 +1137,7 @@ const RenewID = async () => {
 
             {/*DISPLAY CIVIL ID DIALOG */}
             <DefaultDialog back close titleIcon={<CreditCard color="dodgerblue"/>} title="Civil ID" open={civil} onCancel={()=>setCivil(false)} OkButtonText="Add" 
-            
+            footerExtra={<button style={{fontSize:"0.8rem"}}><Plus width={"1rem"} color="salmon"/> Add PDF</button>}
             title_extra={civil_number?
             
             <div style={{display:"flex", gap:"0.5rem", height:"2.25rem"}}>
