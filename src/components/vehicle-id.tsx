@@ -36,18 +36,18 @@ export default function VehicleID(props:Props){
                     </div> */}
 
                     <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
-                        <p style={{fontSize:"0.75rem"}}>VEHICLE NO : </p>
+                        <p style={{fontSize:"0.75rem"}}>LICENSE NO : </p>
                         <p style={{fontWeight:600, fontSize:"0.8rem", textTransform:"uppercase"}}>{props.reg_no}</p>
                     </div>
 
                 </div>
 
                 
-
+{/* 
                 <div style={{display:"flex", alignItems:"center", gap:"0.5rem", marginRight:"1.25rem"}}>
                 <p style={{fontSize:"0.75rem"}}>YEAR : </p>
                 <p style={{fontWeight:600, fontSize:"0.8rem", textTransform:"uppercase"}}>{props.year?props.year:"XXXX"}</p>
-                </div>
+                </div> */}
                 
             </div>
 
