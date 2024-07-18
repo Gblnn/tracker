@@ -5,6 +5,7 @@ import DropDown from "./dropdown"
 
 interface Props{
     title?:string
+    titleSize?:string
     icon?:any
     to?:any
     tag?:any
@@ -58,7 +59,7 @@ export default function Directive(props:Props){
                     
 
                     <div style={{border:'', width:""}}>
-                    <p style={{fontWeight:400, textAlign:"left", border:"", width:"", fontSize:"0.9rem"}}>
+                    <p style={{fontWeight:400, textAlign:"left", border:"", width:"", fontSize:props.titleSize?props.titleSize:"0.9rem"}}>
                         {props.title}
                     </p>
                     <p style={{fontSize:"0.9rem", textAlign:"left", color:"lightblue",opacity:"0.75", background:"", borderRadius:"0.5rem", paddingRight:"0.25rem", paddingLeft:""}}>{props.id_subtitle}</p>

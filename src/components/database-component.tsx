@@ -25,7 +25,7 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, FileInputIcon, Globe, GraduationCap, HeartPulse, InboxIcon, LineChart, MailCheck, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, TextCursor, Trash, UserCircle, X } from "lucide-react"
+import { BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, Globe, GraduationCap, HandHelping, HeartPulse, InboxIcon, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -71,8 +71,17 @@ export default function DbComponent(props:Props){
     const [addButtonModeSwap, setAddButtonModeSwap] = useState(false)
     const [deleteMedicalIDdialog, setDeleteMedicalIDdialog] = useState(false)
     const [email, setEmail] = useState("")
-    const [editedEmail, setEditedEmail] = useState("")
+
+
     const [editedName, setEditedName] = useState("")
+    const [editedEmail, setEditedEmail] = useState("")
+    const [editedEmployeeCode, setEditedEmployeeCode] = useState("")
+    const [editedCompanyName, setEditedCompanyName] = useState("")
+    const [editedDateofJoin, setEditedDateofJoin] = useState("")
+    const [editedSalarybasic, setEditedSalaryBasic] = useState("")
+    const [editedAllowance, setEditedAllowance] = useState("")
+
+
     const [image, setImage] = useState("")
 
     // CIVIL ID VARIABLES
@@ -205,7 +214,15 @@ export default function DbComponent(props:Props){
     const [salaryBasic, setSalaryBasic] = useState("")
     const [allowance, setAllowance] = useState("")
 
+    const [allowanceDialog, setAllowanceDialog] = useState(false)
+
     const [leaveLog, setLeaveLog] = useState(false)
+    const [leaveList, setLeaveList] = useState<any>([])
+    const [leaveFrom, setLeaveFrom] = useState<any>()
+    const [leaveTill, setLeaveTill] = useState<any>()
+
+    const [fetchingLeave, setFetchingLeave] = useState(false)
+    let days = 0
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
     useEffect(()=>{
@@ -313,8 +330,11 @@ export default function DbComponent(props:Props){
             const fetchedData: Array<Record> = [];
 
             querySnapshot.forEach((doc:any)=>{
-                fetchedData.push({id: doc.id, ...doc.data()} as Record)
+                fetchedData.push({id: doc.id, ...doc.data()})
+                
             })
+
+            
 
 
             setfetchingData(false)
@@ -332,7 +352,33 @@ export default function DbComponent(props:Props){
         }   
     }
 
+    const fetchLeave = async () => {
+        setFetchingLeave(true)
+        const leaveQuery = query(collection(db, "leave-record"), orderBy("created_on", "desc"), where("employeeID", "==", id))
+        const snapshot = await getDocs(leaveQuery)
+        const LeaveData: Array<Record> = [];
+
+        snapshot.forEach(async(doc:any)=>{
+            LeaveData.push({id: doc.id, ...doc.data()})
+            setLeaveList(LeaveData)
+            days = days + doc.days
+        })
+        setFetchingLeave(false)
+        
+        
+
+    }
+
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
+
+const addLeave = async () => {
+    setLoading(true)
+    await addDoc(collection(db, "leave-record"), {employeeID:id,created_on:Timestamp.fromDate(new Date()), leaveFrom:leaveFrom, leaveTill:leaveTill, days:moment(leaveTill, "DD/MM/YYYY").diff(moment(leaveFrom, "DD/MM/YYYY"), "days")})
+    fetchLeave()
+    setLeaveFrom("")
+    setLeaveTill("")
+    setLoading(false)
+}
 
 const RenewID = async () => {
     setLoading(true)
@@ -349,7 +395,7 @@ const RenewID = async () => {
     const addRecord = async () => {
         setLoading(true)
         await uploadFile()
-        await addDoc(collection(db, "records"), {name:editedName?editedName:name, email:editedEmail?editedEmail:email==""?"":email, employeeCode:employeeCode, companyName:companyName, dateofJoin:dateofJoin, salaryBasic:salaryBasic, allowance:allowance, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:props.dbCategory, notify:true, profile:imageUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:""})
+        await addDoc(collection(db, "records"), {name:name, email:email, employeeCode:employeeCode, companyName:companyName, dateofJoin:dateofJoin, salaryBasic:salaryBasic, allowance:allowance, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:props.dbCategory, notify:true, profile:imageUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:""})
         console.log("Added Record : ", imageUrl)
         setAddDialog(false)
         setName(editedName?editedName:name)
@@ -362,10 +408,15 @@ const RenewID = async () => {
     // FUNCTION TO EDIT RECORD
     const EditRecordName = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email, modified_on:Timestamp.fromDate(new Date)})
+        await updateDoc(doc(db, "records", id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email, employeeCode:editedEmployeeCode?editedEmployeeCode:employeeCode, companyName:editedCompanyName?editedCompanyName:companyName, dateofJoin:editedDateofJoin?editedDateofJoin:dateofJoin, salaryBasic:editedSalarybasic?editedSalarybasic:salaryBasic, allowance:editedAllowance?editedAllowance:allowance, modified_on:Timestamp.fromDate(new Date)})
         setUserEditPrompt(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
+        setEmployeeCode(editedEmployeeCode?editedEmployeeCode:employeeCode)
+        setCompanyName(editedCompanyName?editedCompanyName:companyName)
+        setDateofJoin(editedDateofJoin?editedDateofJoin:dateofJoin)
+        setSalaryBasic(editedSalarybasic?editedSalarybasic:salaryBasic)
+        setAllowance(editedAllowance?editedAllowance:allowance)
         setLoading(false)
         fetchData()
         setModifiedOn(new Date())
@@ -1143,6 +1194,7 @@ const RenewID = async () => {
                                     setSalaryBasic(post.salaryBasic)
                                     setAllowance(post.allowance)
                                     setProfileName(post.profile_name)
+                                    fetchLeave()
                                 }}                        
 
                             key={post.id} title={post.name} icon={<UserCircle color="dodgerblue" />} />
@@ -1230,13 +1282,16 @@ const RenewID = async () => {
             {/* DISPLAY RECORD DIALOG */}
             <DefaultDialog 
             code={employeeCode}
+            codeTooltip="Employee Code"
             tags
             tag1Text={companyName}
             tag2Text={dateofJoin}
             tag3Text={salaryBasic}
             tag4Text={allowance}
-            tag1OnClick={()=>setSalaryDialog(true)}
-            onBottomTagClick={()=>setLeaveLog(true)}
+            tag3OnClick={()=>setSalaryDialog(true)}
+            tag4OnClick={()=>setAllowanceDialog(true)}
+            onBottomTagClick={()=>{setLeaveLog(true);fetchLeave()}}
+            bottomTagValue={fetchingLeave?<LoadingOutlined/>:days}
             titleIcon={
                 <Tooltip title={profileName}>
                 <Avatar style={{width:"3.5rem", height:"3.5rem"}}>
@@ -1345,9 +1400,10 @@ const RenewID = async () => {
             <AddRecordDialog open={addDialog} onCancel={()=>{setAddDialog(false);setEditedName("")}}
             updating={loading}
             disabled={loading||!editedName?true:false}
+            title="Add Record"
             onImageChange={(e:any)=>{setImageUpload(e.target.files[0]); setFileName(e.target.files[0].name)}}
-            NameOnChange={(e:any)=>{setEditedName(e.target.value)}}
-            EmailOnChange={(e:any)=>setEditedEmail(e.target.value)}
+            NameOnChange={(e:any)=>{setName(e.target.value)}}
+            EmailOnChange={(e:any)=>setEmail(e.target.value)}
             CodeOnChange={(e:any)=>setEmployeeCode(e.target.value)}
             CompanyNameOnChange={(e:any)=>setCompanyName(e.target.value)}
             DateofJoinOnChange={(e:any)=>setDateofJoin(e.target.value)}
@@ -1360,7 +1416,40 @@ const RenewID = async () => {
 
 
             {/* EDIT RECORD DIALOG */}
-            <InputDialog open={userEditPrompt} titleIcon={<PenLine/>} title="Edit Record Name" inputplaceholder="Enter New Name" OkButtonText="Update" OkButtonIcon={<TextCursor width={"1rem"}/>} onCancel={()=>setUserEditPrompt(false)} onOk={EditRecordName} inputOnChange={(e:any)=>setEditedName(e.target.value)} updating={loading} disabled={loading} input1Value={name} input2placeholder="Email Address" input2Value={email} input2OnChange={(e:any)=>setEditedEmail(e.target.value)} image={<input type="file" style={{fontSize:"0.8rem"}}/>} input1Label="Enter Name : " input2Label="Enter Email : "/>
+            <AddRecordDialog open={userEditPrompt} onCancel={()=>{setUserEditPrompt(false);setEditedName("")}}
+            title="Edit Record"
+            updating={loading}
+            disabled={loading||!editedName?true:false}
+            onImageChange={(e:any)=>{setImageUpload(e.target.files[0]); setFileName(e.target.files[0].name)}}
+
+            NameOnChange={(e:any)=>{setEditedName(e.target.value)}}
+            EmailOnChange={(e:any)=>setEditedEmail(e.target.value)}
+            CodeOnChange={(e:any)=>setEditedEmployeeCode(e.target.value)}
+            CompanyNameOnChange={(e:any)=>setEditedCompanyName(e.target.value)}
+            DateofJoinOnChange={(e:any)=>setEditedDateofJoin(e.target.value)}
+            SalaryBasicOnChange={(e:any)=>setEditedSalaryBasic(e.target.value)}
+            AllowanceOnChange={(e:any)=>setEditedAllowance(e.target.value)}
+
+            NameLabel="Full Name : "
+            EmailLabel="Email : "
+            CodeLabel="Code : "
+            CompanyLabel="Company : "
+            DateofJoinLabel="Date of Join : "
+            SalaryBasicLabel="Salary Basic : "
+            AllowanceLabel="Allowance : "
+
+            NameValue={name}
+            EmailValue={email}
+            CodeValue={employeeCode}
+            CompanyValue={companyName}
+            DateofJoinValue={dateofJoin}
+            SalaryBasicValue={salaryBasic}
+            AllowanceValue={allowance}
+
+            onOK={EditRecordName}
+            />
+            
+            {/* <InputDialog open={userEditPrompt} titleIcon={<PenLine/>} title="Edit Record Name" inputplaceholder="Enter New Name" OkButtonText="Update" OkButtonIcon={<TextCursor width={"1rem"}/>} onCancel={()=>setUserEditPrompt(false)} onOk={EditRecordName} inputOnChange={(e:any)=>setEditedName(e.target.value)} updating={loading} disabled={loading} input1Value={name} input2placeholder="Email Address" input2Value={email} input2OnChange={(e:any)=>setEditedEmail(e.target.value)} image={<input type="file" style={{fontSize:"0.8rem"}}/>} input1Label="Enter Name : " input2Label="Enter Email : "/> */}
 
             {/* DELETE RECORD DIALOG */}
             <DefaultDialog open={userDeletePrompt} titleIcon={<X/>} destructive title="Delete Record?" OkButtonText="Delete" onCancel={()=>setUserDeletePrompt(false)} onOk={deleteRecord} updating={loading} disabled={loading}/>
@@ -1792,9 +1881,42 @@ const RenewID = async () => {
 
             <InputDialog open={trainingAddDialog} onOk={()=>{addTraining(trainingType)}} onCancel={()=>{setTrainingAddDialog(false);setEditedTrainingAddDialogInput("")}} title={trainingAddDialogTitle} inputplaceholder="Expiry Date" OkButtonText="Update" inputOnChange={(e:any)=>setEditedTrainingAddDialogInput(e.target.value)} OkButtonIcon={<RefreshCcw width={"1rem"}/>} updating={loading} disabled={loading||!EditedTrainingAddDialogInput?true:false} input1Value={trainingAddDialogInputValue}/>
 
-            <DefaultDialog close title={"Basic Salary"} titleIcon={<CircleDollarSign/>} open={salaryDialog} onCancel={()=>setSalaryDialog(false)}/>
+            <DefaultDialog close title={"Basic Salary"} titleIcon={<CircleDollarSign/>} open={salaryDialog} onCancel={()=>setSalaryDialog(false)}
+            extra={
+                <>
+                <div style={{display:"flex", border:"", width:"100%", borderRadius:"0.5rem", padding:"0.5rem", background:"", flexFlow:"column"}}>
 
-            <DefaultDialog close open={leaveLog} onCancel={()=>setLeaveLog(false)} title={"Leave Log"} titleIcon={<LineChart/>} extra={
+
+                <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"center", display:'flex'}}>Current Earnings</p>
+                    <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600}}>
+                    <p>OMR {salaryBasic}</p>
+                    </div>
+
+                    <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem", width:"100%"}}>
+                        <LineCharter lineColor="lightgreen"/>
+                    </div>
+                </div>
+                
+                </>
+                
+            } 
+            />
+            
+
+            {/* LEAVE LOG DIALOG */}
+            <DefaultDialog code={name} codeTooltip="Employee Name" codeIcon={<User color="dodgerblue" width={"0.8rem"}/>} close open={leaveLog} onCancel={()=>setLeaveLog(false)} title={"Leave Log"}
+            title_extra={
+                <button onClick={fetchLeave} style={{width:"3rem", height:"2.5rem"}}>
+                {
+                    fetchingLeave?
+                    <LoadingOutlined style={{color:"dodgerblue"}}/>
+                    :
+                    <RefreshCcw color="dodgerblue" width={"1rem"}/>
+                }
+                
+            </button>
+            }
+            extra={
                 <>
                 <div style={{display:"flex", border:"", width:"100%", borderRadius:"0.5rem", padding:"0.5rem", background:"", flexFlow:"column"}}>
                     
@@ -1811,12 +1933,33 @@ const RenewID = async () => {
                     
                 </div>
 
+                {leaveList.length==0?
+                    <div style={{width:"100%", border:"3px dashed rgba(100 100 100/ 50%)", height:"2.5rem",borderRadius:"0.5rem", marginBottom:"1rem"}}></div>
+                    :
+                    <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.35rem", maxHeight:"11.25rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem", marginBottom:"1rem"}}>
+                        {
+                        leaveList.map((e:any)=>(
+                            <motion.div key={e.id} initial={{opacity:0}} whileInView={{opacity:1}}>
+                            <Directive status={true} tag={e.days+" Days"} title={e.leaveFrom+" - "+e.leaveTill} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{}}  className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} noArrow/>
+                            </motion.div>
+                        ))
+                    }
+                    </div>}
+
                 <div style={{display:"flex", gap:"0.5rem", width:"100%", zIndex:""}}>
-                    <input placeholder="From" style={{flex:1.5}}/>
-                    <input placeholder="Till" style={{flex:1.5}}/>
-                    <button style={{fontSize:"0.8rem", flex:1}}>
-                        <FileInputIcon width={"1rem"} color="tomato"/>
-                        Add Leave
+                    <input id="input-1" defaultValue={leaveFrom} onChange={(e:any)=>setLeaveFrom(e.target.value)} placeholder="From" style={{flex:1.5}}/>
+                    <input id="input-2" defaultValue={leaveTill} onChange={(e:any)=>setLeaveTill(e.target.value)} placeholder="Till" style={{flex:1.5}}/>
+                    <button onClick={addLeave} style={{fontSize:"0.8rem", flex:0.45}}>
+                        {
+                            loading?
+                            <LoadingOutlined/>
+                            :
+                            <div style={{display:"flex", gap:"0.5rem", alignItems:"center"}}>
+                                <Plus width={"1.25rem"} color="violet"/>
+                            </div>
+                            
+                        }
+                        
                     </button>
                 </div>
                 
@@ -1824,6 +1967,23 @@ const RenewID = async () => {
                 </>
                 
                 }/>
+
+                <DefaultDialog title={"Allowance"} titleIcon={<HandHelping/>} close open={allowanceDialog} onCancel={()=>setAllowanceDialog(false)}
+                extra={
+                    <div style={{display:"flex", border:"", width:"100%", borderRadius:"0.5rem", padding:"0.5rem", background:"", flexFlow:"column"}}>
+
+
+                <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"center", display:'flex'}}>Current Allowance</p>
+                    <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600}}>
+                    <p>OMR {allowance}</p>
+                    </div>
+
+                    <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem", width:"100%"}}>
+                        <LineCharter lineColor="violet"/>
+                    </div>
+                </div>
+                }
+                />
 
             </div>
             

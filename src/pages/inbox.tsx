@@ -507,7 +507,9 @@ export default function Inbox(){
                     <RefreshCcw color="dodgerblue" width={"1rem"}/>
                 }
                 
-            </button>} titleIcon={<LucideMails color="dodgerblue"/>} title="Recipients" open={recipientsDialog} onCancel={()=>setRecipientsDialog(false)} close 
+            </button>
+            } 
+            titleIcon={<LucideMails color="dodgerblue"/>} title="Recipients" open={recipientsDialog} onCancel={()=>setRecipientsDialog(false)} close 
             extra={
                 <>
                 
