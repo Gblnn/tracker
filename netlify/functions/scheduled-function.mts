@@ -107,7 +107,7 @@ export default async (req: Request) => {
         :null
 
         element.vehicle_expiry!=""?
-        m += element.name+"'s Vehicle ID expiry  "
+        m += element.name+"'s Driving License expiry  "
         +
         moment((element.vehicle_expiry).toDate()).startOf('day').fromNow()
         +" on "
@@ -270,7 +270,7 @@ export default async (req: Request) => {
         :null
 
         e.vehicle_expiry!=""?
-        p+="Vehicle ID expiry  "
+        p+="Driving License expiry  "
         +
         moment((e.vehicle_expiry).toDate()).startOf('day').fromNow()
         +" on "

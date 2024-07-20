@@ -25,7 +25,7 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, Globe, GraduationCap, HandHelping, HeartPulse, InboxIcon, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
+import { BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, Globe, GraduationCap, HandHelping, HeartPulse, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -223,6 +223,7 @@ export default function DbComponent(props:Props){
 
     const [fetchingLeave, setFetchingLeave] = useState(false)
     let days = 0
+    
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
     useEffect(()=>{
@@ -250,6 +251,15 @@ export default function DbComponent(props:Props){
             
             setAddDialog(!addDialog)
             setName("")
+            flushHeldKeys   
+        }
+    )
+
+    const {} = useKeyboardShortcut(
+        ["Control", "I"],
+        () => {
+            
+            usenavigate("/inbox")
             flushHeldKeys
         }
     )
@@ -333,9 +343,6 @@ export default function DbComponent(props:Props){
                 fetchedData.push({id: doc.id, ...doc.data()})
                 
             })
-
-            
-
 
             setfetchingData(false)
             setRecords(fetchedData)
@@ -441,8 +448,6 @@ const RenewID = async () => {
         setRecordSummary(false)
         setLoading(false)
         fetchData()
-        
-
     }
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */} 
@@ -901,7 +906,7 @@ const RenewID = async () => {
         {
             status=="false"?
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-            <div style={{display:"flex", width:"100%", background:"crimson", height:"1.5rem", justifyContent:"center", alignItems:"center", position:"fixed", bottom:0, margin:"0"}}>
+            <div style={{display:"flex", width:"100%", background:"crimson", height:"1.5rem", justifyContent:"center", alignItems:"center", position:"fixed", bottom:0,}}>
 
                 <div style={{display:"flex", gap:"0.5rem", alignItems:"center"}}>
                     <RadioTower width={"0.75rem"}/>
@@ -945,6 +950,10 @@ const RenewID = async () => {
                         }
                         </button> */}
 
+                        <button style={{cursor:"default", width:"5rem", fontSize:"0.9rem", opacity:0.5}}>
+                            
+                            Ctrl + I
+                        </button>
                         
                         <button className="transitions blue-glass" style={{paddingLeft:"1rem", paddingRight:"1rem", width:"3rem"}} onClick={()=>{fetchData("refresh")}} >
 
@@ -963,9 +972,9 @@ const RenewID = async () => {
                             </button>
 
 
-                            <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
-                        <InboxIcon className="" color="crimson"/>
-                    </button>
+                            {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
+                                <InboxIcon className="" color="crimson"/>
+                            </button> */}
 
                             
             
@@ -1479,7 +1488,8 @@ const RenewID = async () => {
             </div>
             
             :null
-            } extra={
+            } 
+            extra={
                 <div style={{width:"100%", display:"flex", justifyContent:'center', paddingBottom:"1rem"}}>
                     {
                         !civil_number || loading?

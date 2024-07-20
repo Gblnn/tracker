@@ -73,7 +73,7 @@ export default function DefaultDialog(props:Props){
                                 {
                                     props.code?
                                     <Tooltip title={props.codeTooltip} placement="right">
-                                    <p style={{fontSize:"0.8rem", fontWeight:400, border:"1px solid rgba(100 100 100)",borderRadius:"0.5rem",paddingLeft:"0.25rem", textAlign:"left", opacity:"0.75", display:'flex', gap:"0.5rem",alignItems:"center", paddingRight:"0.5rem", width:"fit-content"}}>
+                                    <p style={{fontSize:"0.8rem", fontWeight:400, border:"1px solid rgba(100 100 100/ 75%)",borderRadius:"0.5rem",paddingLeft:"0.25rem", textAlign:"left", opacity:"0.75", display:'flex', gap:"0.5rem",alignItems:"center", paddingRight:"0.5rem", width:"fit-content"}}>
                                         {
                                             props.codeIcon?
                                             props.codeIcon

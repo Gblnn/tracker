@@ -2,17 +2,34 @@ import Back from "@/components/back";
 import Directive from "@/components/directive";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { motion } from 'framer-motion';
-import { File, Indent, Mail, RefreshCwIcon } from "lucide-react";
+import { File, Inbox, Mail, RefreshCwIcon } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Index(){
 
     const [requestDialog, setRequestDialog] = useState(false)
+    const usenavigate = useNavigate()
 
     return(
-        <div style={{padding:"1.5rem", background:"linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))", height:"100svh"}}>
+        <div style={{padding:"1.25rem", background:"linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))", height:"100svh"}}>
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                <Back icon={<Indent color="salmon"/>} title="Index" noback extra={<button onClick={()=>window.location.reload()} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.8rem"}}><RefreshCwIcon color="crimson" width={"1rem"}/>Update<p style={{opacity:0.5, letterSpacing:"0.15rem"}}>v1.6</p></button>}/>
+                <Back title="Index" noback 
+                extra={
+                    <div style={{display:"flex", gap:"0.5rem"}}>
+                        <button onClick={()=>window.location.reload()} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.8rem"}}>
+                            <RefreshCwIcon color="crimson" width={"1rem"}/>Update
+                            <p style={{opacity:0.5, letterSpacing:"0.15rem"}}>
+                                v1.7
+                            </p>
+                        </button>
+
+                        <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
+                            <Inbox className="" color="crimson"/>
+                        </button>
+                    </div>
+                
+            }/>
                 <br/>
 
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem"}}>
