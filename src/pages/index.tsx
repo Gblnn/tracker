@@ -1,8 +1,10 @@
 import Back from "@/components/back";
 import Directive from "@/components/directive";
 import DefaultDialog from "@/components/ui/default-dialog";
+import { auth } from "@/firebase";
+import { signOut } from "firebase/auth";
 import { motion } from 'framer-motion';
-import { File, Inbox, Mail, RefreshCwIcon } from "lucide-react";
+import { File, Inbox, LogOut, Mail, RefreshCcw } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -18,15 +20,19 @@ export default function Index(){
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
                         <button onClick={()=>window.location.reload()} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.8rem"}}>
-                            <RefreshCwIcon color="crimson" width={"1rem"}/>Update
+                            <RefreshCcw width={"1rem"} color="dodgerblue"/>
                             <p style={{opacity:0.5, letterSpacing:"0.15rem"}}>
                                 v1.7
                             </p>
                         </button>
 
+                        
+
                         <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
                             <Inbox className="" color="crimson"/>
                         </button>
+
+                        {/* <button onClick={()=>{signOut(auth);usenavigate("/")}} style={{width:"3rem"}}><LogOut width={"1rem"} color='lightcoral'/></button> */}
                     </div>
                 
             }/>

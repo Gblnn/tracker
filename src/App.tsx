@@ -10,6 +10,7 @@ import Vehicles from "./pages/vehicles";
 import History from './pages/history';
 import ValeRecords from './pages/vale-records';
 import PageNotFound from './pages/page-not-found';
+import Login from './pages/login';
 
 
 export default function App(){
@@ -31,7 +32,8 @@ export default function App(){
 
     
     <Routes>
-      <Route path="/" element={<Index/>}/>
+      <Route path="/" element={<Login/>}/>
+      <Route path='/index' element={<Index/>}/>
       <Route path="/inbox" element={<Inbox/>}/>
       <Route path="/records" element={<Records/>}/>
       <Route path="/vale-records" element={<ValeRecords/>}/>
@@ -39,6 +41,7 @@ export default function App(){
       <Route path="/vehicles" element={<Vehicles/>}/>
       <Route path="/medicals" element={<Medicals/>}/>
       <Route path='/history' element={<History/>}/>
+      
       <Route path='*' element={<PageNotFound/>}/>
     </Routes>
     
