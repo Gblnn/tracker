@@ -1,10 +1,8 @@
 import Back from "@/components/back";
 import Directive from "@/components/directive";
 import DefaultDialog from "@/components/ui/default-dialog";
-import { auth } from "@/firebase";
-import { signOut } from "firebase/auth";
 import { motion } from 'framer-motion';
-import { File, Inbox, LogOut, Mail, RefreshCcw } from "lucide-react";
+import { File, Inbox, Mail, RefreshCcw } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
