@@ -36,6 +36,16 @@ b {
   font-weight: 600;
 }
 
+.desktop-only {
+  display: none;
+}
+
+@media (width>720px) {
+  .desktop-only {
+    display: flex;
+  }
+}
+
 .blue:hover {
   background: rgb(27, 128, 228);
 }

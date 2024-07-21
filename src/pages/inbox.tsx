@@ -407,7 +407,7 @@ export default function Inbox(){
                             civil_desc={DescGenerator(record.civil_expiry, 2, "Civil ID")}
                             civil_overdue={OverdueGenerator(record.civil_expiry)}
 
-                            vehicle_desc={DescGenerator(record.vehicle_expiry, 2, "Vehicle ID")}
+                            vehicle_desc={DescGenerator(record.vehicle_expiry, 2, "Driving License")}
                             vehicle_overdue={OverdueGenerator(record.vehicle_expiry)}
 
                             medical_desc={DescGenerator(record.medical_due_on, 2, "Medical ID")}

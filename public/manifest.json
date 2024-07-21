@@ -20,8 +20,8 @@
     "lang":"en-US",
     "name":"Utility",
     "short_name":"Utility",
-    "start_url":"https://tracker-dev-session.netlify.app/",
-    "scope":"https://tracker-dev-session.netlify.app",
+    "start_url":"https://doc-record.netlify.app/",
+    "scope":"https://doc-record.netlify.app",
     "description":"Maintain personal records and get notified about important dates",
     "screenshots": [    
    {
