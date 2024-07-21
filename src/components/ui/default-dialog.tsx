@@ -1,7 +1,7 @@
 import { LoadingOutlined } from "@ant-design/icons";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { Tooltip } from "antd";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Hash, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Hash, X } from "lucide-react";
 import { Button } from "./button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from "./dialog";
 
