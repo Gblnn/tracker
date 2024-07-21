@@ -25,7 +25,7 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, Globe, GraduationCap, HandHelping, HeartPulse, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
+import { BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, Globe, GraduationCap, HeartPulse, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -205,7 +205,6 @@ export default function DbComponent(props:Props){
 
     const [imageUpload, setImageUpload] = useState(null);
     const [fileName, setFileName] = useState("")
-    const [imageUrl, setImageUrl] = useState("")
     const [profileName, setProfileName] = useState("")
 
     const [salaryDialog, setSalaryDialog] = useState(false)
@@ -221,8 +220,11 @@ export default function DbComponent(props:Props){
     const [leaveFrom, setLeaveFrom] = useState<any>()
     const [leaveTill, setLeaveTill] = useState<any>()
 
+    const [recordDeleteStatus, setRecordDeleteStatus] = useState("")
+
     const [fetchingLeave, setFetchingLeave] = useState(false)
     let days = 0
+    let imgUrl = ""
     
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
@@ -274,9 +276,8 @@ export default function DbComponent(props:Props){
         fetchData()
     },[])
 
-    useEffect(()=>{
-        
 
+    useEffect(()=>{
         window.addEventListener('online', () => {
             setStatus("true")
         });
@@ -291,9 +292,7 @@ export default function DbComponent(props:Props){
         if(status=="true"){
             message.success("Connection Established")
             fetchData()
-            
         }
-        
         
         else if(status=="false"){
             message.error("Lost Connection.")
@@ -313,13 +312,8 @@ export default function DbComponent(props:Props){
           .then(async (snapshot) => {
             await getDownloadURL(snapshot.ref)
               .then((url:any) => {
-                setImageUrl(String(url))
-                console.log("Upload Complete : ", imageUrl, "link : ", url)
+                imgUrl = url
               })
-              .catch((error) => {
-                message.error(error.message);
-                console.log(error.message)
-              });
           })
           .catch((error) => {
             message.error(error.message);
@@ -365,15 +359,12 @@ export default function DbComponent(props:Props){
         const snapshot = await getDocs(leaveQuery)
         const LeaveData: Array<Record> = [];
 
-        snapshot.forEach(async(doc:any)=>{
+        snapshot.forEach((doc:any)=>{
             LeaveData.push({id: doc.id, ...doc.data()})
             setLeaveList(LeaveData)
-            days = days + doc.days
+            days = doc.length
         })
         setFetchingLeave(false)
-        
-        
-
     }
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
@@ -400,10 +391,10 @@ const RenewID = async () => {
 
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
+        imgUrl = ""
         setLoading(true)
         await uploadFile()
-        await addDoc(collection(db, "records"), {name:name, email:email, employeeCode:employeeCode, companyName:companyName, dateofJoin:dateofJoin, salaryBasic:salaryBasic, allowance:allowance, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:props.dbCategory, notify:true, profile:imageUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:""})
-        console.log("Added Record : ", imageUrl)
+        await addDoc(collection(db, "records"), {name:name, email:email, employeeCode:employeeCode, companyName:companyName, dateofJoin:dateofJoin, salaryBasic:salaryBasic, allowance:allowance, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:props.dbCategory, notify:true, profile:imgUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:""})
         setAddDialog(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -432,11 +423,13 @@ const RenewID = async () => {
     // FUNCTION TO DELETE RECORD
     const deleteRecord = async () => {
         setLoading(true)
+        setRecordDeleteStatus("Deleting Record "+id+" (1/2)")
         await deleteDoc(doc(db, "records", id))
-        profileName==""?
-        null
-        :
-        await deleteObject(ref(storage, profileName))
+        if(profileName!=""){
+            setRecordDeleteStatus("Deleting Image "+profileName+" (2/2)")
+            await deleteObject(ref(storage, profileName))
+        }
+        setRecordDeleteStatus("")
         setCivilNumber("")
         setCivilNumber("")
         setCivilExpiry("")
@@ -1149,7 +1142,7 @@ const RenewID = async () => {
                                     handleSelect(post.id)
                             
                                 }}
-                                onClick={()=>{
+                                onClick={async()=>{
                                     
                                     
                                     setRecordSummary(true);
@@ -1203,10 +1196,10 @@ const RenewID = async () => {
                                     setSalaryBasic(post.salaryBasic)
                                     setAllowance(post.allowance)
                                     setProfileName(post.profile_name)
-                                    fetchLeave()
+                                    await fetchLeave()
                                 }}                        
 
-                            key={post.id} title={post.name} icon={<UserCircle color="dodgerblue" />} />
+                            key={post.id} title={post.name} icon={<UserCircle color="dodgerblue"/>} />
                         </motion.div>
                     ))
                 }
@@ -1303,8 +1296,8 @@ const RenewID = async () => {
             bottomTagValue={fetchingLeave?<LoadingOutlined/>:days}
             titleIcon={
                 <Tooltip title={profileName}>
-                <Avatar style={{width:"3.5rem", height:"3.5rem"}}>
-                    <AvatarImage src={image}/>
+                <Avatar style={{width:"3.5rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center"}}>
+                    <AvatarImage style={{objectFit:"cover"}} src={image}/>
                     <AvatarFallback>
                         <p style={{paddingTop:"0.2rem"}}>{Array.from(name)[0]}</p>
                         
@@ -1408,7 +1401,7 @@ const RenewID = async () => {
 
             <AddRecordDialog open={addDialog} onCancel={()=>{setAddDialog(false);setEditedName("")}}
             updating={loading}
-            disabled={loading||!editedName?true:false}
+            disabled={loading}
             title="Add Record"
             onImageChange={(e:any)=>{setImageUpload(e.target.files[0]); setFileName(e.target.files[0].name)}}
             NameOnChange={(e:any)=>{setName(e.target.value)}}
@@ -1461,7 +1454,12 @@ const RenewID = async () => {
             {/* <InputDialog open={userEditPrompt} titleIcon={<PenLine/>} title="Edit Record Name" inputplaceholder="Enter New Name" OkButtonText="Update" OkButtonIcon={<TextCursor width={"1rem"}/>} onCancel={()=>setUserEditPrompt(false)} onOk={EditRecordName} inputOnChange={(e:any)=>setEditedName(e.target.value)} updating={loading} disabled={loading} input1Value={name} input2placeholder="Email Address" input2Value={email} input2OnChange={(e:any)=>setEditedEmail(e.target.value)} image={<input type="file" style={{fontSize:"0.8rem"}}/>} input1Label="Enter Name : " input2Label="Enter Email : "/> */}
 
             {/* DELETE RECORD DIALOG */}
-            <DefaultDialog open={userDeletePrompt} titleIcon={<X/>} destructive title="Delete Record?" OkButtonText="Delete" onCancel={()=>setUserDeletePrompt(false)} onOk={deleteRecord} updating={loading} disabled={loading}/>
+            <DefaultDialog open={userDeletePrompt} titleIcon={<X/>} destructive title="Delete Record?" OkButtonText="Delete" onCancel={()=>setUserDeletePrompt(false)} onOk={deleteRecord} updating={loading} disabled={loading} extra={recordDeleteStatus?
+            <div style={{width:"100%"}}>
+                <p style={{fontSize:"0.7rem", opacity:0.5}}>{recordDeleteStatus}</p>
+            </div>
+            
+            :null}/>
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
@@ -1930,9 +1928,21 @@ const RenewID = async () => {
                 <>
                 <div style={{display:"flex", border:"", width:"100%", borderRadius:"0.5rem", padding:"0.5rem", background:"", flexFlow:"column"}}>
                     
-                    <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"center", display:'flex'}}>Block Period</p>
-                    <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600}}>
-                    <p>11/12/2024</p>-<p>13/12/2026</p>
+                    <div style={{border:"", display:"flex", alignItems:'center', justifyContent:"space-between"}}>
+
+                        <div style={{border:''}}>
+                            <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"", display:'flex'}}>Block Period</p>
+                            <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600}}>
+                                <p>11/12/2024</p>-<p>13/12/2026</p>
+                            </div>
+                        
+                        </div>
+
+                        <div>
+                            <p style={{fontSize:"0.8rem", opacity:0.5}}>Total Leaves</p>
+                            <p style={{fontWeight:600, border:'', textAlign:"right", fontSize:"1.5rem"}}>10</p>
+                        </div>
+                    
                     </div>
 
                     <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem"}}>
@@ -1957,8 +1967,8 @@ const RenewID = async () => {
                     </div>}
 
                 <div style={{display:"flex", gap:"0.5rem", width:"100%", zIndex:""}}>
-                    <input id="input-1" defaultValue={leaveFrom} onChange={(e:any)=>setLeaveFrom(e.target.value)} placeholder="From" style={{flex:1.5}}/>
-                    <input id="input-2" defaultValue={leaveTill} onChange={(e:any)=>setLeaveTill(e.target.value)} placeholder="Till" style={{flex:1.5}}/>
+                    <input type="search" id="input-1" defaultValue={leaveFrom} onChange={(e:any)=>setLeaveFrom(e.target.value)} placeholder="From" style={{flex:1.5}}/>
+                    <input type="search" id="input-2" defaultValue={leaveTill} onChange={(e:any)=>setLeaveTill(e.target.value)} placeholder="Till" style={{flex:1.5}}/>
                     <button onClick={addLeave} style={{fontSize:"0.8rem", flex:0.45}}>
                         {
                             loading?
@@ -1978,7 +1988,7 @@ const RenewID = async () => {
                 
                 }/>
 
-                <DefaultDialog title={"Allowance"} titleIcon={<HandHelping/>} close open={allowanceDialog} onCancel={()=>setAllowanceDialog(false)}
+                <DefaultDialog code={name} codeIcon={<User color="dodgerblue" width={"0.8rem"}/>} title={"Allowance"} close open={allowanceDialog} onCancel={()=>setAllowanceDialog(false)}
                 extra={
                     <div style={{display:"flex", border:"", width:"100%", borderRadius:"0.5rem", padding:"0.5rem", background:"", flexFlow:"column"}}>
 

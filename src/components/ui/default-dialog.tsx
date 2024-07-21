@@ -140,8 +140,8 @@ export default function DefaultDialog(props:Props){
                             <div onClick={props.tag3OnClick} style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
 
                             <p style={{opacity:0.5}}>Basic : </p><b>{props.tag3Text}</b>  
-
-                            <p style={{display:"flex", alignItems:"center"}}>{"(10%)"}<ArrowUp color="lightgreen" width={"0.9rem"}/></p>                          
+{/* 
+                            <p style={{display:"flex", alignItems:"center"}}>{"(10%)"}<ArrowUp color="lightgreen" width={"0.9rem"}/></p>                           */}
 
                             
                             </div>
@@ -152,8 +152,8 @@ export default function DefaultDialog(props:Props){
                             Allowance : 
                             </p>
                             <b>{props.tag4Text}</b>
-
-                            <p style={{display:"flex", alignItems:"center"}}>{"(1.2%)"}<ArrowDown color="tomato" width={"0.9rem"}/></p>
+{/* 
+                            <p style={{display:"flex", alignItems:"center"}}>{"(1.2%)"}<ArrowDown color="tomato" width={"0.9rem"}/></p> */}
                             
                             </div>
                             

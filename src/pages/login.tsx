@@ -35,7 +35,7 @@ export default function Login(){
     return(
         <div style={{display:"flex", padding:"1.25rem", height:"100svh"}}>
 
-            <div className="desktop-only" style={{border:'', flex:1, background:"midnightblue", alignItems:"flex-end", borderRadius:"1rem"}}>
+            <div className="desktop-only" style={{border:'', flex:1, background:"linear-gradient(darkslateblue, midnightblue)", alignItems:"flex-end", borderRadius:"1rem"}}>
                 
                 <div style={{display:"flex", border:'', alignItems:"center", margin:"2.5rem", gap:"0.75rem"}}>
                 <FileArchiveIcon color="salmon" width={"4rem"} height={"4rem"}/>
