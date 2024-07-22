@@ -190,7 +190,7 @@ export default function DefaultDialog(props:Props){
                             <p>Leaves</p>
 
                             <div style={{display:"flex", alignItems:"center", gap:"0.75rem"}}>
-                                <p style={{fontWeight:"600"}}>{props.bottomTagValue}</p>
+                                <p style={{fontWeight:"600", color:"#8884d8"}}>{props.bottomTagValue}</p>
                             <ChevronRight width={"0.8rem"}/>
                             </div>
                             

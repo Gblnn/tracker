@@ -16,7 +16,7 @@ import { db, storage } from "@/firebase"
 import { LoadingOutlined } from '@ant-design/icons'
 import emailjs from '@emailjs/browser'
 import { message, Tooltip } from 'antd'
-import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, Timestamp, updateDoc, where } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, getAggregateFromServer, getDocs, onSnapshot, orderBy, query, sum, Timestamp, updateDoc, where } from 'firebase/firestore'
 import {
     deleteObject,
     getDownloadURL,
@@ -61,7 +61,8 @@ export default function DbComponent(props:Props){
     const [notify, setNotify] = useState(true)
     const [records, setRecords] = useState<any>([])
     const [name, setName] = useState("")
-    const [id, setID] = useState("")
+    let id = ""
+    const [doc_id, setDocID] = useState("")
     const [recordSummary, setRecordSummary] = useState(false)
     const [civil, setCivil] = useState(false)
     const [vehicle, setVehicle] = useState(false)
@@ -219,11 +220,16 @@ export default function DbComponent(props:Props){
     const [leaveList, setLeaveList] = useState<any>([])
     const [leaveFrom, setLeaveFrom] = useState<any>()
     const [leaveTill, setLeaveTill] = useState<any>()
+    const [leaves, setLeaves] = useState(0)
+    const [deleteLeaveDialog, setDeleteLeaveDialog] = useState(false)
+    const [leaveID, setLeaveID] = useState("")
+
+    const[salaryList, setSalaryList] = useState<any>([])
 
     const [recordDeleteStatus, setRecordDeleteStatus] = useState("")
 
     const [fetchingLeave, setFetchingLeave] = useState(false)
-    let days = 0
+    const [fetchingSalary, setFetchingSalary] = useState(false)
     let imgUrl = ""
     
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
@@ -326,7 +332,7 @@ export default function DbComponent(props:Props){
     const fetchData = async (type?:any) => {
         
         try {
-            
+
             setfetchingData(true)
             const RecordCollection = collection(db, "records")
             const recordQuery = query(RecordCollection, orderBy("created_on"), where("type", "==", props.dbCategory))
@@ -353,34 +359,70 @@ export default function DbComponent(props:Props){
         }   
     }
 
+    const fetchSalary = async () => {
+        setFetchingSalary(true)
+        const salaryQuery = query(collection(db, "salary-record"), orderBy("created_on", "desc"), where("employeeID", "==", doc_id))
+        const snapshot = await getDocs(salaryQuery)
+        const SalaryData:any = [];
+        snapshot.forEach((doc:any)=>{
+            SalaryData.push({id: doc.id, ...doc.data()})
+            setSalaryList(SalaryData)
+        })
+        setFetchingSalary(false)
+    }
+
     const fetchLeave = async () => {
         setFetchingLeave(true)
-        const leaveQuery = query(collection(db, "leave-record"), orderBy("created_on", "desc"), where("employeeID", "==", id))
+
+        const leaveQuery = query(collection(db, "leave-record"), orderBy("created_on", "desc"), where("employeeID", "==", doc_id))
         const snapshot = await getDocs(leaveQuery)
         const LeaveData: Array<Record> = [];
 
         snapshot.forEach((doc:any)=>{
             LeaveData.push({id: doc.id, ...doc.data()})
             setLeaveList(LeaveData)
-            days = doc.length
         })
         setFetchingLeave(false)
+        id = doc_id
+        await leaveSum()
+    }
+
+    const leaveSum = async () => {
+        setFetchingLeave(true)
+        const snapshot = await getAggregateFromServer(query(collection(db, 'leave-record'), where("employeeID", "==", id)), {
+            days:sum("days")
+        })
+        setFetchingLeave(false)
+        setLeaves(snapshot.data().days)
+        console.log(snapshot.data().days, id)
     }
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
 const addLeave = async () => {
     setLoading(true)
-    await addDoc(collection(db, "leave-record"), {employeeID:id,created_on:Timestamp.fromDate(new Date()), leaveFrom:leaveFrom, leaveTill:leaveTill, days:moment(leaveTill, "DD/MM/YYYY").diff(moment(leaveFrom, "DD/MM/YYYY"), "days")})
+    await addDoc(collection(db, "leave-record"), {employeeID:doc_id,created_on:Timestamp.fromDate(new Date()), leaveFrom:leaveFrom, leaveTill:leaveTill, days:moment(leaveTill, "DD/MM/YYYY").diff(moment(leaveFrom, "DD/MM/YYYY"), "days")})
+    id = doc_id
+    await leaveSum()
     fetchLeave()
     setLeaveFrom("")
     setLeaveTill("")
+    setLoading(false)    
+}
+
+const deleteLeave = async () => {
+    setLoading(true)
+    await deleteDoc(doc(db, 'leave-record', leaveID))
+    id = doc_id
+    await leaveSum()
     setLoading(false)
+    fetchLeave()
+    setDeleteLeaveDialog(false)
 }
 
 const RenewID = async () => {
     setLoading(true)
-    await updateDoc(doc(db, "records", id),{civil_expiry:TimeStamper(newExpiry), modified_on:Timestamp.fromDate(new Date())})
+    await updateDoc(doc(db, "records", doc_id),{civil_expiry:TimeStamper(newExpiry), modified_on:Timestamp.fromDate(new Date())})
     setCivilExpiry(newExpiry)
     setLoading(false)
     setRenewDocDialog(false)
@@ -406,7 +448,7 @@ const RenewID = async () => {
     // FUNCTION TO EDIT RECORD
     const EditRecordName = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email, employeeCode:editedEmployeeCode?editedEmployeeCode:employeeCode, companyName:editedCompanyName?editedCompanyName:companyName, dateofJoin:editedDateofJoin?editedDateofJoin:dateofJoin, salaryBasic:editedSalarybasic?editedSalarybasic:salaryBasic, allowance:editedAllowance?editedAllowance:allowance, modified_on:Timestamp.fromDate(new Date)})
+        await updateDoc(doc(db, "records", doc_id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email, employeeCode:editedEmployeeCode?editedEmployeeCode:employeeCode, companyName:editedCompanyName?editedCompanyName:companyName, dateofJoin:editedDateofJoin?editedDateofJoin:dateofJoin, salaryBasic:editedSalarybasic?editedSalarybasic:salaryBasic, allowance:editedAllowance?editedAllowance:allowance, modified_on:Timestamp.fromDate(new Date)})
         setUserEditPrompt(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -423,12 +465,16 @@ const RenewID = async () => {
     // FUNCTION TO DELETE RECORD
     const deleteRecord = async () => {
         setLoading(true)
-        setRecordDeleteStatus("Deleting Record "+id+" (1/2)")
-        await deleteDoc(doc(db, "records", id))
+        setRecordDeleteStatus("Deleting Record "+doc_id+" (1/2)")
+        await deleteDoc(doc(db, "records", doc_id))
         if(profileName!=""){
             setRecordDeleteStatus("Deleting Image "+profileName+" (2/2)")
             await deleteObject(ref(storage, profileName))
         }
+        await leaveList.forEach(async (item:any) => {
+            await deleteDoc(doc(db, "leave-record", item.id))
+        })
+        
         setRecordDeleteStatus("")
         setCivilNumber("")
         setCivilNumber("")
@@ -451,7 +497,7 @@ const RenewID = async () => {
         setAddcivil(false)
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{civil_number:edited_civil_number, 
+            await updateDoc(doc(db, "records", doc_id),{civil_number:edited_civil_number, 
                 civil_expiry:edited_civil_expiry?TimeStamper(edited_civil_expiry):"", civil_DOB:edited_civil_DOB, modified_on:Timestamp.fromDate(new Date)})
             setCivilNumber(edited_civil_number)
             setCivilExpiry(edited_civil_expiry)
@@ -476,7 +522,7 @@ const RenewID = async () => {
     // FUNCTION TO DELETE A CIVIL ID
     const deleteCivilID = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", id),{civil_number:"", civil_expiry:"", civil_DOB:"", modified_on:Timestamp.fromDate(new Date)})
+        await updateDoc(doc(db, "records", doc_id),{civil_number:"", civil_expiry:"", civil_DOB:"", modified_on:Timestamp.fromDate(new Date)})
         setCivilDelete(false)
         setLoading(false)
         setCivilNumber("")
@@ -493,7 +539,7 @@ const RenewID = async () => {
     const EditCivilID = async () => {
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{civil_number:edited_civil_number?edited_civil_number:civil_number, civil_expiry:edited_civil_expiry?TimeStamper(edited_civil_expiry):TimeStamper(civil_expiry), civil_DOB:edited_civil_DOB?edited_civil_DOB:civil_DOB, modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, "records", doc_id),{civil_number:edited_civil_number?edited_civil_number:civil_number, civil_expiry:edited_civil_expiry?TimeStamper(edited_civil_expiry):TimeStamper(civil_expiry), civil_DOB:edited_civil_DOB?edited_civil_DOB:civil_DOB, modified_on:Timestamp.fromDate(new Date)})
             
             setCivilNumber(edited_civil_number?edited_civil_number:civil_number)
             setCivilExpiry(edited_civil_expiry?edited_civil_expiry:civil_expiry)
@@ -519,7 +565,7 @@ const RenewID = async () => {
         setAddVehicleID(false)
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{vehicle_number:vehicle_number, 
+            await updateDoc(doc(db, "records", doc_id),{vehicle_number:vehicle_number, 
             vehicle_expiry:TimeStamper(vehicle_expiry), vehicle_issue:vehicle_issue, vehicle_year:vehicle_year, modified_on:Timestamp.fromDate(new Date)})
 
             setLoading(false)
@@ -545,7 +591,7 @@ const RenewID = async () => {
     // FUNCTION TO DELETE A VEHICLE ID
     const deleteVehicleID = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", id),{vehicle_number:"", vehicle_expiry:"", vehicle_issue:"", modified_on:Timestamp.fromDate(new Date)})
+        await updateDoc(doc(db, "records", doc_id),{vehicle_number:"", vehicle_expiry:"", vehicle_issue:"", modified_on:Timestamp.fromDate(new Date)})
         setVehicleIdDelete(false)
         setLoading(false)
         setVehicleNumber("")
@@ -558,7 +604,7 @@ const RenewID = async () => {
     // FUNCTION TO DELETE A MEDICAL ID
     const deleteMedicalID = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", id),{medical_completed_on:"", medical_due_on:"", modified_on:Timestamp.fromDate(new Date)})
+        await updateDoc(doc(db, "records", doc_id),{medical_completed_on:"", medical_due_on:"", modified_on:Timestamp.fromDate(new Date)})
         setDeleteMedicalIDdialog(false)
         setLoading(false)
         setCompletedOn("")
@@ -572,7 +618,7 @@ const RenewID = async () => {
         setLoading(true)
         try {
             
-            await updateDoc(doc(db, "records", id),{vehicle_number:edited_vehicle_number?edited_vehicle_number:vehicle_number, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), vehicle_issue:edited_vehicle_issue?edited_vehicle_issue:vehicle_issue, modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, "records", doc_id),{vehicle_number:edited_vehicle_number?edited_vehicle_number:vehicle_number, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), vehicle_issue:edited_vehicle_issue?edited_vehicle_issue:vehicle_issue, modified_on:Timestamp.fromDate(new Date)})
 
             setVehicleNumber(edited_vehicle_number?edited_vehicle_number:vehicle_number)
             setVehicleExpiry(edited_vehicle_expiry?edited_vehicle_expiry:vehicle_expiry)
@@ -595,7 +641,7 @@ const RenewID = async () => {
         setLoading(true)
         try {
 
-            await updateDoc(doc(db, "records", id),{vehicle_issue:edited_vehicle_issue, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, "records", doc_id),{vehicle_issue:edited_vehicle_issue, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), modified_on:Timestamp.fromDate(new Date)})
             setVehicleIssue(edited_vehicle_issue?edited_vehicle_issue:vehicle_issue)
             setVehicleExpiry(edited_vehicle_expiry?edited_vehicle_expiry:vehicle_expiry)
             setLoading(false)
@@ -613,7 +659,7 @@ const RenewID = async () => {
         setMedicalIDdialog(false)
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{medical_completed_on:medical_completed_on, 
+            await updateDoc(doc(db, "records", doc_id),{medical_completed_on:medical_completed_on, 
             medical_due_on:TimeStamper(medical_due_on), modified_on:Timestamp.fromDate(new Date)})
 
             setLoading(false)
@@ -634,7 +680,7 @@ const RenewID = async () => {
     const EditMedicalID = async () => {
         setLoading(true)
         try {
-            await updateDoc(doc(db, 'records', id),{medical_completed_on:editedCompletedOn?editedCompletedOn:medical_completed_on, medical_due_on:editedDueOn?TimeStamper(editedDueOn):TimeStamper(medical_due_on), modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, 'records', doc_id),{medical_completed_on:editedCompletedOn?editedCompletedOn:medical_completed_on, medical_due_on:editedDueOn?TimeStamper(editedDueOn):TimeStamper(medical_due_on), modified_on:Timestamp.fromDate(new Date)})
 
             setDueOn(editedDueOn?editedDueOn:medical_due_on)
             setCompletedOn(editedCompletedOn?editedCompletedOn:medical_completed_on)
@@ -651,7 +697,7 @@ const RenewID = async () => {
     const EditPassport = async () => {
         setLoading(true)
         try {
-            await updateDoc(doc(db, 'records', id),{passportID:editedPassportID?editedPassportID:passportID, passportIssue:editedPassportIssue?editedPassportIssue:passportIssue, passportExpiry:editedPassportExpiry?TimeStamper(editedPassportExpiry):TimeStamper(passportExpiry), modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, 'records', doc_id),{passportID:editedPassportID?editedPassportID:passportID, passportIssue:editedPassportIssue?editedPassportIssue:passportIssue, passportExpiry:editedPassportExpiry?TimeStamper(editedPassportExpiry):TimeStamper(passportExpiry), modified_on:Timestamp.fromDate(new Date)})
             setPassportID(editedPassportID?editedPassportID:passportID)
             setPassportIssue(editedPassportIssue?editedPassportIssue:passportIssue)
             setPassportExpiry(editedPassportExpiry?editedPassportExpiry:passportExpiry)
@@ -671,7 +717,7 @@ const RenewID = async () => {
         setLoading(true)
         try {
 
-            await updateDoc(doc(db, "records", id),{medical_completed_on:editedCompletedOn?editedCompletedOn:medical_completed_on, medical_due_on:editedDueOn?TimeStamper(editedDueOn):TimeStamper(medical_due_on), modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, "records", doc_id),{medical_completed_on:editedCompletedOn?editedCompletedOn:medical_completed_on, medical_due_on:editedDueOn?TimeStamper(editedDueOn):TimeStamper(medical_due_on), modified_on:Timestamp.fromDate(new Date)})
 
             setCompletedOn(editedCompletedOn?editedCompletedOn:medical_completed_on)
             setDueOn(editedDueOn?editedDueOn:medical_due_on)
@@ -691,7 +737,7 @@ const RenewID = async () => {
         setAddPassportDialog(false)
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", id),{passportID:passportID, 
+            await updateDoc(doc(db, "records", doc_id),{passportID:passportID, 
             passportIssue:passportIssue, passportExpiry:TimeStamper(passportExpiry), modified_on:Timestamp.fromDate(new Date)})
             setLoading(false)
             fetchData()
@@ -706,7 +752,7 @@ const RenewID = async () => {
 
     const deletePassport = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", id),{passportID:"", passportExpiry:"", passportIssue:"", modified_on:Timestamp.fromDate(new Date)})
+        await updateDoc(doc(db, "records", doc_id),{passportID:"", passportExpiry:"", passportIssue:"", modified_on:Timestamp.fromDate(new Date)})
         setDeletePassportDialog(false)
         setLoading(false)
         setPassportID("")
@@ -718,7 +764,7 @@ const RenewID = async () => {
     
     const renewPassport = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", id),{passportExpiry:TimeStamper(editedPassportExpiry?editedPassportExpiry:passportExpiry), passportIssue:editedPassportIssue?editedPassportIssue:passportIssue, modified_on:Timestamp.fromDate(new Date)
+        await updateDoc(doc(db, "records", doc_id),{passportExpiry:TimeStamper(editedPassportExpiry?editedPassportExpiry:passportExpiry), passportIssue:editedPassportIssue?editedPassportIssue:passportIssue, modified_on:Timestamp.fromDate(new Date)
             
         })
         setPassportIssue(editedPassportIssue?editedPassportIssue:passportIssue)
@@ -891,6 +937,8 @@ const RenewID = async () => {
         setTrainingAddDialog(false)
         fetchData()
     }
+
+    
 
     
 
@@ -1143,11 +1191,10 @@ const RenewID = async () => {
                             
                                 }}
                                 onClick={async()=>{
-                                    
-                                    
                                     setRecordSummary(true);
                                     setName(post.name);
-                                    setID(post.id);
+                                    id = post.id
+                                    setDocID(post.id)
                                     setCivilNumber(post.civil_number);
                                     setCivilExpiry(post.civil_expiry?moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"):null);
                                     setCivilDOB(post.civil_DOB)
@@ -1196,7 +1243,8 @@ const RenewID = async () => {
                                     setSalaryBasic(post.salaryBasic)
                                     setAllowance(post.allowance)
                                     setProfileName(post.profile_name)
-                                    await fetchLeave()
+                                    leaveSum()
+                                    fetchLeave()
                                 }}                        
 
                             key={post.id} title={post.name} icon={<UserCircle color="dodgerblue"/>} />
@@ -1293,7 +1341,7 @@ const RenewID = async () => {
             tag3OnClick={()=>setSalaryDialog(true)}
             tag4OnClick={()=>setAllowanceDialog(true)}
             onBottomTagClick={()=>{setLeaveLog(true);fetchLeave()}}
-            bottomTagValue={fetchingLeave?<LoadingOutlined/>:days}
+            bottomTagValue={fetchingLeave?<LoadingOutlined/>:leaves}
             titleIcon={
                 <Tooltip title={profileName}>
                 <Avatar style={{width:"3.5rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center"}}>
@@ -1890,24 +1938,69 @@ const RenewID = async () => {
             <InputDialog open={trainingAddDialog} onOk={()=>{addTraining(trainingType)}} onCancel={()=>{setTrainingAddDialog(false);setEditedTrainingAddDialogInput("")}} title={trainingAddDialogTitle} inputplaceholder="Expiry Date" OkButtonText="Update" inputOnChange={(e:any)=>setEditedTrainingAddDialogInput(e.target.value)} OkButtonIcon={<RefreshCcw width={"1rem"}/>} updating={loading} disabled={loading||!EditedTrainingAddDialogInput?true:false} input1Value={trainingAddDialogInputValue}/>
 
             <DefaultDialog close title={"Basic Salary"} titleIcon={<CircleDollarSign/>} open={salaryDialog} onCancel={()=>setSalaryDialog(false)}
+            title_extra={<button onClick={fetchSalary} style={{width:"3rem", height:"2.5rem"}}>{fetchingSalary?<LoadingOutlined color="dodgerblue"/>:<RefreshCcw width={"1rem"} color="dodgerblue"/>}</button>}
             extra={
                 <>
                 <div style={{display:"flex", border:"", width:"100%", borderRadius:"0.5rem", padding:"0.5rem", background:"", flexFlow:"column"}}>
+                    
+                    <div style={{border:"", display:"flex", alignItems:'center', justifyContent:"center"}}>
 
+                        <div style={{border:''}}>
+                            <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"", display:'flex'}}>Current Earnings</p>
+                            <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600, fontSize:"1.5rem"}}>
+                                <p>{salaryBasic}</p>
+                            </div>
+                        
+                        </div>
 
-                <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"center", display:'flex'}}>Current Earnings</p>
-                    <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600}}>
-                    <p>OMR {salaryBasic}</p>
+                        {/* <div>
+                            <p style={{fontSize:"0.8rem", opacity:0.5}}>Total Increment</p>
+                            <p style={{fontWeight:600, border:'', textAlign:"right", fontSize:"1.5rem"}}>{leaves}</p>
+                        </div> */}
+                    
                     </div>
 
-                    <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem", width:"100%"}}>
-                        <LineCharter lineColor="lightgreen"/>
+                    <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem"}}>
+                    <LineCharter lineColor="lightgreen"/>
                     </div>
+                    
+                
+                    
                 </div>
+
+                {leaveList.length==0?
+                    <div style={{width:"100%", border:"3px dashed rgba(100 100 100/ 50%)", height:"2.5rem",borderRadius:"0.5rem", marginBottom:"1rem"}}></div>
+                    :
+                    <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.35rem", maxHeight:"11.25rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem", marginBottom:"1rem"}}>
+                        {
+                        salaryList.map((e:any)=>(
+                            <motion.div key={e.id} initial={{opacity:0}} whileInView={{opacity:1}}>
+                            <Directive status={true} tag={e.days+" Days"} title={e.leaveFrom+" - "+e.leaveTill} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{setDeleteLeaveDialog(true);setLeaveID(e.id)}}  className="animate-pulse" color="lightgreen" width={"1.1rem"}/>} noArrow/>
+                            </motion.div>
+                        ))
+                    }
+                    </div>}
+
+                <div style={{display:"flex", gap:"0.5rem", width:"100%", zIndex:""}}>
+                    <input type="search" id="input-1" defaultValue={leaveFrom} onChange={(e:any)=>setLeaveFrom(e.target.value)} placeholder="New Salary" style={{flex:1.5}}/>
+                    <button onClick={addLeave} style={{fontSize:"0.8rem", flex:0.15}}>
+                        {
+                            loading?
+                            <LoadingOutlined/>
+                            :
+                            <div style={{display:"flex", gap:"0.5rem", alignItems:"center"}}>
+                                <Plus width={"1.25rem"} color="lightgreen"/>
+                            </div>
+                            
+                        }
+                        
+                    </button>
+                </div>
+                
                 
                 </>
                 
-            } 
+                } 
             />
             
 
@@ -1940,7 +2033,7 @@ const RenewID = async () => {
 
                         <div>
                             <p style={{fontSize:"0.8rem", opacity:0.5}}>Total Leaves</p>
-                            <p style={{fontWeight:600, border:'', textAlign:"right", fontSize:"1.5rem"}}>10</p>
+                            <p style={{fontWeight:600, border:'', textAlign:"right", fontSize:"1.5rem"}}>{leaves}</p>
                         </div>
                     
                     </div>
@@ -1960,7 +2053,7 @@ const RenewID = async () => {
                         {
                         leaveList.map((e:any)=>(
                             <motion.div key={e.id} initial={{opacity:0}} whileInView={{opacity:1}}>
-                            <Directive status={true} tag={e.days+" Days"} title={e.leaveFrom+" - "+e.leaveTill} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{}}  className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} noArrow/>
+                            <Directive status={true} tag={e.days+" Days"} title={e.leaveFrom+" - "+e.leaveTill} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{setDeleteLeaveDialog(true);setLeaveID(e.id)}}  className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} noArrow/>
                             </motion.div>
                         ))
                     }
@@ -1975,7 +2068,7 @@ const RenewID = async () => {
                             <LoadingOutlined/>
                             :
                             <div style={{display:"flex", gap:"0.5rem", alignItems:"center"}}>
-                                <Plus width={"1.25rem"} color="violet"/>
+                                <Plus width={"1.25rem"} color="#8884d8"/>
                             </div>
                             
                         }
@@ -1987,6 +2080,8 @@ const RenewID = async () => {
                 </>
                 
                 }/>
+
+                <DefaultDialog open={deleteLeaveDialog} title={"Delete Leave?"} destructive OkButtonText="Delete" updating={loading} disabled={loading} onCancel={()=>setDeleteLeaveDialog(false)} onOk={deleteLeave} extra={<p style={{fontSize:"0.75rem", textAlign:"left", width:"100%", marginLeft:"1rem", opacity:0.5}}></p>}/>
 
                 <DefaultDialog code={name} codeIcon={<User color="dodgerblue" width={"0.8rem"}/>} title={"Allowance"} close open={allowanceDialog} onCancel={()=>setAllowanceDialog(false)}
                 extra={
