@@ -214,17 +214,21 @@ export default function DbComponent(props:Props){
     const [salaryBasic, setSalaryBasic] = useState("")
     const [allowance, setAllowance] = useState("")
 
+    const [newSalary, setNewSalary] = useState("")
+
     const [allowanceDialog, setAllowanceDialog] = useState(false)
 
     const [leaveLog, setLeaveLog] = useState(false)
     const [leaveList, setLeaveList] = useState<any>([])
-    const [leaveFrom, setLeaveFrom] = useState<any>()
-    const [leaveTill, setLeaveTill] = useState<any>()
+    const [leaveFrom, setLeaveFrom] = useState<any>("")
+    const [leaveTill, setLeaveTill] = useState<any>("")
     const [leaves, setLeaves] = useState(0)
     const [deleteLeaveDialog, setDeleteLeaveDialog] = useState(false)
     const [leaveID, setLeaveID] = useState("")
 
-    const[salaryList, setSalaryList] = useState<any>([])
+    const [salaryList, setSalaryList] = useState<any>([])
+    const [deleteSalaryDialog, setDeleteSalaryDialog] = useState(false)
+    const [salaryID, setSalaryID] = useState("")
 
     const [recordDeleteStatus, setRecordDeleteStatus] = useState("")
 
@@ -360,6 +364,7 @@ export default function DbComponent(props:Props){
     }
 
     const fetchSalary = async () => {
+        console.log(doc_id)
         setFetchingSalary(true)
         const salaryQuery = query(collection(db, "salary-record"), orderBy("created_on", "desc"), where("employeeID", "==", doc_id))
         const snapshot = await getDocs(salaryQuery)
@@ -367,8 +372,24 @@ export default function DbComponent(props:Props){
         snapshot.forEach((doc:any)=>{
             SalaryData.push({id: doc.id, ...doc.data()})
             setSalaryList(SalaryData)
+            console.log(salaryList)
         })
         setFetchingSalary(false)
+    }
+
+    const addNewSalary = async () => {
+        setLoading(true)
+        try {
+            await addDoc(collection(db, 'salary-record'),{employeeID:doc_id, created_on:Timestamp.fromDate(new Date()), salary:newSalary})
+            await updateDoc(doc(db, 'records', doc_id),{salaryBasic:newSalary})
+            setSalaryBasic(newSalary)
+            fetchSalary()
+            setNewSalary("")
+            setLoading(false)
+            
+        } catch (error) {
+            
+        }
     }
 
     const fetchLeave = async () => {
@@ -376,15 +397,18 @@ export default function DbComponent(props:Props){
 
         const leaveQuery = query(collection(db, "leave-record"), orderBy("created_on", "desc"), where("employeeID", "==", doc_id))
         const snapshot = await getDocs(leaveQuery)
-        const LeaveData: Array<Record> = [];
+        const LeaveData: any = [];
 
         snapshot.forEach((doc:any)=>{
             LeaveData.push({id: doc.id, ...doc.data()})
             setLeaveList(LeaveData)
         })
         setFetchingLeave(false)
-        id = doc_id
+        console.log("id @ fetchLeave()",id)
         await leaveSum()
+        
+
+        
     }
 
     const leaveSum = async () => {
@@ -394,6 +418,7 @@ export default function DbComponent(props:Props){
         })
         setFetchingLeave(false)
         setLeaves(snapshot.data().days)
+
         console.log(snapshot.data().days, id)
     }
 
@@ -1190,11 +1215,12 @@ const RenewID = async () => {
                                     handleSelect(post.id)
                             
                                 }}
-                                onClick={async()=>{
+                                onClick={()=>{
                                     setRecordSummary(true);
                                     setName(post.name);
                                     id = post.id
                                     setDocID(post.id)
+                                    console.log("id:",id)
                                     setCivilNumber(post.civil_number);
                                     setCivilExpiry(post.civil_expiry?moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"):null);
                                     setCivilDOB(post.civil_DOB)
@@ -1243,8 +1269,8 @@ const RenewID = async () => {
                                     setSalaryBasic(post.salaryBasic)
                                     setAllowance(post.allowance)
                                     setProfileName(post.profile_name)
-                                    leaveSum()
                                     fetchLeave()
+                                    
                                 }}                        
 
                             key={post.id} title={post.name} icon={<UserCircle color="dodgerblue"/>} />
@@ -1338,9 +1364,9 @@ const RenewID = async () => {
             tag2Text={dateofJoin}
             tag3Text={salaryBasic}
             tag4Text={allowance}
-            tag3OnClick={()=>setSalaryDialog(true)}
+            tag3OnClick={()=>{setSalaryDialog(true);fetchSalary()}}
             tag4OnClick={()=>setAllowanceDialog(true)}
-            onBottomTagClick={()=>{setLeaveLog(true);fetchLeave()}}
+            onBottomTagClick={()=>{setLeaveLog(true);fetchLeave();setLeaveList([]);id=doc_id}}
             bottomTagValue={fetchingLeave?<LoadingOutlined/>:leaves}
             titleIcon={
                 <Tooltip title={profileName}>
@@ -1968,22 +1994,26 @@ const RenewID = async () => {
                     
                 </div>
 
-                {leaveList.length==0?
+                {salaryList.length==0?
                     <div style={{width:"100%", border:"3px dashed rgba(100 100 100/ 50%)", height:"2.5rem",borderRadius:"0.5rem", marginBottom:"1rem"}}></div>
                     :
                     <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.35rem", maxHeight:"11.25rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem", marginBottom:"1rem"}}>
                         {
                         salaryList.map((e:any)=>(
                             <motion.div key={e.id} initial={{opacity:0}} whileInView={{opacity:1}}>
-                            <Directive status={true} tag={e.days+" Days"} title={e.leaveFrom+" - "+e.leaveTill} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{setDeleteLeaveDialog(true);setLeaveID(e.id)}}  className="animate-pulse" color="lightgreen" width={"1.1rem"}/>} noArrow/>
+                            <Directive status={true} 
+                            tag={
+                                moment(e.created_on.toDate()).format("LL")
+                            } 
+                            title={"OMR "+e.salary} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{setDeleteSalaryDialog(true);setSalaryID(e.id)}}  className="animate-pulse" color="lightgreen" width={"1.1rem"}/>} noArrow/>
                             </motion.div>
                         ))
                     }
                     </div>}
 
                 <div style={{display:"flex", gap:"0.5rem", width:"100%", zIndex:""}}>
-                    <input type="search" id="input-1" defaultValue={leaveFrom} onChange={(e:any)=>setLeaveFrom(e.target.value)} placeholder="New Salary" style={{flex:1.5}}/>
-                    <button onClick={addLeave} style={{fontSize:"0.8rem", flex:0.15}}>
+                    <input type="search" id="input-1" value={newSalary} onChange={(e:any)=>setNewSalary(e.target.value)} placeholder="New Salary" style={{flex:1.5}}/>
+                    <button onClick={addNewSalary} style={{fontSize:"0.8rem", flex:0.15}}>
                         {
                             loading?
                             <LoadingOutlined/>
@@ -2060,8 +2090,8 @@ const RenewID = async () => {
                     </div>}
 
                 <div style={{display:"flex", gap:"0.5rem", width:"100%", zIndex:""}}>
-                    <input type="search" id="input-1" defaultValue={leaveFrom} onChange={(e:any)=>setLeaveFrom(e.target.value)} placeholder="From" style={{flex:1.5}}/>
-                    <input type="search" id="input-2" defaultValue={leaveTill} onChange={(e:any)=>setLeaveTill(e.target.value)} placeholder="Till" style={{flex:1.5}}/>
+                    <input type="search" id="input-1" value={leaveFrom} onChange={(e:any)=>setLeaveFrom(e.target.value)} placeholder="From" style={{flex:1.5}}/>
+                    <input type="search" id="input-2" value={leaveTill} onChange={(e:any)=>setLeaveTill(e.target.value)} placeholder="Till" style={{flex:1.5}}/>
                     <button onClick={addLeave} style={{fontSize:"0.8rem", flex:0.45}}>
                         {
                             loading?
@@ -2094,13 +2124,15 @@ const RenewID = async () => {
                     </div>
 
                     <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem", width:"100%"}}>
-                        <LineCharter lineColor="violet"/>
+                        <LineCharter lineColor="salmon"/>
                     </div>
                 </div>
                 }
                 />
 
             </div>
+
+            <DefaultDialog destructive open={deleteSalaryDialog} onCancel={()=>setDeleteSalaryDialog(false)} title={"Delete Salary?"} OkButtonText="Delete" extra={<p style={{width:"100%", textAlign:"left", paddingLeft:"1rem", fontSize:"0.75rem", opacity:0.5}}>{salaryID}</p>}/>
             
     
         </>

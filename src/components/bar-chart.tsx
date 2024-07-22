@@ -27,11 +27,11 @@ const data = [
   },
   {
     name: 'Jun',
-    days: 15,
+    days: 0,
   },
   {
     name: 'Jul',
-    days: 0,
+    days: 15,
   },
   {
     name: 'Aug',

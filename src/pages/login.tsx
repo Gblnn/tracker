@@ -48,7 +48,7 @@ export default function Login(){
             </div>
 
             <div style={{display:"flex", flex:1, height:"100%", justifyContent:'space-between', alignItems:'', flexFlow:"column"}}>
-                <p style={{ top:0, left:0, margin:"2.5rem", fontSize:"2rem", fontWeight:"600"}}>LOGIN</p>
+                <p style={{ top:0, left:0, margin:"2.5rem", fontSize:"2.5rem", fontWeight:"600"}}>LOGIN</p>
 
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", bottom:0, margin:"2rem", marginBottom:"1.5rem"}}>
 
