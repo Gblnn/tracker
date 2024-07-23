@@ -69,7 +69,7 @@ export default function Login(){
                     
                     
                     <p/>
-                    <button onClick={()=>message.info("Login functionality is curently unavailable")} style={{background:"midnightblue"}}>LOGIN
+                    <button onClick={()=>message.info("Login functionality is curently unavailable please use developer key")} style={{background:"midnightblue"}}>LOGIN
                         <ChevronRight width={"0.75rem"}/>
                     </button>
                 </div>
