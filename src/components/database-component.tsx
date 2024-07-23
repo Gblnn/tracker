@@ -2101,7 +2101,11 @@ const RenewID = async () => {
                                     Math.sign((salaryBasic - initialSalary)/ initialSalary)==-1?
                                     <ArrowDown width={"1rem"} color="tomato"/>
                                     :
+                                    ((salaryBasic - initialSalary)/ initialSalary)==0?
+                                    ""
+                                    :
                                     <ArrowUp width={"1rem"} color="lightgreen"/>
+
                                 }
                                 
                             </p>
