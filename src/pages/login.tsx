@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { auth } from "@/firebase";
+import { message } from "antd";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { ChevronRight, FileArchiveIcon, KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -54,7 +55,7 @@ export default function Login(){
                 
                 <div style={{display:"flex", justifyContent:'center', alignItems:'center', flexFlow:"column", border:"", borderRadius:"1rem", width:"32ch"}}>
 
-                <div style={{display:"flex", border:"",borderRadius:"1rem", padding:"", flexFlow:"column",width:"100%", gap:"0.75rem", marginTop:"2rem"}}>
+                <div style={{display:"flex", border:"",borderRadius:"1rem", padding:"", flexFlow:"column",width:"100%", gap:"0.75rem", marginTop:"6rem"}}>
                 <p style={{ top:0, left:0, fontSize:"2rem", fontWeight:"600", border:"", width:"100%", paddingLeft:"0.5rem", marginTop:""}}>LOGIN</p>
                 <br/>
                 
@@ -68,7 +69,7 @@ export default function Login(){
                     
                     
                     <p/>
-                    <button style={{background:"midnightblue"}}>LOGIN
+                    <button onClick={()=>message.info("Login functionality is curently unavailable")} style={{background:"midnightblue"}}>LOGIN
                         <ChevronRight width={"0.75rem"}/>
                     </button>
                 </div>
@@ -81,7 +82,7 @@ export default function Login(){
 
                     <Button onClick={()=>usenavigate("/index")} variant={"ghost"}>
                         <KeyRound color="dodgerblue" width={"1.25rem"}/>
-                        Temporary Key
+                        Developer Key
                     </Button>
 
                     <Button onClick={SignUpWithGoogle} variant={"ghost"}>

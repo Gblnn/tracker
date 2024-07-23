@@ -32,7 +32,7 @@ import { useNavigate } from "react-router-dom"
 import ReactTimeAgo from 'react-time-ago'
 import useKeyboardShortcut from 'use-keyboard-shortcut'
 import LineCharter from "./bar-chart"
-
+import ConfettiExplosion from 'react-confetti-explosion'
 
 
 type Record = {
@@ -215,6 +215,7 @@ export default function DbComponent(props:Props){
     const [allowance, setAllowance] = useState("")
 
     const [newSalary, setNewSalary] = useState("")
+    const [newAllowance, setNewAllowance]  = useState("")
 
     const [allowanceDialog, setAllowanceDialog] = useState(false)
 
@@ -230,10 +231,15 @@ export default function DbComponent(props:Props){
     const [deleteSalaryDialog, setDeleteSalaryDialog] = useState(false)
     const [salaryID, setSalaryID] = useState("")
 
+    const [allowanceList, setAllowanceList] = useState<any>([])
+    const [deleteAllowanceDialog, setDeleteAllowanceDialog] = useState(false)
+    const [allowanceID, setAllowanceID] = useState("")
+
     const [recordDeleteStatus, setRecordDeleteStatus] = useState("")
 
     const [fetchingLeave, setFetchingLeave] = useState(false)
     const [fetchingSalary, setFetchingSalary] = useState(false)
+    const [fetchingAllowance, setFetchingAllowance] = useState(false)
     let imgUrl = ""
     
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
@@ -317,7 +323,7 @@ export default function DbComponent(props:Props){
           return;
         }
         const imageRef = storageRef(storage, fileName);
-    
+        console.log("Uploading ", fileName)
         await uploadBytes(imageRef, imageUpload)
           .then(async (snapshot) => {
             await getDownloadURL(snapshot.ref)
@@ -377,6 +383,20 @@ export default function DbComponent(props:Props){
         setFetchingSalary(false)
     }
 
+    const fetchAllowance = async () => {
+        console.log(doc_id)
+        setFetchingAllowance(true)
+        const allowanceQuery = query(collection(db, "allowance-record"), orderBy("created_on", "desc"), where("employeeID", "==", doc_id))
+        const snapshot = await getDocs(allowanceQuery)
+        const AllowanceData:any = [];
+        snapshot.forEach((doc:any)=>{
+            AllowanceData.push({id: doc.id, ...doc.data()})
+            setAllowanceList(AllowanceData)
+            console.log(allowanceList)
+        })
+        setFetchingAllowance(false)
+    }
+
     const addNewSalary = async () => {
         setLoading(true)
         try {
@@ -390,6 +410,43 @@ export default function DbComponent(props:Props){
         } catch (error) {
             
         }
+    }
+
+    const addNewAllowance = async () => {
+        setLoading(true)
+        try {
+            await addDoc(collection(db, 'allowance-record'),{employeeID:doc_id, created_on:Timestamp.fromDate(new Date()), allowance:newAllowance})
+            await updateDoc(doc(db, 'records', doc_id),{allowance:newAllowance})
+            setAllowance(newAllowance)
+            fetchAllowance()
+            setNewAllowance("")
+            setLoading(false)
+            
+        } catch (error) {
+            setLoading(false)
+        }
+    }
+
+    const deleteSalary = async () => {
+        setLoading(true)
+        await deleteDoc(doc(db, 'salary-record', salaryID))
+        id = doc_id
+        setLoading(false)
+        fetchSalary()
+        setDeleteSalaryDialog(false)
+        salaryList.length==1&&
+            setSalaryList([])
+    }
+
+    const deleteAllowance = async () => {
+        setLoading(true)
+        await deleteDoc(doc(db, 'allowance-record', allowanceID))
+        id = doc_id
+        setLoading(false)
+        fetchAllowance()
+        setDeleteAllowanceDialog(false)
+        allowanceList.length==1&&
+            setAllowanceList([])
     }
 
     const fetchLeave = async () => {
@@ -443,6 +500,8 @@ const deleteLeave = async () => {
     setLoading(false)
     fetchLeave()
     setDeleteLeaveDialog(false)
+    leaveList.length==1&&
+    setLeaveList([])
 }
 
 const RenewID = async () => {
@@ -461,7 +520,7 @@ const RenewID = async () => {
         imgUrl = ""
         setLoading(true)
         await uploadFile()
-        await addDoc(collection(db, "records"), {name:name, email:email, employeeCode:employeeCode, companyName:companyName, dateofJoin:dateofJoin, salaryBasic:salaryBasic, allowance:allowance, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:props.dbCategory, notify:true, profile:imgUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:""})
+        await addDoc(collection(db, "records"), {name:name, email:email, employeeCode:employeeCode, companyName:companyName, dateofJoin:dateofJoin, salaryBasic:salaryBasic, initialSalary:salaryBasic, allowance:allowance, initialAllowance:allowance, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:props.dbCategory, notify:true, profile:imgUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:""})
         setAddDialog(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -472,8 +531,22 @@ const RenewID = async () => {
 
     // FUNCTION TO EDIT RECORD
     const EditRecordName = async () => {
+        imgUrl = ""
         setLoading(true)
-        await updateDoc(doc(db, "records", doc_id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email, employeeCode:editedEmployeeCode?editedEmployeeCode:employeeCode, companyName:editedCompanyName?editedCompanyName:companyName, dateofJoin:editedDateofJoin?editedDateofJoin:dateofJoin, salaryBasic:editedSalarybasic?editedSalarybasic:salaryBasic, allowance:editedAllowance?editedAllowance:allowance, modified_on:Timestamp.fromDate(new Date)})
+        if(fileName!=""){
+            if (profileName!=""){
+                console.log("Deleting ", profileName)
+                await deleteObject(ref(storage, profileName))
+            }
+            
+            await uploadFile()
+            setImage(imgUrl)
+        }
+        else{}
+
+        
+        
+        await updateDoc(doc(db, "records", doc_id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email, employeeCode:editedEmployeeCode?editedEmployeeCode:employeeCode, companyName:editedCompanyName?editedCompanyName:companyName, dateofJoin:editedDateofJoin?editedDateofJoin:dateofJoin, salaryBasic:editedSalarybasic?editedSalarybasic:salaryBasic, allowance:editedAllowance?editedAllowance:allowance, modified_on:Timestamp.fromDate(new Date),profile:imgUrl, profile_name:fileName})
         setUserEditPrompt(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -498,6 +571,9 @@ const RenewID = async () => {
         }
         await leaveList.forEach(async (item:any) => {
             await deleteDoc(doc(db, "leave-record", item.id))
+        })
+        await salaryList.forEach(async (item:any) => {
+            await deleteDoc(doc(db, "salary-record", item.id))
         })
         
         setRecordDeleteStatus("")
@@ -969,6 +1045,10 @@ const RenewID = async () => {
 
     return(
         <>
+        <div style={{border:"", display:"flex", alignItems:"center", justifyContent:'center'}}>
+        <ConfettiExplosion/>
+        </div>
+        
         {
             status=="false"?
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
@@ -1319,7 +1399,7 @@ const RenewID = async () => {
 
 
             {/* ADD RECORD BUTTON */}
-            <AddRecordButton title={addButtonModeSwap?"Delete Record(s)":"Add Record"} onClickSwap={addButtonModeSwap} onClick={()=>{setAddDialog(true); setName("")}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
+            <AddRecordButton title={addButtonModeSwap?"Delete Record(s)":"Add Record"} onClickSwap={addButtonModeSwap} onClick={()=>{setAddDialog(true); setName("");}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
                 icon={addButtonModeSwap?<Trash color="crimson" width="1rem"/>:<Plus color="dodgerblue" width="1rem"/>}/>
 
 
@@ -1365,7 +1445,7 @@ const RenewID = async () => {
             tag3Text={salaryBasic}
             tag4Text={allowance}
             tag3OnClick={()=>{setSalaryDialog(true);fetchSalary()}}
-            tag4OnClick={()=>setAllowanceDialog(true)}
+            tag4OnClick={()=>{setAllowanceDialog(true);fetchAllowance()}}
             onBottomTagClick={()=>{setLeaveLog(true);fetchLeave();setLeaveList([]);id=doc_id}}
             bottomTagValue={fetchingLeave?<LoadingOutlined/>:leaves}
             titleIcon={
@@ -1472,7 +1552,6 @@ const RenewID = async () => {
             }/>
 
             {/* ADD RECORD DIALOG */}
-
             <AddRecordDialog open={addDialog} onCancel={()=>{setAddDialog(false);setEditedName("")}}
             updating={loading}
             disabled={loading}
@@ -1495,7 +1574,7 @@ const RenewID = async () => {
             <AddRecordDialog open={userEditPrompt} onCancel={()=>{setUserEditPrompt(false);setEditedName("")}}
             title="Edit Record"
             updating={loading}
-            disabled={loading||!editedName?true:false}
+            disabled={loading}
             onImageChange={(e:any)=>{setImageUpload(e.target.files[0]); setFileName(e.target.files[0].name)}}
 
             NameOnChange={(e:any)=>{setEditedName(e.target.value)}}
@@ -1778,7 +1857,6 @@ const RenewID = async () => {
 
             {/* ADD MEDICAL ID DIALOG */}
             <InputDialog open={MedicalIDdialog} OkButtonText="Add" onCancel={()=>setMedicalIDdialog(false)} title="Add Medical ID" titleIcon={<HeartPulse color="tomato"/>} inputplaceholder="Completed On" input2placeholder="Due On" inputOnChange={(e:any)=>setCompletedOn(e.target.value)} input2OnChange={(e:any)=>setDueOn(e.target.value)} onOk={addMedicalID} updating={loading}/>
-
              
             {/* EDIT MEDICAl ID DIALOG */}
             <InputDialog open={editMedicalIDdialog} title="Edit Medical ID" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditMedicalIDdialog(false)}} inputplaceholder="Completed On" input2placeholder="Due on" inputOnChange={(e:any)=>setEditedCompletedOn(e.target.value)} input2OnChange={(e:any)=>{setEditedDueOn(e.target.value)}} onOk={EditMedicalID} updating={loading} disabled={loading} input1Value={medical_completed_on} input2Value={medical_due_on} input3Value={vehicle_issue} input1Label="Completed : " input2Label="Due On : "/>
@@ -1963,7 +2041,7 @@ const RenewID = async () => {
 
             <InputDialog open={trainingAddDialog} onOk={()=>{addTraining(trainingType)}} onCancel={()=>{setTrainingAddDialog(false);setEditedTrainingAddDialogInput("")}} title={trainingAddDialogTitle} inputplaceholder="Expiry Date" OkButtonText="Update" inputOnChange={(e:any)=>setEditedTrainingAddDialogInput(e.target.value)} OkButtonIcon={<RefreshCcw width={"1rem"}/>} updating={loading} disabled={loading||!EditedTrainingAddDialogInput?true:false} input1Value={trainingAddDialogInputValue}/>
 
-            <DefaultDialog close title={"Basic Salary"} titleIcon={<CircleDollarSign/>} open={salaryDialog} onCancel={()=>setSalaryDialog(false)}
+            <DefaultDialog code={name} codeIcon={<User width={"0.8rem"} color="dodgerblue"/>} close title={"Basic Salary"} titleIcon={<CircleDollarSign />} open={salaryDialog} onCancel={()=>setSalaryDialog(false)}
             title_extra={<button onClick={fetchSalary} style={{width:"3rem", height:"2.5rem"}}>{fetchingSalary?<LoadingOutlined color="dodgerblue"/>:<RefreshCcw width={"1rem"} color="dodgerblue"/>}</button>}
             extra={
                 <>
@@ -1973,7 +2051,8 @@ const RenewID = async () => {
 
                         <div style={{border:''}}>
                             <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"", display:'flex'}}>Current Earnings</p>
-                            <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600, fontSize:"1.5rem"}}>
+                            <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600, fontSize:"1.5rem", alignItems:"center"}}>
+                                <p style={{fontWeight:400, fontSize:"1rem"}}>OMR</p>
                                 <p>{salaryBasic}</p>
                             </div>
                         
@@ -2070,6 +2149,7 @@ const RenewID = async () => {
 
                     <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem"}}>
                     <LineCharter/>
+                    
                     </div>
                     
                 
@@ -2113,7 +2193,7 @@ const RenewID = async () => {
 
                 <DefaultDialog open={deleteLeaveDialog} title={"Delete Leave?"} destructive OkButtonText="Delete" updating={loading} disabled={loading} onCancel={()=>setDeleteLeaveDialog(false)} onOk={deleteLeave} extra={<p style={{fontSize:"0.75rem", textAlign:"left", width:"100%", marginLeft:"1rem", opacity:0.5}}></p>}/>
 
-                <DefaultDialog code={name} codeIcon={<User color="dodgerblue" width={"0.8rem"}/>} title={"Allowance"} close open={allowanceDialog} onCancel={()=>setAllowanceDialog(false)}
+                {/* <DefaultDialog code={name} codeIcon={<User color="dodgerblue" width={"0.8rem"}/>} title={"Allowance"} close open={allowanceDialog} onCancel={()=>setAllowanceDialog(false)}
                 extra={
                     <div style={{display:"flex", border:"", width:"100%", borderRadius:"0.5rem", padding:"0.5rem", background:"", flexFlow:"column"}}>
 
@@ -2128,11 +2208,85 @@ const RenewID = async () => {
                     </div>
                 </div>
                 }
-                />
+                /> */}
 
             </div>
 
-            <DefaultDialog destructive open={deleteSalaryDialog} onCancel={()=>setDeleteSalaryDialog(false)} title={"Delete Salary?"} OkButtonText="Delete" extra={<p style={{width:"100%", textAlign:"left", paddingLeft:"1rem", fontSize:"0.75rem", opacity:0.5}}>{salaryID}</p>}/>
+            <DefaultDialog destructive open={deleteSalaryDialog} onCancel={()=>setDeleteSalaryDialog(false)} title={"Delete Salary?"} updating={loading} disabled={loading} onOk={deleteSalary} OkButtonText="Delete" extra={<p style={{width:"100%", textAlign:"left", paddingLeft:"1rem", fontSize:"0.75rem", opacity:0.5}}>{salaryID}</p>}/>
+
+            <DefaultDialog destructive open={deleteAllowanceDialog} onCancel={()=>setDeleteAllowanceDialog(false)} title={"Delete Allowance?"} updating={loading} disabled={loading} onOk={deleteAllowance} OkButtonText="Delete" extra={<p style={{width:"100%", textAlign:"left", paddingLeft:"1rem", fontSize:"0.75rem", opacity:0.5}}>{salaryID}</p>}/>
+
+
+            <DefaultDialog code={name} codeIcon={<User width={"0.8rem"} color="dodgerblue"/>} close title={"Allowance"} open={allowanceDialog} onCancel={()=>setAllowanceDialog(false)}
+            title_extra={<button onClick={fetchAllowance} style={{width:"3rem", height:"2.5rem"}}>{fetchingAllowance?<LoadingOutlined color="dodgerblue"/>:<RefreshCcw width={"1rem"} color="dodgerblue"/>}</button>}
+            extra={
+                <>
+                <div style={{display:"flex", border:"", width:"100%", borderRadius:"0.5rem", padding:"0.5rem", background:"", flexFlow:"column"}}>
+                    
+                    <div style={{border:"", display:"flex", alignItems:'center', justifyContent:"center"}}>
+
+                        <div style={{border:''}}>
+                            <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"", display:'flex'}}>Current Allowance</p>
+                            <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600, fontSize:"1.5rem", alignItems:"center"}}>
+                                <p style={{fontWeight:400, fontSize:"1rem"}}>OMR</p>
+                                <p>{allowance}</p>
+                            </div>
+                        
+                        </div>
+
+                        {/* <div>
+                            <p style={{fontSize:"0.8rem", opacity:0.5}}>Total Increment</p>
+                            <p style={{fontWeight:600, border:'', textAlign:"right", fontSize:"1.5rem"}}>{leaves}</p>
+                        </div> */}
+                    
+                    </div>
+
+                    <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem"}}>
+                    <LineCharter lineColor="salmon"/>
+                    </div>
+                    
+                
+                    
+                </div>
+
+                {allowanceList.length==0?
+                    <div style={{width:"100%", border:"3px dashed rgba(100 100 100/ 50%)", height:"2.5rem",borderRadius:"0.5rem", marginBottom:"1rem"}}></div>
+                    :
+                    <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.35rem", maxHeight:"11.25rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem", marginBottom:"1rem"}}>
+                        {
+                        allowanceList.map((e:any)=>(
+                            <motion.div key={e.id} initial={{opacity:0}} whileInView={{opacity:1}}>
+                            <Directive status={true} 
+                            tag={
+                                moment(e.created_on.toDate()).format("LL")
+                            } 
+                            title={"OMR "+e.allowance} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{setDeleteAllowanceDialog(true);setAllowanceID(e.id)}}  className="animate-pulse" color="salmon" width={"1.1rem"}/>} noArrow/>
+                            </motion.div>
+                        ))
+                    }
+                    </div>}
+
+                <div style={{display:"flex", gap:"0.5rem", width:"100%", zIndex:""}}>
+                    <input type="search" id="input-1" value={newAllowance} onChange={(e:any)=>setNewAllowance(e.target.value)} placeholder="New Allowance" style={{flex:1.5}}/>
+                    <button onClick={addNewAllowance} style={{fontSize:"0.8rem", flex:0.15}}>
+                        {
+                            loading?
+                            <LoadingOutlined/>
+                            :
+                            <div style={{display:"flex", gap:"0.5rem", alignItems:"center"}}>
+                                <Plus width={"1.25rem"} color="salmon"/>
+                            </div>
+                            
+                        }
+                        
+                    </button>
+                </div>
+                
+                
+                </>
+                
+                } 
+            />
             
     
         </>
