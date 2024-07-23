@@ -959,7 +959,7 @@ const RenewID = async () => {
 
     const handleNotify = async () => {
         setNotifyLoading(true)
-        await updateDoc(doc(db, 'records', id),{notify:!notify})
+        await updateDoc(doc(db, 'records', doc_id),{notify:!notify})
         setNotify(!notify)
         setNotifyLoading(false)
         notify==true?
