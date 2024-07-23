@@ -2079,7 +2079,7 @@ const RenewID = async () => {
 
             <InputDialog open={trainingAddDialog} onOk={()=>{addTraining(trainingType)}} onCancel={()=>{setTrainingAddDialog(false);setEditedTrainingAddDialogInput("")}} title={trainingAddDialogTitle} inputplaceholder="Expiry Date" OkButtonText="Update" inputOnChange={(e:any)=>setEditedTrainingAddDialogInput(e.target.value)} OkButtonIcon={<RefreshCcw width={"1rem"}/>} updating={loading} disabled={loading||!EditedTrainingAddDialogInput?true:false} input1Value={trainingAddDialogInputValue}/>
 
-            <DefaultDialog code={name} codeIcon={<User width={"0.8rem"} color="dodgerblue"/>} close title={"Basic Salary"} titleIcon={<CircleDollarSign />} open={salaryDialog} onCancel={()=>setSalaryDialog(false)}
+            <DefaultDialog created_on={initialSalary} code={name} codeIcon={<User width={"0.8rem"} color="dodgerblue"/>} close title={"Basic Salary"} titleIcon={<CircleDollarSign />} open={salaryDialog} onCancel={()=>setSalaryDialog(false)}
             title_extra={<button onClick={fetchSalary} style={{width:"3rem", height:"2.5rem"}}>{fetchingSalary?<LoadingOutlined color="dodgerblue"/>:<RefreshCcw width={"1rem"} color="dodgerblue"/>}</button>}
             extra={
                 <>
