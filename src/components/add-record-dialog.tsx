@@ -28,8 +28,8 @@ interface Props{
     CodeValue?:string
     CompanyValue?:string
     DateofJoinValue?:string
-    SalaryBasicValue?:string
-    AllowanceValue?:string
+    SalaryBasicValue?:any
+    AllowanceValue?:any
 }
 
 export default function AddRecordDialog(props:Props){

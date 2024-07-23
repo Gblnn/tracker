@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { File, Inbox, Mail, RefreshCcw } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ConfettiExplosion from 'react-confetti-explosion'
 
 export default function Index(){
 
@@ -12,6 +13,10 @@ export default function Index(){
     const usenavigate = useNavigate()
 
     return(
+        <>
+        <div style={{border:"", display:"flex", alignItems:"center", justifyContent:'center'}}>
+        <ConfettiExplosion/>
+        </div>
         <div style={{padding:"1.25rem", background:"linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))", height:"100svh"}}>
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
                 <Back title="Index" noback 
@@ -20,7 +25,7 @@ export default function Index(){
                         <button onClick={()=>window.location.reload()} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.8rem"}}>
                             <RefreshCcw width={"1rem"} color="dodgerblue"/>
                             <p style={{opacity:0.5, letterSpacing:"0.15rem"}}>
-                                v1.9
+                                v1.10
                             </p>
                         </button>
 
@@ -50,5 +55,7 @@ export default function Index(){
             <DefaultDialog titleIcon={<Mail/>} title="Request Feature" extra={<p style={{fontSize:"0.85rem", opacity:0.5, marginBottom:"0.5rem"}}>Reach out to the developer to request a new feature? You will be redirected to your e-mail client</p>} open={requestDialog} OkButtonText="Reach out" onCancel={()=>setRequestDialog(false)} sendmail/>
             
         </div>
+        </>
+        
     )
 }

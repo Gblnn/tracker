@@ -25,14 +25,13 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, Globe, GraduationCap, HeartPulse, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
+import { ArrowDown, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, Globe, GraduationCap, HeartPulse, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import ReactTimeAgo from 'react-time-ago'
 import useKeyboardShortcut from 'use-keyboard-shortcut'
 import LineCharter from "./bar-chart"
-import ConfettiExplosion from 'react-confetti-explosion'
 
 
 type Record = {
@@ -79,8 +78,8 @@ export default function DbComponent(props:Props){
     const [editedEmployeeCode, setEditedEmployeeCode] = useState("")
     const [editedCompanyName, setEditedCompanyName] = useState("")
     const [editedDateofJoin, setEditedDateofJoin] = useState("")
-    const [editedSalarybasic, setEditedSalaryBasic] = useState("")
-    const [editedAllowance, setEditedAllowance] = useState("")
+    const [editedSalarybasic, setEditedSalaryBasic] = useState(0)
+    const [editedAllowance, setEditedAllowance] = useState(0)
 
 
     const [image, setImage] = useState("")
@@ -211,11 +210,11 @@ export default function DbComponent(props:Props){
     const [salaryDialog, setSalaryDialog] = useState(false)
     const [employeeCode, setEmployeeCode] = useState("")
     const [dateofJoin, setDateofJoin] = useState("")
-    const [salaryBasic, setSalaryBasic] = useState("")
-    const [allowance, setAllowance] = useState("")
+    const [salaryBasic, setSalaryBasic] = useState(0)
+    const [allowance, setAllowance] = useState(0)
 
-    const [newSalary, setNewSalary] = useState("")
-    const [newAllowance, setNewAllowance]  = useState("")
+    const [newSalary, setNewSalary] = useState(0)
+    const [newAllowance, setNewAllowance]  = useState(0)
 
     const [allowanceDialog, setAllowanceDialog] = useState(false)
 
@@ -241,6 +240,9 @@ export default function DbComponent(props:Props){
     const [fetchingSalary, setFetchingSalary] = useState(false)
     const [fetchingAllowance, setFetchingAllowance] = useState(false)
     let imgUrl = ""
+
+    const [initialSalary, setInitialSalary] = useState(0)
+    const [initialAllowance, setInitialAllowance] = useState(0)
     
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
@@ -404,7 +406,7 @@ export default function DbComponent(props:Props){
             await updateDoc(doc(db, 'records', doc_id),{salaryBasic:newSalary})
             setSalaryBasic(newSalary)
             fetchSalary()
-            setNewSalary("")
+            setNewSalary(0)
             setLoading(false)
             
         } catch (error) {
@@ -419,7 +421,7 @@ export default function DbComponent(props:Props){
             await updateDoc(doc(db, 'records', doc_id),{allowance:newAllowance})
             setAllowance(newAllowance)
             fetchAllowance()
-            setNewAllowance("")
+            setNewAllowance(0)
             setLoading(false)
             
         } catch (error) {
@@ -970,64 +972,64 @@ const RenewID = async () => {
         setLoading(true)
 
         if (type=="hse_induction"){        
-            await updateDoc(doc(db, 'records', id), {vt_hse_induction:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+            await updateDoc(doc(db, 'records', doc_id), {vt_hse_induction:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
             setHseInduction(EditedTrainingAddDialogInput)
         }
 
         if(type=="car_1"){
-            await updateDoc(doc(db, 'records', id), {vt_car_1:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+            await updateDoc(doc(db, 'records', doc_id), {vt_car_1:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
             setVtCar1(EditedTrainingAddDialogInput)
         }
         
 
         if(type=="car_2"){
-            await updateDoc(doc(db, 'records', id), {vt_car_2:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+            await updateDoc(doc(db, 'records', doc_id), {vt_car_2:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
             setVtCar2(EditedTrainingAddDialogInput)
         }
         
 
         if(type=="car_3"){
-            await updateDoc(doc(db, 'records', id), {vt_car_3:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
+            await updateDoc(doc(db, 'records', doc_id), {vt_car_3:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date())})
             setVtCar3(EditedTrainingAddDialogInput)
         }
         
 
         if(type=="car_4"){
-            await updateDoc(doc(db, 'records', id), {vt_car_4:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+            await updateDoc(doc(db, 'records', doc_id), {vt_car_4:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
             setVtCar4(EditedTrainingAddDialogInput)
         }
         
         if(type=="car_5"){
-            await updateDoc(doc(db, 'records', id), {vt_car_5:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+            await updateDoc(doc(db, 'records', doc_id), {vt_car_5:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
             setVtCar5(EditedTrainingAddDialogInput)
         }
         
 
         if(type=="car_6"){
-            await updateDoc(doc(db, 'records', id), {vt_car_6:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+            await updateDoc(doc(db, 'records', doc_id), {vt_car_6:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
             setVtCar6(EditedTrainingAddDialogInput)
         }
         
 
         if(type=="car_7"){
-            await updateDoc(doc(db, 'records', id), {vt_car_7:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+            await updateDoc(doc(db, 'records', doc_id), {vt_car_7:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
             setVtCar7(EditedTrainingAddDialogInput)
         }
         
 
         if(type=="car_8"){
-            await updateDoc(doc(db, 'records', id), {vt_car_8:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+            await updateDoc(doc(db, 'records', doc_id), {vt_car_8:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
             setVtCar8(EditedTrainingAddDialogInput)
         }
         
 
         if(type=="car_9"){
-            await updateDoc(doc(db, 'records', id), {vt_car_9:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+            await updateDoc(doc(db, 'records', doc_id), {vt_car_9:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
             setVtCar9(EditedTrainingAddDialogInput)
         }
         
         if(type=="car_10"){
-            await updateDoc(doc(db, 'records', id), {vt_car_10:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
+            await updateDoc(doc(db, 'records', doc_id), {vt_car_10:TimeStamper(EditedTrainingAddDialogInput), modified_on:Timestamp.fromDate(new Date()) })
             setVtCar10(EditedTrainingAddDialogInput)
         }
         
@@ -1045,9 +1047,7 @@ const RenewID = async () => {
 
     return(
         <>
-        <div style={{border:"", display:"flex", alignItems:"center", justifyContent:'center'}}>
-        <ConfettiExplosion/>
-        </div>
+        
         
         {
             status=="false"?
@@ -1349,6 +1349,8 @@ const RenewID = async () => {
                                     setSalaryBasic(post.salaryBasic)
                                     setAllowance(post.allowance)
                                     setProfileName(post.profile_name)
+                                    setInitialSalary(post.initialSalary)
+                                    setInitialAllowance(post.initialAllowance)
                                     fetchLeave()
                                     
                                 }}                        
@@ -1442,10 +1444,46 @@ const RenewID = async () => {
             tags
             tag1Text={companyName}
             tag2Text={dateofJoin}
-            tag3Text={salaryBasic}
-            tag4Text={allowance}
-            tag3OnClick={()=>{setSalaryDialog(true);fetchSalary()}}
-            tag4OnClick={()=>{setAllowanceDialog(true);fetchAllowance()}}
+            tag3Text={
+            <div style={{display:"flex", alignItems:"center", gap:"0.5rem", fontSize:"0.75rem"}}>
+                {salaryBasic}
+                <p style={{border:'',display:'flex',justifyContent:"center", alignItems:"center", textAlign:"center", opacity:0.5}}>
+                    {((salaryBasic - initialSalary)/ initialSalary)+"%"}
+                    {
+                        Math.sign((salaryBasic - initialSalary)/ initialSalary)==-1?
+                        <ArrowDown width={"1rem"} color="tomato"/>
+                        :
+                        ((salaryBasic - initialSalary)/ initialSalary)==0?
+                        ""
+                        :
+                        <ArrowUp width={"1rem"} color="lightgreen"/>
+
+                    }
+                                
+                </p>
+            </div>
+        }
+        tag4Text={
+            <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
+                {allowance}
+                <p style={{border:'',display:'flex',justifyContent:"center", alignItems:"center", textAlign:"center", opacity:0.5}}>
+                    {((allowance - initialAllowance)/ initialAllowance)+"%"}
+                    {
+                        Math.sign((allowance - initialAllowance)/ initialAllowance)==-1?
+                        <ArrowDown width={"1rem"} color="tomato"/>
+                        :
+                        ((allowance - initialAllowance)/ initialAllowance)==0?
+                        ""
+                        :
+                        <ArrowUp width={"1rem"} color="lightgreen"/>
+
+                    }
+                                
+                </p>
+            </div>
+        }
+            tag3OnClick={()=>{setSalaryDialog(true);fetchSalary();setSalaryList([])}}
+            tag4OnClick={()=>{setAllowanceDialog(true);fetchAllowance();setAllowanceList([])}}
             onBottomTagClick={()=>{setLeaveLog(true);fetchLeave();setLeaveList([]);id=doc_id}}
             bottomTagValue={fetchingLeave?<LoadingOutlined/>:leaves}
             titleIcon={
@@ -2050,13 +2088,27 @@ const RenewID = async () => {
                     <div style={{border:"", display:"flex", alignItems:'center', justifyContent:"center"}}>
 
                         <div style={{border:''}}>
+
                             <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"", display:'flex'}}>Current Earnings</p>
                             <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600, fontSize:"1.5rem", alignItems:"center"}}>
                                 <p style={{fontWeight:400, fontSize:"1rem"}}>OMR</p>
                                 <p>{salaryBasic}</p>
+                                
                             </div>
+                            <p style={{border:'',display:'flex',justifyContent:"center", textAlign:"center", opacity:0.5}}>
+                                {((salaryBasic - initialSalary)/ initialSalary)+"%"}
+                                {
+                                    Math.sign((salaryBasic - initialSalary)/ initialSalary)==-1?
+                                    <ArrowDown width={"1rem"} color="tomato"/>
+                                    :
+                                    <ArrowUp width={"1rem"} color="lightgreen"/>
+                                }
+                                
+                            </p>
                         
                         </div>
+
+                        
 
                         {/* <div>
                             <p style={{fontSize:"0.8rem", opacity:0.5}}>Total Increment</p>
@@ -2217,7 +2269,7 @@ const RenewID = async () => {
             <DefaultDialog destructive open={deleteAllowanceDialog} onCancel={()=>setDeleteAllowanceDialog(false)} title={"Delete Allowance?"} updating={loading} disabled={loading} onOk={deleteAllowance} OkButtonText="Delete" extra={<p style={{width:"100%", textAlign:"left", paddingLeft:"1rem", fontSize:"0.75rem", opacity:0.5}}>{salaryID}</p>}/>
 
 
-            <DefaultDialog code={name} codeIcon={<User width={"0.8rem"} color="dodgerblue"/>} close title={"Allowance"} open={allowanceDialog} onCancel={()=>setAllowanceDialog(false)}
+            <DefaultDialog created_on={initialAllowance} code={name} codeIcon={<User width={"0.8rem"} color="dodgerblue"/>} close title={"Allowance"} open={allowanceDialog} onCancel={()=>setAllowanceDialog(false)}
             title_extra={<button onClick={fetchAllowance} style={{width:"3rem", height:"2.5rem"}}>{fetchingAllowance?<LoadingOutlined color="dodgerblue"/>:<RefreshCcw width={"1rem"} color="dodgerblue"/>}</button>}
             extra={
                 <>
@@ -2231,6 +2283,20 @@ const RenewID = async () => {
                                 <p style={{fontWeight:400, fontSize:"1rem"}}>OMR</p>
                                 <p>{allowance}</p>
                             </div>
+                            <p style={{border:'',display:'flex',justifyContent:"center", textAlign:"center", opacity:0.5}}>
+                                {((allowance - initialAllowance)/ initialAllowance)+"%"}
+                                {
+                                    Math.sign((allowance - initialAllowance)/ initialAllowance)==-1?
+                                    <ArrowDown width={"1rem"} color="tomato"/>
+                                    :
+                                    ((allowance - initialAllowance)/ initialAllowance)==0?
+                                    ""
+                                    :
+                                    <ArrowUp width={"1rem"} color="lightgreen"/>
+
+                                }
+                                
+                            </p>
                         
                         </div>
 

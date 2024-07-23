@@ -229,7 +229,7 @@ export default function Inbox(){
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
 
-                        <button onClick={()=>{setRecipientsDialog(true);fetchRecipients()}} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.85rem"}}><Users className="animate-pulse" width={"1rem"} color="salmon"/>Recipients</button>
+                        <button onClick={()=>{setRecipientsDialog(true);fetchRecipients();setRecipientList([])}} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.85rem"}}><Users className="animate-pulse" width={"1rem"} color="salmon"/>Recipients</button>
 
                         <button className="blue-glass" style={{paddingLeft:"1rem", paddingRight:"1rem", height:"2.5rem", width:"3rem"}} onClick={fetchData} >
                             {

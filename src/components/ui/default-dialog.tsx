@@ -35,10 +35,10 @@ interface Props {
     tag2OnClick?:any
     tag3OnClick?:any
     tag4OnClick?:any
-    tag1Text?:string
-    tag2Text?:string
-    tag3Text?:string
-    tag4Text?:string
+    tag1Text?:any
+    tag2Text?:any
+    tag3Text?:any
+    tag4Text?:any
     onBottomTagClick?:any
     bottomTagValue?:any
     codeTooltip?:string
@@ -148,10 +148,10 @@ export default function DefaultDialog(props:Props){
 
                             <div onClick={props.tag4OnClick} style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.75rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
 
-                            <p style={{opacity:0.5}}>
+                            <p style={{opacity:0.5, fontSize:"0.65rem"}}>
                             Allowance : 
                             </p>
-                            <b>{props.tag4Text}</b>
+                            <b style={{fontSize:"0.8rem"}}>{props.tag4Text}</b>
 {/* 
                             <p style={{display:"flex", alignItems:"center"}}>{"(1.2%)"}<ArrowDown color="tomato" width={"0.9rem"}/></p> */}
                             
