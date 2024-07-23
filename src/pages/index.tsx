@@ -20,7 +20,7 @@ export default function Index(){
                         <button onClick={()=>window.location.reload()} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.8rem"}}>
                             <RefreshCcw width={"1rem"} color="dodgerblue"/>
                             <p style={{opacity:0.5, letterSpacing:"0.15rem"}}>
-                                v1.8
+                                v1.9
                             </p>
                         </button>
 
