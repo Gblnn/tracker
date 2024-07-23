@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { auth } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { FileArchiveIcon, KeyRound } from "lucide-react";
+import { ChevronRight, FileArchiveIcon, KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
  
 export default function Login(){
@@ -39,18 +40,44 @@ export default function Login(){
                 
                 <div style={{display:"flex", border:'', alignItems:"center", margin:"2.5rem", gap:"0.75rem"}}>
                 <FileArchiveIcon color="salmon" width={"4rem"} height={"4rem"}/>
-                <div style={{display:"flex", flexFlow:"column"}}>
-                <p style={{fontWeight:400, fontSize:"2.25rem"}}>DocRecord</p>
+
+                    <div style={{display:"flex", flexFlow:"column"}}>
+                    <p style={{fontWeight:400, fontSize:"2.25rem"}}>DocRecord</p>
+
                 </div>
                 
                 </div>
                 
             </div>
 
-            <div style={{display:"flex", flex:1, height:"100%", justifyContent:'space-between', alignItems:'', flexFlow:"column"}}>
-                <p style={{ top:0, left:0, margin:"2.5rem", fontSize:"2.5rem", fontWeight:"600"}}>LOGIN</p>
+            <div style={{display:"flex", flex:1, height:"100%", justifyContent:'center', alignItems:'center', flexFlow:"column", border:""}}>
+                
+                <div style={{display:"flex", justifyContent:'center', alignItems:'center', flexFlow:"column", border:"", borderRadius:"1rem", width:"32ch"}}>
 
-                <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", bottom:0, margin:"2rem", marginBottom:"1.5rem"}}>
+                <div style={{display:"flex", border:"",borderRadius:"1rem", padding:"", flexFlow:"column",width:"100%", gap:"0.75rem", marginTop:"2rem"}}>
+                <p style={{ top:0, left:0, fontSize:"2rem", fontWeight:"600", border:"", width:"100%", paddingLeft:"0.5rem", marginTop:""}}>LOGIN</p>
+                <br/>
+                
+                    <input type="username" placeholder="Email Address"/>
+                    <input type="password" placeholder="Password"/>
+                    <p/>
+                    <div style={{display:"flex", alignItems:"center", gap:"0.5rem", width:'100%', justifyContent:"", paddingRight:"1rem", paddingLeft:"1rem"}}>
+                    <Checkbox/>
+                    <p style={{ fontSize:"0.75rem"}}>Stay logged in</p>
+                    </div>
+                    
+                    
+                    <p/>
+                    <button style={{background:"midnightblue"}}>LOGIN
+                        <ChevronRight width={"0.75rem"}/>
+                    </button>
+                </div>
+
+                <br/>
+                <br/>
+                <br/>
+
+                <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", bottom:0, width:"100%"}}>
 
                     <Button onClick={()=>usenavigate("/index")} variant={"ghost"}>
                         <KeyRound color="dodgerblue" width={"1.25rem"}/>
@@ -62,6 +89,11 @@ export default function Login(){
                         Continue with Google
                     </Button>
                 </div>
+
+                </div>
+
+                
+                
             </div>
 
 
