@@ -81,6 +81,7 @@ export default function DbComponent(props:Props){
     const [editedDateofJoin, setEditedDateofJoin] = useState("")
     const [editedSalarybasic, setEditedSalaryBasic] = useState(0)
     const [editedAllowance, setEditedAllowance] = useState(0)
+    
 
 
     const [image, setImage] = useState("")
@@ -2189,7 +2190,7 @@ const RenewID = async () => {
                 }
 
                 <div style={{display:"flex", gap:"0.5rem", width:"100%", zIndex:""}}>
-                    <input type="search" id="input-1" value={newSalary} onChange={(e:any)=>setNewSalary(e.target.value)} placeholder="New Salary" style={{flex:1.5}}/>
+                    <input type="search" id="input-1" value={newSalary==0?"":newSalary} onChange={(e:any)=>setNewSalary(e.target.value)} placeholder="New Salary" style={{flex:1.5}}/>
                     <button onClick={addNewSalary} style={{fontSize:"0.8rem", flex:0.15}}>
                         {
                             loading?
@@ -2379,7 +2380,7 @@ const RenewID = async () => {
                     </div>}
 
                 <div style={{display:"flex", gap:"0.5rem", width:"100%", zIndex:""}}>
-                    <input type="search" id="input-1" value={newAllowance} onChange={(e:any)=>setNewAllowance(e.target.value)} placeholder="New Allowance" style={{flex:1.5}}/>
+                    <input type="search" id="input-1" value={newAllowance==0?"":newAllowance} onChange={(e:any)=>setNewAllowance(e.target.value)} placeholder="New Allowance" style={{flex:1.5}}/>
                     <button onClick={addNewAllowance} style={{fontSize:"0.8rem", flex:0.15}}>
                         {
                             loading?
