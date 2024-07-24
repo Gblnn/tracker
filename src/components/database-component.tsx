@@ -433,11 +433,14 @@ export default function DbComponent(props:Props){
         setLoading(true)
         await deleteDoc(doc(db, 'salary-record', salaryID))
         id = doc_id
+        
+        setDeleteSalaryDialog(false)
+        if(salaryList.length==1){
+            setSalaryList([])
+            await updateDoc(doc(db, 'record', doc_id),{salaryBasic:initialSalary})
+        }
         setLoading(false)
         fetchSalary()
-        setDeleteSalaryDialog(false)
-        salaryList.length==1&&
-            setSalaryList([])
     }
 
     const deleteAllowance = async () => {
@@ -453,7 +456,6 @@ export default function DbComponent(props:Props){
 
     const fetchLeave = async () => {
         setFetchingLeave(true)
-
         const leaveQuery = query(collection(db, "leave-record"), orderBy("created_on", "desc"), where("employeeID", "==", doc_id))
         const snapshot = await getDocs(leaveQuery)
         const LeaveData: any = [];
@@ -464,10 +466,7 @@ export default function DbComponent(props:Props){
         })
         setFetchingLeave(false)
         console.log("id @ fetchLeave()",id)
-        await leaveSum()
-        
-
-        
+        await leaveSum() 
     }
 
     const leaveSum = async () => {
@@ -533,22 +532,31 @@ const RenewID = async () => {
 
     // FUNCTION TO EDIT RECORD
     const EditRecordName = async () => {
-        imgUrl = ""
+        
+        console.log("fileName",fileName)
         setLoading(true)
         if(fileName!=""){
+            imgUrl = ""
             if (profileName!=""){
                 console.log("Deleting ", profileName)
                 await deleteObject(ref(storage, profileName))
             }
-            
+         
             await uploadFile()
             setImage(imgUrl)
+            setFileName("")
+            console.log(fileName)
         }
-        else{}
 
+        await updateDoc(doc(db, "records", doc_id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email, employeeCode:editedEmployeeCode?editedEmployeeCode:employeeCode, companyName:editedCompanyName?editedCompanyName:companyName, dateofJoin:editedDateofJoin?editedDateofJoin:dateofJoin, salaryBasic:editedSalarybasic?editedSalarybasic:salaryBasic, allowance:editedAllowance?editedAllowance:allowance, modified_on:Timestamp.fromDate(new Date)})
         
+        if(fileName!=""){
+            await updateDoc(doc(db, 'records', doc_id),{profile:imgUrl, profile_name:fileName})
+            setProfileName(fileName)
+        }
+         
         
-        await updateDoc(doc(db, "records", doc_id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email, employeeCode:editedEmployeeCode?editedEmployeeCode:employeeCode, companyName:editedCompanyName?editedCompanyName:companyName, dateofJoin:editedDateofJoin?editedDateofJoin:dateofJoin, salaryBasic:editedSalarybasic?editedSalarybasic:salaryBasic, allowance:editedAllowance?editedAllowance:allowance, modified_on:Timestamp.fromDate(new Date),profile:imgUrl, profile_name:fileName})
+
         setUserEditPrompt(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -1516,7 +1524,7 @@ const RenewID = async () => {
                         }
                         
                     </button>
-                    <DropDown onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>setUserEditPrompt(true)} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
+                    <DropDown onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>{setUserEditPrompt(true);console.log("filename : ",fileName, "profileName : ", profileName)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
                 </div>
             
             }
@@ -1628,7 +1636,7 @@ const RenewID = async () => {
             CodeLabel="Code : "
             CompanyLabel="Company : "
             DateofJoinLabel="Date of Join : "
-            SalaryBasicLabel="Salary Basic : "
+            SalaryBasicLabel="Initial Salary : "
             AllowanceLabel="Allowance : "
 
             NameValue={name}
