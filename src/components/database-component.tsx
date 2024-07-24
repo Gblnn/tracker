@@ -1530,7 +1530,7 @@ const RenewID = async () => {
                 <Avatar style={{width:"3.5rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center", cursor:"pointer"}}>
                     <AvatarImage style={{objectFit:"cover"}} src={image}/>
                     <AvatarFallback>
-                        <p style={{paddingTop:"0.2rem"}}>{Array.from(name)[0]}</p>
+                        <p>{Array.from(name)[0]}</p>
                         
                     </AvatarFallback>
                 </Avatar>
