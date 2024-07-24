@@ -1386,10 +1386,10 @@ const RenewID = async () => {
                             key={post.id} title={post.name} 
                             icon={
                                 thumbnails?
-                                <UserCircle color="dodgerblue" width={"1.5rem"}/>
+                                <UserCircle color="dodgerblue" width={"1.75rem"} height={"1.75rem"}/>
                                 :
-                                <Avatar style={{width:"1.5rem", height:"1.5rem", border:""}}>
-                                    <AvatarImage src={post.profile}/>
+                                <Avatar style={{width:"1.75rem", height:"1.75rem", border:""}}>
+                                    <AvatarImage style={{objectFit:"cover"}} src={post.profile}/>
                                     <AvatarFallback>
                                         <p style={{paddingTop:"0.1rem"}}>{post.name.charAt(0)}</p>
                                     </AvatarFallback>
@@ -1486,40 +1486,41 @@ const RenewID = async () => {
             tag2Text={dateofJoin}
             tag3Text={
             <div style={{display:"flex", alignItems:"center", gap:"0.5rem", fontSize:"0.75rem"}}>
-                {salaryBasic}
-                <p style={{border:'',display:'flex',justifyContent:"center", alignItems:"center", textAlign:"center", opacity:0.5}}>
-                    {((salaryBasic - initialSalary)/ initialSalary)+"%"}
-                    {
+                <p>{salaryBasic}</p>
+                <div style={{border:'',display:'flex',justifyContent:"center", alignItems:"center", textAlign:"center"}}>
+
+                <p style={{opacity:0.5}}>{"("+Math.abs((salaryBasic - initialSalary)/ initialSalary)+"%"+")"}</p>
+                    <p>{
                         Math.sign((salaryBasic - initialSalary)/ initialSalary)==-1?
-                        <ArrowDown width={"1rem"} color="tomato"/>
+                        <ArrowDown strokeWidth={"3px"} width={"0.9rem"} color="lightcoral"/>
                         :
                         ((salaryBasic - initialSalary)/ initialSalary)==0?
                         ""
                         :
-                        <ArrowUp width={"1rem"} color="lightgreen"/>
+                        <ArrowUp strokeWidth={"3px"} width={"0.9rem"} color="lightgreen"/>
 
-                    }
+                    }</p>
                                 
-                </p>
+                </div>
             </div>
         }
         tag4Text={
-            <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
-                {allowance}
-                <p style={{border:'',display:'flex',justifyContent:"center", alignItems:"center", textAlign:"center", opacity:0.5}}>
-                    {((allowance - initialAllowance)/ initialAllowance)+"%"}
-                    {
+            <div style={{display:"flex", alignItems:"center", gap:"0.5rem", fontSize:"0.75rem"}}>
+                <p>{allowance}</p>
+                <div style={{border:'',display:'flex',justifyContent:"center", alignItems:"center", textAlign:"center"}}>
+                    <p style={{opacity:0.5}}>{"("+Math.abs((allowance - initialAllowance)/ initialAllowance)+"%"+")"}</p>
+                    <p>{
                         Math.sign((allowance - initialAllowance)/ initialAllowance)==-1?
-                        <ArrowDown width={"1rem"} color="tomato"/>
+                        <ArrowDown strokeWidth={"3px"} width={"0.9rem"} color="lightcoral"/>
                         :
                         ((allowance - initialAllowance)/ initialAllowance)==0?
                         ""
                         :
-                        <ArrowUp width={"1rem"} color="lightgreen"/>
+                        <ArrowUp strokeWidth={"3px"} width={"0.9rem"} color="lightgreen"/>
 
-                    }
+                    }</p>
                                 
-                </p>
+                </div>
             </div>
         }
             tag3OnClick={()=>{setSalaryDialog(true);fetchSalary();setSalaryList([])}}

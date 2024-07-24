@@ -137,7 +137,7 @@ export default function DefaultDialog(props:Props){
 
                         <div style={{height:"2rem", border:"", width:"100%", display:'flex', gap:"0.5rem"}}>
 
-                            <div onClick={props.tag3OnClick} style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
+                            <div onClick={props.tag3OnClick} style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.75rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
 
                             <p style={{opacity:0.5}}>Basic : </p><b>{props.tag3Text}</b>  
 {/* 
@@ -148,8 +148,8 @@ export default function DefaultDialog(props:Props){
 
                             <div onClick={props.tag4OnClick} style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.75rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
 
-                            <p style={{opacity:0.5, fontSize:"0.65rem"}}>
-                            Allowance : 
+                            <p style={{opacity:0.5}}>
+                            Allow : 
                             </p>
                             <b style={{fontSize:"0.8rem"}}>{props.tag4Text}</b>
 {/* 
