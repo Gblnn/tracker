@@ -25,7 +25,7 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, Globe, GraduationCap, HeartPulse, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
+import { ArrowDown, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, Globe, GraduationCap, HeartPulse, Image, ImageOff, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -53,6 +53,7 @@ interface Props{
 export default function DbComponent(props:Props){
 
     const [companyName, setCompanyName] = useState("")
+    const [thumbnails, setThumbnails] = useState(true)
 
     const usenavigate = useNavigate()
     // BASIC PAGE VARIABLES
@@ -437,7 +438,7 @@ export default function DbComponent(props:Props){
         setDeleteSalaryDialog(false)
         if(salaryList.length==1){
             setSalaryList([])
-            await updateDoc(doc(db, 'record', doc_id),{salaryBasic:initialSalary})
+            // await updateDoc(doc(db, 'record', doc_id),{salaryBasic:initialSalary})
         }
         setLoading(false)
         fetchSalary()
@@ -1229,7 +1230,7 @@ const RenewID = async () => {
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", marginTop:"1"}}>
 
                     {/* Searchbar */}
-                    <div style={{display:"flex", gap:"0.75rem", border:"", flex:1}}>
+                    <div style={{display:"flex", gap:"0.5rem", border:"", flex:1}}>
 
                         <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable);setAddButtonModeSwap(!addButtonModeSwap);selectable && setChecked([]); !selectable && setSelected(false)}}>
 
@@ -1237,13 +1238,32 @@ const RenewID = async () => {
 
                         </button>
 
+                        
+
                         <SearchBar placeholder="Search Records" onChange={(e:any)=>{setSearch(e.target.value.toLowerCase())}}/>
+
+                        <button onClick={()=>setThumbnails(!thumbnails)} style={{width:"fit-content", fontSize:"0.7rem", display:'flex', alignItems:"center"}}>
+                        {
+                            thumbnails?
+                            <ImageOff style={{opacity:0.5}} width={"1.5rem"}/>
+                            
+                            :
+                            <Image color="dodgerblue" width={"1.5rem"}/>
+                        }
+                        {/* <p style={{opacity:0.5, fontWeight:400}}>Thumbnails</p> */}
+                        
+                        </button>
                     </div>
                      
 
                     <p style={{height:"0.25rem"}}/>
                 
                 <div className="record-list" style={{display:"flex", gap:"0.6rem", flexFlow:"column", overflowY:"auto", height:"72svh", paddingTop:"0.25rem", paddingRight:"0.5rem"}}>
+                    
+                    <div style={{width:"100%", display:"flex", justifyContent:"flex-start"}}>
+                    
+                    </div>
+                    
                 {
                     // RECORD DATA MAPPING
                     records
@@ -1363,7 +1383,18 @@ const RenewID = async () => {
                                     
                                 }}                        
 
-                            key={post.id} title={post.name} icon={<UserCircle color="dodgerblue"/>} />
+                            key={post.id} title={post.name} 
+                            icon={
+                                thumbnails?
+                                <UserCircle color="dodgerblue" width={"1.5rem"}/>
+                                :
+                                <Avatar style={{width:"1.5rem", height:"1.5rem"}}>
+                                    <AvatarImage src={post.profile}/>
+                                    <AvatarFallback>
+                                        <p style={{paddingTop:"0.2rem"}}>{post.name.charAt(0)}</p>
+                                    </AvatarFallback>
+                                </Avatar>
+                            } />
                         </motion.div>
                     ))
                 }
@@ -1496,7 +1527,7 @@ const RenewID = async () => {
             bottomTagValue={fetchingLeave?<LoadingOutlined/>:leaves}
             titleIcon={
                 <Tooltip title={profileName}>
-                <Avatar style={{width:"3.5rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center"}}>
+                <Avatar style={{width:"3.5rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center", cursor:"pointer"}}>
                     <AvatarImage style={{objectFit:"cover"}} src={image}/>
                     <AvatarFallback>
                         <p style={{paddingTop:"0.2rem"}}>{Array.from(name)[0]}</p>

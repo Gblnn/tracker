@@ -55,7 +55,7 @@ export default function Login(){
                 
                 <div style={{display:"flex", justifyContent:'center', alignItems:'center', flexFlow:"column", border:"", borderRadius:"1rem", width:"32ch"}}>
 
-                <div style={{display:"flex", border:"",borderRadius:"1rem", padding:"", flexFlow:"column",width:"100%", gap:"0.75rem", marginTop:"6rem"}}>
+                <div style={{display:"flex", border:"",borderRadius:"1rem", padding:"", flexFlow:"column",width:"100%", gap:"0.75rem", marginTop:"2rem"}}>
                 <p style={{ top:0, left:0, fontSize:"2rem", fontWeight:"600", border:"", width:"100%", paddingLeft:"0.5rem", marginTop:""}}>LOGIN</p>
                 <br/>
                 

@@ -40,7 +40,7 @@ b {
   display: none;
 }
 
-@media (width>720px) {
+@media (width>900px) {
   .desktop-only {
     display: flex;
   }
