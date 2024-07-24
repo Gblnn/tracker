@@ -92,7 +92,7 @@ export default async (req: Request) => {
 
       filteredData.forEach((element:any) => {
 
-        m+="This is a gentle reminder regarding a few document(s) expiring soon in your records : \n\n"
+        // m+="This is a gentle reminder regarding a few document(s) expiring soon in your records : \n\n"
 
         element.civil_expiry!=""?
         m += element.name+"'s Civil ID expiry  "
@@ -453,5 +453,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"42 13 * * * "
+    schedule:"47 13 * * * "
 }
