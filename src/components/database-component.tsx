@@ -2129,9 +2129,9 @@ const RenewID = async () => {
                     
                     </div>
 
-                    <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem"}}>
+                    {/* <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem"}}>
                     <LineCharter lineColor="lightgreen"/>
-                    </div>
+                    </div> */}
                     
                 
                     
@@ -2151,8 +2151,9 @@ const RenewID = async () => {
                             title={"OMR "+e.salary} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{setDeleteSalaryDialog(true);setSalaryID(e.id)}}  className="animate-pulse" color="lightgreen" width={"1.1rem"}/>} noArrow/>
                             </motion.div>
                         ))
-                    }
-                    </div>}
+                        }
+                    </div>
+                }
 
                 <div style={{display:"flex", gap:"0.5rem", width:"100%", zIndex:""}}>
                     <input type="search" id="input-1" value={newSalary} onChange={(e:any)=>setNewSalary(e.target.value)} placeholder="New Salary" style={{flex:1.5}}/>
@@ -2319,9 +2320,9 @@ const RenewID = async () => {
                     
                     </div>
 
-                    <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem"}}>
+                    {/* <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem"}}>
                     <LineCharter lineColor="salmon"/>
-                    </div>
+                    </div> */}
                     
                 
                     
