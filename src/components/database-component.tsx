@@ -1388,12 +1388,13 @@ const RenewID = async () => {
                                 thumbnails?
                                 <UserCircle color="dodgerblue" width={"1.5rem"}/>
                                 :
-                                <Avatar style={{width:"1.5rem", height:"1.5rem"}}>
+                                <Avatar style={{width:"1.5rem", height:"1.5rem", border:""}}>
                                     <AvatarImage src={post.profile}/>
                                     <AvatarFallback>
-                                        <p style={{paddingTop:"0.2rem"}}>{post.name.charAt(0)}</p>
+                                        <p style={{paddingTop:"0.1rem"}}>{post.name.charAt(0)}</p>
                                     </AvatarFallback>
                                 </Avatar>
+                                
                             } />
                         </motion.div>
                     ))
@@ -1530,7 +1531,7 @@ const RenewID = async () => {
                 <Avatar style={{width:"3.5rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center", cursor:"pointer"}}>
                     <AvatarImage style={{objectFit:"cover"}} src={image}/>
                     <AvatarFallback>
-                        <p>{Array.from(name)[0]}</p>
+                        <p style={{paddingTop:"0.1rem"}}>{Array.from(name)[0]}</p>
                         
                     </AvatarFallback>
                 </Avatar>
