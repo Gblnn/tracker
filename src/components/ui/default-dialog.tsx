@@ -62,30 +62,38 @@ export default function DefaultDialog(props:Props){
                                 </div>
                                 
                                 
-                                <div style={{display:"flex", flexFlow:"column", border:""}}>
-                                    <div style={{display:"flex", alignItems:"center", border:"", gap:"0.75rem"}}>
-                                        {props.title}
+                                <div style={{display:"flex", flexFlow:"column", border:"", gap:"0.25rem"}}>
+                                    <div style={{display:"flex", alignItems:"center", border:"", gap:"0.75rem", fontSize:"1.1rem"}}>
+                                        <p style={{border:"",maxWidth:"150px", textOverflow:"ellipsis", textAlign:"left", overflow:"hidden", whiteSpace:"nowrap"}}>{props.title}</p>
+                                        
+                                    </div>
+                                
+                                {
+                                    
+                                    <div style={{display:'flex', gap:"0.75rem"}}>
+                                        {props.code&&
+                                        <Tooltip title={props.codeTooltip} placement="right">
+                                            <div style={{fontSize:"0.75rem", fontWeight:400, border:"1px solid rgba(100 100 100/ 75%)",borderRadius:"0.5rem",paddingLeft:"0.25rem", textAlign:"left", opacity:"0.75", display:'flex', gap:"0.5rem",alignItems:"center", paddingRight:"0.5rem", width:"fit-content", height:""}}>
+                                                {
+                                                    props.codeIcon?
+                                                    props.codeIcon
+                                                    :
+                                                    <Hash color="dodgerblue" width={"0.8rem"}/>
+                                                }
+                                                
+                                                {props.code}
+                                            </div>
+                                        </Tooltip>}
+
                                         <p onClick={props.bigDate} style={{fontWeight:400, fontSize:"1rem", opacity:0.5, letterSpacing:"0.075rem", display:"flex", gap:"0.5rem"}}>    
                                             {props.created_on}
                                         </p>
                                     </div>
-                                
-                                {
-                                    props.code?
-                                    <Tooltip title={props.codeTooltip} placement="right">
-                                    <p style={{fontSize:"0.8rem", fontWeight:400, border:"1px solid rgba(100 100 100/ 75%)",borderRadius:"0.5rem",paddingLeft:"0.25rem", textAlign:"left", opacity:"0.75", display:'flex', gap:"0.5rem",alignItems:"center", paddingRight:"0.5rem", width:"fit-content"}}>
-                                        {
-                                            props.codeIcon?
-                                            props.codeIcon
-                                            :
-                                            <Hash color="dodgerblue" width={"0.8rem"}/>
-                                        }
-                                        
-                                        {props.code}
-                                    </p>
-                                    </Tooltip>
-                                    :null
+                                    
+                                    
                                 }
+
+                                        
                                 
                                 </div>
                                 

@@ -41,6 +41,7 @@
     "react": "^18.2.0",
     "react-confetti-explosion": "^2.1.2",
     "react-dom": "^18.2.0",
+    "react-lazy-load-image-component": "^1.6.2",
     "react-line-graph": "^1.0.6",
     "react-router-dom": "^6.23.1",
     "react-time-ago": "^7.3.3",
@@ -48,12 +49,14 @@
     "sonner": "^1.4.41",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
+    "tesseract.js": "^5.1.0",
     "use-keyboard-shortcut": "^1.1.6"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.2.22",
+    "@types/react-lazy-load-image-component": "^1.6.4",
     "@typescript-eslint/eslint-plugin": "^7.2.0",
     "@typescript-eslint/parser": "^7.2.0",
     "@vite-pwa/assets-generator": "^0.2.4",

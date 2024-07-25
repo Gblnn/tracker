@@ -32,6 +32,8 @@ import { useNavigate } from "react-router-dom"
 import ReactTimeAgo from 'react-time-ago'
 import useKeyboardShortcut from 'use-keyboard-shortcut'
 import LineCharter from "./bar-chart"
+import { LazyLoadImage } from 'react-lazy-load-image-component'
+import 'react-lazy-load-image-component/src/effects/blur.css';
 
 
 type Record = {
@@ -579,7 +581,12 @@ const RenewID = async () => {
         await deleteDoc(doc(db, "records", doc_id))
         if(profileName!=""){
             setRecordDeleteStatus("Deleting Image "+profileName+" (2/2)")
-            await deleteObject(ref(storage, profileName))
+            try {
+                await deleteObject(ref(storage, profileName))  
+            } catch (error) {
+                setLoading(false)
+                message.error(String(error))
+            } 
         }
         await leaveList.forEach(async (item:any) => {
             await deleteDoc(doc(db, "leave-record", item.id))
@@ -943,6 +950,7 @@ const RenewID = async () => {
             
             await checked.forEach(async (item:any) => {
                 await deleteDoc(doc(db, "records", item))
+                await deleteDoc(doc(db, 'salary-record'))
                 counts++
                 setProgress(String(percentage*counts)+"%")
                 setProgressItem(item)
@@ -1106,10 +1114,10 @@ const RenewID = async () => {
                         }
                         </button> */}
 
-                        <button style={{cursor:"default", width:"5rem", fontSize:"0.9rem", opacity:0.5}}>
+                        {/* <button style={{cursor:"default", width:"5rem", fontSize:"0.9rem", opacity:0.5}}>
                             
                             Ctrl + I
-                        </button>
+                        </button> */}
                         
                         <button className="transitions blue-glass" style={{paddingLeft:"1rem", paddingRight:"1rem", width:"3rem"}} onClick={()=>{fetchData("refresh")}} >
 
@@ -1259,7 +1267,7 @@ const RenewID = async () => {
 
                     <p style={{height:"0.25rem"}}/>
                 
-                <div className="record-list" style={{display:"flex", gap:"0.6rem", flexFlow:"column", overflowY:"auto", height:"72svh", paddingTop:"0.25rem", paddingRight:"0.5rem"}}>
+                <div className="record-list" style={{display:"flex", gap:"0.6rem", flexFlow:"column", overflowY:"auto", height:"72svh", paddingTop:"", paddingRight:"0.5rem"}}>
                     
                     <div style={{width:"100%", display:"flex", justifyContent:"flex-start"}}>
                     
@@ -1389,12 +1397,24 @@ const RenewID = async () => {
                                 thumbnails?
                                 <UserCircle color="dodgerblue" width={"1.75rem"} height={"1.75rem"}/>
                                 :
-                                <Avatar style={{width:"1.75rem", height:"1.75rem", border:""}}>
-                                    <AvatarImage style={{objectFit:"cover"}} src={post.profile}/>
-                                    <AvatarFallback>
-                                        <p style={{paddingTop:"0.1rem"}}>{post.name.charAt(0)}</p>
-                                    </AvatarFallback>
-                                </Avatar>
+                                // <Avatar style={{width:"1.75rem", height:"1.75rem", border:""}}>
+                                //     <AvatarImage style={{objectFit:"cover"}} src={post.profile}/>
+                                //     <AvatarFallback>
+                                //         <p style={{paddingTop:"0.1rem"}}>{post.name.charAt(0)}</p>
+                                //     </AvatarFallback>
+                                // </Avatar>
+                                <>
+                                <div style={{background:"#1a1a1a", height:"1.75rem", width:"1.75rem", position:"absolute", borderRadius:"50%", display:"flex", justifyContent:"center", alignItems:"center"}}>
+                                    <p style={{paddingTop:"0.1rem", fontWeight:600}}>{post.name.charAt(0)}</p>
+                                </div>
+                                <LazyLoadImage useIntersectionObserver delayMethod="debounce" threshold={100} effect="blur" style={{width:"1.75rem", height:"1.75rem", borderRadius:"50%", objectFit:"cover", display:"flex"}} src={post.profile} 
+                                // placeholder={
+                                //     post.name.charAt(0)
+                                // }
+                                	
+                                />
+                                </>
+                                
                                 
                             } />
                         </motion.div>
@@ -1487,7 +1507,7 @@ const RenewID = async () => {
             tag2Text={dateofJoin}
             tag3Text={
             <div style={{display:"flex", alignItems:"center", gap:"0.5rem", fontSize:"0.75rem"}}>
-                <p>{salaryBasic}</p>
+                {salaryBasic}
                 <div style={{border:'',display:'flex',justifyContent:"center", alignItems:"center", textAlign:"center"}}>
 
                 <p style={{opacity:0.5}}>{"("+Math.abs((salaryBasic - initialSalary)/ initialSalary)+"%"+")"}</p>
@@ -1507,7 +1527,7 @@ const RenewID = async () => {
         }
         tag4Text={
             <div style={{display:"flex", alignItems:"center", gap:"0.5rem", fontSize:"0.75rem"}}>
-                <p>{allowance}</p>
+                {allowance}
                 <div style={{border:'',display:'flex',justifyContent:"center", alignItems:"center", textAlign:"center"}}>
                     <p style={{opacity:0.5}}>{"("+Math.abs((allowance - initialAllowance)/ initialAllowance)+"%"+")"}</p>
                     <p>{
@@ -1530,6 +1550,7 @@ const RenewID = async () => {
             bottomTagValue={fetchingLeave?<LoadingOutlined/>:leaves}
             titleIcon={
                 <Tooltip title={profileName}>
+
                 <Avatar style={{width:"3.5rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center", cursor:"pointer"}}>
                     <AvatarImage style={{objectFit:"cover"}} src={image}/>
                     <AvatarFallback>
@@ -1655,7 +1676,10 @@ const RenewID = async () => {
             title="Edit Record"
             updating={loading}
             disabled={loading}
-            onImageChange={(e:any)=>{setImageUpload(e.target.files[0]); setFileName(e.target.files[0].name)}}
+            onImageChange={
+                (e:any)=>{
+                    setImageUpload(e.target.files[0]); setFileName(e.target.files[0].name);
+                }}
 
             NameOnChange={(e:any)=>{setEditedName(e.target.value)}}
             EmailOnChange={(e:any)=>setEditedEmail(e.target.value)}
@@ -2137,20 +2161,20 @@ const RenewID = async () => {
                                 <p>{salaryBasic}</p>
                                 
                             </div>
-                            <p style={{border:'',display:'flex',justifyContent:"center", textAlign:"center", opacity:0.5}}>
-                                {((salaryBasic - initialSalary)/ initialSalary)+"%"}
+                            <div style={{border:'',display:'flex',justifyContent:"center", textAlign:"center"}}>
+                                <p style={{opacity:0.5}}>{((salaryBasic - initialSalary)/ initialSalary)+"%"}</p>
                                 {
                                     Math.sign((salaryBasic - initialSalary)/ initialSalary)==-1?
-                                    <ArrowDown width={"1rem"} color="tomato"/>
+                                    <ArrowDown strokeWidth={"3px"} width={"1rem"} color="lightcoral"/>
                                     :
                                     ((salaryBasic - initialSalary)/ initialSalary)==0?
                                     ""
                                     :
-                                    <ArrowUp width={"1rem"} color="lightgreen"/>
+                                    <ArrowUp strokeWidth={"3px"} width={"1rem"} color="lightgreen"/>
 
                                 }
                                 
-                            </p>
+                            </div>
                         
                         </div>
 
@@ -2328,18 +2352,18 @@ const RenewID = async () => {
                             <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"", display:'flex'}}>Current Allowance</p>
                             <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600, fontSize:"1.5rem", alignItems:"center"}}>
                                 <p style={{fontWeight:400, fontSize:"1rem"}}>OMR</p>
-                                <p>{allowance}</p>
+                                {allowance}
                             </div>
-                            <p style={{border:'',display:'flex',justifyContent:"center", textAlign:"center", opacity:0.5}}>
-                                {((allowance - initialAllowance)/ initialAllowance)+"%"}
+                            <p style={{border:'',display:'flex',justifyContent:"center", textAlign:"center"}}>
+                                <p style={{opacity:0.5}}>{((allowance - initialAllowance)/ initialAllowance)+"%"}</p>
                                 {
                                     Math.sign((allowance - initialAllowance)/ initialAllowance)==-1?
-                                    <ArrowDown width={"1rem"} color="tomato"/>
+                                    <ArrowDown strokeWidth={"3px"} width={"1rem"} color="lightcoral"/>
                                     :
                                     ((allowance - initialAllowance)/ initialAllowance)==0?
                                     ""
                                     :
-                                    <ArrowUp width={"1rem"} color="lightgreen"/>
+                                    <ArrowUp strokeWidth={"3px"} width={"1rem"} color="lightgreen"/>
 
                                 }
                                 
