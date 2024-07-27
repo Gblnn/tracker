@@ -12,7 +12,7 @@ import emailjs from '@emailjs/browser';
 import { message } from "antd";
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { ChevronDown, File, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, Users } from "lucide-react";
+import { ChevronDown, File, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, User, Users } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 
@@ -497,7 +497,9 @@ export default function Inbox(){
             <InputDialog titleIcon={<Sparkles color="goldenrod" fill="goldenrod"/>} title={"Renew Document"} open={renewDocDialog} onCancel={()=>{setRenewDocDialog(false);setNewExpiry("")}} inputplaceholder="New Expiry" OkButtonText="Renew" inputOnChange={(e:any)=>setNewExpiry(e.target.value)} onOk={RenewID} updating={loading} disabled={loading||newExpiry?false:true}/>
 
             <DefaultDialog
-            created_on={recipientList.length} 
+        
+            code={recipientList.length}
+            codeIcon={<User width={"0.8rem"} color="dodgerblue"/>}
             title_extra={
             <button onClick={fetchRecipients} style={{width:"3rem", height:"2.5rem"}}>
                 {

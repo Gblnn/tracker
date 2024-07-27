@@ -14,8 +14,10 @@ import DefaultDialog from "@/components/ui/default-dialog"
 import VehicleID from "@/components/vehicle-id"
 import { db, storage } from "@/firebase"
 import { LoadingOutlined } from '@ant-design/icons'
+import * as XLSX from '@e965/xlsx'
 import emailjs from '@emailjs/browser'
 import { message, Tooltip } from 'antd'
+import { saveAs } from 'file-saver'
 import { addDoc, collection, deleteDoc, doc, getAggregateFromServer, getDocs, onSnapshot, orderBy, query, sum, Timestamp, updateDoc, where } from 'firebase/firestore'
 import {
     deleteObject,
@@ -25,15 +27,16 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, EllipsisVerticalIcon, Globe, GraduationCap, HeartPulse, Image, ImageOff, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
+import { ArrowDown, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, Download, EllipsisVerticalIcon, Globe, GraduationCap, HeartPulse, Image, ImageOff, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
+import { LazyLoadImage } from 'react-lazy-load-image-component'
+import 'react-lazy-load-image-component/src/effects/blur.css'
 import { useNavigate } from "react-router-dom"
 import ReactTimeAgo from 'react-time-ago'
 import useKeyboardShortcut from 'use-keyboard-shortcut'
 import LineCharter from "./bar-chart"
-import { LazyLoadImage } from 'react-lazy-load-image-component'
-import 'react-lazy-load-image-component/src/effects/blur.css';
+import DbDropDown from "./db-dropdown"
 
 
 type Record = {
@@ -56,6 +59,10 @@ export default function DbComponent(props:Props){
 
     const [companyName, setCompanyName] = useState("")
     const [thumbnails, setThumbnails] = useState(true)
+    const [remarksDialog, setRemarksDialog] = useState(false)
+    const [remarks, setRemarks] = useState("")
+    const [archivePrompt, setArchivePrompt] = useState(false)
+    const [state, setState] = useState("")
 
     const usenavigate = useNavigate()
     // BASIC PAGE VARIABLES
@@ -362,13 +369,14 @@ export default function DbComponent(props:Props){
 
             setfetchingData(false)
             setRecords(fetchedData)
+            console.log(fetchedData)
             setChecked([])
             setSelectable(false)
             type=="refresh"?
             message.success("Refreshed")
             :null
             
-        } catch (error) {
+        } catch (error) { 
             console.log(error)
             message.info(String(error))
             setStatus("false")
@@ -520,12 +528,52 @@ const RenewID = async () => {
     setModifiedOn(new Date())
 }
 
+    const archiveRecord = async () => {
+        setLoading(true)
+        try {
+            await updateDoc(doc(db, 'records', doc_id),{state:state=="active"?"archived":"active"})
+            setLoading(false)
+            setArchivePrompt(false)
+        } catch (error) {
+            setLoading(false)
+        }
+    }
+
+    const exportDB = () => {
+        const myHeader = ["id","name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "vehicle_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
+        const worksheet = XLSX.utils.json_to_sheet(records, {header: myHeader});
+        const workbook = XLSX.utils.book_new();
+
+        
+
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+
+        // Buffer to store the generated Excel file
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+
+        saveAs(blob, "exportedData.xlsx");
+
+    }
+
+    const addRemark = async () => {
+        setLoading(true)
+        try {
+            await updateDoc(doc(db, 'records', doc_id),{remarks:remarks})
+            setLoading(false)
+            setRemarksDialog(false)
+            fetchData()
+        } catch (error) {
+            setLoading(false)
+        }
+    }
+
     // FUNCTION TO ADD A RECORD
     const addRecord = async () => {
         imgUrl = ""
         setLoading(true)
         await uploadFile()
-        await addDoc(collection(db, "records"), {name:name, email:email, employeeCode:employeeCode, companyName:companyName, dateofJoin:dateofJoin, salaryBasic:salaryBasic, initialSalary:salaryBasic, allowance:allowance, initialAllowance:allowance, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:props.dbCategory, notify:true, profile:imgUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:""})
+        await addDoc(collection(db, "records"), {name:name, email:email, employeeCode:employeeCode, companyName:companyName, dateofJoin:dateofJoin, salaryBasic:salaryBasic, initialSalary:salaryBasic, allowance:allowance, initialAllowance:allowance, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:props.dbCategory, notify:true, profile:imgUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:"", state:"active", remarks:""})
         setAddDialog(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -1135,6 +1183,8 @@ const RenewID = async () => {
 
                             </button>
 
+                            <DbDropDown onExport={exportDB} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
+
 
                             {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
                                 <InboxIcon className="" color="crimson"/>
@@ -1291,6 +1341,7 @@ const RenewID = async () => {
 
                             <Directive 
                                 notify={(!post.notify)}
+                                archived={post.state=="archived"?true:false}
                                 tag={
 
                                     post.civil_expiry != "" || post.vehicle_expiry != "" || post.medical_due_on != "" || post.passportID != ""||post.vt_hse_induction != "" || post.vt_car_1 != "" || post.vt_car_2 != "" || post.vt_car_3 != "" || post.vt_car_4 != ""|| post.vt_car_5 != ""|| post.vt_car_6 != ""|| post.vt_car_7 != ""|| post.vt_car_8 != ""|| post.vt_car_9 != ""|| post.vt_car_10 != ""
@@ -1388,6 +1439,8 @@ const RenewID = async () => {
                                     setProfileName(post.profile_name)
                                     setInitialSalary(post.initialSalary)
                                     setInitialAllowance(post.initialAllowance)
+                                    setRemarks(post.remarks)
+                                    setState(post.state)
                                     fetchLeave()
                                     
                                 }}                        
@@ -1397,12 +1450,7 @@ const RenewID = async () => {
                                 thumbnails?
                                 <UserCircle color="dodgerblue" width={"1.75rem"} height={"1.75rem"}/>
                                 :
-                                // <Avatar style={{width:"1.75rem", height:"1.75rem", border:""}}>
-                                //     <AvatarImage style={{objectFit:"cover"}} src={post.profile}/>
-                                //     <AvatarFallback>
-                                //         <p style={{paddingTop:"0.1rem"}}>{post.name.charAt(0)}</p>
-                                //     </AvatarFallback>
-                                // </Avatar>
+                                
                                 <>
                                 <div style={{background:"#1a1a1a", height:"1.75rem", width:"1.75rem", position:"absolute", borderRadius:"50%", display:"flex", justifyContent:"center", alignItems:"center"}}>
                                     <p style={{paddingTop:"0.1rem", fontWeight:600}}>{post.name.charAt(0)}</p>
@@ -1498,11 +1546,19 @@ const RenewID = async () => {
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
+
+            <InputDialog title="Add Remark" inputplaceholder="Enter remarks" OkButtonText="Update" OkButtonIcon={<RefreshCcw width={"1rem"}/>} open={remarksDialog} onCancel={()=>setRemarksDialog(false)} inputOnChange={(e:any)=>setRemarks(e.target.value)} onOk={addRemark} updating={loading} disabled={loading} input1Value={remarks}/>
+
+            <DefaultDialog titleIcon={<Download/>} title={state=="active"?"Archive Record?":"Unarchive Record?"} open={archivePrompt} onCancel={()=>setArchivePrompt(false)} OkButtonText={state=="active"?"Archive":"Unarchive"} onOk={archiveRecord} updating={loading} disabled={loading}/>
+
             {/* DISPLAY RECORD DIALOG */}
             <DefaultDialog 
             code={employeeCode}
             codeTooltip="Employee Code"
             tags
+            renumeration={props.dbCategory=="personal"?true:false}
+            remarksOnClick={()=>setRemarksDialog(true)}
+            remarksValue={remarks}
             tag1Text={companyName}
             tag2Text={dateofJoin}
             tag3Text={
@@ -1547,7 +1603,8 @@ const RenewID = async () => {
             tag3OnClick={()=>{setSalaryDialog(true);fetchSalary();setSalaryList([])}}
             tag4OnClick={()=>{setAllowanceDialog(true);fetchAllowance();setAllowanceList([])}}
             onBottomTagClick={()=>{setLeaveLog(true);fetchLeave();setLeaveList([]);id=doc_id}}
-            bottomTagValue={fetchingLeave?<LoadingOutlined/>:leaves}
+            bottomTagValue={leaves}
+            bottomValueLoading={fetchingLeave}
             titleIcon={
                 <Tooltip title={profileName}>
 
@@ -1579,7 +1636,7 @@ const RenewID = async () => {
                         }
                         
                     </button>
-                    <DropDown onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>{setUserEditPrompt(true);console.log("filename : ",fileName, "profileName : ", profileName)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
+                    <DropDown onExtra={()=>setArchivePrompt(true)} extraText={state=="active"?"Archive":"Unarchive"} onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>{setUserEditPrompt(true);console.log("filename : ",fileName, "profileName : ", profileName)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
                 </div>
             
             }
@@ -1676,6 +1733,7 @@ const RenewID = async () => {
             title="Edit Record"
             updating={loading}
             disabled={loading}
+            
             onImageChange={
                 (e:any)=>{
                     setImageUpload(e.target.files[0]); setFileName(e.target.files[0].name);
@@ -2354,7 +2412,7 @@ const RenewID = async () => {
                                 <p style={{fontWeight:400, fontSize:"1rem"}}>OMR</p>
                                 {allowance}
                             </div>
-                            <p style={{border:'',display:'flex',justifyContent:"center", textAlign:"center"}}>
+                            <div style={{border:'',display:'flex',justifyContent:"center", textAlign:"center"}}>
                                 <p style={{opacity:0.5}}>{((allowance - initialAllowance)/ initialAllowance)+"%"}</p>
                                 {
                                     Math.sign((allowance - initialAllowance)/ initialAllowance)==-1?
@@ -2367,7 +2425,7 @@ const RenewID = async () => {
 
                                 }
                                 
-                            </p>
+                            </div>
                         
                         </div>
 

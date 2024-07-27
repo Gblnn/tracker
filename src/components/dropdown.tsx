@@ -1,12 +1,14 @@
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import { PenLine, X } from "lucide-react";
+import { Download, PenLine, X } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem } from "./ui/dropdown-menu";
 
 interface Props{
     trigger?:any
     onDelete?:any
     onEdit?:any
+    onExtra?:any
     className?:any
+    extraText?:string
 }
 
 export default function DropDown(props:Props){
@@ -31,6 +33,15 @@ export default function DropDown(props:Props){
             <X className="mr-2 h-4 w-4" />
             <span style={{width:"100%"}} >Delete</span>  
           </DropdownMenuItem>
+
+          {
+            props.onExtra&&
+              <DropdownMenuItem onClick={props.onExtra}>
+                <Download className="mr-2 h-4 w-4" />
+                <span style={{width:"100%"}} >{props.extraText}</span>  
+              </DropdownMenuItem>
+          }
+          
           
         </DropdownMenuGroup>
         

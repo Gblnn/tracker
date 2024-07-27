@@ -1,7 +1,8 @@
-import { BellOff, CheckSquare2, ChevronRight, EllipsisVerticalIcon } from "lucide-react"
+import { BellOff, CheckSquare2, ChevronRight, EllipsisVerticalIcon, Inbox } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import DropDown from "./dropdown"
+import { LoadingOutlined } from '@ant-design/icons'
 
 interface Props{
     title?:string
@@ -21,6 +22,8 @@ interface Props{
     extraOnEdit?:any
     notify?:boolean
     id_subtitle?:string
+    loading?:boolean
+    archived?:boolean
 }
 
 export default function Directive(props:Props){
@@ -29,7 +32,7 @@ export default function Directive(props:Props){
 
     return(
 
-        <Link onClick={()=>props.selectable?setSelected(!selected):null} to={props.to} style={{display:"flex", width:"100%"}}>
+        <Link onClick={()=>props.selectable?setSelected(!selected):null} to={props.to} style={{display:"flex", width:"100%", opacity:props.archived?0.5:1}}>
             {/* <div style={{background:"#1a1a1a",width:"3rem", borderTopLeftRadius:"0.5rem", borderBottomLeftRadius:"0.5rem", display:"flex", alignItems:"center", justifyContent:"center"}}>
                 {props.icon}
             </div> */}
@@ -59,7 +62,7 @@ export default function Directive(props:Props){
                     
 
                     <div style={{border:'', width:""}}>
-                    <p style={{fontWeight:400, textAlign:"left", border:"", width:"", fontSize:props.titleSize?props.titleSize:"0.9rem"}}>
+                    <p style={{fontWeight:400, textAlign:"left", border:"", width:"9rem", fontSize:props.titleSize?props.titleSize:"0.9rem", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis"}}>
                         {props.title}
                     </p>
                     <p style={{fontSize:"0.9rem", textAlign:"left", color:"lightblue",opacity:"0.75", background:"", borderRadius:"0.5rem", paddingRight:"0.25rem", paddingLeft:""}}>{props.id_subtitle}</p>
@@ -92,11 +95,22 @@ export default function Directive(props:Props){
                 
                 
                 props.tag?
-                
-                <p style={{background:"rgba(100 100 100/ 25%)",fontSize:"0.8rem", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", color:props.tag=="Expiring"?"violet":props.tag=="Available"?"lightgreen":props.status?"lightblue":"goldenrod", width:"", fontWeight:600, display:"flex", alignItems:"center", gap:"0.5rem"}}>
-                    {props.tag}
-                    {/* <div style={{height:"0.5rem", width:"0.5rem", background:"dodgerblue", borderRadius:"50%"}}></div> */}
-                    </p>
+                    
+                    
+                        props.loading?
+                        <LoadingOutlined/>
+                        :
+                    <div style={{background:"rgba(100 100 100/ 25%)",fontSize:"0.85rem", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", color:props.tag=="Expiring"?"violet":props.tag=="Available"?"lightgreen":props.status?"lightblue":"goldenrod", width:"", fontWeight:600, display:"flex", alignItems:"center", gap:"0.5rem"}}>
+                        
+                        {props.archived==true?
+                        <>
+                        <Inbox width={"0.8rem"}/>
+                        <p>Archived</p>
+                        </>
+                        :
+                        props.tag
+                        }
+                    </div>
                 :null
                 }
                 

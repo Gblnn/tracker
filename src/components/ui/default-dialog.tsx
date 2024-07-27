@@ -1,9 +1,11 @@
 import { LoadingOutlined } from "@ant-design/icons";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { Tooltip } from "antd";
-import { ChevronLeft, ChevronRight, Hash, X } from "lucide-react";
+import { ChevronLeft, Hash, X } from "lucide-react";
+import Directive from "../directive";
 import { Button } from "./button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from "./dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./accordion";
 
 interface Props {
     open?: boolean
@@ -40,8 +42,12 @@ interface Props {
     tag3Text?:any
     tag4Text?:any
     onBottomTagClick?:any
+    bottomValueLoading?:boolean
     bottomTagValue?:any
     codeTooltip?:string
+    renumeration?:boolean
+    remarksOnClick?:any
+    remarksValue?:string
 }
 
 
@@ -143,13 +149,13 @@ export default function DefaultDialog(props:Props){
 
                         </div>
 
-                        <div style={{height:"2rem", border:"", width:"100%", display:'flex', gap:"0.5rem"}}>
+                        
+
+                        {/* <div style={{height:"2rem", border:"", width:"100%", display:'flex', gap:"0.5rem"}}>
 
                             <div onClick={props.tag3OnClick} style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.75rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
 
                             <p style={{opacity:0.5}}>Basic : </p><b>{props.tag3Text}</b>  
-{/* 
-                            <p style={{display:"flex", alignItems:"center"}}>{"(10%)"}<ArrowUp color="lightgreen" width={"0.9rem"}/></p>                           */}
 
                             
                             </div>
@@ -160,12 +166,10 @@ export default function DefaultDialog(props:Props){
                             Allow : 
                             </p>
                             <b style={{fontSize:"0.8rem"}}>{props.tag4Text}</b>
-{/* 
-                            <p style={{display:"flex", alignItems:"center"}}>{"(1.2%)"}<ArrowDown color="tomato" width={"0.9rem"}/></p> */}
                             
                             </div>
                             
-                        </div>
+                        </div> */}
 
                         </div>
                         
@@ -189,21 +193,51 @@ export default function DefaultDialog(props:Props){
                         :null 
                     }
 
+                    
+
                     {
                         props.tags?
                         <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", border:"", width:"100%", borderTop:"1px solid rgba(100 100 100/ 50%)", paddingTop:"1rem"}}>
-                        <div style={{height:"2.25rem", border:"", width:"100%", display:'flex', gap:"0.5rem"}}>
+                        <div style={{height:"", border:"", width:"100%", display:'flex', gap:"0.5rem", flexFlow:"column"}}>
 
-                            <div onClick={props.onBottomTagClick} style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.9rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"1rem", borderRadius:"0.5rem", opacity:0.75, gap:"0.25rem", flex:1, justifyContent:"space-between", cursor:"pointer"}}>
-                            <p>Leaves</p>
+                            
 
-                            <div style={{display:"flex", alignItems:"center", gap:"0.75rem"}}>
-                                <p style={{fontWeight:"600", color:"#8884d8"}}>{props.bottomTagValue}</p>
-                            <ChevronRight width={"0.8rem"}/>
-                            </div>
+                            <Directive title="Leaves" tag={props.bottomTagValue} onClick={props.onBottomTagClick} status loading={props.bottomValueLoading}/>
+
+                            <Directive title="Remarks" status tag={props.remarksValue} onClick={props.remarksOnClick}/>
+
+                            {
+                                props.renumeration&&
+                                <Accordion type="single" collapsible style={{borderBottom:"none"}}>
+                                <AccordionItem value="item-1">
+                                    <AccordionTrigger style={{border:"", display:"flex", justifyContent:"space-between", height:"2.5rem", paddingLeft:"0.75rem", fontWeight:"400", fontSize:"0.9rem", background:"none", paddingBottom:"1rem"}}>Renumeration</AccordionTrigger>
+                                    <AccordionContent>
+                                    <div style={{height:"3rem", border:"", width:"100%", display:'flex', gap:"0.5rem", paddingTop:"0.5rem"}}>
+
+                                        <div onClick={props.tag3OnClick} style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.75rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
+
+                                        <p style={{opacity:0.5}}>Basic : </p><b>{props.tag3Text}</b>  
+
+                                        
+                                        </div>
+
+                                        <div onClick={props.tag4OnClick} style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.75rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
+
+                                        <p style={{opacity:0.5}}>
+                                        Allow : 
+                                        </p>
+                                        <b style={{fontSize:"0.8rem"}}>{props.tag4Text}</b>
+                                        
+                                        </div>
+                                        
+                                    </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+
+                            }
                             
                             
-                            </div>
 
                         </div>
 

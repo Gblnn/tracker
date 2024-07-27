@@ -16,7 +16,7 @@ export default function Passport(props:Props){
             <div style={{display:"flex", justifyContent:"space-between", borderBottom:"1px solid rgba(100 100 100/ 25%)", padding:"0.75rem"}}>
             <div style={{display:"flex", gap:"0.75rem", alignItems:"center", marginLeft:"0.5rem"}}>
                     {/* <p style={{fontSize:"0.8rem"}}>NAME : </p> */}
-                    <p style={{fontWeight:"600", textTransform:"uppercase"}}>Person 1</p>    
+                    <p style={{fontWeight:"600", textTransform:"uppercase"}}>{props.name}</p>    
                 </div>
                 <p style={{marginLeft:"1rem"}}>{props.passport_id}</p>
             </div>
