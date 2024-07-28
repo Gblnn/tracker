@@ -8,15 +8,15 @@ import SearchBar from "@/components/search-bar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { db } from "@/firebase";
 import { LoadingOutlined } from '@ant-design/icons';
+import * as XLSX from '@e965/xlsx';
 import emailjs from '@emailjs/browser';
 import { message } from "antd";
+import { saveAs } from "file-saver";
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { ChevronDown, Download, File, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, User, Users } from "lucide-react";
+import { ChevronDown, Download, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, User, Users } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
-import * as XLSX from '@e965/xlsx'
-import { saveAs } from "file-saver";
 
 export default function Inbox(){
 
@@ -266,7 +266,7 @@ export default function Inbox(){
         )
     }
 
-    const exportDB = () => {
+    const exportDB = async () => {
         const myHeader = ["id","name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "vehicle_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
 
         filteredData.forEach((e:any) => {
@@ -356,7 +356,8 @@ export default function Inbox(){
         const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
         const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
 
-        saveAs(blob, "exportedData.xlsx");
+        saveAs(blob, "ExpiringDocuments("+String(moment().format("DD/MM/YYYY"))+").xlsx");
+        fetchData()
 
     }
     
@@ -525,8 +526,8 @@ export default function Inbox(){
                             <InboxComponent 
                             notify={!record.notify}
                             archived={record.state=="active"?false:true}
-                            type={record.type=="personal"?"Personal Record":record.type=="vale"?"Vale Record":""}
-                            typeIcon={record.type=="personal"?<File color="dodgerblue" width={"1rem"}/>:record.type=="vale"?<img src="/vale-logo.png" style={{width:"1.25rem", paddingBottom:"0.45rem"}}/>:""}
+                            type={record.type=="personal"?"SSU Record":record.type=="vale"?"Vale Record":""}
+                            typeIcon={record.type=="personal"?<img src="/sohar_star_logo.png" style={{width:"1.25rem"}}/>:record.type=="vale"?<img src="/vale-logo.png" style={{width:"1.25rem", paddingBottom:"0.45rem"}}/>:""}
                             mail={record.email}
                             noArrow
                             onClick={()=>{}}
