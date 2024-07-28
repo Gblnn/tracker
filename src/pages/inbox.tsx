@@ -114,7 +114,7 @@ export default function Inbox(){
                     record.civil_expiry&&
                      Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
                     ||
-                    record.vehicle_expiry&&
+                    record.license_expiry&&
                     Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2  
                     ||
                     record.medical_due_on&&
@@ -158,11 +158,6 @@ export default function Inbox(){
                             
                 )
             }))
-
-            filteredData.forEach((e:any) => {
-                e.vt_hse_induction = String("Test")
-            });
-            console.log(filteredData)
             
             
             
@@ -273,6 +268,85 @@ export default function Inbox(){
 
     const exportDB = () => {
         const myHeader = ["id","name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "vehicle_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
+
+        filteredData.forEach((e:any) => {
+            e.civil_expiry==""?
+            {}
+            :
+            e.civil_expiry = String(moment(e.civil_expiry.toDate()).format("DD/MM/YYYY"))
+
+            e.vehicle_expiry==""?
+            {}
+            :
+            e.vehicle_expiry = String(moment(e.license_expiry.toDate()).format("DD/MM/YYYY"))
+
+
+            e.medical_due_on==""?
+            {}
+            :
+            e.medical_due_on = String(moment(e.medical_due_on.toDate()).format("DD/MM/YYYY"))
+
+            e.passportExpiry==""?
+            {}
+            :
+            e.passportExpiry = String(moment(e.passportExpiry.toDate()).format("DD/MM/YYYY"))
+            
+            e.vt_hse_induction==""?
+            {}
+            :
+            e.vt_hse_induction = String(moment(e.vt_hse_induction.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_1==""?
+            {}
+            :
+            e.vt_car_1 = String(moment(e.vt_car_1.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_2==""?
+            {}
+            :
+            e.vt_car_2 = String(moment(e.vt_car_2.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_3==""?
+            {}
+            :
+            e.vt_car_3 = String(moment(e.vt_car_3.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_4==""?
+            {}
+            :
+            e.vt_car_4 = String(moment(e.vt_car_4.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_5==""?
+            {}
+            :
+            e.vt_car_5 = String(moment(e.vt_car_5.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_6==""?
+            {}
+            :
+            e.vt_car_6 = String(moment(e.vt_car_6.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_7==""?
+            {}
+            :
+            e.vt_car_7 = String(moment(e.vt_car_7.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_8==""?
+            {}
+            :
+            e.vt_car_8 = String(moment(e.vt_car_8.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_9==""?
+            {}
+            :
+            e.vt_car_9 = String(moment(e.vt_car_9.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_10==""?
+            {}
+            :
+            e.vt_car_10 = String(moment(e.vt_car_10.toDate()).format("DD/MM/YYYY"))
+        });
+
         const worksheet = XLSX.utils.json_to_sheet(filteredData, {header: myHeader});
         const workbook = XLSX.utils.book_new();
 
@@ -390,7 +464,7 @@ export default function Inbox(){
                                 record.civil_expiry&&
                                 Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
                                 ||
-                                record.vehicle_expiry&&
+                                record.license_expiry&&
                                 Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2  
                                 ||
                                 record.medical_due_on&&
@@ -481,8 +555,8 @@ export default function Inbox(){
                             civil_desc={DescGenerator(record.civil_expiry, 2, "Civil ID")}
                             civil_overdue={OverdueGenerator(record.civil_expiry)}
 
-                            vehicle_desc={DescGenerator(record.vehicle_expiry, 2, "Driving License")}
-                            vehicle_overdue={OverdueGenerator(record.vehicle_expiry)}
+                            vehicle_desc={DescGenerator(record.license_expiry, 2, "Driving License")}
+                            vehicle_overdue={OverdueGenerator(record.license_expiry)}
 
                             medical_desc={DescGenerator(record.medical_due_on, 2, "Medical ID")}
                             medical_overdue={OverdueGenerator(record.medical_due_on)}

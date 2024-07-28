@@ -543,7 +543,86 @@ const RenewID = async () => {
     }
 
     const exportDB = () => {
-        const myHeader = ["id","name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "vehicle_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10", "civil_number", "vehicle_number", "passportID"];
+        const myHeader = ["name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "vehicle_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10", "civil_number", "vehicle_number", "passportID"];
+
+        records.forEach((e:any) => {
+            e.civil_expiry==""?
+            {}
+            :
+            e.civil_expiry = String(moment(e.civil_expiry.toDate()).format("DD/MM/YYYY"))
+
+            e.vehicle_expiry==""?
+            {}
+            :
+            e.vehicle_expiry = String(moment(e.vehicle_expiry.toDate()).format("DD/MM/YYYY"))
+
+
+            e.medical_due_on==""?
+            {}
+            :
+            e.medical_due_on = String(moment(e.medical_due_on.toDate()).format("DD/MM/YYYY"))
+
+            e.passportExpiry==""?
+            {}
+            :
+            e.passportExpiry = String(moment(e.passportExpiry.toDate()).format("DD/MM/YYYY"))
+            
+            e.vt_hse_induction==""?
+            {}
+            :
+            e.vt_hse_induction = String(moment(e.vt_hse_induction.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_1==""?
+            {}
+            :
+            e.vt_car_1 = String(moment(e.vt_car_1.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_2==""?
+            {}
+            :
+            e.vt_car_2 = String(moment(e.vt_car_2.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_3==""?
+            {}
+            :
+            e.vt_car_3 = String(moment(e.vt_car_3.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_4==""?
+            {}
+            :
+            e.vt_car_4 = String(moment(e.vt_car_4.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_5==""?
+            {}
+            :
+            e.vt_car_5 = String(moment(e.vt_car_5.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_6==""?
+            {}
+            :
+            e.vt_car_6 = String(moment(e.vt_car_6.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_7==""?
+            {}
+            :
+            e.vt_car_7 = String(moment(e.vt_car_7.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_8==""?
+            {}
+            :
+            e.vt_car_8 = String(moment(e.vt_car_8.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_9==""?
+            {}
+            :
+            e.vt_car_9 = String(moment(e.vt_car_9.toDate()).format("DD/MM/YYYY"))
+
+            e.vt_car_10==""?
+            {}
+            :
+            e.vt_car_10 = String(moment(e.vt_car_10.toDate()).format("DD/MM/YYYY"))
+        });
+
         const worksheet = XLSX.utils.json_to_sheet(records, {header: myHeader});
         const workbook = XLSX.utils.book_new();
 
@@ -574,7 +653,7 @@ const RenewID = async () => {
         imgUrl = ""
         setLoading(true)
         await uploadFile()
-        await addDoc(collection(db, "records"), {name:name, email:email, employeeCode:employeeCode, companyName:companyName, dateofJoin:dateofJoin, salaryBasic:salaryBasic, initialSalary:salaryBasic, allowance:allowance, initialAllowance:allowance, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:props.dbCategory, notify:true, profile:imgUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"",  vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:"", state:"active", remarks:""})
+        await addDoc(collection(db, "records"), {name:name, email:email, employeeCode:employeeCode, companyName:companyName, dateofJoin:dateofJoin, salaryBasic:salaryBasic, initialSalary:salaryBasic, allowance:allowance, initialAllowance:allowance, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:props.dbCategory, notify:true, profile:imgUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"", license_number:"",  license_issue:"", license_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:"", state:"active", remarks:""})
         setAddDialog(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -734,8 +813,8 @@ const RenewID = async () => {
         setAddVehicleID(false)
         setLoading(true)
         try {
-            await updateDoc(doc(db, "records", doc_id),{vehicle_number:vehicle_number, 
-            vehicle_expiry:TimeStamper(vehicle_expiry), vehicle_issue:vehicle_issue, modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, "records", doc_id),{license_number:vehicle_number, 
+            license_expiry:TimeStamper(vehicle_expiry), license_issue:vehicle_issue, modified_on:Timestamp.fromDate(new Date)})
 
             setLoading(false)
             fetchData()
@@ -759,7 +838,7 @@ const RenewID = async () => {
     // FUNCTION TO DELETE A VEHICLE ID
     const deleteVehicleID = async () => {
         setLoading(true)
-        await updateDoc(doc(db, "records", doc_id),{vehicle_number:"", vehicle_expiry:"", vehicle_issue:"", modified_on:Timestamp.fromDate(new Date)})
+        await updateDoc(doc(db, "records", doc_id),{license_number:"", license_expiry:"", license_issue:"", modified_on:Timestamp.fromDate(new Date)})
         setVehicleIdDelete(false)
         setLoading(false)
         setVehicleNumber("")
@@ -786,7 +865,7 @@ const RenewID = async () => {
         setLoading(true)
         try {
             
-            await updateDoc(doc(db, "records", doc_id),{vehicle_number:edited_vehicle_number?edited_vehicle_number:vehicle_number, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), vehicle_issue:edited_vehicle_issue?edited_vehicle_issue:vehicle_issue, modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, "records", doc_id),{license_number:edited_vehicle_number?edited_vehicle_number:vehicle_number, license_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), license_issue:edited_vehicle_issue?edited_vehicle_issue:vehicle_issue, modified_on:Timestamp.fromDate(new Date)})
 
             setVehicleNumber(edited_vehicle_number?edited_vehicle_number:vehicle_number)
             setVehicleExpiry(edited_vehicle_expiry?edited_vehicle_expiry:vehicle_expiry)
@@ -809,7 +888,7 @@ const RenewID = async () => {
         setLoading(true)
         try {
 
-            await updateDoc(doc(db, "records", doc_id),{vehicle_issue:edited_vehicle_issue, vehicle_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, "records", doc_id),{license_issue:edited_vehicle_issue, license_expiry:edited_vehicle_expiry?TimeStamper(edited_vehicle_expiry):TimeStamper(vehicle_expiry), modified_on:Timestamp.fromDate(new Date)})
             setVehicleIssue(edited_vehicle_issue?edited_vehicle_issue:vehicle_issue)
             setVehicleExpiry(edited_vehicle_expiry?edited_vehicle_expiry:vehicle_expiry)
             setLoading(false)
@@ -1394,9 +1473,9 @@ const RenewID = async () => {
                                     setCivilDOB(post.civil_DOB)
                                     setCompletedOn(post.medical_completed_on)
                                     setDueOn(post.medical_due_on?moment((post.medical_due_on).toDate()).format("DD/MM/YYYY"):null)
-                                    setVehicleNumber(post.vehicle_number)
-                                    setVehicleExpiry(post.vehicle_expiry?moment((post.vehicle_expiry).toDate()).format("DD/MM/YYYY"):"")
-                                    setVehicleIssue(post.vehicle_issue)
+                                    setVehicleNumber(post.license_number)
+                                    setVehicleExpiry(post.license_expiry?moment((post.license_expiry).toDate()).format("DD/MM/YYYY"):"")
+                                    setVehicleIssue(post.license_issue)
                                     setModifiedOn(post.modified_on?moment((post.modified_on).toDate()):"")
                                     setPassportID(post.passportID)
                                     setPassportIssue(post.passportIssue)
@@ -1429,7 +1508,7 @@ const RenewID = async () => {
                                     setImage(post.profile)
                                     setProfileName(post.profile_name)
                                     setCivilNumber(post.civil_number)
-                                    setVehicleNumber(post.vehicle_number)
+                                    setVehicleNumber(post.license_number)
                                     setPassportID(post.passportID)
                                     setEmployeeCode(post.employeeCode)
                                     setCompanyName(post.companyName)
@@ -1549,7 +1628,7 @@ const RenewID = async () => {
 
             <InputDialog title="Add Remark" inputplaceholder="Enter remarks" OkButtonText="Update" OkButtonIcon={<RefreshCcw width={"1rem"}/>} open={remarksDialog} onCancel={()=>setRemarksDialog(false)} inputOnChange={(e:any)=>setRemarks(e.target.value)} onOk={addRemark} updating={loading} disabled={loading} input1Value={remarks}/>
 
-            <DefaultDialog titleIcon={<Download/>} title={state=="active"?"Archive Record?":"Unarchive Record?"} open={archivePrompt} onCancel={()=>setArchivePrompt(false)} OkButtonText={state=="active"?"Archive":"Unarchive"} onOk={archiveRecord} updating={loading} disabled={loading}/>
+            <DefaultDialog titleIcon={<Download/>} title={state=="active"?"Archive Record?":"Unarchive?"} open={archivePrompt} onCancel={()=>setArchivePrompt(false)} OkButtonText={state=="active"?"Archive":"Confirm"} onOk={archiveRecord} updating={loading} disabled={loading}/>
 
             {/* DISPLAY RECORD DIALOG */}
             <DefaultDialog 
@@ -1608,7 +1687,7 @@ const RenewID = async () => {
             titleIcon={
             
 
-                <Avatar onClick={()=>setImageDialog(true)} style={{width:"3.5rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center", cursor:"pointer"}}>
+                <Avatar onClick={()=>setImageDialog(true)} style={{width:"3.5rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center", cursor:"pointer", border:state=="archived"?"solid goldenrod":""}}>
                     <AvatarImage style={{objectFit:"cover"}} src={image}/>
                     <AvatarFallback>
                         <p style={{paddingTop:"0.1rem"}}>{Array.from(name)[0]}</p>
@@ -1627,7 +1706,7 @@ const RenewID = async () => {
                 <div style={{display:"flex", gap:"0.5rem", alignItems:"center"}}>
                     {
                         state=="active"?
-                        <button onClick={handleNotify} style={{paddingLeft:"1rem", paddingRight:"1rem"}}>
+                        <button onClick={handleNotify} style={{paddingLeft:"1rem", paddingRight:"1rem", height:"2.5rem"}}>
                         {
                             notifyLoading?
                             <LoadingOutlined color="dodgerblue"/>
@@ -1639,7 +1718,7 @@ const RenewID = async () => {
                         
                         </button>
                         :
-                        <button style={{fontSize:"0.8rem", width:"6.5rem", opacity:"0.5", border:"", height:"2rem"}}><Inbox color="dodgerblue" width={"1rem"}/>Archived</button>
+                        <button style={{fontSize:"0.8rem", width:"4.5rem", opacity:"0.5", border:"", height:"2rem"}}>Archived</button>
                     }
                     
 
