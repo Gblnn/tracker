@@ -27,7 +27,7 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, Download, EllipsisVerticalIcon, Globe, GraduationCap, HeartPulse, Image, ImageOff, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
+import { ArrowDown, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, Download, EllipsisVerticalIcon, Globe, GraduationCap, HeartPulse, Image, ImageOff, Inbox, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { LazyLoadImage } from 'react-lazy-load-image-component'
@@ -531,16 +531,18 @@ const RenewID = async () => {
     const archiveRecord = async () => {
         setLoading(true)
         try {
-            await updateDoc(doc(db, 'records', doc_id),{state:state=="active"?"archived":"active"})
+            await updateDoc(doc(db, 'records', doc_id),{state:state=="active"?"archived":"active", notify:state=="active"?false:true})
             setLoading(false)
             setArchivePrompt(false)
+            setState(state=="active"?"archived":"active")
+            setNotify(state=="active"?false:true)
         } catch (error) {
             setLoading(false)
         }
     }
 
     const exportDB = () => {
-        const myHeader = ["id","name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "vehicle_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
+        const myHeader = ["id","name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "vehicle_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10", "CivilID", "VehicleID", "passportID"];
         const worksheet = XLSX.utils.json_to_sheet(records, {header: myHeader});
         const workbook = XLSX.utils.book_new();
 
@@ -1622,8 +1624,10 @@ const RenewID = async () => {
                     
             } 
             title_extra={
-                <div style={{display:"flex", gap:"0.5rem"}}>
-                    <button onClick={handleNotify} style={{paddingLeft:"1rem", paddingRight:"1rem"}}>
+                <div style={{display:"flex", gap:"0.5rem", alignItems:"center"}}>
+                    {
+                        state=="active"?
+                        <button onClick={handleNotify} style={{paddingLeft:"1rem", paddingRight:"1rem"}}>
                         {
                             notifyLoading?
                             <LoadingOutlined color="dodgerblue"/>
@@ -1633,7 +1637,13 @@ const RenewID = async () => {
                             :<BellOff width={"1rem"} color="dodgerblue"/>
                         }
                         
-                    </button>
+                        </button>
+                        :
+                        <button style={{fontSize:"0.8rem", width:"6.5rem", opacity:"0.5", border:"3px solid dodgerblue", height:"2rem"}}><Inbox color="dodgerblue" width={"1rem"}/>Archived</button>
+                    }
+                    
+
+
                     <DropDown onExtra={()=>setArchivePrompt(true)} extraText={state=="active"?"Archive":"Unarchive"} onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>{setUserEditPrompt(true);console.log("filename : ",fileName, "profileName : ", profileName)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
                 </div>
             

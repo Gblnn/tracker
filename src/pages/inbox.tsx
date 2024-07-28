@@ -12,9 +12,11 @@ import emailjs from '@emailjs/browser';
 import { message } from "antd";
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { ChevronDown, File, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, User, Users } from "lucide-react";
+import { ChevronDown, Download, File, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, User, Users } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
+import * as XLSX from '@e965/xlsx'
+import { saveAs } from "file-saver";
 
 export default function Inbox(){
 
@@ -42,6 +44,7 @@ export default function Inbox(){
     const [selectedRecipient, setSelectedRecipient] = useState("")
     const [selectedRecipientID, setSelectedRecipientID] = useState("")
     const [filterState, setFilterState] = useState("")
+    const [filteredData, setFilteredData] = useState<any>([])
 
 
       // MAILJS VARIABLES
@@ -105,6 +108,61 @@ export default function Inbox(){
             })
             setLoading(false)
             setPageLoad(false)
+
+            setFilteredData(fetchedData.filter((record:any)=>{
+                return(
+                    record.civil_expiry&&
+                     Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
+                    ||
+                                record.vehicle_expiry&&
+                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2  
+                                ||
+                                record.medical_due_on&&
+                                Math.round(moment(record.medical_due_on.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.passportExpiry&&
+                                Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))<=6
+                                ||
+                                record.vt_hse_induction&&
+                                Math.round(moment(record.vt_hse_induction.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.vt_car_1&&
+                                Math.round(moment(record.vt_car_1.toDate()).diff(moment(today), 'months'))<=2   
+                                ||
+                                record.vt_car_2&&
+                                Math.round(moment(record.vt_car_2.toDate()).diff(moment(today), 'months'))<=2    
+                                ||
+                                record.vt_car_3&&
+                                Math.round(moment(record.vt_car_3.toDate()).diff(moment(today), 'months'))<=2 
+                                ||
+                                record.vt_car_4&&
+                                Math.round(moment(record.vt_car_4.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.vt_car_5&&
+                                Math.round(moment(record.vt_car_5.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.vt_car_6&&
+                                Math.round(moment(record.vt_car_6.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.vt_car_7&&
+                                Math.round(moment(record.vt_car_7.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.vt_car_8&&
+                                Math.round(moment(record.vt_car_8.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.vt_car_9&&
+                                Math.round(moment(record.vt_car_9.toDate()).diff(moment(today), 'months'))<=2
+                                ||
+                                record.vt_car_10&&
+                                Math.round(moment(record.vt_car_10.toDate()).diff(moment(today), 'months'))<=2
+                            
+                )
+            }))
+
+            filteredData.forEach((e:any) => {
+                e.vt_hse_induction = String(moment((e.vt_hse_induction).toDate()).format("DD/MM/YYYY"))
+            });
+            console.log(filteredData)
             // console.log(records)
             // records.forEach((r:any)=>{
             
@@ -216,6 +274,21 @@ export default function Inbox(){
             Math.round(moment(date.toDate()).diff(moment(today).startOf('day'), 'days'))<=0?true:false
         )
     }
+
+    const exportDB = () => {
+        const myHeader = ["id","name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "vehicle_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
+        const worksheet = XLSX.utils.json_to_sheet(filteredData, {header: myHeader});
+        const workbook = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+
+        // Buffer to store the generated Excel file
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+
+        saveAs(blob, "exportedData.xlsx");
+
+    }
     
 
     // const Evaluate = () => {
@@ -283,6 +356,8 @@ export default function Inbox(){
                         <Bell width={"1rem"} color="violet"/>
                         <p style={{fontSize:"0.8rem"}}>Notify</p>
                     </button> */}
+                    
+
                     <CustomDropDown 
                     trigger={
                     <div className="transitions" style={{display:"flex", gap:"0.25rem", paddingLeft:"0.25rem", paddingRight:"0.25rem", alignItems:"center", minWidth:"6rem", justifyContent:"space-between"}}>
@@ -304,6 +379,8 @@ export default function Inbox(){
                     onClear={()=>setFilterState("")}
                     
                     />
+
+                    <button onClick={exportDB}><Download color="lightgreen" width={"1rem"}/></button>
                     
                 </div>
                 

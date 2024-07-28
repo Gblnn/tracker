@@ -1,9 +1,8 @@
 import emailjs from '@emailjs/nodejs';
 import type { Config } from "@netlify/functions";
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import moment from 'moment';
 import { db } from "../../src/firebase";
-import moment from 'moment'
-import * as XLSX from '@e965/xlsx'
 
 export default async (req: Request) => {
 
@@ -427,14 +426,6 @@ export default async (req: Request) => {
     :null
     })
 
-    const worksheet = XLSX.utils.json_to_sheet(filteredData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-
-    // Buffer to store the generated Excel file
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
-
 
 
     // GENERAL MAIL SEND
@@ -442,15 +433,9 @@ export default async (req: Request) => {
 
     await emailjs.send(serviceId, templateId, {
       recipient: rp,
-      subject:"Document Expiry Reminder",
+      subject:"Document Expiry Reminder", 
       message:m,
-      attachments:[
-        {
-          filename: 'report - '+String(moment().format("DD/MM/YYYY"))+'.xlsx',
-          content:blob,
-          contentType:'application/octet-stream'
-        }
-      ],
+      
     },{
       publicKey:"c8AePKR5BCK8UIn_E",
       privateKey:"9pSXJLIK1ktbJWQSCX-Xw"
@@ -470,5 +455,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"22 13 * * * "
+    schedule:"38 05 * * * "
 }
