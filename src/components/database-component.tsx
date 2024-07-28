@@ -543,7 +543,7 @@ const RenewID = async () => {
     }
 
     const exportDB = () => {
-        const myHeader = ["name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "vehicle_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10", "civil_number", "vehicle_number", "passportID"];
+        const myHeader = ["id","name","employeeCode","type","companyName","state", "civil_expiry", "vehicle_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10", "civil_number", "vehicle_number", "passportID", "salaryBasic", "allowance"];
 
         records.forEach((e:any) => {
             e.civil_expiry==""?
@@ -554,7 +554,7 @@ const RenewID = async () => {
             e.vehicle_expiry==""?
             {}
             :
-            e.vehicle_expiry = String(moment(e.vehicle_expiry.toDate()).format("DD/MM/YYYY"))
+            e.vehicle_expiry = String(moment(e.license_expiry.toDate()).format("DD/MM/YYYY"))
 
 
             e.medical_due_on==""?
@@ -633,6 +633,7 @@ const RenewID = async () => {
         const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
 
         saveAs(blob, "exportedData.xlsx");
+        fetchData()
 
     }
 
