@@ -16,7 +16,7 @@ import { db, storage } from "@/firebase"
 import { LoadingOutlined } from '@ant-design/icons'
 import * as XLSX from '@e965/xlsx'
 import emailjs from '@emailjs/browser'
-import { message, Tooltip } from 'antd'
+import { message } from 'antd'
 import { saveAs } from 'file-saver'
 import { addDoc, collection, deleteDoc, doc, getAggregateFromServer, getDocs, onSnapshot, orderBy, query, sum, Timestamp, updateDoc, where } from 'firebase/firestore'
 import {
@@ -37,6 +37,7 @@ import ReactTimeAgo from 'react-time-ago'
 import useKeyboardShortcut from 'use-keyboard-shortcut'
 import LineCharter from "./bar-chart"
 import DbDropDown from "./db-dropdown"
+import ImageDialog from "./image-dialog"
 
 
 type Record = {
@@ -63,6 +64,7 @@ export default function DbComponent(props:Props){
     const [remarks, setRemarks] = useState("")
     const [archivePrompt, setArchivePrompt] = useState(false)
     const [state, setState] = useState("")
+    const [imageDialog, setImageDialog] = useState(false)
 
     const usenavigate = useNavigate()
     // BASIC PAGE VARIABLES
@@ -139,7 +141,6 @@ export default function DbComponent(props:Props){
     const [vehicle_number, setVehicleNumber] = useState("")
     const [vehicle_issue, setVehicleIssue] = useState("")
     const [vehicle_expiry, setVehicleExpiry] = useState<any>()
-    const [vehicle_year, setVehicleYear] = useState("")
 
     const [medical_completed_on, setCompletedOn] = useState("")
     const [medical_due_on, setDueOn] = useState<any>()
@@ -542,7 +543,7 @@ const RenewID = async () => {
     }
 
     const exportDB = () => {
-        const myHeader = ["id","name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "vehicle_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10", "CivilID", "VehicleID", "passportID"];
+        const myHeader = ["id","name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "vehicle_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10", "civil_number", "vehicle_number", "passportID"];
         const worksheet = XLSX.utils.json_to_sheet(records, {header: myHeader});
         const workbook = XLSX.utils.book_new();
 
@@ -573,7 +574,7 @@ const RenewID = async () => {
         imgUrl = ""
         setLoading(true)
         await uploadFile()
-        await addDoc(collection(db, "records"), {name:name, email:email, employeeCode:employeeCode, companyName:companyName, dateofJoin:dateofJoin, salaryBasic:salaryBasic, initialSalary:salaryBasic, allowance:allowance, initialAllowance:allowance, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:props.dbCategory, notify:true, profile:imgUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"", vehicle_make:"", vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:"", state:"active", remarks:""})
+        await addDoc(collection(db, "records"), {name:name, email:email, employeeCode:employeeCode, companyName:companyName, dateofJoin:dateofJoin, salaryBasic:salaryBasic, initialSalary:salaryBasic, allowance:allowance, initialAllowance:allowance, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:props.dbCategory, notify:true, profile:imgUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"",  vehicle_issue:"", vehicle_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:"", state:"active", remarks:""})
         setAddDialog(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -734,7 +735,7 @@ const RenewID = async () => {
         setLoading(true)
         try {
             await updateDoc(doc(db, "records", doc_id),{vehicle_number:vehicle_number, 
-            vehicle_expiry:TimeStamper(vehicle_expiry), vehicle_issue:vehicle_issue, vehicle_year:vehicle_year, modified_on:Timestamp.fromDate(new Date)})
+            vehicle_expiry:TimeStamper(vehicle_expiry), vehicle_issue:vehicle_issue, modified_on:Timestamp.fromDate(new Date)})
 
             setLoading(false)
             fetchData()
@@ -749,7 +750,6 @@ const RenewID = async () => {
             setCivilDOB("")
             setNewCivilExpiry("")
             setNewCivilNumber("")
-            setVehicleYear("")
             setLoading(false)
             message.info("ID generation failed "+String(error))
         }
@@ -1183,7 +1183,7 @@ const RenewID = async () => {
 
                             </button>
 
-                            <DbDropDown onExport={exportDB} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
+                            <DbDropDown onExport={exportDB} onInbox={()=>usenavigate("/inbox")} onArchives={()=>usenavigate("/archives")} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
 
 
                             {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
@@ -1606,16 +1606,16 @@ const RenewID = async () => {
             bottomTagValue={leaves}
             bottomValueLoading={fetchingLeave}
             titleIcon={
-                <Tooltip title={profileName}>
+            
 
-                <Avatar style={{width:"3.5rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center", cursor:"pointer"}}>
+                <Avatar onClick={()=>setImageDialog(true)} style={{width:"3.5rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center", cursor:"pointer"}}>
                     <AvatarImage style={{objectFit:"cover"}} src={image}/>
                     <AvatarFallback>
                         <p style={{paddingTop:"0.1rem"}}>{Array.from(name)[0]}</p>
                         
                     </AvatarFallback>
                 </Avatar>
-                </Tooltip>
+                
             } title={name} open={recordSummary} onCancel={()=>{setRecordSummary(false);setEmail("")}} 
             bigDate={()=>message.info("Last Modified : "+String(moment(new Date(modified_on)).format("LLL")))}
             created_on={
@@ -1639,7 +1639,7 @@ const RenewID = async () => {
                         
                         </button>
                         :
-                        <button style={{fontSize:"0.8rem", width:"6.5rem", opacity:"0.5", border:"3px solid dodgerblue", height:"2rem"}}><Inbox color="dodgerblue" width={"1rem"}/>Archived</button>
+                        <button style={{fontSize:"0.8rem", width:"6.5rem", opacity:"0.5", border:"", height:"2rem"}}><Inbox color="dodgerblue" width={"1rem"}/>Archived</button>
                     }
                     
 
@@ -1716,6 +1716,8 @@ const RenewID = async () => {
                 </div>
             
             }/>
+
+        <ImageDialog open={imageDialog} src={image}  onCancel={()=>setImageDialog(false)}/>
 
             {/* ADD RECORD DIALOG */}
             <AddRecordDialog open={addDialog} onCancel={()=>{setAddDialog(false);setEditedName("")}}

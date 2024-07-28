@@ -1,11 +1,13 @@
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import { Download, KeyRound } from "lucide-react";
+import { Archive, Download, Inbox, KeyRound } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem } from "./ui/dropdown-menu";
 
 interface Props{
     trigger?:any
     onExport?:any
     onAccess?:any
+    onArchives?:any
+    onInbox?:any
     className?:any
 }
 
@@ -30,6 +32,16 @@ export default function DbDropDown(props:Props){
           <DropdownMenuItem onClick={props.onAccess} style={{width:"100%"}}>
             <KeyRound className="mr-2 " color="dodgerblue" />
             <span style={{width:"100%"}}>Access Control</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem onClick={props.onArchives} style={{width:"100%"}}>
+            <Archive className="mr-2 " color="goldenrod" />
+            <span style={{width:"100%"}}>Archives</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem onClick={props.onInbox} style={{width:"100%"}}>
+            <Inbox className="mr-2 " color="crimson" />
+            <span style={{width:"100%"}}>Inbox</span>
           </DropdownMenuItem>
 
           

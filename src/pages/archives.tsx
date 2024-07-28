@@ -2,23 +2,22 @@
 import Back from "@/components/back";
 import CustomDropDown from "@/components/custom-dropdown";
 import Directive from "@/components/directive";
-import InboxComponent from "@/components/inbox-component";
 import InputDialog from "@/components/input-dialog";
 import SearchBar from "@/components/search-bar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { db } from "@/firebase";
 import { LoadingOutlined } from '@ant-design/icons';
+import * as XLSX from '@e965/xlsx';
 import emailjs from '@emailjs/browser';
 import { message } from "antd";
-import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
+import { saveAs } from "file-saver";
+import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { ChevronDown, Download, File, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, User, Users } from "lucide-react";
+import { Archive, ChevronDown, Download, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, User } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
-import * as XLSX from '@e965/xlsx'
-import { saveAs } from "file-saver";
 
-export default function Inbox(){
+export default function Archives(){
 
     const today:any = moment().toDate()
     const [records, setRecords] = useState<any>([])
@@ -44,7 +43,7 @@ export default function Inbox(){
     const [selectedRecipient, setSelectedRecipient] = useState("")
     const [selectedRecipientID, setSelectedRecipientID] = useState("")
     const [filterState, setFilterState] = useState("")
-    const [filteredData, setFilteredData] = useState<any>([])
+    
 
 
       // MAILJS VARIABLES
@@ -96,7 +95,7 @@ export default function Inbox(){
         try {
             setPageLoad(true)
             const RecordCollection = collection(db, "records")
-            const recordQuery = query(RecordCollection, orderBy("created_on"))
+            const recordQuery = query(RecordCollection, orderBy("created_on"), where("state", "==", "archived"))
             const querySnapshot = await getDocs(recordQuery)
             const fetchedData:any = [];
 
@@ -109,61 +108,16 @@ export default function Inbox(){
             setLoading(false)
             setPageLoad(false)
 
-            setFilteredData(fetchedData.filter((record:any)=>{
-                return(
-                    record.civil_expiry&&
-                     Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
-                    ||
-                    record.vehicle_expiry&&
-                    Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2  
-                    ||
-                    record.medical_due_on&&
-                    Math.round(moment(record.medical_due_on.toDate()).diff(moment(today), 'months'))<=2
-                    ||
-                    record.passportExpiry&&
-                    Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))<=6
-                    ||
-                    record.vt_hse_induction&&
-                    Math.round(moment(record.vt_hse_induction.toDate()).diff(moment(today), 'months'))<=2
-                    ||
-                    record.vt_car_1&&
-                    Math.round(moment(record.vt_car_1.toDate()).diff(moment(today), 'months'))<=2   
-                    ||
-                    record.vt_car_2&&
-                    Math.round(moment(record.vt_car_2.toDate()).diff(moment(today), 'months'))<=2    
-                    ||
-                    record.vt_car_3&&
-                    Math.round(moment(record.vt_car_3.toDate()).diff(moment(today), 'months'))<=2 
-                    ||
-                    record.vt_car_4&&
-                    Math.round(moment(record.vt_car_4.toDate()).diff(moment(today), 'months'))<=2
-                    ||
-                    record.vt_car_5&&
-                    Math.round(moment(record.vt_car_5.toDate()).diff(moment(today), 'months'))<=2
-                    ||
-                    record.vt_car_6&&
-                    Math.round(moment(record.vt_car_6.toDate()).diff(moment(today), 'months'))<=2
-                    ||
-                    record.vt_car_7&&
-                    Math.round(moment(record.vt_car_7.toDate()).diff(moment(today), 'months'))<=2
-                    ||
-                    record.vt_car_8&&
-                    Math.round(moment(record.vt_car_8.toDate()).diff(moment(today), 'months'))<=2
-                    ||
-                    record.vt_car_9&&
-                    Math.round(moment(record.vt_car_9.toDate()).diff(moment(today), 'months'))<=2
-                    ||
-                    record.vt_car_10&&
-                    Math.round(moment(record.vt_car_10.toDate()).diff(moment(today), 'months'))<=2
-                            
-                )
-            }))
-
-            filteredData.forEach((e:any) => {
+            
+            fetchedData.forEach((e:any) => {
                 e.vt_hse_induction = String("Test")
             });
-            console.log(filteredData)
+            console.log(fetchedData)
+            // console.log(records)
+            // records.forEach((r:any)=>{
             
+            //     console.log(r.civil_expiry.toDate())
+            // })
             
             
     
@@ -253,27 +207,11 @@ export default function Inbox(){
         }
     }
 
-    const DescGenerator = (date:any, months:number, name:string) => {
-        return(
-            date&&
-            Math.round(moment(date.toDate()).diff(moment(new Date()), 'months'))
-            <=months&&
-                (name+" expiry "+
-                moment((date).toDate()).startOf('day').fromNow()
-                +" on "+moment(date.toDate()).format("DD/MM/YYYY"))
-        )
-    }
 
-    const OverdueGenerator = (date:any) => {
-        return(
-            date&&
-            Math.round(moment(date.toDate()).diff(moment(today).startOf('day'), 'days'))<=0?true:false
-        )
-    }
 
     const exportDB = () => {
         const myHeader = ["id","name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "vehicle_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
-        const worksheet = XLSX.utils.json_to_sheet(filteredData, {header: myHeader});
+        const worksheet = XLSX.utils.json_to_sheet(records, {header: myHeader});
         const workbook = XLSX.utils.book_new();
 
         XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
@@ -294,11 +232,14 @@ export default function Inbox(){
     return(
         <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
         <div style={{padding:"1.25rem", background:"linear-gradient(rgba(209 20 58/ 15%), rgba(100 100 100/ 0%)"}}>
-            <Back title={"Alerts"}
+            <Back title={"Archives"+" ("+records.length+")"}
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
+{/* 
+                        <button onClick={()=>{setRecipientsDialog(true);fetchRecipients();setRecipientList([])}} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.85rem"}}><Users className="animate-pulse" width={"1rem"} color="salmon"/>Recipients</button> */}
 
-                        <button onClick={()=>{setRecipientsDialog(true);fetchRecipients();setRecipientList([])}} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.85rem"}}><Users className="animate-pulse" width={"1rem"} color="salmon"/>Recipients</button>
+
+                        <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={exportDB}><Download color="lightgreen" width={"1rem"}/></button>
 
                         <button className="blue-glass" style={{paddingLeft:"1rem", paddingRight:"1rem", height:"2.5rem", width:"3rem"}} onClick={fetchData} >
                             {
@@ -376,7 +317,7 @@ export default function Inbox(){
                     
                     />
 
-                    <button onClick={exportDB}><Download color="lightgreen" width={"1rem"}/></button>
+                    
                     
                 </div>
                 
@@ -384,55 +325,7 @@ export default function Inbox(){
 
                 <div className="record-list" id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.75rem", height:"75svh", border:"", overflow:"auto", paddingRight:"0.5rem", paddingBottom:"1rem"}}>
                     {
-                        records
-                        .filter((record:any)=>{
-                            return (
-                                record.civil_expiry&&
-                                Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
-                                ||
-                                record.vehicle_expiry&&
-                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2  
-                                ||
-                                record.medical_due_on&&
-                                Math.round(moment(record.medical_due_on.toDate()).diff(moment(today), 'months'))<=2
-                                ||
-                                record.passportExpiry&&
-                                Math.round(moment(record.passportExpiry.toDate()).diff(moment(today), 'months'))<=6
-                                ||
-                                record.vt_hse_induction&&
-                                Math.round(moment(record.vt_hse_induction.toDate()).diff(moment(today), 'months'))<=2
-                                ||
-                                record.vt_car_1&&
-                                Math.round(moment(record.vt_car_1.toDate()).diff(moment(today), 'months'))<=2   
-                                ||
-                                record.vt_car_2&&
-                                Math.round(moment(record.vt_car_2.toDate()).diff(moment(today), 'months'))<=2    
-                                ||
-                                record.vt_car_3&&
-                                Math.round(moment(record.vt_car_3.toDate()).diff(moment(today), 'months'))<=2 
-                                ||
-                                record.vt_car_4&&
-                                Math.round(moment(record.vt_car_4.toDate()).diff(moment(today), 'months'))<=2
-                                ||
-                                record.vt_car_5&&
-                                Math.round(moment(record.vt_car_5.toDate()).diff(moment(today), 'months'))<=2
-                                ||
-                                record.vt_car_6&&
-                                Math.round(moment(record.vt_car_6.toDate()).diff(moment(today), 'months'))<=2
-                                ||
-                                record.vt_car_7&&
-                                Math.round(moment(record.vt_car_7.toDate()).diff(moment(today), 'months'))<=2
-                                ||
-                                record.vt_car_8&&
-                                Math.round(moment(record.vt_car_8.toDate()).diff(moment(today), 'months'))<=2
-                                ||
-                                record.vt_car_9&&
-                                Math.round(moment(record.vt_car_9.toDate()).diff(moment(today), 'months'))<=2
-                                ||
-                                record.vt_car_10&&
-                                Math.round(moment(record.vt_car_10.toDate()).diff(moment(today), 'months'))<=2
-                            )
-                        })
+                        records  
                         .filter((post:any)=>{
                     
                             return search == ""?
@@ -448,81 +341,18 @@ export default function Inbox(){
                             ((e.type).toLowerCase()).includes(filterState.toLowerCase())
                         })
                         .map((record:any)=>(
-                            <InboxComponent 
-                            notify={!record.notify}
-                            archived={record.state=="active"?false:true}
-                            type={record.type=="personal"?"Personal Record":record.type=="vale"?"Vale Record":""}
-                            typeIcon={record.type=="personal"?<File color="dodgerblue" width={"1rem"}/>:record.type=="vale"?<img src="/vale-logo.png" style={{width:"1.25rem", paddingBottom:"0.45rem"}}/>:""}
-                            mail={record.email}
-                            noArrow
-                            onClick={()=>{}}
-                            onRenewClick={()=>{
-                                setRenewDocDialog(true)
-                                setDocID(record.id)
-                            }}
-                            onReminderClick={()=>{
-                                setReminderDialog(true);
-                                setMailTitle(record.name+"'s document expiry reminder");
-                                setMailContent(
-                                    "This is a gentle reminder regarding some of "+record.name+"'s"+" document(s) expiring soon :  \n\n"+
-                                                                            
-                                    ("Civil ID expiry in "+
-                                    Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))+
-                                
-                                    " month(s)"
-                                    +" on "+moment(record.civil_expiry.toDate()).format("DD/MM/YYYY")+"\n")
-                                )
-                            }}
+                            <Directive 
                             
+                            onClick={()=>{setDocID(record.id)}}
+                            
+                            
+                            icon={<Archive color="goldenrod"/>}
                             key={record.id} 
-                            title={record.name+"'s doc expiry reminder"}
+                            title={record.name}
+                            tag={record.type}
+                            status
 
-                             
-                            civil_desc={DescGenerator(record.civil_expiry, 2, "Civil ID")}
-                            civil_overdue={OverdueGenerator(record.civil_expiry)}
-
-                            vehicle_desc={DescGenerator(record.vehicle_expiry, 2, "Driving License")}
-                            vehicle_overdue={OverdueGenerator(record.vehicle_expiry)}
-
-                            medical_desc={DescGenerator(record.medical_due_on, 2, "Medical ID")}
-                            medical_overdue={OverdueGenerator(record.medical_due_on)}
-
-                            passport_desc={DescGenerator(record.passportExpiry, 6, "Passport")}
-                            passport_overdue={OverdueGenerator(record.passportExpiry)}
-
-                            vt_hse_induction_desc={DescGenerator(record.vt_hse_induction, 2, "HSE Induction Training")}
-                            vt_hse_induction_overdue={OverdueGenerator(record.vt_hse_induction)}
-
-                            vt_car_1_desc={DescGenerator(record.vt_car_1, 2, "CAR - 1 Training")}
-                            vt_car_1_overdue={OverdueGenerator(record.vt_car_1)}
-                            
-                            vt_car_2_desc={DescGenerator(record.vt_car_2, 2, "CAR - 2 Training")}
-                            vt_car_2_overdue={OverdueGenerator(record.vt_car_2)}
-
-                            vt_car_3_desc={DescGenerator(record.vt_car_3, 2, "CAR - 3 Training")}
-                            vt_car_3_overdue={OverdueGenerator(record.vt_car_3)}
-
-                            vt_car_4_desc={DescGenerator(record.vt_car_4, 2, "CAR - 4 Training")}
-                            vt_car_4_overdue={OverdueGenerator(record.vt_car_4)}
-
-                            vt_car_5_desc={DescGenerator(record.vt_car_5, 2, "CAR - 5 Training")}
-                            vt_car_5_overdue={OverdueGenerator(record.vt_car_5)}
-
-                            vt_car_6_desc={DescGenerator(record.vt_car_6, 2, "CAR - 6 Training")}
-                            vt_car_6_overdue={OverdueGenerator(record.vt_car_6)}
-
-                            vt_car_7_desc={DescGenerator(record.vt_car_7, 2, "CAR - 7 Training")}
-                            vt_car_7_overdue={OverdueGenerator(record.vt_car_7)}
-
-                            vt_car_8_desc={DescGenerator(record.vt_car_8, 2, "CAR - 8 Training")}
-                            vt_car_8_overdue={OverdueGenerator(record.vt_car_8)}
-
-                            vt_car_9_desc={DescGenerator(record.vt_car_9, 2, "CAR - 9 Training")}
-                            vt_car_9_overdue={OverdueGenerator(record.vt_car_9)}
-
-                            vt_car_10_desc={DescGenerator(record.vt_car_10, 2, "CAR - 10 Training")}
-                            vt_car_10_overdue={OverdueGenerator(record.vt_car_10)}
-
+                        
                             
                             />
                         ))

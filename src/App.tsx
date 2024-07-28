@@ -11,6 +11,7 @@ import History from './pages/history';
 import ValeRecords from './pages/vale-records';
 import PageNotFound from './pages/page-not-found';
 import Login from './pages/login';
+import Archives from './pages/archives';
 
 
 export default function App(){
@@ -35,6 +36,7 @@ export default function App(){
       <Route path="/" element={<Login/>}/>
       <Route path='/index' element={<Index/>}/>
       <Route path="/inbox" element={<Inbox/>}/>
+      <Route path="/archives" element={<Archives/>}/>
       <Route path="/records" element={<Records/>}/>
       <Route path="/vale-records" element={<ValeRecords/>}/>
       <Route path="/user" element={<UserPage/>}/>

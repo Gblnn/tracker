@@ -48,6 +48,8 @@ interface Props {
     renumeration?:boolean
     remarksOnClick?:any
     remarksValue?:string
+    dialogBackground?:any
+    dialogHeight?:any
 }
 
 
@@ -57,10 +59,12 @@ export default function DefaultDialog(props:Props){
         <>
         <Dialog open={props.open}>
 
-            <DialogContent onOpenAutoFocus={(e)=>e.preventDefault()}>
+            <DialogContent style={{background:props.dialogBackground, backgroundRepeat:"no-repeat", backgroundSize:"cover"}} onOpenAutoFocus={(e)=>e.preventDefault()}>
 
                 <DialogHeader>
-                    <DialogTitle className="heading" style={{userSelect:"none", width:"100%", borderBottom:"1px solid rgba(100 100 100/ 50%)", paddingBottom:"1rem"}}>
+                    {
+                        props.title&&
+                        <DialogTitle className="heading" style={{userSelect:"none", width:"100%", borderBottom:"1px solid rgba(100 100 100/ 50%)", paddingBottom:"1rem"}}>
                         <div className="flex" style={{border:"", justifyContent:"space-between"}}>
                             <div style={{display:"flex", alignItems:"center", gap:"1rem", border:"", width:"100%"}}>
                                 <div style={{border:"", height:"100%", display:"flex"}}>
@@ -120,6 +124,8 @@ export default function DefaultDialog(props:Props){
                         </div>
                         
                     </DialogTitle>
+                    }
+                    
                     
                     {
                         props.tags?

@@ -62,7 +62,7 @@ export default function Directive(props:Props){
                     
 
                     <div style={{border:'', width:""}}>
-                    <p style={{fontWeight:400, textAlign:"left", border:"", width:"9rem", fontSize:props.titleSize?props.titleSize:"0.9rem", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis"}}>
+                    <p style={{fontWeight:400, textAlign:"left", border:"", fontSize:props.titleSize?props.titleSize:"0.9rem", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis", display:"flex", flex:1, width:""}}>
                         {props.title}
                     </p>
                     <p style={{fontSize:"0.9rem", textAlign:"left", color:"lightblue",opacity:"0.75", background:"", borderRadius:"0.5rem", paddingRight:"0.25rem", paddingLeft:""}}>{props.id_subtitle}</p>
@@ -102,13 +102,14 @@ export default function Directive(props:Props){
                         :
                     <div style={{background:"rgba(100 100 100/ 25%)",fontSize:"0.85rem", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", color:props.tag=="Expiring"?"violet":props.tag=="Available"?"lightgreen":props.status?"lightblue":"goldenrod", width:"", fontWeight:600, display:"flex", alignItems:"center", gap:"0.5rem"}}>
                         
-                        {props.archived==true?
-                        <>
-                        <Inbox width={"0.8rem"}/>
+                        {
+                        props.archived==true?
+                        <div style={{color:"white", display:'flex', alignItems:"center", gap:"0.5rem",}}>
+                        <Inbox width={"1rem"}/>
                         <p>Archived</p>
-                        </>
+                        </div>
                         :
-                        props.tag
+                        <p style={{ textTransform:"capitalize"}}>{props.tag}</p>
                         }
                     </div>
                 :null

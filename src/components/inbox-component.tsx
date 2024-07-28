@@ -1,6 +1,6 @@
 import { Tooltip } from 'antd'
 import { motion } from 'framer-motion'
-import { BellOff, Book, Car, CreditCard, Disc, HeartPulse } from "lucide-react"
+import { BellOff, Book, Car, CreditCard, Disc, HeartPulse, Inbox } from "lucide-react"
 import { Link } from "react-router-dom"
 import InboxComponentDesc from './inbox-component-desc'
 
@@ -53,6 +53,7 @@ interface Props{
     typeColor?:string
     typeIcon?:any
     notify?:boolean
+    archived?:boolean
 }
 
 
@@ -250,9 +251,21 @@ export default function InboxComponent(props:Props){
                                 {
                                     props.notify?
                                     <Tooltip title="This person will not be notified">
-                                        <button style={{height:"2rem"}}>
-                                        <BellOff width={"1rem"} color='grey'/>
-                                    </button>
+                                        <button style={{height:"2rem", fontSize:"0.8rem", paddingRight:"1rem", paddingLeft:"1rem", opacity:0.5}}>
+                                            {
+                                                props.archived?
+                                                <Inbox width={"1rem"}/>
+                                                :
+                                                <BellOff width={"1rem"} color='grey'/>
+                                            }
+                                            {
+                                                props.archived?
+                                                "Archived"
+                                                :
+                                                <BellOff width={"1rem"} color='grey'/>
+                                            }
+                                            
+                                        </button>
                                     </Tooltip>
                                     
                                     
