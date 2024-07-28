@@ -261,11 +261,11 @@ export default function Archives(){
 
                         <div style={{display:"flex", gap:"0.25rem", opacity:"0.5"}}>
                             {/* <BellRingIcon width={"1rem"}/> */}
-                            <p>No Alerts</p>
+                            <p>No Archives</p>
                             
                         </div>
                         <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                        <p style={{opacity:0.5, fontSize:"0.7rem"}}>There are no alerts at the moment</p>
+                        <p style={{opacity:0.5, fontSize:"0.7rem"}}>No archives found</p>
                         </motion.div>
 
 
