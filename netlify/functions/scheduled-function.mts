@@ -113,147 +113,243 @@ export default async (req: Request) => {
 
         
 
-        element.license_expiry!=""?
-        m += element.name+"'s Driving License expiry  "
-        +
-        moment((element.license_expiry).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.license_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(element.license_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
-        " (Overdue) "
-        :"")
-        +"\n\n"
-        :null
+        if(element.license_expiry!=""){
 
-        element.medical_due_on!=""?
-        m += element.name+"'s Medical ID expiry "
-        +
-        moment((element.medical_due_on).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.medical_due_on).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(element.medical_due_on.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+          if(Math.round(moment(element.license_expiry.toDate()).diff(moment(today), 'months'))<=2){
 
-        element.passportExpiry!=""?
-        m += element.name+"'s Passport expiry "
-        +
-        moment((element.passportExpiry).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.passportExpiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((element.passportExpiry).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+            m += element.name+"'s Driving License expiry  "
+            +
+            moment((element.license_expiry).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.license_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.license_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
 
-        element.vt_hse_induction!=""?
-        m += element.name+"'s HSE Induction Training expiry "
-        +
-        moment((element.vt_hse_induction).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.vt_hse_induction).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((element.vt_hse_induction).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+          }
+        }
 
-        element.vt_car_1!=""?
-        m += element.name+"'s CAR - 1 Training expiry "
-        +
-        moment((element.vt_car_1).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.vt_car_1).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((element.vt_car_1).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+        if(element.medical_due_on!=""){
 
-        element.vt_car_2!=""?
-        m += element.name+"'s CAR -2 Training expiry "
-        +
-        moment((element.vt_car_2).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.vt_car_2).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((element.vt_car_2).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+          if(Math.round(moment(element.medical_due_on.toDate()).diff(moment(today), 'months'))<=2){
 
-        element.vt_car_3!=""?
-        m += element.name+"'s CAR - 3 Training expiry "
-        +
-        moment((element.vt_car_3).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.vt_car_3).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((element.vt_car_3).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+            m += element.name+"'s Medical expiry  "
+            +
+            moment((element.medical_due_on).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.medical_due_on).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.medical_due_on.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
 
-        element.vt_car_4!=""?
-        m += element.name+"'s CAR - 4 Training expiry "
-        +
-        moment((element.vt_car_4).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.vt_car_4).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((element.vt_car_4).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+          }
+        }
 
-        element.vt_car_5!=""?
-        m += element.name+"'s CAR - 5 Training expiry "
-        +
-        moment((element.vt_car_5).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.vt_car_5).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((element.vt_car_5).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+        if(element.passportExpiry!=""){
 
-        element.vt_car_6!=""?
-        m += element.name+"'s CAR - 6 Training expiry "
-        +
-        moment((element.vt_car_6).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.vt_car_6).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((element.vt_car_6).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+          if(Math.round(moment(element.passportExpiry.toDate()).diff(moment(today), 'months'))<=2){
 
-        element.vt_car_7!=""?
-        m += element.name+"'s CAR - 7 Training expiry "
-        +
-        moment((element.vt_car_7).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.vt_car_7).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((element.vt_car_7).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+            m += element.name+"'s Passport expiry  "
+            +
+            moment((element.passportExpiry).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.passportExpiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.passportExpiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
 
-        element.vt_car_8!=""?
-        m += element.name+"'s CAR - 8 Training expiry "
-        +
-        moment((element.vt_car_8).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.vt_car_8).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((element.vt_car_8).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+          }
+        }
 
-        element.vt_car_9!=""?
-        m += element.name+"'s CAR - 9 Training expiry "
-        +
-        moment((element.vt_car_9).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.vt_car_9).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((element.vt_car_9).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+        if(element.vt_hse_induction!=""){
 
-        element.vt_car_10!=""?
-        m += element.name+"'s CAR - 10 Training expiry "
-        +
-        moment((element.vt_car_10).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.vt_car_10).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((element.vt_car_10).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+          if(Math.round(moment(element.vt_hse_induction.toDate()).diff(moment(today), 'months'))<=2){
+
+            m += element.name+"'s HSE Induction Training expiry  "
+            +
+            moment((element.vt_hse_induction).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.vt_hse_induction).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.vt_hse_induction.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
+
+          }
+        }
+
+        if(element.vt_car_1!=""){
+
+          if(Math.round(moment(element.vt_car_1.toDate()).diff(moment(today), 'months'))<=2){
+
+            m += element.name+"'s CAR - 1 Training expiry  "
+            +
+            moment((element.vt_car_1).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.vt_car_1).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.vt_car_1.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
+
+          }
+        }
+
+        if(element.vt_car_2!=""){
+
+          if(Math.round(moment(element.vt_car_2.toDate()).diff(moment(today), 'months'))<=2){
+
+            m += element.name+"'s CAR - 2 Training expiry  "
+            +
+            moment((element.vt_car_2).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.vt_car_2).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.vt_car_2.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
+
+          }
+        }
+
+        if(element.vt_car_3!=""){
+
+          if(Math.round(moment(element.vt_car_3.toDate()).diff(moment(today), 'months'))<=2){
+
+            m += element.name+"'s CAR - 3 Training expiry  "
+            +
+            moment((element.vt_car_3).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.vt_car_3).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.vt_car_3.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
+
+          }
+        }
+
+        if(element.vt_car_4!=""){
+
+          if(Math.round(moment(element.vt_car_4.toDate()).diff(moment(today), 'months'))<=2){
+
+            m += element.name+"'s CAR - 4 Training expiry  "
+            +
+            moment((element.vt_car_4).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.vt_car_4).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.vt_car_4.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
+
+          }
+        }
+
+        if(element.vt_car_5!=""){
+
+          if(Math.round(moment(element.vt_car_5.toDate()).diff(moment(today), 'months'))<=2){
+
+            m += element.name+"'s CAR - 5 Training expiry  "
+            +
+            moment((element.vt_car_5).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.vt_car_5).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.vt_car_5.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
+
+          }
+        }
+
+        if(element.vt_car_6!=""){
+
+          if(Math.round(moment(element.vt_car_6.toDate()).diff(moment(today), 'months'))<=2){
+
+            m += element.name+"'s CAR - 6 Training expiry  "
+            +
+            moment((element.vt_car_6).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.vt_car_6).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.vt_car_6.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
+
+          }
+        }
+
+        if(element.vt_car_7!=""){
+
+          if(Math.round(moment(element.vt_car_7.toDate()).diff(moment(today), 'months'))<=2){
+
+            m += element.name+"'s CAR - 7 Training expiry  "
+            +
+            moment((element.vt_car_7).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.vt_car_7).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.vt_car_7.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
+
+          }
+        }
+
+        if(element.vt_car_8!=""){
+
+          if(Math.round(moment(element.vt_car_8.toDate()).diff(moment(today), 'months'))<=2){
+
+            m += element.name+"'s CAR - 8 Training expiry  "
+            +
+            moment((element.vt_car_8).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.vt_car_8).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.vt_car_8.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
+
+          }
+        }
+
+        if(element.vt_car_9!=""){
+
+          if(Math.round(moment(element.vt_car_9.toDate()).diff(moment(today), 'months'))<=2){
+
+            m += element.name+"'s CAR - 9 Training expiry  "
+            +
+            moment((element.vt_car_9).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.vt_car_9).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.vt_car_9.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
+
+          }
+        }
+
+        if(element.vt_car_10!=""){
+
+          if(Math.round(moment(element.vt_car_10.toDate()).diff(moment(today), 'months'))<=2){
+
+            m += element.name+"'s CAR - 10 Training expiry  "
+            +
+            moment((element.vt_car_10).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.vt_car_10).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.vt_car_10.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
+
+          }
+        }
 
         m+="\n\n"
       })
@@ -264,161 +360,262 @@ export default async (req: Request) => {
       p+="Listed below are some document(s) which require your attention : \n\n"
 
 
-      e.civil_expiry!=""?
-      p+="Civil ID expiry  "
-        +
-        moment((e.civil_expiry).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.civil_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
-        " (Overdue) "
-        :"")
-        +"\n\n"
-        :null
+      if(e.civil_expiry!=""){
 
-        e.license_expiry!=""?
-        p+="Driving License expiry  "
-        +
-        moment((e.license_expiry).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.license_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.license_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
-        " (Overdue) "
-        :"")
-        +"\n\n"
-        :null
+        if(Math.round(moment(e.civil_expiry.toDate()).diff(moment(today), 'months'))<=2){
 
-        e.medical_due_on!=""?
-        p+="Medical ID expiry "
-        +
-        moment((e.medical_due_on).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.medical_due_on).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.medical_due_on.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+          m += "Civil ID expiry  "
+          +
+          moment((e.civil_expiry).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.civil_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
 
-        e.passportExpiry!=""?
-        p+="Passport expiry "
-        +
-        moment((e.passportExpiry).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.passportExpiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment((e.passportExpiry).toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+        }
+      }
 
-        e.vt_hse_induction!=""?
-        p+="HSE Induction Training expiry "
-        +
-        moment((e.vt_hse_induction).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.vt_hse_induction).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.vt_hse_induction.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+      if(e.license_expiry!=""){
 
-        e.vt_car_1!=""?
-        p+="CAR - 1 Training expiry "
-        +
-        moment((e.vt_car_1).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.vt_car_1).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.vt_car_1.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+        if(Math.round(moment(e.license_expiry.toDate()).diff(moment(today), 'months'))<=2){
 
-        e.vt_car_2!=""?
-        p+="CAR - 2 Training expiry "
-        +
-        moment((e.vt_car_2).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.vt_car_2).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.vt_car_2.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+          m += "Driving License expiry  "
+          +
+          moment((e.license_expiry).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.license_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.license_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
 
-        e.vt_car_3!=""?
-        p+="CAR - 3 Training expiry "
-        +
-        moment((e.vt_car_3).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.vt_car_3).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.vt_car_3.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+        }
+      }
 
-        e.vt_car_4!=""?
-        p+="CAR - 4 Training expiry "
-        +
-        moment((e.vt_car_4).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.vt_car_4).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.vt_car_4.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+      if(e.medical_due_on!=""){
 
-        e.vt_car_5!=""?
-        p+="CAR - 5 Training expiry "
-        +
-        moment((e.vt_car_5).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.vt_car_5).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.vt_car_5.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+        if(Math.round(moment(e.medical_due_on.toDate()).diff(moment(today), 'months'))<=2){
 
-        e.vt_car_6!=""?
-        p+="CAR - 6 Training expiry "
-        +
-        moment((e.vt_car_6).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.vt_car_6).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.vt_car_6.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+          m += "Medical expiry  "
+          +
+          moment((e.medical_due_on).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.medical_due_on).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.medical_due_on.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
 
-        e.vt_car_7!=""?
-        p+="CAR - 7 Training expiry "
-        +
-        moment((e.vt_car_7).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.vt_car_7).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.vt_car_7.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+        }
+      }
 
-        e.vt_car_8!=""?
-        p+="CAR - 8 Training expiry "
-        +
-        moment((e.vt_car_8).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.vt_car_8).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.vt_car_8.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+      if(e.passportExpiry!=""){
 
-        e.vt_car_9!=""?
-        p+="CAR - 9 Training expiry "
-        +
-        moment((e.vt_car_9).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.vt_car_9).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.vt_car_9.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+        if(Math.round(moment(e.passportExpiry.toDate()).diff(moment(today), 'months'))<=2){
 
-        e.vt_car_10!=""?
-        p+="CAR - 10 Training expiry "
-        +
-        moment((e.vt_car_10).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((e.vt_car_10).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.vt_car_10.toDate()).diff(moment(today).startOf('day'), 'days')<=0?" (Overdue)":"")
-        +"\n\n"
-        :null
+          m += "Passport expiry  "
+          +
+          moment((e.passportExpiry).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.passportExpiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.passportExpiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
 
-      
+        }
+      }
+
+      if(e.vt_hse_induction!=""){
+
+        if(Math.round(moment(e.vt_hse_induction.toDate()).diff(moment(today), 'months'))<=2){
+
+          m += "HSE Induction Training expiry  "
+          +
+          moment((e.vt_hse_induction).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.vt_hse_induction).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.vt_hse_induction.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
+
+        }
+      }
+
+      if(e.vt_car_1!=""){
+
+        if(Math.round(moment(e.vt_car_1.toDate()).diff(moment(today), 'months'))<=2){
+
+          m += "CAR - 1 Training expiry  "
+          +
+          moment((e.vt_car_1).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.vt_car_1).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.vt_car_1.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
+
+        }
+      }
+
+      if(e.vt_car_2!=""){
+
+        if(Math.round(moment(e.vt_car_2.toDate()).diff(moment(today), 'months'))<=2){
+
+          m += "CAR - 2 Training expiry  "
+          +
+          moment((e.vt_car_2).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.vt_car_2).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.vt_car_2.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
+
+        }
+      }
+
+      if(e.vt_car_3!=""){
+
+        if(Math.round(moment(e.vt_car_3.toDate()).diff(moment(today), 'months'))<=2){
+
+          m += "CAR - 3 Training expiry  "
+          +
+          moment((e.vt_car_3).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.vt_car_3).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.vt_car_3.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
+
+        }
+      }
+
+      if(e.vt_car_4!=""){
+
+        if(Math.round(moment(e.vt_car_4.toDate()).diff(moment(today), 'months'))<=2){
+
+          m += "CAR - 4 Training expiry  "
+          +
+          moment((e.vt_car_4).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.vt_car_4).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.vt_car_4.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
+
+        }
+      }
+
+      if(e.vt_car_5!=""){
+
+        if(Math.round(moment(e.vt_car_5.toDate()).diff(moment(today), 'months'))<=2){
+
+          m += "CAR - 5 Training expiry  "
+          +
+          moment((e.vt_car_5).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.vt_car_5).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.vt_car_5.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
+
+        }
+      }
+
+      if(e.vt_car_6!=""){
+
+        if(Math.round(moment(e.vt_car_6.toDate()).diff(moment(today), 'months'))<=2){
+
+          m += "CAR - 6 Training expiry  "
+          +
+          moment((e.vt_car_6).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.vt_car_6).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.vt_car_6.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
+
+        }
+      }
+
+      if(e.vt_car_7!=""){
+
+        if(Math.round(moment(e.vt_car_7.toDate()).diff(moment(today), 'months'))<=2){
+
+          m += "CAR - 7 Training expiry  "
+          +
+          moment((e.vt_car_7).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.vt_car_7).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.vt_car_7.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
+
+        }
+      }
+
+      if(e.vt_car_8!=""){
+
+        if(Math.round(moment(e.vt_car_8.toDate()).diff(moment(today), 'months'))<=2){
+
+          m += "CAR - 8 Training expiry  "
+          +
+          moment((e.vt_car_8).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.vt_car_8).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.vt_car_8.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
+
+        }
+      }
+
+      if(e.vt_car_9!=""){
+
+        if(Math.round(moment(e.vt_car_9.toDate()).diff(moment(today), 'months'))<=2){
+
+          m += "CAR - 9 Training expiry  "
+          +
+          moment((e.vt_car_9).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.vt_car_9).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.vt_car_9.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
+
+        }
+      }
+
+      if(e.vt_car_10!=""){
+
+        if(Math.round(moment(e.vt_car_10.toDate()).diff(moment(today), 'months'))<=2){
+
+          m += "CAR - 10 Training expiry  "
+          +
+          moment((e.vt_car_10).toDate()).startOf('day').fromNow()
+          +" on "
+          +String(moment((e.vt_car_10).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+          +String(moment(e.vt_car_10.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+          " (Overdue) "
+          :"")
+          +"\n\n"
+
+        }
+      }
+
+      //INDIVIDIAL MAIL SEND
       filteredData.length>=1?
       e.notify==true&&
       await emailjs.send(serviceId, "template_0f3zy3e", {
@@ -462,5 +659,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"57 06 * * * "
+    schedule:"02 08 * * * "
 }
