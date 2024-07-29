@@ -222,7 +222,7 @@ export default function DefaultDialog(props:Props){
 
                             
 
-                            <Directive title="Leaves" tag={props.bottomTagValue} onClick={props.onBottomTagClick} status loading={props.bottomValueLoading}/>
+                            <Directive title="Day off(s)" tag={props.bottomTagValue} onClick={props.onBottomTagClick} status loading={props.bottomValueLoading}/>
 
                             <Directive title="Remarks" status tag={props.remarksValue} onClick={props.remarksOnClick}/>
 

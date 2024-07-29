@@ -1808,6 +1808,7 @@ const RenewID = async () => {
             updating={loading}
             disabled={loading}
             title="Add Record"
+            renumeration={props.dbCategory=="personal"?true:false}
             onImageChange={(e:any)=>{setImageUpload(e.target.files[0]); setFileName(e.target.files[0].name)}}
             NameOnChange={(e:any)=>{setName(e.target.value)}}
             EmailOnChange={(e:any)=>setEmail(e.target.value)}

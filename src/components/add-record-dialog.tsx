@@ -30,6 +30,7 @@ interface Props{
     DateofJoinValue?:string
     SalaryBasicValue?:any
     AllowanceValue?:any
+    renumeration?:boolean
 }
 
 export default function AddRecordDialog(props:Props){
@@ -44,8 +45,8 @@ export default function AddRecordDialog(props:Props){
             input3placeholder="Employee Code"
             input4placeholder="Name of Company"
             input5placeholder="Date of Joining"
-            input6placeholder="Salary Basic"
-            input7placeholder="Allowance"
+            input6placeholder={props.renumeration?"Salary Basic":""}
+            input7placeholder={props.renumeration?"Allowance":""}
             inputOnChange={props.NameOnChange}  
             input2OnChange={props.EmailOnChange}  
             input3OnChange={props.CodeOnChange}
