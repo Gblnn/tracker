@@ -135,7 +135,7 @@ export default async (req: Request) => {
 
           if(Math.round(moment(element.medical_due_on.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"Medical expiry  "
+            m += "Medical expiry  "
             +
             moment((element.medical_due_on).toDate()).startOf('day').fromNow()
             +" on "
@@ -638,7 +638,7 @@ export default async (req: Request) => {
 
     await emailjs.send(serviceId, templateId, {
       recipient: rp,
-      subject:"Document Expiry Reminder", 
+      subject:"HR Document Expiry Reminder", 
       message:m,
       
     },{
@@ -660,5 +660,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"37 11 * * * "
+    schedule:"48 11 * * * "
 }
