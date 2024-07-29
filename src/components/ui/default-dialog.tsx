@@ -126,7 +126,7 @@ export default function DefaultDialog(props:Props){
 
                         {
                             props.creation_date&&
-                            <div style={{display:"flex", alignItems:"center", gap:"0.5rem", marginTop:"0.75rem", background:"rgba(100 100 100/ 10%)", padding:"", borderRadius:"0.5rem", justifyContent:'center', height:"2rem", border:""}}>
+                            <div style={{display:"flex", alignItems:"center", gap:"0.5rem", marginTop:"0.75rem", background:"linear-gradient(90deg, rgba(0 0 0/0%), rgba(100 100 100/ 25%), rgba(0 0 0/0%))", padding:"", borderRadius:"0.5rem", justifyContent:'center', height:"2rem", border:""}}>
                                 <p style={{fontSize:"0.8rem", opacity:"0.5", fontWeight:400}}>Created on : </p>
                                 <p style={{fontSize:"0.8rem", color:"dodgerblue"}}>{props.creation_date}</p>
                             </div>
