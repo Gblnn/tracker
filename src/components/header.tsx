@@ -1,10 +1,8 @@
 import { db } from "@/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { Inbox } from "lucide-react";
-import moment from "moment";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import InboxComponent from "./inbox-component";
 
 interface Props{
     updateInbox?:any
@@ -12,8 +10,6 @@ interface Props{
 
 export default function Header(props:Props){
 
-    const today:any = moment().toDate()
-    const [records, setRecords] = useState<any>([])
     const [pageLoad, setPageLoad] = useState(false)
     // const [count, setCount] = useState(0)
 
@@ -29,7 +25,7 @@ export default function Header(props:Props){
             querySnapshot.forEach((doc:any)=>{
                 fetchedData.push({id: doc.id, ...doc.data()})
                 
-                setRecords(fetchedData)
+            
                 
             })
             setPageLoad(false)
@@ -90,7 +86,7 @@ export default function Header(props:Props){
             </div>
 
             <div id="inboxes" style={{display:"none", flexFlow:"column", gap:"0.75rem"}}>
-                    {
+                    {/* {
                         records
                         .filter((record:any)=>{
                             return (
@@ -105,7 +101,7 @@ export default function Header(props:Props){
                         .map((record:any)=>(
                             <InboxComponent key={record.id}/>
                         ))
-                    }
+                    } */}
                 </div>
             
             

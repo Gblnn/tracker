@@ -40,8 +40,8 @@ export default async (req: Request) => {
           e.civil_expiry&&
           Math.round(moment(e.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
           ||
-          e.vehicle_expiry&&
-          Math.round(moment(e.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2
+          e.license_expiry&&
+          Math.round(moment(e.license_expiry.toDate()).diff(moment(today), 'months'))<=2
           ||
           e.medical_due_on&&
           Math.round(moment(e.medical_due_on.toDate()).diff(moment(today), 'months'))<=2
@@ -92,13 +92,14 @@ export default async (req: Request) => {
 
       filteredData.forEach((element:any) => {
 
-        // m+="This is a gentle reminder regarding a few document(s) expiring soon in your records : \n\n"
+        
+        m+=element.name+"'s documents\n\n"
 
         if(element.civil_expiry!=""){
 
           if(Math.round(moment(element.civil_expiry.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"'s Civil ID expiry  "
+            m += "Civil ID expiry  "
             +
             moment((element.civil_expiry).toDate()).startOf('day').fromNow()
             +" on "
@@ -659,5 +660,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"07 08 * * * "
+    schedule:"27 11 * * * "
 }

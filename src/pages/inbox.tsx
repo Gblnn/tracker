@@ -115,7 +115,7 @@ export default function Inbox(){
                      Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
                     ||
                     record.license_expiry&&
-                    Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2  
+                    Math.round(moment(record.license_expiry.toDate()).diff(moment(today), 'months'))<=2  
                     ||
                     record.medical_due_on&&
                     Math.round(moment(record.medical_due_on.toDate()).diff(moment(today), 'months'))<=2
@@ -462,7 +462,7 @@ export default function Inbox(){
                                 Math.round(moment(record.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
                                 ||
                                 record.license_expiry&&
-                                Math.round(moment(record.vehicle_expiry.toDate()).diff(moment(today), 'months'))<=2  
+                                Math.round(moment(record.license_expiry.toDate()).diff(moment(today), 'months'))<=2  
                                 ||
                                 record.medical_due_on&&
                                 Math.round(moment(record.medical_due_on.toDate()).diff(moment(today), 'months'))<=2
