@@ -94,17 +94,24 @@ export default async (req: Request) => {
 
         // m+="This is a gentle reminder regarding a few document(s) expiring soon in your records : \n\n"
 
-        element.civil_expiry!=""?
-        m += element.name+"'s Civil ID expiry  "
-        +
-        moment((element.civil_expiry).toDate()).startOf('day').fromNow()
-        +" on "
-        +String(moment((element.civil_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(element.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
-        " (Overdue) "
-        :"")
-        +"\n\n"
-        :null
+        if(element.civil_expiry!=""){
+
+          if(Math.round(moment(element.civil_expiry.toDate()).diff(moment(today), 'months'))<=2){
+
+            m += element.name+"'s Civil ID expiry  "
+            +
+            moment((element.civil_expiry).toDate()).startOf('day').fromNow()
+            +" on "
+            +String(moment((element.civil_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+            +String(moment(element.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+            " (Overdue) "
+            :"")
+            +"\n\n"
+
+          }
+        }
+
+        
 
         element.license_expiry!=""?
         m += element.name+"'s Driving License expiry  "
@@ -455,5 +462,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"39 06 * * * "
+    schedule:"57 06 * * * "
 }
