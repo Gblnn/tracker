@@ -364,7 +364,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.civil_expiry.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "Civil ID expiry  "
+          p += "Civil ID expiry  "
           +
           moment((e.civil_expiry).toDate()).startOf('day').fromNow()
           +" on "
@@ -381,7 +381,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.license_expiry.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "Driving License expiry  "
+          p += "Driving License expiry  "
           +
           moment((e.license_expiry).toDate()).startOf('day').fromNow()
           +" on "
@@ -398,7 +398,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.medical_due_on.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "Medical expiry  "
+          p += "Medical expiry  "
           +
           moment((e.medical_due_on).toDate()).startOf('day').fromNow()
           +" on "
@@ -415,7 +415,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.passportExpiry.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "Passport expiry  "
+          p += "Passport expiry  "
           +
           moment((e.passportExpiry).toDate()).startOf('day').fromNow()
           +" on "
@@ -432,7 +432,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.vt_hse_induction.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "HSE Induction Training expiry  "
+          p += "HSE Induction Training expiry  "
           +
           moment((e.vt_hse_induction).toDate()).startOf('day').fromNow()
           +" on "
@@ -449,7 +449,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.vt_car_1.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "CAR - 1 Training expiry  "
+          p += "CAR - 1 Training expiry  "
           +
           moment((e.vt_car_1).toDate()).startOf('day').fromNow()
           +" on "
@@ -466,7 +466,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.vt_car_2.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "CAR - 2 Training expiry  "
+          p += "CAR - 2 Training expiry  "
           +
           moment((e.vt_car_2).toDate()).startOf('day').fromNow()
           +" on "
@@ -483,7 +483,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.vt_car_3.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "CAR - 3 Training expiry  "
+          p += "CAR - 3 Training expiry  "
           +
           moment((e.vt_car_3).toDate()).startOf('day').fromNow()
           +" on "
@@ -500,7 +500,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.vt_car_4.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "CAR - 4 Training expiry  "
+          p += "CAR - 4 Training expiry  "
           +
           moment((e.vt_car_4).toDate()).startOf('day').fromNow()
           +" on "
@@ -517,7 +517,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.vt_car_5.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "CAR - 5 Training expiry  "
+          p += "CAR - 5 Training expiry  "
           +
           moment((e.vt_car_5).toDate()).startOf('day').fromNow()
           +" on "
@@ -534,7 +534,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.vt_car_6.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "CAR - 6 Training expiry  "
+          p += "CAR - 6 Training expiry  "
           +
           moment((e.vt_car_6).toDate()).startOf('day').fromNow()
           +" on "
@@ -551,7 +551,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.vt_car_7.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "CAR - 7 Training expiry  "
+          p += "CAR - 7 Training expiry  "
           +
           moment((e.vt_car_7).toDate()).startOf('day').fromNow()
           +" on "
@@ -568,7 +568,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.vt_car_8.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "CAR - 8 Training expiry  "
+          p += "CAR - 8 Training expiry  "
           +
           moment((e.vt_car_8).toDate()).startOf('day').fromNow()
           +" on "
@@ -585,7 +585,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.vt_car_9.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "CAR - 9 Training expiry  "
+          p += "CAR - 9 Training expiry  "
           +
           moment((e.vt_car_9).toDate()).startOf('day').fromNow()
           +" on "
@@ -602,7 +602,7 @@ export default async (req: Request) => {
 
         if(Math.round(moment(e.vt_car_10.toDate()).diff(moment(today), 'months'))<=2){
 
-          m += "CAR - 10 Training expiry  "
+          p += "CAR - 10 Training expiry  "
           +
           moment((e.vt_car_10).toDate()).startOf('day').fromNow()
           +" on "
@@ -659,5 +659,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"02 08 * * * "
+    schedule:"07 08 * * * "
 }
