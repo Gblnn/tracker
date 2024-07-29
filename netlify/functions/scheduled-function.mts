@@ -93,7 +93,7 @@ export default async (req: Request) => {
       filteredData.forEach((element:any) => {
 
         
-        m+=element.name+"'s documents\n\n"
+        m+=element.name+"'s documents : \n\n"
 
         if(element.civil_expiry!=""){
 
@@ -118,7 +118,7 @@ export default async (req: Request) => {
 
           if(Math.round(moment(element.license_expiry.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"'s Driving License expiry  "
+            m += "Driving License expiry  "
             +
             moment((element.license_expiry).toDate()).startOf('day').fromNow()
             +" on "
@@ -135,7 +135,7 @@ export default async (req: Request) => {
 
           if(Math.round(moment(element.medical_due_on.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"'s Medical expiry  "
+            m += element.name+"Medical expiry  "
             +
             moment((element.medical_due_on).toDate()).startOf('day').fromNow()
             +" on "
@@ -150,9 +150,9 @@ export default async (req: Request) => {
 
         if(element.passportExpiry!=""){
 
-          if(Math.round(moment(element.passportExpiry.toDate()).diff(moment(today), 'months'))<=2){
+          if(Math.round(moment(element.passportExpiry.toDate()).diff(moment(today), 'months'))<=6){
 
-            m += element.name+"'s Passport expiry  "
+            m += "Passport expiry  "
             +
             moment((element.passportExpiry).toDate()).startOf('day').fromNow()
             +" on "
@@ -169,7 +169,7 @@ export default async (req: Request) => {
 
           if(Math.round(moment(element.vt_hse_induction.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"'s HSE Induction Training expiry  "
+            m += "HSE Induction Training expiry  "
             +
             moment((element.vt_hse_induction).toDate()).startOf('day').fromNow()
             +" on "
@@ -186,7 +186,7 @@ export default async (req: Request) => {
 
           if(Math.round(moment(element.vt_car_1.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"'s CAR - 1 Training expiry  "
+            m += "CAR - 1 Training expiry  "
             +
             moment((element.vt_car_1).toDate()).startOf('day').fromNow()
             +" on "
@@ -203,7 +203,7 @@ export default async (req: Request) => {
 
           if(Math.round(moment(element.vt_car_2.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"'s CAR - 2 Training expiry  "
+            m += "CAR - 2 Training expiry  "
             +
             moment((element.vt_car_2).toDate()).startOf('day').fromNow()
             +" on "
@@ -220,7 +220,7 @@ export default async (req: Request) => {
 
           if(Math.round(moment(element.vt_car_3.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"'s CAR - 3 Training expiry  "
+            m += "CAR - 3 Training expiry  "
             +
             moment((element.vt_car_3).toDate()).startOf('day').fromNow()
             +" on "
@@ -237,7 +237,7 @@ export default async (req: Request) => {
 
           if(Math.round(moment(element.vt_car_4.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"'s CAR - 4 Training expiry  "
+            m += "CAR - 4 Training expiry  "
             +
             moment((element.vt_car_4).toDate()).startOf('day').fromNow()
             +" on "
@@ -254,7 +254,7 @@ export default async (req: Request) => {
 
           if(Math.round(moment(element.vt_car_5.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"'s CAR - 5 Training expiry  "
+            m += "CAR - 5 Training expiry  "
             +
             moment((element.vt_car_5).toDate()).startOf('day').fromNow()
             +" on "
@@ -271,7 +271,7 @@ export default async (req: Request) => {
 
           if(Math.round(moment(element.vt_car_6.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"'s CAR - 6 Training expiry  "
+            m += "CAR - 6 Training expiry  "
             +
             moment((element.vt_car_6).toDate()).startOf('day').fromNow()
             +" on "
@@ -288,7 +288,7 @@ export default async (req: Request) => {
 
           if(Math.round(moment(element.vt_car_7.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"'s CAR - 7 Training expiry  "
+            m += "CAR - 7 Training expiry  "
             +
             moment((element.vt_car_7).toDate()).startOf('day').fromNow()
             +" on "
@@ -305,7 +305,7 @@ export default async (req: Request) => {
 
           if(Math.round(moment(element.vt_car_8.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"'s CAR - 8 Training expiry  "
+            m += "CAR - 8 Training expiry  "
             +
             moment((element.vt_car_8).toDate()).startOf('day').fromNow()
             +" on "
@@ -322,7 +322,7 @@ export default async (req: Request) => {
 
           if(Math.round(moment(element.vt_car_9.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"'s CAR - 9 Training expiry  "
+            m += "CAR - 9 Training expiry  "
             +
             moment((element.vt_car_9).toDate()).startOf('day').fromNow()
             +" on "
@@ -339,7 +339,7 @@ export default async (req: Request) => {
 
           if(Math.round(moment(element.vt_car_10.toDate()).diff(moment(today), 'months'))<=2){
 
-            m += element.name+"'s CAR - 10 Training expiry  "
+            m += "CAR - 10 Training expiry  "
             +
             moment((element.vt_car_10).toDate()).startOf('day').fromNow()
             +" on "
@@ -414,7 +414,7 @@ export default async (req: Request) => {
 
       if(e.passportExpiry!=""){
 
-        if(Math.round(moment(e.passportExpiry.toDate()).diff(moment(today), 'months'))<=2){
+        if(Math.round(moment(e.passportExpiry.toDate()).diff(moment(today), 'months'))<=6){
 
           p += "Passport expiry  "
           +
@@ -660,5 +660,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"29 11 * * * "
+    schedule:"37 11 * * * "
 }
