@@ -266,85 +266,81 @@ export default function Inbox(){
         )
     }
 
+    // const dataChecker = (data:any, n:any) => {
+    //     console.log(data.toDate(), n)
+        
+    //         data==""?
+    //         {}
+    //         :
+    //         Math.round(moment(data.toDate()).diff(moment(),"months"))<=n?
+    //         data = String(moment(data.toDate()).format("DD/MM/YYYY"))
+    //         :
+    //         data = ""
+        
+        
+        
+    // }
+
     const exportDB = async () => {
-        const myHeader = ["id","name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "vehicle_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
+        const myHeader = ["id","name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "license_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
 
         filteredData.forEach((e:any) => {
+
             e.civil_expiry==""?
             {}
             :
+            Math.round(moment(e.civil_expiry.toDate()).diff(moment(),"months"))<=2?
             e.civil_expiry = String(moment(e.civil_expiry.toDate()).format("DD/MM/YYYY"))
+            :
+            e.civil_expiry = ""
 
-            e.vehicle_expiry==""?
+
+
+            e.license_expiry==""?
             {}
             :
-            e.vehicle_expiry = String(moment(e.license_expiry.toDate()).format("DD/MM/YYYY"))
+            Math.round(moment(e.license_expiry.toDate()).diff(moment(),"months"))<=2?
+            e.license_expiry = String(moment(e.license_expiry.toDate()).format("DD/MM/YYYY"))
+            :
+            e.license_expiry = ""
 
 
             e.medical_due_on==""?
             {}
             :
+            Math.round(moment(e.medical_due_on.toDate()).diff(moment(),"months"))<=2?
             e.medical_due_on = String(moment(e.medical_due_on.toDate()).format("DD/MM/YYYY"))
+            :
+            e.medical_due_on = ""
+
 
             e.passportExpiry==""?
             {}
             :
+            Math.round(moment(e.passportExpiry.toDate()).diff(moment(),"months"))<=6?
             e.passportExpiry = String(moment(e.passportExpiry.toDate()).format("DD/MM/YYYY"))
-            
+            :
+            e.passportExpiry = ""
+
+
+
             e.vt_hse_induction==""?
             {}
             :
+            Math.round(moment(e.vt_hse_induction.toDate()).diff(moment(),"months"))<=2?
             e.vt_hse_induction = String(moment(e.vt_hse_induction.toDate()).format("DD/MM/YYYY"))
+            :
+            e.vt_hse_induction = ""
+
 
             e.vt_car_1==""?
             {}
             :
+            Math.round(moment(e.vt_car_1.toDate()).diff(moment(),"months"))<=2?
             e.vt_car_1 = String(moment(e.vt_car_1.toDate()).format("DD/MM/YYYY"))
-
-            e.vt_car_2==""?
-            {}
             :
-            e.vt_car_2 = String(moment(e.vt_car_2.toDate()).format("DD/MM/YYYY"))
+            e.vt_car_1 = ""
 
-            e.vt_car_3==""?
-            {}
-            :
-            e.vt_car_3 = String(moment(e.vt_car_3.toDate()).format("DD/MM/YYYY"))
-
-            e.vt_car_4==""?
-            {}
-            :
-            e.vt_car_4 = String(moment(e.vt_car_4.toDate()).format("DD/MM/YYYY"))
-
-            e.vt_car_5==""?
-            {}
-            :
-            e.vt_car_5 = String(moment(e.vt_car_5.toDate()).format("DD/MM/YYYY"))
-
-            e.vt_car_6==""?
-            {}
-            :
-            e.vt_car_6 = String(moment(e.vt_car_6.toDate()).format("DD/MM/YYYY"))
-
-            e.vt_car_7==""?
-            {}
-            :
-            e.vt_car_7 = String(moment(e.vt_car_7.toDate()).format("DD/MM/YYYY"))
-
-            e.vt_car_8==""?
-            {}
-            :
-            e.vt_car_8 = String(moment(e.vt_car_8.toDate()).format("DD/MM/YYYY"))
-
-            e.vt_car_9==""?
-            {}
-            :
-            e.vt_car_9 = String(moment(e.vt_car_9.toDate()).format("DD/MM/YYYY"))
-
-            e.vt_car_10==""?
-            {}
-            :
-            e.vt_car_10 = String(moment(e.vt_car_10.toDate()).format("DD/MM/YYYY"))
         });
 
         const worksheet = XLSX.utils.json_to_sheet(filteredData, {header: myHeader});
