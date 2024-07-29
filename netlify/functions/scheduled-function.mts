@@ -106,13 +106,13 @@ export default async (req: Request) => {
         +"\n\n"
         :null
 
-        element.vehicle_expiry!=""?
+        element.license_expiry!=""?
         m += element.name+"'s Driving License expiry  "
         +
-        moment((element.vehicle_expiry).toDate()).startOf('day').fromNow()
+        moment((element.license_expiry).toDate()).startOf('day').fromNow()
         +" on "
-        +String(moment((element.vehicle_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(element.vehicle_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+        +String(moment((element.license_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(moment(element.license_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
         " (Overdue) "
         :"")
         +"\n\n"
@@ -269,13 +269,13 @@ export default async (req: Request) => {
         +"\n\n"
         :null
 
-        e.vehicle_expiry!=""?
+        e.license_expiry!=""?
         p+="Driving License expiry  "
         +
-        moment((e.vehicle_expiry).toDate()).startOf('day').fromNow()
+        moment((e.license_expiry).toDate()).startOf('day').fromNow()
         +" on "
-        +String(moment((e.vehicle_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
-        +String(moment(e.vehicle_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
+        +String(moment((e.license_expiry).toDate()).add(1, 'day').format("DD/MM/YYYY"))
+        +String(moment(e.license_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
         " (Overdue) "
         :"")
         +"\n\n"
@@ -455,5 +455,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"33 06 * * * "
+    schedule:"37 06 * * * "
 }
