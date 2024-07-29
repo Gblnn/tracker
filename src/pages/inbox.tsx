@@ -282,7 +282,7 @@ export default function Inbox(){
     // }
 
     const exportDB = async () => {
-        const myHeader = ["id","name","employeeCode","type","companyName","state", "salaryBasic", "allowance", "civil_expiry", "license_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
+        const myHeader = ["id","name","employeeCode","type","companyName","state", "civil_expiry", "license_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10", "salaryBasic", "allowance"];
 
         filteredData.forEach((e:any) => {
 
