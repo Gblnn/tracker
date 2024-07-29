@@ -50,6 +50,7 @@ interface Props {
     remarksValue?:string
     dialogBackground?:any
     dialogHeight?:any
+    creation_date?:string
 }
 
 
@@ -122,6 +123,16 @@ export default function DefaultDialog(props:Props){
                         <div style={{border:"", display:"flex", fontWeight:"600", fontSize:"0.8rem", color:"dodgerblue"}}>
                             <p style={{paddingLeft:"0.5rem",paddingRight:"0.5rem", borderRadius:"0.5rem", background:"rgba(100 100 100/ 20%)", marginLeft:"0.5rem"}}>{props.subtitle}</p>
                         </div>
+
+                        {
+                            props.creation_date&&
+                            <div style={{display:"flex", alignItems:"center", gap:"0.5rem", marginTop:"0.75rem", background:"rgba(100 100 100/ 10%)", padding:"", borderRadius:"0.5rem", justifyContent:'center', height:"2rem", border:""}}>
+                                <p style={{fontSize:"0.8rem", opacity:"0.5", fontWeight:400}}>Created on : </p>
+                                <p style={{fontSize:"0.8rem", color:"dodgerblue"}}>{props.creation_date}</p>
+                            </div>
+                        }
+
+                            
                         
                     </DialogTitle>
                     }
@@ -130,6 +141,9 @@ export default function DefaultDialog(props:Props){
                     {
                         props.tags?
                         <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", border:"", width:"100%"}}>
+
+                            
+                            
                         <div style={{height:"2rem", border:"", width:"100%", display:'flex', gap:"0.5rem"}}>
 
                             <div style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
@@ -218,7 +232,7 @@ export default function DefaultDialog(props:Props){
                                 <AccordionItem value="item-1">
                                     <AccordionTrigger style={{border:"", display:"flex", justifyContent:"space-between", height:"2.5rem", paddingLeft:"0.75rem", fontWeight:"400", fontSize:"0.9rem", background:"none", paddingBottom:"1rem"}}>Renumeration</AccordionTrigger>
                                     <AccordionContent>
-                                    <div style={{height:"3rem", border:"", width:"100%", display:'flex', gap:"0.5rem", paddingTop:"0.5rem"}}>
+                                    <div style={{height:"2.5rem", border:"", width:"100%", display:'flex', gap:"0.5rem", paddingTop:"0.5rem"}}>
 
                                         <div onClick={props.tag3OnClick} style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.75rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
 

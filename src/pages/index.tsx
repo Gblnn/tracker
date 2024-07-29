@@ -66,7 +66,7 @@ export default function Index(){
 
             <DefaultDialog titleIcon={<Mail/>} title="Request Feature" extra={<p style={{fontSize:"0.85rem", opacity:0.5, marginBottom:"0.5rem"}}>Reach out to the developer to request a new feature? You will be redirected to your e-mail client</p>} open={requestDialog} OkButtonText="Reach out" onCancel={()=>setRequestDialog(false)} sendmail/>
 
-            <InputDialog title={"Secure Login"} titleIcon={<KeyRound color="dodgerblue"/>} open={loginPrompt} onCancel={()=>setLoginPrompt(false)} OkButtonText="Continue" inputplaceholder="Password"  onOk={()=>usenavigate("/records")}/>
+            <InputDialog title={"Protected Route"} desc="Enter key to continue" titleIcon={<KeyRound color="dodgerblue"/>} open={loginPrompt} onCancel={()=>setLoginPrompt(false)} OkButtonText="Continue" inputplaceholder="Password"  onOk={()=>usenavigate("/records")}/>
             
         </div>
         </>

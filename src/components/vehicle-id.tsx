@@ -17,7 +17,7 @@ export default function VehicleID(props:Props){
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", paddingLeft:"1.5rem", borderBottom:"1px solid rgba(100 100 100/50%)"}}>
                 <div>
                 <p style={{textTransform:"uppercase", textAlign:"left"}}>{props.name}</p>
-                <p style={{fontSize:"0.75rem", color:"crimson", fontWeight:600}}>MOTOR VEHICLE LICENSE</p>
+                <p style={{fontSize:"0.75rem", color:"crimson", fontWeight:600}}>VEHICLE DRIVING LICENSE</p>
                 </div>
                 
                 <img src="/rop_logo.png" style={{width:"3rem", height:"3rem", margin:"0.75rem"}}/>

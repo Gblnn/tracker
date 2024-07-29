@@ -65,6 +65,7 @@ export default function DbComponent(props:Props){
     const [archivePrompt, setArchivePrompt] = useState(false)
     const [state, setState] = useState("")
     const [imageDialog, setImageDialog] = useState(false)
+    const [created_on, setCreatedOn] = useState("")
 
     const usenavigate = useNavigate()
     // BASIC PAGE VARIABLES
@@ -1479,6 +1480,7 @@ const RenewID = async () => {
                                     setVehicleExpiry(post.license_expiry?moment((post.license_expiry).toDate()).format("DD/MM/YYYY"):"")
                                     setVehicleIssue(post.license_issue)
                                     setModifiedOn(post.modified_on?moment((post.modified_on).toDate()):"")
+                                    setCreatedOn(moment(post.created_on.toDate()).format("LL"))
                                     setPassportID(post.passportID)
                                     setPassportIssue(post.passportIssue)
                                     setPassportExpiry(post.passportExpiry?moment((post.passportExpiry).toDate()).format("DD/MM/YYYY"):null)
@@ -1635,6 +1637,7 @@ const RenewID = async () => {
             {/* DISPLAY RECORD DIALOG */}
             <DefaultDialog 
             code={employeeCode}
+            creation_date={created_on}
             codeTooltip="Employee Code"
             tags
             renumeration={props.dbCategory=="personal"?true:false}
@@ -1689,8 +1692,8 @@ const RenewID = async () => {
             titleIcon={
             
 
-                <Avatar onClick={()=>setImageDialog(true)} style={{width:"3.5rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center", cursor:"pointer", border:state=="archived"?"solid goldenrod":""}}>
-                    <AvatarImage style={{objectFit:"cover"}} src={image}/>
+                <Avatar style={{width:"3.5rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center", cursor:"pointer", border:state=="archived"?"solid goldenrod":""}}>
+                    <AvatarImage onClick={()=>setImageDialog(true)} style={{objectFit:"cover"}} src={image}/>
                     <AvatarFallback>
                         <p style={{paddingTop:"0.1rem"}}>{Array.from(name)[0]}</p>
                         
