@@ -12,6 +12,7 @@ import ValeRecords from './pages/vale-records';
 import PageNotFound from './pages/page-not-found';
 import Login from './pages/login';
 import Archives from './pages/archives';
+import AccessControl from './pages/access-control';
 
 
 export default function App(){
@@ -37,6 +38,7 @@ export default function App(){
       <Route path='/index' element={<Index/>}/>
       <Route path="/inbox" element={<Inbox/>}/>
       <Route path="/archives" element={<Archives/>}/>
+      <Route path="/access-control" element={<AccessControl/>}/>
       <Route path="/records" element={<Records/>}/>
       <Route path="/vale-records" element={<ValeRecords/>}/>
       <Route path="/user" element={<UserPage/>}/>

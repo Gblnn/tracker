@@ -16,6 +16,7 @@ interface Props{
     DateofJoinOnChange?:any
     SalaryBasicOnChange?:any
     AllowanceOnChange?:any
+    LocalContactOnChange?:any
     NameLabel?:string
     EmailLabel?:string
     CodeLabel?:string
@@ -23,6 +24,7 @@ interface Props{
     DateofJoinLabel?:string
     SalaryBasicLabel?:string
     AllowanceLabel?:string
+    LocalContactLabel?:string
     NameValue?:string
     EmailValue?:string
     CodeValue?:string
@@ -30,6 +32,7 @@ interface Props{
     DateofJoinValue?:string
     SalaryBasicValue?:any
     AllowanceValue?:any
+    LocalContactValue?:any
     renumeration?:boolean
 }
 
@@ -47,6 +50,7 @@ export default function AddRecordDialog(props:Props){
             input5placeholder="Date of Joining"
             input6placeholder={props.renumeration?"Salary Basic":""}
             input7placeholder={props.renumeration?"Allowance":""}
+            input8placeholder="Local Contact Number"
             inputOnChange={props.NameOnChange}  
             input2OnChange={props.EmailOnChange}  
             input3OnChange={props.CodeOnChange}
@@ -54,6 +58,7 @@ export default function AddRecordDialog(props:Props){
             input5OnChange={props.DateofJoinOnChange}
             input6OnChange={props.SalaryBasicOnChange}
             input7OnChange={props.AllowanceOnChange}
+            input8OnChange={props.LocalContactOnChange}
             input1Label={props.NameLabel}
             input2Label={props.EmailLabel}
             input3Label={props.CodeLabel}
@@ -61,6 +66,7 @@ export default function AddRecordDialog(props:Props){
             input5Label={props.DateofJoinLabel}
             input6Label={props.SalaryBasicLabel}
             input7Label={props.AllowanceLabel}
+            input8Label={props.LocalContactLabel}
             input1Value={props.NameValue}
             input2Value={props.EmailValue}
             input3Value={props.CodeValue}
@@ -68,6 +74,7 @@ export default function AddRecordDialog(props:Props){
             input5Value={props.DateofJoinValue}
             input6Value={props.SalaryBasicValue}
             input7Value={props.AllowanceValue}
+            input8Value={props.LocalContactValue}
 
             
             disabled={props.disabled} updating={props.updating}  

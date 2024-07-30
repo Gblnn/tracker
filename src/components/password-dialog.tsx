@@ -21,13 +21,11 @@ interface Props{
     input5OnChange?:any
     input6OnChange?:any
     input7OnChange?:any
-    input8OnChange?:any
     input3placeholder?:string
     input4placeholder?:string
     input5placeholder?:string
     input6placeholder?:string
     input7placeholder?:string
-    input8placeholder?:string
     disabled?:boolean
     OkButtonIcon?:any
     updating?:boolean
@@ -38,7 +36,6 @@ interface Props{
     input5Value?:string
     input6Value?:string
     input7Value?:string
-    input8Value?:string
     input1Label?:string
     input2Label?:string
     input3Label?:string
@@ -46,13 +43,12 @@ interface Props{
     input5Label?:string
     input6Label?:string
     input7Label?:string
-    input8Label?:string
     input1Type?:string
     extra?:any
     image?:any
 }
 
-export default function InputDialog(props:Props){
+export default function PasswordDialog(props:Props){
     return(
         <Dialog open={props.open}>
             <DialogContent onOpenAutoFocus={(e)=>e.preventDefault()}>
@@ -89,7 +85,7 @@ export default function InputDialog(props:Props){
                                 :null
                             }
                         
-                            <input id='input-1' type={props.input1Type} style={{letterSpacing:props.input1Type?"0.15rem":""}} defaultValue={props.input1Value} placeholder={props.inputplaceholder} onChange={props.inputOnChange}/>
+                            <input id='input-1' type={"password"} defaultValue={props.input1Value} placeholder={props.inputplaceholder} onChange={props.inputOnChange}/>
 
                         </div>
                         {
@@ -190,23 +186,6 @@ export default function InputDialog(props:Props){
                             }
                             
                             <input id='input-7' defaultValue={props.input7Value} placeholder={props.input7placeholder} onChange={props.input7OnChange}/>
-                        </div>
-                        
-                        :null
-                    }
-
-{
-                        props.input8placeholder?
-                        <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
-                            {
-                                props.input8Label?
-                                <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
-                                    {props.input8Label}
-                                </p>
-                                :null
-                            }
-                            
-                            <input id='input-8' defaultValue={props.input8Value} placeholder={props.input8placeholder} onChange={props.input8OnChange}/>
                         </div>
                         
                         :null

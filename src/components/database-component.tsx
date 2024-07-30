@@ -66,6 +66,10 @@ export default function DbComponent(props:Props){
     const [state, setState] = useState("")
     const [imageDialog, setImageDialog] = useState(false)
     const [created_on, setCreatedOn] = useState("")
+    const [contact, setContact] = useState("")
+    const [editedContact, setEditedContact] = useState("")
+    const [nativePhone, setNativePhone] = useState("")
+    const [nativeAddress, setNativeAddress] = useState("")
 
     const usenavigate = useNavigate()
     // BASIC PAGE VARIABLES
@@ -184,7 +188,6 @@ export default function DbComponent(props:Props){
     const [status, setStatus] = useState("")
 
     const [renewDocDialog, setRenewDocDialog] = useState(false)
-    const [selectAll, setSelectAll] = useState(false)
     const [renewVehicleDialog, setRenewVehicleDialog] = useState(false)
 
     const [newExpiry, setNewExpiry] = useState<any>()
@@ -339,11 +342,15 @@ export default function DbComponent(props:Props){
         }
         const imageRef = storageRef(storage, fileName);
         console.log("Uploading ", fileName)
+        fileName==""?
+        console.log("Skipped Upload")
+        :
         await uploadBytes(imageRef, imageUpload)
           .then(async (snapshot) => {
             await getDownloadURL(snapshot.ref)
               .then((url:any) => {
                 imgUrl = url
+                setFileName("")
               })
           })
           .catch((error) => {
@@ -656,7 +663,7 @@ const RenewID = async () => {
         imgUrl = ""
         setLoading(true)
         await uploadFile()
-        await addDoc(collection(db, "records"), {name:name, email:email, employeeCode:employeeCode, companyName:companyName, dateofJoin:dateofJoin, salaryBasic:salaryBasic, initialSalary:salaryBasic, allowance:allowance, initialAllowance:allowance, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:props.dbCategory, notify:true, profile:imgUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"", license_number:"",  license_issue:"", license_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:"", state:"active", remarks:""})
+        await addDoc(collection(db, "records"), {name:name, email:email, employeeCode:employeeCode, companyName:companyName, dateofJoin:dateofJoin, salaryBasic:salaryBasic, initialSalary:salaryBasic, allowance:allowance, initialAllowance:allowance, contact:contact, created_on:Timestamp.fromDate(new Date()), modified_on:Timestamp.fromDate(new Date()), type:props.dbCategory, notify:true, profile:imgUrl, profile_name:fileName, civil_number:"", civil_expiry:"", civil_DOB:"", license_number:"",  license_issue:"", license_expiry:"", medical_completed_on:"", medical_due_on:"", passportID:"", passportIssue:"", passportExpiry:"", vt_hse_induction:"", vt_car_1:"", vt_car_2:"", vt_car_3:"", vt_car_4:"", vt_car_5:"", vt_car_6:"", vt_car_7:"", vt_car_8:"", vt_car_9:"", vt_car_10:"", state:"active", remarks:""})
         setAddDialog(false)
         setName(editedName?editedName:name)
         setEmail(editedEmail?editedEmail:email)
@@ -683,7 +690,7 @@ const RenewID = async () => {
             console.log(fileName)
         }
 
-        await updateDoc(doc(db, "records", doc_id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email, employeeCode:editedEmployeeCode?editedEmployeeCode:employeeCode, companyName:editedCompanyName?editedCompanyName:companyName, dateofJoin:editedDateofJoin?editedDateofJoin:dateofJoin, salaryBasic:editedSalarybasic?editedSalarybasic:salaryBasic, allowance:editedAllowance?editedAllowance:allowance, modified_on:Timestamp.fromDate(new Date)})
+        await updateDoc(doc(db, "records", doc_id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email, employeeCode:editedEmployeeCode?editedEmployeeCode:employeeCode, companyName:editedCompanyName?editedCompanyName:companyName, dateofJoin:editedDateofJoin?editedDateofJoin:dateofJoin, initialSalary:editedSalarybasic?editedSalarybasic:salaryBasic, initialAllowance:editedAllowance?editedAllowance:allowance, contact:editedContact?editedContact:contact, modified_on:Timestamp.fromDate(new Date)})
         
         if(fileName!=""){
             await updateDoc(doc(db, 'records', doc_id),{profile:imgUrl, profile_name:fileName})
@@ -700,6 +707,7 @@ const RenewID = async () => {
         setDateofJoin(editedDateofJoin?editedDateofJoin:dateofJoin)
         setSalaryBasic(editedSalarybasic?editedSalarybasic:salaryBasic)
         setAllowance(editedAllowance?editedAllowance:allowance)
+        setContact(editedContact?editedContact:contact)
         setLoading(false)
         fetchData()
         setModifiedOn(new Date())
@@ -719,11 +727,19 @@ const RenewID = async () => {
                 message.error(String(error))
             } 
         }
-        await leaveList.forEach(async (item:any) => {
+        setRecordDeleteStatus("Deleting Day offs")
+        leaveList.forEach(async (item:any) => {
             await deleteDoc(doc(db, "leave-record", item.id))
         })
-        await salaryList.forEach(async (item:any) => {
+
+        setRecordDeleteStatus("Deleting Salary Records")
+        salaryList.forEach(async (item:any) => {
             await deleteDoc(doc(db, "salary-record", item.id))
+        })
+
+        setRecordDeleteStatus("Deleting Allowance Records")
+        allowanceList.forEach(async (item:any) => {
+            await deleteDoc(doc(db, "allowance-record", item.id))
         })
         
         setRecordDeleteStatus("")
@@ -732,6 +748,12 @@ const RenewID = async () => {
         setCivilExpiry("")
         setCivilDOB("")
         setName("")
+        setEmail("")
+        setCompanyName("")
+        setDateofJoin("")
+        setSalaryBasic(0)
+        setAllowance(0)
+        setContact("")
         setNewCivilExpiry("")
         setNewCivilNumber("")
         setUserDeletePrompt(false)
@@ -988,7 +1010,7 @@ const RenewID = async () => {
         setLoading(true)
         try {
             await updateDoc(doc(db, "records", doc_id),{passportID:passportID, 
-            passportIssue:passportIssue, passportExpiry:TimeStamper(passportExpiry), modified_on:Timestamp.fromDate(new Date)})
+            passportIssue:passportIssue, passportExpiry:TimeStamper(passportExpiry), nativePhone:nativePhone, nativeAddress:nativeAddress, modified_on:Timestamp.fromDate(new Date)})
             setLoading(false)
             fetchData()
             setModifiedOn(new Date())
@@ -1077,10 +1099,24 @@ const RenewID = async () => {
             let counts = 0
             let percentage = 100/checked.length
             setLoading(true)
+
+            const snapshot = await getDocs(collection(db, 'records'))
+                snapshot.forEach((e:any) => {
+                    console.log(e.profile_name)
+                    e.profile_name?
+                    deleteObject(ref(storage, e.profile_name)) 
+                    :
+                    console.log("Skipped profile delete for "+e.id)  
+
+                });
             
             await checked.forEach(async (item:any) => {
+                console.log(item)
                 await deleteDoc(doc(db, "records", item))
-                await deleteDoc(doc(db, 'salary-record'))
+                
+
+                
+                
                 counts++
                 setProgress(String(percentage*counts)+"%")
                 setProgressItem(item)
@@ -1265,7 +1301,7 @@ const RenewID = async () => {
 
                             </button>
 
-                            <DbDropDown onExport={exportDB} onInbox={()=>usenavigate("/inbox")} onArchives={()=>usenavigate("/archives")} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
+                            <DbDropDown onExport={exportDB} onInbox={()=>usenavigate("/inbox")} onArchives={()=>usenavigate("/archives")} onAccess={()=>usenavigate("/access-control")} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
 
 
                             {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
@@ -1279,18 +1315,18 @@ const RenewID = async () => {
                     <div 
                     className="transitions" 
                     onClick={()=>{
-                        setSelectAll(!selectAll)
-                        !selectAll?
-                        setSelected(true)
-                        :setSelected(false)
-                        !selectAll?
-                        records.forEach((item:any)=>{
-                            setChecked((data:any)=>[...data,item.id])
+                        // setSelectAll(!selectAll)
+                        // !selectAll?
+                        // setSelected(true)
+                        // :setSelected(false)
+                        // !selectAll?
+                        // records.forEach((item:any)=>{
+                        //     setChecked((data:any)=>[...data,item.id])
                         
-                        })
-                        :setChecked([])
+                        // })
+                        // :setChecked([])
                         }} 
-                    style={{height:"2.75rem", border:"", width:"7.5rem", background:selectAll?"dodgerblue":"rgba(100 100 100/ 20%)", padding:"0.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", paddingLeft:"1rem", paddingRight:"1rem", borderRadius:"0.5rem", cursor:"pointer"}}>
+                    style={{height:"2.75rem", border:"", width:"7.5rem", background:"rgba(100 100 100/ 20%)", padding:"0.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", paddingLeft:"1rem", paddingRight:"1rem", borderRadius:"0.5rem", cursor:"pointer"}}>
                         <p style={{opacity:0.75}}>Selected</p>
                         <p style={{ fontWeight:600}}>{checked.length}</p>
                     </div>
@@ -1524,6 +1560,9 @@ const RenewID = async () => {
                                     setInitialAllowance(post.initialAllowance)
                                     setRemarks(post.remarks)
                                     setState(post.state)
+                                    setContact(post.contact)
+                                    setNativePhone(post.nativePhone)
+                                    setNativeAddress(post.nativeAddress)
                                     fetchLeave()
                                     
                                 }}                        
@@ -1593,7 +1632,7 @@ const RenewID = async () => {
 
 
             {/* ADD RECORD BUTTON */}
-            <AddRecordButton title={addButtonModeSwap?"Delete Record(s)":"Add Record"} onClickSwap={addButtonModeSwap} onClick={()=>{setAddDialog(true); setName("");}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
+            <AddRecordButton title={addButtonModeSwap?"Delete Record(s)":"Add Record"} onClickSwap={addButtonModeSwap} onClick={()=>{setAddDialog(true); setName(""); setEmail(""); setEmployeeCode(""); setCompanyName(""); setDateofJoin(""); setSalaryBasic(0); setAllowance(0); setContact("")}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
                 icon={addButtonModeSwap?<Trash color="crimson" width="1rem"/>:<Plus color="dodgerblue" width="1rem"/>}/>
 
 
@@ -1640,6 +1679,7 @@ const RenewID = async () => {
             creation_date={created_on}
             codeTooltip="Employee Code"
             tags
+            contact={contact}
             renumeration={props.dbCategory=="personal"?true:false}
             remarksOnClick={()=>setRemarksDialog(true)}
             remarksValue={remarks}
@@ -1728,7 +1768,7 @@ const RenewID = async () => {
                     
 
 
-                    <DropDown onExtra={()=>setArchivePrompt(true)} extraText={state=="active"?"Archive":"Unarchive"} onDelete={()=>setUserDeletePrompt(true)} onEdit={()=>{setUserEditPrompt(true);console.log("filename : ",fileName, "profileName : ", profileName)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
+                    <DropDown onExtra={()=>setArchivePrompt(true)} extraText={state=="active"?"Archive":"Unarchive"} onDelete={()=>{setUserDeletePrompt(true);console.log(profileName);fetchLeave();fetchSalary();fetchAllowance();console.log(leaveList, salaryList, allowanceList)}} onEdit={()=>{setUserEditPrompt(true);console.log("filename : ",fileName, "profileName : ", profileName)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
                 </div>
             
             }
@@ -1737,13 +1777,13 @@ const RenewID = async () => {
                     
                     <Directive onClick={()=>setCivil(true)} icon={<CreditCard color="dodgerblue"/>} title="Civil ID" tag={civil_expiry} 
                     status={
-                        moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
+                        moment(civil_expiry, "DD/MM/YYYY").diff(moment(today), 'months')<=2?
                         false:true
                     }/>
 
                     <Directive tag={vehicle_expiry} onClick={()=>setVehicle(true)} icon={<Car color="violet"/>} title="License" 
                     status={
-                        moment(vehicle_expiry, "DD/MM/YYYY").diff(moment(today), 'months')<=3?
+                        moment(vehicle_expiry, "DD/MM/YYYY").diff(moment(today), 'months')<=2?
                         false
                         :true
                     }/>
@@ -1754,7 +1794,7 @@ const RenewID = async () => {
                     }/>
 
                     <Directive tag={medical_due_on} onClick={()=>setHealthDialog(true)} icon={<HeartPulse color="tomato"/>} title="Medical" status={
-                        moment(medical_due_on, "DD/MM/YYYY").diff(moment(today),'months')<=3?
+                        moment(medical_due_on, "DD/MM/YYYY").diff(moment(today),'months')<=2?
                         false:true
                     }/>
 
@@ -1765,27 +1805,27 @@ const RenewID = async () => {
                         :
                         <Directive
                     tag={
-                        moment(vt_hse_induction, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        moment(vt_hse_induction, "DD/MM/YYYY").diff(moment(today),'months')<=2
                         ||
-                        moment(vt_car_1, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        moment(vt_car_1, "DD/MM/YYYY").diff(moment(today),'months')<=2
                         ||
-                        moment(vt_car_2, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        moment(vt_car_2, "DD/MM/YYYY").diff(moment(today),'months')<=2
                         ||
-                        moment(vt_car_3, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        moment(vt_car_3, "DD/MM/YYYY").diff(moment(today),'months')<=2
                         ||
-                        moment(vt_car_4, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        moment(vt_car_4, "DD/MM/YYYY").diff(moment(today),'months')<=2
                         ||
-                        moment(vt_car_5, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        moment(vt_car_5, "DD/MM/YYYY").diff(moment(today),'months')<=2
                         ||
-                        moment(vt_car_6, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        moment(vt_car_6, "DD/MM/YYYY").diff(moment(today),'months')<=2
                         ||
-                        moment(vt_car_7, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        moment(vt_car_7, "DD/MM/YYYY").diff(moment(today),'months')<=2
                         ||
-                        moment(vt_car_8, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        moment(vt_car_8, "DD/MM/YYYY").diff(moment(today),'months')<=2
                         ||
-                        moment(vt_car_9, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        moment(vt_car_9, "DD/MM/YYYY").diff(moment(today),'months')<=2
                         ||
-                        moment(vt_car_10, "DD/MM/YYYY").diff(moment(today),'months')<=3
+                        moment(vt_car_10, "DD/MM/YYYY").diff(moment(today),'months')<=2
                         ?
                         "Expiring Soon"
                         :
@@ -1817,6 +1857,7 @@ const RenewID = async () => {
             DateofJoinOnChange={(e:any)=>setDateofJoin(e.target.value)}
             SalaryBasicOnChange={(e:any)=>setSalaryBasic(e.target.value)}
             AllowanceOnChange={(e:any)=>setAllowance(e.target.value)}
+            LocalContactOnChange={(e:any)=>setContact(e.target.value)}
             onOK={addRecord}
             />
 
@@ -1828,7 +1869,7 @@ const RenewID = async () => {
             title="Edit Record"
             updating={loading}
             disabled={loading}
-            
+            renumeration={props.dbCategory=="personal"?true:false}
             onImageChange={
                 (e:any)=>{
                     setImageUpload(e.target.files[0]); setFileName(e.target.files[0].name);
@@ -1841,6 +1882,7 @@ const RenewID = async () => {
             DateofJoinOnChange={(e:any)=>setEditedDateofJoin(e.target.value)}
             SalaryBasicOnChange={(e:any)=>setEditedSalaryBasic(e.target.value)}
             AllowanceOnChange={(e:any)=>setEditedAllowance(e.target.value)}
+            LocalContactOnChange={(e:any)=>setEditedContact(e.target.value)}
 
             NameLabel="Full Name : "
             EmailLabel="Email : "
@@ -1849,14 +1891,16 @@ const RenewID = async () => {
             DateofJoinLabel="Date of Join : "
             SalaryBasicLabel="Initial Salary : "
             AllowanceLabel="Allowance : "
+            LocalContactLabel="Contact : "
 
             NameValue={name}
             EmailValue={email}
             CodeValue={employeeCode}
             CompanyValue={companyName}
             DateofJoinValue={dateofJoin}
-            SalaryBasicValue={salaryBasic}
-            AllowanceValue={allowance}
+            SalaryBasicValue={initialSalary}
+            AllowanceValue={initialAllowance}
+            LocalContactValue={contact}
 
             onOK={EditRecordName}
             />
@@ -2275,7 +2319,7 @@ const RenewID = async () => {
                         </div>
                         :
                         <div>
-                        <Passport name={name} passport_id={passportID} issue={passportIssue} expiry={passportExpiry}/>
+                        <Passport nativePhone={nativePhone} name={name} passport_id={passportID} issue={passportIssue} nativeAddress={nativeAddress} expiry={passportExpiry}/>
                         {/* <br/>
                         <button style={{width:"100%"}}>Edit</button> */}
                         </div>  
@@ -2285,11 +2329,11 @@ const RenewID = async () => {
             }/>
 
             {/* ADD PASSPORT ID DIALOG */}
-            <InputDialog open={addPassportDialog} OkButtonText="Add" onCancel={()=>setAddPassportDialog(false)} title="Add Passport" titleIcon={<Book color="goldenrod"/>} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setPassportID(e.target.value)} input2OnChange={(e:any)=>setPassportIssue(e.target.value)} input3OnChange={(e:any)=>setPassportExpiry(e.target.value)} onOk={addPassport} updating={loading}/>
+            <InputDialog open={addPassportDialog} OkButtonText="Add" onCancel={()=>setAddPassportDialog(false)} title="Add Passport" titleIcon={<Book color="goldenrod"/>} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setPassportID(e.target.value)} input2OnChange={(e:any)=>setPassportIssue(e.target.value)} input3OnChange={(e:any)=>setPassportExpiry(e.target.value)} input4placeholder="Native Phone" input5placeholder="Native Address" input4OnChange={(e:any)=>setNativePhone(e.target.value)} input5OnChange={(e:any)=>setNativeAddress(e.target.value)} onOk={addPassport} updating={loading}/>
 
              
             {/* EDIT PASSPORT DIALOG */}
-            <InputDialog open={editPassportDialog} title="Edit Passport" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditPassportDialog(false)}} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setEditedPassportID(e.target.value)} input2OnChange={(e:any)=>{setEditedPassportIssue(e.target.value)}} input3OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} onOk={EditPassport} updating={loading} disabled={loading} input1Value={passportID} input2Value={passportIssue} input3Value={passportExpiry} input1Label="Passport ID : " input2Label="Issue Date : " input3Label="Expiry Date" />
+            <InputDialog open={editPassportDialog} title="Edit Passport" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditPassportDialog(false)}} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setEditedPassportID(e.target.value)} input2OnChange={(e:any)=>{setEditedPassportIssue(e.target.value)}} input3OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} onOk={EditPassport} updating={loading} disabled={loading} input1Value={passportID} input2Value={passportIssue} input3Value={passportExpiry} input1Label="Passport ID : " input2Label="Issue Date : " input3Label="Expiry Date" input4placeholder="Native Phone Number" input4Label="Native Phone : " input4Value={nativePhone} input5placeholder="Native Address" input5Label="Address : " input5Value={nativeAddress} />
 
             <DefaultDialog title={"Delete Passport?"} destructive OkButtonText="Delete" open={DeletePassportDialog} onCancel={()=>setDeletePassportDialog(false)} updating={loading} disabled={loading} onOk={deletePassport}/>
 

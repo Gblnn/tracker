@@ -1,4 +1,4 @@
-import { BellOff, CheckSquare2, ChevronRight, EllipsisVerticalIcon, Inbox } from "lucide-react"
+import { BellOff, CheckSquare2, ChevronRight, EllipsisVerticalIcon, Inbox, LockKeyholeIcon } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import DropDown from "./dropdown"
@@ -24,6 +24,7 @@ interface Props{
     id_subtitle?:string
     loading?:boolean
     archived?:boolean
+    protected?:boolean
 }
 
 export default function Directive(props:Props){
@@ -90,6 +91,11 @@ export default function Directive(props:Props){
                         <BellOff width={"1rem"} color="grey"/>
                         :null
                     }
+
+                {
+                    props.protected&&
+                    <LockKeyholeIcon width={"1rem"} color="grey"/>
+                }
                     
                 {
                 

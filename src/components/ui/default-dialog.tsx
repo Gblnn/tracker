@@ -1,7 +1,7 @@
 import { LoadingOutlined } from "@ant-design/icons";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { Tooltip } from "antd";
-import { ChevronLeft, Hash, X } from "lucide-react";
+import { ChevronLeft, Hash, Phone, X } from "lucide-react";
 import Directive from "../directive";
 import { Button } from "./button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from "./dialog";
@@ -51,6 +51,7 @@ interface Props {
     dialogBackground?:any
     dialogHeight?:any
     creation_date?:string
+    contact?:string
 }
 
 
@@ -126,9 +127,25 @@ export default function DefaultDialog(props:Props){
 
                         {
                             props.creation_date&&
-                            <div style={{display:"flex", alignItems:"center", gap:"0.5rem", marginTop:"0.75rem", background:"linear-gradient(90deg, rgba(0 0 0/0%), rgba(100 100 100/ 25%), rgba(0 0 0/0%))", padding:"", borderRadius:"0.5rem", justifyContent:'center', height:"2rem", border:""}}>
-                                <p style={{fontSize:"0.8rem", opacity:"0.5", fontWeight:400}}>Created on : </p>
-                                <p style={{fontSize:"0.8rem", color:"dodgerblue"}}>{props.creation_date}</p>
+                            <div style={{display:"flex", alignItems:"center", gap:"0.5rem", marginTop:"0.95rem", background:props.contact?"":"linear-gradient(90deg, rgba(0 0 0/ 0%), rgba(100 100 100/ 25%), rgba(0 0 0/ 0%))", padding:"", borderRadius:"0.75rem", justifyContent:props.contact?'space-between':"center", height:"2.25rem", border:props.contact?"1px solid rgba(100 100 100/50%)":""}}>
+                                <div style={{display:"flex", gap:"0.5rem", marginLeft:"0.65rem"}}>
+                                    <p style={{fontSize:"0.8rem", opacity:"0.5", fontWeight:400}}>Created on : </p>
+                                    <p style={{fontSize:"0.8rem", color:"dodgerblue"}}>{props.creation_date}</p>
+
+                                </div>
+
+                                {
+                                    props.contact&&
+                                    <a href={"tel:"+props.contact} style={{display:"flex", gap:"0.5rem", alignItems:"center", marginRight:"0.25rem", border:'', background:"rgba(100 100 100/ 25%)", borderRadius:"0.5rem", paddingLeft:"0.75rem", paddingRight:"0.75rem"}}>
+                                        
+                                        <Phone width={"0.8rem"} color="dodgerblue"/>
+                                        <p style={{fontSize:"1rem"}}>{props.contact}</p>
+                                        
+                                    </a>
+                                }
+                                
+                                
+                                
                             </div>
                         }
 
