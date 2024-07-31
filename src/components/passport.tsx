@@ -26,10 +26,10 @@ export default function Passport(props:Props){
                     <div style={{display:"flex", border:'', width:"100%"}}>
                     {
                         props.nativePhone&&
-                        <div style={{fontSize:"0.75rem", textAlign:"left", border:'', display:"flex", alignItems:'center', gap:"0.5rem", background:"rgba(100 100 100/ 20%)", borderRadius:"0.5rem", paddingLeft:"0.5rem", paddingRight:"0.5rem"}}>
+                        <a href={"tel:"+props.nativePhone} style={{fontSize:"0.75rem", textAlign:"left", border:'', display:"flex", alignItems:'center', gap:"0.5rem", background:"rgba(100 100 100/ 20%)", borderRadius:"0.5rem", paddingLeft:"0.5rem", paddingRight:"0.5rem"}}>
                             <Phone color='goldenrod' width={"0.75rem"}/>
                             <p>{props.nativePhone}</p>
-                        </div>
+                        </a>
                     }
 
 

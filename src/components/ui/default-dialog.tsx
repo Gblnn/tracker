@@ -136,7 +136,7 @@ export default function DefaultDialog(props:Props){
 
                                 {
                                     props.contact&&
-                                    <a href={"tel:"+props.contact} style={{display:"flex", gap:"0.5rem", alignItems:"center", marginRight:"0.25rem", border:'', background:"rgba(100 100 100/ 25%)", borderRadius:"0.5rem", paddingLeft:"0.75rem", paddingRight:"0.75rem"}}>
+                                    <a href={"tel:"+props.contact} style={{display:"flex", gap:"0.5rem", alignItems:"center", marginRight:"0.35rem", border:'', background:"rgba(100 100 100/ 25%)", borderRadius:"0.5rem", paddingLeft:"0.75rem", paddingRight:"0.75rem"}}>
                                         
                                         <Phone width={"0.8rem"} color="dodgerblue"/>
                                         <p style={{fontSize:"1rem"}}>{props.contact}</p>

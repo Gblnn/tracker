@@ -70,6 +70,11 @@ export default function DbComponent(props:Props){
     const [editedContact, setEditedContact] = useState("")
     const [nativePhone, setNativePhone] = useState("")
     const [nativeAddress, setNativeAddress] = useState("")
+    const [editedNativePhone, setEditedNativePhone] = useState("")
+    const [editedNativeAddress, setEditedNativeAddress] = useState("")
+    const [leaveReview, setLeaveReview] = useState(false)
+    const [editedLeaveFrom, setEditedLeaveFrom] = useState("")
+    const [editedLeaveTill, setEditedLeaveTill] = useState("")
 
     const usenavigate = useNavigate()
     // BASIC PAGE VARIABLES
@@ -492,7 +497,7 @@ export default function DbComponent(props:Props){
 
     const leaveSum = async () => {
         setFetchingLeave(true)
-        const snapshot = await getAggregateFromServer(query(collection(db, 'leave-record'), where("employeeID", "==", id)), {
+        const snapshot = await getAggregateFromServer(query(collection(db, 'leave-record'), where("employeeID", "==", id), where("pending", "==", false)), {
             days:sum("days")
         })
         setFetchingLeave(false)
@@ -505,13 +510,23 @@ export default function DbComponent(props:Props){
 
 const addLeave = async () => {
     setLoading(true)
-    await addDoc(collection(db, "leave-record"), {employeeID:doc_id,created_on:Timestamp.fromDate(new Date()), leaveFrom:leaveFrom, leaveTill:leaveTill, days:moment(leaveTill, "DD/MM/YYYY").diff(moment(leaveFrom, "DD/MM/YYYY"), "days")})
+    await addDoc(collection(db, "leave-record"), {employeeID:doc_id,created_on:Timestamp.fromDate(new Date()), leaveFrom:editedLeaveFrom, leaveTill:editedLeaveTill?editedLeaveTill:"Pending", days:moment(leaveTill, "DD/MM/YYYY").diff(moment(leaveFrom, "DD/MM/YYYY"), "days"), pending:leaveTill?false:true})
     id = doc_id
     await leaveSum()
     fetchLeave()
     setLeaveFrom("")
+    setEditedLeaveFrom("")
     setLeaveTill("")
     setLoading(false)    
+}
+
+const updateLeave = async () => {
+    setLoading(true)
+    await updateDoc(doc(db, 'leave-record', leaveID),{leaveFrom:leaveFrom, leaveTill:leaveTill, pending:leaveTill=="Pending"?true:false, days:leaveTill!="Pending"&&moment(leaveTill, "DD/MM/YYYY").diff(moment(leaveFrom, "DD/MM/YYYY"), "days")})
+    await leaveSum()
+    fetchLeave()
+    setLeaveReview(false)
+    setLoading(false)
 }
 
 const deleteLeave = async () => {
@@ -969,10 +984,12 @@ const RenewID = async () => {
     const EditPassport = async () => {
         setLoading(true)
         try {
-            await updateDoc(doc(db, 'records', doc_id),{passportID:editedPassportID?editedPassportID:passportID, passportIssue:editedPassportIssue?editedPassportIssue:passportIssue, passportExpiry:editedPassportExpiry?TimeStamper(editedPassportExpiry):TimeStamper(passportExpiry), modified_on:Timestamp.fromDate(new Date)})
+            await updateDoc(doc(db, 'records', doc_id),{passportID:editedPassportID?editedPassportID:passportID, passportIssue:editedPassportIssue?editedPassportIssue:passportIssue, passportExpiry:editedPassportExpiry?TimeStamper(editedPassportExpiry):TimeStamper(passportExpiry), nativePhone:editedNativePhone?editedNativePhone:nativePhone, nativeAddress:editedNativeAddress?editedNativeAddress:nativeAddress, modified_on:Timestamp.fromDate(new Date)})
             setPassportID(editedPassportID?editedPassportID:passportID)
             setPassportIssue(editedPassportIssue?editedPassportIssue:passportIssue)
             setPassportExpiry(editedPassportExpiry?editedPassportExpiry:passportExpiry)
+            setNativePhone(editedNativePhone?editedNativePhone:nativePhone)
+            setNativeAddress(editedNativeAddress?editedNativeAddress:nativeAddress)
             setLoading(false)
             setEditPassportDialog(false)
             fetchData()
@@ -2333,7 +2350,7 @@ const RenewID = async () => {
 
              
             {/* EDIT PASSPORT DIALOG */}
-            <InputDialog open={editPassportDialog} title="Edit Passport" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditPassportDialog(false)}} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setEditedPassportID(e.target.value)} input2OnChange={(e:any)=>{setEditedPassportIssue(e.target.value)}} input3OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} onOk={EditPassport} updating={loading} disabled={loading} input1Value={passportID} input2Value={passportIssue} input3Value={passportExpiry} input1Label="Passport ID : " input2Label="Issue Date : " input3Label="Expiry Date" input4placeholder="Native Phone Number" input4Label="Native Phone : " input4Value={nativePhone} input5placeholder="Native Address" input5Label="Address : " input5Value={nativeAddress} />
+            <InputDialog open={editPassportDialog} title="Edit Passport" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditPassportDialog(false)}} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setEditedPassportID(e.target.value)} input2OnChange={(e:any)=>{setEditedPassportIssue(e.target.value)}} input3OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} onOk={EditPassport} updating={loading} disabled={loading} input1Value={passportID} input2Value={passportIssue} input3Value={passportExpiry} input1Label="Passport ID : " input2Label="Issue Date : " input3Label="Expiry Date" input4placeholder="Native Phone Number" input4Label="Native Phone : " input4Value={nativePhone} input5placeholder="Native Address" input5Label="Address : " input5Value={nativeAddress} input4OnChange={(e:any)=>setEditedNativePhone(e.target.value)} input5OnChange={(e:any)=>setEditedNativeAddress(e.target.value)}/>
 
             <DefaultDialog title={"Delete Passport?"} destructive OkButtonText="Delete" open={DeletePassportDialog} onCancel={()=>setDeletePassportDialog(false)} updating={loading} disabled={loading} onOk={deletePassport}/>
 
@@ -2483,15 +2500,16 @@ const RenewID = async () => {
                         {
                         leaveList.map((e:any)=>(
                             <motion.div key={e.id} initial={{opacity:0}} whileInView={{opacity:1}}>
-                            <Directive status={true} tag={e.days+" Days"} title={e.leaveFrom+" - "+e.leaveTill} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{setDeleteLeaveDialog(true);setLeaveID(e.id)}}  className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} noArrow/>
+                            <Directive tagOnClick={()=>{setLeaveReview(true);setLeaveFrom(e.leaveFrom);setLeaveID(e.id)}} status={true} tag={e.pending?"Pending":e.days+" Days"} title={e.leaveFrom+" - "+e.leaveTill} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{setDeleteLeaveDialog(true);setLeaveID(e.id)}}  className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} noArrow/>
                             </motion.div>
                         ))
                     }
                     </div>}
 
                 <div style={{display:"flex", gap:"0.5rem", width:"100%", zIndex:""}}>
-                    <input type="search" id="input-1" value={leaveFrom} onChange={(e:any)=>setLeaveFrom(e.target.value)} placeholder="From" style={{flex:1.5}}/>
-                    <input type="search" id="input-2" value={leaveTill} onChange={(e:any)=>setLeaveTill(e.target.value)} placeholder="Till" style={{flex:1.5}}/>
+                    <input type="search" id="input-1" value={editedLeaveFrom} onChange={(e:any)=>setEditedLeaveFrom(e.target.value)} placeholder="From" style={{flex:1.5}}/>
+
+                    <input type="search" id="input-2" value={editedLeaveTill} onChange={(e:any)=>setEditedLeaveTill(e.target.value)} placeholder="Till" style={{flex:1.5}}/>
                     <button onClick={addLeave} style={{fontSize:"0.8rem", flex:0.45}}>
                         {
                             loading?
@@ -2510,6 +2528,19 @@ const RenewID = async () => {
                 </>
                 
                 }/>
+
+                <InputDialog title={"Leave Review"} open={leaveReview} onCancel={()=>setLeaveReview(false)}
+                inputplaceholder="Leave From"
+                input1Value={leaveFrom}
+                inputOnChange={(e:any)=>setLeaveFrom(e.target.value)}
+                input2placeholder="Leave Till"
+                input2OnChange={(e:any)=>setLeaveTill(e.target.value)}
+                OkButtonText="Update"
+                OkButtonIcon={<RefreshCcw width={"1rem"}/>}
+                updating={loading}
+                disabled={loading}
+                onOk={updateLeave}
+                />
 
                 <DefaultDialog open={deleteLeaveDialog} title={"Delete Leave?"} destructive OkButtonText="Delete" updating={loading} disabled={loading} onCancel={()=>setDeleteLeaveDialog(false)} onOk={deleteLeave} extra={<p style={{fontSize:"0.75rem", textAlign:"left", width:"100%", marginLeft:"1rem", opacity:0.5}}></p>}/>
 
