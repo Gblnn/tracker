@@ -45,6 +45,7 @@
     "react-dom": "^18.2.0",
     "react-lazy-load-image-component": "^1.6.2",
     "react-line-graph": "^1.0.6",
+    "react-private-route": "^1.1.2",
     "react-router-dom": "^6.23.1",
     "react-time-ago": "^7.3.3",
     "recharts": "^2.12.7",

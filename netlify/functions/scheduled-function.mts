@@ -1,6 +1,6 @@
 import emailjs from '@emailjs/nodejs';
 import type { Config } from "@netlify/functions";
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, where } from 'firebase/firestore';
 import moment from 'moment';
 import { db } from "../../src/firebase";
 
@@ -9,11 +9,11 @@ export default async (req: Request) => {
     const serviceId = "service_lunn2bp";
     const templateId = "template_1y0oq9l";
 
+    const today = new Date()
     let m = ""
     let p = ""
-    let filteredData = []
-    const today = new Date()
     let rp = ""
+    let filteredData = []
 
 
     try {
@@ -28,7 +28,7 @@ export default async (req: Request) => {
       })
 
       const RecordCollection = collection(db, "records")
-      const recordQuery = query(RecordCollection, orderBy("created_on"))
+      const recordQuery = query(RecordCollection, orderBy("created_on"), where("state","==","active"))
       const querySnapshot = await getDocs(recordQuery)
       const fetchedData:any = [];
 
@@ -654,11 +654,12 @@ export default async (req: Request) => {
     catch (error) {
       console.log(error);
     }
-    const { next_run } = await req.json()
 
+
+    const { next_run } = await req.json()
     console.log("Received event Next invocation at:", next_run)
 }
 
 export const config: Config = {
-    schedule:"49 12 * * * "
+    schedule:"18 13 * * * "
 }
