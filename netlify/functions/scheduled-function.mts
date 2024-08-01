@@ -93,7 +93,7 @@ export default async (req: Request) => {
       filteredData.forEach((element:any) => {
 
         
-        m+=element.name+"'s documents"+element.state=="archived"?" (Archived) ":""+" : \n\n"
+        m+=element.name+"'s documents : \n\n"
 
         if(element.civil_expiry!=""){
 
@@ -352,7 +352,7 @@ export default async (req: Request) => {
 
           }
         }
-
+        m+=element.state=="archived"?" (Archived) ":""
         m+="\n\n"
       })
 
@@ -661,5 +661,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"55 08 * * * "
+    schedule:"58 08 * * * "
 }
