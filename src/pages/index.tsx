@@ -9,10 +9,19 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Index(){
-
+    
     const [requestDialog, setRequestDialog] = useState(false)
     const [loginPrompt, setLoginPrompt] = useState(false)
+    const [valeLoginPrompt, setValeLoginPrompt] = useState(false)
     const usenavigate = useNavigate()
+
+    const handleLoginPrompt = (e:string) => {
+        e=="ssu"&&
+        setLoginPrompt(true)
+
+        e=="vale"&&
+        setValeLoginPrompt(true)
+    }
 
     return(
         <>
@@ -45,7 +54,7 @@ export default function Index(){
 
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem"}}>
 
-                    <Directive protected onClick={()=>{setLoginPrompt(true)}} title="Sohar Star United" 
+                    <Directive protected onClick={()=>handleLoginPrompt("ssu")} title="Sohar Star United" 
                     icon={
 
                         <Avatar style={{width:"1.25rem", height:"1.25rem", border:""}}>
@@ -57,7 +66,20 @@ export default function Index(){
                 
                     }/>
 
-                    <Directive to="/vale-records" title="Vale Team" icon={<img src="/vale-logo.png" style={{width:"1.25rem", paddingBottom:"0.25rem"}}/>}/>
+                    <Directive protected onClick={()=>handleLoginPrompt("vale")} title="Vale Team"
+                    icon={
+
+                        <Avatar  style={{width:"1.25rem", height:"1.25rem", border:""}}>
+                            <AvatarImage 
+                            style={{objectFit:"cover", paddingBottom:"0.1rem"}} src={"/vale-logo.png"} />
+
+                            <AvatarFallback>
+                                <p style={{paddingTop:"0.1rem"}}>{"V"}</p>
+                            </AvatarFallback>
+                        </Avatar>
+                
+                    }
+                    />
 
                     {/* <Directive onClick={()=>{setRequestDialog(true)}} title="Request Feature" icon={<Plus color="grey" width={"1.1rem"} height={"1.1rem"}/>}/> */}
 
@@ -67,6 +89,9 @@ export default function Index(){
             <DefaultDialog titleIcon={<Mail/>} title="Request Feature" extra={<p style={{fontSize:"0.85rem", opacity:0.5, marginBottom:"0.5rem"}}>Reach out to the developer to request a new feature? You will be redirected to your e-mail client</p>} open={requestDialog} OkButtonText="Reach out" onCancel={()=>setRequestDialog(false)} sendmail/>
 
             <InputDialog title={"Protected Route"} input1Type="password" desc="Enter key to continue" titleIcon={<KeyRound color="dodgerblue"/>} open={loginPrompt} onCancel={()=>setLoginPrompt(false)} OkButtonText="Continue" inputplaceholder="Password"  onOk={()=>usenavigate("/records")}/>
+
+            
+            <InputDialog title={"Protected Route"} input1Type="password" desc="Enter key to continue" titleIcon={<img src="/vale-logo.png" width={"28rem"} style={{paddingBottom:"0.25rem", marginRight:"0.25rem"}}/>} open={valeLoginPrompt} onCancel={()=>setValeLoginPrompt(false)} OkButtonText="Continue" inputplaceholder="Password"  onOk={()=>usenavigate("/vale-records")}/>
             
         </div>
         </>

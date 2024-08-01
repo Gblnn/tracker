@@ -2532,6 +2532,7 @@ const RenewID = async () => {
                 <InputDialog title={"Leave Review"} open={leaveReview} onCancel={()=>setLeaveReview(false)}
                 inputplaceholder="Leave From"
                 input1Value={leaveFrom}
+                input2Value={leaveTill}
                 inputOnChange={(e:any)=>setLeaveFrom(e.target.value)}
                 input2placeholder="Leave Till"
                 input2OnChange={(e:any)=>setLeaveTill(e.target.value)}
