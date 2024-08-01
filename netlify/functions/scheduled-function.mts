@@ -638,7 +638,6 @@ export default async (req: Request) => {
 
     // GENERAL MAIL SEND
     filteredData.length>=1?
-    state != "archived"&&
     await emailjs.send(serviceId, templateId, {
       recipient: rp,
       subject:"HR Document Expiry Reminder", 
@@ -663,5 +662,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"38 12 * * * "
+    schedule:"42 12 * * * "
 }
