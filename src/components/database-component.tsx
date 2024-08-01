@@ -35,7 +35,6 @@ import 'react-lazy-load-image-component/src/effects/blur.css'
 import { useNavigate } from "react-router-dom"
 import ReactTimeAgo from 'react-time-ago'
 import useKeyboardShortcut from 'use-keyboard-shortcut'
-import LineCharter from "./bar-chart"
 import DbDropDown from "./db-dropdown"
 import ImageDialog from "./image-dialog"
 
@@ -2483,10 +2482,10 @@ const RenewID = async () => {
                     
                     </div>
 
-                    <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem"}}>
+                    {/* <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem"}}>
                     <LineCharter/>
                     
-                    </div>
+                    </div> */}
                     
                 
                     
