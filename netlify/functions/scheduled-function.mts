@@ -14,7 +14,7 @@ export default async (req: Request) => {
     let filteredData = []
     const today = new Date()
     let rp = ""
-    let state = ""
+
 
     try {
 
@@ -38,8 +38,6 @@ export default async (req: Request) => {
 
       filteredData = fetchedData.filter((e:any)=>{
         return(
-          e.state!="archived"
-          ||
           e.civil_expiry&&
           Math.round(moment(e.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
           ||
@@ -662,5 +660,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"45 12 * * * "
+    schedule:"49 12 * * * "
 }
