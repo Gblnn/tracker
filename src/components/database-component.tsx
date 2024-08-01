@@ -510,13 +510,12 @@ export default function DbComponent(props:Props){
 
 const addLeave = async () => {
     setLoading(true)
-    await addDoc(collection(db, "leave-record"), {employeeID:doc_id,created_on:Timestamp.fromDate(new Date()), leaveFrom:editedLeaveFrom, leaveTill:editedLeaveTill?editedLeaveTill:"Pending", days:moment(leaveTill, "DD/MM/YYYY").diff(moment(leaveFrom, "DD/MM/YYYY"), "days"), pending:leaveTill?false:true})
+    await addDoc(collection(db, "leave-record"), {employeeID:doc_id,created_on:Timestamp.fromDate(new Date()), leaveFrom:editedLeaveFrom, leaveTill:editedLeaveTill?editedLeaveTill:"Pending", days:moment(editedLeaveTill, "DD/MM/YYYY").diff(moment(editedLeaveFrom, "DD/MM/YYYY"), "days"), pending:editedLeaveTill?false:true})
     id = doc_id
     await leaveSum()
     fetchLeave()
-    setLeaveFrom("")
     setEditedLeaveFrom("")
-    setLeaveTill("")
+    setEditedLeaveTill("")
     setLoading(false)    
 }
 
@@ -2346,7 +2345,7 @@ const RenewID = async () => {
             }/>
 
             {/* ADD PASSPORT ID DIALOG */}
-            <InputDialog open={addPassportDialog} OkButtonText="Add" onCancel={()=>setAddPassportDialog(false)} title="Add Passport" titleIcon={<Book color="goldenrod"/>} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setPassportID(e.target.value)} input2OnChange={(e:any)=>setPassportIssue(e.target.value)} input3OnChange={(e:any)=>setPassportExpiry(e.target.value)} input4placeholder="Native Phone" input5placeholder="Native Address" input4OnChange={(e:any)=>setNativePhone(e.target.value)} input5OnChange={(e:any)=>setNativeAddress(e.target.value)} onOk={addPassport} updating={loading}/>
+            <InputDialog open={addPassportDialog} OkButtonText="Add" onCancel={()=>setAddPassportDialog(false)} title="Add Passport" titleIcon={<Book color="goldenrod"/>} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setPassportID(e.target.value)} input2OnChange={(e:any)=>setPassportIssue(e.target.value)} input3OnChange={(e:any)=>setPassportExpiry(e.target.value)} input4placeholder="Native Phone ( with Country code )" input5placeholder="Native Address" input4OnChange={(e:any)=>setNativePhone(e.target.value)} input5OnChange={(e:any)=>setNativeAddress(e.target.value)} onOk={addPassport} updating={loading}/>
 
              
             {/* EDIT PASSPORT DIALOG */}

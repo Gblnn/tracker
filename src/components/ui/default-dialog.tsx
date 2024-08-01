@@ -128,8 +128,8 @@ export default function DefaultDialog(props:Props){
                         {
                             props.creation_date&&
                             <div style={{display:"flex", alignItems:"center", gap:"0.5rem", marginTop:"0.95rem", background:props.contact?"":"linear-gradient(90deg, rgba(0 0 0/ 0%), rgba(100 100 100/ 25%), rgba(0 0 0/ 0%))", padding:"", borderRadius:"0.75rem", justifyContent:props.contact?'space-between':"center", height:"2.25rem", border:props.contact?"1px solid rgba(100 100 100/50%)":""}}>
-                                <div style={{display:"flex", gap:"0.5rem", marginLeft:"0.65rem"}}>
-                                    <p style={{fontSize:"0.8rem", opacity:"0.5", fontWeight:400}}>Created on : </p>
+                                <div style={{display:"flex", gap:"0.5rem", marginLeft:"0.75rem", alignItems:"center"}}>
+                                    <p style={{fontSize:"0.8rem", opacity:"0.5", fontWeight:400}}>Created : </p>
                                     <p style={{fontSize:"0.8rem", color:"dodgerblue"}}>{props.creation_date}</p>
 
                                 </div>

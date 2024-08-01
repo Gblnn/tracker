@@ -124,9 +124,7 @@ export default function Directive(props:Props){
                 
                 {
                     props.selectable||props.noArrow?
-                    <div style={{width:"1rem"}}>
-                       
-                    </div>
+                    ""
                     :
                     props.extra?
                     <DropDown className={"no-bg"} onDelete={props.extraOnDelete} onEdit={props.extraOnEdit} trigger={<EllipsisVerticalIcon width={"0.8rem"} height={"0.75rem"}/>} />
