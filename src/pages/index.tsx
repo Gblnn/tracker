@@ -9,7 +9,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Index(){
-    
+
     const [requestDialog, setRequestDialog] = useState(false)
     const [loginPrompt, setLoginPrompt] = useState(false)
     const [valeLoginPrompt, setValeLoginPrompt] = useState(false)
@@ -36,7 +36,7 @@ export default function Index(){
                         <button onClick={()=>window.location.reload()} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.8rem"}}>
                         
                             <p style={{opacity:0.5, letterSpacing:"0.15rem"}}>
-                                v1.14
+                                v1.16
                             </p>
                         </button>
 
