@@ -39,7 +39,20 @@ export default function AccessControl(){
                 
                     }/>
 
-                    <Directive to="/vale-records" title="Vale Team" icon={<img src="/vale-logo.png" style={{width:"1.25rem", paddingBottom:"0.25rem"}}/>}/>
+                    <Directive protected title="Vale Team"
+                    icon={
+
+                        <Avatar  style={{width:"1.25rem", height:"1.25rem", border:""}}>
+                            <AvatarImage 
+                            style={{objectFit:"cover", paddingBottom:"0.1rem"}} src={"/vale-logo.png"} />
+
+                            <AvatarFallback>
+                                <p style={{paddingTop:"0.1rem"}}>{"V"}</p>
+                            </AvatarFallback>
+                        </Avatar>
+                
+                    }
+                    />
 
                     {/* <Directive onClick={()=>{setRequestDialog(true)}} title="Request Feature" icon={<Plus color="grey" width={"1.1rem"} height={"1.1rem"}/>}/> */}
 

@@ -61,7 +61,7 @@ export default function DefaultDialog(props:Props){
         <>
         <Dialog open={props.open}>
 
-            <DialogContent style={{background:props.dialogBackground, backgroundRepeat:"no-repeat", backgroundSize:"cover"}} onOpenAutoFocus={(e)=>e.preventDefault()}>
+            <DialogContent style={{background:props.dialogBackground, backgroundRepeat:"no-repeat", backgroundSize:"contain", backgroundPosition:"center", border:"none"}} onOpenAutoFocus={(e)=>e.preventDefault()}>
 
                 <DialogHeader>
                     {

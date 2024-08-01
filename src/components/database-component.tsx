@@ -521,6 +521,8 @@ const addLeave = async () => {
 const updateLeave = async () => {
     setLoading(true)
     await updateDoc(doc(db, 'leave-record', leaveID),{leaveFrom:leaveFrom, leaveTill:leaveTill, pending:leaveTill=="Pending"?true:false, days:leaveTill!="Pending"&&moment(leaveTill, "DD/MM/YYYY").diff(moment(leaveFrom, "DD/MM/YYYY"), "days")})
+    setLeaveFrom(leaveFrom)
+    setLeaveTill(leaveTill)
     await leaveSum()
     fetchLeave()
     setLeaveReview(false)
