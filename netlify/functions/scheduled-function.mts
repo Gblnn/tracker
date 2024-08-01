@@ -93,7 +93,7 @@ export default async (req: Request) => {
       filteredData.forEach((element:any) => {
 
         
-        m+=element.name+"'s documents : \n\n"
+        m+=element.name+"'s documents"+element.state=="archived"?" (Archived) ":""+" : \n\n"
 
         if(element.civil_expiry!=""){
 
@@ -107,6 +107,7 @@ export default async (req: Request) => {
             +String(moment(element.civil_expiry.toDate()).diff(moment(today).startOf('day'), 'days')<=0?
             " (Overdue) "
             :"")
+            
             +"\n\n"
 
           }
@@ -660,5 +661,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"48 11 * * * "
+    schedule:"52 08 * * * "
 }
