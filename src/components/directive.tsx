@@ -90,6 +90,9 @@ export default function Directive(props:Props){
                 null
                 :
                         props.notify?
+                        props.archived?
+                        ""
+                        :
                         <BellOff width={"1rem"} color="grey"/>
                         :null
                     }

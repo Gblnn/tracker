@@ -12,7 +12,7 @@ import * as XLSX from '@e965/xlsx';
 import emailjs from '@emailjs/browser';
 import { message } from "antd";
 import { saveAs } from "file-saver";
-import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
+import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from "firebase/firestore";
 import { motion } from 'framer-motion';
 import { ChevronDown, Download, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, User, Users } from "lucide-react";
 import moment from "moment";
@@ -96,7 +96,7 @@ export default function Inbox(){
         try {
             setPageLoad(true)
             const RecordCollection = collection(db, "records")
-            const recordQuery = query(RecordCollection, orderBy("created_on"))
+            const recordQuery = query(RecordCollection, orderBy("created_on"), where("state", "==", "active"))
             const querySnapshot = await getDocs(recordQuery)
             const fetchedData:any = [];
 

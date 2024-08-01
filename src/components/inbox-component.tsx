@@ -250,7 +250,7 @@ export default function InboxComponent(props:Props){
                                 
                                 {
                                     props.notify?
-                                    <Tooltip title="This person will not be notified">
+                                    <Tooltip title={props.archived?"All notifications paused":"This person will not be notified"}>
                                         <button style={{height:"2rem", fontSize:"0.8rem", paddingRight:"1rem", paddingLeft:"1rem", opacity:0.5}}>
                                             {
                                                 props.archived&&
