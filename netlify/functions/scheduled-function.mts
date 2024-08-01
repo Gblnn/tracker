@@ -14,6 +14,7 @@ export default async (req: Request) => {
     let filteredData = []
     const today = new Date()
     let rp = ""
+    let state = ""
 
     try {
 
@@ -37,6 +38,8 @@ export default async (req: Request) => {
 
       filteredData = fetchedData.filter((e:any)=>{
         return(
+          e.state!="archived"
+          ||
           e.civil_expiry&&
           Math.round(moment(e.civil_expiry.toDate()).diff(moment(today), 'months'))<=2
           ||
@@ -92,7 +95,6 @@ export default async (req: Request) => {
 
       filteredData.forEach((element:any) => {
 
-        
         m+=element.name+"'s documents : \n\n"
 
         if(element.civil_expiry!=""){
@@ -636,7 +638,7 @@ export default async (req: Request) => {
 
     // GENERAL MAIL SEND
     filteredData.length>=1?
-
+    state != "archived"&&
     await emailjs.send(serviceId, templateId, {
       recipient: rp,
       subject:"HR Document Expiry Reminder", 
@@ -661,5 +663,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"09 11 * * * "
+    schedule:"38 12 * * * "
 }

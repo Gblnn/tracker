@@ -16,7 +16,7 @@ import { db, storage } from "@/firebase"
 import { LoadingOutlined } from '@ant-design/icons'
 import * as XLSX from '@e965/xlsx'
 import emailjs from '@emailjs/browser'
-import { message } from 'antd'
+import { message, Tooltip } from 'antd'
 import { saveAs } from 'file-saver'
 import { addDoc, collection, deleteDoc, doc, getAggregateFromServer, getDocs, onSnapshot, orderBy, query, sum, Timestamp, updateDoc, where } from 'firebase/firestore'
 import {
@@ -1475,6 +1475,7 @@ const RenewID = async () => {
                         <motion.div key={post.id} initial={{opacity:0}} whileInView={{opacity:1}}>
 
                             <Directive 
+                            space
                                 notify={(!post.notify)}
                                 archived={post.state=="archived"?true:false}
                                 tag={
@@ -1749,7 +1750,7 @@ const RenewID = async () => {
             titleIcon={
             
 
-                <Avatar style={{width:"3.5rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center", cursor:"pointer", border:state=="archived"?"solid goldenrod":""}}>
+                <Avatar style={{width:"3.55rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center", cursor:"pointer", border:state=="archived"?"solid goldenrod":""}}>
                     <AvatarImage onClick={()=>setImageDialog(true)} style={{objectFit:"cover"}} src={image}/>
                     <AvatarFallback>
                         <p style={{paddingTop:"0.1rem"}}>{Array.from(name)[0]}</p>
@@ -1780,7 +1781,9 @@ const RenewID = async () => {
                         
                         </button>
                         :
-                        <button style={{fontSize:"0.8rem", width:"4.5rem", opacity:"0.5", border:"", height:"2rem"}}>Archived</button>
+                        <Tooltip title="All notifications paused">
+                        <button style={{fontSize:"0.8rem", width:"4.5rem", opacity:"0.75", border:"", height:"2rem", color:""}}>Archived</button>
+                        </Tooltip>
                     }
                     
 
