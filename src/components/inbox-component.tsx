@@ -253,10 +253,9 @@ export default function InboxComponent(props:Props){
                                     <Tooltip title="This person will not be notified">
                                         <button style={{height:"2rem", fontSize:"0.8rem", paddingRight:"1rem", paddingLeft:"1rem", opacity:0.5}}>
                                             {
-                                                props.archived?
+                                                props.archived&&
                                                 <Inbox width={"1rem"}/>
-                                                :
-                                                <BellOff width={"1rem"} color='grey'/>
+                                                
                                             }
                                             {
                                                 props.archived?
