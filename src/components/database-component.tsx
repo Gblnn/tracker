@@ -368,7 +368,6 @@ export default function DbComponent(props:Props){
     const fetchData = async (type?:any) => {
         
         try {
-
             setfetchingData(true)
             const RecordCollection = collection(db, "records")
             const recordQuery = query(RecordCollection, orderBy("created_on"), where("type", "==", props.dbCategory))
@@ -395,6 +394,17 @@ export default function DbComponent(props:Props){
             setStatus("false")
         }   
     }
+
+    // const fetchChecked = async () => {
+    //     try {
+    //         setLoading(true)
+
+    //         setLoading(false)
+            
+    //     } catch (error) {
+    //         setLoading(false)
+    //     }
+    // }
 
     const fetchSalary = async () => {
         console.log(doc_id)
@@ -2473,10 +2483,21 @@ const RenewID = async () => {
                     <div style={{border:"", display:"flex", alignItems:'center', justifyContent:"space-between"}}>
 
                         <div style={{border:''}}>
-                            <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"", display:'flex'}}>Block Period</p>
-                            <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600}}>
-                                <p>11/12/2024</p>-<p>13/12/2026</p>
+                            <div style={{display:"flex", gap:"0.25rem", alignItems:"center"}}>
+                                <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"", display:'flex'}}>Block Period</p>
+                                {
+                                    leaves?
+                                    <p style={{fontSize:"0.75rem", opacity:0.5}}>{"( "}extended by {leaves} days{" )"}</p>
+                                    :null
+                                }
+                                
                             </div>
+                            
+                            <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600}}>
+                                <p style={{textAlign:"left", border:""}}>11/12/2024</p>-<p>{String(moment("13/12/2026", "DD/MM/YYYY").add(leaves, "days").format("DD/MM/YYYY"))}</p>
+                                
+                            </div>
+                            
                         
                         </div>
 
@@ -2503,7 +2524,7 @@ const RenewID = async () => {
                         {
                         leaveList.map((e:any)=>(
                             <motion.div key={e.id} initial={{opacity:0}} whileInView={{opacity:1}}>
-                            <Directive tagOnClick={()=>{setLeaveReview(true);setLeaveFrom(e.leaveFrom);setLeaveID(e.id)}} status={true} tag={e.pending?"Pending":e.days+" Days"} title={e.leaveFrom+" - "+e.leaveTill} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{setDeleteLeaveDialog(true);setLeaveID(e.id)}}  className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} noArrow/>
+                            <Directive tagOnClick={()=>{setLeaveReview(true);setLeaveFrom(e.leaveFrom);e.pending==false?setLeaveTill(e.leaveTill):setLeaveTill(""), setLeaveID(e.id)}} status={true} tag={e.pending?"Pending":e.days+" Days"} title={e.leaveFrom+" - "+e.leaveTill} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{setDeleteLeaveDialog(true);setLeaveID(e.id)}}  className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} noArrow/>
                             </motion.div>
                         ))
                     }

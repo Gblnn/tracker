@@ -13,6 +13,7 @@ import PageNotFound from './pages/page-not-found';
 import Login from './pages/login';
 import Archives from './pages/archives';
 import AccessControl from './pages/access-control';
+import ProtectedRoutes from './components/protectedRoute';
 
 
 export default function App(){
@@ -35,16 +36,18 @@ export default function App(){
     
     <Routes>
       <Route path="/" element={<Login/>}/>
-      <Route path='/index' element={<Index/>}/>
-      <Route path="/inbox" element={<Inbox/>}/>
-      <Route path="/archives" element={<Archives/>}/>
-      <Route path="/access-control" element={<AccessControl/>}/>
-      <Route path="/records" element={<Records/>}/>
-      <Route path="/vale-records" element={<ValeRecords/>}/>
-      <Route path="/user" element={<UserPage/>}/>
-      <Route path="/vehicles" element={<Vehicles/>}/>
-      <Route path="/medicals" element={<Medicals/>}/>
-      <Route path='/history' element={<History/>}/>
+      <Route element={<ProtectedRoutes user={"user"}/>}>
+        <Route path='/index' element={<Index/>}/>
+        <Route path="/inbox" element={<Inbox/>}/>
+        <Route path="/archives" element={<Archives/>}/>
+        <Route path="/access-control" element={<AccessControl/>}/>
+        <Route path="/records" element={<Records/>}/>
+        <Route path="/vale-records" element={<ValeRecords/>}/>
+        <Route path="/user" element={<UserPage/>}/>
+        <Route path="/vehicles" element={<Vehicles/>}/>
+        <Route path="/medicals" element={<Medicals/>}/>
+        <Route path='/history' element={<History/>}/>
+      </Route>
       
       <Route path='*' element={<PageNotFound/>}/>
     </Routes>
