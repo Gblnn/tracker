@@ -282,7 +282,7 @@ export default function Inbox(){
     // }
 
     const exportDB = async () => {
-        const myHeader = ["id","name","employeeCode","type","companyName","state","notify", "civil_expiry", "license_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10","civil_number","license_number", "passportID", "salaryBasic", "allowance"];
+        const myHeader = ["id","name","employeeCode","type","companyName","state","notify", "civil_expiry", "license_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10","civil_number","license_number", "passportID"];
 
         filteredData.forEach((e:any) => {
 
@@ -341,7 +341,95 @@ export default function Inbox(){
             :
             e.vt_car_1 = ""
 
+
+            e.vt_car_2==""?
+            {}
+            :
+            Math.round(moment(e.vt_car_2.toDate()).diff(moment(),"months"))<=2?
+            e.vt_car_2 = String(moment(e.vt_car_2.toDate()).format("DD/MM/YYYY"))
+            :
+            e.vt_car_2 = ""
+
+
+            e.vt_car_3==""?
+            {}
+            :
+            Math.round(moment(e.vt_car_3.toDate()).diff(moment(),"months"))<=2?
+            e.vt_car_3 = String(moment(e.vt_car_3.toDate()).format("DD/MM/YYYY"))
+            :
+            e.vt_car_3 = ""
+
+
+            e.vt_car_4==""?
+            {}
+            :
+            Math.round(moment(e.vt_car_4.toDate()).diff(moment(),"months"))<=2?
+            e.vt_car_4 = String(moment(e.vt_car_4.toDate()).format("DD/MM/YYYY"))
+            :
+            e.vt_car_4 = ""
+
+
+            e.vt_car_5==""?
+            {}
+            :
+            Math.round(moment(e.vt_car_5.toDate()).diff(moment(),"months"))<=2?
+            e.vt_car_5 = String(moment(e.vt_car_5.toDate()).format("DD/MM/YYYY"))
+            :
+            e.vt_car_5 = ""
+
+
+            e.vt_car_6==""?
+            {}
+            :
+            Math.round(moment(e.vt_car_6.toDate()).diff(moment(),"months"))<=2?
+            e.vt_car_6 = String(moment(e.vt_car_6.toDate()).format("DD/MM/YYYY"))
+            :
+            e.vt_car_6 = ""
+
+
+
+            e.vt_car_7==""?
+            {}
+            :
+            Math.round(moment(e.vt_car_7.toDate()).diff(moment(),"months"))<=2?
+            e.vt_car_7 = String(moment(e.vt_car_7.toDate()).format("DD/MM/YYYY"))
+            :
+            e.vt_car_7 = ""
+
+
+            e.vt_car_8==""?
+            {}
+            :
+            Math.round(moment(e.vt_car_8.toDate()).diff(moment(),"months"))<=2?
+            e.vt_car_8 = String(moment(e.vt_car_8.toDate()).format("DD/MM/YYYY"))
+            :
+            e.vt_car_8 = ""
+
+
+            e.vt_car_9==""?
+            {}
+            :
+            Math.round(moment(e.vt_car_9.toDate()).diff(moment(),"months"))<=2?
+            e.vt_car_9 = String(moment(e.vt_car_9.toDate()).format("DD/MM/YYYY"))
+            :
+            e.vt_car_9 = ""
+
+
+            e.vt_car_10==""?
+            {}
+            :
+            Math.round(moment(e.vt_car_10.toDate()).diff(moment(),"months"))<=2?
+            e.vt_car_10 = String(moment(e.vt_car_10.toDate()).format("DD/MM/YYYY"))
+            :
+            e.vt_car_10 = ""
+
+
+
+
+            
         });
+
+
 
         const worksheet = XLSX.utils.json_to_sheet(filteredData, {header: myHeader});
         const workbook = XLSX.utils.book_new();
@@ -440,7 +528,7 @@ export default function Inbox(){
                         
                     </div>}
                     option1Text="Personal"
-                    option2Text="Vale"
+                    option2Text="Vale Record"
                     onOption1={()=>setFilterState("personal")}
                     onOption2={()=>setFilterState("vale")}
                     onClear={()=>setFilterState("")}

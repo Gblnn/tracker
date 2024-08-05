@@ -15,7 +15,6 @@ export default async (req: Request) => {
     let rp = ""
     let filteredData = []
 
-
     try {
 
       const RecipientCollection = collection(db, "recipients")

@@ -1,19 +1,23 @@
 import emailjs from '@emailjs/browser';
 import { useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
+import ProtectedRoutes from './components/protectedRoute';
 import Index from "./pages";
+import AccessControl from './pages/access-control';
+import Archives from './pages/archives';
+import History from './pages/history';
 import Inbox from "./pages/inbox";
+import Login from './pages/login';
 import Medicals from "./pages/medicals";
+import PageNotFound from './pages/page-not-found';
 import Records from "./pages/records";
 import UserPage from "./pages/user";
-import Vehicles from "./pages/vehicles";
-import History from './pages/history';
 import ValeRecords from './pages/vale-records';
-import PageNotFound from './pages/page-not-found';
-import Login from './pages/login';
-import Archives from './pages/archives';
-import AccessControl from './pages/access-control';
-import ProtectedRoutes from './components/protectedRoute';
+import AdminPage from './pages/admin-page';
+
+declare global{
+  var user : string
+}
 
 
 export default function App(){
@@ -21,8 +25,7 @@ export default function App(){
     emailjs.init("c8AePKR5BCK8UIn_E")
 },[])
   return(
-    <div>
-
+    <>
     {/* <Header updateInbox/> */}
     <div style={{height:""}}></div>
     
@@ -32,19 +35,19 @@ export default function App(){
     
     </div>
     
-
     
     <Routes>
       <Route path="/" element={<Login/>}/>
-      <Route element={<ProtectedRoutes user={"user"}/>}>
+      
+      <Route element={<ProtectedRoutes user={globalThis}/>}>
         <Route path='/index' element={<Index/>}/>
+        <Route path="/admin" element={<AdminPage/>}/>
         <Route path="/inbox" element={<Inbox/>}/>
         <Route path="/archives" element={<Archives/>}/>
         <Route path="/access-control" element={<AccessControl/>}/>
         <Route path="/records" element={<Records/>}/>
         <Route path="/vale-records" element={<ValeRecords/>}/>
         <Route path="/user" element={<UserPage/>}/>
-        <Route path="/vehicles" element={<Vehicles/>}/>
         <Route path="/medicals" element={<Medicals/>}/>
         <Route path='/history' element={<History/>}/>
       </Route>
@@ -53,6 +56,9 @@ export default function App(){
     </Routes>
     
     
-    </div>
+    
+    </>
+
+    
   )
 }

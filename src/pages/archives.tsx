@@ -109,7 +109,7 @@ export default function Archives(){
             setPageLoad(false)
 
     
-            console.log(fetchedData)
+            // console.log(fetchedData)
             // console.log(records)
             // records.forEach((r:any)=>{
             

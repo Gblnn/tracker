@@ -1,49 +1,43 @@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { auth } from "@/firebase";
+import { LoadingOutlined } from '@ant-design/icons';
 import { message } from "antd";
 import { browserSessionPersistence, GoogleAuthProvider, setPersistence, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { ChevronRight, FileArchiveIcon, KeyRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LoadingOutlined } from '@ant-design/icons'
+
+
  
 export default function Login(){
-
-    let user = ""
-
-    useEffect(()=>{
-        console.log(user)
-        user?
-        usenavigate("/index")
-        :
-        usenavigate("/")
-        
-    },[])
 
     const usenavigate = useNavigate()
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [loading, setLoading] = useState(false)
+
+    
+    
     setPersistence(auth, browserSessionPersistence)
+
+
+
     const handleLoginIn = async () => {
         try {
             setLoading(true)
             const userCredential = await signInWithEmailAndPassword(auth, email, password)
-            let user = userCredential.user
-            console.log(user)
+            globalThis.user = userCredential.user.uid
+            console.log(globalThis.user)
             setLoading(false)
-            user?
+            globalThis.user?
             usenavigate("/index")
             :
             message.error("Login Failed")
         } catch (err:any) {
             setLoading(false)
             const errorMessage = err.message;
-            
-
-        
-            console.log(err.code)
+            console.log(err.message)
 
             switch (err.code) {
                 case "auth/invalid-email":

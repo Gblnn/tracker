@@ -264,7 +264,7 @@ export default function DbComponent(props:Props){
     const [initialSalary, setInitialSalary] = useState(0)
     const [initialAllowance, setInitialAllowance] = useState(0)
     
-{/* //////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
+{/* //////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
     useEffect(()=>{
         onSnapshot(query(collection(db, 'records')), (snapshot:any) => {
@@ -273,10 +273,10 @@ export default function DbComponent(props:Props){
                 fetchData()   
               }
               if (change.type === "modified") {
-                  fetchData()
+                fetchData()
               }
               if (change.type === "removed") {
-                  fetchData()
+                fetchData()
               }
             });
           });
@@ -381,7 +381,7 @@ export default function DbComponent(props:Props){
 
             setfetchingData(false)
             setRecords(fetchedData)
-            console.log(fetchedData)
+            // console.log(fetchedData)
             setChecked([])
             setSelectable(false)
             type=="refresh"?
@@ -459,7 +459,8 @@ export default function DbComponent(props:Props){
             setNewAllowance(0)
             setLoading(false)
             
-        } catch (error) {
+        } 
+        catch (error) {
             setLoading(false)
         }
     }
@@ -1462,11 +1463,9 @@ const RenewID = async () => {
 
                     <p style={{height:"0.25rem"}}/>
                 
-                <div className="record-list" style={{display:"flex", gap:"0.6rem", flexFlow:"column", overflowY:"auto", height:"72svh", paddingTop:"", paddingRight:"0.5rem"}}>
+                <div className="record-list" style={{display:"flex", gap:"0.6rem", flexFlow:"column", overflowY:"auto", height:"72svh", paddingTop:"0.15rem", paddingRight:"0.35rem"}}>
                     
-                    <div style={{width:"100%", display:"flex", justifyContent:"flex-start"}}>
                     
-                    </div>
                     
                 {
                     // RECORD DATA MAPPING
@@ -1534,7 +1533,7 @@ const RenewID = async () => {
                                     setName(post.name);
                                     id = post.id
                                     setDocID(post.id)
-                                    console.log("id:",id)
+                                    // console.log("id:",id)
                                     setCivilNumber(post.civil_number);
                                     setCivilExpiry(post.civil_expiry?moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"):null);
                                     setCivilDOB(post.civil_DOB)
