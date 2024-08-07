@@ -376,7 +376,6 @@ export default function DbComponent(props:Props){
 
             querySnapshot.forEach((doc:any)=>{
                 fetchedData.push({id: doc.id, ...doc.data()})
-                
             })
 
             setfetchingData(false)
@@ -516,52 +515,52 @@ export default function DbComponent(props:Props){
         console.log(snapshot.data().days, id)
     }
 
-{/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
+{/*///////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
-const addLeave = async () => {
-    setLoading(true)
-    await addDoc(collection(db, "leave-record"), {employeeID:doc_id,created_on:Timestamp.fromDate(new Date()), leaveFrom:editedLeaveFrom, leaveTill:editedLeaveTill?editedLeaveTill:"Pending", days:moment(editedLeaveTill, "DD/MM/YYYY").diff(moment(editedLeaveFrom, "DD/MM/YYYY"), "days"), pending:editedLeaveTill?false:true})
-    id = doc_id
-    await leaveSum()
-    fetchLeave()
-    setEditedLeaveFrom("")
-    setEditedLeaveTill("")
-    setLoading(false)    
-}
+    const addLeave = async () => {
+        setLoading(true)
+        await addDoc(collection(db, "leave-record"), {employeeID:doc_id,created_on:Timestamp.fromDate(new Date()), leaveFrom:editedLeaveFrom, leaveTill:editedLeaveTill?editedLeaveTill:"Pending", days:moment(editedLeaveTill, "DD/MM/YYYY").diff(moment(editedLeaveFrom, "DD/MM/YYYY"), "days"), pending:editedLeaveTill?false:true})
+        id = doc_id
+        await leaveSum()
+        fetchLeave()
+        setEditedLeaveFrom("")
+        setEditedLeaveTill("")
+        setLoading(false)    
+    }
 
-const updateLeave = async () => {
-    setLoading(true)
-    await updateDoc(doc(db, 'leave-record', leaveID),{leaveFrom:leaveFrom, leaveTill:leaveTill, pending:leaveTill=="Pending"?true:false, days:leaveTill!="Pending"&&moment(leaveTill, "DD/MM/YYYY").diff(moment(leaveFrom, "DD/MM/YYYY"), "days")})
-    setLeaveFrom(leaveFrom)
-    setLeaveTill(leaveTill)
-    await leaveSum()
-    fetchLeave()
-    setLeaveReview(false)
-    setLoading(false)
-}
+    const updateLeave = async () => {
+        setLoading(true)
+        await updateDoc(doc(db, 'leave-record', leaveID),{leaveFrom:leaveFrom, leaveTill:leaveTill, pending:leaveTill=="Pending"?true:false, days:leaveTill!="Pending"&&moment(leaveTill, "DD/MM/YYYY").diff(moment(leaveFrom, "DD/MM/YYYY"), "days")})
+        setLeaveFrom(leaveFrom)
+        setLeaveTill(leaveTill)
+        await leaveSum()
+        fetchLeave()
+        setLeaveReview(false)
+        setLoading(false)
+    }
 
-const deleteLeave = async () => {
-    setLoading(true)
-    await deleteDoc(doc(db, 'leave-record', leaveID))
-    id = doc_id
-    await leaveSum()
-    setLoading(false)
-    fetchLeave()
-    setDeleteLeaveDialog(false)
-    leaveList.length==1&&
-    setLeaveList([])
-}
+    const deleteLeave = async () => {
+        setLoading(true)
+        await deleteDoc(doc(db, 'leave-record', leaveID))
+        id = doc_id
+        await leaveSum()
+        setLoading(false)
+        fetchLeave()
+        setDeleteLeaveDialog(false)
+        leaveList.length==1&&
+        setLeaveList([])
+    }
 
-const RenewID = async () => {
-    setLoading(true)
-    await updateDoc(doc(db, "records", doc_id),{civil_expiry:TimeStamper(newExpiry), modified_on:Timestamp.fromDate(new Date())})
-    setCivilExpiry(newExpiry)
-    setLoading(false)
-    setRenewDocDialog(false)
-    fetchData()
-    setNewExpiry("")
-    setModifiedOn(new Date())
-}
+    const RenewID = async () => {
+        setLoading(true)
+        await updateDoc(doc(db, "records", doc_id),{civil_expiry:TimeStamper(newExpiry), modified_on:Timestamp.fromDate(new Date())})
+        setCivilExpiry(newExpiry)
+        setLoading(false)
+        setRenewDocDialog(false)
+        fetchData()
+        setNewExpiry("")
+        setModifiedOn(new Date())
+    }
 
     const archiveRecord = async () => {
         setLoading(true)
@@ -2472,7 +2471,6 @@ const RenewID = async () => {
                     :
                     <RefreshCcw color="dodgerblue" width={"1rem"}/>
                 }
-                
             </button>
             }
             extra={
