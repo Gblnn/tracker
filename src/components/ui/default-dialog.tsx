@@ -85,7 +85,7 @@ export default function DefaultDialog(props:Props){
                                     <div style={{display:'flex', gap:"0.75rem"}}>
                                         {props.code&&
                                         <Tooltip title={props.codeTooltip} placement="right">
-                                            <div style={{fontSize:"0.75rem", fontWeight:400, border:"1px solid rgba(100 100 100/ 75%)",borderRadius:"0.5rem",paddingLeft:"0.25rem", textAlign:"left", opacity:"0.75", display:'flex', gap:"0.5rem",alignItems:"center", paddingRight:"0.5rem", width:"fit-content", height:""}}>
+                                            <div style={{fontSize:"1rem", fontWeight:400, border:"1px solid rgba(100 100 100/ 75%)",borderRadius:"0.5rem",paddingLeft:"0.25rem", textAlign:"left", opacity:"0.75", display:'flex', gap:"0.5rem",alignItems:"center", paddingRight:"0.5rem", width:"fit-content", height:""}}>
                                                 {
                                                     props.codeIcon?
                                                     props.codeIcon
@@ -93,7 +93,7 @@ export default function DefaultDialog(props:Props){
                                                     <Hash color="dodgerblue" width={"0.8rem"}/>
                                                 }
                                                 
-                                                {props.code}
+                                                <p style={{fontSize:"0.9rem"}}>{props.code}</p>
                                             </div>
                                         </Tooltip>}
 
