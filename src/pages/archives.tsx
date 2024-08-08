@@ -207,7 +207,7 @@ export default function Archives(){
 
 
     const exportDB = () => {
-        const myHeader = ["id","name","employeeCode","type","companyName","state","notify", "civil_expiry", "license_expiry", "medical_due_on", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10","civil_number","license_number", "passportID", "salaryBasic", "allowance"];
+        const myHeader = ["id","name","employeeCode","type","companyName","state","civil_number", "civil_expiry", "license_number", "license_expiry", "medical_due_on","passportID", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
 
         records.forEach((e:any) => {
             

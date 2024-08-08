@@ -15,10 +15,6 @@ import UserPage from "./pages/user";
 import ValeRecords from './pages/vale-records';
 import AdminPage from './pages/admin-page';
 
-declare global{
-  var user : string
-}
-
 
 export default function App(){
   useEffect(()=>{
@@ -39,7 +35,7 @@ export default function App(){
     <Routes>
       <Route path="/" element={<Login/>}/>
       
-      <Route element={<ProtectedRoutes user={globalThis}/>}>
+      <Route element={<ProtectedRoutes user={window.name}/>}>
         <Route path='/index' element={<Index/>}/>
         <Route path="/admin" element={<AdminPage/>}/>
         <Route path="/inbox" element={<Inbox/>}/>

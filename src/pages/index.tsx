@@ -3,8 +3,10 @@ import Directive from "@/components/directive";
 import InputDialog from "@/components/input-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import DefaultDialog from "@/components/ui/default-dialog";
+import { auth } from "@/firebase";
+import { signOut } from "firebase/auth";
 import { motion } from 'framer-motion';
-import { FileArchive, Inbox, KeyRound, Mail } from "lucide-react";
+import { FileArchive, KeyRound, LogOut, Mail } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -42,11 +44,11 @@ export default function Index(){
 
                         
 
-                        <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
+                        {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
                             <Inbox className="" color="crimson"/>
-                        </button>
+                        </button> */}
 
-                        {/* <button onClick={()=>{signOut(auth);usenavigate("/")}} style={{width:"3rem"}}><LogOut width={"1rem"} color='lightcoral'/></button> */}
+                        <button onClick={()=>{signOut(auth);usenavigate("/");window.name="";console.log(window.name);window.location.reload()}} style={{width:"3rem"}}><LogOut width={"1rem"} color='lightcoral'/></button>
                     </div>
                 
             }/>

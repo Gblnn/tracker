@@ -5,7 +5,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { message } from "antd";
 import { browserSessionPersistence, GoogleAuthProvider, setPersistence, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { ChevronRight, FileArchiveIcon, KeyRound } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 
@@ -21,17 +21,23 @@ export default function Login(){
     
     setPersistence(auth, browserSessionPersistence)
 
+    useEffect(()=>{
+        window.name&&
+        usenavigate("/index")
+    },[])
+
 
 
     const handleLoginIn = async () => {
         try {
             setLoading(true)
             const userCredential = await signInWithEmailAndPassword(auth, email, password)
-            globalThis.user = userCredential.user.uid
-            console.log(globalThis.user)
+            window.name = userCredential.user.uid
+            console.log(window.name)
             setLoading(false)
-            globalThis.user?
-            usenavigate("/index")
+            window.name?
+            
+            window.location.reload()
             :
             message.error("Login Failed")
         } catch (err:any) {
