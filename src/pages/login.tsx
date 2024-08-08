@@ -153,7 +153,7 @@ export default function Login(){
                     </Button>
 
                     <Button onClick={SignUpWithGoogle} variant={"ghost"}>
-                        <img src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" width={"25rem"}/>
+                        <img src="/google.png" width={"25rem"}/>
                         Continue with Google
                     </Button>
                 </div>
