@@ -1,5 +1,5 @@
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import { Archive, FileSpreadsheet, Inbox, KeyRound } from "lucide-react";
+import { Archive, DownloadCloud, Inbox, KeyRound } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem } from "./ui/dropdown-menu";
 
 interface Props{
@@ -25,7 +25,7 @@ export default function DbDropDown(props:Props){
         <DropdownMenuGroup>
 
           <DropdownMenuItem onClick={props.onExport} style={{width:"100%"}}>
-            <FileSpreadsheet className="mr-2" color="lightgreen" />
+            <DownloadCloud className="mr-2" color="lightgreen" />
             <span style={{width:"100%"}}>Export xlsx</span>
           </DropdownMenuItem>
 

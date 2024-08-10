@@ -6,7 +6,7 @@ import DefaultDialog from "@/components/ui/default-dialog";
 import { auth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { motion } from 'framer-motion';
-import { FileArchive, KeyRound, LogOut, Mail } from "lucide-react";
+import { KeyRound, LogOut, Mail } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -15,6 +15,7 @@ export default function Index(){
     const [requestDialog, setRequestDialog] = useState(false)
     const [loginPrompt, setLoginPrompt] = useState(false)
     const [valeLoginPrompt, setValeLoginPrompt] = useState(false)
+    const [logoutPrompt, setLogoutPrompt] = useState(false)
     const usenavigate = useNavigate()
 
     const handleLoginPrompt = (e:string) => {
@@ -32,13 +33,13 @@ export default function Index(){
         </div> */}
         <div style={{padding:"1.25rem", background:"linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))", height:"100svh"}}>
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
-                <Back title="DocRecord" icon={<FileArchive color="salmon"/>} noback 
+                <Back title="StarDox" icon={<img src="/stardox-bg.png" style={{width:"2rem"}}/>} noback 
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
                         <button onClick={()=>window.location.reload()} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.8rem"}}>
                         
                             <p style={{opacity:0.5, letterSpacing:"0.15rem"}}>
-                                v1.16
+                                v1.18
                             </p>
                         </button>
 
@@ -48,7 +49,7 @@ export default function Index(){
                             <Inbox className="" color="crimson"/>
                         </button> */}
 
-                        <button onClick={()=>{signOut(auth);usenavigate("/");window.name="";console.log(window.name);window.location.reload()}} style={{width:"3rem"}}><LogOut width={"1rem"} color='lightcoral'/></button>
+                        <button onClick={()=>{setLogoutPrompt(true)}} style={{width:"3rem"}}><LogOut width={"1rem"} color='lightcoral'/></button>
                     </div>
                 
             }/>
@@ -94,6 +95,8 @@ export default function Index(){
 
             
             <InputDialog title={"Protected Route"} input1Type="password" desc="Enter key to continue" titleIcon={<img src="/vale-logo.png" width={"28rem"} style={{paddingBottom:"0.25rem", marginRight:"0.25rem"}}/>} open={valeLoginPrompt} onCancel={()=>setValeLoginPrompt(false)} OkButtonText="Continue" inputplaceholder="Password"  onOk={()=>usenavigate("/vale-records")}/>
+
+            <DefaultDialog destructive OkButtonText="Logout" title={"Confirm Logout?"} open={logoutPrompt} onCancel={()=>setLogoutPrompt(false)} onOk={()=>{signOut(auth);usenavigate("/");window.name="";console.log(window.name);window.location.reload()}}/>
             
         </div>
         </>

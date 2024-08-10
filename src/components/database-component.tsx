@@ -27,7 +27,7 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, Download, EllipsisVerticalIcon, Globe, GraduationCap, HeartPulse, Image, ImageOff, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
+import { ArrowDown, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, FileSpreadsheet, Globe, GraduationCap, HeartPulse, Image, ImageOff, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { LazyLoadImage } from 'react-lazy-load-image-component'
@@ -57,6 +57,8 @@ interface Props{
 
 export default function DbComponent(props:Props){
 
+    const [file, setFile] = useState(null)
+    const [jsonData, setJsonData] = useState('')
     const [companyName, setCompanyName] = useState("")
     const [thumbnails, setThumbnails] = useState(true)
     const [remarksDialog, setRemarksDialog] = useState(false)
@@ -263,6 +265,10 @@ export default function DbComponent(props:Props){
 
     const [initialSalary, setInitialSalary] = useState(0)
     const [initialAllowance, setInitialAllowance] = useState(0)
+
+    const [importDialog, setImportDialog] = useState(false)
+
+
     
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
@@ -1252,6 +1258,22 @@ export default function DbComponent(props:Props){
         fetchData()
     }
 
+    const handleImport = () => {
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e:any) => {
+            const data = e.target.result;
+            const workbook = XLSX.read(data, { type: "binary" });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet);
+            setJsonData(JSON.stringify(json, null, 2));
+          };
+          reader.readAsArrayBuffer(file);
+          console.log(jsonData)
+        }
+      };
+
     
 
     
@@ -1456,6 +1478,10 @@ export default function DbComponent(props:Props){
                         }
                         {/* <p style={{opacity:0.5, fontWeight:400}}>Thumbnails</p> */}
                         
+                        </button>
+
+                        <button onClick={()=>setImportDialog(true)}>
+                            <FileDown color="lightgreen"/>
                         </button>
                     </div>
                      
@@ -1666,6 +1692,15 @@ export default function DbComponent(props:Props){
 
             {/* Dialog Boxes 👇*/}
 
+            
+            <DefaultDialog open={importDialog} title={"Import XLSX"} titleIcon={<FileSpreadsheet color="lightgreen"/>} codeIcon={<File width={"0.8rem"}/>} code=".xls, .xlsx" OkButtonText="Upload" onCancel={()=>setImportDialog(false)} onOk={handleImport}
+            extra={
+                <div style={{display:"flex", gap:"0.5rem", width:"100%"}}>
+                <input style={{fontSize:"0.8rem"}} type="file" accept=".xls, .xlsx" onChange={(e:any)=>setFile(e.target.files[0])}/>
+                <button style={{fontSize:"0.8rem", paddingRight:"1rem", paddingLeft:"1rem"}}>Upload</button>
+                </div>
+                
+            }/>
 
             {/* Upload Excel files Dialog */}
             <DefaultDialog onCancel={()=>setExcelUploadDialog(false)} OkButtonText="Upload" open={excel_upload_dialog} title="Upload Excel Data" titleIcon={<CloudUpload/> } 

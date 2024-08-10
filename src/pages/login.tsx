@@ -4,7 +4,7 @@ import { auth } from "@/firebase";
 import { LoadingOutlined } from '@ant-design/icons';
 import { message } from "antd";
 import { browserSessionPersistence, GoogleAuthProvider, setPersistence, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
-import { ChevronRight, FileArchiveIcon, KeyRound } from "lucide-react";
+import { ChevronRight, KeyRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -97,13 +97,15 @@ export default function Login(){
 
             <div className="desktop-only" style={{border:'', flex:1, background:"linear-gradient(darkslateblue, midnightblue)", alignItems:"flex-end", borderRadius:"1rem"}}>
                 
-                <div style={{display:"flex", border:'', alignItems:"center", margin:"2.5rem", gap:"0.75rem"}}>
-                <FileArchiveIcon color="salmon" width={"4rem"} height={"4rem"}/>
+                    <div style={{display:"flex", border:'', alignItems:"center", margin:"2rem", gap:""}}>
+                        
+                        <img src="/stardox-bg.png" style={{width:"4rem", border:""}}/>
+                        
 
-                    <div style={{display:"flex", flexFlow:"column"}}>
-                    <p style={{fontWeight:400, fontSize:"2.25rem"}}>DocRecord</p>
+                        <div style={{display:"flex", flexFlow:"column"}}>
+                        <p style={{fontWeight:400, fontSize:"2.25rem"}}>StarDox</p>
 
-                </div>
+                    </div>
                 
                 </div>
                 
