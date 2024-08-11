@@ -1,5 +1,5 @@
 import { LoadingOutlined } from "@ant-design/icons";
-import { DialogTitle } from "@radix-ui/react-dialog";
+import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import { Tooltip } from "antd";
 import { ChevronLeft, Hash, Phone, X } from "lucide-react";
 import Directive from "../directive";
@@ -304,6 +304,7 @@ export default function DefaultDialog(props:Props){
                     
                     
                 </DialogHeader>
+                <DialogDescription style={{display:"none"}}/>
 
                 <DialogFooter>
                     <div style={{display:"flex", flexFlow:"column", width:"100%", gap:"0.5rem"}}>

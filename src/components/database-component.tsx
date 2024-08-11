@@ -27,7 +27,7 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, FileSpreadsheet, Globe, GraduationCap, HeartPulse, Image, ImageOff, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, User, UserCircle, X } from "lucide-react"
+import { ArrowDown, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, Globe, GraduationCap, HeartPulse, Image, ImageOff, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, UploadCloud, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { LazyLoadImage } from 'react-lazy-load-image-component'
@@ -37,6 +37,7 @@ import ReactTimeAgo from 'react-time-ago'
 import useKeyboardShortcut from 'use-keyboard-shortcut'
 import DbDropDown from "./db-dropdown"
 import ImageDialog from "./image-dialog"
+import SheetComponent from "./sheet-component"
 
 
 type Record = {
@@ -58,7 +59,7 @@ interface Props{
 export default function DbComponent(props:Props){
 
     const [file, setFile] = useState(null)
-    const [jsonData, setJsonData] = useState('')
+    const [jsonData, setJsonData] = useState<any>([])
     const [companyName, setCompanyName] = useState("")
     const [thumbnails, setThumbnails] = useState(true)
     const [remarksDialog, setRemarksDialog] = useState(false)
@@ -94,8 +95,6 @@ export default function DbComponent(props:Props){
     const [addButtonModeSwap, setAddButtonModeSwap] = useState(false)
     const [deleteMedicalIDdialog, setDeleteMedicalIDdialog] = useState(false)
     const [email, setEmail] = useState("")
-
-
     const [editedName, setEditedName] = useState("")
     const [editedEmail, setEditedEmail] = useState("")
     const [editedEmployeeCode, setEditedEmployeeCode] = useState("")
@@ -103,9 +102,6 @@ export default function DbComponent(props:Props){
     const [editedDateofJoin, setEditedDateofJoin] = useState("")
     const [editedSalarybasic, setEditedSalaryBasic] = useState(0)
     const [editedAllowance, setEditedAllowance] = useState(0)
-    
-
-
     const [image, setImage] = useState("")
 
     // CIVIL ID VARIABLES
@@ -268,7 +264,6 @@ export default function DbComponent(props:Props){
 
     const [importDialog, setImportDialog] = useState(false)
 
-
     
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
@@ -369,6 +364,30 @@ export default function DbComponent(props:Props){
           });
       };
 
+    const fetchBlank = async () => {
+        try {
+            setLoading(true)
+
+            const myHeader = ["name","employeeCode","companyName","email","contact","dateofJoin","nativeAddress","nativePhone","initialSalary","initialAllowance","civil_number","civil_DOB", "civil_expiry", "license_number","license_issue", "license_expiry","medical_completed_on" ,"medical_due_on","passportID","passportIssue", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
+
+            const Header = ["name","employeeCode","companyName","email","contact","dateofJoin","nativeAddress","nativePhone","initialSalary","initialAllowance","civil_number","civil_DOB", "civil_expiry", "license_number","license_issue", "license_expiry","medical_completed_on" ,"medical_due_on","passportID","passportIssue", "passportExpiry"]
+
+        const worksheet = XLSX.utils.json_to_sheet([{}], {header: props.dbCategory=="personal"?Header: myHeader});
+        const workbook = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+
+        // Buffer to store the generated Excel file
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+
+        saveAs(blob, "Template.xlsx");
+            setLoading(false)
+        } catch (error) {
+            setLoading(false)
+        }
+    }
+
 
     //INITIAL DATA FETCH ON PAGE LOAD
     const fetchData = async (type?:any) => {
@@ -386,7 +405,7 @@ export default function DbComponent(props:Props){
 
             setfetchingData(false)
             setRecords(fetchedData)
-            // console.log(fetchedData)
+            
             setChecked([])
             setSelectable(false)
             type=="refresh"?
@@ -412,7 +431,7 @@ export default function DbComponent(props:Props){
     // }
 
     const fetchSalary = async () => {
-        console.log(doc_id)
+        
         setFetchingSalary(true)
         const salaryQuery = query(collection(db, "salary-record"), orderBy("created_on", "desc"), where("employeeID", "==", doc_id))
         const snapshot = await getDocs(salaryQuery)
@@ -420,13 +439,13 @@ export default function DbComponent(props:Props){
         snapshot.forEach((doc:any)=>{
             SalaryData.push({id: doc.id, ...doc.data()})
             setSalaryList(SalaryData)
-            console.log(salaryList)
+            
         })
         setFetchingSalary(false)
     }
 
     const fetchAllowance = async () => {
-        console.log(doc_id)
+        
         setFetchingAllowance(true)
         const allowanceQuery = query(collection(db, "allowance-record"), orderBy("created_on", "desc"), where("employeeID", "==", doc_id))
         const snapshot = await getDocs(allowanceQuery)
@@ -434,7 +453,7 @@ export default function DbComponent(props:Props){
         snapshot.forEach((doc:any)=>{
             AllowanceData.push({id: doc.id, ...doc.data()})
             setAllowanceList(AllowanceData)
-            console.log(allowanceList)
+            
         })
         setFetchingAllowance(false)
     }
@@ -444,6 +463,7 @@ export default function DbComponent(props:Props){
         try {
             await addDoc(collection(db, 'salary-record'),{employeeID:doc_id, created_on:Timestamp.fromDate(new Date()), salary:newSalary})
             await updateDoc(doc(db, 'records', doc_id),{salaryBasic:newSalary})
+            await addDoc(collection(db, 'history'),{created_on:new Date(), user:window.name, desc:"Updated Salary to "+newSalary, doc_owner:name})
             setSalaryBasic(newSalary)
             fetchSalary()
             setNewSalary(0)
@@ -506,7 +526,7 @@ export default function DbComponent(props:Props){
             setLeaveList(LeaveData)
         })
         setFetchingLeave(false)
-        console.log("id @ fetchLeave()",id)
+    
         await leaveSum() 
     }
 
@@ -518,7 +538,7 @@ export default function DbComponent(props:Props){
         setFetchingLeave(false)
         setLeaves(snapshot.data().days)
 
-        console.log(snapshot.data().days, id)
+        
     }
 
 {/*///////////////////////////////////////////////////////////////////////////////////////////////////////*/}
@@ -588,7 +608,7 @@ export default function DbComponent(props:Props){
             
             e.civil_expiry==""?
             {}
-            :
+            : 
             e.civil_expiry = String(moment(e.civil_expiry.toDate()).format("DD/MM/YYYY"))
 
             e.license_expiry==""?
@@ -607,60 +627,105 @@ export default function DbComponent(props:Props){
             :
             e.passportExpiry = String(moment(e.passportExpiry.toDate()).format("DD/MM/YYYY"))
             
+
+
             e.vt_hse_induction==""?
             {}
             :
+            props.dbCategory=="vale"?
             e.vt_hse_induction = String(moment(e.vt_hse_induction.toDate()).format("DD/MM/YYYY"))
+            :{}
+
+
+
 
             e.vt_car_1==""?
             {}
             :
+            props.dbCategory=="vale"?
             e.vt_car_1 = String(moment(e.vt_car_1.toDate()).format("DD/MM/YYYY"))
+            :{}
+
+
 
             e.vt_car_2==""?
             {}
             :
+            props.dbCategory=="vale"?
             e.vt_car_2 = String(moment(e.vt_car_2.toDate()).format("DD/MM/YYYY"))
+            :{}
+
+
 
             e.vt_car_3==""?
             {}
             :
+            props.dbCategory=="vale"?
             e.vt_car_3 = String(moment(e.vt_car_3.toDate()).format("DD/MM/YYYY"))
+            :{}
+
+
 
             e.vt_car_4==""?
             {}
             :
+            props.dbCategory=="vale"?
             e.vt_car_4 = String(moment(e.vt_car_4.toDate()).format("DD/MM/YYYY"))
+            :{}
+
+
 
             e.vt_car_5==""?
             {}
             :
+            props.dbCategory=="vale"?
             e.vt_car_5 = String(moment(e.vt_car_5.toDate()).format("DD/MM/YYYY"))
+            :{}
+
+
 
             e.vt_car_6==""?
             {}
             :
+            props.dbCategory=="vale"?
             e.vt_car_6 = String(moment(e.vt_car_6.toDate()).format("DD/MM/YYYY"))
+            :{}
+
+
 
             e.vt_car_7==""?
             {}
             :
+            props.dbCategory=="vale"?
             e.vt_car_7 = String(moment(e.vt_car_7.toDate()).format("DD/MM/YYYY"))
+            :{}
+
+
 
             e.vt_car_8==""?
             {}
             :
+            props.dbCategory=="vale"?
             e.vt_car_8 = String(moment(e.vt_car_8.toDate()).format("DD/MM/YYYY"))
+            :{}
+
+
 
             e.vt_car_9==""?
             {}
             :
+            props.dbCategory=="vale"?
             e.vt_car_9 = String(moment(e.vt_car_9.toDate()).format("DD/MM/YYYY"))
+            :{}
+
+
 
             e.vt_car_10==""?
             {}
             :
+            props.dbCategory=="vale"?
             e.vt_car_10 = String(moment(e.vt_car_10.toDate()).format("DD/MM/YYYY"))
+            :{}
         });
 
         const worksheet = XLSX.utils.json_to_sheet(records, {header: myHeader});
@@ -710,7 +775,7 @@ export default function DbComponent(props:Props){
         setLoading(true)
         if(fileName!=""){
             imgUrl = ""
-            if (profileName!=""){
+            if (profileName!=null){
                 console.log("Deleting ", profileName)
                 await deleteObject(ref(storage, profileName))
             }
@@ -749,7 +814,8 @@ export default function DbComponent(props:Props){
         setLoading(true)
         setRecordDeleteStatus("Deleting Record "+doc_id+" (1/2)")
         await deleteDoc(doc(db, "records", doc_id))
-        if(profileName!=""){
+        
+        if(profileName!=null){
             setRecordDeleteStatus("Deleting Image "+profileName+" (2/2)")
             try {
                 await deleteObject(ref(storage, profileName))  
@@ -1263,11 +1329,12 @@ export default function DbComponent(props:Props){
           const reader = new FileReader();
           reader.onload = (e:any) => {
             const data = e.target.result;
-            const workbook = XLSX.read(data, { type: "binary" });
+            const workbook = XLSX.read(data, { type: "binary", cellDates:true, dateNF:"DD/MM/YYYY" });
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
             const json = XLSX.utils.sheet_to_json(worksheet);
-            setJsonData(JSON.stringify(json, null, 2));
+            const string = (JSON.stringify(json, null, 2));
+            setJsonData(JSON.parse(string))
           };
           reader.readAsArrayBuffer(file);
           console.log(jsonData)
@@ -1275,7 +1342,71 @@ export default function DbComponent(props:Props){
       };
 
     
+    const uploadJson = () => {
+        
+            setLoading(true)
+            jsonData.forEach((e:any) => {
+                
+                e.type = props.dbCategory
+                e.created_on = new Date()
+                e.modified_on = new Date()
+                e.notify = true
+                e.state = "active"
 
+                e.dateofJoin?
+                e.dateofJoin = moment(e.dateofJoin).format("DD/MM/YYYY")
+                :{}
+
+                e.civil_expiry?
+                e.civil_expiry = Timestamp.fromDate(new Date(e.civil_expiry))
+                :{}
+                
+                e.license_expiry?
+                e.license_expiry = Timestamp.fromDate(new Date(e.license_expiry))
+                :{}
+
+                e.medical_due_on?
+                e.medical_due_on = Timestamp.fromDate(new Date(e.medical_due_on))
+                :{}
+
+                e.passportExpiry?
+                e.passportExpiry = Timestamp.fromDate(new Date(e.passportExpiry))
+                :{}
+                
+                e.civil_DOB?
+                e.civil_DOB = moment(e.civil_DOB).format("DD/MM/YYYY")
+                :{}
+
+                e.license_issue?
+                e.license_issue = moment(e.license_issue).format("DD/MM/YYYY")
+                :{}
+
+                e.medical_completed_on?
+                e.medical_completed_on = moment(e.medical_completed_on).format("DD/MM/YYYY")
+                :{}
+
+                e.passportIssue?
+                e.passportIssue = moment(e.passportIssue).format("DD/MM/YYYY")
+                :{}
+
+            
+
+
+                e.salaryBasic = e.initialSalary
+                e.allowance = e.initialAllowance
+
+        
+            });
+            jsonData.forEach(async (e:any) => {
+            
+                await addDoc(collection(db, "records"), e)
+                console.log(e)
+            });
+            
+            setLoading(false)
+            setImportDialog(false)
+            fetchData()
+    }
     
 
     return(
@@ -1350,7 +1481,7 @@ export default function DbComponent(props:Props){
 
                             </button>
 
-                            <DbDropDown onExport={exportDB} onInbox={()=>usenavigate("/inbox")} onArchives={()=>usenavigate("/archives")} onAccess={()=>usenavigate("/access-control")} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
+                            <DbDropDown onUpload={()=>setImportDialog(true)} onExport={exportDB} onInbox={()=>usenavigate("/inbox")} onArchives={()=>usenavigate("/archives")} onAccess={()=>usenavigate("/access-control")} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
 
 
                             {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
@@ -1481,7 +1612,7 @@ export default function DbComponent(props:Props){
                         </button>
 
                         <button onClick={()=>setImportDialog(true)}>
-                            <FileDown color="lightgreen"/>
+                            <UploadCloud color="salmon"/>
                         </button>
                     </div>
                      
@@ -1560,7 +1691,7 @@ export default function DbComponent(props:Props){
                                     setDocID(post.id)
                                     // console.log("id:",id)
                                     setCivilNumber(post.civil_number);
-                                    setCivilExpiry(post.civil_expiry?moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"):null);
+                                    setCivilExpiry(post.civil_expiry?moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"):"");
                                     setCivilDOB(post.civil_DOB)
                                     setCompletedOn(post.medical_completed_on)
                                     setDueOn(post.medical_due_on?moment((post.medical_due_on).toDate()).format("DD/MM/YYYY"):null)
@@ -1607,7 +1738,7 @@ export default function DbComponent(props:Props){
                                     setDateofJoin(post.dateofJoin)
                                     setSalaryBasic(post.salaryBasic)
                                     setAllowance(post.allowance)
-                                    setProfileName(post.profile_name)
+                                    
                                     setInitialSalary(post.initialSalary)
                                     setInitialAllowance(post.initialAllowance)
                                     setRemarks(post.remarks)
@@ -1693,14 +1824,85 @@ export default function DbComponent(props:Props){
             {/* Dialog Boxes 👇*/}
 
             
-            <DefaultDialog open={importDialog} title={"Import XLSX"} titleIcon={<FileSpreadsheet color="lightgreen"/>} codeIcon={<File width={"0.8rem"}/>} code=".xls, .xlsx" OkButtonText="Upload" onCancel={()=>setImportDialog(false)} onOk={handleImport}
+            <DefaultDialog open={importDialog} created_on={jsonData.length==0?"":""+jsonData.length} title={"Upload XLSX"} titleIcon={<UploadCloud color="salmon"/>} codeIcon={<File width={"0.8rem"}/>} code=".xls, .xlsx" OkButtonText="Upload" onCancel={()=>{setImportDialog(false);setFile(null);setJsonData([])}} disabled={jsonData.length>0?false:true}
+            updating={loading}
+            onOk={uploadJson}
+            title_extra={
+                <div style={{display:'flex', flexFlow:"column", gap:"0.5rem"}}>
+                    <button onClick={fetchBlank} style={{fontSize:"0.8rem", height:"2rem", paddingLeft:"1rem", paddingRight:"1rem"}}>
+                        {
+                            <>
+                            <FileDown color="lightgreen" width={"1rem"}/>
+                            Template
+                            </>
+                            
+                            
+                        }
+                        
+                    </button>
+                
+                </div>
+            
+        }
             extra={
+
+                <>
+
+                {
+                    jsonData.length==0?
+                    <div style={{width:"100%", border:"3px dashed rgba(100 100 100/ 50%)", height:"2.5rem",borderRadius:"0.5rem", marginBottom:""}}></div>
+                    :
+                    <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.35rem", maxHeight:"11.25rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem", marginBottom:"0.5rem"}}>
+                        {
+                        jsonData.map((e:any)=>(
+                            <motion.div key={e.contact} initial={{opacity:0}} whileInView={{opacity:1}}>
+                            <Directive status={true} 
+                            onClick={()=>{}}
+                            title={e.name} titleSize="0.75rem" key={e.id} icon={<UserCircle width={"1.25rem"} color="salmon"/>} />
+                            </motion.div>
+                        ))
+                        }
+                    </div>
+                }
+
+
+
                 <div style={{display:"flex", gap:"0.5rem", width:"100%"}}>
                 <input style={{fontSize:"0.8rem"}} type="file" accept=".xls, .xlsx" onChange={(e:any)=>setFile(e.target.files[0])}/>
-                <button style={{fontSize:"0.8rem", paddingRight:"1rem", paddingLeft:"1rem"}}>Upload</button>
+                <button className={file?"":"disabled"} onClick={()=>{jsonData.length>0?setJsonData([]):handleImport()}} style={{fontSize:"0.8rem", paddingRight:"1rem", paddingLeft:"1rem"}}>{jsonData.length>0?"Clear":"Add"}</button>
                 </div>
+                </>
+
+
+                
                 
             }/>
+
+            <SheetComponent title={name} />
+
+
+            <DefaultDialog
+            // extra={
+                
+            //         jsonData.length==0?
+            //         <div style={{width:"100%", border:"3px dashed rgba(100 100 100/ 50%)", height:"2.5rem",borderRadius:"0.5rem", marginBottom:"1rem"}}></div>
+            //         :
+            //         <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.35rem", maxHeight:"11.25rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem", marginBottom:"1rem"}}>
+            //             {
+            //             jsonData.map((e:any)=>(
+            //                 <motion.div key={e.id} initial={{opacity:0}} whileInView={{opacity:1}}>
+            //                 <Directive status={true} 
+            //                 tag={
+            //                     moment(e.created_on.toDate()).format("LL")
+            //                 } 
+            //                 title={"OMR "+e.salary} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{setDeleteSalaryDialog(true);setSalaryID(e.id)}}  className="animate-pulse" color="lightgreen" width={"1.1rem"}/>} noArrow/>
+            //                 </motion.div>
+            //             ))
+            //             }
+            //         </div>
+                
+            // }
+            />
 
             {/* Upload Excel files Dialog */}
             <DefaultDialog onCancel={()=>setExcelUploadDialog(false)} OkButtonText="Upload" open={excel_upload_dialog} title="Upload Excel Data" titleIcon={<CloudUpload/> } 
@@ -1831,7 +2033,7 @@ export default function DbComponent(props:Props){
                     
 
 
-                    <DropDown onExtra={()=>setArchivePrompt(true)} extraText={state=="active"?"Archive":"Unarchive"} onDelete={()=>{setUserDeletePrompt(true);console.log(profileName);fetchLeave();fetchSalary();fetchAllowance();console.log(leaveList, salaryList, allowanceList)}} onEdit={()=>{setUserEditPrompt(true);console.log("filename : ",fileName, "profileName : ", profileName)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
+                    <DropDown onExtra={()=>setArchivePrompt(true)} extraText={state=="active"?"Archive":"Unarchive"} onDelete={()=>{setUserDeletePrompt(true);fetchLeave();fetchSalary();fetchAllowance()}} onEdit={()=>{setUserEditPrompt(true);console.log("filename : ",fileName, "profileName : ", profileName)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
                 </div>
             
             }
@@ -1908,6 +2110,7 @@ export default function DbComponent(props:Props){
 
             {/* ADD RECORD DIALOG */}
             <AddRecordDialog open={addDialog} onCancel={()=>{setAddDialog(false);setEditedName("")}}
+            
             updating={loading}
             disabled={loading}
             title="Add Record"
@@ -1984,7 +2187,7 @@ export default function DbComponent(props:Props){
             {/*DISPLAY CIVIL ID DIALOG */}
             <DefaultDialog back close titleIcon={<CreditCard color="dodgerblue"/>} title="Civil ID" open={civil} onCancel={()=>setCivil(false)} OkButtonText="Add" 
             
-            title_extra={civil_number?
+            title_extra={civil_expiry?
             
             <div style={{display:"flex", gap:"0.5rem", height:"2.25rem"}}>
             
@@ -2007,7 +2210,7 @@ export default function DbComponent(props:Props){
             extra={
                 <div style={{width:"100%", display:"flex", justifyContent:'center', paddingBottom:"1rem"}}>
                     {
-                        !civil_number || loading?
+                        !civil_expiry || loading?
                         <div style={{height:"19ch", width:"32ch", display:"flex"}}>
                             
                             <button onClick={()=>setAddcivil(true)} style={{width:"100%",border:"2px solid rgba(100 100 100/ 50%)"}}>

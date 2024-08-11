@@ -32,7 +32,7 @@ export default function Login(){
         try {
             setLoading(true)
             const userCredential = await signInWithEmailAndPassword(auth, email, password)
-            window.name = userCredential.user.uid
+            window.name = String(userCredential.user.email)
             console.log(window.name)
             setLoading(false)
             window.name?

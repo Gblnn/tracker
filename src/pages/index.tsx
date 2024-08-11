@@ -6,7 +6,7 @@ import DefaultDialog from "@/components/ui/default-dialog";
 import { auth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { motion } from 'framer-motion';
-import { KeyRound, LogOut, Mail } from "lucide-react";
+import { HistoryIcon, KeyRound, LogOut, Mail } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -36,12 +36,14 @@ export default function Index(){
                 <Back title="StarDox" icon={<img src="/stardox-bg.png" style={{width:"2rem"}}/>} noback 
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
-                        <button onClick={()=>window.location.reload()} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.8rem"}}>
+                        {/* <button onClick={()=>window.location.reload()} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.8rem"}}>
                         
                             <p style={{opacity:0.5, letterSpacing:"0.15rem"}}>
                                 v1.18
                             </p>
-                        </button>
+                        </button> */}
+
+                        <button style={{width:"3rem"}} onClick={()=>usenavigate("/history")}><HistoryIcon width={"1.25rem"}  color="grey"/></button>
 
                         
 

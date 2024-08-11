@@ -2,6 +2,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { ImageIcon } from 'lucide-react';
+import { DialogDescription } from '@radix-ui/react-dialog';
 
 interface Props{
     open?: boolean
@@ -75,6 +76,7 @@ export default function InputDialog(props:Props){
                             <div style={{display:"flex", marginBottom:"1rem", alignItems:"center", gap:"0.5rem"}}>
                                 <ImageIcon/>
                                 {props.image}
+                                {/* <button style={{fontSize:"0.8rem", width:"10rem"}}>Upload XLSX</button> */}
                             </div>
                             :null
                         }
@@ -231,7 +233,7 @@ export default function InputDialog(props:Props){
                         :null 
                     }
 
-                
+                <DialogDescription style={{display:"none"}}/>
 
                 <DialogFooter>
                     <div style={{width:"100%", display:"flex", gap:"0.5rem", justifyContent:"center"}}>
