@@ -1352,7 +1352,7 @@ export default function DbComponent(props:Props){
             setJsonData(JSON.parse(string))
           };
           reader.readAsArrayBuffer(file);
-          console.log(jsonData)
+        
         }
       };
 
@@ -1427,7 +1427,7 @@ export default function DbComponent(props:Props){
             jsonData.forEach(async (e:any) => {
             
                 await addDoc(collection(db, "records"), e)
-                console.log(e)
+                
             });
             
             setLoading(false)

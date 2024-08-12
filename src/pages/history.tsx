@@ -64,7 +64,7 @@ export default function History(){
             }/>
                 <br/>
 
-                <div className="record-list" style={{display:"flex", gap:"0.6rem", flexFlow:"column", overflowY:"auto", height:"72svh", paddingTop:"0.15rem", paddingRight:"0.35rem"}}>
+                <div className="record-list" style={{display:"flex", gap:"0.6rem", flexFlow:"column", overflowY:"auto", height:"82svh", paddingTop:"0.15rem", paddingRight:"0.35rem", border:''}}>
                     {
                         records.map((e:any)=>(
                             <Directive key={e.id}  id_subtitle={e.user} subtext={e.doc_owner+"' s"} 
