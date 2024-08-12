@@ -1,11 +1,11 @@
-import { BellOff, CheckSquare2, ChevronRight, EllipsisVerticalIcon, Inbox, LockKeyholeIcon } from "lucide-react"
+import { BellOff, CheckSquare2, ChevronRight, Circle, EllipsisVerticalIcon, Inbox, LockKeyholeIcon } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import DropDown from "./dropdown"
 import { LoadingOutlined } from '@ant-design/icons'
 
 interface Props{
-    title?:string
+    title?:any
     titleSize?:string
     icon?:any
     to?:any
@@ -27,6 +27,8 @@ interface Props{
     protected?:boolean
     tagOnClick?:any
     space?:boolean
+    new?:boolean
+    customTitle?:boolean
 }
 
 export default function Directive(props:Props){
@@ -65,10 +67,35 @@ export default function Directive(props:Props){
                     
 
                     <div style={{border:'', width:""}}>
-                    <p style={{fontWeight:400, textAlign:"left", border:"", fontSize:props.titleSize?props.titleSize:"0.9rem", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis", display:"flex", flex:1, width:""}}>
+
+                    {
+                        props.subtext?
+                        <p style={{fontWeight:400, width:"", textAlign:"left", fontSize:"0.6rem", opacity:"0.6", textTransform:"uppercase", maxWidth:"80px", textOverflow:"ellipsis", overflow:"hidden", whiteSpace:"nowrap", border:""}}>
+                        {""+props.subtext+""}
+                        </p>
+                        :null
+                    }
+
+                        {
+                            props.customTitle?
+                            props.title
+                            :
+                            <p style={{fontWeight:400, textAlign:"left", border:"", fontSize:props.titleSize?props.titleSize:"0.9rem", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis", display:"flex", flex:1, width:"", gap:"0.5rem", alignItems:"center"}}>
                         {props.title}
+                        {
+                            props.new&&
+                            <Circle style={{height:"auto", width:"0.45rem"}} color="dodgerblue" fill="dodgerblue"/>
+                            
+                        }
+                        
                     </p>
-                    <p style={{fontSize:"0.7rem", textAlign:"left", color:"lightblue",opacity:"0.75", background:"", borderRadius:"0.5rem", paddingRight:"0.25rem", paddingLeft:""}}>{props.id_subtitle}</p>
+                        }
+
+
+                    
+                    <p style={{fontSize:"0.7rem", textAlign:"left", color:"lightblue",opacity:"0.75", background:"", borderRadius:"0.5rem", paddingRight:"0.25rem", paddingLeft:"", height:"", border:'', alignItems:'center'}}>{props.id_subtitle}</p>
+
+                    
                     </div>
                     
 
@@ -77,14 +104,10 @@ export default function Directive(props:Props){
 
                 </div>
 
+                
+
             <div style={{display:"flex", alignItems:"center", gap:"0.75rem"}}>
-            {
-                        props.subtext?
-                        <p style={{fontWeight:400, width:"", textAlign:"left", fontSize:"0.6rem", opacity:"0.6", textTransform:"uppercase"}}>
-                        {""+props.subtext+""}
-                        </p>
-                        :null
-                    }
+            
 
                 {props.selectable?
                 null

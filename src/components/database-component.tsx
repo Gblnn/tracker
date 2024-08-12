@@ -463,7 +463,7 @@ export default function DbComponent(props:Props){
         try {
             await addDoc(collection(db, 'salary-record'),{employeeID:doc_id, created_on:Timestamp.fromDate(new Date()), salary:newSalary})
             await updateDoc(doc(db, 'records', doc_id),{salaryBasic:newSalary})
-            await addDoc(collection(db, 'history'),{created_on:new Date(), user:window.name, desc:"Updated Salary to "+newSalary, doc_owner:name})
+            await addDoc(collection(db, 'history'),{created_on:new Date(), user:window.name, newValue:newSalary, previousValue:salaryBasic, fieldAltered:"salary", doc_owner:name, type:props.dbCategory})
             setSalaryBasic(newSalary)
             fetchSalary()
             setNewSalary(0)
@@ -604,6 +604,8 @@ export default function DbComponent(props:Props){
     const exportDB = () => {
         const myHeader = ["id","name","employeeCode","type","companyName","state","civil_number", "civil_expiry", "license_number", "license_expiry", "medical_due_on","passportID", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
 
+        const Header = ["id","name","employeeCode","type","companyName","state","civil_number", "civil_expiry", "license_number", "license_expiry", "medical_due_on","passportID", "passportExpiry"]
+
         records.forEach((e:any) => {
             
             e.civil_expiry==""?
@@ -728,7 +730,7 @@ export default function DbComponent(props:Props){
             :{}
         });
 
-        const worksheet = XLSX.utils.json_to_sheet(records, {header: myHeader});
+        const worksheet = XLSX.utils.json_to_sheet(records, {header: props.dbCategory=="personal"?Header:myHeader});
         const workbook = XLSX.utils.book_new();
 
         XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
@@ -821,7 +823,6 @@ export default function DbComponent(props:Props){
                 await deleteObject(ref(storage, profileName))  
             } catch (error) {
                 setLoading(false)
-                message.error(String(error))
             } 
         }
         setRecordDeleteStatus("Deleting Day offs")
@@ -1641,6 +1642,8 @@ export default function DbComponent(props:Props){
 
                             <Directive 
                             space
+                            new={moment(post.created_on.toDate()).fromNow()=="a few seconds ago"}
+                            
                                 notify={(!post.notify)}
                                 archived={post.state=="archived"?true:false}
                                 tag={
@@ -1648,28 +1651,8 @@ export default function DbComponent(props:Props){
                                     post.civil_expiry != "" || post.license_expiry != "" || post.medical_due_on != "" || post.passportID != ""||post.vt_hse_induction != "" || post.vt_car_1 != "" || post.vt_car_2 != "" || post.vt_car_3 != "" || post.vt_car_4 != ""|| post.vt_car_5 != ""|| post.vt_car_6 != ""|| post.vt_car_7 != ""|| post.vt_car_8 != ""|| post.vt_car_9 != ""|| post.vt_car_10 != ""
                                     ?
                                     
-
-                                    
                                     "Available"
                                     :"No Data"
-
-                                    
-
-
-
-                                    // ||
-                                    // post.civil_expiry?
-                                    // Math.round(moment(new Date(post.civil_expiry)).diff(moment(today), 'months')+1)<=3?
-                                    // "Expiring"
-                                    // :"No Data"
-                                    // :null
-
-                                    // ||
-                                    // post.vehicle_expiry?
-                                    // Math.round(moment(new Date(post.vehicle_expiry)).diff(moment(today), 'months')+1)<=3?
-                                    // "Expiring"
-                                    // :"No Data"
-                                    // :null
 
                                 }
                                 
@@ -1689,7 +1672,7 @@ export default function DbComponent(props:Props){
                                     setName(post.name);
                                     id = post.id
                                     setDocID(post.id)
-                                    // console.log("id:",id)
+                                    
                                     setCivilNumber(post.civil_number);
                                     setCivilExpiry(post.civil_expiry?moment((post.civil_expiry).toDate()).format("DD/MM/YYYY"):"");
                                     setCivilDOB(post.civil_DOB)
