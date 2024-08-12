@@ -71,10 +71,44 @@ export default function History(){
                             customTitle
                             title={
                                 <div style={{border:'', display:'flex', marginBottom:"0.25rem", gap:"", fontSize:"0.9rem", alignItems:'center'}}>
-                                    <p style={{textTransform:"capitalize"}}>{e.fieldAltered}</p>
-                                    <div style={{display:"flex", background:"rgba(100 100 100/ 20%)", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"1rem", alignItems:'center', height:"1.25rem", marginLeft:"0.25rem", color:"goldenrod"}}>{e.previousValue}</div>
-                                    <ArrowRight width={"0.8rem"} color="lightblue"/>
-                                    <div style={{display:"flex", background:"rgba(100 100 100/ 20%)", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"1rem", alignItems:"center", height:"1.25rem", color:"dodgerblue"}}>{e.newValue}</div>
+
+                                    <p style={{textTransform:"capitalize"}}>{e.fieldAltered} {e.method=="deletion"&& e.method}</p>
+
+
+                                    {
+                                        e.method=="updation"&&
+                                        <div style={{border:"", display:"flex", alignItems:"center"}}>
+
+
+                                        
+                                        <div style={{display:"flex", background:"rgba(100 100 100/ 20%)", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"1rem", alignItems:'center', height:"1.25rem", marginLeft:"0.25rem", color:"goldenrod"}}>
+
+                                            {e.previousValue}
+
+                                        </div>
+
+                                        <ArrowRight width={"0.8rem"} color="lightblue"/>
+
+                                        <div style={{display:"flex", background:"rgba(100 100 100/ 20%)", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"1rem", alignItems:"center", height:"1.25rem", color:"dodgerblue"}}>
+
+                                            {e.newValue}
+
+                                        </div>
+                                    </div>
+                                    }
+
+                                    {
+                                        e.method=="deletion"&&
+
+                                        <div style={{display:"flex", background:"rgba(100 100 100/ 20%)", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"1rem", alignItems:"center", height:"1.25rem", color:"crimson", marginLeft:"0.25rem", fontWeight:600}}>
+
+                                            {e.newValue}
+
+                                        </div>
+                                    }
+                                    
+                                    
+
                                 </div>
                                     
                             }

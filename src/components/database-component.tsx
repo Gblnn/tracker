@@ -284,6 +284,13 @@ export default function DbComponent(props:Props){
 
         
     },[])
+
+
+    const AddHistory = async (method:string, newValue?:any, previousValue?:any, fieldAltered?:any) => {
+
+
+        await addDoc(collection(db, 'history'),{created_on:new Date(), user:window.name, newValue:newValue, previousValue:previousValue, fieldAltered:fieldAltered, doc_owner:name, type:props.dbCategory, method:method})
+    }
     
     
     const {flushHeldKeys} = useKeyboardShortcut(
@@ -463,7 +470,9 @@ export default function DbComponent(props:Props){
         try {
             await addDoc(collection(db, 'salary-record'),{employeeID:doc_id, created_on:Timestamp.fromDate(new Date()), salary:newSalary})
             await updateDoc(doc(db, 'records', doc_id),{salaryBasic:newSalary})
-            await addDoc(collection(db, 'history'),{created_on:new Date(), user:window.name, newValue:newSalary, previousValue:salaryBasic, fieldAltered:"salary", doc_owner:name, type:props.dbCategory})
+
+            AddHistory("updation",newSalary, salaryBasic, "salary")
+
             setSalaryBasic(newSalary)
             fetchSalary()
             setNewSalary(0)
@@ -479,6 +488,8 @@ export default function DbComponent(props:Props){
         try {
             await addDoc(collection(db, 'allowance-record'),{employeeID:doc_id, created_on:Timestamp.fromDate(new Date()), allowance:newAllowance})
             await updateDoc(doc(db, 'records', doc_id),{allowance:newAllowance})
+
+            AddHistory("updation", newAllowance, allowance, "allowance")
             setAllowance(newAllowance)
             fetchAllowance()
             setNewAllowance(0)
@@ -500,6 +511,8 @@ export default function DbComponent(props:Props){
             setSalaryList([])
             // await updateDoc(doc(db, 'record', doc_id),{salaryBasic:initialSalary})
         }
+
+        AddHistory("deletion", salaryBasic, null, "salary")
         setLoading(false)
         fetchSalary()
     }
@@ -507,6 +520,7 @@ export default function DbComponent(props:Props){
     const deleteAllowance = async () => {
         setLoading(true)
         await deleteDoc(doc(db, 'allowance-record', allowanceID))
+        AddHistory("deletion", allowance, null, "allowance")
         id = doc_id
         setLoading(false)
         fetchAllowance()
