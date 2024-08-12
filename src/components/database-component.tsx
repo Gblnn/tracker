@@ -1425,16 +1425,13 @@ export default function DbComponent(props:Props){
         
             });
             jsonData.forEach(async (e:any) => {
-            
                 await addDoc(collection(db, "records"), e)
-                
             });
             
             setLoading(false)
             setImportDialog(false)
             fetchData()
     }
-    
 
     return(
         <>

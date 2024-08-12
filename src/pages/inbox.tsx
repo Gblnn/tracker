@@ -495,22 +495,9 @@ export default function Inbox(){
                 
                 <p style={{height:"1.5rem"}}></p>
                 <div style={{display:"flex", width:"100%", border:"", gap:"0.5rem"}}>
-                    {/* <button style={{display:"flex", width:"2.5rem"}}>
-                        
-                        <Filter width={"1rem"} color="salmon"/>
-                        
-                    </button> */}
+                    
                     <SearchBar placeholder="Search by name" onChange={(e:any)=>setSearch(e.target.value.toLowerCase())}/>
-                    {/* <button 
-                    onClick={()=>{
-                        setReminderDialog(true)
-                        setMailTitle("Document expiry Reminder")
-                        setMailContent("There are several documents expiring soon which requires your attention.")
-                        }} 
-                        style={{width:"6.5rem"}}>
-                        <Bell width={"1rem"} color="violet"/>
-                        <p style={{fontSize:"0.8rem"}}>Notify</p>
-                    </button> */}
+                    
                     
 
                     <CustomDropDown 
@@ -541,7 +528,7 @@ export default function Inbox(){
                 
                 <p style={{height:"1.5rem"}}></p>
 
-                <div className="record-list" id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.75rem", height:"75svh", border:"", overflow:"auto", paddingRight:"0.5rem", paddingBottom:"1rem"}}>
+                <div className="record-list" id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.75rem", height:"75svh", border:"", overflow:"auto", paddingRight:"", paddingBottom:"1rem"}}>
                     {
                         records
                         .filter((record:any)=>{

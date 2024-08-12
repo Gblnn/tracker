@@ -81,7 +81,7 @@ export default function History(){
 
 
                                         
-                                        <div style={{display:"flex", background:"rgba(100 100 100/ 20%)", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"1rem", alignItems:'center', height:"1.25rem", marginLeft:"0.25rem", color:"goldenrod"}}>
+                                        <div style={{display:"flex", background:"rgba(100 100 100/ 20%)", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"1rem", alignItems:'center', height:"1.25rem", marginLeft:"0.25rem", color:"lightblue"}}>
 
                                             {e.previousValue}
 

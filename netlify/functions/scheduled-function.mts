@@ -87,8 +87,7 @@ export default async (req: Request) => {
       Data.forEach((r:any)=>{
         rp += r.recipient+", "
       })
-
-
+      
 
       filteredData.forEach((element:any) => {
 
