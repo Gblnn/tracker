@@ -802,7 +802,7 @@ export default function DbComponent(props:Props){
             console.log(fileName)
         }
 
-        await updateDoc(doc(db, "records", doc_id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email, employeeCode:editedEmployeeCode?editedEmployeeCode:employeeCode, companyName:editedCompanyName?editedCompanyName:companyName, dateofJoin:editedDateofJoin?editedDateofJoin:dateofJoin, initialSalary:editedSalarybasic?editedSalarybasic:salaryBasic, initialAllowance:editedAllowance?editedAllowance:allowance, contact:editedContact?editedContact:contact, modified_on:Timestamp.fromDate(new Date)})
+        await updateDoc(doc(db, "records", doc_id), {name:editedName?editedName:name, email:editedEmail?editedEmail:email, employeeCode:editedEmployeeCode?editedEmployeeCode:employeeCode, companyName:editedCompanyName?editedCompanyName:companyName, dateofJoin:editedDateofJoin?editedDateofJoin:dateofJoin, initialSalary:editedSalarybasic?editedSalarybasic:initialSalary, initialAllowance:editedAllowance?editedAllowance:initialAllowance, contact:editedContact?editedContact:contact, modified_on:Timestamp.fromDate(new Date)})
         
         if(fileName!=""){
             await updateDoc(doc(db, 'records', doc_id),{profile:imgUrl, profile_name:fileName})

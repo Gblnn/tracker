@@ -34,11 +34,11 @@ export default function App(){
     
     <Routes>
       <Route path="/" element={<Login/>}/>
-      
+      <Route path="/inbox" element={<Inbox/>}/>
+
       <Route element={<ProtectedRoutes user={window.name}/>}>
         <Route path='/index' element={<Index/>}/>
         <Route path="/admin" element={<AdminPage/>}/>
-        <Route path="/inbox" element={<Inbox/>}/>
         <Route path="/archives" element={<Archives/>}/>
         <Route path="/access-control" element={<AccessControl/>}/>
         <Route path="/records" element={<Records/>}/>
