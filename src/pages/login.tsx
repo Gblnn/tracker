@@ -3,7 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { auth } from "@/firebase";
 import { LoadingOutlined } from '@ant-design/icons';
 import { message } from "antd";
-import { browserSessionPersistence, GoogleAuthProvider, setPersistence, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { browserSessionPersistence, setPersistence, signInWithEmailAndPassword } from "firebase/auth";
 import { ChevronRight, KeyRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -67,31 +67,6 @@ export default function Login(){
         }
     }
 }
-
-    const SignUpWithGoogle = async () => {
-
-        try {
-            const provider = new GoogleAuthProvider();
-    
-        const result=await signInWithPopup(auth, provider)
-         
-           
-            const credential = GoogleAuthProvider.credentialFromResult(result);
-            if (!credential){
-                console.error("Error in user Credential")
-                return
-            }
-            const token = credential.accessToken;
-            const user = result.user;
-            console.log(user,token)
-           
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error:any) {
-            
-            console.log(error.code);
-    
-        }
-      };
     return(
         <div style={{display:"flex", padding:"1.25rem", height:"100svh"}}>
 
@@ -154,10 +129,6 @@ export default function Login(){
                         Developer Key
                     </Button>
 
-                    <Button onClick={SignUpWithGoogle} variant={"ghost"}>
-                        <img src="/google.png" width={"25rem"}/>
-                        Continue with Google
-                    </Button>
                 </div>
 
                 </div>
