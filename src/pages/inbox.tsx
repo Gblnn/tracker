@@ -282,7 +282,7 @@ export default function Inbox(){
     // }
 
     const exportDB = async () => {
-        const myHeader = ["id","name","employeeCode","type","companyName","state","civil_number", "civil_expiry", "license_number", "license_expiry", "medical_due_on","passportID", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
+        const myHeader = ["name","employeeCode","type","companyName","state","civil_number", "civil_expiry", "license_number", "license_expiry", "medical_due_on","passportID", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
 
         filteredData.forEach((e:any) => {
 
@@ -434,6 +434,10 @@ export default function Inbox(){
         const worksheet = XLSX.utils.json_to_sheet(filteredData, {header: myHeader});
         const workbook = XLSX.utils.book_new();
 
+        const range = XLSX.utils.decode_range(String(worksheet['!ref']));
+        range.e['c'] = myHeader.length - 1;
+        worksheet['!ref'] = XLSX.utils.encode_range(range);
+
         XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
 
         // Buffer to store the generated Excel file
@@ -533,7 +537,7 @@ export default function Inbox(){
                 
                 <p style={{height:"1.5rem"}}></p>
 
-                <div className="record-list" id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.75rem", height:"75svh", border:"", overflow:"auto", paddingRight:"", paddingBottom:"1rem"}}>
+                <div className="record-list" id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.65rem", height:"74svh", border:"", overflow:"auto", paddingRight:"", paddingBottom:"1rem"}}>
                     {
                         records
                         .filter((record:any)=>{
