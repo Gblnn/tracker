@@ -539,7 +539,7 @@ export default function Inbox(){
                 
                 <p style={{height:"1.5rem"}}></p>
 
-                <div className="record-list" id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.65rem", height:"74svh", border:"", overflow:"auto", paddingRight:"", paddingBottom:"1rem"}}>
+                <div className="record-list" id="inboxes" style={{display:"flex", flexFlow:"column", gap:"0.65rem", height:"74svh", border:"", overflow:"auto", paddingRight:"0.25rem", paddingBottom:""}}>
                     {
                         records
                         .filter((record:any)=>{

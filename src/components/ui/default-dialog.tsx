@@ -136,7 +136,7 @@ export default function DefaultDialog(props:Props){
 
                                 {
                                     props.contact&&
-                                    <a href={"tel:"+props.contact} style={{display:"flex", gap:"0.5rem", alignItems:"center", marginRight:"0.35rem", border:'', background:"rgba(100 100 100/ 25%)", borderRadius:"0.5rem", paddingLeft:"0.75rem", paddingRight:"0.75rem"}}>
+                                    <a href={"tel:"+props.contact} style={{display:"flex", gap:"0.5rem", alignItems:"center", marginRight:"0.35rem", border:'', background:"rgba(150 150 150/ 15%)", borderRadius:"0.5rem", paddingLeft:"0.75rem", paddingRight:"0.75rem"}}>
                                         
                                         <Phone width={"0.8rem"} color="dodgerblue"/>
                                         <p style={{fontSize:"1rem"}}>{props.contact}</p>
@@ -163,7 +163,7 @@ export default function DefaultDialog(props:Props){
                             
                         <div style={{height:"2rem", border:"", width:"100%", display:'flex', gap:"0.5rem"}}>
 
-                            <div style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
+                            <div style={{background:"rgba(150 150 150/ 15%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
                             {
                                 props.tag1Text?
                                 <p>{props.tag1Text}</p>
@@ -174,7 +174,7 @@ export default function DefaultDialog(props:Props){
                             
                             </div>
 
-                            <div style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
+                            <div style={{background:"rgba(150 150 150/ 15%)", fontSize:"0.8rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
 
                             <p style={{opacity:0.5}}>
                             Joined : 

@@ -134,7 +134,7 @@ export default function Directive(props:Props){
                         props.loading?
                         <LoadingOutlined/>
                         :
-                    <div onClick={props.tagOnClick} style={{background:"rgba(100 100 100/ 25%)",fontSize:"0.85rem", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", color:props.tag=="Expiring"?"violet":props.tag=="Available"?"lightgreen":props.status?"lightblue":"goldenrod", width:"", fontWeight:600, display:"flex", alignItems:"center", gap:"0.5rem"}}>
+                    <div onClick={props.tagOnClick} style={{background:"rgba(150 150 150/ 15%)",fontSize:"0.85rem", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", color:props.tag=="Expiring"?"violet":props.tag=="Available"?"lightgreen":props.status?"lightblue":"goldenrod", width:"", fontWeight:600, display:"flex", alignItems:"center", gap:"0.5rem"}}>
                         
                         {
                         props.archived==true?

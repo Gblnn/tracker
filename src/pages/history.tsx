@@ -49,7 +49,7 @@ export default function History(){
                 <Back title={"History"+" ("+records.length+")"} 
                 extra={
                     <div style={{display:"flex", gap:"0.5rem"}}>
-                        <button onClick={fetchData} className="blue-glass" style={{width:"3rem", height:"2.5rem"}}>
+                        <button onClick={fetchData} className="blue-glass" style={{width:"3rem", height:"2.75rem"}}>
                             {
                                 fetchingData?
                                 <LoadingOutlined/>

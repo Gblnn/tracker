@@ -1506,12 +1506,14 @@ export default function DbComponent(props:Props){
 
                             </button>
 
-                            <DbDropDown onUpload={()=>setImportDialog(true)} onExport={exportDB} onInbox={()=>usenavigate("/inbox")} onArchives={()=>usenavigate("/archives")} onAccess={()=>usenavigate("/access-control")} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
-
-
                             {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
                                 <InboxIcon className="" color="crimson"/>
                             </button> */}
+
+                            <DbDropDown onUpload={()=>setImportDialog(true)} onExport={exportDB} onInbox={()=>usenavigate("/inbox")} onArchives={()=>usenavigate("/archives")} onAccess={()=>usenavigate("/access-control")} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
+
+
+                            
 
                             
             
@@ -1568,10 +1570,6 @@ export default function DbComponent(props:Props){
                 fetchingData?
                 <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
                     <div style={{width:"100%",height:"75svh", display:"flex", justifyContent:"center", alignItems:"center", border:""}}>
-
-                        {/* <div style={{display:"flex", gap:"0.5rem", opacity:"0.5", border:""}}>
-                            <p style={{fontSize:"0.75rem"}} className="animate-ping">Fetching Data</p>
-                        </div> */}
 
                         <div style={{ border:"", display:"flex", alignItems:"center", justifyContent:"center"}}>
                             
@@ -1764,13 +1762,11 @@ export default function DbComponent(props:Props){
                                 :
                                 
                                 <>
-                                <div style={{background:"#1a1a1a", height:"1.75rem", width:"1.75rem", position:"absolute", borderRadius:"50%", display:"flex", justifyContent:"center", alignItems:"center"}}>
+                                <div style={{background:"#1a1a1a", color:"white", height:"1.75rem", width:"1.75rem", position:"absolute", borderRadius:"50%", display:"flex", justifyContent:"center", alignItems:"center"}}>
                                     <p style={{paddingTop:"0.1rem", fontWeight:600}}>{post.name.charAt(0)}</p>
                                 </div>
                                 <LazyLoadImage useIntersectionObserver delayMethod="debounce" threshold={100} effect="blur" style={{width:"1.75rem", height:"1.75rem", borderRadius:"50%", objectFit:"cover", display:"flex"}} src={post.profile} 
-                                // placeholder={
-                                //     post.name.charAt(0)
-                                // }
+                                
                                 	
                                 />
                                 </>
