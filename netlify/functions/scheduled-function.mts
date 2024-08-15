@@ -6,7 +6,7 @@ import { db } from "../../src/firebase";
 
 export default async (req: Request) => {
 
-    const serviceId = "service_lunn2bp";
+    const serviceId = "service_fixajl8";
     const templateId = "template_1y0oq9l";
 
     const today = new Date()
@@ -24,15 +24,6 @@ export default async (req: Request) => {
 
       Snapshot.forEach((doc:any)=>{
         Data.push({id: doc.id, ...doc.data()})        
-      })
-
-      const LeaveCollection = collection(db, "records")
-      const leaveQuery = query(LeaveCollection, orderBy("created_on"), where("state","==","active"))
-      const leaveSnapshot = await getDocs(leaveQuery)
-      const fetchedLeaves:any = [];
-
-      leaveSnapshot.forEach((doc:any)=>{
-        fetchedLeaves.push({id: doc.id, ...doc.data()})        
       })
 
       const RecordCollection = collection(db, "records")
@@ -673,5 +664,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"12 07 * * * "
+    schedule:"17 07 * * * "
 }
