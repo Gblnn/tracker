@@ -36,13 +36,22 @@ export default function App(){
       <Route path="/" element={<Login/>}/>
       <Route path="/inbox" element={<Inbox/>}/>
 
-      <Route element={<ProtectedRoutes user={window.name}/>}>
+      <Route 
+      element={<ProtectedRoutes user={window.name}/>}>
+        
         <Route path='/index' element={<Index/>}/>
         <Route path="/admin" element={<AdminPage/>}/>
         <Route path="/archives" element={<Archives/>}/>
         <Route path="/access-control" element={<AccessControl/>}/>
-        <Route path="/records" element={<Records/>}/>
-        <Route path="/vale-records" element={<ValeRecords/>}/>
+
+        <Route 
+        element={<ProtectedRoutes user={"user"}/>}>
+
+          <Route path="/records" element={<Records/>}/>
+          <Route path="/vale-records" element={<ValeRecords/>}/>
+        </Route>
+        
+
         <Route path="/user" element={<UserPage/>}/>
         <Route path="/medicals" element={<Medicals/>}/>
         <Route path='/history' element={<History/>}/>

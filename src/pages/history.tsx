@@ -72,7 +72,7 @@ export default function History(){
                             title={
                                 <div style={{border:'', display:'flex', marginBottom:"0.25rem", gap:"", fontSize:"0.9rem", alignItems:'center'}}>
 
-                                    <p style={{textTransform:"capitalize"}}>{e.fieldAltered} {e.method=="deletion"&& e.method}</p>
+                                    <p style={{textTransform:"capitalize",textAlign:"left", border:'', whiteSpace:"nowrap"}}>{e.fieldAltered}</p>
 
 
                                     {

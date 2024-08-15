@@ -81,14 +81,14 @@ export default function Directive(props:Props){
                             props.title
                             :
                             <p style={{fontWeight:400, textAlign:"left", border:"", fontSize:props.titleSize?props.titleSize:"0.9rem", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis", display:"flex", flex:1, width:"", gap:"0.5rem", alignItems:"center"}}>
-                        {props.title}
-                        {
-                            props.new&&
-                            <Circle style={{height:"auto", width:"0.45rem"}} color="dodgerblue" fill="dodgerblue"/>
-                            
-                        }
+                                {props.title}
+                                {
+                                props.new&&
+                                <Circle style={{height:"auto", width:"0.45rem"}} color="dodgerblue" fill="dodgerblue"/>
+                                
+                                }
                         
-                    </p>
+                            </p>
                         }
 
 

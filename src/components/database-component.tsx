@@ -77,6 +77,7 @@ export default function DbComponent(props:Props){
     const [leaveReview, setLeaveReview] = useState(false)
     const [editedLeaveFrom, setEditedLeaveFrom] = useState("")
     const [editedLeaveTill, setEditedLeaveTill] = useState("")
+    const [expectedReturn, setExpectedReturn] = useState("")
 
     const usenavigate = useNavigate()
     // BASIC PAGE VARIABLES
@@ -570,7 +571,7 @@ export default function DbComponent(props:Props){
 
     const updateLeave = async () => {
         setLoading(true)
-        await updateDoc(doc(db, 'leave-record', leaveID),{leaveFrom:leaveFrom, leaveTill:leaveTill, pending:leaveTill=="Pending"?true:false, days:leaveTill!="Pending"&&moment(leaveTill, "DD/MM/YYYY").diff(moment(leaveFrom, "DD/MM/YYYY"), "days")})
+        await updateDoc(doc(db, 'leave-record', leaveID),{leaveFrom:leaveFrom, leaveTill:leaveTill, expectedReturn:expectedReturn, pending:leaveTill==""?true:false, days:leaveTill!="Pending"&&moment(leaveTill, "DD/MM/YYYY").diff(moment(leaveFrom, "DD/MM/YYYY"), "days")})
         setLeaveFrom(leaveFrom)
         setLeaveTill(leaveTill)
         await leaveSum()
@@ -2765,7 +2766,7 @@ export default function DbComponent(props:Props){
                         {
                         leaveList.map((e:any)=>(
                             <motion.div key={e.id} initial={{opacity:0}} whileInView={{opacity:1}}>
-                            <Directive tagOnClick={()=>{setLeaveReview(true);setLeaveFrom(e.leaveFrom);e.pending==false?setLeaveTill(e.leaveTill):setLeaveTill(""), setLeaveID(e.id)}} status={true} tag={e.pending?"Pending":e.days+" Days"} title={e.leaveFrom+" - "+e.leaveTill} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{setDeleteLeaveDialog(true);setLeaveID(e.id)}}  className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} noArrow/>
+                            <Directive tagOnClick={()=>{setLeaveReview(true);setLeaveFrom(e.leaveFrom);e.pending==false?setLeaveTill(e.leaveTill):setLeaveTill(""), setLeaveID(e.id);setExpectedReturn(e.expectedReturn)}} status={true} tag={e.pending?"Pending":e.days+" Days"} title={e.leaveFrom+" - "+e.leaveTill} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{setDeleteLeaveDialog(true);setLeaveID(e.id)}}  className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} noArrow/>
                             </motion.div>
                         ))
                     }
@@ -2796,11 +2797,20 @@ export default function DbComponent(props:Props){
 
                 <InputDialog title={"Leave Review"} open={leaveReview} onCancel={()=>setLeaveReview(false)}
                 inputplaceholder="Leave From"
+                
+                
+
                 input1Value={leaveFrom}
                 input2Value={leaveTill}
+                input3Value={expectedReturn}
+                input1Label="Leave From"
+                input2Label="Leave Till"
+                input3Label="Expected Return"
                 inputOnChange={(e:any)=>setLeaveFrom(e.target.value)}
                 input2placeholder="Leave Till"
+                input3placeholder={leaveTill?"":"Expected Return"}
                 input2OnChange={(e:any)=>setLeaveTill(e.target.value)}
+                input3OnChange={(e:any)=>setExpectedReturn(e.target.value)}
                 OkButtonText="Update"
                 OkButtonIcon={<RefreshCcw width={"1rem"}/>}
                 updating={loading}
@@ -2809,23 +2819,6 @@ export default function DbComponent(props:Props){
                 />
 
                 <DefaultDialog open={deleteLeaveDialog} title={"Delete Leave?"} destructive OkButtonText="Delete" updating={loading} disabled={loading} onCancel={()=>setDeleteLeaveDialog(false)} onOk={deleteLeave} extra={<p style={{fontSize:"0.75rem", textAlign:"left", width:"100%", marginLeft:"1rem", opacity:0.5}}></p>}/>
-
-                {/* <DefaultDialog code={name} codeIcon={<User color="dodgerblue" width={"0.8rem"}/>} title={"Allowance"} close open={allowanceDialog} onCancel={()=>setAllowanceDialog(false)}
-                extra={
-                    <div style={{display:"flex", border:"", width:"100%", borderRadius:"0.5rem", padding:"0.5rem", background:"", flexFlow:"column"}}>
-
-
-                <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"center", display:'flex'}}>Current Allowance</p>
-                    <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600}}>
-                    <p>OMR {allowance}</p>
-                    </div>
-
-                    <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem", width:"100%"}}>
-                        <LineCharter lineColor="salmon"/>
-                    </div>
-                </div>
-                }
-                /> */}
 
             </div>
 
