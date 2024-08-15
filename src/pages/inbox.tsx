@@ -61,6 +61,7 @@ export default function Inbox(){
         setCount(Number(document.getElementById("inboxes")?.childElementCount))
     },[pageLoad])
 
+
     // FUNCTION TO SEND A TEST EMAIL
     const sendMail = async () => {
         
@@ -88,10 +89,6 @@ export default function Inbox(){
           setReminderDialog(false)
     }
 
-   
-
-    
-
     const fetchData = async () => {
         try {
             setPageLoad(true)
@@ -102,7 +99,6 @@ export default function Inbox(){
 
             querySnapshot.forEach((doc:any)=>{
                 fetchedData.push({id: doc.id, ...doc.data()})
-                
                 setRecords(fetchedData)
                 
             })
@@ -158,12 +154,7 @@ export default function Inbox(){
                             
                 )
             }))
-            
-            
-            
-    
 
-            
         } catch (error) {
             console.log(error)
         }
@@ -266,27 +257,13 @@ export default function Inbox(){
         )
     }
 
-    // const dataChecker = (data:any, n:any) => {
-    //     console.log(data.toDate(), n)
-        
-    //         data==""?
-    //         {}
-    //         :
-    //         Math.round(moment(data.toDate()).diff(moment(),"months"))<=n?
-    //         data = String(moment(data.toDate()).format("DD/MM/YYYY"))
-    //         :
-    //         data = ""
-        
-        
-        
-    // }
-
     const exportDB = async () => {
 
         const myHeader = ["name","employeeCode","type","companyName","state","civil_number", "civil_expiry", "license_number", "license_expiry", "medical_due_on","passportID", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
 
 
-        filteredData.forEach((e:any) => {
+        filteredData
+        .forEach((e:any) => {
 
             e.civil_expiry==""?
             {}
@@ -425,11 +402,34 @@ export default function Inbox(){
             :
             e.vt_car_10 = ""
 
+            delete(e.profile_name)
+            delete(e.profile)
+            delete(e.salaryBasic)
+            delete(e.email)
+            delete(e.notify)
+            delete(e.nativeAddress)
+            delete(e.license_issue)
+            delete(e.passportIssue)
+            delete(e.dateofJoin)
+            delete(e.initialSalary)
+            delete(e.medical_completed_on)
+            delete(e.civil_DOB)
+            delete(e.nativePhone)
+            delete(e.allowance)
+            delete(e.contact)
+            delete(e.initialAllowance)
+            delete(e.id)
+            delete(e.modified_on)
+            delete(e.created_on)
+            delete(e.remarks) 
+        })
+        
+        
+        
+        
+        
 
-
-
-            
-        });
+        
 
 
 

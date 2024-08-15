@@ -26,6 +26,15 @@ export default async (req: Request) => {
         Data.push({id: doc.id, ...doc.data()})        
       })
 
+      const LeaveCollection = collection(db, "records")
+      const leaveQuery = query(LeaveCollection, orderBy("created_on"), where("state","==","active"))
+      const leaveSnapshot = await getDocs(leaveQuery)
+      const fetchedLeaves:any = [];
+
+      leaveSnapshot.forEach((doc:any)=>{
+        fetchedLeaves.push({id: doc.id, ...doc.data()})        
+      })
+
       const RecordCollection = collection(db, "records")
       const recordQuery = query(RecordCollection, orderBy("created_on"), where("state","==","active"))
       const querySnapshot = await getDocs(recordQuery)
@@ -34,6 +43,9 @@ export default async (req: Request) => {
       querySnapshot.forEach((doc:any)=>{
         fetchedData.push({id: doc.id, ...doc.data()})        
       })
+
+
+
 
       filteredData = fetchedData.filter((e:any)=>{
         return(
@@ -631,7 +643,6 @@ export default async (req: Request) => {
     })
 
 
-
     // GENERAL MAIL SEND
     filteredData.length>=1?
     await emailjs.send(serviceId, templateId, {
@@ -645,6 +656,9 @@ export default async (req: Request) => {
     }
   )
   :null
+
+
+
   
 
     } 
@@ -659,5 +673,5 @@ export default async (req: Request) => {
 }
 
 export const config: Config = {
-    schedule:"55 11 * * * "
+    schedule:"10 07 * * * "
 }
