@@ -65,7 +65,8 @@ export default function DefaultDialog(props:Props){
 
                 <DialogHeader>
                     {
-                        props.title&&
+                        
+
                         <DialogTitle className="heading" style={{userSelect:"none", width:"100%", borderBottom:"1px solid rgba(100 100 100/ 50%)", paddingBottom:"1rem"}}>
                         <div className="flex" style={{border:"", justifyContent:"space-between"}}>
                             <div style={{display:"flex", alignItems:"center", gap:"1rem", border:"", width:"100%"}}>

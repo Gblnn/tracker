@@ -354,6 +354,7 @@ export default function DbComponent(props:Props){
           return;
         }
         const imageRef = storageRef(storage, fileName);
+
         console.log("Uploading ", fileName)
         fileName==""?
         console.log("Skipped Upload")
@@ -792,7 +793,7 @@ export default function DbComponent(props:Props){
         setLoading(true)
         if(fileName!=""){
             imgUrl = ""
-            if (profileName!=null){
+            if (profileName!=""){
                 console.log("Deleting ", profileName)
                 await deleteObject(ref(storage, profileName))
             }
@@ -1469,21 +1470,11 @@ export default function DbComponent(props:Props){
                 <Back title={props.title+
                 
                 " ("+records.length+")"} 
+
                 extra={
                     !selectable?
                     <div style={{display:"flex", gap:"0.5rem", height:"2.75rem"}}>
-                        
-                        {/* <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>{setExcelUploadDialog(true)}}><Upload width={"1rem"} color="dodgerblue"/></button> */}
                     
-                        {/* <button style={{paddingLeft:"1rem", paddingRight:"1rem"}} onClick={()=>setMailConfigDialog(true)}>
-                        {
-                            loading?
-                            <LoadingOutlined color="dodgerblue"/>
-                            :
-                            <BellRing width="1.1rem" color="dodgerblue"/>
-                            
-                        }
-                        </button> */}
 
                         {/* <button style={{cursor:"default", width:"5rem", fontSize:"0.9rem", opacity:0.5}}>
                             
@@ -1543,9 +1534,6 @@ export default function DbComponent(props:Props){
 
                 {// if page doesn't load : 
 
-                
-
-
                 // IF NUMBER OF RECORDS IS LESS THAN 1
                 records.length<1?
 
@@ -1575,11 +1563,8 @@ export default function DbComponent(props:Props){
                             
                             {props.loader}
                             
-                            
                         </div>
                         
-
-
                     </div>
                 </motion.div>
                 
@@ -1596,8 +1581,6 @@ export default function DbComponent(props:Props){
                         </div>
                 
                         <p style={{opacity:0.5, fontSize:"0.7rem"}}>Add a record using + Add Record</p>
-                        
-
 
                     </div>
                 </motion.div>
@@ -2036,7 +2019,7 @@ export default function DbComponent(props:Props){
                     
 
 
-                    <DropDown onExtra={()=>setArchivePrompt(true)} extraText={state=="active"?"Archive":"Unarchive"} onDelete={()=>{setUserDeletePrompt(true);fetchLeave();fetchSalary();fetchAllowance()}} onEdit={()=>{setUserEditPrompt(true);console.log("filename : ",fileName, "profileName : ", profileName)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
+                    <DropDown onExtra={()=>setArchivePrompt(true)} extraText={state=="active"?"Archive":"Unarchive"} onDelete={()=>{setUserDeletePrompt(true);fetchLeave();fetchSalary();fetchAllowance()}} onEdit={()=>{setUserEditPrompt(true);}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>}/>
                 </div>
             
             }
@@ -2129,8 +2112,6 @@ export default function DbComponent(props:Props){
             LocalContactOnChange={(e:any)=>setContact(e.target.value)}
             onOK={addRecord}
             />
-
-           
 
 
             {/* EDIT RECORD DIALOG */}
@@ -2356,11 +2337,6 @@ export default function DbComponent(props:Props){
                 </div>
             }/>
 
-            {/* <DefaultDialog close back titleIcon={<HeartPulse color="tomato"/>} title={"Medical"} open={healthDialog} onCancel={()=>setHealthDialog(false)} extra={
-                <div>
-
-                </div>
-            }/> */}
 
 
             {/* MEDICAL ID DIALOG */}
@@ -2380,9 +2356,6 @@ export default function DbComponent(props:Props){
                     :null
                 }
 
-                {/* <DropDown onDelete={()=>{setVehicleIdDelete(true)}} 
-                onEdit={()=>{setEditVehicleIDprompt(true)}} 
-                trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} */}
 
                 <DropDown onDelete={()=>{setDeleteMedicalIDdialog(true)}} onEdit={()=>{setEditMedicalIDdialog(true)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} />
 
@@ -2417,8 +2390,7 @@ export default function DbComponent(props:Props){
                         :
                         <div>
                         <MedicalID name={name} completedOn={medical_completed_on} dueOn={medical_due_on}/>
-                        {/* <br/>
-                        <button style={{width:"100%"}}>Edit</button> */}
+                        
                         </div>  
                     }
                     <br/>         
