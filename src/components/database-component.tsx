@@ -382,6 +382,7 @@ export default function DbComponent(props:Props){
             const Header = ["name","employeeCode","companyName","email","contact","dateofJoin","nativeAddress","nativePhone","initialSalary","initialAllowance","civil_number","civil_DOB", "civil_expiry", "license_number","license_issue", "license_expiry","medical_completed_on" ,"medical_due_on","passportID","passportIssue", "passportExpiry"]
 
         const worksheet = XLSX.utils.json_to_sheet([{}], {header: props.dbCategory=="personal"?Header: myHeader});
+
         const workbook = XLSX.utils.book_new();
 
         XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
@@ -427,17 +428,6 @@ export default function DbComponent(props:Props){
             setStatus("false")
         }   
     }
-
-    // const fetchChecked = async () => {
-    //     try {
-    //         setLoading(true)
-
-    //         setLoading(false)
-            
-    //     } catch (error) {
-    //         setLoading(false)
-    //     }
-    // }
 
     const fetchSalary = async () => {
         
