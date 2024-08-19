@@ -111,152 +111,152 @@ export default async (req: Request) => {
     filteredData.forEach((element: any) => {
       m += element.name + "'s documents : \n\n";
 
-      if (element.civil_expiry != "") {
-        if (
-          Math.round(
-            moment(element.civil_expiry.toDate()).diff(moment(today), "months")
-          ) <= 2
-        ) {
-          m +=
-            "Civil ID expiry  " +
-            moment(element.civil_expiry.toDate()).startOf("day").fromNow() +
-            " on " +
-            String(
-              moment(element.civil_expiry.toDate())
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
-            String(
-              moment(element.civil_expiry.toDate()).diff(
-                moment(today).startOf("day"),
-                "days"
-              ) <= 0
-                ? " (Overdue) "
-                : ""
-            ) +
-            "\n\n";
-        }
-      }
+      // if (element.civil_expiry != "") {
+      //   if (
+      //     Math.round(
+      //       moment(element.civil_expiry.toDate()).diff(moment(today), "months")
+      //     ) <= 2
+      //   ) {
+      //     m +=
+      //       "Civil ID expiry  " +
+      //       moment(element.civil_expiry.toDate()).startOf("day").fromNow() +
+      //       " on " +
+      //       String(
+      //         moment(element.civil_expiry.toDate())
+      //           .add(1, "day")
+      //           .format("DD/MM/YYYY")
+      //       ) +
+      //       String(
+      //         moment(element.civil_expiry.toDate()).diff(
+      //           moment(today).startOf("day"),
+      //           "days"
+      //         ) <= 0
+      //           ? " (Overdue) "
+      //           : ""
+      //       ) +
+      //       "\n\n";
+      //   }
+      // }
 
-      if (element.license_expiry != "") {
-        if (
-          Math.round(
-            moment(element.license_expiry.toDate()).diff(
-              moment(today),
-              "months"
-            )
-          ) <= 2
-        ) {
-          m +=
-            "Driving License expiry  " +
-            moment(element.license_expiry.toDate()).startOf("day").fromNow() +
-            " on " +
-            String(
-              moment(element.license_expiry.toDate())
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
-            String(
-              moment(element.license_expiry.toDate()).diff(
-                moment(today).startOf("day"),
-                "days"
-              ) <= 0
-                ? " (Overdue) "
-                : ""
-            ) +
-            "\n\n";
-        }
-      }
+      // if (element.license_expiry != "") {
+      //   if (
+      //     Math.round(
+      //       moment(element.license_expiry.toDate()).diff(
+      //         moment(today),
+      //         "months"
+      //       )
+      //     ) <= 2
+      //   ) {
+      //     m +=
+      //       "Driving License expiry  " +
+      //       moment(element.license_expiry.toDate()).startOf("day").fromNow() +
+      //       " on " +
+      //       String(
+      //         moment(element.license_expiry.toDate())
+      //           .add(1, "day")
+      //           .format("DD/MM/YYYY")
+      //       ) +
+      //       String(
+      //         moment(element.license_expiry.toDate()).diff(
+      //           moment(today).startOf("day"),
+      //           "days"
+      //         ) <= 0
+      //           ? " (Overdue) "
+      //           : ""
+      //       ) +
+      //       "\n\n";
+      //   }
+      // }
 
-      if (element.medical_due_on != "") {
-        if (
-          Math.round(
-            moment(element.medical_due_on.toDate()).diff(
-              moment(today),
-              "months"
-            )
-          ) <= 2
-        ) {
-          m +=
-            "Medical expiry  " +
-            moment(element.medical_due_on.toDate()).startOf("day").fromNow() +
-            " on " +
-            String(
-              moment(element.medical_due_on.toDate())
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
-            String(
-              moment(element.medical_due_on.toDate()).diff(
-                moment(today).startOf("day"),
-                "days"
-              ) <= 0
-                ? " (Overdue) "
-                : ""
-            ) +
-            "\n\n";
-        }
-      }
+      // if (element.medical_due_on != "") {
+      //   if (
+      //     Math.round(
+      //       moment(element.medical_due_on.toDate()).diff(
+      //         moment(today),
+      //         "months"
+      //       )
+      //     ) <= 2
+      //   ) {
+      //     m +=
+      //       "Medical expiry  " +
+      //       moment(element.medical_due_on.toDate()).startOf("day").fromNow() +
+      //       " on " +
+      //       String(
+      //         moment(element.medical_due_on.toDate())
+      //           .add(1, "day")
+      //           .format("DD/MM/YYYY")
+      //       ) +
+      //       String(
+      //         moment(element.medical_due_on.toDate()).diff(
+      //           moment(today).startOf("day"),
+      //           "days"
+      //         ) <= 0
+      //           ? " (Overdue) "
+      //           : ""
+      //       ) +
+      //       "\n\n";
+      //   }
+      // }
 
-      if (element.passportExpiry != "") {
-        if (
-          Math.round(
-            moment(element.passportExpiry.toDate()).diff(
-              moment(today),
-              "months"
-            )
-          ) <= 6
-        ) {
-          m +=
-            "Passport expiry  " +
-            moment(element.passportExpiry.toDate()).startOf("day").fromNow() +
-            " on " +
-            String(
-              moment(element.passportExpiry.toDate())
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
-            String(
-              moment(element.passportExpiry.toDate()).diff(
-                moment(today).startOf("day"),
-                "days"
-              ) <= 0
-                ? " (Overdue) "
-                : ""
-            ) +
-            "\n\n";
-        }
-      }
+      // if (element.passportExpiry != "") {
+      //   if (
+      //     Math.round(
+      //       moment(element.passportExpiry.toDate()).diff(
+      //         moment(today),
+      //         "months"
+      //       )
+      //     ) <= 6
+      //   ) {
+      //     m +=
+      //       "Passport expiry  " +
+      //       moment(element.passportExpiry.toDate()).startOf("day").fromNow() +
+      //       " on " +
+      //       String(
+      //         moment(element.passportExpiry.toDate())
+      //           .add(1, "day")
+      //           .format("DD/MM/YYYY")
+      //       ) +
+      //       String(
+      //         moment(element.passportExpiry.toDate()).diff(
+      //           moment(today).startOf("day"),
+      //           "days"
+      //         ) <= 0
+      //           ? " (Overdue) "
+      //           : ""
+      //       ) +
+      //       "\n\n";
+      //   }
+      // }
 
-      if (element.vt_hse_induction != "") {
-        if (
-          Math.round(
-            moment(element.vt_hse_induction.toDate()).diff(
-              moment(today),
-              "months"
-            )
-          ) <= 2
-        ) {
-          m +=
-            "HSE Induction Training expiry  " +
-            moment(element.vt_hse_induction.toDate()).startOf("day").fromNow() +
-            " on " +
-            String(
-              moment(element.vt_hse_induction.toDate())
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
-            String(
-              moment(element.vt_hse_induction.toDate()).diff(
-                moment(today).startOf("day"),
-                "days"
-              ) <= 0
-                ? " (Overdue) "
-                : ""
-            ) +
-            "\n\n";
-        }
-      }
+      // if (element.vt_hse_induction != "") {
+      //   if (
+      //     Math.round(
+      //       moment(element.vt_hse_induction.toDate()).diff(
+      //         moment(today),
+      //         "months"
+      //       )
+      //     ) <= 2
+      //   ) {
+      //     m +=
+      //       "HSE Induction Training expiry  " +
+      //       moment(element.vt_hse_induction.toDate()).startOf("day").fromNow() +
+      //       " on " +
+      //       String(
+      //         moment(element.vt_hse_induction.toDate())
+      //           .add(1, "day")
+      //           .format("DD/MM/YYYY")
+      //       ) +
+      //       String(
+      //         moment(element.vt_hse_induction.toDate()).diff(
+      //           moment(today).startOf("day"),
+      //           "days"
+      //         ) <= 0
+      //           ? " (Overdue) "
+      //           : ""
+      //       ) +
+      //       "\n\n";
+      //   }
+      // }
 
       // if (element.vt_car_1 != "") {
       //   if (
@@ -965,5 +965,5 @@ export default async (req: Request) => {
 };
 
 export const config: Config = {
-  schedule: "12 07 * * * ",
+  schedule: "16 07 * * * ",
 };
