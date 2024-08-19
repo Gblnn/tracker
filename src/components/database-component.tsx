@@ -1403,43 +1403,43 @@ export default function DbComponent(props:Props){
 
                 e.vt_car_1?
                 e.vt_car_1 = Timestamp.fromDate(new Date(e.vt_car_1))
-                :{}
+                :e.vt_car_1 = ""
 
                 e.vt_car_2?
                 e.vt_car_2 = Timestamp.fromDate(new Date(e.vt_car_2))
-                :{}
+                :e.vt_car_2 = ""
 
                 e.vt_car_3?
                 e.vt_car_3 = Timestamp.fromDate(new Date(e.vt_car_3))
-                :{}
+                :e.vt_car_3 = ""
 
                 e.vt_car_4?
                 e.vt_car_4 = Timestamp.fromDate(new Date(e.vt_car_4))
-                :{}
+                :e.vt_car_4
 
                 e.vt_car_5?
                 e.vt_car_5 = Timestamp.fromDate(new Date(e.vt_car_5))
-                :{}
+                :e.vt_car_5 = ""
 
                 e.vt_car_6?
                 e.vt_car_6 = Timestamp.fromDate(new Date(e.vt_car_6))
-                :{}
+                :e.vt_car_6 = ""
 
                 e.vt_car_7?
                 e.vt_car_7 = Timestamp.fromDate(new Date(e.vt_car_7))
-                :{}
+                :e.vt_car_7 = ""
 
                 e.vt_car_8?
                 e.vt_car_8 = Timestamp.fromDate(new Date(e.vt_car_8))
-                :{}
+                :e.vt_car_8 = ""
 
                 e.vt_car_9?
                 e.vt_car_9 = Timestamp.fromDate(new Date(e.vt_car_9))
-                :{}
+                :e.vt_car_9 = ""
 
                 e.vt_car_10?
                 e.vt_car_10 = Timestamp.fromDate(new Date(e.vt_car_10))
-                :{}
+                :e.vt_car_10 = ""
                 
 
                 e.salaryBasic?
