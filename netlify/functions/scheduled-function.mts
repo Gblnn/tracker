@@ -106,6 +106,8 @@ export default async (req: Request) => {
       rp += r.recipient + ", ";
     });
 
+    console.log(filteredData);
+
     filteredData.forEach((element: any) => {
       m += element.name + "'s documents : \n\n";
 
@@ -963,5 +965,5 @@ export default async (req: Request) => {
 };
 
 export const config: Config = {
-  schedule: "55 06 * * * ",
+  schedule: "00 07 * * * ",
 };

@@ -54,9 +54,7 @@ export default function Inbox(){
 
     useEffect(()=>{
         fetchData()
-        filteredData.forEach((e:any) => {
-            console.log(e.vt_car_4)
-        });
+        console.log(filteredData)
     },[])
 
     useEffect(()=>{
