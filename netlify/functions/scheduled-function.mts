@@ -136,7 +136,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.license_expiry != "") {
+      if (element.license_expiry != null) {
         if (
           Math.round(
             moment(element.license_expiry.toDate()).diff(
@@ -965,5 +965,5 @@ export default async (req: Request) => {
 };
 
 export const config: Config = {
-  schedule: "21 08 * * * ",
+  schedule: "31 08 * * * ",
 };
