@@ -337,32 +337,33 @@ export default async (req: Request) => {
         }
       }
 
-      // if (element.vt_car_4 != null) {
-      //   if (
-      //     Math.round(
-      //       moment(element.vt_car_4.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     m +=
-      //       "CAR - 4 Training expiry  " +
-      //       moment(element.vt_car_4.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.vt_car_4.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.vt_car_4.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.vt_car_4 != null) {
+        if (
+          Math.round(
+            moment(element.vt_car_4.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          m +=
+            "CAR - 4 Training expiry  " +
+            moment(element.vt_car_4.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.vt_car_4.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.vt_car_4.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+          console.log("Log : " + element.vt_car_4);
+        }
+      }
 
       if (element.vt_car_5 != null) {
         if (
@@ -962,5 +963,5 @@ export default async (req: Request) => {
 };
 
 export const config: Config = {
-  schedule: "46 05 * * * ",
+  schedule: "08 06 * * * ",
 };
