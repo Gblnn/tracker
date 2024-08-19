@@ -24,17 +24,17 @@ export default function CivilID(props:Props){
 
                 <div id="civil-no" style={{display:"flex",border:"", alignItems:'center', gap:"1rem"}}>
                     <p style={{fontSize:"0.7rem"}}>CIVIL NUMBER : </p>
-                    <p style={{fontWeight:600, fontSize:"0.9rem"}}>{props.civilid?props.civilid:"XXXXXXXXX"}</p>
+                    <p style={{fontWeight:600, fontSize:"0.9rem"}}>{props.civilid?props.civilid:"XXXXXXXX"}</p>
                 </div>
 
                 <div id="civil-no" style={{display:"flex", alignItems:'center', gap:"1rem"}}>
                     <p style={{fontSize:"0.7rem", }}>EXPIRY DATE : </p>
-                    <p style={{fontWeight:600, fontSize:"0.9rem"}}>{props.expirydate?props.expirydate:"XXXXXXXXX"}</p>
+                    <p style={{fontWeight:600, fontSize:"0.9rem"}}>{props.expirydate?props.expirydate:"XXXXXXXX"}</p>
                 </div>
 
                 <div id="civil-no" style={{display:"flex", alignItems:'center', gap:"1rem"}}>
                     <p style={{fontSize:"0.7rem"}}>DATE OF BIRTH : </p>
-                    <p style={{fontWeight:600,fontSize:"0.9rem"}}>{props.DOB?props.DOB:"XXXXXXXXX"}</p>
+                    <p style={{fontWeight:600,fontSize:"0.9rem"}}>{props.DOB?props.DOB:"XXXXXXXX"}</p>
                 </div>
 
                 {/* <div style={{display:"flex", border:"", flex:1, justifyContent:"flex-end", alignItems:"center", flexFlow:"column"}}>
