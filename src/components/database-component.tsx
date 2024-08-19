@@ -2371,7 +2371,7 @@ export default function DbComponent(props:Props){
             <DefaultDialog close titleIcon={<HeartPulse color="tomato"/>} title="Medical ID" open={healthDialog} onCancel={()=>setHealthDialog(false)} back
 
             title_extra=
-            {medical_completed_on?
+            {medical_due_on?
 
                 <div style={{display:"flex", gap:"0.5rem", height:"2.25rem"}}>
 
@@ -2395,7 +2395,7 @@ export default function DbComponent(props:Props){
             extra={
                 <div style={{width:"100%", display:"flex", justifyContent:'center', paddingBottom:"1rem"}}>
                     {
-                        !medical_completed_on || loading?
+                        !medical_due_on || loading?
                         <div style={{height:"19ch", width:"32ch", display:"flex"}}>
                             
                             <button onClick={()=>setMedicalIDdialog(true)} style={{width:"100%",border:"2px solid rgba(100 100 100/ 50%)"}}>

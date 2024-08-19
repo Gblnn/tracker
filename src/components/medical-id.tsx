@@ -59,12 +59,12 @@ export default function MedicalID(props:Props){
                 <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", width:'100%', margin:"1rem"}}>
                 <div id="civil-no" style={{display:"flex", alignItems:'center', gap:"0.5rem"}}>
                     <p style={{fontSize:"0.7rem", }}>COMPLETED : </p>
-                    <p style={{fontWeight:600, fontSize:"0.8rem"}}>{props.completedOn}</p>
+                    <p style={{fontWeight:600, fontSize:"0.8rem"}}>{props.completedOn?props.completedOn:"XXXXXXXX"}</p>
                 </div>
 
                 <div id="civil-no" style={{display:"flex", alignItems:'center', gap:"0.5rem"}}>
                     <p style={{fontSize:"0.7rem"}}>DUE : </p>
-                    <p style={{fontWeight:600,fontSize:"0.8rem"}}>{props.dueOn}</p>
+                    <p style={{fontWeight:600,fontSize:"0.8rem"}}>{props.dueOn?props.dueOn:"XXXXXX"}</p>
                 </div>
                 </div>
 
