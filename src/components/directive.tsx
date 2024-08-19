@@ -80,7 +80,7 @@ export default function Directive(props:Props){
                             props.customTitle?
                             props.title
                             :
-                            <p style={{fontWeight:400, textAlign:"left", border:"", fontSize:props.titleSize?props.titleSize:"0.9rem", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis", display:"flex", flex:1, width:"", gap:"0.5rem", alignItems:"center"}}>
+                            <p style={{fontWeight:400, textAlign:"left", border:"", fontSize:props.titleSize?props.titleSize:"0.9rem", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis", display:"flex", flex:1, width:"130px", gap:"0.5rem", alignItems:"center"}}>
                                 {props.title}
                                 {
                                 props.new&&
@@ -134,7 +134,7 @@ export default function Directive(props:Props){
                         props.loading?
                         <LoadingOutlined/>
                         :
-                    <div onClick={props.tagOnClick} style={{background:"rgba(150 150 150/ 15%)",fontSize:"0.85rem", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", color:props.tag=="Expiring"?"violet":props.tag=="Available"?"lightgreen":props.status?"lightblue":"goldenrod", width:"", fontWeight:600, display:"flex", alignItems:"center", gap:"0.5rem"}}>
+                    <div onClick={props.tagOnClick} style={{background:"rgba(150 150 150/ 15%)",fontSize:"0.85rem", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", color:props.tag=="Expiring"?"goldenrod":props.tag=="Available"?"lightgreen":props.status?"lightblue":"goldenrod", width:"", fontWeight:600, display:"flex", alignItems:"center", gap:"0.5rem"}}>
                         
                         {
                         props.archived==true?

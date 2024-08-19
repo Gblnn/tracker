@@ -275,7 +275,7 @@ export default function Inbox(){
 
 
 
-            e.license_expiry==""?
+            e.license_expiry==null?
             {}
             :
             Math.round(moment(e.license_expiry.toDate()).diff(moment(),"months"))<=2?
@@ -284,7 +284,7 @@ export default function Inbox(){
             e.license_expiry = ""
 
 
-            e.medical_due_on==""?
+            e.medical_due_on==null?
             {}
             :
             Math.round(moment(e.medical_due_on.toDate()).diff(moment(),"months"))<=2?
@@ -293,7 +293,7 @@ export default function Inbox(){
             e.medical_due_on = ""
 
 
-            e.passportExpiry==""?
+            e.passportExpiry==null?
             {}
             :
             Math.round(moment(e.passportExpiry.toDate()).diff(moment(),"months"))<=6?
@@ -303,7 +303,7 @@ export default function Inbox(){
 
 
 
-            e.vt_hse_induction==""?
+            e.vt_hse_induction==null?
             {}
             :
             Math.round(moment(e.vt_hse_induction.toDate()).diff(moment(),"months"))<=2?
@@ -312,7 +312,7 @@ export default function Inbox(){
             e.vt_hse_induction = ""
 
 
-            e.vt_car_1==""?
+            e.vt_car_1==null?
             {}
             :
             Math.round(moment(e.vt_car_1.toDate()).diff(moment(),"months"))<=2?
@@ -321,7 +321,7 @@ export default function Inbox(){
             e.vt_car_1 = ""
 
 
-            e.vt_car_2==""?
+            e.vt_car_2==null?
             {}
             :
             Math.round(moment(e.vt_car_2.toDate()).diff(moment(),"months"))<=2?
@@ -330,7 +330,7 @@ export default function Inbox(){
             e.vt_car_2 = ""
 
 
-            e.vt_car_3==""?
+            e.vt_car_3==null?
             {}
             :
             Math.round(moment(e.vt_car_3.toDate()).diff(moment(),"months"))<=2?
@@ -339,7 +339,7 @@ export default function Inbox(){
             e.vt_car_3 = ""
 
 
-            e.vt_car_4==""?
+            e.vt_car_4==null?
             {}
             :
             Math.round(moment(e.vt_car_4.toDate()).diff(moment(),"months"))<=2?
@@ -348,7 +348,7 @@ export default function Inbox(){
             e.vt_car_4 = ""
 
 
-            e.vt_car_5==""?
+            e.vt_car_5==null?
             {}
             :
             Math.round(moment(e.vt_car_5.toDate()).diff(moment(),"months"))<=2?
@@ -357,7 +357,7 @@ export default function Inbox(){
             e.vt_car_5 = ""
 
 
-            e.vt_car_6==""?
+            e.vt_car_6==null?
             {}
             :
             Math.round(moment(e.vt_car_6.toDate()).diff(moment(),"months"))<=2?
@@ -367,7 +367,7 @@ export default function Inbox(){
 
 
 
-            e.vt_car_7==""?
+            e.vt_car_7==null?
             {}
             :
             Math.round(moment(e.vt_car_7.toDate()).diff(moment(),"months"))<=2?
@@ -376,7 +376,7 @@ export default function Inbox(){
             e.vt_car_7 = ""
 
 
-            e.vt_car_8==""?
+            e.vt_car_8==null?
             {}
             :
             Math.round(moment(e.vt_car_8.toDate()).diff(moment(),"months"))<=2?
@@ -385,7 +385,7 @@ export default function Inbox(){
             e.vt_car_8 = ""
 
 
-            e.vt_car_9==""?
+            e.vt_car_9==null?
             {}
             :
             Math.round(moment(e.vt_car_9.toDate()).diff(moment(),"months"))<=2?
@@ -394,7 +394,7 @@ export default function Inbox(){
             e.vt_car_9 = ""
 
 
-            e.vt_car_10==""?
+            e.vt_car_10==null?
             {}
             :
             Math.round(moment(e.vt_car_10.toDate()).diff(moment(),"months"))<=2?
@@ -632,7 +632,7 @@ export default function Inbox(){
                             }}
                             
                             key={record.id} 
-                            title={record.name+"'s doc expiry reminder"}
+                            title={record.name}
 
                              
                             civil_desc={DescGenerator(record.civil_expiry, 2, "Civil ID")}

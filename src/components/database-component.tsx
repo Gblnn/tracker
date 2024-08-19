@@ -1359,6 +1359,7 @@ export default function DbComponent(props:Props){
                 e.modified_on = new Date()
                 e.notify = true
                 e.state = "active"
+                
 
                 e.dateofJoin?
                 e.dateofJoin = moment(e.dateofJoin).format("DD/MM/YYYY")
@@ -1396,23 +1397,60 @@ export default function DbComponent(props:Props){
                 e.passportIssue = moment(e.passportIssue).format("DD/MM/YYYY")
                 :{}
 
-            
+                e.vt_hse_induction?
+                e.vt_hse_induction = Timestamp.fromDate(new Date(e.vt_hse_induction))
+                :{}
 
+                e.vt_car_1?
+                e.vt_car_1 = Timestamp.fromDate(new Date(e.vt_car_1))
+                :{}
 
+                e.vt_car_2?
+                e.vt_car_2 = Timestamp.fromDate(new Date(e.vt_car_2))
+                :{}
+
+                e.vt_car_3?
+                e.vt_car_3 = Timestamp.fromDate(new Date(e.vt_car_3))
+                :{}
+
+                e.vt_car_4?
+                e.vt_car_4 = Timestamp.fromDate(new Date(e.vt_car_4))
+                :{}
+
+                e.vt_car_5?
+                e.vt_car_5 = Timestamp.fromDate(new Date(e.vt_car_5))
+                :{}
+
+                e.vt_car_6?
+                e.vt_car_6 = Timestamp.fromDate(new Date(e.vt_car_6))
+                :{}
+
+                e.vt_car_7?
+                e.vt_car_7 = Timestamp.fromDate(new Date(e.vt_car_7))
+                :{}
+
+                e.vt_car_8?
+                e.vt_car_8 = Timestamp.fromDate(new Date(e.vt_car_8))
+                :{}
+
+                e.vt_car_9?
+                e.vt_car_9 = Timestamp.fromDate(new Date(e.vt_car_9))
+                :{}
+
+                e.vt_car_10?
+                e.vt_car_10 = Timestamp.fromDate(new Date(e.vt_car_10))
+                :{}
+                
+
+                e.salaryBasic?
                 e.salaryBasic = e.initialSalary
-                e.allowance = e.initialAllowance
+                :
+                e.salaryBasic = 0
 
-                e.vt_hse_induction = ""
-                e.vt_car_1 = ""
-                e.vt_car_2 = ""
-                e.vt_car_3 = ""
-                e.vt_car_4 = ""
-                e.vt_car_5 = ""
-                e.vt_car_6 = ""
-                e.vt_car_7 = ""
-                e.vt_car_8 = ""
-                e.vt_car_9 = ""
-                e.vt_car_10 = ""
+                e.allowance?
+                e.allowance = e.initialAllowance
+                :
+                e.allowance = 0
 
         
             });
@@ -2068,7 +2106,7 @@ export default function DbComponent(props:Props){
                         ||
                         moment(vt_car_10, "DD/MM/YYYY").diff(moment(today),'months')<=2
                         ?
-                        "Expiring Soon"
+                        "Expiring"
                         :
                         ""                                           
                     } 

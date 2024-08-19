@@ -52,6 +52,7 @@ interface Props {
     dialogHeight?:any
     creation_date?:string
     contact?:string
+    titleinfo?:boolean
 }
 
 
@@ -76,8 +77,10 @@ export default function DefaultDialog(props:Props){
                                 
                                 
                                 <div style={{display:"flex", flexFlow:"column", border:"", gap:"0.25rem"}}>
-                                    <div style={{display:"flex", alignItems:"center", border:"", gap:"0.75rem", fontSize:"1.1rem"}}>
-                                        <p style={{border:"",maxWidth:"150px", textOverflow:"ellipsis", textAlign:"left", overflow:"hidden", whiteSpace:"nowrap"}}>{props.title}</p>
+                                    <div style={{display:"flex", alignItems:"center", border:"", gap:"0.75rem", fontSize:"1rem"}}>
+                                        <p style={{border:"",maxWidth:"150px", textOverflow:"ellipsis", textAlign:"left", overflow:"hidden", whiteSpace:"nowrap"}}>
+                                            {props.title}
+                                        </p>
                                         
                                     </div>
                                 
