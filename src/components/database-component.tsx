@@ -1371,7 +1371,7 @@ export default function DbComponent(props:Props){
                 
                 e.license_expiry?
                 e.license_expiry = Timestamp.fromDate(new Date(e.license_expiry))
-                :e.civil_expiry = ""
+                :e.license_expiry = ""
 
                 e.medical_due_on?
                 e.medical_due_on = Timestamp.fromDate(new Date(e.medical_due_on))
