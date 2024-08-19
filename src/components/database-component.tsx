@@ -1363,43 +1363,43 @@ export default function DbComponent(props:Props){
 
                 e.dateofJoin?
                 e.dateofJoin = moment(e.dateofJoin).format("DD/MM/YYYY")
-                :{}
+                :e.dateofJoin = ""
 
                 e.civil_expiry?
                 e.civil_expiry = Timestamp.fromDate(new Date(e.civil_expiry))
-                :{}
+                :e.civil_expiry = ""
                 
                 e.license_expiry?
                 e.license_expiry = Timestamp.fromDate(new Date(e.license_expiry))
-                :{}
+                :e.civil_expiry = ""
 
                 e.medical_due_on?
                 e.medical_due_on = Timestamp.fromDate(new Date(e.medical_due_on))
-                :{}
+                :e.medical_due_on = ""
 
                 e.passportExpiry?
                 e.passportExpiry = Timestamp.fromDate(new Date(e.passportExpiry))
-                :{}
+                :e.passportExpiry = ""
                 
                 e.civil_DOB?
                 e.civil_DOB = moment(e.civil_DOB).format("DD/MM/YYYY")
-                :{}
+                :e.civil_DOB = ""
 
                 e.license_issue?
                 e.license_issue = moment(e.license_issue).format("DD/MM/YYYY")
-                :{}
+                :e.license_issue = ""
 
                 e.medical_completed_on?
                 e.medical_completed_on = moment(e.medical_completed_on).format("DD/MM/YYYY")
-                :{}
+                :e.medical_completed_on = ""
 
                 e.passportIssue?
                 e.passportIssue = moment(e.passportIssue).format("DD/MM/YYYY")
-                :{}
+                :e.passportIssue = ""
 
                 e.vt_hse_induction?
                 e.vt_hse_induction = Timestamp.fromDate(new Date(e.vt_hse_induction))
-                :{}
+                :e.vt_hse_induction = ""
 
                 e.vt_car_1?
                 e.vt_car_1 = Timestamp.fromDate(new Date(e.vt_car_1))
