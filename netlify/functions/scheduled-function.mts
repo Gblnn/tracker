@@ -109,7 +109,7 @@ export default async (req: Request) => {
     filteredData.forEach((element: any) => {
       m += element.name + "'s documents : \n\n";
 
-      if (element.civil_expiry != null) {
+      if (element.civil_expiry) {
         if (
           Math.round(
             moment(element.civil_expiry.toDate()).diff(moment(today), "months")
@@ -136,7 +136,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.license_expiry != null) {
+      if (element.license_expiry) {
         if (
           Math.round(
             moment(element.license_expiry.toDate()).diff(
@@ -166,7 +166,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.medical_due_on != null) {
+      if (element.medical_due_on) {
         if (
           Math.round(
             moment(element.medical_due_on.toDate()).diff(
@@ -196,7 +196,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.passportExpiry != null) {
+      if (element.passportExpiry) {
         if (
           Math.round(
             moment(element.passportExpiry.toDate()).diff(
@@ -226,7 +226,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.vt_hse_induction != null) {
+      if (element.vt_hse_induction) {
         if (
           Math.round(
             moment(element.vt_hse_induction.toDate()).diff(
@@ -256,7 +256,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.vt_car_1 != null) {
+      if (element.vt_car_1) {
         if (
           Math.round(
             moment(element.vt_car_1.toDate()).diff(moment(today), "months")
@@ -283,7 +283,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.vt_car_2 != null) {
+      if (element.vt_car_2) {
         if (
           Math.round(
             moment(element.vt_car_2.toDate()).diff(moment(today), "months")
@@ -310,7 +310,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.vt_car_3 != null) {
+      if (element.vt_car_3) {
         if (
           Math.round(
             moment(element.vt_car_3.toDate()).diff(moment(today), "months")
@@ -337,7 +337,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.vt_car_4 != null) {
+      if (element.vt_car_4) {
         if (
           Math.round(
             moment(element.vt_car_4.toDate()).diff(moment(today), "months")
@@ -365,7 +365,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.vt_car_5 != null) {
+      if (element.vt_car_5) {
         if (
           Math.round(
             moment(element.vt_car_5.toDate()).diff(moment(today), "months")
@@ -392,7 +392,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.vt_car_6 != null) {
+      if (element.vt_car_6) {
         if (
           Math.round(
             moment(element.vt_car_6.toDate()).diff(moment(today), "months")
@@ -419,7 +419,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.vt_car_7 != null) {
+      if (element.vt_car_7) {
         if (
           Math.round(
             moment(element.vt_car_7.toDate()).diff(moment(today), "months")
@@ -446,7 +446,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.vt_car_8 != null) {
+      if (element.vt_car_8) {
         if (
           Math.round(
             moment(element.vt_car_8.toDate()).diff(moment(today), "months")
@@ -473,7 +473,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.vt_car_9 != null) {
+      if (element.vt_car_9) {
         if (
           Math.round(
             moment(element.vt_car_9.toDate()).diff(moment(today), "months")
@@ -500,7 +500,7 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.vt_car_10 != null) {
+      if (element.vt_car_10) {
         if (
           Math.round(
             moment(element.vt_car_10.toDate()).diff(moment(today), "months")
@@ -963,5 +963,5 @@ export default async (req: Request) => {
 };
 
 export const config: Config = {
-  schedule: "08 06 * * * ",
+  schedule: "38 06 * * * ",
 };
