@@ -275,7 +275,7 @@ export default function Inbox(){
 
 
 
-            e.license_expiry==null?
+            e.license_expiry==""?
             {}
             :
             Math.round(moment(e.license_expiry.toDate()).diff(moment(),"months"))<=2?
@@ -284,7 +284,7 @@ export default function Inbox(){
             e.license_expiry = ""
 
 
-            e.medical_due_on==null?
+            e.medical_due_on==""?
             {}
             :
             Math.round(moment(e.medical_due_on.toDate()).diff(moment(),"months"))<=2?
@@ -293,7 +293,7 @@ export default function Inbox(){
             e.medical_due_on = ""
 
 
-            e.passportExpiry==null?
+            e.passportExpiry==""?
             {}
             :
             Math.round(moment(e.passportExpiry.toDate()).diff(moment(),"months"))<=6?
@@ -303,7 +303,7 @@ export default function Inbox(){
 
 
 
-            e.vt_hse_induction==null?
+            e.vt_hse_induction==""?
             {}
             :
             Math.round(moment(e.vt_hse_induction.toDate()).diff(moment(),"months"))<=2?
@@ -312,7 +312,7 @@ export default function Inbox(){
             e.vt_hse_induction = ""
 
 
-            e.vt_car_1==null?
+            e.vt_car_1==""?
             {}
             :
             Math.round(moment(e.vt_car_1.toDate()).diff(moment(),"months"))<=2?
@@ -321,7 +321,7 @@ export default function Inbox(){
             e.vt_car_1 = ""
 
 
-            e.vt_car_2==null?
+            e.vt_car_2==""?
             {}
             :
             Math.round(moment(e.vt_car_2.toDate()).diff(moment(),"months"))<=2?
@@ -330,7 +330,7 @@ export default function Inbox(){
             e.vt_car_2 = ""
 
 
-            e.vt_car_3==null?
+            e.vt_car_3==""?
             {}
             :
             Math.round(moment(e.vt_car_3.toDate()).diff(moment(),"months"))<=2?
@@ -339,7 +339,7 @@ export default function Inbox(){
             e.vt_car_3 = ""
 
 
-            e.vt_car_4==null?
+            e.vt_car_4==""?
             {}
             :
             Math.round(moment(e.vt_car_4.toDate()).diff(moment(),"months"))<=2?
@@ -348,7 +348,7 @@ export default function Inbox(){
             e.vt_car_4 = ""
 
 
-            e.vt_car_5==null?
+            e.vt_car_5==""?
             {}
             :
             Math.round(moment(e.vt_car_5.toDate()).diff(moment(),"months"))<=2?
@@ -357,7 +357,7 @@ export default function Inbox(){
             e.vt_car_5 = ""
 
 
-            e.vt_car_6==null?
+            e.vt_car_6==""?
             {}
             :
             Math.round(moment(e.vt_car_6.toDate()).diff(moment(),"months"))<=2?
@@ -367,7 +367,7 @@ export default function Inbox(){
 
 
 
-            e.vt_car_7==null?
+            e.vt_car_7==""?
             {}
             :
             Math.round(moment(e.vt_car_7.toDate()).diff(moment(),"months"))<=2?
@@ -376,7 +376,7 @@ export default function Inbox(){
             e.vt_car_7 = ""
 
 
-            e.vt_car_8==null?
+            e.vt_car_8==""?
             {}
             :
             Math.round(moment(e.vt_car_8.toDate()).diff(moment(),"months"))<=2?
@@ -385,7 +385,7 @@ export default function Inbox(){
             e.vt_car_8 = ""
 
 
-            e.vt_car_9==null?
+            e.vt_car_9==""?
             {}
             :
             Math.round(moment(e.vt_car_9.toDate()).diff(moment(),"months"))<=2?
@@ -394,7 +394,7 @@ export default function Inbox(){
             e.vt_car_9 = ""
 
 
-            e.vt_car_10==null?
+            e.vt_car_10==""?
             {}
             :
             Math.round(moment(e.vt_car_10.toDate()).diff(moment(),"months"))<=2?
@@ -517,7 +517,7 @@ export default function Inbox(){
                         
                         <>
                         <Filter color="salmon" fill={filterState!=""?"salmon":"#2a2a2a"} width={"1.25rem"}/>
-                        <p style={{textTransform:"capitalize", fontSize:"0.8rem", opacity:0.75}}>       {filterState==""?"filter":filterState}
+                        <p style={{textTransform:"capitalize", fontSize:"0.8rem", opacity:0.75}}>       {filterState==""?"filter":filterState=="personal"?"SSU":filterState}
                         </p>
                         </>
                         
@@ -525,7 +525,7 @@ export default function Inbox(){
                         <ChevronDown color="rgba(150 150 150/ 50%)" width={"1rem"}/>
                         
                     </div>}
-                    option1Text="Personal"
+                    option1Text="SSU"
                     option2Text="Vale Record"
                     onOption1={()=>setFilterState("personal")}
                     onOption2={()=>setFilterState("vale")}

@@ -14,7 +14,7 @@ export default function MedicalID(props:Props){
 
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", paddingLeft:"0.75rem", borderBottom:"1px solid rgba(100 100 100/50%)"}}>
                 <div>
-                <p style={{textTransform:"uppercase", textAlign:"left"}}>{props.name}</p>
+                <p style={{textTransform:"uppercase", textAlign:"left", fontSize:"0.8rem"}}>{props.name}</p>
                 <p style={{fontSize:"0.75rem", color:"tomato", fontWeight:"600"}}>Medical Card</p>
                 </div>
                 <div style={{border:"", padding:"1rem"}}>
@@ -59,7 +59,7 @@ export default function MedicalID(props:Props){
                 <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", width:'100%', margin:"1rem"}}>
                 <div id="civil-no" style={{display:"flex", alignItems:'center', gap:"0.5rem"}}>
                     <p style={{fontSize:"0.7rem", }}>COMPLETED : </p>
-                    <p style={{fontWeight:600, fontSize:"0.8rem"}}>{props.completedOn?props.completedOn:"XXXXXXXX"}</p>
+                    <p style={{fontWeight:600, fontSize:"0.8rem"}}>{props.completedOn?props.completedOn:"XXXXXX"}</p>
                 </div>
 
                 <div id="civil-no" style={{display:"flex", alignItems:'center', gap:"0.5rem"}}>

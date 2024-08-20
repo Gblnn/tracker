@@ -27,7 +27,7 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, Globe, GraduationCap, HeartPulse, Image, ImageOff, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, UploadCloud, User, UserCircle, X } from "lucide-react"
+import { ArrowDown, ArrowDownAZ, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, Globe, GraduationCap, HeartPulse, Image, ImageOff, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, UploadCloud, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { LazyLoadImage } from 'react-lazy-load-image-component'
@@ -58,6 +58,7 @@ interface Props{
 
 export default function DbComponent(props:Props){
 
+    const [selectAll, setSelectAll] = useState(false)
     const [file, setFile] = useState(null)
     const [jsonData, setJsonData] = useState<any>([])
     const [companyName, setCompanyName] = useState("")
@@ -321,8 +322,10 @@ export default function DbComponent(props:Props){
     // PAGE LOAD HANDLER
     useEffect(() =>{
         fetchData()
+        fetchLeave()
+        fetchSalary()
+        fetchAllowance()
     },[])
-
 
     useEffect(()=>{
         window.addEventListener('online', () => {
@@ -831,16 +834,20 @@ export default function DbComponent(props:Props){
                 setLoading(false)
             } 
         }
+        
+        console.log("Deleting Day offs")
         setRecordDeleteStatus("Deleting Day offs")
         leaveList.forEach(async (item:any) => {
             await deleteDoc(doc(db, "leave-record", item.id))
         })
 
+        console.log("Deleting Salary Records")
         setRecordDeleteStatus("Deleting Salary Records")
         salaryList.forEach(async (item:any) => {
             await deleteDoc(doc(db, "salary-record", item.id))
         })
 
+        console.log("Deleting Allowance Records")
         setRecordDeleteStatus("Deleting Allowance Records")
         allowanceList.forEach(async (item:any) => {
             await deleteDoc(doc(db, "allowance-record", item.id))
@@ -1442,12 +1449,12 @@ export default function DbComponent(props:Props){
                 :e.vt_car_10 = ""
                 
 
-                e.salaryBasic?
+                e.initialSalary?
                 e.salaryBasic = e.initialSalary
                 :
                 e.salaryBasic = 0
 
-                e.allowance?
+                e.initialAllowance?
                 e.allowance = e.initialAllowance
                 :
                 e.allowance = 0
@@ -1541,16 +1548,16 @@ export default function DbComponent(props:Props){
                     <div 
                     className="transitions" 
                     onClick={()=>{
-                        // setSelectAll(!selectAll)
-                        // !selectAll?
-                        // setSelected(true)
-                        // :setSelected(false)
-                        // !selectAll?
-                        // records.forEach((item:any)=>{
-                        //     setChecked((data:any)=>[...data,item.id])
+                        setSelectAll(!selectAll)
+                        !selectAll?
+                        setSelected(true)
+                        :setSelected(false)
+                        !selectAll?
+                        records.forEach((item:any)=>{
+                            setChecked((data:any)=>[...data,item.id])
                         
-                        // })
-                        // :setChecked([])
+                        })
+                        :setChecked([])
                         }} 
                     style={{height:"2.75rem", border:"", width:"7.5rem", background:"rgba(100 100 100/ 20%)", padding:"0.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", paddingLeft:"1rem", paddingRight:"1rem", borderRadius:"0.5rem", cursor:"pointer"}}>
                         <p style={{opacity:0.75}}>Selected</p>
@@ -1621,7 +1628,7 @@ export default function DbComponent(props:Props){
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem", marginTop:"1"}}>
 
                     {/* Searchbar */}
-                    <div style={{display:"flex", gap:"0.75rem", border:"", flex:1}}>
+                    <div style={{display:"flex", gap:"0.5rem", border:"", flex:1}}>
 
                         <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable);setAddButtonModeSwap(!addButtonModeSwap);selectable && setChecked([]); !selectable && setSelected(false)}}>
 
@@ -1631,7 +1638,7 @@ export default function DbComponent(props:Props){
 
                         
 
-                        <SearchBar placeholder="Search Records" onChange={(e:any)=>{setSearch(e.target.value.toLowerCase())}}/>
+                        <SearchBar placeholder="Search" onChange={(e:any)=>{setSearch(e.target.value.toLowerCase())}}/>
 
                         <button onClick={()=>setThumbnails(!thumbnails)} style={{width:"fit-content", fontSize:"0.7rem", display:'flex', alignItems:"center"}}>
                         {
@@ -1647,6 +1654,10 @@ export default function DbComponent(props:Props){
 
                         <button onClick={()=>setImportDialog(true)}>
                             <UploadCloud color="salmon"/>
+                        </button>
+
+                        <button>
+                            <ArrowDownAZ color="dodgerblue"/>
                         </button>
                     </div>
                      

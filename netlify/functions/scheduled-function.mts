@@ -361,7 +361,6 @@ export default async (req: Request) => {
                 : ""
             ) +
             "\n\n";
-          console.log("Log : " + element.vt_car_4);
         }
       }
 

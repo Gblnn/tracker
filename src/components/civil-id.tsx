@@ -13,8 +13,8 @@ export default function CivilID(props:Props){
         <div className="civil-id" style={{width:"32ch", height:"19ch", background:"rgba(100 100 100/ 15%)", borderRadius:"0.75rem", zIndex:0, userSelect:"none"}}>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", paddingLeft:"1.5rem", borderBottom:"1px solid rgba(100 100 100/ 35%)"}}>
                 <div style={{border:""}}>
-                <p style={{textTransform:"uppercase", textAlign:"left", fontSize:"0.8rem"}}>{props.name}</p>
-                <p style={{fontSize:"0.7rem", fontWeight:600, color:"dodgerblue", border:"", textAlign:"left"}}>RESIDENT CARD</p>
+                <p style={{textTransform:"uppercase", textAlign:"left", fontSize:"0.75rem"}}>{props.name}</p>
+                <p style={{fontSize:"0.6rem", fontWeight:600, color:"dodgerblue", border:"", textAlign:"left"}}>RESIDENT CARD</p>
                 </div>
                 
                 <img src="/oman-logo.png" style={{width:"3rem", height:"3rem", margin:"0.75rem"}}/>

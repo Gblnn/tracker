@@ -80,15 +80,21 @@ export default function Directive(props:Props){
                             props.customTitle?
                             props.title
                             :
-                            <p style={{fontWeight:400, textAlign:"left", border:"", fontSize:props.titleSize?props.titleSize:"0.9rem", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis", display:"flex", flex:1, width:"130px", gap:"0.5rem", alignItems:"center"}}>
-                                {props.title}
+                            <span className="" style={{fontWeight:400, textAlign:"left", border:"", fontSize:props.titleSize?props.titleSize:"0.9rem", display:"flex", gap:"0.5rem", alignItems:"center", width:"100%"}}>
+
+                                <div style={{flex:"1 1 100%", minWidth:"0", width:"130px"}}>
+                                    <div style={{overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
+                                    {props.title}
+                                    </div>
+                                </div>
+                                
                                 {
                                 props.new&&
                                 <Circle style={{height:"auto", width:"0.45rem"}} color="dodgerblue" fill="dodgerblue"/>
                                 
                                 }
                         
-                            </p>
+                            </span>
                         }
 
 

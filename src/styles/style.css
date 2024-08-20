@@ -40,6 +40,10 @@ b {
   display: none;
 }
 
+.dynamic-width {
+  max-width: 130px;
+}
+
 @media (width>900px) {
   .desktop-only {
     display: flex;
