@@ -142,7 +142,7 @@ export default function Directive(props:Props){
                         props.archived==true?
                         <div style={{color:"white", display:'flex', alignItems:"center", gap:"0.5rem",}}>
                         <Inbox width={"1rem"}/>
-                        <p>Archived</p>
+                        
                         </div>
                         :
                         <p  style={{ textTransform:"capitalize"}}>{props.tag}</p>

@@ -427,7 +427,7 @@ export default function Archives(){
                             icon={<Archive color="goldenrod"/>}
                             key={record.id} 
                             title={record.name}
-                            tag={record.type}
+                            tag={record.type=="personal"?"SSU":record.type=="vale"?"Vale":""}
                             status
 
                         
