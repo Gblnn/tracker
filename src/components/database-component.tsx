@@ -26,7 +26,7 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowDownAZ, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, Globe, GraduationCap, HeartPulse, Image, ImageOff, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, UploadCloud, User, UserCircle, X } from "lucide-react"
+import { ArrowDown, ArrowDown01, ArrowDownAZ, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, Globe, GraduationCap, HeartPulse, Image, ImageOff, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, UploadCloud, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { LazyLoadImage } from 'react-lazy-load-image-component'
@@ -1644,7 +1644,13 @@ export default function DbComponent(props:Props){
 
                         <Select defaultValue="name" onValueChange={setSortBy}>
                             <SelectTrigger style={{width:"fit-content", background:""}}>
-                            <ArrowDownAZ width={"1rem"} color="dodgerblue"/>
+                                {
+                                    sortby=="name"?
+                                    <ArrowDownAZ width={"1.25rem"} color="dodgerblue"/>
+                                    :
+                                    <ArrowDown01 width={"1.25rem"} color="dodgerblue"/>
+                                }
+                            
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem style={{justifyContent:"flex-start"}} value="name">Name</SelectItem>
