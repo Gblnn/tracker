@@ -15,7 +15,6 @@ import VehicleID from "@/components/vehicle-id"
 import { db, storage } from "@/firebase"
 import { LoadingOutlined } from '@ant-design/icons'
 import * as XLSX from '@e965/xlsx'
-import emailjs from '@emailjs/browser'
 import { message, Tooltip } from 'antd'
 import { saveAs } from 'file-saver'
 import { addDoc, collection, deleteDoc, doc, getAggregateFromServer, getDocs, onSnapshot, orderBy, query, sum, Timestamp, updateDoc, where } from 'firebase/firestore'
@@ -27,7 +26,7 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowDownAZ, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, Globe, GraduationCap, HeartPulse, Image, ImageOff, MailCheck, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, UploadCloud, User, UserCircle, X } from "lucide-react"
+import { ArrowDown, ArrowDownAZ, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, Globe, GraduationCap, HeartPulse, Image, ImageOff, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, UploadCloud, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { LazyLoadImage } from 'react-lazy-load-image-component'
@@ -38,6 +37,7 @@ import useKeyboardShortcut from 'use-keyboard-shortcut'
 import DbDropDown from "./db-dropdown"
 import ImageDialog from "./image-dialog"
 import SheetComponent from "./sheet-component"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select"
 
 
 type Record = {
@@ -141,11 +141,6 @@ export default function DbComponent(props:Props){
     const [renewMedicalIDdialog, setRenewMedicalIDdialog] = useState(false)
     const [renewPassportDialog, setRenewPassportDialog] = useState(false)
 
-    //MAIL CONFIG VALUES
-    const [mailconfigdialog, setMailConfigDialog] = useState(false)
-    const [recipient, setRecipient] = useState("")
-    const [testmessage, setTestMessage] = useState("")
-
     //VEHICLE ID VARIABLES
     const [vehicle_number, setVehicleNumber] = useState("")
     const [vehicle_issue, setVehicleIssue] = useState("")
@@ -196,9 +191,7 @@ export default function DbComponent(props:Props){
 
     const [newExpiry, setNewExpiry] = useState<any>()
 
-    // MAILJS VARIABLES
-    const serviceId = "service_lunn2bp";
-    const templateId = "template_1y0oq9l";
+
 
     const today = new Date()
 
@@ -265,6 +258,7 @@ export default function DbComponent(props:Props){
     const [initialAllowance, setInitialAllowance] = useState(0)
 
     const [importDialog, setImportDialog] = useState(false)
+    const [sortby, setSortBy] = useState("name")
 
     
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////*/}
@@ -351,6 +345,14 @@ export default function DbComponent(props:Props){
         
     },[status])
 
+
+    useEffect(()=>{
+        fetchData()
+        fetchLeave()
+        fetchSalary()
+        fetchAllowance()
+    },[sortby])
+
     const uploadFile = async () => {
         if (imageUpload === null) {
           message.info("No image attached");
@@ -408,7 +410,7 @@ export default function DbComponent(props:Props){
         try {
             setfetchingData(true)
             const RecordCollection = collection(db, "records")
-            const recordQuery = query(RecordCollection, orderBy("created_on"), where("type", "==", props.dbCategory))
+            const recordQuery = query(RecordCollection, orderBy(sortby), where("type", "==", props.dbCategory))
             const querySnapshot = await getDocs(recordQuery)
             const fetchedData: Array<Record> = [];
 
@@ -1161,26 +1163,6 @@ export default function DbComponent(props:Props){
     
     }
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
-
-    // FUNCTION TO SEND A TEST EMAIL
-    const TestMail = async () => {
-        
-        try {
-            setLoading(true)
-            await emailjs.send(serviceId, templateId, {
-              name: "User",
-              recipient: recipient,
-              message: testmessage
-            });
-            setLoading(false)
-            message.success("Email Successfully Sent")
-          } catch (error) {
-            console.log(error);
-            message.info("Invalid email address")
-            setLoading(false)
-          }
-          setMailConfigDialog(false)
-    }
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
 
@@ -1656,9 +1638,20 @@ export default function DbComponent(props:Props){
                             <UploadCloud color="salmon"/>
                         </button>
 
-                        <button>
+                        {/* <button>
                             <ArrowDownAZ color="dodgerblue"/>
-                        </button>
+                        </button> */}
+
+                        <Select defaultValue="name" onValueChange={setSortBy}>
+                            <SelectTrigger style={{width:"fit-content", background:""}}>
+                            <ArrowDownAZ width={"1rem"} color="dodgerblue"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem style={{justifyContent:"flex-start"}} value="name">Name</SelectItem>
+                                <SelectItem style={{justifyContent:"flex-start"}} value="employeeCode">Code</SelectItem>
+                                
+                            </SelectContent>
+                        </Select>
                     </div>
                      
 
@@ -1936,20 +1929,6 @@ export default function DbComponent(props:Props){
                 <FileInput/>
                 </>
             }/>
-
-
-            {/* Mail Configuration Dialog */}
-            <DefaultDialog disabled={loading||recipient?false:true} titleIcon={<MailCheck/>} title="Test Notifications" open={mailconfigdialog} onCancel={()=>setMailConfigDialog(false)} onOk={TestMail} updating={loading} OkButtonText="Send Test Mail" extra={
-                <div style={{display:"flex", border:"", width:"100%", flexFlow:"column", gap:"0.5rem"}}>
-                    <input placeholder="Enter E-Mail Address" onChange={(e)=>setRecipient(e.target.value)}/>
-                    <textarea onChange={(e:any)=>setTestMessage(e.target.value)} placeholder="Message..." rows={4}/>
-                {/* <Button variant={"ghost"} style={{flex:1}} onClick={()=>{setRecipientsDialog(true)}}>
-                    <Plus style={{width:"1rem"}} color="dodgerblue"/>
-                    Add Recipient
-                </Button> */}
-                </div>
-                
-                }/>
 
 
             

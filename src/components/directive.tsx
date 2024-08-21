@@ -38,6 +38,7 @@ export default function Directive(props:Props){
     return(
 
         <Link onClick={()=>props.selectable?setSelected(!selected):null} to={props.to} style={{display:"flex", width:"100%", opacity:props.archived?0.5:1}}>
+
             {/* <div style={{background:"#1a1a1a",width:"3rem", borderTopLeftRadius:"0.5rem", borderBottomLeftRadius:"0.5rem", display:"flex", alignItems:"center", justifyContent:"center"}}>
                 {props.icon}
             </div> */}
@@ -49,17 +50,12 @@ export default function Directive(props:Props){
                 <div style={{display:"flex", gap:"1rem", alignItems:"center"}}>
                     {
                         props.selectable?
+
                         <div style={{display:"flex", justifyContent:"center", alignItems:"center"}}>
-                        <CheckSquare2 width={"1.75rem"} height={"1.75rem"} className="check-square" fill={selected||props.selected?"dodgerblue":"rgba(100 100 100/ 50%)"} stroke={selected||props.selected?"white":"none"}/>
-                        {
-                            selected?
-                            // <Check style={{position:"relative", width:"0.75rem"}} />
-                            ""
-                            :null
-                        }
+
+                            <CheckSquare2 width={"1.75rem"} height={"1.75rem"} className="check-square" fill={selected||props.selected?"dodgerblue":"rgba(100 100 100/ 50%)"} stroke={selected||props.selected?"white":"none"}/>
                         
                         </div>
-                        
                         :
                         props.icon
 

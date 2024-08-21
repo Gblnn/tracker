@@ -26,7 +26,7 @@ const SelectTrigger = React.forwardRef<
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 opacity-50" />
+      
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ))
@@ -91,7 +91,15 @@ const SelectContent = React.forwardRef<
             "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
         )}
       >
-        {children}
+        <div
+            ref={(ref) => {
+              if (!ref) return;
+              ref.ontouchstart = (e) => e.preventDefault();
+            }}
+          >
+            {children}
+          </div>
+    
       </SelectPrimitive.Viewport>
       <SelectScrollDownButton />
     </SelectPrimitive.Content>
