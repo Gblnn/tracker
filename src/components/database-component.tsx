@@ -1634,9 +1634,9 @@ export default function DbComponent(props:Props){
                         
                         </button>
 
-                        <button onClick={()=>setImportDialog(true)}>
+                        {/* <button onClick={()=>setImportDialog(true)}>
                             <UploadCloud color="salmon"/>
-                        </button>
+                        </button> */}
 
                         {/* <button>
                             <ArrowDownAZ color="dodgerblue"/>
@@ -2611,7 +2611,7 @@ export default function DbComponent(props:Props){
 
                         <div style={{border:'', display:"flex", flexFlow:"column", alignItems:"center"}}>
                             
-                            <p style={{display:"flex", gap:"0.5rem", fontWeight:"500"}}><User color="dodgerblue" width={"1.25rem"}/>{name}</p>
+                            <p style={{display:"flex", gap:"0.5rem", fontWeight:"500", background:"linear-gradient(90deg, rgba(0 0 0/ 0%), rgba(100 100 100/ 20%), rgba(0 0 0/ 0%)) ", padding:"0.25rem"}}><User color="dodgerblue" width={"1.25rem"}/>{name}</p>
                             <br/>
                             <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"", display:'flex'}}>Current Earnings</p>
                             <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600, fontSize:"1.5rem", alignItems:"center"}}>
@@ -2695,7 +2695,7 @@ export default function DbComponent(props:Props){
             
 
             {/* LEAVE LOG DIALOG */}
-            <DefaultDialog code={name} codeTooltip="Employee Name" codeIcon={<User color="dodgerblue" width={"0.8rem"}/>} close open={leaveLog} onCancel={()=>setLeaveLog(false)} title={"Leave Log"}
+            <DefaultDialog codeTooltip="Employee Name" codeIcon={<User color="dodgerblue" width={"0.8rem"}/>} close open={leaveLog} onCancel={()=>setLeaveLog(false)} title={"Leave Log"}
             title_extra={
                 <button onClick={fetchLeave} style={{width:"3rem", height:"2.5rem"}}>
                 {
@@ -2710,6 +2710,10 @@ export default function DbComponent(props:Props){
                 <>
                 <div style={{display:"flex", border:"", width:"100%", borderRadius:"0.5rem", padding:"0.5rem", background:"", flexFlow:"column"}}>
                     
+                    <p style={{border:"", display:"flex", gap:"0.5rem", justifyContent:'center', alignItems:'center', background:"linear-gradient(90deg, rgba(0 0 0/ 0%), rgba(100 100 100/ 20%), rgba(0 0 0/ 0%)) ", padding:"0.25rem"}}><User color="dodgerblue" width={"1.25rem"}/>{name}</p>
+
+                    <br/>
+
                     <div style={{border:"", display:"flex", alignItems:'center', justifyContent:"space-between"}}>
 
                         <div style={{border:''}}>
@@ -2815,7 +2819,7 @@ export default function DbComponent(props:Props){
             <DefaultDialog destructive open={deleteAllowanceDialog} onCancel={()=>setDeleteAllowanceDialog(false)} title={"Delete Allowance?"} updating={loading} disabled={loading} onOk={deleteAllowance} OkButtonText="Delete" extra={<p style={{width:"100%", textAlign:"left", paddingLeft:"1rem", fontSize:"0.75rem", opacity:0.5}}>{salaryID}</p>}/>
 
 
-            <DefaultDialog created_on={initialAllowance} code={name} codeIcon={<User width={"0.8rem"} color="dodgerblue"/>} close title={"Initial Allowance"} open={allowanceDialog} onCancel={()=>setAllowanceDialog(false)}
+            <DefaultDialog created_on={initialAllowance} codeIcon={<User width={"0.8rem"} color="dodgerblue"/>} close title={"Initial Allowance"} open={allowanceDialog} onCancel={()=>setAllowanceDialog(false)}
             title_extra={<button onClick={fetchAllowance} style={{width:"3rem", height:"2.5rem"}}>{fetchingAllowance?<LoadingOutlined color="dodgerblue"/>:<RefreshCcw width={"1rem"} color="dodgerblue"/>}</button>}
             extra={
                 <>
@@ -2823,7 +2827,9 @@ export default function DbComponent(props:Props){
                     
                     <div style={{border:"", display:"flex", alignItems:'center', justifyContent:"center"}}>
 
-                        <div style={{border:''}}>
+                        <div style={{border:'', display:'flex', flexFlow:"column", alignItems:"center"}}>
+                        <p style={{display:"flex", gap:"0.5rem", fontWeight:"500", background:"linear-gradient(90deg, rgba(0 0 0/ 0%), rgba(100 100 100/ 20%), rgba(0 0 0/ 0%)) ", padding:"0.25rem"}}><User color="dodgerblue" width={"1.25rem"}/>{name}</p>
+                        <br/>
                             <p style={{fontSize:"0.8rem", opacity:0.5, justifyContent:"", display:'flex'}}>Current Allowance</p>
                             <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600, fontSize:"1.5rem", alignItems:"center"}}>
                                 <p style={{fontWeight:400, fontSize:"1rem"}}>OMR</p>
