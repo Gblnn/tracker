@@ -1833,8 +1833,8 @@ export default function DbComponent(props:Props){
 
 
             {/* ADD RECORD BUTTON */}
-            <AddRecordButton title={addButtonModeSwap?"Delete Record(s)":"Add Record"} onClickSwap={addButtonModeSwap} onClick={()=>{setAddDialog(true); setName(""); setEmail(""); setEmployeeCode(""); setCompanyName(""); setDateofJoin(""); setSalaryBasic(0); setAllowance(0); setContact("")}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
-                icon={addButtonModeSwap?<Trash color="crimson" width="1rem"/>:<Plus color="dodgerblue" width="1rem"/>}/>
+            <AddRecordButton onClickSwap={addButtonModeSwap} onClick={()=>{setAddDialog(true); setName(""); setEmail(""); setEmployeeCode(""); setCompanyName(""); setDateofJoin(""); setSalaryBasic(0); setAllowance(0); setContact("")}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
+                icon={addButtonModeSwap?<Trash color="crimson" width=""/>:<Plus color="dodgerblue" width=""/>}/>
 
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
