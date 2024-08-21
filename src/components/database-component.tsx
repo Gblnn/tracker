@@ -1687,9 +1687,12 @@ export default function DbComponent(props:Props){
 
                                     post.civil_expiry != "" || post.license_expiry != "" || post.medical_due_on != "" || post.passportID != ""||post.vt_hse_induction != "" || post.vt_car_1 != "" || post.vt_car_2 != "" || post.vt_car_3 != "" || post.vt_car_4 != ""|| post.vt_car_5 != ""|| post.vt_car_6 != ""|| post.vt_car_7 != ""|| post.vt_car_8 != ""|| post.vt_car_9 != ""|| post.vt_car_10 != ""
                                     ?
-                                    
+                                    post.state == "archived"?
+                                    "Archived"
+                                    :
                                     ""
                                     :"No Data"
+                                    
 
                                 }
                                 
