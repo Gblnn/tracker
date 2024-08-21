@@ -13,9 +13,9 @@ export default function MedicalID(props:Props){
         <div className="civil-id" style={{width:"32ch", height:"19ch", background:"rgba(100 100 100/ 15%)", borderRadius:"0.75rem",  cursor:"pointer", zIndex:0, display:"flex", flexFlow:"column", justifyContent:"space-between"}}>
 
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", paddingLeft:"0.75rem", borderBottom:"1px solid rgba(100 100 100/50%)"}}>
-                <div>
+                <div style={{display:"flex", flexFlow:"column"}}>
                 <p style={{textTransform:"uppercase", textAlign:"left", fontSize:"0.8rem"}}>{props.name}</p>
-                <p style={{fontSize:"0.75rem", color:"tomato", fontWeight:"600"}}>Medical Card</p>
+                <p style={{fontSize:"0.75rem", color:"tomato", fontWeight:"600", border:"", textAlign:"left"}}>Medical Card</p>
                 </div>
                 <div style={{border:"", padding:"1rem"}}>
                 <HeartPulse color='tomato' width={"2rem"}/>
