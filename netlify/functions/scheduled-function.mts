@@ -136,35 +136,35 @@ export default async (req: Request) => {
         }
       }
 
-      if (element.license_expiry != "") {
-        if (
-          Math.round(
-            moment(element.license_expiry.toDate()).diff(
-              moment(today),
-              "months"
-            )
-          ) <= 2
-        ) {
-          m +=
-            "Driving License expiry  " +
-            moment(element.license_expiry.toDate()).startOf("day").fromNow() +
-            " on " +
-            String(
-              moment(element.license_expiry.toDate())
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
-            String(
-              moment(element.license_expiry.toDate()).diff(
-                moment(today).startOf("day"),
-                "days"
-              ) <= 0
-                ? " (Overdue) "
-                : ""
-            ) +
-            "\n\n";
-        }
-      }
+      // if (element.license_expiry != "") {
+      //   if (
+      //     Math.round(
+      //       moment(element.license_expiry.toDate()).diff(
+      //         moment(today),
+      //         "months"
+      //       )
+      //     ) <= 2
+      //   ) {
+      //     m +=
+      //       "Driving License expiry  " +
+      //       moment(element.license_expiry.toDate()).startOf("day").fromNow() +
+      //       " on " +
+      //       String(
+      //         moment(element.license_expiry.toDate())
+      //           .add(1, "day")
+      //           .format("DD/MM/YYYY")
+      //       ) +
+      //       String(
+      //         moment(element.license_expiry.toDate()).diff(
+      //           moment(today).startOf("day"),
+      //           "days"
+      //         ) <= 0
+      //           ? " (Overdue) "
+      //           : ""
+      //       ) +
+      //       "\n\n";
+      //   }
+      // }
 
       if (element.medical_due_on != "") {
         if (
@@ -562,32 +562,32 @@ export default async (req: Request) => {
         }
       }
 
-      if (e.license_expiry != "") {
-        if (
-          Math.round(
-            moment(e.license_expiry.toDate()).diff(moment(today), "months")
-          ) <= 2
-        ) {
-          p +=
-            "Driving License expiry  " +
-            moment(e.license_expiry.toDate()).startOf("day").fromNow() +
-            " on " +
-            String(
-              moment(e.license_expiry.toDate())
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
-            String(
-              moment(e.license_expiry.toDate()).diff(
-                moment(today).startOf("day"),
-                "days"
-              ) <= 0
-                ? " (Overdue) "
-                : ""
-            ) +
-            "\n\n";
-        }
-      }
+      // if (e.license_expiry != "") {
+      //   if (
+      //     Math.round(
+      //       moment(e.license_expiry.toDate()).diff(moment(today), "months")
+      //     ) <= 2
+      //   ) {
+      //     p +=
+      //       "Driving License expiry  " +
+      //       moment(e.license_expiry.toDate()).startOf("day").fromNow() +
+      //       " on " +
+      //       String(
+      //         moment(e.license_expiry.toDate())
+      //           .add(1, "day")
+      //           .format("DD/MM/YYYY")
+      //       ) +
+      //       String(
+      //         moment(e.license_expiry.toDate()).diff(
+      //           moment(today).startOf("day"),
+      //           "days"
+      //         ) <= 0
+      //           ? " (Overdue) "
+      //           : ""
+      //       ) +
+      //       "\n\n";
+      //   }
+      // }
 
       if (e.medical_due_on != "") {
         if (
@@ -964,5 +964,5 @@ export default async (req: Request) => {
 };
 
 export const config: Config = {
-  schedule: "35 13 * * * ",
+  schedule: "39 13 * * * ",
 };
