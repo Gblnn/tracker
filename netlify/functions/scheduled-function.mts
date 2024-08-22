@@ -166,365 +166,365 @@ export default async (req: Request) => {
         }
       }
 
-      // if (element.medical_due_on != "") {
-      //   if (
-      //     Math.round(
-      //       moment(element.medical_due_on.toDate()).diff(
-      //         moment(today),
-      //         "months"
-      //       )
-      //     ) <= 2
-      //   ) {
-      //     m +=
-      //       "Medical expiry  " +
-      //       moment(element.medical_due_on.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.medical_due_on.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.medical_due_on.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.medical_due_on != "") {
+        if (
+          Math.round(
+            moment(element.medical_due_on.toDate()).diff(
+              moment(today),
+              "months"
+            )
+          ) <= 2
+        ) {
+          m +=
+            "Medical expiry  " +
+            moment(element.medical_due_on.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.medical_due_on.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.medical_due_on.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (element.passportExpiry != "") {
-      //   if (
-      //     Math.round(
-      //       moment(element.passportExpiry.toDate()).diff(
-      //         moment(today),
-      //         "months"
-      //       )
-      //     ) <= 6
-      //   ) {
-      //     m +=
-      //       "Passport expiry  " +
-      //       moment(element.passportExpiry.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.passportExpiry.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.passportExpiry.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.passportExpiry != "") {
+        if (
+          Math.round(
+            moment(element.passportExpiry.toDate()).diff(
+              moment(today),
+              "months"
+            )
+          ) <= 6
+        ) {
+          m +=
+            "Passport expiry  " +
+            moment(element.passportExpiry.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.passportExpiry.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.passportExpiry.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (element.vt_hse_induction != "") {
-      //   if (
-      //     Math.round(
-      //       moment(element.vt_hse_induction.toDate()).diff(
-      //         moment(today),
-      //         "months"
-      //       )
-      //     ) <= 2
-      //   ) {
-      //     m +=
-      //       "HSE Induction Training expiry  " +
-      //       moment(element.vt_hse_induction.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.vt_hse_induction.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.vt_hse_induction.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.vt_hse_induction != "") {
+        if (
+          Math.round(
+            moment(element.vt_hse_induction.toDate()).diff(
+              moment(today),
+              "months"
+            )
+          ) <= 2
+        ) {
+          m +=
+            "HSE Induction Training expiry  " +
+            moment(element.vt_hse_induction.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.vt_hse_induction.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.vt_hse_induction.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (element.vt_car_1 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(element.vt_car_1.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     m +=
-      //       "CAR - 1 Training expiry  " +
-      //       moment(element.vt_car_1.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.vt_car_1.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.vt_car_1.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.vt_car_1 != "") {
+        if (
+          Math.round(
+            moment(element.vt_car_1.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          m +=
+            "CAR - 1 Training expiry  " +
+            moment(element.vt_car_1.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.vt_car_1.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.vt_car_1.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (element.vt_car_2 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(element.vt_car_2.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     m +=
-      //       "CAR - 2 Training expiry  " +
-      //       moment(element.vt_car_2.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.vt_car_2.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.vt_car_2.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.vt_car_2 != "") {
+        if (
+          Math.round(
+            moment(element.vt_car_2.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          m +=
+            "CAR - 2 Training expiry  " +
+            moment(element.vt_car_2.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.vt_car_2.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.vt_car_2.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (element.vt_car_3 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(element.vt_car_3.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     m +=
-      //       "CAR - 3 Training expiry  " +
-      //       moment(element.vt_car_3.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.vt_car_3.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.vt_car_3.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.vt_car_3 != "") {
+        if (
+          Math.round(
+            moment(element.vt_car_3.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          m +=
+            "CAR - 3 Training expiry  " +
+            moment(element.vt_car_3.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.vt_car_3.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.vt_car_3.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (element.vt_car_4 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(element.vt_car_4.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     m +=
-      //       "CAR - 4 Training expiry  " +
-      //       moment(element.vt_car_4.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.vt_car_4.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.vt_car_4.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.vt_car_4 != "") {
+        if (
+          Math.round(
+            moment(element.vt_car_4.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          m +=
+            "CAR - 4 Training expiry  " +
+            moment(element.vt_car_4.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.vt_car_4.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.vt_car_4.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (element.vt_car_5 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(element.vt_car_5.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     m +=
-      //       "CAR - 5 Training expiry  " +
-      //       moment(element.vt_car_5.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.vt_car_5.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.vt_car_5.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.vt_car_5 != "") {
+        if (
+          Math.round(
+            moment(element.vt_car_5.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          m +=
+            "CAR - 5 Training expiry  " +
+            moment(element.vt_car_5.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.vt_car_5.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.vt_car_5.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (element.vt_car_6 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(element.vt_car_6.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     m +=
-      //       "CAR - 6 Training expiry  " +
-      //       moment(element.vt_car_6.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.vt_car_6.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.vt_car_6.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.vt_car_6 != "") {
+        if (
+          Math.round(
+            moment(element.vt_car_6.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          m +=
+            "CAR - 6 Training expiry  " +
+            moment(element.vt_car_6.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.vt_car_6.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.vt_car_6.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (element.vt_car_7 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(element.vt_car_7.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     m +=
-      //       "CAR - 7 Training expiry  " +
-      //       moment(element.vt_car_7.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.vt_car_7.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.vt_car_7.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.vt_car_7 != "") {
+        if (
+          Math.round(
+            moment(element.vt_car_7.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          m +=
+            "CAR - 7 Training expiry  " +
+            moment(element.vt_car_7.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.vt_car_7.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.vt_car_7.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (element.vt_car_8 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(element.vt_car_8.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     m +=
-      //       "CAR - 8 Training expiry  " +
-      //       moment(element.vt_car_8.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.vt_car_8.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.vt_car_8.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.vt_car_8 != "") {
+        if (
+          Math.round(
+            moment(element.vt_car_8.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          m +=
+            "CAR - 8 Training expiry  " +
+            moment(element.vt_car_8.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.vt_car_8.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.vt_car_8.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (element.vt_car_9 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(element.vt_car_9.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     m +=
-      //       "CAR - 9 Training expiry  " +
-      //       moment(element.vt_car_9.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.vt_car_9.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.vt_car_9.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.vt_car_9 != "") {
+        if (
+          Math.round(
+            moment(element.vt_car_9.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          m +=
+            "CAR - 9 Training expiry  " +
+            moment(element.vt_car_9.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.vt_car_9.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.vt_car_9.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (element.vt_car_10 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(element.vt_car_10.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     m +=
-      //       "CAR - 10 Training expiry  " +
-      //       moment(element.vt_car_10.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.vt_car_10.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.vt_car_10.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.vt_car_10 != "") {
+        if (
+          Math.round(
+            moment(element.vt_car_10.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          m +=
+            "CAR - 10 Training expiry  " +
+            moment(element.vt_car_10.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.vt_car_10.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.vt_car_10.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
       m += element.state == "archived" ? " (Archived) " : "";
       m += "\n\n";
@@ -589,336 +589,336 @@ export default async (req: Request) => {
         }
       }
 
-      // if (e.medical_due_on != "") {
-      //   if (
-      //     Math.round(
-      //       moment(e.medical_due_on.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     p +=
-      //       "Medical expiry  " +
-      //       moment(e.medical_due_on.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(e.medical_due_on.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(e.medical_due_on.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (e.medical_due_on != "") {
+        if (
+          Math.round(
+            moment(e.medical_due_on.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          p +=
+            "Medical expiry  " +
+            moment(e.medical_due_on.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(e.medical_due_on.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(e.medical_due_on.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (e.passportExpiry != "") {
-      //   if (
-      //     Math.round(
-      //       moment(e.passportExpiry.toDate()).diff(moment(today), "months")
-      //     ) <= 6
-      //   ) {
-      //     p +=
-      //       "Passport expiry  " +
-      //       moment(e.passportExpiry.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(e.passportExpiry.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(e.passportExpiry.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (e.passportExpiry != "") {
+        if (
+          Math.round(
+            moment(e.passportExpiry.toDate()).diff(moment(today), "months")
+          ) <= 6
+        ) {
+          p +=
+            "Passport expiry  " +
+            moment(e.passportExpiry.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(e.passportExpiry.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(e.passportExpiry.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (e.vt_hse_induction != "") {
-      //   if (
-      //     Math.round(
-      //       moment(e.vt_hse_induction.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     p +=
-      //       "HSE Induction Training expiry  " +
-      //       moment(e.vt_hse_induction.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(e.vt_hse_induction.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(e.vt_hse_induction.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (e.vt_hse_induction != "") {
+        if (
+          Math.round(
+            moment(e.vt_hse_induction.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          p +=
+            "HSE Induction Training expiry  " +
+            moment(e.vt_hse_induction.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(e.vt_hse_induction.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(e.vt_hse_induction.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (e.vt_car_1 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(e.vt_car_1.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     p +=
-      //       "CAR - 1 Training expiry  " +
-      //       moment(e.vt_car_1.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(e.vt_car_1.toDate()).add(1, "day").format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(e.vt_car_1.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (e.vt_car_1 != "") {
+        if (
+          Math.round(
+            moment(e.vt_car_1.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          p +=
+            "CAR - 1 Training expiry  " +
+            moment(e.vt_car_1.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(e.vt_car_1.toDate()).add(1, "day").format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(e.vt_car_1.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (e.vt_car_2 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(e.vt_car_2.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     p +=
-      //       "CAR - 2 Training expiry  " +
-      //       moment(e.vt_car_2.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(e.vt_car_2.toDate()).add(1, "day").format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(e.vt_car_2.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (e.vt_car_2 != "") {
+        if (
+          Math.round(
+            moment(e.vt_car_2.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          p +=
+            "CAR - 2 Training expiry  " +
+            moment(e.vt_car_2.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(e.vt_car_2.toDate()).add(1, "day").format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(e.vt_car_2.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (e.vt_car_3 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(e.vt_car_3.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     p +=
-      //       "CAR - 3 Training expiry  " +
-      //       moment(e.vt_car_3.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(e.vt_car_3.toDate()).add(1, "day").format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(e.vt_car_3.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (e.vt_car_3 != "") {
+        if (
+          Math.round(
+            moment(e.vt_car_3.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          p +=
+            "CAR - 3 Training expiry  " +
+            moment(e.vt_car_3.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(e.vt_car_3.toDate()).add(1, "day").format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(e.vt_car_3.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (e.vt_car_4 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(e.vt_car_4.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     p +=
-      //       "CAR - 4 Training expiry  " +
-      //       moment(e.vt_car_4.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(e.vt_car_4.toDate()).add(1, "day").format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(e.vt_car_4.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (e.vt_car_4 != "") {
+        if (
+          Math.round(
+            moment(e.vt_car_4.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          p +=
+            "CAR - 4 Training expiry  " +
+            moment(e.vt_car_4.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(e.vt_car_4.toDate()).add(1, "day").format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(e.vt_car_4.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (e.vt_car_5 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(e.vt_car_5.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     p +=
-      //       "CAR - 5 Training expiry  " +
-      //       moment(e.vt_car_5.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(e.vt_car_5.toDate()).add(1, "day").format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(e.vt_car_5.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (e.vt_car_5 != "") {
+        if (
+          Math.round(
+            moment(e.vt_car_5.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          p +=
+            "CAR - 5 Training expiry  " +
+            moment(e.vt_car_5.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(e.vt_car_5.toDate()).add(1, "day").format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(e.vt_car_5.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (e.vt_car_6 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(e.vt_car_6.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     p +=
-      //       "CAR - 6 Training expiry  " +
-      //       moment(e.vt_car_6.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(e.vt_car_6.toDate()).add(1, "day").format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(e.vt_car_6.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (e.vt_car_6 != "") {
+        if (
+          Math.round(
+            moment(e.vt_car_6.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          p +=
+            "CAR - 6 Training expiry  " +
+            moment(e.vt_car_6.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(e.vt_car_6.toDate()).add(1, "day").format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(e.vt_car_6.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (e.vt_car_7 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(e.vt_car_7.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     p +=
-      //       "CAR - 7 Training expiry  " +
-      //       moment(e.vt_car_7.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(e.vt_car_7.toDate()).add(1, "day").format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(e.vt_car_7.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (e.vt_car_7 != "") {
+        if (
+          Math.round(
+            moment(e.vt_car_7.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          p +=
+            "CAR - 7 Training expiry  " +
+            moment(e.vt_car_7.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(e.vt_car_7.toDate()).add(1, "day").format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(e.vt_car_7.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (e.vt_car_8 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(e.vt_car_8.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     p +=
-      //       "CAR - 8 Training expiry  " +
-      //       moment(e.vt_car_8.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(e.vt_car_8.toDate()).add(1, "day").format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(e.vt_car_8.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (e.vt_car_8 != "") {
+        if (
+          Math.round(
+            moment(e.vt_car_8.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          p +=
+            "CAR - 8 Training expiry  " +
+            moment(e.vt_car_8.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(e.vt_car_8.toDate()).add(1, "day").format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(e.vt_car_8.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (e.vt_car_9 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(e.vt_car_9.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     p +=
-      //       "CAR - 9 Training expiry  " +
-      //       moment(e.vt_car_9.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(e.vt_car_9.toDate()).add(1, "day").format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(e.vt_car_9.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (e.vt_car_9 != "") {
+        if (
+          Math.round(
+            moment(e.vt_car_9.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          p +=
+            "CAR - 9 Training expiry  " +
+            moment(e.vt_car_9.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(e.vt_car_9.toDate()).add(1, "day").format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(e.vt_car_9.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
-      // if (e.vt_car_10 != "") {
-      //   if (
-      //     Math.round(
-      //       moment(e.vt_car_10.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     p +=
-      //       "CAR - 10 Training expiry  " +
-      //       moment(e.vt_car_10.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(e.vt_car_10.toDate()).add(1, "day").format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(e.vt_car_10.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (e.vt_car_10 != "") {
+        if (
+          Math.round(
+            moment(e.vt_car_10.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          p +=
+            "CAR - 10 Training expiry  " +
+            moment(e.vt_car_10.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(e.vt_car_10.toDate()).add(1, "day").format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(e.vt_car_10.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
       //INDIVIDIAL MAIL SEND
       filteredData.length >= 1
@@ -964,5 +964,5 @@ export default async (req: Request) => {
 };
 
 export const config: Config = {
-  schedule: "23 13 * * * ",
+  schedule: "35 13 * * * ",
 };
