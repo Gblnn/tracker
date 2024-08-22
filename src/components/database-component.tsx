@@ -1843,14 +1843,13 @@ export default function DbComponent(props:Props){
 
             {/* ADD RECORD BUTTON */}
             <AddRecordButton onClickSwap={addButtonModeSwap} onClick={()=>{setAddDialog(true); setName(""); setEmail(""); setEmployeeCode(""); setCompanyName(""); setDateofJoin(""); setSalaryBasic(0); setAllowance(0); setContact("")}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
-                icon={addButtonModeSwap?<Trash color="crimson" />:<Plus color="dodgerblue"/>}/>
+            icon={addButtonModeSwap?<Trash color="crimson" />:<Plus color="dodgerblue"/>}/>
 
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
             {/* Dialog Boxes 👇*/}
 
-            
             <DefaultDialog open={importDialog} created_on={jsonData.length==0?"":""+jsonData.length} title={"Upload XLSX"} titleIcon={<UploadCloud color="salmon"/>} codeIcon={<File width={"0.8rem"}/>} code=".xls, .xlsx" OkButtonText="Upload" onCancel={()=>{setImportDialog(false);setFile(null);setJsonData([])}} disabled={jsonData.length>0?false:true}
             updating={loading}
             onOk={uploadJson}
@@ -1882,7 +1881,7 @@ export default function DbComponent(props:Props){
                     <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.35rem", maxHeight:"11.25rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem", marginBottom:"0.5rem"}}>
                         {
                         jsonData.map((e:any)=>(
-                            <motion.div key={e.contact} initial={{opacity:0}} whileInView={{opacity:1}}>
+                            <motion.div key={e.employeeCode} initial={{opacity:0}} whileInView={{opacity:1}}>
                             <Directive status={true} 
                             onClick={()=>{}}
                             title={e.name} titleSize="0.75rem" key={e.id} icon={<UserCircle width={"1.25rem"} color="salmon"/>} />
@@ -1899,37 +1898,9 @@ export default function DbComponent(props:Props){
                 <button className={file?"":"disabled"} onClick={()=>{jsonData.length>0?setJsonData([]):handleImport()}} style={{fontSize:"0.8rem", paddingRight:"1rem", paddingLeft:"1rem"}}>{jsonData.length>0?"Clear":"Add"}</button>
                 </div>
                 </>
-
-
-                
-                
             }/>
 
             <SheetComponent title={name} />
-
-
-            <DefaultDialog
-            // extra={
-                
-            //         jsonData.length==0?
-            //         <div style={{width:"100%", border:"3px dashed rgba(100 100 100/ 50%)", height:"2.5rem",borderRadius:"0.5rem", marginBottom:"1rem"}}></div>
-            //         :
-            //         <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.35rem", maxHeight:"11.25rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem", marginBottom:"1rem"}}>
-            //             {
-            //             jsonData.map((e:any)=>(
-            //                 <motion.div key={e.id} initial={{opacity:0}} whileInView={{opacity:1}}>
-            //                 <Directive status={true} 
-            //                 tag={
-            //                     moment(e.created_on.toDate()).format("LL")
-            //                 } 
-            //                 title={"OMR "+e.salary} titleSize="0.75rem" key={e.id} icon={<MinusSquareIcon onClick={()=>{setDeleteSalaryDialog(true);setSalaryID(e.id)}}  className="animate-pulse" color="lightgreen" width={"1.1rem"}/>} noArrow/>
-            //                 </motion.div>
-            //             ))
-            //             }
-            //         </div>
-                
-            // }
-            />
 
             {/* Upload Excel files Dialog */}
             <DefaultDialog onCancel={()=>setExcelUploadDialog(false)} OkButtonText="Upload" open={excel_upload_dialog} title="Upload Excel Data" titleIcon={<CloudUpload/> } 
@@ -2198,7 +2169,7 @@ export default function DbComponent(props:Props){
             {/*DISPLAY CIVIL ID DIALOG */}
             <DefaultDialog back close titleIcon={<CreditCard color="dodgerblue"/>} title="Civil ID" open={civil} onCancel={()=>setCivil(false)} OkButtonText="Add" 
             
-            title_extra={civil_expiry?
+            title_extra={civil_number?
             
             <div style={{display:"flex", gap:"0.5rem", height:"2.25rem"}}>
             
@@ -2221,7 +2192,7 @@ export default function DbComponent(props:Props){
             extra={
                 <div style={{width:"100%", display:"flex", justifyContent:'center', paddingBottom:"1rem"}}>
                     {
-                        !civil_expiry || loading?
+                        !civil_number || loading?
                         <div style={{height:"19ch", width:"32ch", display:"flex"}}>
                             
                             <button onClick={()=>setAddcivil(true)} style={{width:"100%",border:"2px solid rgba(100 100 100/ 50%)"}}>
