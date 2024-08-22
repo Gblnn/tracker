@@ -109,32 +109,32 @@ export default async (req: Request) => {
     filteredData.forEach((element: any) => {
       m += element.name + "'s documents : \n\n";
 
-      // if (element.civil_expiry != "") {
-      //   if (
-      //     Math.round(
-      //       moment(element.civil_expiry.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     m +=
-      //       "Civil ID expiry  " +
-      //       moment(element.civil_expiry.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(element.civil_expiry.toDate())
-      //           .add(1, "day")
-      //           .format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(element.civil_expiry.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (element.civil_expiry != "") {
+        if (
+          Math.round(
+            moment(element.civil_expiry.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          m +=
+            "Civil ID expiry  " +
+            moment(element.civil_expiry.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(element.civil_expiry.toDate())
+                .add(1, "day")
+                .format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(element.civil_expiry.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
       // if (element.license_expiry != "") {
       //   if (
@@ -537,30 +537,30 @@ export default async (req: Request) => {
       p +=
         "Listed below are some document(s) which require your attention : \n\n";
 
-      // if (e.civil_expiry != "") {
-      //   if (
-      //     Math.round(
-      //       moment(e.civil_expiry.toDate()).diff(moment(today), "months")
-      //     ) <= 2
-      //   ) {
-      //     p +=
-      //       "Civil ID expiry  " +
-      //       moment(e.civil_expiry.toDate()).startOf("day").fromNow() +
-      //       " on " +
-      //       String(
-      //         moment(e.civil_expiry.toDate()).add(1, "day").format("DD/MM/YYYY")
-      //       ) +
-      //       String(
-      //         moment(e.civil_expiry.toDate()).diff(
-      //           moment(today).startOf("day"),
-      //           "days"
-      //         ) <= 0
-      //           ? " (Overdue) "
-      //           : ""
-      //       ) +
-      //       "\n\n";
-      //   }
-      // }
+      if (e.civil_expiry != "") {
+        if (
+          Math.round(
+            moment(e.civil_expiry.toDate()).diff(moment(today), "months")
+          ) <= 2
+        ) {
+          p +=
+            "Civil ID expiry  " +
+            moment(e.civil_expiry.toDate()).startOf("day").fromNow() +
+            " on " +
+            String(
+              moment(e.civil_expiry.toDate()).add(1, "day").format("DD/MM/YYYY")
+            ) +
+            String(
+              moment(e.civil_expiry.toDate()).diff(
+                moment(today).startOf("day"),
+                "days"
+              ) <= 0
+                ? " (Overdue) "
+                : ""
+            ) +
+            "\n\n";
+        }
+      }
 
       // if (e.license_expiry != "") {
       //   if (
@@ -964,5 +964,5 @@ export default async (req: Request) => {
 };
 
 export const config: Config = {
-  schedule: "17 13 * * * ",
+  schedule: "20 13 * * * ",
 };
