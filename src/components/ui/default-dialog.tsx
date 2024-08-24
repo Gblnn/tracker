@@ -340,7 +340,7 @@ export default function DefaultDialog(props:Props){
                         :
                         <div style={{width:"100%", display:"flex", gap:"0.5rem", justifyContent:"center"}}>
                             
-                        <Button className={props.disabled?"disabled":""} variant={props.destructive?"destructive":"default"} id="okBtn" onClick={!props.updating?props.onOk:null} style={{flex:1}}>
+                        <Button className={props.disabled?"disabled":""} variant={props.destructive?"destructive":"default"} id="okBtn" onClick={props.updating?null:props.onOk} style={{flex:1}}>
                             {
                                 props.sendmail?
                                 <a href="mailto:Gokul.nathiel2305@gmail.com" target="_blank" rel="noopener noreferer">
@@ -363,7 +363,7 @@ export default function DefaultDialog(props:Props){
                             
                         </Button>
 
-                        <Button variant={"ghost"} id="cancelBtn" onClick={props.onCancel} style={{flex:1}}>
+                        <Button className={props.updating?"disabled":""} variant={"ghost"} id="cancelBtn" onClick={props.updating?null:props.onCancel} style={{flex:1}}>
                             Cancel
                         </Button>
                     </div>

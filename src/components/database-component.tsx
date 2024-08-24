@@ -4,7 +4,6 @@ import Back from "@/components/back"
 import CivilID from "@/components/civil-id"
 import Directive from "@/components/directive"
 import DropDown from "@/components/dropdown"
-import FileInput from "@/components/file-input"
 import InputDialog from "@/components/input-dialog"
 import MedicalID from "@/components/medical-id"
 import Passport from "@/components/passport"
@@ -26,7 +25,7 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowDown01, ArrowDownAZ, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CloudUpload, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, Globe, GraduationCap, HeartPulse, Image, ImageOff, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, UploadCloud, User, UserCircle, X } from "lucide-react"
+import { ArrowDown, ArrowDown01, ArrowDownAZ, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, Globe, GraduationCap, HeartPulse, Image, ImageOff, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, UploadCloud, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { LazyLoadImage } from 'react-lazy-load-image-component'
@@ -170,8 +169,6 @@ export default function DbComponent(props:Props){
 
     const [add_vehicle_id, setAddVehicleID] = useState(false)
 
-    const [excel_upload_dialog, setExcelUploadDialog] = useState(false)
-
     const [selectable, setSelectable] = useState(false)
     const [search, setSearch] = useState("")
 
@@ -288,7 +285,6 @@ export default function DbComponent(props:Props){
         await addDoc(collection(db, 'history'),{created_on:new Date(), user:window.name, newValue:newValue, previousValue:previousValue, fieldAltered:fieldAltered, doc_owner:name, type:props.dbCategory, method:method})
     }
     
-    
     const {flushHeldKeys} = useKeyboardShortcut(
         ["Control", "A"],
         () => {
@@ -312,7 +308,6 @@ export default function DbComponent(props:Props){
         return Timestamp.fromDate(moment(date, "DD/MM/YYYY").toDate())  
     }
 
-
     // PAGE LOAD HANDLER
     useEffect(() =>{
         fetchData()
@@ -328,8 +323,6 @@ export default function DbComponent(props:Props){
         window.addEventListener('offline', () => {
             setStatus("false")
         });
-
-        
     })
 
     useEffect(()=>{
@@ -351,7 +344,9 @@ export default function DbComponent(props:Props){
         fetchLeave()
         fetchSalary()
         fetchAllowance()
+
     },[sortby])
+
 
     const uploadFile = async () => {
         if (imageUpload === null) {
@@ -476,7 +471,7 @@ export default function DbComponent(props:Props){
             setLoading(false)
             
         } catch (error) {
-            
+            console.log(error)
         }
     }
 
@@ -1197,7 +1192,7 @@ export default function DbComponent(props:Props){
 
             const snapshot = await getDocs(collection(db, 'records'))
                 snapshot.forEach((e:any) => {
-                    console.log(e.profile_name)
+                    
                     e.profile_name?
                     deleteObject(ref(storage, e.profile_name)) 
                     :
@@ -1206,7 +1201,7 @@ export default function DbComponent(props:Props){
                 });
             
             await checked.forEach(async (item:any) => {
-                console.log(item)
+                // console.log(item)
                 await deleteDoc(doc(db, "records", item))
                 
 
@@ -1338,9 +1333,12 @@ export default function DbComponent(props:Props){
       };
 
     
-    const uploadJson = () => {
+    const uploadJson = async () => {
         
             setLoading(true)
+            let counts = 0
+            let percentage = 100/jsonData.length
+
             jsonData.forEach((e:any) => {
                 
                 e.type = props.dbCategory
@@ -1348,7 +1346,10 @@ export default function DbComponent(props:Props){
                 e.modified_on = new Date()
                 e.notify = true
                 e.state = "active"
-                
+                e.email?
+                e.email = e.email
+                :
+                e.email = ""
 
                 e.dateofJoin?
                 e.dateofJoin = moment(e.dateofJoin).format("DD/MM/YYYY")
@@ -1404,7 +1405,7 @@ export default function DbComponent(props:Props){
 
                 e.vt_car_4?
                 e.vt_car_4 = Timestamp.fromDate(new Date(e.vt_car_4))
-                :e.vt_car_4
+                :e.vt_car_4 = ""
 
                 e.vt_car_5?
                 e.vt_car_5 = Timestamp.fromDate(new Date(e.vt_car_5))
@@ -1443,10 +1444,17 @@ export default function DbComponent(props:Props){
 
         
             });
-            jsonData.forEach(async (e:any) => {
+            // await jsonData.forEach((e:any) => {
+            //     addDoc(collection(db, "records"), e)
+            // });
+
+            for(let e of jsonData){
                 await addDoc(collection(db, "records"), e)
-            });
-            
+                counts ++
+                setProgress(String(percentage*counts)+"%")
+                setProgressItem(String(e.name))
+            }
+            window.location.reload()
             setLoading(false)
             setImportDialog(false)
             fetchData()
@@ -1850,8 +1858,9 @@ export default function DbComponent(props:Props){
 
             {/* Dialog Boxes 👇*/}
 
-            <DefaultDialog open={importDialog} created_on={jsonData.length==0?"":""+jsonData.length} title={"Upload XLSX"} titleIcon={<UploadCloud color="salmon"/>} codeIcon={<File width={"0.8rem"}/>} code=".xls, .xlsx" OkButtonText="Upload" onCancel={()=>{setImportDialog(false);setFile(null);setJsonData([])}} disabled={jsonData.length>0?false:true}
+            <DefaultDialog progress={progress} progressItem={progressItem} open={importDialog} created_on={jsonData.length==0?"":""+jsonData.length} title={"Upload XLSX"} titleIcon={<UploadCloud color="salmon"/>} codeIcon={<File width={"0.8rem"}/>} code=".xls, .xlsx" OkButtonText="Upload" onCancel={()=>{setImportDialog(false);setFile(null);setJsonData([]);window.location.reload()}} disabled={jsonData.length>0?false:true}
             updating={loading}
+            
             onOk={uploadJson}
             title_extra={
                 <div style={{display:'flex', flexFlow:"column", gap:"0.5rem"}}>
@@ -1897,18 +1906,14 @@ export default function DbComponent(props:Props){
                 <input style={{fontSize:"0.8rem"}} type="file" accept=".xls, .xlsx" onChange={(e:any)=>setFile(e.target.files[0])}/>
                 <button className={file?"":"disabled"} onClick={()=>{jsonData.length>0?setJsonData([]):handleImport()}} style={{fontSize:"0.8rem", paddingRight:"1rem", paddingLeft:"1rem"}}>{jsonData.length>0?"Clear":"Add"}</button>
                 </div>
+
+                
                 </>
             }/>
 
             <SheetComponent title={name} />
 
-            {/* Upload Excel files Dialog */}
-            <DefaultDialog onCancel={()=>setExcelUploadDialog(false)} OkButtonText="Upload" open={excel_upload_dialog} title="Upload Excel Data" titleIcon={<CloudUpload/> } 
-                extra={
-                <>
-                <FileInput/>
-                </>
-            }/>
+            
 
 
             
