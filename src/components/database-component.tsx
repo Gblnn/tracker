@@ -15,7 +15,6 @@ import { db, storage } from "@/firebase"
 import { LoadingOutlined } from '@ant-design/icons'
 import * as XLSX from '@e965/xlsx'
 import { message, Tooltip } from 'antd'
-import { saveAs } from 'file-saver'
 import { addDoc, collection, deleteDoc, doc, getAggregateFromServer, getDocs, onSnapshot, orderBy, query, sum, Timestamp, updateDoc, where } from 'firebase/firestore'
 import {
     deleteObject,
@@ -25,7 +24,7 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowDown01, ArrowDownAZ, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, Globe, GraduationCap, HeartPulse, Image, ImageOff, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, UploadCloud, User, UserCircle, X } from "lucide-react"
+import { ArrowDown, ArrowDown01, ArrowDownAZ, ArrowUp, BellOff, BellRing, Book, CalendarDays, Car, CheckSquare2, CircleDollarSign, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, Globe, GraduationCap, HeartPulse, Image, ImageOff, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, UploadCloud, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { LazyLoadImage } from 'react-lazy-load-image-component'
@@ -33,6 +32,7 @@ import 'react-lazy-load-image-component/src/effects/blur.css'
 import { useNavigate } from "react-router-dom"
 import ReactTimeAgo from 'react-time-ago'
 import useKeyboardShortcut from 'use-keyboard-shortcut'
+import { exportDatabase, getBlank } from "./component-functions"
 import DbDropDown from "./db-dropdown"
 import ImageDialog from "./image-dialog"
 import SheetComponent from "./sheet-component"
@@ -373,34 +373,13 @@ export default function DbComponent(props:Props){
           });
       };
 
-    const fetchBlank = async () => {
-        try {
-            setLoading(true)
-
-            const myHeader = ["name","employeeCode","companyName","email","contact","dateofJoin","nativeAddress","nativePhone","initialSalary","initialAllowance","civil_number","civil_DOB", "civil_expiry", "license_number","license_issue", "license_expiry","medical_completed_on" ,"medical_due_on","passportID","passportIssue", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
-
-            const Header = ["name","employeeCode","companyName","email","contact","dateofJoin","nativeAddress","nativePhone","initialSalary","initialAllowance","civil_number","civil_DOB", "civil_expiry", "license_number","license_issue", "license_expiry","medical_completed_on" ,"medical_due_on","passportID","passportIssue", "passportExpiry"]
-
-        const worksheet = XLSX.utils.json_to_sheet([{}], {header: props.dbCategory=="personal"?Header: myHeader});
-
-        const workbook = XLSX.utils.book_new();
-
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-
-        // Buffer to store the generated Excel file
-        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
-
-        saveAs(blob, "Template.xlsx");
-            setLoading(false)
-        } catch (error) {
-            setLoading(false)
-        }
+    const fetchBlank = () => {
+        getBlank(loading, props.dbCategory)
     }
 
 
     //INITIAL DATA FETCH ON PAGE LOAD
-    const fetchData = async (type?:any) => {
+    const fetchData = async () => {
         
         try {
             setfetchingData(true)
@@ -418,9 +397,7 @@ export default function DbComponent(props:Props){
             
             setChecked([])
             setSelectable(false)
-            type=="refresh"?
-            message.success("Refreshed")
-            :null
+            
             
         } catch (error) { 
             console.log(error)
@@ -608,146 +585,7 @@ export default function DbComponent(props:Props){
     }
 
     const exportDB = () => {
-        const myHeader = ["id","name","employeeCode","type","companyName","state","civil_number", "civil_expiry", "license_number", "license_expiry", "medical_due_on","passportID", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
-
-        const Header = ["id","name","employeeCode","type","companyName","state","civil_number", "civil_expiry", "license_number", "license_expiry", "medical_due_on","passportID", "passportExpiry"]
-
-        records.forEach((e:any) => {
-            
-            e.civil_expiry==""?
-            {}
-            : 
-            e.civil_expiry = String(moment(e.civil_expiry.toDate()).format("DD/MM/YYYY"))
-
-            e.license_expiry==""?
-            {}
-            :
-            e.license_expiry = String(moment(e.license_expiry.toDate()).format("DD/MM/YYYY"))
-
-
-            e.medical_due_on==""?
-            {}
-            :
-            e.medical_due_on = String(moment(e.medical_due_on.toDate()).format("DD/MM/YYYY"))
-
-            e.passportExpiry==""?
-            {}
-            :
-            e.passportExpiry = String(moment(e.passportExpiry.toDate()).format("DD/MM/YYYY"))
-            
-
-
-            e.vt_hse_induction==""?
-            {}
-            :
-            props.dbCategory=="vale"?
-            e.vt_hse_induction = String(moment(e.vt_hse_induction.toDate()).format("DD/MM/YYYY"))
-            :{}
-
-
-
-
-            e.vt_car_1==""?
-            {}
-            :
-            props.dbCategory=="vale"?
-            e.vt_car_1 = String(moment(e.vt_car_1.toDate()).format("DD/MM/YYYY"))
-            :{}
-
-
-
-            e.vt_car_2==""?
-            {}
-            :
-            props.dbCategory=="vale"?
-            e.vt_car_2 = String(moment(e.vt_car_2.toDate()).format("DD/MM/YYYY"))
-            :{}
-
-
-
-            e.vt_car_3==""?
-            {}
-            :
-            props.dbCategory=="vale"?
-            e.vt_car_3 = String(moment(e.vt_car_3.toDate()).format("DD/MM/YYYY"))
-            :{}
-
-
-
-            e.vt_car_4==""?
-            {}
-            :
-            props.dbCategory=="vale"?
-            e.vt_car_4 = String(moment(e.vt_car_4.toDate()).format("DD/MM/YYYY"))
-            :{}
-
-
-
-            e.vt_car_5==""?
-            {}
-            :
-            props.dbCategory=="vale"?
-            e.vt_car_5 = String(moment(e.vt_car_5.toDate()).format("DD/MM/YYYY"))
-            :{}
-
-
-
-            e.vt_car_6==""?
-            {}
-            :
-            props.dbCategory=="vale"?
-            e.vt_car_6 = String(moment(e.vt_car_6.toDate()).format("DD/MM/YYYY"))
-            :{}
-
-
-
-            e.vt_car_7==""?
-            {}
-            :
-            props.dbCategory=="vale"?
-            e.vt_car_7 = String(moment(e.vt_car_7.toDate()).format("DD/MM/YYYY"))
-            :{}
-
-
-
-            e.vt_car_8==""?
-            {}
-            :
-            props.dbCategory=="vale"?
-            e.vt_car_8 = String(moment(e.vt_car_8.toDate()).format("DD/MM/YYYY"))
-            :{}
-
-
-
-            e.vt_car_9==""?
-            {}
-            :
-            props.dbCategory=="vale"?
-            e.vt_car_9 = String(moment(e.vt_car_9.toDate()).format("DD/MM/YYYY"))
-            :{}
-
-
-
-            e.vt_car_10==""?
-            {}
-            :
-            props.dbCategory=="vale"?
-            e.vt_car_10 = String(moment(e.vt_car_10.toDate()).format("DD/MM/YYYY"))
-            :{}
-        });
-
-        const worksheet = XLSX.utils.json_to_sheet(records, {header: props.dbCategory=="personal"?Header:myHeader});
-        const workbook = XLSX.utils.book_new();
-
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-
-        // Buffer to store the generated Excel file
-        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
-
-        saveAs(blob, "exportedData.xlsx");
-        fetchData()
-
+        exportDatabase(records, props.dbCategory)
     }
 
     const addRemark = async () => {
@@ -1193,10 +1031,9 @@ export default function DbComponent(props:Props){
             const snapshot = await getDocs(collection(db, 'records'))
                 snapshot.forEach((e:any) => {
                     
-                    e.profile_name?
+                    e.profile_name&&
                     deleteObject(ref(storage, e.profile_name)) 
-                    :
-                    console.log("Skipped profile delete for "+e.id)  
+                      
 
                 });
             
@@ -1506,7 +1343,7 @@ export default function DbComponent(props:Props){
                             Ctrl + I
                         </button> */}
                         
-                        <button className="transitions blue-glass" style={{paddingLeft:"1rem", paddingRight:"1rem", width:"3rem"}} onClick={()=>{fetchData("refresh")}} >
+                        <button className="transitions blue-glass" style={{paddingLeft:"1rem", paddingRight:"1rem", width:"3rem"}} onClick={()=>{fetchData()}} >
 
                             {
                                 fetchingData?
@@ -1656,6 +1493,9 @@ export default function DbComponent(props:Props){
                                     sortby=="name"?
                                     <ArrowDownAZ width={"1.25rem"} color="dodgerblue"/>
                                     :
+                                    sortby=="created_on"?
+                                    <CalendarDays width={"1.25rem"} color="dodgerblue"/>
+                                    :
                                     <ArrowDown01 width={"1.25rem"} color="dodgerblue"/>
                                 }
                             
@@ -1663,6 +1503,7 @@ export default function DbComponent(props:Props){
                             <SelectContent>
                                 <SelectItem style={{justifyContent:"flex-start"}} value="name">Name</SelectItem>
                                 <SelectItem style={{justifyContent:"flex-start"}} value="employeeCode">Code</SelectItem>
+                                <SelectItem style={{justifyContent:"flex-start"}} value="created_on">Created </SelectItem>
                                 
                             </SelectContent>
                         </Select>
@@ -1870,19 +1711,12 @@ export default function DbComponent(props:Props){
                             <FileDown color="lightgreen" width={"1rem"}/>
                             Template
                             </>
-                            
-                            
                         }
-                        
                     </button>
-                
                 </div>
-            
         }
             extra={
-
                 <>
-
                 {
                     jsonData.length==0?
                     <div style={{width:"100%", border:"3px dashed rgba(100 100 100/ 50%)", height:"2.5rem",borderRadius:"0.5rem", marginBottom:""}}></div>
@@ -1900,26 +1734,16 @@ export default function DbComponent(props:Props){
                     </div>
                 }
 
-
-
                 <div style={{display:"flex", gap:"0.5rem", width:"100%"}}>
                 <input style={{fontSize:"0.8rem"}} type="file" accept=".xls, .xlsx" onChange={(e:any)=>setFile(e.target.files[0])}/>
                 <button className={file?"":"disabled"} onClick={()=>{jsonData.length>0?setJsonData([]):handleImport()}} style={{fontSize:"0.8rem", paddingRight:"1rem", paddingLeft:"1rem"}}>{jsonData.length>0?"Clear":"Add"}</button>
                 </div>
 
-                
                 </>
             }/>
 
             <SheetComponent title={name} />
-
-            
-
-
-            
-
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
-
 
             <InputDialog title="Add Remark" inputplaceholder="Enter remarks" OkButtonText="Update" OkButtonIcon={<RefreshCcw width={"1rem"}/>} open={remarksDialog} onCancel={()=>setRemarksDialog(false)} inputOnChange={(e:any)=>setRemarks(e.target.value)} onOk={addRemark} updating={loading} disabled={loading} input1Value={remarks}/>
 
@@ -2154,11 +1978,8 @@ export default function DbComponent(props:Props){
             SalaryBasicValue={initialSalary}
             AllowanceValue={initialAllowance}
             LocalContactValue={contact}
-
             onOK={EditRecordName}
             />
-            
-            {/* <InputDialog open={userEditPrompt} titleIcon={<PenLine/>} title="Edit Record Name" inputplaceholder="Enter New Name" OkButtonText="Update" OkButtonIcon={<TextCursor width={"1rem"}/>} onCancel={()=>setUserEditPrompt(false)} onOk={EditRecordName} inputOnChange={(e:any)=>setEditedName(e.target.value)} updating={loading} disabled={loading} input1Value={name} input2placeholder="Email Address" input2Value={email} input2OnChange={(e:any)=>setEditedEmail(e.target.value)} image={<input type="file" style={{fontSize:"0.8rem"}}/>} input1Label="Enter Name : " input2Label="Enter Email : "/> */}
 
             {/* DELETE RECORD DIALOG */}
             <DefaultDialog open={userDeletePrompt} titleIcon={<X/>} destructive title="Delete Record?" OkButtonText="Delete" onCancel={()=>setUserDeletePrompt(false)} onOk={deleteRecord} updating={loading} disabled={loading} extra={recordDeleteStatus?
@@ -2527,10 +2348,6 @@ export default function DbComponent(props:Props){
                     :null
                 }
 
-                {/* <DropDown onDelete={()=>{setVehicleIdDelete(true)}} 
-                onEdit={()=>{setEditVehicleIDprompt(true)}} 
-                trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} */}
-
                 <DropDown onDelete={()=>{setDeletePassportDialog(true)}} onEdit={()=>{setEditPassportDialog(true)}} trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} />
 
                 </div>
@@ -2574,7 +2391,6 @@ export default function DbComponent(props:Props){
 
             {/* ADD PASSPORT ID DIALOG */}
             <InputDialog open={addPassportDialog} OkButtonText="Add" onCancel={()=>setAddPassportDialog(false)} title="Add Passport" titleIcon={<Book color="goldenrod"/>} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setPassportID(e.target.value)} input2OnChange={(e:any)=>setPassportIssue(e.target.value)} input3OnChange={(e:any)=>setPassportExpiry(e.target.value)} input4placeholder="Native Phone ( with Country code )" input5placeholder="Native Address" input4OnChange={(e:any)=>setNativePhone(e.target.value)} input5OnChange={(e:any)=>setNativeAddress(e.target.value)} onOk={addPassport} updating={loading}/>
-
              
             {/* EDIT PASSPORT DIALOG */}
             <InputDialog open={editPassportDialog} title="Edit Passport" titleIcon={<PenLine/>} OkButtonText="Update" onCancel={()=>{setEditPassportDialog(false)}} inputplaceholder="Passport ID" input2placeholder="Issue Date" input3placeholder="Expiry Date" inputOnChange={(e:any)=>setEditedPassportID(e.target.value)} input2OnChange={(e:any)=>{setEditedPassportIssue(e.target.value)}} input3OnChange={(e:any)=>setEditedPassportExpiry(e.target.value)} onOk={EditPassport} updating={loading} disabled={loading} input1Value={passportID} input2Value={passportIssue} input3Value={passportExpiry} input1Label="Passport ID : " input2Label="Issue Date : " input3Label="Expiry Date" input4placeholder="Native Phone Number" input4Label="Native Phone : " input4Value={nativePhone} input5placeholder="Native Address" input5Label="Address : " input5Value={nativeAddress} input4OnChange={(e:any)=>setEditedNativePhone(e.target.value)} input5OnChange={(e:any)=>setEditedNativeAddress(e.target.value)}/>
@@ -2620,13 +2436,6 @@ export default function DbComponent(props:Props){
                             </div>
                         
                         </div>
-
-                        
-
-                        {/* <div>
-                            <p style={{fontSize:"0.8rem", opacity:0.5}}>Total Increment</p>
-                            <p style={{fontWeight:600, border:'', textAlign:"right", fontSize:"1.5rem"}}>{leaves}</p>
-                        </div> */}
                     
                     </div>
 
@@ -2671,10 +2480,7 @@ export default function DbComponent(props:Props){
                         
                     </button>
                 </div>
-                
-                
                 </>
-                
                 } 
             />
             
@@ -2760,23 +2566,16 @@ export default function DbComponent(props:Props){
                             :
                             <div style={{display:"flex", gap:"0.5rem", alignItems:"center"}}>
                                 <Plus width={"1.25rem"} color="#8884d8"/>
-                            </div>
-                            
-                        }
-                        
+                            </div>   
+                        } 
                     </button>
                 </div>
-                
-                
                 </>
                 
                 }/>
 
                 <InputDialog title={"Leave Review"} open={leaveReview} onCancel={()=>setLeaveReview(false)}
                 inputplaceholder="Leave From"
-                
-                
-
                 input1Value={leaveFrom}
                 input2Value={leaveTill}
                 input3Value={expectedReturn}
@@ -2830,17 +2629,11 @@ export default function DbComponent(props:Props){
                                     ""
                                     :
                                     <ArrowUp strokeWidth={"3px"} width={"1rem"} color="lightgreen"/>
-
                                 }
                                 
                             </div>
                         
                         </div>
-
-                        {/* <div>
-                            <p style={{fontSize:"0.8rem", opacity:0.5}}>Total Increment</p>
-                            <p style={{fontWeight:600, border:'', textAlign:"right", fontSize:"1.5rem"}}>{leaves}</p>
-                        </div> */}
                     
                     </div>
 
@@ -2870,7 +2663,9 @@ export default function DbComponent(props:Props){
                     </div>}
 
                 <div style={{display:"flex", gap:"0.5rem", width:"100%", zIndex:""}}>
+
                     <input type="search" id="input-1" value={newAllowance==0?"":newAllowance} onChange={(e:any)=>setNewAllowance(e.target.value)} placeholder="New Allowance" style={{flex:1.5}}/>
+
                     <button onClick={addNewAllowance} style={{fontSize:"0.8rem", flex:0.15}}>
                         {
                             loading?
@@ -2879,19 +2674,13 @@ export default function DbComponent(props:Props){
                             <div style={{display:"flex", gap:"0.5rem", alignItems:"center"}}>
                                 <Plus width={"1.25rem"} color="salmon"/>
                             </div>
-                            
                         }
-                        
                     </button>
+
                 </div>
-                
-                
-                </>
-                
+                </>    
                 } 
             />
-            
-    
         </>
     )
 }
