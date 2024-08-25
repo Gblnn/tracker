@@ -24,7 +24,7 @@ import {
     uploadBytes,
 } from "firebase/storage"
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowDown01, ArrowDownAZ, ArrowUp, BellOff, BellRing, Book, CalendarDays, Car, CheckSquare2, CircleDollarSign, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, Globe, GraduationCap, HeartPulse, Image, ImageOff, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, UploadCloud, User, UserCircle, X } from "lucide-react"
+import { ArrowDown, ArrowDown01, ArrowDownAZ, ArrowUp, BellOff, BellRing, Book, Car, CheckSquare2, CircleDollarSign, CreditCard, Disc, Download, EllipsisVerticalIcon, File, FileDown, Globe, GraduationCap, HeartPulse, Image, ImageOff, ListStart, MinusSquareIcon, PackageOpen, PenLine, Plus, RadioTower, RefreshCcw, Sparkles, Trash, UploadCloud, User, UserCircle, X } from "lucide-react"
 import moment from 'moment'
 import { useEffect, useState } from "react"
 import { LazyLoadImage } from 'react-lazy-load-image-component'
@@ -1329,10 +1329,11 @@ export default function DbComponent(props:Props){
 
             </div>
                 {/* BACK BUTTON */}
-                <Back title={props.title+
+                <Back title={props.title
                 
-                " ("+records.length+")"} 
-
+                // +" ("+records.length+")"
+            } 
+                subtitle={records.length}
                 extra={
                     !selectable?
                     <div style={{display:"flex", gap:"0.5rem", height:"2.75rem"}}>
@@ -1386,7 +1387,7 @@ export default function DbComponent(props:Props){
                         })
                         :setChecked([])
                         }} 
-                    style={{height:"2.75rem", border:"", width:"7.5rem", background:"rgba(100 100 100/ 20%)", padding:"0.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", paddingLeft:"1rem", paddingRight:"1rem", borderRadius:"0.5rem", cursor:"pointer"}}>
+                    style={{height:"2.75rem", border:"", width:"7.75rem", background:"rgba(100 100 100/ 20%)", padding:"0.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", paddingLeft:"1rem", paddingRight:"1rem", borderRadius:"0.5rem", cursor:"pointer"}}>
                         <p style={{opacity:0.75}}>Selected</p>
                         <p style={{ fontWeight:600}}>{checked.length}</p>
                     </div>
@@ -1494,7 +1495,7 @@ export default function DbComponent(props:Props){
                                     <ArrowDownAZ width={"1.25rem"} color="dodgerblue"/>
                                     :
                                     sortby=="created_on"?
-                                    <CalendarDays width={"1.25rem"} color="dodgerblue"/>
+                                    <ListStart width={"1.25rem"} color="dodgerblue"/>
                                     :
                                     <ArrowDown01 width={"1.25rem"} color="dodgerblue"/>
                                 }
@@ -1503,7 +1504,7 @@ export default function DbComponent(props:Props){
                             <SelectContent>
                                 <SelectItem style={{justifyContent:"flex-start"}} value="name">Name</SelectItem>
                                 <SelectItem style={{justifyContent:"flex-start"}} value="employeeCode">Code</SelectItem>
-                                <SelectItem style={{justifyContent:"flex-start"}} value="created_on">Created </SelectItem>
+                                <SelectItem style={{justifyContent:"flex-start"}} value="created_on">Original </SelectItem>
                                 
                             </SelectContent>
                         </Select>
@@ -1724,7 +1725,7 @@ export default function DbComponent(props:Props){
                     <div className="recipients" style={{width:"100%", display:"flex", flexFlow:"column", gap:"0.35rem", maxHeight:"11.25rem", overflowY:"auto", paddingRight:"0.5rem", minHeight:"2.25rem", marginBottom:"0.5rem"}}>
                         {
                         jsonData.map((e:any)=>(
-                            <motion.div key={e.employeeCode} initial={{opacity:0}} whileInView={{opacity:1}}>
+                            <motion.div key={e.name} initial={{opacity:0}} whileInView={{opacity:1}}>
                             <Directive status={true} 
                             onClick={()=>{}}
                             title={e.name} titleSize="0.75rem" key={e.id} icon={<UserCircle width={"1.25rem"} color="salmon"/>} />

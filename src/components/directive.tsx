@@ -79,7 +79,7 @@ export default function Directive(props:Props){
                             <span className="" style={{fontWeight:400, textAlign:"left", border:"", fontSize:props.titleSize?props.titleSize:"0.9rem", display:"flex", gap:"0.5rem", alignItems:"center", width:"100%"}}>
 
                                 <div style={{flex:"1 1 100%", minWidth:"0", maxWidth:"130px"}}>
-                                    <div style={{overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
+                                    <div style={{overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textTransform:"capitalize"}}>
                                     {props.title}
                                     </div>
                                 </div>
