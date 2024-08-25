@@ -54,7 +54,6 @@ export default function Inbox(){
 
     useEffect(()=>{
         fetchData()
-        console.log(filteredData)
     },[])
 
     useEffect(()=>{

@@ -29,6 +29,7 @@ interface Props{
     space?:boolean
     new?:boolean
     customTitle?:boolean
+    height?:string
 }
 
 export default function Directive(props:Props){
@@ -37,11 +38,7 @@ export default function Directive(props:Props){
 
     return(
 
-        <Link onClick={()=>props.selectable?setSelected(!selected):null} to={props.to} style={{display:"flex", width:"100%", opacity:props.archived?0.5:1}}>
-
-            {/* <div style={{background:"#1a1a1a",width:"3rem", borderTopLeftRadius:"0.5rem", borderBottomLeftRadius:"0.5rem", display:"flex", alignItems:"center", justifyContent:"center"}}>
-                {props.icon}
-            </div> */}
+        <Link onClick={()=>props.selectable?setSelected(!selected):null} to={props.to} style={{display:"flex", width:"100%", opacity:props.archived?0.5:1, height:props.height?props.height:""}}>
 
             <button onClick={props.selectable?props.onSelect:props.onClick} style={{paddingLeft:"1rem", gap:"0.5rem", width:"100%", justifyContent:"space-between"}}>
 
@@ -126,14 +123,12 @@ export default function Directive(props:Props){
                     props.protected&&
                     <LockKeyholeIcon width={"1rem"} color="grey"/>
                 }
-                    
+
+
+
                 {
-                
-                
                 props.tag?
-                    
-                    
-                        props.loading?
+                    props.loading?
                         <LoadingOutlined/>
                         :
                     <div onClick={props.tagOnClick} style={{background:"rgba(150 150 150/ 15%)",fontSize:"0.85rem", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", color:props.tag=="Expiring"?"goldenrod":props.tag=="Available"?"lightgreen":props.status?"lightblue":"goldenrod", width:"", fontWeight:600, display:"flex", alignItems:"center", gap:"0.5rem"}}>

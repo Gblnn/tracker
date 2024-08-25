@@ -1,5 +1,6 @@
 import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { motion } from 'framer-motion'
 
 interface Props{
     icon?:any
@@ -32,7 +33,10 @@ export default function Back(props:Props){
                         </h2>
                         {
                         props.subtitle?
-                        <p style={{fontSize:"0.85rem", border:"",opacity:"", display:'flex', alignItems:'center', height:'1.25rem', borderRadius:"0.5rem", background:"white", color:"black", padding:"0.25rem", fontWeight:"600"}}>{props.subtitle}</p>
+                        <motion.div initial={{opacity:0}} whileInView={{opacity:1}} 
+                        transition={{duration:"0.5"}}>
+                            <p style={{fontSize:"0.85rem", border:"",opacity:"", display:'flex', alignItems:'center', height:'1.15rem', borderRadius:"0.5rem", background:"white", color:"black", padding:"0.25rem", fontWeight:"500", marginBottom:"0.1rem"}}>{props.subtitle}</p>
+                        </motion.div>
                         :""
                     }
                     </div>

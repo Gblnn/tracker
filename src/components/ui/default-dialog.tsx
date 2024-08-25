@@ -243,9 +243,9 @@ export default function DefaultDialog(props:Props){
 
                             
 
-                            <Directive title="Day off(s)" tag={props.bottomTagValue} onClick={props.onBottomTagClick} status loading={props.bottomValueLoading}/>
+                            <Directive titleSize="0.8rem" height="2.25rem" title="Day off(s)" tag={props.bottomTagValue} onClick={props.onBottomTagClick} status loading={props.bottomValueLoading}/>
 
-                            <Directive title="Remarks" status tag={props.remarksValue} onClick={props.remarksOnClick}/>
+                            <Directive titleSize="0.8rem" height="2.25rem" title="Remarks" status tag={props.remarksValue} onClick={props.remarksOnClick}/>
 
                             {
                                 props.renumeration&&
