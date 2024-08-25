@@ -2,28 +2,27 @@ import * as XLSX from '@e965/xlsx';
 import { saveAs } from 'file-saver';
 import moment from 'moment';
 
-export const getBlank = async (load:boolean, category:string|undefined) => {
+export const getBlank = async (category:string|undefined) => {
     try {
-        load = true
-
+        
         const myHeader = ["name","employeeCode","companyName","email","contact","dateofJoin","nativeAddress","nativePhone","initialSalary","initialAllowance","civil_number","civil_DOB", "civil_expiry", "license_number","license_issue", "license_expiry","medical_completed_on" ,"medical_due_on","passportID","passportIssue", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
 
         const Header = ["name","employeeCode","companyName","email","contact","dateofJoin","nativeAddress","nativePhone","initialSalary","initialAllowance","civil_number","civil_DOB", "civil_expiry", "license_number","license_issue", "license_expiry","medical_completed_on" ,"medical_due_on","passportID","passportIssue", "passportExpiry"]
 
-    const worksheet = XLSX.utils.json_to_sheet([{}], {header: category=="personal"?Header: myHeader});
+        const worksheet = XLSX.utils.json_to_sheet([{}], {header: category=="personal"?Header: myHeader});
 
-    const workbook = XLSX.utils.book_new();
+        const workbook = XLSX.utils.book_new();
 
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
 
-    // Buffer to store the generated Excel file
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+        // Buffer to store the generated Excel file
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
 
-    saveAs(blob, "Template.xlsx");
-        load = false
+        saveAs(blob, "Template.xlsx");
+        
     } catch (error) {
-        load = false
+        console.log(error)
     }
 }
 

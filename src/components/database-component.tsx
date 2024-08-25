@@ -374,7 +374,7 @@ export default function DbComponent(props:Props){
       };
 
     const fetchBlank = () => {
-        getBlank(loading, props.dbCategory)
+        getBlank(props.dbCategory)
     }
 
 
