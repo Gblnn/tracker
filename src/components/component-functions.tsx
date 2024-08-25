@@ -2,9 +2,9 @@ import * as XLSX from '@e965/xlsx';
 import { saveAs } from 'file-saver';
 import moment from 'moment';
 
-export const getBlank = async (loading:boolean, category:string|undefined) => {
+export const getBlank = async (load:boolean, category:string|undefined) => {
     try {
-        loading = true
+        load = true
 
         const myHeader = ["name","employeeCode","companyName","email","contact","dateofJoin","nativeAddress","nativePhone","initialSalary","initialAllowance","civil_number","civil_DOB", "civil_expiry", "license_number","license_issue", "license_expiry","medical_completed_on" ,"medical_due_on","passportID","passportIssue", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
 
@@ -21,9 +21,9 @@ export const getBlank = async (loading:boolean, category:string|undefined) => {
     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
 
     saveAs(blob, "Template.xlsx");
-        loading = false
+        load = false
     } catch (error) {
-        loading = false
+        load = false
     }
 }
 
