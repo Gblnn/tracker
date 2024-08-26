@@ -14,7 +14,7 @@ import { message } from "antd";
 import { saveAs } from "file-saver";
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { ChevronDown, Download, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, User, Users } from "lucide-react";
+import { ChevronDown, Download, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, User } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 
@@ -465,7 +465,7 @@ export default function Inbox(){
                         
                         {
                             window.name?
-                            <button onClick={()=>{setRecipientsDialog(true);fetchRecipients();setRecipientList([])}} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.85rem"}}><Users className="animate-pulse" width={"1rem"} color="salmon"/>Recipients</button>
+                            <button onClick={()=>{setRecipientsDialog(true);fetchRecipients();setRecipientList([])}} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.85rem"}}><Mails width={"1rem"} color="salmon"/></button>
                             :""
                         }
                         
@@ -513,11 +513,11 @@ export default function Inbox(){
 
                     <CustomDropDown 
                     trigger={
-                    <div className="transitions" style={{display:"flex", gap:"0.25rem", paddingLeft:"0.25rem", paddingRight:"0.25rem", alignItems:"center", minWidth:"6rem", justifyContent:"space-between"}}>
+                    <div className="transitions" style={{display:"flex", gap:"0.25rem", paddingLeft:"0.25rem", paddingRight:"0.25rem", alignItems:"center", minWidth:"5.5rem", justifyContent:"space-between"}}>
                         
                         <>
-                        <Filter color="salmon" fill={filterState!=""?"salmon":"#2a2a2a"} width={"1.25rem"}/>
-                        <p style={{textTransform:"capitalize", fontSize:"0.8rem", opacity:0.75}}>       {filterState==""?"filter":filterState=="personal"?"SSU":filterState}
+                        <Filter color="salmon" fill={filterState!=""?"salmon":"#2a2a2a"} width={"1.1rem"}/>
+                        <p style={{textTransform:"capitalize", fontSize:"0.7rem", opacity:0.75}}>       {filterState==""?"filter":filterState=="personal"?"SSU":filterState}
                         </p>
                         </>
                         
