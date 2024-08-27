@@ -1727,7 +1727,9 @@ export default function DbComponent(props:Props){
                         jsonData.map((e:any)=>(
                             <motion.div key={e.name} initial={{opacity:0}} whileInView={{opacity:1}}>
                             <Directive status={true} 
+                            noArrow
                             onClick={()=>{}}
+                            tag={e.employeeCode}
                             title={e.name} titleSize="0.75rem" key={e.id} icon={<UserCircle width={"1.25rem"} color="salmon"/>} />
                             </motion.div>
                         ))
