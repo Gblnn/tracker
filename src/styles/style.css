@@ -12,7 +12,7 @@ input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   transition: background-color 5000s ease-in-out 0s;
-  -webkit-text-fill-color: #ffffff;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 button {
@@ -135,11 +135,6 @@ textarea:hover {
 }
 
 textarea:focus {
-  outline: none;
-  background-color: rgba(100 100 100/ 15%);
-}
-
-input:focus {
   outline: none;
   background-color: rgba(100 100 100/ 15%);
 }

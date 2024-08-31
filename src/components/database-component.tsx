@@ -93,7 +93,6 @@ export default function DbComponent(props:Props){
     const [addcivil, setAddcivil] = useState(false)
     const [modified_on, setModifiedOn] = useState<any>()
     const [loading, setLoading] = useState(false)
-    const [addButtonModeSwap, setAddButtonModeSwap] = useState(false)
     const [deleteMedicalIDdialog, setDeleteMedicalIDdialog] = useState(false)
     const [email, setEmail] = useState("")
     const [editedName, setEditedName] = useState("")
@@ -1040,10 +1039,6 @@ export default function DbComponent(props:Props){
             await checked.forEach(async (item:any) => {
                 // console.log(item)
                 await deleteDoc(doc(db, "records", item))
-                
-
-                
-                
                 counts++
                 setProgress(String(percentage*counts)+"%")
                 setProgressItem(item)
@@ -1051,9 +1046,7 @@ export default function DbComponent(props:Props){
 
                 if(checked.length==counts){
                     setLoading(false)
-                    
                     setBulkDeleteDialog(false)
-                    setAddButtonModeSwap(false)
                     setSelectable(false)
                     fetchData()
                     setProgress("")
@@ -1296,7 +1289,7 @@ export default function DbComponent(props:Props){
 
     const ToggleOmniscience = async () => {
         setOmniLoad(true)
-        await updateDoc(doc(db, 'records', doc_id),{omni:!omni, type:!omni?"omni":props.dbCategory})
+        await updateDoc(doc(db, 'records', doc_id),{type:!omni?"omni":props.dbCategory})
         setOmniLoad(false)
         setOmni(!omni)
         !omni?
@@ -1466,7 +1459,7 @@ export default function DbComponent(props:Props){
                     {/* Searchbar */}
                     <div style={{display:"flex", gap:"0.5rem", border:"", flex:1}}>
 
-                        <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable);setAddButtonModeSwap(!addButtonModeSwap);selectable && setChecked([]); !selectable && setSelected(false)}}>
+                        <button className={selectable?"blue":""} onClick={()=>{setSelectable(!selectable);selectable && setChecked([]); !selectable && setSelected(false)}}>
 
                                 <CheckSquare2 color={selectable?"white":"dodgerblue"}/>
 
@@ -1633,7 +1626,7 @@ export default function DbComponent(props:Props){
                                     setContact(post.contact)
                                     setNativePhone(post.nativePhone)
                                     setNativeAddress(post.nativeAddress)
-                                    setOmni(post.omni)
+                                    post.type=="omni"?setOmni(true):setOmni(false)
                                     fetchLeave()
                                     
                                 }}                        
@@ -1645,7 +1638,7 @@ export default function DbComponent(props:Props){
                                 :
                                 
                                 <>
-                                <div style={{background:"#1a1a1a", color:"white", height:"1.75rem", width:"1.75rem", position:"absolute", borderRadius:"50%", display:"flex", justifyContent:"center", alignItems:"center", border:post.omni?"solid violet":""}}>
+                                <div style={{background:"#1a1a1a", color:"white", height:"1.75rem", width:"1.75rem", position:"absolute", borderRadius:"50%", display:"flex", justifyContent:"center", alignItems:"center", border:post.type=="omni"?"solid violet":""}}>
                                     <p style={{paddingTop:"0.1rem", fontWeight:600}}>{post.name.charAt(0)}</p>
                                 </div>
                                 <LazyLoadImage useIntersectionObserver delayMethod="debounce" threshold={100} effect="blur" style={{width:"1.75rem", height:"1.75rem", borderRadius:"50%", objectFit:"cover", display:"flex"}} src={post.profile} 
@@ -1701,8 +1694,8 @@ export default function DbComponent(props:Props){
 
 
             {/* ADD RECORD BUTTON */}
-            <AddRecordButton onClickSwap={addButtonModeSwap} onClick={()=>{setAddDialog(true); setName(""); setEmail(""); setEmployeeCode(""); setCompanyName(""); setDateofJoin(""); setSalaryBasic(0); setAllowance(0); setContact("")}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
-            icon={addButtonModeSwap?<Trash color="crimson" />:<Plus color="dodgerblue"/>}/>
+            <AddRecordButton onClickSwap={selectable} onClick={()=>{setAddDialog(true); setName(""); setEmail(""); setEmployeeCode(""); setCompanyName(""); setDateofJoin(""); setSalaryBasic(0); setAllowance(0); setContact("")}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
+            icon={selectable?<Trash color="crimson" />:<Plus color="dodgerblue"/>}/>
 
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
