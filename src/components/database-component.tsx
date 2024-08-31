@@ -1636,7 +1636,7 @@ export default function DbComponent(props:Props){
                                 :
                                 
                                 <>
-                                <div style={{background:"#1a1a1a", color:"white", height:"1.75rem", width:"1.75rem", position:"absolute", borderRadius:"50%", display:"flex", justifyContent:"center", alignItems:"center", border:post.type=="omni"?"solid violet":""}}>
+                                <div style={{background:"#1a1a1a", color:"white", height:"1.75rem", width:"1.75rem", position:"absolute", borderRadius:"50%", display:"flex", justifyContent:"center", alignItems:"center", border:post.type=="omni"?"2px solid violet":""}}>
                                     <p style={{paddingTop:"0.1rem", fontWeight:600}}>{post.name.charAt(0)}</p>
                                 </div>
                                 <LazyLoadImage useIntersectionObserver delayMethod="debounce" threshold={100} effect="blur" style={{width:"1.75rem", height:"1.75rem", borderRadius:"50%", objectFit:"cover", display:"flex"}} src={post.profile} 
