@@ -14,7 +14,7 @@ import { message } from "antd";
 import { saveAs } from "file-saver";
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from "firebase/firestore";
 import { motion } from 'framer-motion';
-import { ChevronDown, Download, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, User } from "lucide-react";
+import { ChevronDown, Download, Eye, Filter, Info, LucideMails, Mails, MinusSquareIcon, PenLine, Plus, RefreshCcw, Sparkles, User } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 
@@ -527,6 +527,7 @@ export default function Inbox(){
                     </div>}
                     option1Text="SSU"
                     option2Text="Vale Record"
+                    
                     onOption1={()=>setFilterState("personal")}
                     onOption2={()=>setFilterState("vale")}
                     onClear={()=>setFilterState("")}
@@ -608,8 +609,8 @@ export default function Inbox(){
                             <InboxComponent 
                             notify={!record.notify}
                             archived={record.state=="active"?false:true}
-                            type={record.type=="personal"?"SSU Record":record.type=="vale"?"Vale Record":""}
-                            typeIcon={record.type=="personal"?<img src="/sohar_star_logo.png" style={{width:"1.25rem"}}/>:record.type=="vale"?<img src="/vale-logo.png" style={{width:"1.25rem", paddingBottom:"0.45rem"}}/>:""}
+                            type={record.type=="personal"?"SSU Record":record.type=="vale"?"Vale Record":"Omni"}
+                            typeIcon={record.type=="personal"?<img src="/sohar_star_logo.png" style={{width:"1.25rem"}}/>:record.type=="vale"?<img src="/vale-logo.png" style={{width:"1.25rem", paddingBottom:"0.45rem"}}/>:<Eye width={"1rem"} color="dodgerblue"/>}
                             mail={record.email}
                             noArrow
                             onClick={()=>{}}
@@ -755,7 +756,7 @@ export default function Inbox(){
                     {
                         recipientList.map((recipient:any)=>(
                             <motion.div key={recipient.id} initial={{opacity:0}} whileInView={{opacity:1}}>
-                            <Directive key={recipient.id} icon={<MinusSquareIcon onClick={()=>{setRemoveRecipientDialog(true);setSelectedRecipient(recipient.recipient);setSelectedRecipientID(recipient.id)}} className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} title={recipient.recipient} noArrow/>
+                            <Directive notName key={recipient.id} icon={<MinusSquareIcon onClick={()=>{setRemoveRecipientDialog(true);setSelectedRecipient(recipient.recipient);setSelectedRecipientID(recipient.id)}} className="animate-pulse" color="dodgerblue" width={"1.1rem"}/>} title={recipient.recipient} noArrow/>
                             </motion.div>
                         ))
                     }

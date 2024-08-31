@@ -923,6 +923,7 @@ export default async (req: Request) => {
       //INDIVIDIAL MAIL SEND
       filteredData.length >= 1
         ? e.email != "" &&
+          e.notify == true &&
           (await emailjs.send(
             serviceId,
             "template_0f3zy3e",

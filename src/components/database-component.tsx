@@ -1395,8 +1395,8 @@ export default function DbComponent(props:Props){
                         })
                         :setChecked([])
                         }} 
-                    style={{height:"2.75rem", border:"", width:"7.75rem", background:"rgba(100 100 100/ 20%)", padding:"0.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", paddingLeft:"1rem", paddingRight:"1rem", borderRadius:"0.5rem", cursor:"pointer"}}>
-                        <p style={{opacity:0.75}}>Selected</p>
+                    style={{height:"2.25rem", border:"", width:"7rem", background:"rgba(100 100 100/ 20%)", padding:"0.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", paddingLeft:"1rem", paddingRight:"1rem", borderRadius:"0.5rem", cursor:"pointer", marginTop:"0.25rem", marginBottom:"0.25rem"}}>
+                        <p style={{opacity:0.75, fontSize:"0.85rem"}}>Selected</p>
                         <p style={{ fontWeight:600}}>{checked.length}</p>
                     </div>
                     }
@@ -1889,10 +1889,15 @@ export default function DbComponent(props:Props){
                         false:true
                     }/>
 
-                    <Directive tag={medical_due_on} onClick={()=>setHealthDialog(true)} icon={<HeartPulse color="tomato"/>} title="Medical" status={
-                        moment(medical_due_on, "DD/MM/YYYY").diff(moment(today),'months')<=2?
-                        false:true
-                    }/>
+
+                    {
+                        props.dbCategory=="vale"&&
+                        <Directive tag={medical_due_on} onClick={()=>setHealthDialog(true)} icon={<HeartPulse color="tomato"/>} title="Medical" status={
+                            moment(medical_due_on, "DD/MM/YYYY").diff(moment(today),'months')<=2?
+                            false:true
+                        }/>
+                    }
+                    
 
                     
                     {
