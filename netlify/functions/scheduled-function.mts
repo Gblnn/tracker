@@ -922,22 +922,20 @@ export default async (req: Request) => {
 
       //INDIVIDIAL MAIL SEND
       filteredData.length >= 1
-        ? e.notify == true &&
-          e.email(
-            await emailjs.send(
-              serviceId,
-              "template_0f3zy3e",
-              {
-                recipient: e.email + ", ",
-                subject: "Document Expiry Reminder",
-                message: p,
-              },
-              {
-                publicKey: "c8AePKR5BCK8UIn_E",
-                privateKey: "9pSXJLIK1ktbJWQSCX-Xw",
-              }
-            )
-          )
+        ? e.email != "" &&
+          (await emailjs.send(
+            serviceId,
+            "template_0f3zy3e",
+            {
+              recipient: e.email + ", ",
+              subject: "Document Expiry Reminder",
+              message: p,
+            },
+            {
+              publicKey: "c8AePKR5BCK8UIn_E",
+              privateKey: "9pSXJLIK1ktbJWQSCX-Xw",
+            }
+          ))
         : null;
     });
 
@@ -966,5 +964,5 @@ export default async (req: Request) => {
 };
 
 export const config: Config = {
-  schedule: "58 05 * * * ",
+  schedule: "06 06 * * * ",
 };

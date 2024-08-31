@@ -53,6 +53,7 @@ interface Props {
     creation_date?:string
     contact?:string
     titleinfo?:boolean
+    onTitleClick?:any
 }
 
 
@@ -77,7 +78,8 @@ export default function DefaultDialog(props:Props){
                                 
                                 
                                 <div style={{display:"flex", flexFlow:"column", border:"", gap:"0.25rem"}}>
-                                    <div style={{display:"flex", alignItems:"center", border:"", gap:"0.75rem", fontSize:"1rem"}}>
+
+                                    <div onClick={props.onTitleClick} style={{display:"flex", alignItems:"center", border:"", gap:"0.75rem", fontSize:"1rem"}}>
                                         <p style={{border:"",maxWidth:"150px", textOverflow:"ellipsis", textAlign:"left", overflow:"hidden", whiteSpace:"", textTransform:"capitalize"}}>
                                             {props.title}
                                         </p>

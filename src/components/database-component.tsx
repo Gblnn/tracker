@@ -256,8 +256,9 @@ export default function DbComponent(props:Props){
 
     const [importDialog, setImportDialog] = useState(false)
     const [sortby, setSortBy] = useState("name")
+    const [omni, setOmni] = useState(false)
+    const [omniLoad, setOmniLoad] = useState(false)
 
-    
 {/* //////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 
     useEffect(()=>{
@@ -384,7 +385,7 @@ export default function DbComponent(props:Props){
         try {
             setfetchingData(true)
             const RecordCollection = collection(db, "records")
-            const recordQuery = query(RecordCollection, orderBy(sortby), where("type", "==", props.dbCategory))
+            const recordQuery = query(RecordCollection, orderBy(sortby), where("type", "in", [props.dbCategory, "omni"]))
             const querySnapshot = await getDocs(recordQuery)
             const fetchedData: Array<Record> = [];
 
@@ -394,7 +395,6 @@ export default function DbComponent(props:Props){
 
             setfetchingData(false)
             setRecords(fetchedData)
-            
             setChecked([])
             setSelectable(false)
             
@@ -1281,9 +1281,6 @@ export default function DbComponent(props:Props){
 
         
             });
-            // await jsonData.forEach((e:any) => {
-            //     addDoc(collection(db, "records"), e)
-            // });
 
             for(let e of jsonData){
                 await addDoc(collection(db, "records"), e)
@@ -1295,6 +1292,17 @@ export default function DbComponent(props:Props){
             setLoading(false)
             setImportDialog(false)
             fetchData()
+    }
+
+    const ToggleOmniscience = async () => {
+        setOmniLoad(true)
+        await updateDoc(doc(db, 'records', doc_id),{omni:!omni, type:!omni?"omni":props.dbCategory})
+        setOmniLoad(false)
+        setOmni(!omni)
+        !omni?
+        message.success("Omniscience Enabled")
+        :
+        message.info("Omniscience Disabled")
     }
 
     return(
@@ -1625,6 +1633,7 @@ export default function DbComponent(props:Props){
                                     setContact(post.contact)
                                     setNativePhone(post.nativePhone)
                                     setNativeAddress(post.nativeAddress)
+                                    setOmni(post.omni)
                                     fetchLeave()
                                     
                                 }}                        
@@ -1636,7 +1645,7 @@ export default function DbComponent(props:Props){
                                 :
                                 
                                 <>
-                                <div style={{background:"#1a1a1a", color:"white", height:"1.75rem", width:"1.75rem", position:"absolute", borderRadius:"50%", display:"flex", justifyContent:"center", alignItems:"center"}}>
+                                <div style={{background:"#1a1a1a", color:"white", height:"1.75rem", width:"1.75rem", position:"absolute", borderRadius:"50%", display:"flex", justifyContent:"center", alignItems:"center", border:post.omni?"solid violet":""}}>
                                     <p style={{paddingTop:"0.1rem", fontWeight:600}}>{post.name.charAt(0)}</p>
                                 </div>
                                 <LazyLoadImage useIntersectionObserver delayMethod="debounce" threshold={100} effect="blur" style={{width:"1.75rem", height:"1.75rem", borderRadius:"50%", objectFit:"cover", display:"flex"}} src={post.profile} 
@@ -1758,6 +1767,7 @@ export default function DbComponent(props:Props){
             creation_date={created_on}
             codeTooltip="Employee Code"
             tags
+            onTitleClick={()=>props.dbCategory=="personal"?ToggleOmniscience():message.info("Omniscience retrace on parent record")}
             contact={contact}
             renumeration={props.dbCategory=="personal"?true:false}
             remarksOnClick={()=>setRemarksDialog(true)}
@@ -1811,10 +1821,15 @@ export default function DbComponent(props:Props){
             titleIcon={
             
 
-                <Avatar style={{width:"3.55rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center", cursor:"pointer", border:state=="archived"?"solid goldenrod":""}}>
+                <Avatar style={{width:"3.55rem", height:"3.5rem", objectFit:"cover", display:"flex", justifyContent:"center", alignItems:"center", cursor:"pointer", border:state=="archived"?"solid goldenrod":omni?"solid violet":""}}>
                     <AvatarImage onClick={()=>setImageDialog(true)} style={{objectFit:"cover"}} src={image}/>
                     <AvatarFallback>
-                        <p style={{paddingTop:"0.1rem"}}>{Array.from(name)[0]}</p>
+                        {
+                            omniLoad?
+                            <LoadingOutlined/>
+                            :
+                            <p style={{paddingTop:"0.1rem"}}>{Array.from(name)[0]}</p>
+                        }
                         
                     </AvatarFallback>
                 </Avatar>
@@ -2504,9 +2519,9 @@ export default function DbComponent(props:Props){
                 <>
                 <div style={{display:"flex", border:"", width:"100%", borderRadius:"0.5rem", padding:"0.5rem", background:"", flexFlow:"column"}}>
                     
-                    <p style={{border:"", display:"flex", gap:"0.5rem", justifyContent:'center', alignItems:'center', background:"linear-gradient(90deg, rgba(0 0 0/ 0%), rgba(100 100 100/ 20%), rgba(0 0 0/ 0%)) ", padding:"0.25rem"}}><User color="dodgerblue" width={"1.25rem"}/>{name}</p>
+                    <p style={{border:"", display:"flex", gap:"0.5rem", justifyContent:'center', alignItems:'center', background:"linear-gradient(90deg, rgba(0 0 0/ 0%), rgba(100 100 100/ 20%), rgba(0 0 0/ 0%)) ", padding:"0.25rem", marginBottom:"1rem"}}>{name}</p>
 
-                    <br/>
+                    
 
                     <div style={{border:"", display:"flex", alignItems:'center', justifyContent:"space-between"}}>
 
@@ -2522,7 +2537,7 @@ export default function DbComponent(props:Props){
                             </div>
                             
                             <div style={{display:"flex", border:"", gap:"0.5rem", justifyContent:"center", fontWeight:600}}>
-                                <p style={{textAlign:"left", border:""}}>11/12/2024</p>-<p>{String(moment("13/12/2026", "DD/MM/YYYY").add(leaves, "days").format("DD/MM/YYYY"))}</p>
+                                <p style={{textAlign:"left", border:""}}>{dateofJoin}</p>-<p>{String(moment(dateofJoin, "DD/MM/YYYY").add(1.5, "years").add(leaves, "days").format("DD/MM/YYYY"))}</p>
                                 
                             </div>
                             

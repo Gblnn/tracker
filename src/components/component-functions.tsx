@@ -7,7 +7,7 @@ export const getBlank = async (category:string|undefined) => {
         
         const myHeader = ["name","employeeCode","companyName","email","contact","dateofJoin","nativeAddress","nativePhone","initialSalary","initialAllowance","civil_number","civil_DOB", "civil_expiry", "license_number","license_issue", "license_expiry","medical_completed_on" ,"medical_due_on","passportID","passportIssue", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"];
 
-        const Header = ["name","employeeCode","companyName","email","contact","dateofJoin","nativeAddress","nativePhone","initialSalary","initialAllowance","civil_number","civil_DOB", "civil_expiry", "license_number","license_issue", "license_expiry","medical_completed_on" ,"medical_due_on","passportID","passportIssue", "passportExpiry"]
+        const Header = ["name","employeeCode","companyName","email","contact","dateofJoin","nativeAddress","nativePhone","initialSalary","initialAllowance","civil_number","civil_DOB", "civil_expiry", "license_number","license_issue", "license_expiry","medical_completed_on" ,"medical_due_on","passportID","passportIssue", "passportExpiry", "vt_hse_induction", "vt_car_1", "vt_car_2", "vt_car_3", "vt_car_4", "vt_car_5", "vt_car_6", "vt_car_7", "vt_car_8", "vt_car_9", "vt_car_10"]
 
         const worksheet = XLSX.utils.json_to_sheet([{}], {header: category=="personal"?Header: myHeader});
 

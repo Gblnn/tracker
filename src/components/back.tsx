@@ -35,7 +35,7 @@ export default function Back(props:Props){
                         props.subtitle?
                         <motion.div initial={{opacity:0}} whileInView={{opacity:1}} 
                         transition={{duration:"0.5"}}>
-                            <p style={{fontSize:"0.85rem", border:"",opacity:"", display:'flex', alignItems:'center', height:'', borderRadius:"0.5rem", background:"white", color:"black", padding:"0.25rem", paddingTop:"0.025rem", paddingBottom:"0.025rem", fontWeight:"500", marginBottom:"0.1rem"}}>{props.subtitle}</p>
+                            <p style={{fontSize:"0.85rem", border:"",opacity:"", display:'flex', alignItems:'center', height:'', borderRadius:"0.5rem", background:"white", color:"black", padding:"0.25rem", paddingTop:"0.005rem", paddingBottom:"0.005rem", paddingLeft:"0.45rem",paddingRight:"0.5rem", fontWeight:"500", marginBottom:"0.1rem"}}>{props.subtitle}</p>
                         </motion.div>
                         :""
                     }
