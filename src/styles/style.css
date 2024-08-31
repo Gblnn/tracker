@@ -12,6 +12,7 @@ input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   transition: background-color 5000s ease-in-out 0s;
+  -webkit-text-fill-color: #ffffff;
 }
 
 button {
@@ -96,10 +97,6 @@ input::-webkit-search-cancel-button {
 
 input::placeholder {
   color: rgb(100 100 100);
-}
-
-input:hover {
-  background-color: rgba(100 100 100/ 15%);
 }
 
 input::file-selector-button {
