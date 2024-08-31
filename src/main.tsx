@@ -1,24 +1,20 @@
-import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import '../app/globals.css'
-import App from './App.tsx'
-import { ThemeProvider } from './components/theme-provider.tsx'
-import './styles/style.css'
-import './styles/utils.css'
-import './WEB/css/clash-grotesk.css'
-import TimeAgo from 'javascript-time-ago'
-import en from 'javascript-time-ago/locale/en'
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import "../app/globals.css";
+import App from "./App.tsx";
+import { ThemeProvider } from "./components/theme-provider.tsx";
+import "./styles/style.css";
+import "./styles/utils.css";
+import "./WEB/css/clash-grotesk.css";
+import TimeAgo from "javascript-time-ago";
+import en from "javascript-time-ago/locale/en";
 
-TimeAgo.addDefaultLocale(en)
+TimeAgo.addDefaultLocale(en);
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  
-    <BrowserRouter>
-    
-    <ThemeProvider defaultTheme='dark'>
-    <App />
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <BrowserRouter>
+    <ThemeProvider defaultTheme="dark">
+      <App />
     </ThemeProvider>
-    </BrowserRouter>
-    
-  
-)
+  </BrowserRouter>
+);
