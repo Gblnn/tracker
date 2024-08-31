@@ -1326,9 +1326,7 @@ export default function DbComponent(props:Props){
             {/* Main Component */}
             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
 
-            <div>
-
-            </div>
+            
                 {/* BACK BUTTON */}
                 <Back title={props.title
                 
@@ -1337,7 +1335,7 @@ export default function DbComponent(props:Props){
                 subtitle={records.length}
                 extra={
                     !selectable?
-                    <div style={{display:"flex", gap:"0.5rem", height:"2.75rem"}}>
+                    <div className="transitions" style={{display:"flex", gap:"0.5rem", height:"2.75rem"}}>
                     
 
                         {/* <button style={{cursor:"default", width:"5rem", fontSize:"0.9rem", opacity:0.5}}>
