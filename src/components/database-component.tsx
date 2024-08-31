@@ -1693,7 +1693,7 @@ export default function DbComponent(props:Props){
 
             {/* ADD RECORD BUTTON */}
             <AddRecordButton onClickSwap={selectable} onClick={()=>{setAddDialog(true); setName(""); setEmail(""); setEmployeeCode(""); setCompanyName(""); setDateofJoin(""); setSalaryBasic(0); setAllowance(0); setContact("")}} alternateOnClick={()=>{checked.length<1?null:setBulkDeleteDialog(true)}}
-            icon={selectable?<Trash color="crimson" />:<Plus color="dodgerblue"/>}/>
+            icon={selectable?<Trash color={checked.length<1?"#5a5a5a":"crimson"} />:<Plus color="dodgerblue"/>}/>
 
 
 {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
