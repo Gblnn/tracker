@@ -90,6 +90,10 @@ input {
   transition: 0.3s;
 }
 
+input:focus {
+  outline: none;
+}
+
 input::-webkit-search-cancel-button {
   margin-right: 0.75rem;
   cursor: pointer;
