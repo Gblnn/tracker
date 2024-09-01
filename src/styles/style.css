@@ -277,8 +277,8 @@ textarea:focus {
 }
 
 .record-list {
-  mask: linear-gradient(#0000, #000 5% 85%, #0000);
-  -webkit-mask: linear-gradient(#0000, #000 5% 85%, #0000);
+  mask: linear-gradient(#0000, #000 1% 85%, #0000);
+  -webkit-mask: linear-gradient(#0000, #000 1% 85%, #0000);
 }
 
 /* Custom Scrollbar */
