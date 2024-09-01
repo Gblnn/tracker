@@ -1878,7 +1878,7 @@ export default function DbComponent(props: Props) {
                     flexFlow: "column",
                     overflowY: "auto",
                     height: "74svh",
-                    paddingTop: "0.45rem",
+                    paddingTop: "0.65rem",
                     paddingRight: "0.35rem",
                     paddingBottom: "5rem",
                   }}
