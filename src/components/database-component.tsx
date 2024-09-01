@@ -1878,9 +1878,6 @@ export default function DbComponent(props: Props) {
                     flexFlow: "column",
                     overflowY: "auto",
                     height: "74svh",
-                    paddingTop: "0.65rem",
-                    paddingRight: "0.35rem",
-                    paddingBottom: "5rem",
                   }}
                 >
                   {
@@ -2505,9 +2502,9 @@ export default function DbComponent(props: Props) {
                 cursor: "pointer",
                 border:
                   state == "archived"
-                    ? "solid goldenrod"
+                    ? "2px solid goldenrod"
                     : omni
-                    ? "solid violet"
+                    ? "2px solid violet"
                     : "",
               }}
             >
@@ -3340,6 +3337,12 @@ export default function DbComponent(props: Props) {
               ) : (
                 <div>
                   <MedicalID
+                    // tooltip={
+                    //   moment(medical_due_on, "DD/MM/YYYY").diff(
+                    //     moment(today),
+                    //     "months"
+                    //   ) <= 2
+                    // }
                     name={name}
                     completedOn={medical_completed_on}
                     dueOn={medical_due_on}

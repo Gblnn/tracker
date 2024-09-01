@@ -277,6 +277,9 @@ textarea:focus {
 }
 
 .record-list {
+  padding-right: 0.5rem;
+  padding-bottom: 5rem;
+  padding-top: 0.65rem;
   mask: linear-gradient(#0000, #000 3% 85%, #0000);
   -webkit-mask: linear-gradient(#0000, #000 3% 85%, #0000);
 }
