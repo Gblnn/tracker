@@ -55,7 +55,7 @@ export default function MedicalID(props: Props) {
                 textAlign: "left",
               }}
             >
-              Medical Card
+              Medical ID
             </p>
           </div>
           <div style={{ border: "", padding: "1rem" }}>

@@ -1862,7 +1862,7 @@ export default function DbComponent(props: Props) {
                         style={{ justifyContent: "flex-start" }}
                         value="created_on"
                       >
-                        Original{" "}
+                        Original
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -2083,7 +2083,6 @@ export default function DbComponent(props: Props) {
                               setDateofJoin(post.dateofJoin);
                               setSalaryBasic(post.salaryBasic);
                               setAllowance(post.allowance);
-
                               setInitialSalary(post.initialSalary);
                               setInitialAllowance(post.initialAllowance);
                               setRemarks(post.remarks);
@@ -3948,7 +3947,6 @@ export default function DbComponent(props: Props) {
                         padding: "0.25rem",
                       }}
                     >
-                      <User color="dodgerblue" width={"1.25rem"} />
                       {name}
                     </p>
                     <br />
@@ -4500,7 +4498,6 @@ export default function DbComponent(props: Props) {
                       padding: "0.25rem",
                     }}
                   >
-                    <User color="dodgerblue" width={"1.25rem"} />
                     {name}
                   </p>
                   <br />
