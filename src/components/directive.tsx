@@ -39,6 +39,7 @@ interface Props {
   customTitle?: boolean;
   height?: string;
   notName?: boolean;
+  className?: string;
 }
 
 export default function Directive(props: Props) {
@@ -48,9 +49,10 @@ export default function Directive(props: Props) {
     <Link
       onClick={() => (props.selectable ? setSelected(!selected) : null)}
       to={props.to}
+      className={props.className}
       style={{
         display: "flex",
-        width: "100%",
+
         opacity: props.archived ? 0.5 : 1,
         height: props.height ? props.height : "",
       }}

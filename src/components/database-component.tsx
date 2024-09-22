@@ -60,6 +60,7 @@ import {
   HeartPulse,
   Image,
   ImageOff,
+  Inbox,
   ListStart,
   MinusSquareIcon,
   PackageOpen,
@@ -70,7 +71,6 @@ import {
   Sparkles,
   Trash,
   UploadCloud,
-  User,
   UserCircle,
   X,
 } from "lucide-react";
@@ -302,6 +302,7 @@ export default function DbComponent(props: Props) {
   const [sortby, setSortBy] = useState("name");
   const [omni, setOmni] = useState(false);
   const [omniLoad, setOmniLoad] = useState(false);
+  const [access, setAccess] = useState(false);
 
   {
     /* //////////////////////////////////////////////////////////////////////////////////////////////////////*/
@@ -1575,6 +1576,8 @@ export default function DbComponent(props: Props) {
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
           {/* BACK BUTTON */}
           <Back
+            editMode={access}
+            onTap={() => setAccess(!access)}
             title={
               props.title
 
@@ -1617,18 +1620,27 @@ export default function DbComponent(props: Props) {
                     )}
                   </button>
 
-                  {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
-                                <InboxIcon className="" color="crimson"/>
-                            </button> */}
-
-                  <DbDropDown
-                    onUpload={() => setImportDialog(true)}
-                    onExport={exportDB}
-                    onInbox={() => usenavigate("/inbox")}
-                    onArchives={() => usenavigate("/archives")}
-                    onAccess={() => usenavigate("/access-control")}
-                    trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
-                  />
+                  {access && (
+                    <DbDropDown
+                      onUpload={() => setImportDialog(true)}
+                      onExport={exportDB}
+                      onInbox={() => usenavigate("/inbox")}
+                      onArchives={() => usenavigate("/archives")}
+                      onAccess={() => usenavigate("/access-control")}
+                      trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
+                    />
+                  )}
+                  {!access && (
+                    <button
+                      onClick={() => usenavigate("/inbox")}
+                      style={{
+                        width: "3rem",
+                        background: "rgba(220 20 60/ 20%)",
+                      }}
+                    >
+                      <Inbox className="" color="crimson" width={"1.25rem"} />
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div
@@ -1790,16 +1802,20 @@ export default function DbComponent(props: Props) {
                     flex: 1,
                   }}
                 >
-                  <button
-                    className={selectable ? "blue" : ""}
-                    onClick={() => {
-                      setSelectable(!selectable);
-                      selectable && setChecked([]);
-                      !selectable && setSelected(false);
-                    }}
-                  >
-                    <CheckSquare2 color={selectable ? "white" : "dodgerblue"} />
-                  </button>
+                  {access && (
+                    <button
+                      className={selectable ? "blue" : ""}
+                      onClick={() => {
+                        setSelectable(!selectable);
+                        selectable && setChecked([]);
+                        !selectable && setSelected(false);
+                      }}
+                    >
+                      <CheckSquare2
+                        color={selectable ? "white" : "dodgerblue"}
+                      />
+                    </button>
+                  )}
 
                   <SearchBar
                     placeholder="Search"
@@ -1875,7 +1891,7 @@ export default function DbComponent(props: Props) {
                   style={{
                     display: "flex",
                     gap: "0.6rem",
-                    flexFlow: "column",
+
                     overflowY: "auto",
                     height: "74svh",
                   }}
@@ -1898,6 +1914,7 @@ export default function DbComponent(props: Props) {
                           whileInView={{ opacity: 1 }}
                         >
                           <Directive
+                            className="record-item"
                             space
                             new={
                               moment(post.created_on.toDate()).fromNow() ==
@@ -2125,7 +2142,6 @@ export default function DbComponent(props: Props) {
                                   >
                                     <p
                                       style={{
-                                        paddingTop: "0.1rem",
                                         fontWeight: 600,
                                       }}
                                     >
@@ -2190,30 +2206,33 @@ export default function DbComponent(props: Props) {
         </motion.div>
 
         {/* ADD RECORD BUTTON */}
-        <AddRecordButton
-          onClickSwap={selectable}
-          onClick={() => {
-            setAddDialog(true);
-            setName("");
-            setEmail("");
-            setEmployeeCode("");
-            setCompanyName("");
-            setDateofJoin("");
-            setSalaryBasic(0);
-            setAllowance(0);
-            setContact("");
-          }}
-          alternateOnClick={() => {
-            checked.length < 1 ? null : setBulkDeleteDialog(true);
-          }}
-          icon={
-            selectable ? (
-              <Trash color={checked.length < 1 ? "#5a5a5a" : "crimson"} />
-            ) : (
-              <Plus color="dodgerblue" />
-            )
-          }
-        />
+
+        {access && (
+          <AddRecordButton
+            onClickSwap={selectable}
+            onClick={() => {
+              setAddDialog(true);
+              setName("");
+              setEmail("");
+              setEmployeeCode("");
+              setCompanyName("");
+              setDateofJoin("");
+              setSalaryBasic(0);
+              setAllowance(0);
+              setContact("");
+            }}
+            alternateOnClick={() => {
+              checked.length < 1 ? null : setBulkDeleteDialog(true);
+            }}
+            icon={
+              selectable ? (
+                <Trash color={checked.length < 1 ? "#5a5a5a" : "crimson"} />
+              ) : (
+                <Plus color="dodgerblue" />
+              )
+            }
+          />
+        )}
 
         {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
@@ -2367,7 +2386,7 @@ export default function DbComponent(props: Props) {
           tags
           onTitleClick={() =>
             props.dbCategory == "personal"
-              ? ToggleOmniscience()
+              ? access && ToggleOmniscience()
               : message.info("Omniscience retrace on parent record")
           }
           contact={contact}
@@ -2545,26 +2564,28 @@ export default function DbComponent(props: Props) {
               style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
             >
               {state == "active" ? (
-                <button
-                  onClick={handleNotify}
-                  style={{
-                    paddingLeft: "1rem",
-                    paddingRight: "1rem",
-                    height: "2.5rem",
-                  }}
-                >
-                  {notifyLoading ? (
-                    <LoadingOutlined color="dodgerblue" />
-                  ) : notify ? (
-                    <BellRing
-                      color="dodgerblue"
-                      width={"1rem"}
-                      fill="dodgerblue"
-                    />
-                  ) : (
-                    <BellOff width={"1rem"} color="dodgerblue" />
-                  )}
-                </button>
+                access && (
+                  <button
+                    onClick={handleNotify}
+                    style={{
+                      paddingLeft: "1rem",
+                      paddingRight: "1rem",
+                      height: "2.5rem",
+                    }}
+                  >
+                    {notifyLoading ? (
+                      <LoadingOutlined color="dodgerblue" />
+                    ) : notify ? (
+                      <BellRing
+                        color="dodgerblue"
+                        width={"1rem"}
+                        fill="dodgerblue"
+                      />
+                    ) : (
+                      <BellOff width={"1rem"} color="dodgerblue" />
+                    )}
+                  </button>
+                )
               ) : (
                 <Tooltip title="All notifications paused">
                   <button
@@ -2582,20 +2603,22 @@ export default function DbComponent(props: Props) {
                 </Tooltip>
               )}
 
-              <DropDown
-                onExtra={() => setArchivePrompt(true)}
-                extraText={state == "active" ? "Archive" : "Unarchive"}
-                onDelete={() => {
-                  setUserDeletePrompt(true);
-                  fetchLeave();
-                  fetchSalary();
-                  fetchAllowance();
-                }}
-                onEdit={() => {
-                  setUserEditPrompt(true);
-                }}
-                trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
-              />
+              {access && (
+                <DropDown
+                  onExtra={() => setArchivePrompt(true)}
+                  extraText={state == "active" ? "Archive" : "Unarchive"}
+                  onDelete={() => {
+                    setUserDeletePrompt(true);
+                    fetchLeave();
+                    fetchSalary();
+                    fetchAllowance();
+                  }}
+                  onEdit={() => {
+                    setUserEditPrompt(true);
+                  }}
+                  trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
+                />
+              )}
             </div>
           }
           close
@@ -2874,16 +2897,17 @@ export default function DbComponent(props: Props) {
                     Renew
                   </button>
                 ) : null}
-
-                <DropDown
-                  onDelete={() => {
-                    setCivilDelete(true);
-                  }}
-                  onEdit={() => {
-                    setEditcivilprompt(true);
-                  }}
-                  trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
-                />
+                {access && (
+                  <DropDown
+                    onDelete={() => {
+                      setCivilDelete(true);
+                    }}
+                    onEdit={() => {
+                      setEditcivilprompt(true);
+                    }}
+                    trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
+                  />
+                )}
               </div>
             ) : null
           }
@@ -3041,16 +3065,17 @@ export default function DbComponent(props: Props) {
                 {/* <DropDown onDelete={()=>{setVehicleIdDelete(true)}} 
                 onEdit={()=>{setEditVehicleIDprompt(true)}} 
                 trigger={<EllipsisVerticalIcon width={"1.1rem"}/>} */}
-
-                <DropDown
-                  onDelete={() => {
-                    setVehicleIdDelete(true);
-                  }}
-                  onEdit={() => {
-                    setEditVehicleIDprompt(true);
-                  }}
-                  trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
-                />
+                {access && (
+                  <DropDown
+                    onDelete={() => {
+                      setVehicleIdDelete(true);
+                    }}
+                    onEdit={() => {
+                      setEditVehicleIDprompt(true);
+                    }}
+                    trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
+                  />
+                )}
               </div>
             ) : null
           }
@@ -3290,15 +3315,17 @@ export default function DbComponent(props: Props) {
                   </button>
                 ) : null}
 
-                <DropDown
-                  onDelete={() => {
-                    setDeleteMedicalIDdialog(true);
-                  }}
-                  onEdit={() => {
-                    setEditMedicalIDdialog(true);
-                  }}
-                  trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
-                />
+                {access && (
+                  <DropDown
+                    onDelete={() => {
+                      setDeleteMedicalIDdialog(true);
+                    }}
+                    onEdit={() => {
+                      setEditMedicalIDdialog(true);
+                    }}
+                    trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
+                  />
+                )}
               </div>
             ) : null
           }
@@ -3716,15 +3743,17 @@ export default function DbComponent(props: Props) {
                   </button>
                 ) : null}
 
-                <DropDown
-                  onDelete={() => {
-                    setDeletePassportDialog(true);
-                  }}
-                  onEdit={() => {
-                    setEditPassportDialog(true);
-                  }}
-                  trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
-                />
+                {access && (
+                  <DropDown
+                    onDelete={() => {
+                      setDeletePassportDialog(true);
+                    }}
+                    onEdit={() => {
+                      setEditPassportDialog(true);
+                    }}
+                    trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
+                  />
+                )}
               </div>
             ) : null
           }
@@ -3890,7 +3919,7 @@ export default function DbComponent(props: Props) {
 
         <DefaultDialog
           created_on={initialSalary}
-          codeIcon={<User width={"0.8rem"} color="dodgerblue" />}
+          code={employeeCode}
           close
           title={"Initial Salary"}
           titleIcon={<CircleDollarSign />}
@@ -4065,42 +4094,43 @@ export default function DbComponent(props: Props) {
                   ))}
                 </div>
               )}
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: "0.5rem",
-                  width: "100%",
-                  zIndex: "",
-                }}
-              >
-                <input
-                  type="search"
-                  id="input-1"
-                  value={newSalary == 0 ? "" : newSalary}
-                  onChange={(e: any) => setNewSalary(e.target.value)}
-                  placeholder="New Salary"
-                  style={{ flex: 1.5 }}
-                />
-                <button
-                  onClick={addNewSalary}
-                  style={{ fontSize: "0.8rem", flex: 0.15 }}
+              {access && (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "0.5rem",
+                    width: "100%",
+                    zIndex: "",
+                  }}
                 >
-                  {loading ? (
-                    <LoadingOutlined />
-                  ) : (
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "0.5rem",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Plus width={"1.25rem"} color="lightgreen" />
-                    </div>
-                  )}
-                </button>
-              </div>
+                  <input
+                    type="search"
+                    id="input-1"
+                    value={newSalary == 0 ? "" : newSalary}
+                    onChange={(e: any) => setNewSalary(e.target.value)}
+                    placeholder="New Salary"
+                    style={{ flex: 1.5 }}
+                  />
+                  <button
+                    onClick={addNewSalary}
+                    style={{ fontSize: "0.8rem", flex: 0.15 }}
+                  >
+                    {loading ? (
+                      <LoadingOutlined />
+                    ) : (
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "0.5rem",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Plus width={"1.25rem"} color="lightgreen" />
+                      </div>
+                    )}
+                  </button>
+                </div>
+              )}
             </>
           }
         />
@@ -4108,7 +4138,7 @@ export default function DbComponent(props: Props) {
         {/* LEAVE LOG DIALOG */}
         <DefaultDialog
           codeTooltip="Employee Name"
-          codeIcon={<User color="dodgerblue" width={"0.8rem"} />}
+          code={employeeCode}
           close
           open={leaveLog}
           onCancel={() => setLeaveLog(false)}
@@ -4156,10 +4186,15 @@ export default function DbComponent(props: Props) {
 
                 <div
                   style={{
-                    border: "",
+                    border: "1px solid rgba(100 100 100/ 70%)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
+                    paddingLeft: "0.75rem",
+                    paddingRight: "0.75rem",
+                    paddingBottom: "0.35rem",
+                    paddingTop: "0.35rem",
+                    borderRadius: "0.75rem",
                   }}
                 >
                   <div style={{ border: "" }}>
@@ -4168,6 +4203,7 @@ export default function DbComponent(props: Props) {
                         display: "flex",
                         gap: "0.25rem",
                         alignItems: "center",
+                        border: "",
                       }}
                     >
                       <p
@@ -4176,17 +4212,31 @@ export default function DbComponent(props: Props) {
                           opacity: 0.5,
                           justifyContent: "",
                           display: "flex",
+                          gap: "0.75rem",
                         }}
                       >
                         Block Period
                       </p>
+
+                      <p
+                        style={{
+                          fontSize: "0.8rem",
+                          background: "rgba(100 100 100/ 20%)",
+                          borderRadius: "0.5rem",
+                          paddingLeft: "0.35rem",
+                          paddingRight: "0.35rem",
+                        }}
+                      >
+                        1.5 months
+                      </p>
+
                       {leaves ? (
                         <p style={{ fontSize: "0.75rem", opacity: 0.5 }}>
                           {"( "}extended by {leaves} days{" )"}
                         </p>
                       ) : null}
                     </div>
-
+                    <p style={{ height: "0.25rem" }}></p>
                     <div
                       style={{
                         display: "flex",
@@ -4212,9 +4262,7 @@ export default function DbComponent(props: Props) {
                   </div>
 
                   <div>
-                    <p style={{ fontSize: "0.8rem", opacity: 0.5 }}>
-                      Total Leaves
-                    </p>
+                    <p style={{ fontSize: "0.8rem", opacity: 0.5 }}>Total</p>
                     <p
                       style={{
                         fontWeight: 600,
@@ -4297,51 +4345,52 @@ export default function DbComponent(props: Props) {
                   ))}
                 </div>
               )}
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: "0.5rem",
-                  width: "100%",
-                  zIndex: "",
-                }}
-              >
-                <input
-                  type="search"
-                  id="input-1"
-                  value={editedLeaveFrom}
-                  onChange={(e: any) => setEditedLeaveFrom(e.target.value)}
-                  placeholder="From"
-                  style={{ flex: 1.5 }}
-                />
-
-                <input
-                  type="search"
-                  id="input-2"
-                  value={editedLeaveTill}
-                  onChange={(e: any) => setEditedLeaveTill(e.target.value)}
-                  placeholder="Till"
-                  style={{ flex: 1.5 }}
-                />
-                <button
-                  onClick={addLeave}
-                  style={{ fontSize: "0.8rem", flex: 0.45 }}
+              {access && (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "0.5rem",
+                    width: "100%",
+                    zIndex: "",
+                  }}
                 >
-                  {loading ? (
-                    <LoadingOutlined />
-                  ) : (
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "0.5rem",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Plus width={"1.25rem"} color="#8884d8" />
-                    </div>
-                  )}
-                </button>
-              </div>
+                  <input
+                    type="search"
+                    id="input-1"
+                    value={editedLeaveFrom}
+                    onChange={(e: any) => setEditedLeaveFrom(e.target.value)}
+                    placeholder="From"
+                    style={{ flex: 1.5 }}
+                  />
+
+                  <input
+                    type="search"
+                    id="input-2"
+                    value={editedLeaveTill}
+                    onChange={(e: any) => setEditedLeaveTill(e.target.value)}
+                    placeholder="Till"
+                    style={{ flex: 1.5 }}
+                  />
+                  <button
+                    onClick={addLeave}
+                    style={{ fontSize: "0.8rem", flex: 0.45 }}
+                  >
+                    {loading ? (
+                      <LoadingOutlined />
+                    ) : (
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "0.5rem",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Plus width={"1.25rem"} color="#8884d8" />
+                      </div>
+                    )}
+                  </button>
+                </div>
+              )}
             </>
           }
         />
@@ -4350,7 +4399,7 @@ export default function DbComponent(props: Props) {
           title={"Leave Review"}
           open={leaveReview}
           onCancel={() => setLeaveReview(false)}
-          inputplaceholder="Leave From"
+          inputplaceholder={"Leave From"}
           input1Value={leaveFrom}
           input2Value={leaveTill}
           input3Value={expectedReturn}
@@ -4442,7 +4491,7 @@ export default function DbComponent(props: Props) {
 
       <DefaultDialog
         created_on={initialAllowance}
-        codeIcon={<User width={"0.8rem"} color="dodgerblue" />}
+        code={employeeCode}
         close
         title={"Initial Allowance"}
         open={allowanceDialog}
@@ -4617,43 +4666,44 @@ export default function DbComponent(props: Props) {
                 ))}
               </div>
             )}
-
-            <div
-              style={{
-                display: "flex",
-                gap: "0.5rem",
-                width: "100%",
-                zIndex: "",
-              }}
-            >
-              <input
-                type="search"
-                id="input-1"
-                value={newAllowance == 0 ? "" : newAllowance}
-                onChange={(e: any) => setNewAllowance(e.target.value)}
-                placeholder="New Allowance"
-                style={{ flex: 1.5 }}
-              />
-
-              <button
-                onClick={addNewAllowance}
-                style={{ fontSize: "0.8rem", flex: 0.15 }}
+            {access && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: "0.5rem",
+                  width: "100%",
+                  zIndex: "",
+                }}
               >
-                {loading ? (
-                  <LoadingOutlined />
-                ) : (
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "0.5rem",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Plus width={"1.25rem"} color="salmon" />
-                  </div>
-                )}
-              </button>
-            </div>
+                <input
+                  type="search"
+                  id="input-1"
+                  value={newAllowance == 0 ? "" : newAllowance}
+                  onChange={(e: any) => setNewAllowance(e.target.value)}
+                  placeholder="New Allowance"
+                  style={{ flex: 1.5 }}
+                />
+
+                <button
+                  onClick={addNewAllowance}
+                  style={{ fontSize: "0.8rem", flex: 0.15 }}
+                >
+                  {loading ? (
+                    <LoadingOutlined />
+                  ) : (
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "0.5rem",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Plus width={"1.25rem"} color="salmon" />
+                    </div>
+                  )}
+                </button>
+              </div>
+            )}
           </>
         }
       />

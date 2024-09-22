@@ -185,7 +185,12 @@ export default function Login() {
             <p />
             <button
               onClick={handleLoginIn}
-              style={{ background: "midnightblue" }}
+              className={loading ? "disabled" : ""}
+              style={{
+                background: "midnightblue",
+                display: "flex",
+                gap: "0.75rem",
+              }}
             >
               {loading ? <LoadingOutlined /> : ""}
               LOGIN

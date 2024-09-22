@@ -58,6 +58,12 @@ b {
   }
 }
 
+@media (width>700px) {
+  .record-list {
+    flex-wrap: wrap;
+  }
+}
+
 .blue:hover {
   background: rgb(27, 128, 228);
 }
@@ -282,6 +288,8 @@ textarea:focus {
   padding-top: 0.65rem;
   mask: linear-gradient(#0000, #000 3% 85%, #0000);
   -webkit-mask: linear-gradient(#0000, #000 3% 85%, #0000);
+  flex-wrap: wrap;
+  flex-flow: column;
 }
 
 /* Custom Scrollbar */
