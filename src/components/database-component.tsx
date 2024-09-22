@@ -47,6 +47,7 @@ import {
   BellRing,
   Book,
   Car,
+  Check,
   CheckSquare2,
   CircleDollarSign,
   CreditCard,
@@ -86,6 +87,7 @@ import DbDropDown from "./db-dropdown";
 import ImageDialog from "./image-dialog";
 import SheetComponent from "./sheet-component";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select";
+import RefreshButton from "./refresh-button";
 
 type Record = {
   id: string;
@@ -303,6 +305,7 @@ export default function DbComponent(props: Props) {
   const [omni, setOmni] = useState(false);
   const [omniLoad, setOmniLoad] = useState(false);
   const [access, setAccess] = useState(false);
+  const [refreshCompleted, setRefreshCompleted] = useState(false);
 
   {
     /* //////////////////////////////////////////////////////////////////////////////////////////////////////*/
@@ -435,9 +438,13 @@ export default function DbComponent(props: Props) {
       });
 
       setfetchingData(false);
+      setRefreshCompleted(true);
       setRecords(fetchedData);
       setChecked([]);
       setSelectable(false);
+      setTimeout(() => {
+        setRefreshCompleted(false);
+      }, 1000);
     } catch (error) {
       console.log(error);
       message.info(String(error));
@@ -1595,30 +1602,11 @@ export default function DbComponent(props: Props) {
                             Ctrl + I
                         </button> */}
 
-                  <button
-                    className="transitions blue-glass"
-                    style={{
-                      paddingLeft: "1rem",
-                      paddingRight: "1rem",
-                      width: "3rem",
-                    }}
-                    onClick={() => {
-                      fetchData();
-                    }}
-                  >
-                    {fetchingData ? (
-                      <>
-                        <LoadingOutlined style={{ color: "dodgerblue" }} />
-                        {/* <p style={{fontSize:"0.8rem", opacity:0.5}}>Updating</p> */}
-                      </>
-                    ) : (
-                      <RefreshCcw
-                        width={"1.25rem"}
-                        height={"1.25rem"}
-                        color="dodgerblue"
-                      />
-                    )}
-                  </button>
+                  <RefreshButton
+                    onClick={() => fetchData()}
+                    refreshCompleted={refreshCompleted}
+                    fetchingData={fetchingData}
+                  />
 
                   {access && (
                     <DbDropDown
