@@ -54,7 +54,7 @@ export default function Index() {
                   style={{ width: "3rem" }}
                   onClick={() => usenavigate("/history")}
                 >
-                  <HistoryIcon width={"1.25rem"} color="grey" />
+                  <HistoryIcon width={"1.1rem"} color="dodgerblue" />
                 </button>
 
                 {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
@@ -76,7 +76,6 @@ export default function Index() {
 
           <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
             <Directive
-              protected
               onClick={() => handleLoginPrompt("ssu")}
               title="Sohar Star United"
               icon={
@@ -95,7 +94,6 @@ export default function Index() {
             />
 
             <Directive
-              protected
               onClick={() => handleLoginPrompt("vale")}
               title="Vale Team"
               icon={

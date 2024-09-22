@@ -17,6 +17,7 @@ export default function RefreshButton(props: Props) {
           paddingLeft: "1rem",
           paddingRight: "1rem",
           width: "3rem",
+          height: "2.75rem",
         }}
         onClick={props.onClick}
       >

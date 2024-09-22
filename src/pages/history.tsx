@@ -1,11 +1,11 @@
 import Back from "@/components/back";
 import Directive from "@/components/directive";
+import RefreshButton from "@/components/refresh-button";
 import { db } from "@/firebase";
-import { LoadingOutlined } from "@ant-design/icons";
 import { message } from "antd";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { ArrowRight, RefreshCcw } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import ReactTimeAgo from "react-time-ago";
@@ -13,6 +13,7 @@ import ReactTimeAgo from "react-time-ago";
 export default function History() {
   const [fetchingData, setfetchingData] = useState(false);
   const [records, setRecords] = useState<any>([]);
+  const [refreshCompleted, setRefreshCompleted] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -35,6 +36,10 @@ export default function History() {
 
       setfetchingData(false);
       setRecords(fetchedData);
+      setRefreshCompleted(true);
+      setTimeout(() => {
+        setRefreshCompleted(false);
+      }, 1000);
     } catch (error) {
       setfetchingData(false);
     }
@@ -57,19 +62,24 @@ export default function History() {
           <Back
             title={"History" + " (" + records.length + ")"}
             extra={
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button
-                  onClick={fetchData}
-                  className="blue-glass"
-                  style={{ width: "3rem", height: "2.75rem" }}
-                >
-                  {fetchingData ? (
-                    <LoadingOutlined />
-                  ) : (
-                    <RefreshCcw color="dodgerblue" width={"1rem"} />
-                  )}
-                </button>
-              </div>
+              <RefreshButton
+                onClick={fetchData}
+                fetchingData={fetchingData}
+                refreshCompleted={refreshCompleted}
+              />
+              //   <div style={{ display: "flex", gap: "0.5rem" }}>
+              //     <button
+              //       onClick={fetchData}
+              //       className="blue-glass"
+              //       style={{ width: "3rem", height: "2.75rem" }}
+              //     >
+              //       {fetchingData ? (
+              //         <LoadingOutlined />
+              //       ) : (
+              //         <RefreshCcw color="dodgerblue" width={"1rem"} />
+              //       )}
+              //     </button>
+              //   </div>
             }
           />
           <br />

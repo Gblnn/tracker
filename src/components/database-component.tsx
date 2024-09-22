@@ -39,6 +39,7 @@ import {
 } from "firebase/storage";
 import { motion } from "framer-motion";
 import {
+  Archive,
   ArrowDown,
   ArrowDown01,
   ArrowDownAZ,
@@ -47,13 +48,13 @@ import {
   BellRing,
   Book,
   Car,
-  Check,
   CheckSquare2,
   CircleDollarSign,
   CreditCard,
   Disc,
   Download,
   EllipsisVerticalIcon,
+  Eye,
   File,
   FileDown,
   Globe,
@@ -85,9 +86,9 @@ import useKeyboardShortcut from "use-keyboard-shortcut";
 import { exportDatabase, getBlank } from "./component-functions";
 import DbDropDown from "./db-dropdown";
 import ImageDialog from "./image-dialog";
+import RefreshButton from "./refresh-button";
 import SheetComponent from "./sheet-component";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select";
-import RefreshButton from "./refresh-button";
 
 type Record = {
   id: string;
@@ -2551,45 +2552,45 @@ export default function DbComponent(props: Props) {
             <div
               style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
             >
-              {state == "active" ? (
-                access && (
-                  <button
-                    onClick={handleNotify}
-                    style={{
-                      paddingLeft: "1rem",
-                      paddingRight: "1rem",
-                      height: "2.5rem",
-                    }}
-                  >
-                    {notifyLoading ? (
-                      <LoadingOutlined color="dodgerblue" />
-                    ) : notify ? (
-                      <BellRing
-                        color="dodgerblue"
-                        width={"1rem"}
-                        fill="dodgerblue"
-                      />
-                    ) : (
-                      <BellOff width={"1rem"} color="dodgerblue" />
-                    )}
-                  </button>
-                )
-              ) : (
-                <Tooltip title="All notifications paused">
-                  <button
-                    style={{
-                      fontSize: "0.8rem",
-                      width: "4.5rem",
-                      opacity: "0.75",
-                      border: "",
-                      height: "2rem",
-                      color: "",
-                    }}
-                  >
-                    Archived
-                  </button>
-                </Tooltip>
-              )}
+              {state == "active"
+                ? access && (
+                    <button
+                      onClick={handleNotify}
+                      style={{
+                        paddingLeft: "1rem",
+                        paddingRight: "1rem",
+                        height: "2.5rem",
+                      }}
+                    >
+                      {notifyLoading ? (
+                        <LoadingOutlined color="dodgerblue" />
+                      ) : notify ? (
+                        <BellRing
+                          color="dodgerblue"
+                          width={"1rem"}
+                          fill="dodgerblue"
+                        />
+                      ) : (
+                        <BellOff width={"1rem"} color="dodgerblue" />
+                      )}
+                    </button>
+                  )
+                : access && (
+                    <Tooltip title="All notifications paused">
+                      <button
+                        style={{
+                          fontSize: "0.8rem",
+
+                          opacity: "0.75",
+                          border: "",
+                          height: "2.5rem",
+                          color: "",
+                        }}
+                      >
+                        <Archive />
+                      </button>
+                    </Tooltip>
+                  )}
 
               {access && (
                 <DropDown
@@ -2606,6 +2607,18 @@ export default function DbComponent(props: Props) {
                   }}
                   trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
                 />
+              )}
+              {!access && (
+                <button
+                  style={{
+                    height: "2rem",
+                    fontSize: "0.8rem",
+                    opacity: "0.75",
+                  }}
+                >
+                  <Eye width={"1rem"} color="dodgerblue" />
+                  Preview
+                </button>
               )}
             </div>
           }
