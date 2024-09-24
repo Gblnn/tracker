@@ -7,6 +7,7 @@ import {
   Circle,
   EllipsisVerticalIcon,
   LockKeyholeIcon,
+  PenLine,
 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -41,6 +42,7 @@ interface Props {
   height?: string;
   notName?: boolean;
   className?: string;
+  editableTag?: boolean;
 }
 
 export default function Directive(props: Props) {
@@ -233,7 +235,17 @@ export default function Directive(props: Props) {
                     <Archive width={"1rem"} />
                   </div>
                 ) : (
-                  <p style={{ textTransform: "capitalize" }}>{props.tag}</p>
+                  <p
+                    style={{
+                      textTransform: "capitalize",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    {props.editableTag && <PenLine width={"0.65rem"} />}
+                    {props.tag}
+                  </p>
                 )}
               </div>
             )
@@ -251,7 +263,9 @@ export default function Directive(props: Props) {
               }
             />
           ) : (
-            <ChevronRight width={"1rem"} />
+            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
+              <ChevronRight width={"1rem"} />
+            </motion.div>
           )}
         </div>
       </button>

@@ -4318,7 +4318,17 @@ export default function DbComponent(props: Props) {
                     }
                   </div>
 
-                  <div>
+                  <div
+                    style={{
+                      height: "100%",
+                      borderLeft: "1px solid rgba(100 100 100/ 75%)",
+                      paddingLeft: "1rem",
+                      display: "flex",
+                      flexFlow: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
                     <p style={{ fontSize: "0.8rem", opacity: 0.5 }}>Total</p>
                     <p
                       style={{
@@ -4326,6 +4336,7 @@ export default function DbComponent(props: Props) {
                         border: "",
                         textAlign: "right",
                         fontSize: "1.5rem",
+                        lineHeight: "1.5rem",
                       }}
                     >
                       {leaves}
@@ -4357,12 +4368,13 @@ export default function DbComponent(props: Props) {
                     display: "flex",
                     flexFlow: "column",
                     gap: "0.35rem",
-                    maxHeight: "11.25rem",
+                    maxHeight: "12.25rem",
                     overflowY: "auto",
                     paddingRight: "",
                     minHeight: "2.25rem",
                     marginBottom: "1rem",
                     padding: "0.5rem",
+                    paddingTop: "0",
                   }}
                 >
                   {leaveList.map((e: any) => (
@@ -4372,15 +4384,18 @@ export default function DbComponent(props: Props) {
                       whileInView={{ opacity: 1 }}
                     >
                       <Directive
+                        editableTag
                         notName
                         tagOnClick={() => {
-                          setLeaveReview(true);
-                          setLeaveFrom(e.leaveFrom);
-                          e.pending == false
-                            ? setLeaveTill(e.leaveTill)
-                            : setLeaveTill(""),
-                            setLeaveID(e.id);
-                          setExpectedReturn(e.expectedReturn);
+                          if (access) {
+                            setLeaveReview(true);
+                            setLeaveFrom(e.leaveFrom);
+                            e.pending == false
+                              ? setLeaveTill(e.leaveTill)
+                              : setLeaveTill(""),
+                              setLeaveID(e.id);
+                            setExpectedReturn(e.expectedReturn);
+                          }
                         }}
                         status={true}
                         tag={e.pending ? "Pending" : e.days + " Days"}
