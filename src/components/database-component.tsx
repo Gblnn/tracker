@@ -2130,12 +2130,17 @@ export default function DbComponent(props: Props) {
                                   height={"1.75rem"}
                                 />
                               ) : (
-                                <LazyLoader
-                                  name={post.name}
-                                  type={post.type}
-                                  profile={post.profile}
-                                  block
-                                />
+                                <motion.div
+                                  initial={{ opacity: 0 }}
+                                  whileInView={{ opacity: 1 }}
+                                >
+                                  <LazyLoader
+                                    name={post.name}
+                                    type={post.type}
+                                    profile={post.profile}
+                                    block
+                                  />
+                                </motion.div>
                               )
                             }
                           />

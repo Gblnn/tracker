@@ -11,6 +11,7 @@ import {
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import DropDown from "./dropdown";
+import { motion } from "framer-motion";
 
 interface Props {
   title?: any;
@@ -82,17 +83,19 @@ export default function Directive(props: Props) {
                 alignItems: "center",
               }}
             >
-              <CheckSquare2
-                width={"1.75rem"}
-                height={"1.75rem"}
-                className="check-square"
-                fill={
-                  selected || props.selected
-                    ? "dodgerblue"
-                    : "rgba(100 100 100/ 50%)"
-                }
-                stroke={selected || props.selected ? "white" : "none"}
-              />
+              <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
+                <CheckSquare2
+                  width={"1.75rem"}
+                  height={"1.75rem"}
+                  className="check-square"
+                  fill={
+                    selected || props.selected
+                      ? "dodgerblue"
+                      : "rgba(100 100 100/ 50%)"
+                  }
+                  stroke={selected || props.selected ? "white" : "none"}
+                />
+              </motion.div>
             </div>
           ) : (
             props.icon
