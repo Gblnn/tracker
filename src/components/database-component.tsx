@@ -44,6 +44,7 @@ import {
   ArrowDown01,
   ArrowDownAZ,
   ArrowUp,
+  BarChart3,
   BellOff,
   BellRing,
   Book,
@@ -78,7 +79,6 @@ import {
 } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
-import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/blur.css";
 import { useNavigate } from "react-router-dom";
 import ReactTimeAgo from "react-time-ago";
@@ -86,6 +86,7 @@ import useKeyboardShortcut from "use-keyboard-shortcut";
 import { exportDatabase, getBlank } from "./component-functions";
 import DbDropDown from "./db-dropdown";
 import ImageDialog from "./image-dialog";
+import LazyLoader from "./lazy-loader";
 import RefreshButton from "./refresh-button";
 import SheetComponent from "./sheet-component";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select";
@@ -458,7 +459,7 @@ export default function DbComponent(props: Props) {
     const salaryQuery = query(
       collection(db, "salary-record"),
       orderBy("created_on", "desc"),
-      where("employeeID", "==", doc_id)
+      where("employeeCode", "==", employeeCode)
     );
     const snapshot = await getDocs(salaryQuery);
     const SalaryData: any = [];
@@ -474,7 +475,7 @@ export default function DbComponent(props: Props) {
     const allowanceQuery = query(
       collection(db, "allowance-record"),
       orderBy("created_on", "desc"),
-      where("employeeID", "==", doc_id)
+      where("employeeCode", "==", employeeCode)
     );
     const snapshot = await getDocs(allowanceQuery);
     const AllowanceData: any = [];
@@ -558,7 +559,7 @@ export default function DbComponent(props: Props) {
     const leaveQuery = query(
       collection(db, "leave-record"),
       orderBy("created_on", "desc"),
-      where("employeeID", "==", doc_id)
+      where("employeeCode", "==", employeeCode)
     );
     const snapshot = await getDocs(leaveQuery);
     const LeaveData: any = [];
@@ -604,6 +605,7 @@ export default function DbComponent(props: Props) {
         "days"
       ),
       pending: editedLeaveTill ? false : true,
+      employeeCode: employeeCode,
     });
     id = doc_id;
     await leaveSum();
@@ -1620,15 +1622,17 @@ export default function DbComponent(props: Props) {
                     />
                   )}
                   {!access && (
-                    <button
-                      onClick={() => usenavigate("/inbox")}
-                      style={{
-                        width: "3rem",
-                        background: "rgba(220 20 60/ 20%)",
-                      }}
-                    >
-                      <Inbox className="" color="crimson" width={"1.25rem"} />
-                    </button>
+                    <Tooltip title="Ctrl + I">
+                      <button
+                        onClick={() => usenavigate("/inbox")}
+                        style={{
+                          width: "3rem",
+                          background: "rgba(220 20 60/ 20%)",
+                        }}
+                      >
+                        <Inbox className="" color="crimson" width={"1.25rem"} />
+                      </button>
+                    </Tooltip>
                   )}
                 </div>
               ) : (
@@ -1857,12 +1861,12 @@ export default function DbComponent(props: Props) {
                       >
                         Name
                       </SelectItem>
-                      <SelectItem
+                      {/* <SelectItem
                         style={{ justifyContent: "flex-start" }}
                         value="employeeCode"
                       >
                         Code
-                      </SelectItem>
+                      </SelectItem> */}
                       <SelectItem
                         style={{ justifyContent: "flex-start" }}
                         value="created_on"
@@ -1885,23 +1889,32 @@ export default function DbComponent(props: Props) {
                     height: "74svh",
                   }}
                 >
-                  {
-                    // RECORD DATA MAPPING
-                    records
-                      .filter((post: any) => {
-                        return search == ""
-                          ? {}
-                          : post.name &&
-                              post.name
-                                .toLowerCase()
-                                .includes(search.toLowerCase());
-                      })
-                      .map((post: any) => (
-                        <motion.div
-                          key={post.id}
-                          initial={{ opacity: 0 }}
-                          whileInView={{ opacity: 1 }}
-                        >
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    style={{
+                      display: "flex",
+                      flexFlow: "column",
+                      gap: "0.6rem",
+                    }}
+                  >
+                    {
+                      // RECORD DATA MAPPING
+                      records
+                        .filter((post: any) => {
+                          return search == ""
+                            ? {}
+                            : post.name &&
+                                post.name
+                                  .toLowerCase()
+                                  .includes(search.toLowerCase());
+                        })
+                        .map((post: any) => (
+                          // <motion.div
+                          //   key={post.id}
+                          //   initial={{ opacity: 0 }}
+                          //   whileInView={{ opacity: 1 }}
+                          // >
                           <Directive
                             className="record-item"
                             space
@@ -2111,53 +2124,18 @@ export default function DbComponent(props: Props) {
                                   height={"1.75rem"}
                                 />
                               ) : (
-                                <>
-                                  <div
-                                    style={{
-                                      background: "#1a1a1a",
-                                      color: "white",
-                                      height: "1.75rem",
-                                      width: "1.75rem",
-                                      position: "absolute",
-                                      borderRadius: "50%",
-                                      display: "flex",
-                                      justifyContent: "center",
-                                      alignItems: "center",
-                                      border:
-                                        post.type == "omni"
-                                          ? "2px solid violet"
-                                          : "",
-                                    }}
-                                  >
-                                    <p
-                                      style={{
-                                        fontWeight: 600,
-                                      }}
-                                    >
-                                      {post.name.charAt(0)}
-                                    </p>
-                                  </div>
-                                  <LazyLoadImage
-                                    useIntersectionObserver
-                                    delayMethod="debounce"
-                                    threshold={100}
-                                    effect="blur"
-                                    style={{
-                                      width: "1.75rem",
-                                      height: "1.75rem",
-                                      borderRadius: "50%",
-                                      objectFit: "cover",
-                                      display: "flex",
-                                    }}
-                                    src={post.profile}
-                                  />
-                                </>
+                                <LazyLoader
+                                  name={post.name}
+                                  type={post.type}
+                                  profile={post.profile}
+                                />
                               )
                             }
                           />
-                        </motion.div>
-                      ))
-                  }
+                          // </motion.div>
+                        ))
+                    }
+                  </motion.div>
                 </div>
               </div>
             )
@@ -4142,6 +4120,7 @@ export default function DbComponent(props: Props) {
           code={employeeCode}
           close
           open={leaveLog}
+          titleIcon={<BarChart3 />}
           onCancel={() => setLeaveLog(false)}
           title={"Leave Log"}
           title_extra={
@@ -4191,10 +4170,10 @@ export default function DbComponent(props: Props) {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    paddingLeft: "0.75rem",
-                    paddingRight: "0.75rem",
-                    paddingBottom: "0.35rem",
-                    paddingTop: "0.35rem",
+                    paddingLeft: "0.85rem",
+                    paddingRight: "1.25rem",
+                    paddingBottom: "0.65rem",
+                    paddingTop: "0.65rem",
                     borderRadius: "0.75rem",
                   }}
                 >
@@ -4202,7 +4181,7 @@ export default function DbComponent(props: Props) {
                     <div
                       style={{
                         display: "flex",
-                        gap: "0.25rem",
+                        gap: "0.45rem",
                         alignItems: "center",
                         border: "",
                       }}
@@ -4221,23 +4200,20 @@ export default function DbComponent(props: Props) {
 
                       <p
                         style={{
-                          fontSize: "0.8rem",
+                          fontSize: "0.75rem",
                           background: "rgba(100 100 100/ 20%)",
                           borderRadius: "0.5rem",
                           paddingLeft: "0.35rem",
                           paddingRight: "0.35rem",
+                          fontWeight: 600,
+                          color: "dodgerblue",
                         }}
                       >
-                        1.5 months
+                        18 months
                       </p>
-
-                      {leaves ? (
-                        <p style={{ fontSize: "0.75rem", opacity: 0.5 }}>
-                          {"( "}extended by {leaves} days{" )"}
-                        </p>
-                      ) : null}
                     </div>
-                    <p style={{ height: "0.25rem" }}></p>
+                    <p style={{ height: "0.5rem" }}></p>
+
                     <div
                       style={{
                         display: "flex",
@@ -4260,6 +4236,20 @@ export default function DbComponent(props: Props) {
                         )}
                       </p>
                     </div>
+                    <p style={{ height: "0.45rem" }}></p>
+                    {
+                      // leaves &&
+                      <p
+                        style={{
+                          fontSize: "0.7rem",
+                          opacity: 0.5,
+                          border: "",
+                          display: "flex",
+                        }}
+                      >
+                        extended by {leaves} days
+                      </p>
+                    }
                   </div>
 
                   <div>
@@ -4303,9 +4293,10 @@ export default function DbComponent(props: Props) {
                     gap: "0.35rem",
                     maxHeight: "11.25rem",
                     overflowY: "auto",
-                    paddingRight: "0.5rem",
+                    paddingRight: "",
                     minHeight: "2.25rem",
                     marginBottom: "1rem",
+                    padding: "0.5rem",
                   }}
                 >
                   {leaveList.map((e: any) => (
@@ -4315,6 +4306,7 @@ export default function DbComponent(props: Props) {
                       whileInView={{ opacity: 1 }}
                     >
                       <Directive
+                        notName
                         tagOnClick={() => {
                           setLeaveReview(true);
                           setLeaveFrom(e.leaveFrom);
@@ -4350,13 +4342,16 @@ export default function DbComponent(props: Props) {
                 <div
                   style={{
                     display: "flex",
-                    gap: "0.5rem",
+                    gap: "0.25rem",
                     width: "100%",
                     zIndex: "",
+                    border: "1px solid rgba(100 100 100/ 75%)",
+                    padding: "0.35rem",
+                    borderRadius: "0.75rem",
                   }}
                 >
                   <input
-                    type="search"
+                    type=""
                     id="input-1"
                     value={editedLeaveFrom}
                     onChange={(e: any) => setEditedLeaveFrom(e.target.value)}
@@ -4365,7 +4360,7 @@ export default function DbComponent(props: Props) {
                   />
 
                   <input
-                    type="search"
+                    type=""
                     id="input-2"
                     value={editedLeaveTill}
                     onChange={(e: any) => setEditedLeaveTill(e.target.value)}

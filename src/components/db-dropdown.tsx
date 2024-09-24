@@ -4,6 +4,7 @@ import {
   DownloadCloud,
   Inbox,
   KeyRound,
+  RefreshCcw,
   UploadCloud,
 } from "lucide-react";
 import {
@@ -75,13 +76,13 @@ export default function DbDropDown(props: Props) {
               <span style={{ width: "100%" }}>Inbox</span>
             </DropdownMenuItem>
 
-            {/* <DropdownMenuItem
+            <DropdownMenuItem
               onClick={() => window.location.reload()}
               style={{ width: "100%" }}
             >
               <RefreshCcw className="mr-2 " color="dodgerblue" />
               <span style={{ width: "100%" }}>Force Reload</span>
-            </DropdownMenuItem> */}
+            </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>

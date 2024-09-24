@@ -4,6 +4,7 @@ import { Route, Routes } from "react-router-dom";
 import ProtectedRoutes from "./components/protectedRoute";
 import Index from "./pages";
 import AccessControl from "./pages/access-control";
+import AdminPage from "./pages/admin-page";
 import Archives from "./pages/archives";
 import History from "./pages/history";
 import Inbox from "./pages/inbox";
@@ -13,7 +14,6 @@ import PageNotFound from "./pages/page-not-found";
 import Records from "./pages/records";
 import UserPage from "./pages/user";
 import ValeRecords from "./pages/vale-records";
-import AdminPage from "./pages/admin-page";
 
 export default function App() {
   useEffect(() => {
@@ -42,7 +42,6 @@ export default function App() {
             <Route path="/vale-records" element={<ValeRecords />} />
           </Route>
 
-          <Route path="/user" element={<UserPage />} />
           <Route path="/medicals" element={<Medicals />} />
           <Route path="/history" element={<History />} />
         </Route>

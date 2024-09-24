@@ -10,6 +10,7 @@ interface Props {
   subtitle?: any;
   onTap?: any;
   editMode?: boolean;
+  fontSize?: string;
 }
 
 export default function Back(props: Props) {
@@ -19,7 +20,7 @@ export default function Back(props: Props) {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "0.5rem",
+        gap: "0.75rem",
         zIndex: 5,
         justifyContent: "space-between",
       }}
@@ -51,18 +52,30 @@ export default function Back(props: Props) {
             style={{
               border: "",
               display: "flex",
-              height: "1.25rem",
+              height: "",
               alignItems: "center",
               gap: "0.5rem",
               justifyContent: "center",
             }}
           >
-            {props.icon}
+            {props.icon && (
+              <div
+                style={{
+                  border: "",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {props.icon}
+              </div>
+            )}
+
             <h2
               style={{
                 letterSpacing: "0.025rem",
                 fontWeight: 400,
-                fontSize: "1.5rem",
+                fontSize: props.fontSize ? props.fontSize : "1.5rem",
               }}
               onClick={props.onTap}
             >

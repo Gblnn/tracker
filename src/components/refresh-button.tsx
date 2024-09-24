@@ -24,7 +24,12 @@ export default function RefreshButton(props: Props) {
         {props.fetchingData ? (
           <LoadingOutlined style={{ color: "dodgerblue" }} />
         ) : props.refreshCompleted ? (
-          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ border: "", display: "flex" }}
+          >
             <Check
               color="dodgerblue"
               className="transitions"
@@ -33,7 +38,12 @@ export default function RefreshButton(props: Props) {
             />
           </motion.div>
         ) : (
-          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ border: "", display: "flex" }}
+          >
             <RefreshCcw width={"1rem"} height={"1rem"} color="dodgerblue" />
           </motion.div>
         )}
