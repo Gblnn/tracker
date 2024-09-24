@@ -4384,7 +4384,7 @@ export default function DbComponent(props: Props) {
                       whileInView={{ opacity: 1 }}
                     >
                       <Directive
-                        editableTag
+                        editableTag={access}
                         notName
                         tagOnClick={() => {
                           if (access) {
