@@ -45,6 +45,7 @@ import {
   ArrowDownAZ,
   ArrowUp,
   BarChart3,
+  BarChart3Icon,
   BellOff,
   BellRing,
   Book,
@@ -54,12 +55,14 @@ import {
   CreditCard,
   Disc,
   Download,
+  DownloadCloud,
   EllipsisVerticalIcon,
   Eye,
   File,
   FileDown,
   Globe,
   GraduationCap,
+  HandHelping,
   HeartPulse,
   Image,
   ImageOff,
@@ -308,6 +311,7 @@ export default function DbComponent(props: Props) {
   const [omniLoad, setOmniLoad] = useState(false);
   const [access, setAccess] = useState(false);
   const [refreshCompleted, setRefreshCompleted] = useState(false);
+  const [exportDialog, setExportDialog] = useState(false);
 
   {
     /* //////////////////////////////////////////////////////////////////////////////////////////////////////*/
@@ -1614,7 +1618,7 @@ export default function DbComponent(props: Props) {
                   {access && (
                     <DbDropDown
                       onUpload={() => setImportDialog(true)}
-                      onExport={exportDB}
+                      onExport={() => setExportDialog(true)}
                       onInbox={() => usenavigate("/inbox")}
                       onArchives={() => usenavigate("/archives")}
                       onAccess={() => usenavigate("/access-control")}
@@ -1790,8 +1794,10 @@ export default function DbComponent(props: Props) {
                 <div
                   style={{
                     display: "flex",
-                    gap: "0.5rem",
-                    border: "",
+                    gap: "0.35rem",
+                    padding: "",
+
+                    borderRadius: "0.85rem",
                     flex: 1,
                   }}
                 >
@@ -1816,31 +1822,6 @@ export default function DbComponent(props: Props) {
                       setSearch(e.target.value.toLowerCase());
                     }}
                   />
-
-                  <button
-                    onClick={() => setThumbnails(!thumbnails)}
-                    style={{
-                      width: "fit-content",
-                      fontSize: "0.7rem",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    {thumbnails ? (
-                      <ImageOff style={{ opacity: 0.5 }} width={"1.5rem"} />
-                    ) : (
-                      <Image color="dodgerblue" width={"1.5rem"} />
-                    )}
-                    {/* <p style={{opacity:0.5, fontWeight:400}}>Thumbnails</p> */}
-                  </button>
-
-                  {/* <button onClick={()=>setImportDialog(true)}>
-                            <UploadCloud color="salmon"/>
-                        </button> */}
-
-                  {/* <button>
-                            <ArrowDownAZ color="dodgerblue"/>
-                        </button> */}
 
                   <Select defaultValue="name" onValueChange={setSortBy}>
                     <SelectTrigger
@@ -1875,6 +1856,31 @@ export default function DbComponent(props: Props) {
                       </SelectItem>
                     </SelectContent>
                   </Select>
+
+                  <button
+                    onClick={() => setThumbnails(!thumbnails)}
+                    style={{
+                      width: "fit-content",
+                      fontSize: "0.7rem",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    {thumbnails ? (
+                      <ImageOff style={{ opacity: 0.5 }} width={"1.5rem"} />
+                    ) : (
+                      <Image color="dodgerblue" width={"1.5rem"} />
+                    )}
+                    {/* <p style={{opacity:0.5, fontWeight:400}}>Thumbnails</p> */}
+                  </button>
+
+                  {/* <button onClick={()=>setImportDialog(true)}>
+                            <UploadCloud color="salmon"/>
+                        </button> */}
+
+                  {/* <button>
+                            <ArrowDownAZ color="dodgerblue"/>
+                        </button> */}
                 </div>
 
                 <p style={{ height: "0.25rem" }} />
@@ -2128,6 +2134,7 @@ export default function DbComponent(props: Props) {
                                   name={post.name}
                                   type={post.type}
                                   profile={post.profile}
+                                  block
                                 />
                               )
                             }
@@ -2204,6 +2211,60 @@ export default function DbComponent(props: Props) {
         {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
         {/* Dialog Boxes 👇*/}
+
+        <DefaultDialog
+          close
+          code={".xlsx, .xls"}
+          codeIcon={<File width={"1rem"} color="dodgerblue" />}
+          onCancel={() => {
+            setExportDialog(false);
+            window.location.reload();
+          }}
+          open={exportDialog}
+          title={"Export Data"}
+          titleIcon={<DownloadCloud color="lightgreen" />}
+          extra={
+            <div
+              style={{
+                width: "100%",
+                display: "flex",
+                flexFlow: "column",
+                gap: "0.5rem",
+              }}
+            >
+              <Directive
+                icon={<File width={"1.25rem"} color="dodgerblue" />}
+                title={"Export Records"}
+                tag={<DownloadCloud width={"1.25rem"} />}
+                status
+                noArrow
+                onClick={exportDB}
+              />
+              <Directive
+                icon={<BarChart3Icon color="violet" width={"1.25rem"} />}
+                title={"Export Leave Log"}
+                tag={<DownloadCloud width={"1.25rem"} />}
+                status
+                noArrow
+              />
+              <Directive
+                title={"Export Salary Log"}
+                icon={<CircleDollarSign width={"1.25rem"} color="lightgreen" />}
+                tag={<DownloadCloud width={"1.25rem"} />}
+                status
+                noArrow
+              />
+              <Directive
+                notName
+                title={"Export Allowance Log"}
+                icon={<HandHelping color="salmon" />}
+                tag={<DownloadCloud width={"1.25rem"} />}
+                status
+                noArrow
+              />
+            </div>
+          }
+        />
 
         <DefaultDialog
           progress={progress}

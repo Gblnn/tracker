@@ -66,7 +66,14 @@ export default function Directive(props: Props) {
           justifyContent: "space-between",
         }}
       >
-        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "0.75rem",
+            alignItems: "center",
+            border: "",
+          }}
+        >
           {props.selectable ? (
             <div
               style={{

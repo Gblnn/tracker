@@ -13,7 +13,7 @@ interface Props {
 
 export default function LazyLoader(props: Props) {
   return (
-    <>
+    <div style={{ display: "flex" }}>
       <div
         style={{
           fontSize: props.fontSize ? props.fontSize : "",
@@ -51,6 +51,6 @@ export default function LazyLoader(props: Props) {
         }}
         src={props.profile}
       />
-    </>
+    </div>
   );
 }
