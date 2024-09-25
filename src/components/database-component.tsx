@@ -1616,27 +1616,36 @@ export default function DbComponent(props: Props) {
                   />
 
                   {access && (
-                    <DbDropDown
-                      onUpload={() => setImportDialog(true)}
-                      onExport={() => setExportDialog(true)}
-                      onInbox={() => usenavigate("/inbox")}
-                      onArchives={() => usenavigate("/archives")}
-                      onAccess={() => usenavigate("/access-control")}
-                      trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
-                    />
+                    <div style={{ display: "flex" }} className="transitions">
+                      <DbDropDown
+                        onUpload={() => setImportDialog(true)}
+                        onExport={() => setExportDialog(true)}
+                        onInbox={() => usenavigate("/inbox")}
+                        onArchives={() => usenavigate("/archives")}
+                        onAccess={() => usenavigate("/access-control")}
+                        trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
+                      />
+                    </div>
                   )}
                   {!access && (
-                    <Tooltip title="Ctrl + I">
-                      <button
-                        onClick={() => usenavigate("/inbox")}
-                        style={{
-                          width: "3rem",
-                          background: "rgba(220 20 60/ 20%)",
-                        }}
-                      >
-                        <Inbox className="" color="crimson" width={"1.25rem"} />
-                      </button>
-                    </Tooltip>
+                    <div style={{ display: "flex" }} className="transitions">
+                      <Tooltip title="Ctrl + I">
+                        <button
+                          className=""
+                          onClick={() => usenavigate("/inbox")}
+                          style={{
+                            width: "3rem",
+                            background: "rgba(220 20 60/ 20%)",
+                          }}
+                        >
+                          <Inbox
+                            className=""
+                            color="crimson"
+                            width={"1.25rem"}
+                          />
+                        </button>
+                      </Tooltip>
+                    </div>
                   )}
                 </div>
               ) : (
@@ -1792,6 +1801,7 @@ export default function DbComponent(props: Props) {
               >
                 {/* Searchbar */}
                 <div
+                  className="transitions"
                   style={{
                     display: "flex",
                     gap: "0.35rem",

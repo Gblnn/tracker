@@ -17,6 +17,7 @@ export default function Back(props: Props) {
   const usenavigate = useNavigate();
   return (
     <div
+      className="transitions"
       style={{
         display: "flex",
         alignItems: "center",
@@ -52,7 +53,7 @@ export default function Back(props: Props) {
             style={{
               border: "",
               display: "flex",
-              height: "",
+              height: "2.25rem",
               alignItems: "center",
               gap: "0.5rem",
               justifyContent: "center",
@@ -114,7 +115,16 @@ export default function Back(props: Props) {
                   {props.subtitle}
                 </p>
                 {props.editMode && (
-                  <PenLine width={"1rem"} height={"1rem"} color="dodgerblue" />
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                  >
+                    <PenLine
+                      width={"1rem"}
+                      height={"1rem"}
+                      color="dodgerblue"
+                    />
+                  </motion.div>
                 )}
               </motion.div>
             ) : (
