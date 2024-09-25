@@ -1,7 +1,8 @@
 import { LazyLoadImage } from "react-lazy-load-image-component";
+import { LoadingOutlined } from "@ant-design/icons";
 
 interface Props {
-  name: string;
+  name: any;
   type?: string;
   profile?: string;
   block?: boolean;
@@ -10,6 +11,7 @@ interface Props {
   fontSize?: string;
   background?: string;
   gradient?: boolean;
+  loading?: boolean;
 }
 
 export default function LazyLoader(props: Props) {
@@ -21,7 +23,7 @@ export default function LazyLoader(props: Props) {
           background: props.background
             ? props.background
             : props.gradient
-            ? "linear-gradient(#3a3a3a, #1a1a1a)"
+            ? "linear-gradient(#3a3a3a, #1e1e1e)"
             : "#1a1a1a",
           color: "white",
           height: props.height ? props.height : "1.75rem",
@@ -37,9 +39,15 @@ export default function LazyLoader(props: Props) {
         <p
           style={{
             fontWeight: 600,
+            display: "flex",
+            border: "solid",
           }}
         >
-          {props.name.charAt(0).toUpperCase()}
+          {props.loading ? (
+            <LoadingOutlined />
+          ) : (
+            props.name.charAt(0).toUpperCase()
+          )}
         </p>
       </div>
       <LazyLoadImage

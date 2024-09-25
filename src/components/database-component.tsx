@@ -2557,8 +2557,8 @@ export default function DbComponent(props: Props) {
               block
               width="4rem"
               height="4rem"
-              fontSize="1.65rem"
-              name={Array.from(name)[0]}
+              name={name}
+              loading={omniLoad}
             />
             // <Avatar
             //   style={{
