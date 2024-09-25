@@ -8,7 +8,6 @@ import InputDialog from "@/components/input-dialog";
 import MedicalID from "@/components/medical-id";
 import Passport from "@/components/passport";
 import SearchBar from "@/components/search-bar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import VehicleID from "@/components/vehicle-id";
 import { db, storage } from "@/firebase";
@@ -2145,6 +2144,7 @@ export default function DbComponent(props: Props) {
                                   whileInView={{ opacity: 1 }}
                                 >
                                   <LazyLoader
+                                    gradient
                                     name={post.name}
                                     type={post.type}
                                     profile={post.profile}
@@ -2552,36 +2552,44 @@ export default function DbComponent(props: Props) {
           bottomTagValue={leaves}
           bottomValueLoading={fetchingLeave}
           titleIcon={
-            <Avatar
-              style={{
-                width: "3.55rem",
-                height: "3.5rem",
-                objectFit: "cover",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                cursor: "pointer",
-                border:
-                  state == "archived"
-                    ? "2px solid goldenrod"
-                    : omni
-                    ? "2px solid violet"
-                    : "",
-              }}
-            >
-              <AvatarImage
-                onClick={() => setImageDialog(true)}
-                style={{ objectFit: "cover" }}
-                src={image}
-              />
-              <AvatarFallback>
-                {omniLoad ? (
-                  <LoadingOutlined />
-                ) : (
-                  <p style={{ paddingTop: "0.1rem" }}>{Array.from(name)[0]}</p>
-                )}
-              </AvatarFallback>
-            </Avatar>
+            <LazyLoader
+              gradient
+              block
+              width="4rem"
+              height="4rem"
+              fontSize="1.65rem"
+              name={Array.from(name)[0]}
+            />
+            // <Avatar
+            //   style={{
+            //     width: "3.55rem",
+            //     height: "3.5rem",
+            //     objectFit: "cover",
+            //     display: "flex",
+            //     justifyContent: "center",
+            //     alignItems: "center",
+            //     cursor: "pointer",
+            //     border:
+            //       state == "archived"
+            //         ? "2px solid goldenrod"
+            //         : omni
+            //         ? "2px solid violet"
+            //         : "",
+            //   }}
+            // >
+            //   <AvatarImage
+            //     onClick={() => setImageDialog(true)}
+            //     style={{ objectFit: "cover" }}
+            //     src={image}
+            //   />
+            //   <AvatarFallback>
+            //     {omniLoad ? (
+            //       <LoadingOutlined />
+            //     ) : (
+            //       <p style={{ paddingTop: "0.1rem" }}>{Array.from(name)[0]}</p>
+            //     )}
+            //   </AvatarFallback>
+            // </Avatar>
           }
           title={name}
           open={recordSummary}

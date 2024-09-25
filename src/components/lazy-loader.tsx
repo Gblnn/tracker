@@ -9,6 +9,7 @@ interface Props {
   width?: string;
   fontSize?: string;
   background?: string;
+  gradient?: boolean;
 }
 
 export default function LazyLoader(props: Props) {
@@ -17,7 +18,11 @@ export default function LazyLoader(props: Props) {
       <div
         style={{
           fontSize: props.fontSize ? props.fontSize : "",
-          background: props.background ? props.background : "#1a1a1a",
+          background: props.background
+            ? props.background
+            : props.gradient
+            ? "linear-gradient(#3a3a3a, #1a1a1a)"
+            : "#1a1a1a",
           color: "white",
           height: props.height ? props.height : "1.75rem",
           width: props.width ? props.width : "1.75rem",
