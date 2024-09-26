@@ -40,7 +40,7 @@ export default function LazyLoader(props: Props) {
           style={{
             fontWeight: 600,
             display: "flex",
-            border: "solid",
+            border: "",
           }}
         >
           {props.loading ? (
