@@ -12,6 +12,8 @@ interface Props {
   background?: string;
   gradient?: boolean;
   loading?: boolean;
+  state?: string;
+  omni?: boolean;
 }
 
 export default function LazyLoader(props: Props) {
@@ -33,7 +35,12 @@ export default function LazyLoader(props: Props) {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          border: props.type == "omni" ? "2px solid violet" : "",
+          border:
+            props.state == "archived"
+              ? "2px solid goldenrod"
+              : props.omni
+              ? "2px solid violet"
+              : "",
         }}
       >
         <p

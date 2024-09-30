@@ -2149,6 +2149,8 @@ export default function DbComponent(props: Props) {
                                     type={post.type}
                                     profile={post.profile}
                                     block
+                                    state={post.state}
+                                    omni={post.type == "omni"}
                                   />
                                 </motion.div>
                               )
@@ -2559,6 +2561,8 @@ export default function DbComponent(props: Props) {
               height="4rem"
               name={name}
               loading={omniLoad}
+              state={state}
+              omni={omni}
             />
             // <Avatar
             //   style={{
@@ -2642,14 +2646,14 @@ export default function DbComponent(props: Props) {
                       <button
                         style={{
                           fontSize: "0.8rem",
-
+                          width: "2.75rem",
                           opacity: "0.75",
                           border: "",
                           height: "2.5rem",
                           color: "",
                         }}
                       >
-                        <Archive />
+                        <Archive width={"1.15rem"} />
                       </button>
                     </Tooltip>
                   )}

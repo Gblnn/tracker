@@ -139,7 +139,7 @@ export default function DefaultDialog(props: Props) {
                       </div>
 
                       {
-                        <div style={{ display: "flex", gap: "0.75rem" }}>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
                           {props.code && (
                             <Tooltip
                               title={props.codeTooltip}
