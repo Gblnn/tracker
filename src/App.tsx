@@ -14,6 +14,7 @@ import PageNotFound from "./pages/page-not-found";
 import Records from "./pages/records";
 import UserPage from "./pages/user";
 import ValeRecords from "./pages/vale-records";
+import RecordList from "./pages/record-list";
 
 export default function App() {
   useEffect(() => {
@@ -32,6 +33,7 @@ export default function App() {
 
         <Route element={<ProtectedRoutes user={window.name} />}>
           <Route path="/index" element={<Index />} />
+          <Route path="/record-list" element={<RecordList />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/archives" element={<Archives />} />
           <Route path="/access-control" element={<AccessControl />} />

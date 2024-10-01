@@ -1,27 +1,27 @@
 import Back from "@/components/back";
 import Directive from "@/components/directive";
 import InputDialog from "@/components/input-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { auth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { motion } from "framer-motion";
-import {
-  FileArchive,
-  KeyRound,
-  LogOut,
-  Mail,
-  RefreshCcw,
-  UserPlus,
-} from "lucide-react";
+import { HistoryIcon, KeyRound, Mail } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function Index() {
+export default function RecordList() {
   const [requestDialog, setRequestDialog] = useState(false);
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [valeLoginPrompt, setValeLoginPrompt] = useState(false);
   const [logoutPrompt, setLogoutPrompt] = useState(false);
   const usenavigate = useNavigate();
+
+  const handleLoginPrompt = (e: string) => {
+    e == "ssu" && setLoginPrompt(true);
+
+    e == "vale" && setValeLoginPrompt(true);
+  };
 
   return (
     <>
@@ -38,40 +38,32 @@ export default function Index() {
       >
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
           <Back
-            title="StarDox"
-            icon={<img src="/stardox-bg.png" style={{ width: "2rem" }} />}
-            noback
+            title="Records"
+            // icon={<FileArchive color="violet" width={"2rem"} />}
             extra={
-              <div
-                style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
-              >
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                {/* <button onClick={()=>window.location.reload()} style={{paddingLeft:"1rem", paddingRight:"1rem", fontSize:"0.8rem"}}>
+                        
+                            <p style={{opacity:0.5, letterSpacing:"0.15rem"}}>
+                                v1.18
+                            </p>
+                        </button> */}
+
                 <button
-                  onClick={() => window.location.reload()}
                   style={{
+                    width: "",
                     paddingLeft: "1rem",
                     paddingRight: "1rem",
-                    fontSize: "0.75rem",
-                    opacity: "0.75",
                   }}
+                  onClick={() => usenavigate("/history")}
                 >
-                  <RefreshCcw width={"1rem"} color="dodgerblue" />
-                  <p style={{ opacity: 0.5, letterSpacing: "0.15rem" }}>
-                    v1.18
-                  </p>
+                  <p style={{ fontSize: "0.8rem" }}>History</p>
+                  <HistoryIcon width={"1.1rem"} color="dodgerblue" />
                 </button>
 
                 {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
                             <Inbox className="" color="crimson"/>
                         </button> */}
-
-                <button
-                  onClick={() => {
-                    setLogoutPrompt(true);
-                  }}
-                  style={{ width: "3rem" }}
-                >
-                  <LogOut width={"1rem"} color="lightcoral" />
-                </button>
               </div>
             }
           />
@@ -79,17 +71,6 @@ export default function Index() {
 
           <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
             <Directive
-              to={"/record-list"}
-              title={"Records Master"}
-              icon={<FileArchive color="violet" width={"1.25rem"} />}
-            />
-
-            <Directive
-              title={"New Hire"}
-              icon={<UserPlus width={"1.25rem"} color="dodgerblue" />}
-            />
-
-            {/* <Directive
               onClick={() => handleLoginPrompt("ssu")}
               title="Sohar Star United"
               icon={
@@ -124,7 +105,7 @@ export default function Index() {
                   </AvatarFallback>
                 </Avatar>
               }
-            /> */}
+            />
 
             {/* <Directive onClick={()=>{setRequestDialog(true)}} title="Request Feature" icon={<Plus color="grey" width={"1.1rem"} height={"1.1rem"}/>}/> */}
           </div>
