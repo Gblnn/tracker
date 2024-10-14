@@ -15,6 +15,7 @@ import Records from "./pages/records";
 import UserPage from "./pages/user";
 import ValeRecords from "./pages/vale-records";
 import RecordList from "./pages/record-list";
+import NewHire from "./pages/new-hire";
 
 export default function App() {
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/archives" element={<Archives />} />
           <Route path="/access-control" element={<AccessControl />} />
           <Route path="/user" element={<UserPage />} />
+          <Route path="/new-hire" element={<NewHire />} />
 
           <Route element={<ProtectedRoutes user={"user"} />}>
             <Route path="/records" element={<Records />} />

@@ -5,18 +5,11 @@ import DefaultDialog from "@/components/ui/default-dialog";
 import { auth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { motion } from "framer-motion";
-import {
-  FileArchive,
-  KeyRound,
-  LogOut,
-  Mail,
-  RefreshCcw,
-  UserPlus,
-} from "lucide-react";
+import { File, KeyRound, Mail } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function Index() {
+export default function NewHire() {
   const [requestDialog, setRequestDialog] = useState(false);
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [valeLoginPrompt, setValeLoginPrompt] = useState(false);
@@ -38,14 +31,12 @@ export default function Index() {
       >
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
           <Back
-            title="StarDox"
-            icon={<img src="/stardox-bg.png" style={{ width: "2rem" }} />}
-            noback
+            title="New Hire"
             extra={
               <div
                 style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
               >
-                <button
+                {/* <button
                   onClick={() => window.location.reload()}
                   style={{
                     paddingLeft: "1rem",
@@ -58,20 +49,20 @@ export default function Index() {
                   <p style={{ opacity: 0.5, letterSpacing: "0.15rem" }}>
                     v1.18
                   </p>
-                </button>
+                </button> */}
 
                 {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
                             <Inbox className="" color="crimson"/>
                         </button> */}
 
-                <button
+                {/* <button
                   onClick={() => {
                     setLogoutPrompt(true);
                   }}
                   style={{ width: "3rem" }}
                 >
                   <LogOut width={"1rem"} color="lightcoral" />
-                </button>
+                </button> */}
               </div>
             }
           />
@@ -80,15 +71,14 @@ export default function Index() {
           <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
             <Directive
               to={"/record-list"}
-              title={"Records Master"}
-              icon={<FileArchive color="violet" width={"1.25rem"} />}
+              title={"Offer Letters"}
+              icon={<File color="violet" width={"1.25rem"} />}
             />
 
-            <Directive
-              to={"/new-hire"}
+            {/* <Directive
               title={"New Hire"}
               icon={<UserPlus width={"1.25rem"} color="dodgerblue" />}
-            />
+            /> */}
 
             {/* <Directive
               onClick={() => handleLoginPrompt("ssu")}
