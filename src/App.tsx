@@ -16,6 +16,7 @@ import UserPage from "./pages/user";
 import ValeRecords from "./pages/vale-records";
 import RecordList from "./pages/record-list";
 import NewHire from "./pages/new-hire";
+import UserReset from "./pages/user-reset";
 
 export default function App() {
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function App() {
 
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="/user-reset" element={<UserReset />} />
         <Route path="/inbox" element={<Inbox />} />
 
         <Route element={<ProtectedRoutes user={window.name} />}>

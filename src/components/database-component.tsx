@@ -599,6 +599,7 @@ export default function DbComponent(props: Props) {
   const addLeave = async () => {
     setLoading(true);
     await addDoc(collection(db, "leave-record"), {
+      name: name,
       employeeID: doc_id,
       created_on: Timestamp.fromDate(new Date()),
       leaveFrom: editedLeaveFrom,
