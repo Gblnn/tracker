@@ -18,7 +18,6 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [authStatus, setAuthStatus] = useState("");
 
   setPersistence(auth, browserSessionPersistence);
 
@@ -39,7 +38,6 @@ export default function Login() {
     });
     console.log(fetchedData[0].role, fetchedData[0].email);
     fetchedData[0].role == "admin" ? (window.name = fetchedData[0].email) : "";
-    fetchedData[0].role == "admin" && setAuthStatus("admin");
     window.location.reload();
     setLoading(false);
   };

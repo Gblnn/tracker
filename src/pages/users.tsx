@@ -32,8 +32,8 @@ export default function Users() {
   const [loading, setLoading] = useState(false);
 
   const [display_name, setDisplayName] = useState("");
-  const [display_email, setDisplayEmail] = useState("");
-  const [role, setRole] = useState("");
+  // const [display_email, setDisplayEmail] = useState("");
+  // const [role, setRole] = useState("");
 
   const auth = getAuth();
 
@@ -147,7 +147,7 @@ export default function Users() {
                 onClick={() => {
                   setUserDialog(true);
                   setDisplayName(user.name);
-                  setDisplayEmail(user.email);
+                  // setDisplayEmail(user.email);
                 }}
                 key={user.id}
                 icon={
