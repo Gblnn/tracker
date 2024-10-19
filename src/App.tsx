@@ -17,6 +17,8 @@ import ValeRecords from "./pages/vale-records";
 import RecordList from "./pages/record-list";
 import NewHire from "./pages/new-hire";
 import UserReset from "./pages/user-reset";
+import RequestAccess from "./pages/request-access";
+import Users from "./pages/users";
 
 export default function App() {
   useEffect(() => {
@@ -32,12 +34,14 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/user-reset" element={<UserReset />} />
+        <Route path="/request-access" element={<RequestAccess />} />
         <Route path="/inbox" element={<Inbox />} />
 
         <Route element={<ProtectedRoutes user={window.name} />}>
           <Route path="/index" element={<Index />} />
           <Route path="/record-list" element={<RecordList />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/users" element={<Users />} />
           <Route path="/archives" element={<Archives />} />
           <Route path="/access-control" element={<AccessControl />} />
           <Route path="/user" element={<UserPage />} />

@@ -5,9 +5,8 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { LoadingOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { KeyRound } from "lucide-react";
 
-export default function UserReset() {
+export default function RequestAccess() {
   const [email, setEmail] = useState("");
   const auth = getAuth();
   const [loading, setLoading] = useState(false);
@@ -70,24 +69,37 @@ export default function UserReset() {
                 fontSize: "1.35rem",
                 textTransform: "uppercase",
                 fontWeight: "600",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
               }}
             >
-              <KeyRound color="dodgerblue" />
-              Reset Password
+              Request Access
             </p>
             <p style={{ fontSize: "0.8rem", opacity: 0.75 }}>
-              Recieve a password recovery link in your mail for your account.
+              Your request will be reviewed and verified by the organization
+              before granting you access.
             </p>
 
-            <input
-              onChange={(e) => {
-                setEmail(e.target.value);
-              }}
-              placeholder="Enter Email"
-            ></input>
+            <div
+              style={{ display: "flex", flexFlow: "column", gap: "0.75rem" }}
+            >
+              {/* <input
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                }}
+                placeholder="Enter Full Name"
+              ></input> */}
+
+              <input
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                }}
+                placeholder="Enter Employee Code"
+              ></input>
+
+              <p style={{ fontSize: "0.6rem", opacity: 0.5 }}>
+                Please consult the HR Department to acquire or enquire about
+                your employee code{" "}
+              </p>
+            </div>
 
             <button
               onClick={ResetPassword}
@@ -98,7 +110,7 @@ export default function UserReset() {
                 fontSize: "0.9rem",
               }}
             >
-              {loading ? <LoadingOutlined /> : "Send Recovery Email"}
+              {loading ? <LoadingOutlined /> : "Request Access"}
             </button>
           </div>
         </motion.div>

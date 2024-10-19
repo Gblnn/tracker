@@ -1,27 +1,41 @@
 import Back from "@/components/back";
 import Directive from "@/components/directive";
+import IndexDropDown from "@/components/index-dropdown";
 import InputDialog from "@/components/input-dialog";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { auth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { motion } from "framer-motion";
-import {
-  FileArchive,
-  KeyRound,
-  LogOut,
-  Mail,
-  RefreshCcw,
-  UserPlus,
-} from "lucide-react";
+import { Bug, FileArchive, KeyRound, Mail, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import emailjs from "@emailjs/browser";
+import moment from "moment";
 
 export default function Index() {
   const [requestDialog, setRequestDialog] = useState(false);
+  const [bugDialog, setBugDialog] = useState(false);
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [valeLoginPrompt, setValeLoginPrompt] = useState(false);
   const [logoutPrompt, setLogoutPrompt] = useState(false);
   const usenavigate = useNavigate();
+  const [issue, setIssue] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const serviceId = "service_fixajl8";
+  const templateId = "template_0f3zy3e";
+
+  const sendBugReport = async () => {
+    setLoading(true);
+    await emailjs.send(serviceId, templateId, {
+      name: auth.currentUser?.email,
+      subject: "Bug Report - " + moment().format("ll"),
+      recipient: "goblinn688@gmail.com",
+      message: issue,
+    });
+    setLoading(false);
+    setBugDialog(false);
+  };
 
   return (
     <>
@@ -39,13 +53,14 @@ export default function Index() {
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
           <Back
             title="StarDox"
-            icon={<img src="/stardox-bg.png" style={{ width: "2rem" }} />}
+            subtitle={"v2.0"}
+            // icon={<img src="/stardox-bg.png" style={{ width: "2rem" }} />}
             noback
             extra={
               <div
                 style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
               >
-                <button
+                {/* <button
                   onClick={() => window.location.reload()}
                   style={{
                     paddingLeft: "1rem",
@@ -58,20 +73,44 @@ export default function Index() {
                   <p style={{ opacity: 0.5, letterSpacing: "0.15rem" }}>
                     v1.18
                   </p>
-                </button>
+                </button> */}
 
                 {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
                             <Inbox className="" color="crimson"/>
                         </button> */}
 
-                <button
+                {/* <button
                   onClick={() => {
                     setLogoutPrompt(true);
                   }}
                   style={{ width: "3rem" }}
                 >
                   <LogOut width={"1rem"} color="lightcoral" />
+                </button> */}
+
+                <button
+                  onClick={() => usenavigate("/admin")}
+                  style={{
+                    fontSize: "0.75rem",
+                    paddingLeft: "1rem",
+                    paddingRight: "1rem",
+                  }}
+                >
+                  <KeyRound color="dodgerblue" width={"1rem"} />
                 </button>
+
+                <button
+                  style={{
+                    fontSize: "0.75rem",
+                    paddingLeft: "1rem",
+                    paddingRight: "1rem",
+                  }}
+                  onClick={() => setBugDialog(true)}
+                >
+                  <Bug width={"1rem"} color="lightgreen" />
+                </button>
+
+                <IndexDropDown onLogout={() => setLogoutPrompt(true)} />
               </div>
             }
           />
@@ -89,6 +128,16 @@ export default function Index() {
               title={"New Hire"}
               icon={<UserPlus width={"1.25rem"} color="dodgerblue" />}
             />
+
+            {/* <Directive
+              notName
+              to={""}
+              title={"Report a Bug"}
+              icon={<Bug width={"1.25rem"} color="lightgreen" />}
+              onClick={() => {
+                setBugDialog(true);
+              }}
+            /> */}
 
             {/* <Directive
               onClick={() => handleLoginPrompt("ssu")}
@@ -130,6 +179,35 @@ export default function Index() {
             {/* <Directive onClick={()=>{setRequestDialog(true)}} title="Request Feature" icon={<Plus color="grey" width={"1.1rem"} height={"1.1rem"}/>}/> */}
           </div>
         </motion.div>
+
+        <DefaultDialog
+          title={"Report a Bug"}
+          titleIcon={<Bug color="lightgreen" />}
+          extra={
+            <div
+              style={{
+                display: "flex",
+                width: "100%",
+                flexFlow: "column",
+                gap: "0.75rem",
+              }}
+            >
+              <textarea
+                onChange={(e) => setIssue(e.target.value)}
+                rows={5}
+                placeholder="Describe issue"
+              />
+            </div>
+          }
+          open={bugDialog}
+          onCancel={() => setBugDialog(false)}
+          OkButtonText="Report"
+          disabled={issue == ""}
+          onOk={() => {
+            issue != "" ? sendBugReport() : "";
+          }}
+          updating={loading}
+        />
 
         <DefaultDialog
           titleIcon={<Mail />}

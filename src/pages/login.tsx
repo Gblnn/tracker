@@ -1,5 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox";
-import { auth } from "@/firebase";
+import { auth, db } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import { message } from "antd";
 import {
@@ -7,6 +7,7 @@ import {
   setPersistence,
   signInWithEmailAndPassword,
 } from "firebase/auth";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -17,56 +18,45 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [authStatus, setAuthStatus] = useState("");
 
   setPersistence(auth, browserSessionPersistence);
 
   useEffect(() => {
-    window.name && usenavigate("/index");
+    window.name != "" && usenavigate("/index");
   }, []);
+
+  const AuthenticateRole = async () => {
+    const RecordCollection = collection(db, "users");
+    const recordQuery = query(
+      RecordCollection,
+      where("email", "==", auth.currentUser?.email)
+    );
+    const querySnapshot = await getDocs(recordQuery);
+    const fetchedData: any = [];
+    querySnapshot.forEach((doc: any) => {
+      fetchedData.push({ id: doc.id, ...doc.data() });
+    });
+    console.log(fetchedData[0].role, fetchedData[0].email);
+    fetchedData[0].role == "admin" ? (window.name = fetchedData[0].email) : "";
+    fetchedData[0].role == "admin" && setAuthStatus("admin");
+    window.location.reload();
+    setLoading(false);
+  };
 
   const handleLoginIn = async () => {
     try {
       setLoading(true);
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      window.name = String(userCredential.user.email);
-      console.log(window.name);
-      setLoading(false);
-      window.name ? window.location.reload() : message.error("Login Failed");
+      await signInWithEmailAndPassword(auth, email, password);
+      AuthenticateRole();
+      console.log(auth.currentUser);
     } catch (err: any) {
       setLoading(false);
       const errorMessage = err.message;
       console.log(err.message);
-
-      switch (err.code) {
-        case "auth/invalid-email":
-          message.error("This email address is invalid.");
-          break;
-        case "auth/user-disabled":
-          message.error("This email address is disabled by the administrator.");
-          break;
-        case "auth/user-not-found":
-          message.error("This email address is not registered.");
-          break;
-        case "auth/wrong-password":
-          message.error(
-            "The password is invalid or the user does not have a password."
-          );
-          break;
-        default:
-          message.error(errorMessage);
-          break;
-      }
+      message.error(errorMessage);
     }
   };
-
-  // const handleDevKey = () => {
-  //   window.name = "key";
-  //   window.location.reload();
-  // };
 
   return (
     <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
@@ -241,20 +231,21 @@ export default function Login() {
                 Developer Key
               </Button> */}
               <p style={{ opacity: 0.5, fontSize: "0.65rem", border: "" }}>
-                If you do not have an account you can request for access. You
-                will be granted access to create an account once your request is
+                If you do not have an account you can request for one. You will
+                be granted access to create an account once your request is
                 reviewed and verified by the organization.
               </p>
-              <a
+              <Link
                 style={{
                   fontSize: "0.8rem",
                   color: "mediumslateblue",
                   fontWeight: "600",
                   cursor: "pointer",
                 }}
+                to={"/request-access"}
               >
                 Request Access
-              </a>
+              </Link>
             </div>
           </div>
         </div>

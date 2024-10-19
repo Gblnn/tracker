@@ -5,6 +5,7 @@ import LazyLoader from "@/components/lazy-loader";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { motion } from "framer-motion";
 import {
+  Book,
   Car,
   CreditCard,
   EllipsisVerticalIcon,
@@ -58,7 +59,7 @@ export default function UserPage() {
           />
 
           <Directive
-            icon={<Car width={"1.1rem"} height={"1.1rem"} color="goldenrod" />}
+            icon={<Car width={"1.1rem"} height={"1.1rem"} color="violet" />}
             title="Vehicle"
           />
 
@@ -67,6 +68,11 @@ export default function UserPage() {
               <HeartPulse width={"1.1rem"} height={"1.1rem"} color="tomato" />
             }
             title="Medical"
+          />
+
+          <Directive
+            icon={<Book width={"1.1rem"} height={"1.1rem"} color="goldenrod" />}
+            title="Passport"
           />
         </div>
       </motion.div>
