@@ -112,6 +112,7 @@ export default function Users() {
       setLoading(false);
       setUserDialog(false);
       message.success("Updated User");
+      fetchUsers();
     } catch (error) {
       setLoading(false);
       message.error(String(error));
@@ -203,7 +204,6 @@ export default function Users() {
       </motion.div>
 
       <DefaultDialog
-        code={display_email}
         title={display_name}
         titleIcon={<User color="dodgerblue" />}
         codeIcon={<AtSign color="dodgerblue" width={"1rem"} />}
@@ -221,6 +221,12 @@ export default function Users() {
               gap: "0.5rem",
             }}
           >
+            <Directive
+              notName
+              title={display_email}
+              noArrow
+              icon={<AtSign width={"1.24rem"} color="dodgerblue" />}
+            />
             <SelectMenu value={role.toLowerCase()} onChange={setRole} />
             <ClearanceMenu
               value={clearance ? clearance : "Undefined"}

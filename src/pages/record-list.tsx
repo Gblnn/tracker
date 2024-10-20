@@ -3,8 +3,11 @@ import Directive from "@/components/directive";
 import InputDialog from "@/components/input-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import DefaultDialog from "@/components/ui/default-dialog";
-import { auth } from "@/firebase";
+import { auth, db } from "@/firebase";
+import { LoadingOutlined } from "@ant-design/icons";
+import { message } from "antd";
 import { signOut } from "firebase/auth";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { HistoryIcon, KeyRound, Mail } from "lucide-react";
 import { useState } from "react";
@@ -16,11 +19,47 @@ export default function RecordList() {
   const [valeLoginPrompt, setValeLoginPrompt] = useState(false);
   const [logoutPrompt, setLogoutPrompt] = useState(false);
   const usenavigate = useNavigate();
+  const [verifyDialog, setVerifyDialog] = useState(false);
+  // const [loading, setLoading] = useState(false);
 
   const handleLoginPrompt = (e: string) => {
-    e == "ssu" && setLoginPrompt(true);
+    e == "ssu" && verify("ssu");
 
-    e == "vale" && setValeLoginPrompt(true);
+    e == "vale" && verify("vale");
+  };
+
+  const verify = async (e: string) => {
+    setVerifyDialog(true);
+    try {
+      // setLoading(true);
+
+      const RecordCollection = collection(db, "users");
+      const recordQuery = query(
+        RecordCollection,
+        where("email", "==", window.name)
+      );
+      const querySnapshot = await getDocs(recordQuery);
+      const fetchedData: any = [];
+      querySnapshot.forEach((doc: any) => {
+        fetchedData.push({ id: doc.id, ...doc.data() });
+      });
+      // setLoading(false);
+      setVerifyDialog(false);
+
+      e == "ssu" && fetchedData[0].clearance == "All"
+        ? usenavigate("/records")
+        : e == "vale" && fetchedData[0].clearance == "All"
+        ? usenavigate("/vale-records")
+        : e == "ssu" && fetchedData[0].clearance == "Sohar Star United"
+        ? usenavigate("/records")
+        : e == "vale" && fetchedData[0].clearance == "Vale"
+        ? usenavigate("/vale-records")
+        : message.error("No clearance to access");
+    } catch (error) {
+      setVerifyDialog(false);
+      // setLoading(false);
+      message.error(String(error));
+    }
   };
 
   return (
@@ -130,6 +169,14 @@ export default function RecordList() {
           OkButtonText="Reach out"
           onCancel={() => setRequestDialog(false)}
           sendmail
+        />
+
+        <DefaultDialog
+          onCancel={() => setVerifyDialog(false)}
+          close
+          open={verifyDialog}
+          title={"Verifying"}
+          titleIcon={<LoadingOutlined />}
         />
 
         <InputDialog
