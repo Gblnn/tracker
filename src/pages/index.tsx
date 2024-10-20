@@ -4,17 +4,16 @@ import IndexDropDown from "@/components/index-dropdown";
 import InputDialog from "@/components/input-dialog";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { auth, db } from "@/firebase";
+import { LoadingOutlined } from "@ant-design/icons";
+import emailjs from "@emailjs/browser";
+import { message } from "antd";
 import { signOut } from "firebase/auth";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { Bug, FileArchive, KeyRound, Mail, UserPlus } from "lucide-react";
+import moment from "moment";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import emailjs from "@emailjs/browser";
-import moment from "moment";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { message } from "antd";
-import { LoadingOutlined } from "@ant-design/icons";
-import ReleaseNote from "@/components/release-note";
 
 export default function Index() {
   const [requestDialog, setRequestDialog] = useState(false);

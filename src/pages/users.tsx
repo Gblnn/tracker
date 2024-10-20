@@ -203,7 +203,7 @@ export default function Users() {
       </motion.div>
 
       <DefaultDialog
-        code={role}
+        code={display_email}
         title={display_name}
         titleIcon={<User color="dodgerblue" />}
         codeIcon={<AtSign color="dodgerblue" width={"1rem"} />}

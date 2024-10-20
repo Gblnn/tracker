@@ -10,7 +10,7 @@ import Passport from "@/components/passport";
 import SearchBar from "@/components/search-bar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import VehicleID from "@/components/vehicle-id";
-import { auth, db, storage } from "@/firebase";
+import { db, storage } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import * as XLSX from "@e965/xlsx";
 import { message, Tooltip } from "antd";
