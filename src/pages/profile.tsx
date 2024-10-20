@@ -1,7 +1,7 @@
 import Back from "@/components/back";
 import InputDialog from "@/components/input-dialog";
 import LazyLoader from "@/components/lazy-loader";
-import { auth, db } from "@/firebase";
+import { db } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
