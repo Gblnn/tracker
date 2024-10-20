@@ -10,7 +10,7 @@ import { message } from "antd";
 import { signOut } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { Bug, FileArchive, KeyRound, Mail, UserPlus } from "lucide-react";
+import { Bug, Car, FileArchive, KeyRound, Mail, UserPlus } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -191,6 +191,11 @@ export default function Index() {
                 to={"/new-hire"}
                 title={"New Hire"}
                 icon={<UserPlus width={"1.25rem"} color="dodgerblue" />}
+              />
+
+              <Directive
+                title={"Vehicles"}
+                icon={<Car color="salmon" width={"1.25rem"} />}
               />
 
               {/* <Directive

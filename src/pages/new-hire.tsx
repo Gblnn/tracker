@@ -70,7 +70,7 @@ export default function NewHire() {
 
           <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
             <Directive
-              to={"/record-list"}
+              to={""}
               title={"Offer Letters"}
               icon={<File color="violet" width={"1.25rem"} />}
             />

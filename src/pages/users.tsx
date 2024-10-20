@@ -54,6 +54,7 @@ export default function Users() {
         name: name,
         email: email,
         role: "user",
+        clearance: "Sohar Star United",
       });
       message.success("User created");
       setLoading(false);
@@ -79,6 +80,7 @@ export default function Users() {
   const deleteUser = async () => {
     setLoading(true);
     await deleteDoc(doc(db, "users", docid));
+    fetchUsers();
     setLoading(false);
     setDeleteConfirmDialog(false);
     setUserDialog(false);
@@ -142,7 +144,6 @@ export default function Users() {
                 onClick={() => setAddUserDialog(true)}
               >
                 <UserPlus width={"1rem"} color="dodgerblue" />
-                Add User
               </button>
               <RefreshButton
                 fetchingData={fetchingData}
