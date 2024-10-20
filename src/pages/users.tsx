@@ -20,7 +20,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { AtSign, Eye, User, UserPlus } from "lucide-react";
+import { AtSign, User, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Users() {
@@ -162,10 +162,10 @@ export default function Users() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              height: "82svh",
+              height: "75svh",
             }}
           >
-            <LoadingOutlined color="dodgerblue" width={"2rem"} />
+            <LoadingOutlined style={{ color: "dodgerblue", scale: "2" }} />
           </div>
         ) : (
           <div
@@ -188,13 +188,13 @@ export default function Users() {
                   setClearance(user.clearance);
                 }}
                 key={user.id}
-                icon={
-                  user.role == "admin" ? (
-                    <Eye width={"1.25rem"} color="dodgerblue" />
-                  ) : (
-                    <User width={"1.25rem"} color="dodgerblue" />
-                  )
-                }
+                // icon={
+                //   user.role == "admin" ? (
+                //     <Eye width={"1.25rem"} color="dodgerblue" />
+                //   ) : (
+                //     <User width={"1.25rem"} color="dodgerblue" />
+                //   )
+                // }
                 title={user.name}
                 id_subtitle={user.email}
               />

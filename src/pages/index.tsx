@@ -167,21 +167,33 @@ export default function Index() {
             }
           />
           <br />
+          {loading ? (
+            <div
+              style={{
+                border: "",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "75svh",
+              }}
+            >
+              <LoadingOutlined style={{ color: "dodgerblue", scale: "2" }} />
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
+              <Directive
+                to={"/record-list"}
+                title={"Records Master"}
+                icon={<FileArchive color="violet" width={"1.25rem"} />}
+              />
 
-          <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
-            <Directive
-              to={"/record-list"}
-              title={"Records Master"}
-              icon={<FileArchive color="violet" width={"1.25rem"} />}
-            />
+              <Directive
+                to={"/new-hire"}
+                title={"New Hire"}
+                icon={<UserPlus width={"1.25rem"} color="dodgerblue" />}
+              />
 
-            <Directive
-              to={"/new-hire"}
-              title={"New Hire"}
-              icon={<UserPlus width={"1.25rem"} color="dodgerblue" />}
-            />
-
-            {/* <Directive
+              {/* <Directive
               notName
               to={""}
               title={"Report a Bug"}
@@ -191,7 +203,7 @@ export default function Index() {
               }}
             /> */}
 
-            {/* <Directive
+              {/* <Directive
               onClick={() => handleLoginPrompt("ssu")}
               title="Sohar Star United"
               icon={
@@ -228,8 +240,9 @@ export default function Index() {
               }
             /> */}
 
-            {/* <Directive onClick={()=>{setRequestDialog(true)}} title="Request Feature" icon={<Plus color="grey" width={"1.1rem"} height={"1.1rem"}/>}/> */}
-          </div>
+              {/* <Directive onClick={()=>{setRequestDialog(true)}} title="Request Feature" icon={<Plus color="grey" width={"1.1rem"} height={"1.1rem"}/>}/> */}
+            </div>
+          )}
         </motion.div>
 
         <DefaultDialog

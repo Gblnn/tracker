@@ -47,7 +47,7 @@ export default function Login() {
       setLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
       AuthenticateRole();
-      console.log(auth.currentUser);
+      // console.log(auth.currentUser);
     } catch (err: any) {
       setLoading(false);
       const errorMessage = err.message;
