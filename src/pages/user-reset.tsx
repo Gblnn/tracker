@@ -79,7 +79,8 @@ export default function UserReset() {
               Reset Password
             </p>
             <p style={{ fontSize: "0.8rem", opacity: 0.75 }}>
-              Recieve a password recovery link in your mail for your account.
+              Enter your e-mail address to recieve a password recovery link for
+              your account.
             </p>
 
             <input

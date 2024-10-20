@@ -37,7 +37,7 @@ export default function Login() {
       fetchedData.push({ id: doc.id, ...doc.data() });
     });
     console.log(fetchedData[0].role, fetchedData[0].email);
-    fetchedData[0].role == "admin" ? (window.name = fetchedData[0].email) : "";
+    window.name = fetchedData[0].email;
     window.location.reload();
     setLoading(false);
   };
