@@ -22,9 +22,9 @@ export default function AdminPage() {
           title="Admin"
           extra={
             <div style={{ display: "flex", gap: "0.5rem" }}>
-              <button style={{ paddingLeft: "1rem", paddingRight: "1rem" }}>
+              {/* <button style={{ paddingLeft: "1rem", paddingRight: "1rem" }}>
                 v2.0
-              </button>
+              </button> */}
             </div>
           }
         />

@@ -1155,16 +1155,18 @@ export default function Inbox() {
                         notName
                         key={recipient.id}
                         icon={
-                          <MinusSquareIcon
-                            onClick={() => {
-                              setRemoveRecipientDialog(true);
-                              setSelectedRecipient(recipient.recipient);
-                              setSelectedRecipientID(recipient.id);
-                            }}
-                            className="animate-pulse"
-                            color="dodgerblue"
-                            width={"1.1rem"}
-                          />
+                          access && (
+                            <MinusSquareIcon
+                              onClick={() => {
+                                setRemoveRecipientDialog(true);
+                                setSelectedRecipient(recipient.recipient);
+                                setSelectedRecipientID(recipient.id);
+                              }}
+                              className="animate-pulse"
+                              color="dodgerblue"
+                              width={"1.1rem"}
+                            />
+                          )
                         }
                         title={recipient.recipient}
                         noArrow

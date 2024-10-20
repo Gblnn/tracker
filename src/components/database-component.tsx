@@ -2461,7 +2461,7 @@ export default function DbComponent(props: Props) {
           renumeration={
             props.dbCategory == "personal" && access == true ? true : false
           }
-          remarksOnClick={() => setRemarksDialog(true)}
+          remarksOnClick={() => access && setRemarksDialog(true)}
           remarksValue={remarks}
           tag1Text={companyName}
           tag2Text={dateofJoin}
@@ -2743,7 +2743,7 @@ export default function DbComponent(props: Props) {
 
               <Directive
                 tag={vehicle_expiry}
-                onClick={() => setVehicle(true)}
+                onClick={() => access && setVehicle(true)}
                 icon={<Car color="violet" />}
                 title="License"
                 status={
@@ -2758,7 +2758,7 @@ export default function DbComponent(props: Props) {
 
               <Directive
                 tag={passportExpiry}
-                onClick={() => setPassportDialog(true)}
+                onClick={() => access && setPassportDialog(true)}
                 icon={<Book color="goldenrod" />}
                 title="Passport"
                 status={
@@ -4450,15 +4450,17 @@ export default function DbComponent(props: Props) {
                         titleSize="0.75rem"
                         key={e.id}
                         icon={
-                          <MinusSquareIcon
-                            onClick={() => {
-                              setDeleteLeaveDialog(true);
-                              setLeaveID(e.id);
-                            }}
-                            className="animate-pulse"
-                            color="dodgerblue"
-                            width={"1.1rem"}
-                          />
+                          access && (
+                            <MinusSquareIcon
+                              onClick={() => {
+                                setDeleteLeaveDialog(true);
+                                setLeaveID(e.id);
+                              }}
+                              className="animate-pulse"
+                              color="dodgerblue"
+                              width={"1.1rem"}
+                            />
+                          )
                         }
                         noArrow
                       />

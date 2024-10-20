@@ -33,11 +33,16 @@ export default function Index() {
     setLoading(true);
     await emailjs.send(serviceId, templateId, {
       name: auth.currentUser?.email,
-      subject: "Bug Report - " + moment().format("ll"),
+      subject:
+        "Bug Report - " +
+        moment().format("ll") +
+        " from " +
+        auth.currentUser?.email,
       recipient: "goblinn688@gmail.com",
       message: issue,
     });
     setLoading(false);
+    message.success("Bug Report sent");
     setBugDialog(false);
   };
 
