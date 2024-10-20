@@ -10,7 +10,7 @@ import Passport from "@/components/passport";
 import SearchBar from "@/components/search-bar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import VehicleID from "@/components/vehicle-id";
-import { db, storage } from "@/firebase";
+import { auth, db, storage } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import * as XLSX from "@e965/xlsx";
 import { message, Tooltip } from "antd";
@@ -441,6 +441,8 @@ export default function DbComponent(props: Props) {
       querySnapshot.forEach((doc: any) => {
         fetchedData.push({ id: doc.id, ...doc.data() });
       });
+
+      verifyAccess();
 
       setfetchingData(false);
       setRefreshCompleted(true);
@@ -1550,6 +1552,26 @@ export default function DbComponent(props: Props) {
       : message.info("Omniscience Disabled");
   };
 
+  const verifyAccess = async () => {
+    try {
+      setLoading(true);
+      const RecordCollection = collection(db, "users");
+      const recordQuery = query(
+        RecordCollection,
+        where("email", "==", window.name)
+      );
+      const querySnapshot = await getDocs(recordQuery);
+      const fetchedData: any = [];
+      querySnapshot.forEach((doc: any) => {
+        fetchedData.push({ id: doc.id, ...doc.data() });
+      });
+      setLoading(false);
+      fetchedData[0].role == "admin" ? setAccess(true) : setAccess(false);
+    } catch (error) {
+      message.error(String(error));
+    }
+  };
+
   return (
     <>
       {status == "false" ? (
@@ -1591,7 +1613,7 @@ export default function DbComponent(props: Props) {
           {/* BACK BUTTON */}
           <Back
             editMode={access}
-            onTap={() => setAccess(!access)}
+            // onTap={() => setAccess(!access)}
             title={
               props.title
 
@@ -2436,7 +2458,9 @@ export default function DbComponent(props: Props) {
               : message.info("Omniscience retrace on parent record")
           }
           contact={contact}
-          renumeration={props.dbCategory == "personal" ? true : false}
+          renumeration={
+            props.dbCategory == "personal" && access == true ? true : false
+          }
           remarksOnClick={() => setRemarksDialog(true)}
           remarksValue={remarks}
           tag1Text={companyName}
@@ -2703,7 +2727,7 @@ export default function DbComponent(props: Props) {
               }}
             >
               <Directive
-                onClick={() => setCivil(true)}
+                onClick={() => access && setCivil(true)}
                 icon={<CreditCard color="dodgerblue" />}
                 title="Civil ID"
                 tag={civil_expiry}

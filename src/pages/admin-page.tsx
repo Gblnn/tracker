@@ -20,7 +20,13 @@ export default function AdminPage() {
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
         <Back
           title="Admin"
-          extra={<div style={{ display: "flex", gap: "0.5rem" }}></div>}
+          extra={
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button style={{ paddingLeft: "1rem", paddingRight: "1rem" }}>
+                v2.0
+              </button>
+            </div>
+          }
         />
 
         <br />

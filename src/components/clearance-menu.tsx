@@ -6,14 +6,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronDown, UserCircle } from "lucide-react";
+import { ChevronDown, KeyRound } from "lucide-react";
 
 interface Props {
   value?: string;
   onChange?: any;
 }
 
-export default function SelectMenu(props: Props) {
+export default function ClearanceMenu(props: Props) {
   return (
     <Select defaultValue={props.value} onValueChange={props.onChange}>
       <SelectTrigger
@@ -24,8 +24,8 @@ export default function SelectMenu(props: Props) {
         }}
         className=""
       >
-        <UserCircle color="dodgerblue" width={"1.25rem"} />
-        <SelectValue placeholder="Role" />
+        <KeyRound color="dodgerblue" width={"1.25rem"} />
+        <SelectValue placeholder="Clearance" />
         <ChevronDown width={"1rem"} />
       </SelectTrigger>
       <SelectContent>
@@ -38,15 +38,22 @@ export default function SelectMenu(props: Props) {
         >
           <SelectItem
             style={{ display: "flex", justifyContent: "flex-start" }}
-            value="admin"
+            value="All"
           >
-            Admin
+            All
+          </SelectItem>
+
+          <SelectItem
+            style={{ display: "flex", justifyContent: "flex-start" }}
+            value="Sohar Star United"
+          >
+            Sohar Star United
           </SelectItem>
           <SelectItem
             style={{ display: "flex", justifyContent: "flex-start" }}
-            value="user"
+            value="Vale"
           >
-            User
+            Vale
           </SelectItem>
         </SelectGroup>
       </SelectContent>

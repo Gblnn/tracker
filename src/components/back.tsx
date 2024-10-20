@@ -1,6 +1,7 @@
 import { ChevronLeft, PenLine } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { LoadingOutlined } from "@ant-design/icons";
 
 interface Props {
   icon?: any;
@@ -11,10 +12,12 @@ interface Props {
   onTap?: any;
   editMode?: boolean;
   fontSize?: string;
+  editModeLoading?: boolean;
 }
 
 export default function Back(props: Props) {
   const usenavigate = useNavigate();
+
   return (
     <div
       className="transitions"
@@ -119,11 +122,15 @@ export default function Back(props: Props) {
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                   >
-                    <PenLine
-                      width={"1rem"}
-                      height={"1rem"}
-                      color="dodgerblue"
-                    />
+                    {props.editModeLoading ? (
+                      <LoadingOutlined color="dodgerblue" />
+                    ) : (
+                      <PenLine
+                        width={"1rem"}
+                        height={"1rem"}
+                        color="dodgerblue"
+                      />
+                    )}
                   </motion.div>
                 )}
               </motion.div>

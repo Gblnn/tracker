@@ -1,5 +1,5 @@
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import { EllipsisVerticalIcon, LogOut, RefreshCcw } from "lucide-react";
+import { EllipsisVerticalIcon, LogOut, RefreshCcw, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,7 @@ interface Props {
   onInbox?: any;
   className?: any;
   onLogout?: any;
+  onProfile?: any;
 }
 
 export default function IndexDropDown(props: Props) {
@@ -76,6 +77,11 @@ export default function IndexDropDown(props: Props) {
             >
               <RefreshCcw className="mr-2 " color="dodgerblue" />
               <span style={{ width: "100%" }}>Force Reload</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem>
+              <User className="mr-2" color="dodgerblue" />
+              <span style={{ width: "100%" }}>Profile</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem

@@ -1,7 +1,9 @@
 import Back from "@/components/back";
+import ClearanceMenu from "@/components/clearance-menu";
 import Directive from "@/components/directive";
 import InputDialog from "@/components/input-dialog";
 import RefreshButton from "@/components/refresh-button";
+import SelectMenu from "@/components/select-menu";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { db } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
@@ -10,12 +12,15 @@ import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import {
   addDoc,
   collection,
+  deleteDoc,
+  doc,
   getDocs,
   orderBy,
   query,
+  updateDoc,
 } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { Eye, User, UserPlus } from "lucide-react";
+import { AtSign, Eye, User, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Users() {
@@ -32,8 +37,12 @@ export default function Users() {
   const [loading, setLoading] = useState(false);
 
   const [display_name, setDisplayName] = useState("");
-  // const [display_email, setDisplayEmail] = useState("");
+  const [display_email, setDisplayEmail] = useState("");
   // const [role, setRole] = useState("");
+  const [docid, setDocid] = useState("");
+  const [deleteConfirmDiaog, setDeleteConfirmDialog] = useState(false);
+  const [role, setRole] = useState("");
+  const [clearance, setClearance] = useState("");
 
   const auth = getAuth();
 
@@ -49,6 +58,7 @@ export default function Users() {
       message.success("User created");
       setLoading(false);
       setAddUserDialog(false);
+      fetchUsers();
     } catch (error) {
       setLoading(false);
       message.error(String(error));
@@ -66,6 +76,14 @@ export default function Users() {
     fetchUsers();
   }, []);
 
+  const deleteUser = async () => {
+    setLoading(true);
+    await deleteDoc(doc(db, "users", docid));
+    setLoading(false);
+    setDeleteConfirmDialog(false);
+    setUserDialog(false);
+  };
+
   const fetchUsers = async () => {
     setfetchingData(true);
     const RecordCollection = collection(db, "users");
@@ -82,6 +100,22 @@ export default function Users() {
     setTimeout(() => {
       setRefreshCompleted(false);
     }, 1000);
+  };
+
+  const updateUser = async () => {
+    try {
+      setLoading(true);
+      await updateDoc(doc(db, "users", docid), {
+        role: role,
+        clearance: clearance,
+      });
+      setLoading(false);
+      setUserDialog(false);
+      message.success("Updated User");
+    } catch (error) {
+      setLoading(false);
+      message.error(String(error));
+    }
   };
 
   return (
@@ -145,9 +179,12 @@ export default function Users() {
             {users.map((user: any) => (
               <Directive
                 onClick={() => {
+                  setDocid(user.id);
                   setUserDialog(true);
                   setDisplayName(user.name);
-                  // setDisplayEmail(user.email);
+                  setDisplayEmail(user.email);
+                  setRole(user.role);
+                  setClearance(user.clearance);
                 }}
                 key={user.id}
                 icon={
@@ -166,11 +203,56 @@ export default function Users() {
       </motion.div>
 
       <DefaultDialog
+        code={role}
         title={display_name}
         titleIcon={<User color="dodgerblue" />}
-        close
+        codeIcon={<AtSign color="dodgerblue" width={"1rem"} />}
         open={userDialog}
+        OkButtonText="Update"
         onCancel={() => setUserDialog(false)}
+        onOk={updateUser}
+        updating={loading}
+        extra={
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              flexFlow: "column",
+              gap: "0.5rem",
+            }}
+          >
+            <SelectMenu value={role.toLowerCase()} onChange={setRole} />
+            <ClearanceMenu
+              value={clearance ? clearance : "Undefined"}
+              onChange={setClearance}
+            />
+          </div>
+        }
+        title_extra={
+          <div>
+            <button
+              onClick={() => setDeleteConfirmDialog(true)}
+              style={{
+                fontSize: "0.75rem",
+                paddingLeft: "1rem",
+                paddingRight: "1rem",
+              }}
+            >
+              Remove
+            </button>
+          </div>
+        }
+      />
+
+      <DefaultDialog
+        destructive
+        open={deleteConfirmDiaog}
+        onCancel={() => setDeleteConfirmDialog(false)}
+        title={"Delete User?"}
+        OkButtonText="Delete"
+        onOk={deleteUser}
+        updating={loading}
+        disabled={loading}
       />
 
       <InputDialog
@@ -187,7 +269,7 @@ export default function Users() {
         input2OnChange={(e: any) => setEmail(e.target.value)}
         input3OnChange={(e: any) => setPassword(e.target.value)}
         input4OnChange={(e: any) => setpassconfirm(e.target.value)}
-        disabled={!email || !passconfirm || password != passconfirm}
+        disabled={!name || !email || !passconfirm || password != passconfirm}
         onOk={createUser}
         updating={loading}
       />

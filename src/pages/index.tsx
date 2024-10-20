@@ -3,14 +3,18 @@ import Directive from "@/components/directive";
 import IndexDropDown from "@/components/index-dropdown";
 import InputDialog from "@/components/input-dialog";
 import DefaultDialog from "@/components/ui/default-dialog";
-import { auth } from "@/firebase";
+import { auth, db } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { motion } from "framer-motion";
 import { Bug, FileArchive, KeyRound, Mail, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import emailjs from "@emailjs/browser";
 import moment from "moment";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { message } from "antd";
+import { LoadingOutlined } from "@ant-design/icons";
+import ReleaseNote from "@/components/release-note";
 
 export default function Index() {
   const [requestDialog, setRequestDialog] = useState(false);
@@ -21,6 +25,7 @@ export default function Index() {
   const usenavigate = useNavigate();
   const [issue, setIssue] = useState("");
   const [loading, setLoading] = useState(false);
+  const [access, setAccess] = useState(false);
 
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
@@ -37,6 +42,32 @@ export default function Index() {
     setBugDialog(false);
   };
 
+  const verifyAccess = async () => {
+    try {
+      setLoading(true);
+
+      const RecordCollection = collection(db, "users");
+      const recordQuery = query(
+        RecordCollection,
+        where("email", "==", window.name)
+      );
+      const querySnapshot = await getDocs(recordQuery);
+      const fetchedData: any = [];
+      querySnapshot.forEach((doc: any) => {
+        fetchedData.push({ id: doc.id, ...doc.data() });
+      });
+      setLoading(false);
+
+      fetchedData[0].role == "admin" ? setAccess(true) : setAccess(false);
+    } catch (error) {
+      message.error(String(error));
+    }
+  };
+
+  useEffect(() => {
+    verifyAccess();
+  }, []);
+
   return (
     <>
       {/* <div style={{border:"", display:"flex", alignItems:"center", justifyContent:'center'}}>
@@ -44,6 +75,7 @@ export default function Index() {
         </div> */}
       <div
         style={{
+          border: "",
           padding: "1.25rem",
           background:
             "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
@@ -88,16 +120,29 @@ export default function Index() {
                   <LogOut width={"1rem"} color="lightcoral" />
                 </button> */}
 
-                <button
-                  onClick={() => usenavigate("/admin")}
-                  style={{
-                    fontSize: "0.75rem",
-                    paddingLeft: "1rem",
-                    paddingRight: "1rem",
-                  }}
-                >
-                  <KeyRound color="dodgerblue" width={"1rem"} />
-                </button>
+                {access && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                  >
+                    <button
+                      onClick={() => usenavigate("/admin")}
+                      style={{
+                        fontSize: "0.75rem",
+                        paddingLeft: "1rem",
+                        paddingRight: "1rem",
+                        height: "2.5rem",
+                        width: "3rem",
+                      }}
+                    >
+                      {loading ? (
+                        <LoadingOutlined color="dodgerblue" />
+                      ) : (
+                        <KeyRound color="dodgerblue" width={"1rem"} />
+                      )}
+                    </button>
+                  </motion.div>
+                )}
 
                 <button
                   style={{
@@ -110,7 +155,10 @@ export default function Index() {
                   <Bug width={"1rem"} color="lightgreen" />
                 </button>
 
-                <IndexDropDown onLogout={() => setLogoutPrompt(true)} />
+                <IndexDropDown
+                  onLogout={() => setLogoutPrompt(true)}
+                  onProfile={() => usenavigate("/profile")}
+                />
               </div>
             }
           />
@@ -190,6 +238,7 @@ export default function Index() {
                 width: "100%",
                 flexFlow: "column",
                 gap: "0.75rem",
+                paddingBottom: "0.5rem",
               }}
             >
               <textarea
@@ -275,6 +324,7 @@ export default function Index() {
           }}
         />
       </div>
+      {/* <ReleaseNote /> */}
     </>
   );
 }
