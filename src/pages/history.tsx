@@ -5,7 +5,7 @@ import { db } from "@/firebase";
 import { message } from "antd";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import ReactTimeAgo from "react-time-ago";
@@ -101,7 +101,13 @@ export default function History() {
               <Directive
                 key={e.id}
                 id_subtitle={e.user}
-                subtext={e.doc_owner + "' s"}
+                subtext={
+                  e.method == "export"
+                    ? "ENTIRE"
+                    : e.method == "import"
+                    ? "IMPORT"
+                    : e.doc_owner + "' s"
+                }
                 customTitle
                 title={
                   <div
@@ -183,6 +189,46 @@ export default function History() {
                           fontWeight: 600,
                         }}
                       >
+                        {e.newValue}
+                      </div>
+                    )}
+
+                    {e.method == "addition" && (
+                      <div
+                        style={{
+                          display: "flex",
+                          background: "rgba(100 100 100/ 20%)",
+                          paddingLeft: "0.5rem",
+                          paddingRight: "0.5rem",
+                          borderRadius: "1rem",
+                          alignItems: "center",
+                          height: "1.25rem",
+                          color: "lightgreen",
+                          marginLeft: "0.25rem",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {e.newValue}
+                      </div>
+                    )}
+
+                    {e.method == "renew" && (
+                      <div
+                        style={{
+                          display: "flex",
+                          background: "rgba(100 100 100/ 20%)",
+                          paddingLeft: "0.5rem",
+                          paddingRight: "0.5rem",
+                          borderRadius: "1rem",
+                          alignItems: "center",
+                          height: "1.25rem",
+                          color: "goldenrod",
+                          marginLeft: "0.25rem",
+                          fontWeight: 600,
+                          gap: "0.35rem",
+                        }}
+                      >
+                        <Sparkles width={"0.8rem"} color="white" />
                         {e.newValue}
                       </div>
                     )}

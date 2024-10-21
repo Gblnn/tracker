@@ -45,6 +45,13 @@ export default function ClearanceMenu(props: Props) {
 
           <SelectItem
             style={{ display: "flex", justifyContent: "flex-start" }}
+            value="none"
+          >
+            None
+          </SelectItem>
+
+          <SelectItem
+            style={{ display: "flex", justifyContent: "flex-start" }}
             value="Sohar Star United"
           >
             Sohar Star United

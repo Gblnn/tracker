@@ -110,6 +110,7 @@ interface Props {
 
 export default function DbComponent(props: Props) {
   const [selectAll, setSelectAll] = useState(false);
+  const [deleteKey, setDeleteKey] = useState("");
   const [file, setFile] = useState(null);
   const [jsonData, setJsonData] = useState<any>([]);
   const [companyName, setCompanyName] = useState("");
@@ -613,6 +614,7 @@ export default function DbComponent(props: Props) {
       pending: editedLeaveTill ? false : true,
       employeeCode: employeeCode,
     });
+    await AddHistory("addition", editedLeaveFrom, "Leave", "Leave");
     id = doc_id;
     await leaveSum();
     fetchLeave();
@@ -648,6 +650,7 @@ export default function DbComponent(props: Props) {
     await deleteDoc(doc(db, "leave-record", leaveID));
     id = doc_id;
     await leaveSum();
+    await AddHistory("deletion", null, leaveFrom);
     setLoading(false);
     fetchLeave();
     setDeleteLeaveDialog(false);
@@ -660,6 +663,7 @@ export default function DbComponent(props: Props) {
       civil_expiry: TimeStamper(newExpiry),
       modified_on: Timestamp.fromDate(new Date()),
     });
+    await AddHistory("renew", newExpiry, "", "Civil ID");
     setCivilExpiry(newExpiry);
     setLoading(false);
     setRenewDocDialog(false);
@@ -684,7 +688,8 @@ export default function DbComponent(props: Props) {
     }
   };
 
-  const exportDB = () => {
+  const exportDB = async () => {
+    await AddHistory("export", "", "", "Database Export");
     exportDatabase(records, props.dbCategory);
   };
 
@@ -747,6 +752,7 @@ export default function DbComponent(props: Props) {
       state: "active",
       remarks: "",
     });
+    await AddHistory("addition", "Created", "", "Record");
     setAddDialog(false);
     setName(editedName ? editedName : name);
     setEmail(editedEmail ? editedEmail : email);
@@ -791,6 +797,8 @@ export default function DbComponent(props: Props) {
       });
       setProfileName(fileName);
     }
+
+    await AddHistory("addition", "Edited", "", "Record");
 
     setUserEditPrompt(false);
     setName(editedName ? editedName : name);
@@ -838,6 +846,7 @@ export default function DbComponent(props: Props) {
     allowanceList.forEach(async (item: any) => {
       await deleteDoc(doc(db, "allowance-record", item.id));
     });
+    await AddHistory("deletion", "Deleted", "", "Record");
 
     setRecordDeleteStatus("");
     setCivilNumber("");
@@ -876,6 +885,7 @@ export default function DbComponent(props: Props) {
         civil_DOB: edited_civil_DOB,
         modified_on: Timestamp.fromDate(new Date()),
       });
+      await AddHistory("addition", "Added", "", "Civil ID");
       setCivilNumber(edited_civil_number);
       setCivilExpiry(edited_civil_expiry);
       setCivilDOB(edited_civil_DOB);
@@ -903,6 +913,8 @@ export default function DbComponent(props: Props) {
       civil_DOB: "",
       modified_on: Timestamp.fromDate(new Date()),
     });
+    setLoading(true);
+    await AddHistory("deletion", "Deleted", "", "Civil ID");
     setCivilDelete(false);
     setLoading(false);
     setCivilNumber("");
@@ -927,7 +939,8 @@ export default function DbComponent(props: Props) {
         civil_DOB: edited_civil_DOB ? edited_civil_DOB : civil_DOB,
         modified_on: Timestamp.fromDate(new Date()),
       });
-
+      setLoading(true);
+      await AddHistory("addition", "Updated", "", "Civil ID");
       setCivilNumber(edited_civil_number ? edited_civil_number : civil_number);
       setCivilExpiry(edited_civil_expiry ? edited_civil_expiry : civil_expiry);
       setCivilDOB(edited_civil_DOB ? edited_civil_DOB : civil_DOB);
@@ -958,7 +971,7 @@ export default function DbComponent(props: Props) {
         license_issue: vehicle_issue,
         modified_on: Timestamp.fromDate(new Date()),
       });
-
+      await AddHistory("addition", "Added", "", "Vehicle ID");
       setLoading(false);
       fetchData();
       setModifiedOn(new Date());
@@ -983,6 +996,7 @@ export default function DbComponent(props: Props) {
       license_issue: "",
       modified_on: Timestamp.fromDate(new Date()),
     });
+    await AddHistory("deletion", "Deleted", "", "Vehicle ID");
     setVehicleIdDelete(false);
     setLoading(false);
     setVehicleNumber("");
@@ -1000,6 +1014,7 @@ export default function DbComponent(props: Props) {
       medical_due_on: "",
       modified_on: Timestamp.fromDate(new Date()),
     });
+    await AddHistory("deletion", "Deleted", "", "Medical");
     setDeleteMedicalIDdialog(false);
     setLoading(false);
     setCompletedOn("");
@@ -1024,6 +1039,8 @@ export default function DbComponent(props: Props) {
           : vehicle_issue,
         modified_on: Timestamp.fromDate(new Date()),
       });
+
+      await AddHistory("addition", "Updated", "", "Vehicle ID");
 
       setVehicleNumber(
         edited_vehicle_number ? edited_vehicle_number : vehicle_number
@@ -1056,6 +1073,7 @@ export default function DbComponent(props: Props) {
           : TimeStamper(vehicle_expiry),
         modified_on: Timestamp.fromDate(new Date()),
       });
+      await AddHistory("renew", edited_vehicle_expiry, "", "Vehicle ID");
       setVehicleIssue(
         edited_vehicle_issue ? edited_vehicle_issue : vehicle_issue
       );
@@ -1081,7 +1099,7 @@ export default function DbComponent(props: Props) {
         medical_due_on: TimeStamper(medical_due_on),
         modified_on: Timestamp.fromDate(new Date()),
       });
-
+      await AddHistory("addition", "Added", "", "Medical ID");
       setLoading(false);
       fetchData();
       setModifiedOn(new Date());
@@ -1106,6 +1124,7 @@ export default function DbComponent(props: Props) {
           : TimeStamper(medical_due_on),
         modified_on: Timestamp.fromDate(new Date()),
       });
+      await AddHistory("addition", "Updated", "", "Medical");
 
       setDueOn(editedDueOn ? editedDueOn : medical_due_on);
       setCompletedOn(
@@ -1137,6 +1156,7 @@ export default function DbComponent(props: Props) {
           : nativeAddress,
         modified_on: Timestamp.fromDate(new Date()),
       });
+      await AddHistory("addition", "Updated", "", "Passport");
       setPassportID(editedPassportID ? editedPassportID : passportID);
       setPassportIssue(
         editedPassportIssue ? editedPassportIssue : passportIssue
@@ -1170,7 +1190,7 @@ export default function DbComponent(props: Props) {
           : TimeStamper(medical_due_on),
         modified_on: Timestamp.fromDate(new Date()),
       });
-
+      await AddHistory("renew", editedCompletedOn, "", "Medical");
       setCompletedOn(
         editedCompletedOn ? editedCompletedOn : medical_completed_on
       );
@@ -1198,6 +1218,7 @@ export default function DbComponent(props: Props) {
         nativeAddress: nativeAddress,
         modified_on: Timestamp.fromDate(new Date()),
       });
+      await AddHistory("addition", "Added", "", "Passport");
       setLoading(false);
       fetchData();
       setModifiedOn(new Date());
@@ -1215,6 +1236,7 @@ export default function DbComponent(props: Props) {
       passportIssue: "",
       modified_on: Timestamp.fromDate(new Date()),
     });
+    await AddHistory("deletion", "Deleted", "", "Passport");
     setDeletePassportDialog(false);
     setLoading(false);
     setPassportID("");
@@ -1233,6 +1255,7 @@ export default function DbComponent(props: Props) {
       passportIssue: editedPassportIssue ? editedPassportIssue : passportIssue,
       modified_on: Timestamp.fromDate(new Date()),
     });
+    await AddHistory("renew", editedPassportExpiry, "", "Passport");
     setPassportIssue(editedPassportIssue ? editedPassportIssue : passportIssue);
     setPassportExpiry(
       editedPassportExpiry ? editedPassportExpiry : passportExpiry
@@ -1292,7 +1315,14 @@ export default function DbComponent(props: Props) {
           setProgress("");
         }
       });
+      await AddHistory(
+        "export",
+        "Bulk Deletion",
+        "",
+        "Bulk Deletion " + checked.length + " record(s)"
+      );
     } catch (error) {
+      setLoading(false);
       message.info(String(error));
     }
   };
@@ -1426,6 +1456,7 @@ export default function DbComponent(props: Props) {
 
   const uploadJson = async () => {
     setLoading(true);
+    await AddHistory("import", "", "", jsonData.length + " records from XLSX");
     let counts = 0;
     let percentage = 100 / jsonData.length;
 
@@ -3290,8 +3321,14 @@ export default function DbComponent(props: Props) {
           open={bulkDeleteDialog}
           OkButtonText="Confirm"
           onCancel={() => setBulkDeleteDialog(false)}
-          onOk={handleBulkDelete}
-          disabled={loading}
+          onOk={() => deleteKey == "root" && handleBulkDelete()}
+          disabled={loading || deleteKey != "root" ? true : false}
+          extra={
+            <input
+              placeholder="Enter Key"
+              onChange={(e) => setDeleteKey(e.target.value)}
+            />
+          }
         />
 
         {/* RENEW CIVIL ID */}

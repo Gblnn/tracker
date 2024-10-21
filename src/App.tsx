@@ -20,6 +20,7 @@ import UserReset from "./pages/user-reset";
 import RequestAccess from "./pages/request-access";
 import Users from "./pages/users";
 import Profile from "./pages/profile";
+import AccessRequests from "./pages/access-requests";
 
 export default function App() {
   useEffect(() => {
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/users" element={<Users />} />
           <Route path="/archives" element={<Archives />} />
           <Route path="/access-control" element={<AccessControl />} />
+          <Route path="access-requests" element={<AccessRequests />} />
           <Route path="/user" element={<UserPage />} />
           <Route path="/new-hire" element={<NewHire />} />
           <Route path="/profile" element={<Profile />} />

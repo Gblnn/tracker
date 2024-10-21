@@ -72,76 +72,77 @@ export default function Profile() {
             <LoadingOutlined style={{ color: "dodgerblue", scale: "3" }} />
           </div>
         ) : (
-          <div
-            style={{
-              display: "flex",
-              flexFlow: "row",
-              gap: "0.5rem",
-              border: "",
-              borderBottom: "1px solid rgba(100 100 100/ 50%)",
-              paddingBottom: "1.5rem",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
             <div
               style={{
                 display: "flex",
-                gap: "1rem",
+                flexFlow: "row",
+                gap: "0.5rem",
                 border: "",
-                width: "fit-content",
+                borderBottom: "1px solid rgba(100 100 100/ 50%)",
+                paddingBottom: "1.5rem",
+                justifyContent: "space-between",
                 alignItems: "center",
               }}
             >
-              <LazyLoader
-                gradient
-                block
-                name={name}
-                width="5rem"
-                height="5rem"
-                fontSize="2rem"
-              />
-              <div style={{ border: "" }}>
-                <p
-                  style={{
-                    fontWeight: "600",
-                    fontSize: "1.5rem",
-                    lineHeight: "1.25rem",
-                  }}
-                >
-                  {name}
-                </p>
-                <p style={{ fontSize: "0.8rem", lineHeight: "2rem" }}>
-                  {window.name}
-                </p>
-                <p
-                  style={{
-                    fontSize: "0.75rem",
-                    background: "white",
-                    width: "fit-content",
-                    paddingLeft: "0.35rem",
-                    paddingRight: "0.35rem",
-                    borderRadius: "0.5rem",
-                    color: "black",
-                    fontWeight: 600,
-                  }}
-                >
-                  {role}
-                </p>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "1rem",
+                  border: "",
+                  width: "fit-content",
+                  alignItems: "center",
+                }}
+              >
+                <LazyLoader
+                  gradient
+                  block
+                  name={name}
+                  width="5rem"
+                  height="5rem"
+                  fontSize="2rem"
+                />
+                <div style={{ border: "" }}>
+                  <p
+                    style={{
+                      fontWeight: "600",
+                      fontSize: "1.5rem",
+                      lineHeight: "1.25rem",
+                    }}
+                  >
+                    {name}
+                  </p>
+                  <p style={{ fontSize: "0.8rem", lineHeight: "2rem" }}>
+                    {window.name}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "0.75rem",
+                      background: "white",
+                      width: "fit-content",
+                      paddingLeft: "0.35rem",
+                      paddingRight: "0.35rem",
+                      borderRadius: "0.5rem",
+                      color: "black",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {role}
+                  </p>
+                </div>
               </div>
-            </div>
-            <button
-              style={{
-                paddingLeft: "1rem",
-                paddingRight: "1rem",
-                marginRight: "1rem",
-                fontSize: "0.8rem",
-              }}
-            >
-              Edit
-            </button>
+              <button
+                style={{
+                  paddingLeft: "1rem",
+                  paddingRight: "1rem",
+                  marginRight: "1rem",
+                  fontSize: "0.8rem",
+                }}
+              >
+                Edit
+              </button>
 
-            {/* <Directive
+              {/* <Directive
             title="Users"
             icon={<Users width={"1.1rem"} color="dodgerblue" />}
             onClick={() => setAddUserDialog(true)}
@@ -154,7 +155,8 @@ export default function Profile() {
             onClick={() => setAddUserDialog(true)}
             to={"/access-requests"}
           /> */}
-          </div>
+            </div>
+          </motion.div>
         )}
       </motion.div>
 

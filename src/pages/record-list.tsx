@@ -50,6 +50,10 @@ export default function RecordList() {
         ? usenavigate("/records")
         : e == "vale" && fetchedData[0].clearance == "All"
         ? usenavigate("/vale-records")
+        : e == "ssu" && fetchedData[0].clearance == "none"
+        ? message.error("No Clearance to access")
+        : e == "vale" && fetchedData[0].clearance == "none"
+        ? message.error("No Clearance to access")
         : e == "ssu" && fetchedData[0].clearance == "Sohar Star United"
         ? usenavigate("/records")
         : e == "vale" && fetchedData[0].clearance == "Vale"
