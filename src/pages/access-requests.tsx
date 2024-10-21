@@ -1,8 +1,7 @@
 import Back from "@/components/back";
-import Directive from "@/components/directive";
 import InputDialog from "@/components/input-dialog";
 import { motion } from "framer-motion";
-import { GitPullRequestArrow, UserPlus, Users } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { useState } from "react";
 
 export default function AccessRequests() {
