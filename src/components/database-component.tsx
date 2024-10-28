@@ -73,6 +73,7 @@ import {
   Plus,
   RadioTower,
   RefreshCcw,
+  ScrollText,
   Sparkles,
   Trash,
   UploadCloud,
@@ -109,6 +110,9 @@ interface Props {
 }
 
 export default function DbComponent(props: Props) {
+  const [editAccess, setEditAccess] = useState(false);
+  const [sensitive_data_access, setSensitiveDataAccess] = useState(false);
+  const [contractDialog, setContractDialog] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
   const [deleteKey, setDeleteKey] = useState("");
   const [file, setFile] = useState(null);
@@ -1597,8 +1601,14 @@ export default function DbComponent(props: Props) {
         fetchedData.push({ id: doc.id, ...doc.data() });
       });
       setLoading(false);
-      fetchedData[0].role == "admin" ? setAccess(true) : setAccess(false);
-    } catch (error) {
+      fetchedData[0].editor == "true" ? setAccess(true) : setAccess(false);
+      fetchedData[0].sensitive_data == "true"
+        ? setSensitiveDataAccess(true)
+        : setSensitiveDataAccess(false);
+      fetchedData[0].editor == "true"
+        ? setEditAccess(true)
+        : setEditAccess(false);
+    } catch (error: any) {
       message.error(String(error));
     }
   };
@@ -2285,13 +2295,18 @@ export default function DbComponent(props: Props) {
 
         <DefaultDialog
           close
-          code={".xlsx, .xls"}
           codeIcon={<File width={"1rem"} color="dodgerblue" />}
           onCancel={() => {
             setExportDialog(false);
             window.location.reload();
           }}
           open={exportDialog}
+          title_extra={
+            <button style={{ fontSize: "0.8rem", width: "9rem" }}>
+              <DownloadCloud color="dodgerblue" width={"1rem"} />
+              Raw Data
+            </button>
+          }
           title={"Export Data"}
           titleIcon={<DownloadCloud color="lightgreen" />}
           extra={
@@ -2477,6 +2492,84 @@ export default function DbComponent(props: Props) {
           disabled={loading}
         />
 
+        <DefaultDialog
+          close
+          titleIcon={<ScrollText color="dodgerblue" />}
+          title={"Contract"}
+          open={contractDialog}
+          onCancel={() => setContractDialog(false)}
+          extra={
+            <div
+              style={{
+                display: "flex",
+                flexFlow: "column",
+                width: "100%",
+                border: "",
+              }}
+            >
+              <div
+                style={{
+                  border: "",
+                  height: "28ch",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    background: "rgba(100 100 100/ 10%)",
+                    border: "2px solid rgba(100 100 100/ 40%)",
+                    height: "22ch",
+                    width: "16ch",
+                    borderRadius: "0.5rem",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <p style={{ fontSize: "0.75rem", opacity: 0.5 }}>
+                    No Preview
+                  </p>
+                </div>
+              </div>
+              <p
+                style={{
+                  textAlign: "center",
+                  padding: "0.25rem",
+                  fontSize: "0.8rem",
+                  background:
+                    "linear-gradient(90deg, rgba(100 100 100/ 0%), rgba(100 100 100/ 20%), rgba(100 100 100/ 0%))",
+                }}
+              >
+                Expiring Soon
+              </p>
+              <br />
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "0.5rem",
+                }}
+              >
+                <input placeholder="Contract Expiry Date" />
+                <button
+                  className="primary"
+                  style={{
+                    paddingLeft: "1rem",
+                    paddingRight: "1rem",
+                    fontSize: "0.8rem",
+                  }}
+                >
+                  <RefreshCcw color="dodgerblue" width={"1rem"} />
+                  Update
+                </button>
+              </div>
+            </div>
+          }
+        />
+
         {/* DISPLAY RECORD DIALOG */}
         <DefaultDialog
           code={employeeCode}
@@ -2490,11 +2583,14 @@ export default function DbComponent(props: Props) {
           }
           contact={contact}
           renumeration={
-            props.dbCategory == "personal" && access == true ? true : false
+            props.dbCategory == "personal" && sensitive_data_access == true
+              ? true
+              : false
           }
           remarksOnClick={() => access && setRemarksDialog(true)}
           remarksValue={remarks}
           tag1Text={companyName}
+          tag1OnClick={() => setContractDialog(true)}
           tag2Text={dateofJoin}
           tag3Text={
             <div
@@ -4223,7 +4319,7 @@ export default function DbComponent(props: Props) {
                   ))}
                 </div>
               )}
-              {access && (
+              {editAccess && (
                 <div
                   style={{
                     display: "flex",

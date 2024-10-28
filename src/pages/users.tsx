@@ -1,6 +1,7 @@
 import Back from "@/components/back";
 import ClearanceMenu from "@/components/clearance-menu";
 import Directive from "@/components/directive";
+import IOMenu from "@/components/editorMenu";
 import InputDialog from "@/components/input-dialog";
 import RefreshButton from "@/components/refresh-button";
 import SelectMenu from "@/components/select-menu";
@@ -20,7 +21,14 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { AtSign, User, UserPlus } from "lucide-react";
+import {
+  AtSign,
+  Eye,
+  MinusCircle,
+  PenLine,
+  User,
+  UserPlus,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Users() {
@@ -43,6 +51,8 @@ export default function Users() {
   const [deleteConfirmDiaog, setDeleteConfirmDialog] = useState(false);
   const [role, setRole] = useState("");
   const [clearance, setClearance] = useState("");
+  const [editor, setEditor] = useState("");
+  const [sensitive_data, setSensitiveData] = useState("");
 
   const auth = getAuth();
 
@@ -55,6 +65,8 @@ export default function Users() {
         email: email,
         role: "user",
         clearance: "Sohar Star United",
+        editor: "false",
+        sensitive_data: "false",
       });
       message.success("User created");
       setLoading(false);
@@ -110,6 +122,8 @@ export default function Users() {
       await updateDoc(doc(db, "users", docid), {
         role: role,
         clearance: clearance,
+        editor: editor,
+        sensitive_data: sensitive_data,
       });
       setLoading(false);
       setUserDialog(false);
@@ -187,15 +201,17 @@ export default function Users() {
                   setDisplayEmail(user.email);
                   setRole(user.role);
                   setClearance(user.clearance);
+                  setEditor(user.editor);
+                  setSensitiveData(user.sensitive_data);
                 }}
                 key={user.id}
-                // icon={
-                //   user.role == "admin" ? (
-                //     <Eye width={"1.25rem"} color="dodgerblue" />
-                //   ) : (
-                //     <User width={"1.25rem"} color="dodgerblue" />
-                //   )
-                // }
+                icon={
+                  user.role == "admin" ? (
+                    <Eye width={"1.25rem"} color="dodgerblue" />
+                  ) : (
+                    <User width={"1.25rem"} color="dodgerblue" />
+                  )
+                }
                 title={user.name}
                 id_subtitle={user.email}
               />
@@ -233,6 +249,18 @@ export default function Users() {
               value={clearance ? clearance : "Undefined"}
               onChange={setClearance}
             />
+            <IOMenu
+              placeholder="Clearance"
+              icon={<PenLine color="dodgerblue" width={"1.25rem"} />}
+              value={editor == "true" ? "true" : "false"}
+              onChange={setEditor}
+            />
+            <IOMenu
+              placeholder="Sensitive Data"
+              value={sensitive_data == "true" ? "true" : "false"}
+              onChange={setSensitiveData}
+              icon={<Eye color="dodgerblue" width={"1.25rem"} />}
+            />
           </div>
         }
         title_extra={
@@ -243,8 +271,10 @@ export default function Users() {
                 fontSize: "0.75rem",
                 paddingLeft: "1rem",
                 paddingRight: "1rem",
+                height: "2rem",
               }}
             >
+              <MinusCircle width={"1rem"} color="crimson" />
               Remove
             </button>
           </div>

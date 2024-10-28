@@ -1,7 +1,7 @@
 import { LoadingOutlined } from "@ant-design/icons";
 import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import { Tooltip } from "antd";
-import { ChevronLeft, Hash, Phone, X } from "lucide-react";
+import { ChevronLeft, Hash, Info, Phone, ScrollText, X } from "lucide-react";
 import Directive from "../directive";
 import { Button } from "./button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from "./dialog";
@@ -46,6 +46,7 @@ interface Props {
   tag2Text?: any;
   tag3Text?: any;
   tag4Text?: any;
+  tag1Alert?: boolean;
   onBottomTagClick?: any;
   bottomValueLoading?: boolean;
   bottomTagValue?: any;
@@ -305,6 +306,7 @@ export default function DefaultDialog(props: Props) {
                   }}
                 >
                   <div
+                    onClick={props.tag1OnClick}
                     style={{
                       background: "rgba(150 150 150/ 15%)",
                       fontSize: "0.8rem",
@@ -313,12 +315,23 @@ export default function DefaultDialog(props: Props) {
                       paddingRight: "0.75rem",
                       paddingLeft: "0.75rem",
                       borderRadius: "0.5rem",
-                      gap: "0.25rem",
+                      gap: "0.5rem",
                       flex: 1,
                       justifyContent: "center",
                       cursor: "pointer",
                     }}
                   >
+                    {props.tag1Alert ? (
+                      <Info
+                        className="animate-pulse"
+                        width={"1rem"}
+                        color="crimson"
+                        strokeWidth={"3px"}
+                      />
+                    ) : (
+                      <ScrollText width={"1rem"} color="dodgerblue" />
+                    )}
+
                     {props.tag1Text ? <p>{props.tag1Text}</p> : "No Data"}
                   </div>
 

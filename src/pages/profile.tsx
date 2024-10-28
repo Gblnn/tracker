@@ -1,11 +1,19 @@
 import Back from "@/components/back";
+import Directive from "@/components/directive";
 import InputDialog from "@/components/input-dialog";
 import LazyLoader from "@/components/lazy-loader";
 import { db } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { UserPlus } from "lucide-react";
+import {
+  Book,
+  Car,
+  CreditCard,
+  Disc,
+  HeartPulse,
+  UserPlus,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Profile() {
@@ -124,14 +132,14 @@ export default function Profile() {
                       paddingRight: "0.35rem",
                       borderRadius: "0.5rem",
                       color: "black",
-                      fontWeight: 600,
+                      fontWeight: 500,
                     }}
                   >
                     {role}
                   </p>
                 </div>
               </div>
-              <button
+              {/* <button
                 style={{
                   paddingLeft: "1rem",
                   paddingRight: "1rem",
@@ -140,7 +148,7 @@ export default function Profile() {
                 }}
               >
                 Edit
-              </button>
+              </button> */}
 
               {/* <Directive
             title="Users"
@@ -156,6 +164,56 @@ export default function Profile() {
             to={"/access-requests"}
           /> */}
             </div>
+            <br />
+            <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
+              <Directive
+                title={"Civil ID"}
+                icon={<CreditCard color="dodgerblue" width={"1.25rem"} />}
+              />
+
+              <Directive
+                title={"License"}
+                icon={<Car color="violet" width={"1.25rem"} />}
+              />
+
+              <Directive
+                title={"Passport"}
+                icon={<Book color="goldenrod" width={"1.25rem"} />}
+              />
+
+              <Directive
+                title={"Medical"}
+                icon={<HeartPulse width={"1.25rem"} color="tomato" />}
+              />
+
+              <Directive
+                icon={<Disc width={"1.25rem"} color="dodgerblue" />}
+                title={"Training"}
+              />
+            </div>
+            {/* <div
+              style={{
+                border: "",
+                display: "flex",
+                flexWrap: "wrap",
+                height: "65svh",
+                gap: "0.75rem",
+                justifyContent: "",
+              }}
+            >
+              <SquareDirective
+                title="Civil ID"
+                icon={<CreditCard color="dodgerblue" width={"2rem"} />}
+              />
+              <SquareDirective
+                title="License"
+                icon={<Car color="violet" width={"2rem"} />}
+              />
+              <SquareDirective
+                title="Passport"
+                icon={<Book color="goldenrod" width={"2rem"} />}
+              />
+            </div> */}
           </motion.div>
         )}
       </motion.div>
