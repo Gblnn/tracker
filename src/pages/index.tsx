@@ -10,7 +10,15 @@ import { message } from "antd";
 import { signOut } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { Bug, Car, FileArchive, Globe, KeyRound, Mail } from "lucide-react";
+import {
+  Bug,
+  Car,
+  FileArchive,
+  FileText,
+  Globe,
+  KeyRound,
+  Mail,
+} from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -88,7 +96,7 @@ export default function Index() {
       >
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
           <Back
-            title="StarDox"
+            title="StarBoard"
             subtitle={"v2.0"}
             // icon={<img src="/stardox-bg.png" style={{ width: "2rem" }} />}
             noback
@@ -202,6 +210,11 @@ export default function Index() {
                 to={"/website"}
                 title={"Website"}
                 icon={<Globe color="dodgerblue" width={"1.25rem"} />}
+              />
+
+              <Directive
+                title={"LPOs"}
+                icon={<FileText width={"1.25rem"} color="lightgreen" />}
               />
 
               {/* <Directive

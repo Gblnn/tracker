@@ -22,6 +22,7 @@ import Users from "./pages/users";
 import Profile from "./pages/profile";
 import AccessRequests from "./pages/access-requests";
 import Openings from "./pages/openings";
+import Website from "./pages/website";
 
 export default function App() {
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function App() {
           <Route path="/new-hire" element={<NewHire />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/openings" element={<Openings />} />
+          <Route path="/website" element={<Website />} />
 
           <Route element={<ProtectedRoutes user={"user"} />}>
             <Route path="/records" element={<Records />} />

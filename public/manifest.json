@@ -21,8 +21,8 @@
     "lang":"en-US",
     "name":"StarDox",
     "short_name":"StarDox",
-    "start_url":"https://stardox.netlify.app/",
-    "scope":"https://stardox.netlify.app",
+    "start_url":"https://starboard.soharstar.com/",
+    "scope":"https://starboard.soharstar.com",
     "description":"Maintain personal records and get notified about important dates",
     "screenshots": [    
    {

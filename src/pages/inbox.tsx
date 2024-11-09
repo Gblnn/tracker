@@ -77,12 +77,35 @@ export default function Inbox() {
   const templateId = "template_1y0oq9l";
 
   useEffect(() => {
+    verifyAccess();
     fetchData();
   }, []);
 
   useEffect(() => {
     setCount(Number(document.getElementById("inboxes")?.childElementCount));
   }, [pageLoad]);
+
+  const verifyAccess = async () => {
+    try {
+      setLoading(true);
+
+      const RecordCollection = collection(db, "users");
+      const recordQuery = query(
+        RecordCollection,
+        where("email", "==", window.name)
+      );
+      const querySnapshot = await getDocs(recordQuery);
+      const fetchedData: any = [];
+      querySnapshot.forEach((doc: any) => {
+        fetchedData.push({ id: doc.id, ...doc.data() });
+      });
+      setLoading(false);
+
+      fetchedData[0].role == "admin" ? setAccess(true) : setAccess(false);
+    } catch (error) {
+      message.error(String(error));
+    }
+  };
 
   // FUNCTION TO SEND A TEST EMAIL
   const sendMail = async () => {

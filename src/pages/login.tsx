@@ -81,7 +81,7 @@ export default function Login() {
             <img src="/stardox-bg.png" style={{ width: "4rem", border: "" }} />
 
             <div style={{ display: "flex", flexFlow: "column" }}>
-              <p style={{ fontWeight: 400, fontSize: "2.25rem" }}>StarDox</p>
+              <p style={{ fontWeight: 400, fontSize: "2.25rem" }}>StarBoard</p>
             </div>
           </div>
         </div>
