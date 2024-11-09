@@ -632,7 +632,7 @@ export default function DbComponent(props: Props) {
     await updateDoc(doc(db, "leave-record", leaveID), {
       leaveFrom: leaveFrom,
       leaveTill: leaveTill,
-      expectedReturn: expectedReturn,
+      expectedReturn: expectedReturn ? expectedReturn : "",
       pending: leaveTill == "" ? true : false,
       days:
         leaveTill != "Pending" &&
@@ -641,6 +641,12 @@ export default function DbComponent(props: Props) {
           "days"
         ),
     });
+    await AddHistory(
+      "updation",
+      expectedReturn ? expectedReturn : leaveTill,
+      null,
+      expectedReturn ? "Expected Return" : "Leave Till"
+    );
     setLeaveFrom(leaveFrom);
     setLeaveTill(leaveTill);
     await leaveSum();
@@ -654,7 +660,7 @@ export default function DbComponent(props: Props) {
     await deleteDoc(doc(db, "leave-record", leaveID));
     id = doc_id;
     await leaveSum();
-    await AddHistory("deletion", null, leaveFrom);
+    await AddHistory("deletion", leaveFrom, null, "Leave");
     setLoading(false);
     fetchLeave();
     setDeleteLeaveDialog(false);
@@ -2533,7 +2539,7 @@ export default function DbComponent(props: Props) {
                   </p>
                 </div>
               </div>
-              <p
+              {/* <p
                 style={{
                   textAlign: "center",
                   padding: "0.25rem",
@@ -2543,7 +2549,7 @@ export default function DbComponent(props: Props) {
                 }}
               >
                 Expiring Soon
-              </p>
+              </p> */}
               <br />
               <div
                 style={{
@@ -4587,6 +4593,7 @@ export default function DbComponent(props: Props) {
                             <MinusSquareIcon
                               onClick={() => {
                                 setDeleteLeaveDialog(true);
+                                setLeaveFrom(e.leaveFrom);
                                 setLeaveID(e.id);
                               }}
                               className="animate-pulse"
