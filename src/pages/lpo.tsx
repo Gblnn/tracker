@@ -1,12 +1,14 @@
+import AddRecordButton from "@/components/add-record-button";
 import Back from "@/components/back";
 import Directive from "@/components/directive";
 import InputDialog from "@/components/input-dialog";
+import SearchBox from "@/components/searchbar";
 import { motion } from "framer-motion";
-import { Hash, UserPlus } from "lucide-react";
+import { Hash, Plus } from "lucide-react";
 import { useState } from "react";
 
 export default function LPO() {
-  const [addUserDialog, setAddUserDialog] = useState(false);
+  const [createProjectDialog, setCreateProjectDialog] = useState(false);
 
   return (
     <div
@@ -20,14 +22,12 @@ export default function LPO() {
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
         <Back
           title="LPOs"
-          extra={
-            <div style={{ display: "flex", gap: "0.5rem" }}>
-              {/* <button style={{ paddingLeft: "1rem", paddingRight: "1rem" }}>
-                v2.0
-              </button> */}
-            </div>
-          }
+          extra={<div style={{ display: "flex", gap: "0.5rem" }}></div>}
         />
+
+        <br />
+
+        <SearchBox />
 
         <br />
 
@@ -36,18 +36,18 @@ export default function LPO() {
             icon={<Hash width={"1.25rem"} color="dodgerblue" />}
             title={"CD 180"}
           />
+          <Directive
+            icon={<Hash width={"1.25rem"} color="dodgerblue" />}
+            title={"CD 175"}
+          />
         </div>
+
+        <AddRecordButton icon={<Plus color="dodgerblue" />} />
       </motion.div>
 
       <InputDialog
-        titleIcon={<UserPlus color="dodgerblue" />}
-        open={addUserDialog}
-        title={"Add User"}
-        OkButtonText="Add"
-        inputplaceholder="Enter Email"
-        input2placeholder="Enter Password"
-        input3placeholder="Confirm Password"
-        onCancel={() => setAddUserDialog(false)}
+        open={createProjectDialog}
+        onCancel={() => setCreateProjectDialog(false)}
       />
     </div>
   );

@@ -86,7 +86,7 @@ import "react-lazy-load-image-component/src/effects/blur.css";
 import { useNavigate } from "react-router-dom";
 import ReactTimeAgo from "react-time-ago";
 import useKeyboardShortcut from "use-keyboard-shortcut";
-import { exportDatabase, getBlank } from "./component-functions";
+import { exportDatabase, exportRaw, getBlank } from "./component-functions";
 import DbDropDown from "./db-dropdown";
 import ImageDialog from "./image-dialog";
 import LazyLoader from "./lazy-loader";
@@ -701,6 +701,11 @@ export default function DbComponent(props: Props) {
   const exportDB = async () => {
     await AddHistory("export", "", "", "Database Export");
     exportDatabase(records, props.dbCategory);
+  };
+
+  const exportRawDB = async () => {
+    await AddHistory("export", "", "", "Raw Database Data");
+    exportRaw(records);
   };
 
   const addRemark = async () => {
@@ -2308,7 +2313,10 @@ export default function DbComponent(props: Props) {
           }}
           open={exportDialog}
           title_extra={
-            <button style={{ fontSize: "0.8rem", width: "9rem" }}>
+            <button
+              onClick={exportRawDB}
+              style={{ fontSize: "0.8rem", width: "9rem" }}
+            >
               <DownloadCloud color="dodgerblue" width={"1rem"} />
               Raw Data
             </button>
@@ -2779,6 +2787,7 @@ export default function DbComponent(props: Props) {
               {state == "active"
                 ? access && (
                     <button
+                      className={notify ? "blue-glass" : ""}
                       onClick={handleNotify}
                       style={{
                         paddingLeft: "1rem",
@@ -2790,12 +2799,12 @@ export default function DbComponent(props: Props) {
                         <LoadingOutlined color="dodgerblue" />
                       ) : notify ? (
                         <BellRing
-                          color="dodgerblue"
+                          color={"dodgerblue"}
                           width={"1rem"}
                           fill="dodgerblue"
                         />
                       ) : (
-                        <BellOff width={"1rem"} color="dodgerblue" />
+                        <BellOff width={"1rem"} color="grey" />
                       )}
                     </button>
                   )
