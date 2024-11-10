@@ -2,7 +2,7 @@ import Back from "@/components/back";
 import Directive from "@/components/directive";
 import InputDialog from "@/components/input-dialog";
 import { motion } from "framer-motion";
-import { Newspaper, User, UserPlus, Users } from "lucide-react";
+import { Newspaper, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
 
 export default function Website() {
