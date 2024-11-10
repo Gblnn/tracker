@@ -1691,7 +1691,7 @@ export default function DbComponent(props: Props) {
                         onExport={() => setExportDialog(true)}
                         onInbox={() => usenavigate("/inbox")}
                         onArchives={() => usenavigate("/archives")}
-                        onAccess={() => usenavigate("/access-control")}
+                        // onAccess={() => usenavigate("/access-control")}
                         trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
                       />
                     </div>

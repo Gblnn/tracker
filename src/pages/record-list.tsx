@@ -9,7 +9,7 @@ import { message } from "antd";
 import { signOut } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { HistoryIcon, KeyRound, Mail } from "lucide-react";
+import { HistoryIcon, Inbox, KeyRound, Mail } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -93,6 +93,7 @@ export default function RecordList() {
                         </button> */}
 
                 <button
+                  className="blue-glass"
                   style={{
                     width: "",
                     paddingLeft: "1rem",
@@ -104,9 +105,12 @@ export default function RecordList() {
                   <HistoryIcon width={"1.1rem"} color="dodgerblue" />
                 </button>
 
-                {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
-                            <Inbox className="" color="crimson"/>
-                        </button> */}
+                <button
+                  onClick={() => usenavigate("/inbox")}
+                  style={{ width: "3rem", background: "rgba(220 20 60/ 20%)" }}
+                >
+                  <Inbox width={"1.25rem"} className="" color="crimson" />
+                </button>
               </div>
             }
           />

@@ -2,7 +2,7 @@ import Back from "@/components/back";
 import Directive from "@/components/directive";
 import InputDialog from "@/components/input-dialog";
 import { motion } from "framer-motion";
-import { UserPlus } from "lucide-react";
+import { Newspaper, User, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
 
 export default function Website() {
@@ -32,7 +32,12 @@ export default function Website() {
         <br />
 
         <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
-          <Directive />
+          <Directive title={"Openings"} icon={<Users width={"1.25rem"} />} />
+          <Directive
+            notName
+            icon={<Newspaper color="dodgerblue" width={"1.25rem"} />}
+            title={"Latest News & Updates"}
+          />
         </div>
       </motion.div>
 

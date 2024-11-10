@@ -23,6 +23,7 @@ import Profile from "./pages/profile";
 import AccessRequests from "./pages/access-requests";
 import Openings from "./pages/openings";
 import Website from "./pages/website";
+import LPO from "./pages/lpo";
 
 export default function App() {
   useEffect(() => {
@@ -54,6 +55,8 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/openings" element={<Openings />} />
           <Route path="/website" element={<Website />} />
+          <Route path="/lpos" element={<LPO />} />
+          <Route />
 
           <Route element={<ProtectedRoutes user={"user"} />}>
             <Route path="/records" element={<Records />} />

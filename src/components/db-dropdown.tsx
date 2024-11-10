@@ -3,7 +3,6 @@ import {
   Archive,
   DownloadCloud,
   Inbox,
-  KeyRound,
   RefreshCcw,
   UploadCloud,
 } from "lucide-react";
@@ -55,13 +54,13 @@ export default function DbDropDown(props: Props) {
               <span style={{ width: "100%" }}>Upload xlsx</span>
             </DropdownMenuItem>
 
-            <DropdownMenuItem
+            {/* <DropdownMenuItem
               onClick={props.onAccess}
               style={{ width: "100%" }}
             >
               <KeyRound className="mr-2 " color="dodgerblue" />
               <span style={{ width: "100%" }}>Access Control</span>
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
 
             <DropdownMenuItem
               onClick={props.onArchives}

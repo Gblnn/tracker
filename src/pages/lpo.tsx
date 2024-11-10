@@ -2,7 +2,7 @@ import Back from "@/components/back";
 import Directive from "@/components/directive";
 import InputDialog from "@/components/input-dialog";
 import { motion } from "framer-motion";
-import { UserPlus } from "lucide-react";
+import { Hash, UserPlus } from "lucide-react";
 import { useState } from "react";
 
 export default function LPO() {
@@ -32,7 +32,10 @@ export default function LPO() {
         <br />
 
         <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
-          <Directive />
+          <Directive
+            icon={<Hash width={"1.25rem"} color="dodgerblue" />}
+            title={"CD 180"}
+          />
         </div>
       </motion.div>
 

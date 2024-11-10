@@ -97,7 +97,7 @@ export default function Index() {
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
           <Back
             title="StarBoard"
-            subtitle={"v2.0"}
+            subtitle={"v2.1"}
             // icon={<img src="/stardox-bg.png" style={{ width: "2rem" }} />}
             noback
             extra={
@@ -156,7 +156,7 @@ export default function Index() {
                   </motion.div>
                 )}
 
-                <button
+                {/* <button
                   style={{
                     fontSize: "0.75rem",
                     paddingLeft: "1rem",
@@ -165,7 +165,7 @@ export default function Index() {
                   onClick={() => setBugDialog(true)}
                 >
                   <Bug width={"1rem"} color="lightgreen" />
-                </button>
+                </button> */}
 
                 <IndexDropDown
                   onLogout={() => setLogoutPrompt(true)}
@@ -213,6 +213,7 @@ export default function Index() {
               />
 
               <Directive
+                to={"/lpos"}
                 title={"LPOs"}
                 icon={<FileText width={"1.25rem"} color="lightgreen" />}
               />
