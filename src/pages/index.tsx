@@ -15,9 +15,9 @@ import {
   Car,
   FileArchive,
   FileText,
-  Globe,
   KeyRound,
   Mail,
+  QrCode,
 } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
@@ -97,7 +97,7 @@ export default function Index() {
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
           <Back
             title="StarBoard"
-            subtitle={"v2.1"}
+            subtitle={"v2.1.1"}
             // icon={<img src="/stardox-bg.png" style={{ width: "2rem" }} />}
             noback
             extra={
@@ -206,16 +206,24 @@ export default function Index() {
                 icon={<Car color="salmon" width={"1.25rem"} />}
               />
 
-              <Directive
+              {/* <Directive
                 to={"/website"}
                 title={"Website"}
-                icon={<Globe color="dodgerblue" width={"1.25rem"} />}
+                icon={<Globe width={"1.25rem"} />}
+              /> */}
+
+              <Directive
+                to={"/qr-code-generator"}
+                title={"QR Generator"}
+                icon={<QrCode width={"1.25rem"} />}
               />
 
               <Directive
+                tag="Work In Progress"
+                status={true}
                 to={"/lpos"}
                 title={"LPOs"}
-                icon={<FileText width={"1.25rem"} color="lightgreen" />}
+                icon={<FileText width={"1.25rem"} color="dodgerblue" />}
               />
 
               {/* <Directive
@@ -356,7 +364,10 @@ export default function Index() {
           OkButtonText="Logout"
           title={"Confirm Logout?"}
           open={logoutPrompt}
-          onCancel={() => setLogoutPrompt(false)}
+          onCancel={() => {
+            setLogoutPrompt(false);
+            window.location.reload();
+          }}
           onOk={() => {
             signOut(auth);
             usenavigate("/");

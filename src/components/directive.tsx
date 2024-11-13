@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Circle,
   EllipsisVerticalIcon,
+  LoaderCircle,
   LockKeyholeIcon,
   PenLine,
 } from "lucide-react";
@@ -99,6 +100,12 @@ export default function Directive(props: Props) {
                 />
               </motion.div>
             </div>
+          ) : props.loading ? (
+            <LoaderCircle
+              className="animate-spin"
+              color="dodgerblue"
+              width={"1.25rem"}
+            />
           ) : (
             props.icon
           )}

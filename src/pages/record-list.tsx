@@ -101,7 +101,7 @@ export default function RecordList() {
                   }}
                   onClick={() => usenavigate("/history")}
                 >
-                  <p style={{ fontSize: "0.8rem" }}>History</p>
+                  {/* <p style={{ fontSize: "0.8rem" }}></p> */}
                   <HistoryIcon width={"1.1rem"} color="dodgerblue" />
                 </button>
 

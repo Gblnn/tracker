@@ -4,26 +4,27 @@ import { Route, Routes } from "react-router-dom";
 import ProtectedRoutes from "./components/protectedRoute";
 import Index from "./pages";
 import AccessControl from "./pages/access-control";
+import AccessRequests from "./pages/access-requests";
 import AdminPage from "./pages/admin-page";
 import Archives from "./pages/archives";
 import History from "./pages/history";
 import Inbox from "./pages/inbox";
 import Login from "./pages/login";
-import Medicals from "./pages/medicals";
-import PageNotFound from "./pages/page-not-found";
-import Records from "./pages/records";
-import UserPage from "./pages/user";
-import ValeRecords from "./pages/vale-records";
-import RecordList from "./pages/record-list";
-import NewHire from "./pages/new-hire";
-import UserReset from "./pages/user-reset";
-import RequestAccess from "./pages/request-access";
-import Users from "./pages/users";
-import Profile from "./pages/profile";
-import AccessRequests from "./pages/access-requests";
-import Openings from "./pages/openings";
-import Website from "./pages/website";
 import LPO from "./pages/lpo";
+import Medicals from "./pages/medicals";
+import NewHire from "./pages/new-hire";
+import Openings from "./pages/openings";
+import PageNotFound from "./pages/page-not-found";
+import Profile from "./pages/profile";
+import QRCode from "./pages/qr-code";
+import RecordList from "./pages/record-list";
+import Records from "./pages/records";
+import RequestAccess from "./pages/request-access";
+import UserPage from "./pages/user";
+import UserReset from "./pages/user-reset";
+import Users from "./pages/users";
+import ValeRecords from "./pages/vale-records";
+import Website from "./pages/website";
 
 export default function App() {
   useEffect(() => {
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="/openings" element={<Openings />} />
           <Route path="/website" element={<Website />} />
           <Route path="/lpos" element={<LPO />} />
+          <Route path="/qr-code-generator" element={<QRCode />} />
           <Route />
 
           <Route element={<ProtectedRoutes user={"user"} />}>

@@ -60,7 +60,8 @@ export default function History() {
       >
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
           <Back
-            title={"History" + " (" + records.length + ")"}
+            title={"History"}
+            subtitle={records.length}
             extra={
               <RefreshButton
                 onClick={fetchData}

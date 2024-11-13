@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 import { Hash, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export default function LPO() {
+export default function LPODef() {
   const [search, setSearch] = useState("");
   const [createProjectDialog, setCreateProjectDialog] = useState(false);
   const [fetchingData, setfetchingData] = useState(false);
@@ -28,7 +28,7 @@ export default function LPO() {
   const fetchData = async () => {
     try {
       setfetchingData(true);
-      const RecordCollection = collection(db, "project-code");
+      const RecordCollection = collection(db, "lpo");
       const recordQuery = query(RecordCollection);
       const querySnapshot = await getDocs(recordQuery);
       const fetchedData: any = [];
@@ -91,10 +91,12 @@ export default function LPO() {
 
         <br />
 
-        <SearchBar
-          placeholder="Search"
-          onChange={(e: any) => setSearch(e.target.value.toLowerCase())}
-        />
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <SearchBar
+            placeholder="Search"
+            onChange={(e: any) => setSearch(e.target.value.toLowerCase())}
+          />
+        </div>
 
         <br />
 

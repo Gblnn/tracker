@@ -32,7 +32,10 @@ export default function Website() {
         <br />
 
         <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
-          <Directive title={"Openings"} icon={<Users width={"1.25rem"} />} />
+          <Directive
+            title={"Openings"}
+            icon={<Users width={"1.25rem"} color="dodgerblue" />}
+          />
           <Directive
             notName
             icon={<Newspaper color="dodgerblue" width={"1.25rem"} />}

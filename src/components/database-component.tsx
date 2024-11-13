@@ -67,6 +67,7 @@ import {
   ImageOff,
   Inbox,
   ListStart,
+  LoaderCircle,
   MinusSquareIcon,
   PackageOpen,
   PenLine,
@@ -699,7 +700,9 @@ export default function DbComponent(props: Props) {
   };
 
   const exportDB = async () => {
+    setLoading(true);
     await AddHistory("export", "", "", "Database Export");
+    setLoading(false);
     exportDatabase(records, props.dbCategory);
   };
 
@@ -2317,7 +2320,11 @@ export default function DbComponent(props: Props) {
               onClick={exportRawDB}
               style={{ fontSize: "0.8rem", width: "9rem" }}
             >
-              <DownloadCloud color="dodgerblue" width={"1rem"} />
+              {loading ? (
+                <LoaderCircle className="animate-spin" width={"1rem"} />
+              ) : (
+                <DownloadCloud color="dodgerblue" width={"1rem"} />
+              )}
               Raw Data
             </button>
           }
@@ -2333,34 +2340,34 @@ export default function DbComponent(props: Props) {
               }}
             >
               <Directive
+                loading={loading}
                 icon={<File width={"1.25rem"} color="dodgerblue" />}
                 title={"Export Records"}
-                tag={<DownloadCloud width={"1.25rem"} />}
+                // tag={<DownloadCloud width={"1.25rem"} />}
                 status
-                noArrow
                 onClick={exportDB}
               />
               <Directive
                 icon={<BarChart3Icon color="violet" width={"1.25rem"} />}
                 title={"Export Leave Log"}
-                tag={<DownloadCloud width={"1.25rem"} />}
+                // tag={<DownloadCloud width={"1.25rem"} />}
                 status
-                noArrow
+                // noArrow
               />
               <Directive
                 title={"Export Salary Log"}
                 icon={<CircleDollarSign width={"1.25rem"} color="lightgreen" />}
-                tag={<DownloadCloud width={"1.25rem"} />}
+                // tag={<DownloadCloud width={"1.25rem"} />}
                 status
-                noArrow
+                // noArrow
               />
               <Directive
                 notName
                 title={"Export Allowance Log"}
                 icon={<HandHelping color="salmon" />}
-                tag={<DownloadCloud width={"1.25rem"} />}
+                // tag={<DownloadCloud width={"1.25rem"} />}
                 status
-                noArrow
+                // noArrow
               />
             </div>
           }

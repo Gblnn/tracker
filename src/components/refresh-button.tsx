@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { Check, RefreshCcw } from "lucide-react";
 
 interface Props {
-  onClick: any;
-  fetchingData: any;
-  refreshCompleted: any;
+  onClick?: any;
+  fetchingData?: any;
+  refreshCompleted?: any;
 }
 
 export default function RefreshButton(props: Props) {
