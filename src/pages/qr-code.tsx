@@ -1,130 +1,123 @@
 import Back from "@/components/back";
-import { Copy, Download, ExternalLink, QrCodeIcon } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
-import { useCallback, useState } from "react";
+import { Download, Link2, QrCode } from "lucide-react";
+import QRCode from "qrcode";
+import { useCallback, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
-function QRCode() {
-  const [text, setText] = useState("");
-  const [copied, setCopied] = useState(false);
+function QRCodeGenerator() {
+  const [url, setUrl] = useState("");
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const handleDownload = useCallback(() => {
-    const svg = document.querySelector("svg");
-    if (!svg) return;
+  const generateQRCode = useCallback(async () => {
+    if (!url) return;
 
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
+    try {
+      if (canvasRef.current) {
+        await QRCode.toCanvas(canvasRef.current, url, {
+          width: 400,
+          margin: 2,
+          color: {
+            dark: "#000000",
+            light: "#ffffff",
+          },
+        });
+        const dataUrl = canvasRef.current.toDataURL("image/png");
+        setQrCodeUrl(dataUrl);
+      }
+    } catch (err) {
+      console.error("Error generating QR code:", err);
+    }
+  }, [url]);
 
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx?.drawImage(img, 0, 0);
-      const pngFile = canvas.toDataURL("image/png");
+  const downloadQRCode = useCallback(() => {
+    if (!qrCodeUrl) return;
 
-      const downloadLink = document.createElement("a");
-      downloadLink.download = "qrcode.png";
-      downloadLink.href = pngFile;
-      downloadLink.click();
-    };
-
-    img.src = "data:image/svg+xml;base64," + btoa(svgData);
-  }, []);
-
-  const copyToClipboard = useCallback(() => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [text]);
+    const link = document.createElement("a");
+    link.href = qrCodeUrl;
+    link.download = "qrcode.png";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [qrCodeUrl]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      className="min-h-screen  p-6"
+    <div
       style={{
+        height: "100svh",
         background:
           "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
       }}
     >
-      <Back icon={<QrCodeIcon color="dodgerblue" />} title={"QR Generator"} />
-      <div className="max-w-2xl mx-auto">
-        <div className=" rounded-2xl shadow-xl p-8 mb-8">
-          <div className="mb-6">
-            <label htmlFor="text" className="block text-sm font-medium mb-2">
-              Enter text or URL
-            </label>
-            <input
-              type="text"
-              id="text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-              placeholder="Enter text or URL here..."
-            />
-          </div>
+      <div style={{ padding: "1.5rem" }}>
+        <Back title={"QR Generator"} icon={<QrCode color="dodgerblue" />} />
+      </div>
 
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className=" p-6 rounded-xl w-full md:w-auto flex items-center justify-center">
-              {text ? (
-                <QRCodeSVG
-                  value={text}
-                  size={200}
-                  level="H"
-                  includeMargin
-                  className="w-full max-w-[200px]"
-                />
-              ) : (
-                <div className="w-[200px] h-[200px] flex items-center justify-center text-gray-400 border-2 border-dashed rounded-lg">
-                  <span>QR Code Preview</span>
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        className=""
+      >
+        <div className="max-w-md mx-auto" style={{ border: "" }}>
+          <div
+            // style={{ background: "rgba(100 100 100/ 10%)" }}
+            className="rounded-lg p-6 space-y-6"
+          >
+            <div className="space-y-2">
+              <label htmlFor="url" className="block text-sm font-medium">
+                Enter URL or Text
+              </label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Link2 className="h-5 w-5 text-gray-400" />
                 </div>
-              )}
+                <input
+                  type="text"
+                  id="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="https://example.com"
+                />
+              </div>
             </div>
 
-            <div className="flex-1 space-y-4">
-              {text && (
+            <button
+              onClick={generateQRCode}
+              className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none transition-colors"
+            >
+              Generate QR Code
+            </button>
+
+            <motion.div
+              style={{ border: "" }}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              className="flex flex-col items-center space-y-4"
+            >
+              <canvas ref={canvasRef} className="hidden" />
+              {qrCodeUrl && (
                 <>
+                  <img
+                    src={qrCodeUrl}
+                    alt="Generated QR Code"
+                    className="w-64 h-64 border-2 border-gray-200 rounded-lg"
+                  />
                   <button
-                    onClick={handleDownload}
-                    className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
+                    onClick={downloadQRCode}
+                    className="flex items-center space-x-2 bg-grey-700 text-white py-2 px-4 rounded-md  focus:outline-none   transition-colors"
                   >
-                    <Download className="w-5 h-5" />
-                    Download PNG
+                    <Download className="h-5 w-5" />
+                    <span>Download PNG</span>
                   </button>
-
-                  <button
-                    onClick={copyToClipboard}
-                    className="w-full flex items-center justify-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-lg hover:bg-gray-900 transition-colors"
-                  >
-                    <Copy className="w-5 h-5" />
-                    {copied ? "Copied!" : "Copy Text"}
-                  </button>
-
-                  {text.startsWith("http") && (
-                    <a
-                      href={text}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full flex items-center justify-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      <ExternalLink className="w-5 h-5" />
-                      Open URL
-                    </a>
-                  )}
                 </>
               )}
-            </div>
+            </motion.div>
           </div>
         </div>
-
-        {/* <div className="text-center text-sm text-gray-600">
-          <p>Simply enter your text or URL above to generate a QR code.</p>
-          <p>You can download the QR code as a PNG file or copy the text.</p>
-        </div> */}
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }
 
-export default QRCode;
+export default QRCodeGenerator;

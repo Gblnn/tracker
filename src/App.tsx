@@ -16,7 +16,7 @@ import NewHire from "./pages/new-hire";
 import Openings from "./pages/openings";
 import PageNotFound from "./pages/page-not-found";
 import Profile from "./pages/profile";
-import QRCode from "./pages/qr-code";
+import QRCodeGenerator from "./pages/qr-code";
 import RecordList from "./pages/record-list";
 import Records from "./pages/records";
 import RequestAccess from "./pages/request-access";
@@ -25,6 +25,7 @@ import UserReset from "./pages/user-reset";
 import Users from "./pages/users";
 import ValeRecords from "./pages/vale-records";
 import Website from "./pages/website";
+import ProjectLPO from "./pages/project-lpo";
 
 export default function App() {
   useEffect(() => {
@@ -57,7 +58,8 @@ export default function App() {
           <Route path="/openings" element={<Openings />} />
           <Route path="/website" element={<Website />} />
           <Route path="/lpos" element={<LPO />} />
-          <Route path="/qr-code-generator" element={<QRCode />} />
+          <Route path="/qr-code-generator" element={<QRCodeGenerator />} />
+          <Route path="project-lpo" element={<ProjectLPO />} />
           <Route />
 
           <Route element={<ProtectedRoutes user={"user"} />}>
