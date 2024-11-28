@@ -227,6 +227,7 @@ export default function Index() {
               />
 
               <Directive
+                tag="Work In Progress"
                 to={"/movement-register"}
                 title={"Movement Register"}
                 icon={<ArrowUpDown width={"1.25rem"} color="dodgerblue" />}
