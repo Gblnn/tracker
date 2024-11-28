@@ -26,6 +26,7 @@ import Users from "./pages/users";
 import ValeRecords from "./pages/vale-records";
 import Website from "./pages/website";
 import ProjectLPO from "./pages/project-lpo";
+import MovementRegister from "./pages/movement-register";
 
 export default function App() {
   useEffect(() => {
@@ -59,7 +60,8 @@ export default function App() {
           <Route path="/website" element={<Website />} />
           <Route path="/lpos" element={<LPO />} />
           <Route path="/qr-code-generator" element={<QRCodeGenerator />} />
-          <Route path="project-lpo" element={<ProjectLPO />} />
+          <Route path="/project-lpo" element={<ProjectLPO />} />
+          <Route path="/movement-register" element={<MovementRegister />} />
           <Route />
 
           <Route element={<ProtectedRoutes user={"user"} />}>

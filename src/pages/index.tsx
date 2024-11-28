@@ -11,6 +11,7 @@ import { signOut } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
 import {
+  ArrowUpDown,
   Bug,
   Car,
   FileArchive,
@@ -74,6 +75,12 @@ export default function Index() {
     } catch (error) {
       message.error(String(error));
     }
+  };
+
+  const Authenticate = () => {
+    access
+      ? usenavigate("/record-list")
+      : message.error("Admin clearance required");
   };
 
   useEffect(() => {
@@ -190,7 +197,8 @@ export default function Index() {
           ) : (
             <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
               <Directive
-                to={"/record-list"}
+                to={access ? "/record-list" : ""}
+                onClick={Authenticate}
                 title={"Records Master"}
                 icon={<FileArchive color="violet" width={"1.25rem"} />}
               />
@@ -216,6 +224,12 @@ export default function Index() {
                 to={"/qr-code-generator"}
                 title={"QR Generator"}
                 icon={<QrCode width={"1.25rem"} />}
+              />
+
+              <Directive
+                to={"/movement-register"}
+                title={"Movement Register"}
+                icon={<ArrowUpDown width={"1.25rem"} color="dodgerblue" />}
               />
 
               <Directive

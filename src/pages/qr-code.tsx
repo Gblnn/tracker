@@ -58,9 +58,19 @@ function QRCodeGenerator() {
         whileInView={{ opacity: 1 }}
         className=""
       >
-        <div className="max-w-md mx-auto" style={{ border: "" }}>
+        <div
+          className="max-w-md mx-auto"
+          style={{
+            border: "",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "75svh",
+            width: "100%",
+          }}
+        >
           <div
-            // style={{ background: "rgba(100 100 100/ 10%)" }}
+            style={{ background: "", width: "100%" }}
             className="rounded-lg p-6 space-y-6"
           >
             <div className="space-y-2">

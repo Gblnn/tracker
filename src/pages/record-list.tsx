@@ -20,7 +20,8 @@ export default function RecordList() {
   const [logoutPrompt, setLogoutPrompt] = useState(false);
   const usenavigate = useNavigate();
   const [verifyDialog, setVerifyDialog] = useState(false);
-  // const [loading, setLoading] = useState(false);
+  const [ssuloading, setSSULoading] = useState(false);
+  const [valeloading, setValeLoading] = useState(false);
 
   const handleLoginPrompt = (e: string) => {
     e == "ssu" && verify("ssu");
@@ -29,10 +30,9 @@ export default function RecordList() {
   };
 
   const verify = async (e: string) => {
-    setVerifyDialog(true);
+    e == "ssu" ? setSSULoading(true) : e == "vale" && setValeLoading(true);
+    // setVerifyDialog(true);
     try {
-      // setLoading(true);
-
       const RecordCollection = collection(db, "users");
       const recordQuery = query(
         RecordCollection,
@@ -43,8 +43,8 @@ export default function RecordList() {
       querySnapshot.forEach((doc: any) => {
         fetchedData.push({ id: doc.id, ...doc.data() });
       });
-      // setLoading(false);
-      setVerifyDialog(false);
+
+      // setVerifyDialog(false);
 
       e == "ssu" && fetchedData[0].clearance == "All"
         ? usenavigate("/records")
@@ -59,6 +59,8 @@ export default function RecordList() {
         : e == "vale" && fetchedData[0].clearance == "Vale"
         ? usenavigate("/vale-records")
         : message.error("No clearance to access");
+
+      e == "ssu" ? setSSULoading(false) : e == "vale" && setValeLoading(false);
     } catch (error) {
       setVerifyDialog(false);
       // setLoading(false);
@@ -118,6 +120,7 @@ export default function RecordList() {
 
           <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
             <Directive
+              loading={ssuloading}
               onClick={() => handleLoginPrompt("ssu")}
               title="Sohar Star United"
               icon={
@@ -138,6 +141,7 @@ export default function RecordList() {
             <Directive
               onClick={() => handleLoginPrompt("vale")}
               title="Vale Team"
+              loading={valeloading}
               icon={
                 <Avatar
                   style={{ width: "1.25rem", height: "1.25rem", border: "" }}
