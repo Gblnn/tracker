@@ -2727,16 +2727,20 @@ export default function DbComponent(props: Props) {
           bottomTagValue={leaves}
           bottomValueLoading={fetchingLeave}
           titleIcon={
-            <LazyLoader
-              gradient
-              block
-              width="4rem"
-              height="4rem"
-              name={name}
-              loading={omniLoad}
-              state={state}
-              omni={omni}
-            />
+            <div onClick={() => (image ? setImageDialog(true) : {})}>
+              <LazyLoader
+                profile={image}
+                gradient
+                block
+                width="4rem"
+                height="4rem"
+                name={name}
+                loading={omniLoad}
+                state={state}
+                omni={omni}
+              />
+            </div>
+
             // <Avatar
             //   style={{
             //     width: "3.55rem",
