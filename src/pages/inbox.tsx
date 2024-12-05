@@ -28,8 +28,8 @@ import {
 import { motion } from "framer-motion";
 import {
   ChevronDown,
-  Download,
   Eye,
+  FileSpreadsheet,
   Filter,
   Info,
   LucideMails,
@@ -702,7 +702,7 @@ export default function Inbox() {
 
                 {access && (
                   <button onClick={exportDB}>
-                    <Download color="lightgreen" width={"1rem"} />
+                    <FileSpreadsheet color="lightgreen" width={"1rem"} />
                   </button>
                 )}
               </div>

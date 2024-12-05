@@ -850,7 +850,7 @@ export default function DbComponent(props: Props) {
     console.log("Deleting Day offs");
     setRecordDeleteStatus("Deleting Day offs");
     leaveList.forEach(async (item: any) => {
-      await deleteDoc(doc(db, "leave-record", item.id));
+      await deleteDoc(doc(db, "leavFe-record", item.id));
     });
 
     console.log("Deleting Salary Records");
@@ -975,7 +975,7 @@ export default function DbComponent(props: Props) {
   };
 
   {
-    /* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
+    /* ///////////////////////////////////////////////////////////////////////////////////////////////// */
   }
 
   // FUNCTION TO ADD A VEHICLE ID

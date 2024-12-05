@@ -1,16 +1,24 @@
 import { LoadingOutlined } from "@ant-design/icons";
 import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import { Tooltip } from "antd";
-import { ChevronLeft, Hash, Info, Phone, ScrollText, X } from "lucide-react";
+import {
+  ChevronLeft,
+  Hash,
+  Info,
+  LineChart,
+  Phone,
+  ScrollText,
+  X,
+} from "lucide-react";
 import Directive from "../directive";
-import { Button } from "./button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader } from "./dialog";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "./accordion";
+import { Button } from "./button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader } from "./dialog";
 
 interface Props {
   open?: boolean;
@@ -417,6 +425,7 @@ export default function DefaultDialog(props: Props) {
                   }}
                 >
                   <Directive
+                    icon={<LineChart width={"1.25rem"} color="dodgerblue" />}
                     titleSize="0.8rem"
                     height="2.25rem"
                     title="Day off(s)"
