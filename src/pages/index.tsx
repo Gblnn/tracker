@@ -34,6 +34,7 @@ export default function Index() {
   const [issue, setIssue] = useState("");
   const [loading, setLoading] = useState(false);
   const [access, setAccess] = useState(false);
+  const [admin, setAdmin] = useState(false);
 
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
@@ -71,16 +72,20 @@ export default function Index() {
       });
       setLoading(false);
 
-      fetchedData[0].role == "admin" ? setAccess(true) : setAccess(false);
+      fetchedData[0].clearance == "Sohar Star United" ||
+      fetchedData[0].clearance == "Vale" ||
+      fetchedData[0].clearance == "All"
+        ? setAccess(true)
+        : setAccess(false);
+
+      fetchedData[0].role == "admin" ? setAdmin(true) : setAdmin(false);
     } catch (error) {
       message.error(String(error));
     }
   };
 
   const Authenticate = () => {
-    access
-      ? usenavigate("/record-list")
-      : message.error("Admin clearance required");
+    access ? usenavigate("/record-list") : message.error("Clearance required");
   };
 
   useEffect(() => {
@@ -139,7 +144,7 @@ export default function Index() {
                   <LogOut width={"1rem"} color="lightcoral" />
                 </button> */}
 
-                {access && (
+                {admin && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}

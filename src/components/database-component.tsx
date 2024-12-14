@@ -787,7 +787,7 @@ export default function DbComponent(props: Props) {
       imgUrl = "";
       if (profileName != "") {
         console.log("Deleting ", profileName);
-        await deleteObject(ref(storage, profileName));
+        await deleteObject(ref(storage, profileName)); 
       }
 
       await uploadFile();
