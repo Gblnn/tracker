@@ -79,10 +79,12 @@ export default function IndexDropDown(props: Props) {
               <span style={{ width: "100%" }}>Force Reload</span>
             </DropdownMenuItem>
 
-            <DropdownMenuItem onClick={props.onProfile}>
-              <User className="mr-2" color="dodgerblue" />
-              <span style={{ width: "100%" }}>Profile</span>
-            </DropdownMenuItem>
+            {props.onProfile && (
+              <DropdownMenuItem onClick={props.onProfile}>
+                <User className="mr-2" color="dodgerblue" />
+                <span style={{ width: "100%" }}>Profile</span>
+              </DropdownMenuItem>
+            )}
 
             <DropdownMenuItem
               onClick={props.onLogout}

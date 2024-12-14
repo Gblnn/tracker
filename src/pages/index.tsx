@@ -79,6 +79,8 @@ export default function Index() {
         : setAccess(false);
 
       fetchedData[0].role == "admin" ? setAdmin(true) : setAdmin(false);
+
+      fetchedData[0].role == "profile" && usenavigate("/profile");
     } catch (error) {
       message.error(String(error));
     }
@@ -110,7 +112,7 @@ export default function Index() {
           <Back
             title="StarBoard"
             subtitle={"v2.1.1"}
-            // icon={<img src="/stardox-bg.png" style={{ width: "2rem" }} />}
+            icon={<img src="/stardox-bg.png" style={{ width: "1.75rem" }} />}
             noback
             extra={
               <div

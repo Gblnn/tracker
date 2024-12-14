@@ -98,7 +98,7 @@ export default function Back(props: Props) {
               >
                 <p
                   style={{
-                    fontSize: "0.85rem",
+                    fontSize: "0.75rem",
                     border: "",
                     opacity: "",
                     display: "flex",
@@ -109,8 +109,8 @@ export default function Back(props: Props) {
                     color: "black",
                     padding: "0.25rem",
 
-                    paddingLeft: "0.25rem",
-                    paddingRight: "0.25rem",
+                    paddingLeft: "0.35rem",
+                    paddingRight: "0.35rem",
                     fontWeight: "500",
                     marginBottom: "0.1rem",
                   }}

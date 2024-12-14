@@ -1,8 +1,11 @@
 import Back from "@/components/back";
 import Directive from "@/components/directive";
+import IndexDropDown from "@/components/index-dropdown";
 import InputDialog from "@/components/input-dialog";
 import LazyLoader from "@/components/lazy-loader";
-import { db } from "@/firebase";
+import DefaultDialog from "@/components/ui/default-dialog";
+import { auth, db } from "@/firebase";
+import { signOut } from "firebase/auth";
 import { LoadingOutlined } from "@ant-design/icons";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
@@ -15,12 +18,16 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
   const [addUserDialog, setAddUserDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
+  const [logoutPrompt, setLogoutPrompt] = useState(false);
+
+  const usenavigate = useNavigate();
 
   useEffect(() => {
     fetchUsers();
@@ -55,12 +62,16 @@ export default function Profile() {
     >
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
         <Back
-          title="Profile"
+          noback
+          title="StarBoard"
+          subtitle={"v2.1.1"}
+          icon={<img style={{ width: "2rem" }} src="stardox-bg.png" />}
           extra={
             <div style={{ display: "flex", gap: "0.5rem" }}>
               {/* <button style={{ paddingLeft: "1rem", paddingRight: "1rem" }}>
                 v2.0
               </button> */}
+              <IndexDropDown onLogout={() => setLogoutPrompt(true)} />
             </div>
           }
         />
@@ -88,7 +99,9 @@ export default function Profile() {
                 gap: "0.5rem",
                 border: "",
                 borderBottom: "1px solid rgba(100 100 100/ 50%)",
+                borderTop: "1px solid rgba(100 100 100/ 50%)",
                 paddingBottom: "1.5rem",
+                paddingTop: "1.5rem",
                 justifyContent: "space-between",
                 alignItems: "center",
               }}
@@ -125,14 +138,14 @@ export default function Profile() {
                   </p>
                   <p
                     style={{
-                      fontSize: "0.75rem",
+                      fontSize: "0.65rem",
                       background: "white",
                       width: "fit-content",
                       paddingLeft: "0.35rem",
                       paddingRight: "0.35rem",
                       borderRadius: "0.5rem",
                       color: "black",
-                      fontWeight: 500,
+                      fontWeight: 600,
                     }}
                   >
                     {role}
@@ -217,6 +230,24 @@ export default function Profile() {
           </motion.div>
         )}
       </motion.div>
+
+      <DefaultDialog
+        destructive
+        OkButtonText="Logout"
+        title={"Confirm Logout?"}
+        open={logoutPrompt}
+        onCancel={() => {
+          setLogoutPrompt(false);
+          window.location.reload();
+        }}
+        onOk={() => {
+          signOut(auth);
+          usenavigate("/");
+          window.name = "";
+          console.log(window.name);
+          window.location.reload();
+        }}
+      />
 
       <InputDialog
         titleIcon={<UserPlus color="dodgerblue" />}

@@ -231,7 +231,7 @@ export default function Login() {
               <p style={{ opacity: 0.5, fontSize: "0.65rem", border: "" }}>
                 If you do not have an account you can request for one. You will
                 be granted access to create an account once your request is
-                reviewed and verified by the organization.
+                processed.
               </p>
               <Link
                 style={{

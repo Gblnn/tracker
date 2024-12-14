@@ -74,8 +74,8 @@ export default function RequestAccess() {
               Request Access
             </p>
             <p style={{ fontSize: "0.8rem", opacity: 0.75 }}>
-              Your request will be reviewed and verified by the organization
-              before granting you access.
+              Request for a free account by entering your employee code in the
+              field below.
             </p>
 
             <div

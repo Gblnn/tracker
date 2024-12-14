@@ -48,6 +48,13 @@ export default function SelectMenu(props: Props) {
           >
             User
           </SelectItem>
+
+          <SelectItem
+            style={{ display: "flex", justifyContent: "flex-start" }}
+            value="profile"
+          >
+            Profile
+          </SelectItem>
         </SelectGroup>
       </SelectContent>
     </Select>
