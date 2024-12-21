@@ -63,10 +63,16 @@ export default function Profile() {
     >
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
         <Back
-          noback
-          title="StarBoard"
-          subtitle={"v2.1.1"}
-          icon={<img style={{ width: "2rem" }} src="stardox-bg.png" />}
+          noback={role == "profile"}
+          title={role == "profile" ? "StarBoard" : "Profile"}
+          subtitle={role == "profile" ? "v2.1.1" : ""}
+          icon={
+            role == "profile" ? (
+              <img style={{ width: "2rem" }} src="stardox-bg.png" />
+            ) : (
+              ""
+            )
+          }
           extra={
             <div style={{ display: "flex", gap: "0.5rem" }}>
               {/* <button style={{ paddingLeft: "1rem", paddingRight: "1rem" }}>
