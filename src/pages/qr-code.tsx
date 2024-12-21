@@ -1,8 +1,8 @@
 import Back from "@/components/back";
-import { Download, Link2, QrCode } from "lucide-react";
+import { motion } from "framer-motion";
+import { Download, Link2 } from "lucide-react";
 import QRCode from "qrcode";
 import { useCallback, useRef, useState } from "react";
-import { motion } from "framer-motion";
 
 function QRCodeGenerator() {
   const [url, setUrl] = useState("");
