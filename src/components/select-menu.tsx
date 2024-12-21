@@ -24,9 +24,27 @@ export default function SelectMenu(props: Props) {
         }}
         className=""
       >
-        <UserCircle color="dodgerblue" width={"1.25rem"} />
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <UserCircle color="dodgerblue" width={"1.25rem"} />
+          <p
+            style={{
+              fontSize: "0.65rem",
+              position: "absolute",
+              marginLeft: "2rem ",
+              opacity: "0.5",
+              textTransform: "uppercase",
+              fontWeight: "600",
+            }}
+          >
+            Type
+          </p>
+        </div>
+
         <SelectValue placeholder="Role" />
-        <ChevronDown width={"1rem"} />
+
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <ChevronDown width={"1rem"} />
+        </div>
       </SelectTrigger>
       <SelectContent>
         <SelectGroup

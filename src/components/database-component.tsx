@@ -787,7 +787,7 @@ export default function DbComponent(props: Props) {
       imgUrl = "";
       if (profileName != "") {
         console.log("Deleting ", profileName);
-        await deleteObject(ref(storage, profileName)); 
+        await deleteObject(ref(storage, profileName));
       }
 
       await uploadFile();
@@ -2013,8 +2013,10 @@ export default function DbComponent(props: Props) {
                             space
                             new={
                               moment(post.created_on.toDate()).fromNow() ==
-                              "a few seconds ago"
+                                "a few seconds ago" ||
+                              (selectable && post.type == "omni")
                             }
+                            dotColor={selectable ? "violet" : "dodgerblue"}
                             notify={!post.notify}
                             archived={post.state == "archived" ? true : false}
                             tag={

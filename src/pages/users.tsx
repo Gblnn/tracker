@@ -250,12 +250,14 @@ export default function Users() {
               onChange={setClearance}
             />
             <IOMenu
+              title="Editing"
               placeholder="Clearance"
               icon={<PenLine color="dodgerblue" width={"1.25rem"} />}
               value={editor == "true" ? "true" : "false"}
               onChange={setEditor}
             />
             <IOMenu
+              title="Sensitive Data"
               placeholder="Sensitive Data"
               value={sensitive_data == "true" ? "true" : "false"}
               onChange={setSensitiveData}

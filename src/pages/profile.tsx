@@ -9,6 +9,7 @@ import { signOut } from "firebase/auth";
 import { LoadingOutlined } from "@ant-design/icons";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
+import CircularProgress from "../components/circular-progress";
 import {
   Book,
   Car,
@@ -96,9 +97,10 @@ export default function Profile() {
               style={{
                 display: "flex",
                 flexFlow: "row",
+                flexWrap: "wrap",
                 gap: "0.5rem",
                 border: "",
-                borderBottom: "1px solid rgba(100 100 100/ 50%)",
+                // borderBottom: "1px solid rgba(100 100 100/ 50%)",
                 borderTop: "1px solid rgba(100 100 100/ 50%)",
                 paddingBottom: "1.5rem",
                 paddingTop: "1.5rem",
@@ -152,6 +154,24 @@ export default function Profile() {
                   </p>
                 </div>
               </div>
+              <div
+                className="sm:w-full"
+                style={{
+                  justifyContent: "center",
+                  alignItems: "center",
+
+                  border: "",
+                  display: "flex",
+                  gap: "2rem",
+                  marginTop: "1rem",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                <CircularProgress percentage={78} title="Average" />
+                <CircularProgress percentage={95} title="Top" />
+                <CircularProgress percentage={59} title="Me" />
+              </div>
+
               {/* <button
                 style={{
                   paddingLeft: "1rem",
@@ -177,6 +197,7 @@ export default function Profile() {
             to={"/access-requests"}
           /> */}
             </div>
+
             <br />
             <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
               <Directive

@@ -24,7 +24,22 @@ export default function ClearanceMenu(props: Props) {
         }}
         className=""
       >
-        <KeyRound color="dodgerblue" width={"1.25rem"} />
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <KeyRound color="dodgerblue" width={"1.25rem"} />
+          <p
+            style={{
+              fontSize: "0.65rem",
+              position: "absolute",
+              marginLeft: "2rem ",
+              opacity: "0.5",
+              textTransform: "uppercase",
+              fontWeight: "600",
+            }}
+          >
+            Clearance
+          </p>
+        </div>
+
         <SelectValue placeholder="Clearance" />
         <ChevronDown width={"1rem"} />
       </SelectTrigger>

@@ -701,8 +701,8 @@ export default function Inbox() {
                 />
 
                 {access && (
-                  <button onClick={exportDB}>
-                    <FileSpreadsheet color="lightgreen" width={"1rem"} />
+                  <button onClick={exportDB} style={{ width: "3rem" }}>
+                    <FileSpreadsheet color="lightgreen" width={"1.1rem"} />
                   </button>
                 )}
               </div>

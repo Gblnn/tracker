@@ -50,7 +50,7 @@ function QRCodeGenerator() {
       }}
     >
       <div style={{ padding: "1.5rem" }}>
-        <Back title={"QR Generator"} icon={<QrCode color="dodgerblue" />} />
+        <Back />
       </div>
 
       <motion.div

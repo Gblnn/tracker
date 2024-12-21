@@ -14,6 +14,12 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import DropDown from "./dropdown";
 import { motion } from "framer-motion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@radix-ui/react-tooltip";
 
 interface Props {
   title?: any;
@@ -44,6 +50,7 @@ interface Props {
   notName?: boolean;
   className?: string;
   editableTag?: boolean;
+  dotColor?: string;
 }
 
 export default function Directive(props: Props) {
@@ -142,7 +149,7 @@ export default function Directive(props: Props) {
                   border: "",
                   fontSize: props.titleSize ? props.titleSize : "0.9rem",
                   display: "flex",
-                  gap: "0.5rem",
+                  gap: "0.65rem",
                   alignItems: "center",
                   width: "100%",
                 }}
@@ -163,11 +170,33 @@ export default function Directive(props: Props) {
                 </div>
 
                 {props.new && (
-                  <Circle
-                    style={{ height: "auto", width: "0.45rem" }}
-                    color="dodgerblue"
-                    fill="dodgerblue"
-                  />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Circle
+                          style={{
+                            height: "auto",
+                            width: "0.5rem",
+                          }}
+                          color={props.dotColor}
+                          fill={props.dotColor}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent
+                        style={{
+                          background: "black",
+                          padding: "0.25rem",
+                          paddingRight: "0.5rem",
+                          paddingLeft: "0.5rem",
+                          borderRadius: "0.5rem",
+                          marginBottom: "0.5rem",
+                          border: "1px solid rgba(100 100 100/ 50%)",
+                        }}
+                      >
+                        {props.dotColor == "violet" ? "Omni" : "New"}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </span>
             )}

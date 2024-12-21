@@ -16,6 +16,7 @@ import {
   Car,
   FileArchive,
   FileText,
+  Globe,
   KeyRound,
   Mail,
   QrCode,
@@ -221,10 +222,16 @@ export default function Index() {
                 icon={<Car color="salmon" width={"1.25rem"} />}
               />
 
-              {/* <Directive
+              <Directive
                 to={"/website"}
                 title={"Website"}
                 icon={<Globe width={"1.25rem"} />}
+              />
+
+              {/* <Directive
+                to={"/add-remarks"}
+                title={"Annotate"}
+                icon={<PenSquare width={"1.25rem"} color="dodgerblue" />}
               /> */}
 
               <Directive
