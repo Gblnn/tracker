@@ -155,11 +155,11 @@ export default function Profile() {
                 </div>
               </div>
               <div
-                className="sm:w-full"
+                className=""
                 style={{
                   justifyContent: "center",
                   alignItems: "center",
-
+                  width: "100%",
                   border: "",
                   display: "flex",
                   gap: "2rem",
