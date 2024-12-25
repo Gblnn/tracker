@@ -15,7 +15,7 @@ export default function CircularProgress(props: Props) {
             transition: "stroke-dashoffset 0.5s ease 0s",
             strokeLinecap: "round",
           },
-          trail: { stroke: "midnightblue" },
+          trail: { stroke: "rgba(0 0 0/ 0%)" },
         }}
         value={props.percentage}
       >
