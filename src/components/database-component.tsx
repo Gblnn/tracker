@@ -19,12 +19,10 @@ import {
   collection,
   deleteDoc,
   doc,
-  getAggregateFromServer,
   getDocs,
   onSnapshot,
   orderBy,
   query,
-  sum,
   Timestamp,
   updateDoc,
   where,
@@ -49,6 +47,9 @@ import {
   BellRing,
   Book,
   Car,
+  Check,
+  CheckCircle,
+  CheckCircle2,
   CheckSquare2,
   CircleDollarSign,
   CreditCard,
@@ -143,7 +144,6 @@ export default function DbComponent(props: Props) {
   const [notify, setNotify] = useState(true);
   const [records, setRecords] = useState<any>([]);
   const [name, setName] = useState("");
-  let id = "";
   const [doc_id, setDocID] = useState("");
   const [recordSummary, setRecordSummary] = useState(false);
   const [civil, setCivil] = useState(false);
@@ -317,6 +317,7 @@ export default function DbComponent(props: Props) {
   const [access, setAccess] = useState(false);
   const [refreshCompleted, setRefreshCompleted] = useState(false);
   const [exportDialog, setExportDialog] = useState(false);
+  const [id, setId] = useState("");
 
   {
     /* //////////////////////////////////////////////////////////////////////////////////////////////////////*/
@@ -541,7 +542,7 @@ export default function DbComponent(props: Props) {
   const deleteSalary = async () => {
     setLoading(true);
     await deleteDoc(doc(db, "salary-record", salaryID));
-    id = doc_id;
+    setId(doc_id);
 
     setDeleteSalaryDialog(false);
     if (salaryList.length == 1) {
@@ -558,7 +559,7 @@ export default function DbComponent(props: Props) {
     setLoading(true);
     await deleteDoc(doc(db, "allowance-record", allowanceID));
     AddHistory("deletion", allowance, null, "allowance");
-    id = doc_id;
+    setId(doc_id);
     setLoading(false);
     fetchAllowance();
     setDeleteAllowanceDialog(false);
@@ -581,24 +582,24 @@ export default function DbComponent(props: Props) {
     });
     setFetchingLeave(false);
 
-    await leaveSum();
+    // await leaveSum();
   };
 
-  const leaveSum = async () => {
-    setFetchingLeave(true);
-    const snapshot = await getAggregateFromServer(
-      query(
-        collection(db, "leave-record"),
-        where("employeeID", "==", id),
-        where("pending", "==", false)
-      ),
-      {
-        days: sum("days"),
-      }
-    );
-    setFetchingLeave(false);
-    setLeaves(snapshot.data().days);
-  };
+  // const leaveSum = async () => {
+  //   setFetchingLeave(true);
+  //   const snapshot = await getAggregateFromServer(
+  //     query(
+  //       collection(db, "leave-record"),
+  //       where("employeeID", "==", id),
+  //       where("pending", "==", false)
+  //     ),
+  //     {
+  //       days: sum("days"),
+  //     }
+  //   );
+  //   setFetchingLeave(false);
+  //   setLeaves(snapshot.data().days);
+  // };
 
   {
     /*///////////////////////////////////////////////////////////////////////////////////////////////////////*/
@@ -620,8 +621,8 @@ export default function DbComponent(props: Props) {
       employeeCode: employeeCode,
     });
     await AddHistory("addition", editedLeaveFrom, "Leave", "Leave");
-    id = doc_id;
-    await leaveSum();
+    setId(doc_id);
+    // await leaveSum();
     fetchLeave();
     setEditedLeaveFrom("");
     setEditedLeaveTill("");
@@ -650,7 +651,7 @@ export default function DbComponent(props: Props) {
     );
     setLeaveFrom(leaveFrom);
     setLeaveTill(leaveTill);
-    await leaveSum();
+    // await leaveSum();
     fetchLeave();
     setLeaveReview(false);
     setLoading(false);
@@ -659,8 +660,8 @@ export default function DbComponent(props: Props) {
   const deleteLeave = async () => {
     setLoading(true);
     await deleteDoc(doc(db, "leave-record", leaveID));
-    id = doc_id;
-    await leaveSum();
+    setId(doc_id);
+    // await leaveSum();
     await AddHistory("deletion", leaveFrom, null, "Leave");
     setLoading(false);
     fetchLeave();
@@ -1479,7 +1480,7 @@ export default function DbComponent(props: Props) {
     let percentage = 100 / jsonData.length;
 
     jsonData.forEach((e: any) => {
-      e.type = props.dbCategory;
+      e.type = e.type == "omni" ? "omni" : props.dbCategory;
       e.created_on = new Date();
       e.modified_on = new Date();
       e.notify = true;
@@ -1489,86 +1490,6 @@ export default function DbComponent(props: Props) {
       e.dateofJoin
         ? (e.dateofJoin = moment(e.dateofJoin).format("DD/MM/YYYY"))
         : (e.dateofJoin = "");
-
-      e.civil_expiry
-        ? (e.civil_expiry = Timestamp.fromDate(new Date(e.civil_expiry)))
-        : (e.civil_expiry = "");
-
-      e.license_expiry
-        ? (e.license_expiry = Timestamp.fromDate(new Date(e.license_expiry)))
-        : (e.license_expiry = "");
-
-      e.medical_due_on
-        ? (e.medical_due_on = Timestamp.fromDate(new Date(e.medical_due_on)))
-        : (e.medical_due_on = "");
-
-      e.passportExpiry
-        ? (e.passportExpiry = Timestamp.fromDate(new Date(e.passportExpiry)))
-        : (e.passportExpiry = "");
-
-      e.civil_DOB
-        ? (e.civil_DOB = moment(e.civil_DOB).format("DD/MM/YYYY"))
-        : (e.civil_DOB = "");
-
-      e.license_issue
-        ? (e.license_issue = moment(e.license_issue).format("DD/MM/YYYY"))
-        : (e.license_issue = "");
-
-      e.medical_completed_on
-        ? (e.medical_completed_on = moment(e.medical_completed_on).format(
-            "DD/MM/YYYY"
-          ))
-        : (e.medical_completed_on = "");
-
-      e.passportIssue
-        ? (e.passportIssue = moment(e.passportIssue).format("DD/MM/YYYY"))
-        : (e.passportIssue = "");
-
-      e.vt_hse_induction
-        ? (e.vt_hse_induction = Timestamp.fromDate(
-            new Date(e.vt_hse_induction)
-          ))
-        : (e.vt_hse_induction = "");
-
-      e.vt_car_1
-        ? (e.vt_car_1 = Timestamp.fromDate(new Date(e.vt_car_1)))
-        : (e.vt_car_1 = "");
-
-      e.vt_car_2
-        ? (e.vt_car_2 = Timestamp.fromDate(new Date(e.vt_car_2)))
-        : (e.vt_car_2 = "");
-
-      e.vt_car_3
-        ? (e.vt_car_3 = Timestamp.fromDate(new Date(e.vt_car_3)))
-        : (e.vt_car_3 = "");
-
-      e.vt_car_4
-        ? (e.vt_car_4 = Timestamp.fromDate(new Date(e.vt_car_4)))
-        : (e.vt_car_4 = "");
-
-      e.vt_car_5
-        ? (e.vt_car_5 = Timestamp.fromDate(new Date(e.vt_car_5)))
-        : (e.vt_car_5 = "");
-
-      e.vt_car_6
-        ? (e.vt_car_6 = Timestamp.fromDate(new Date(e.vt_car_6)))
-        : (e.vt_car_6 = "");
-
-      e.vt_car_7
-        ? (e.vt_car_7 = Timestamp.fromDate(new Date(e.vt_car_7)))
-        : (e.vt_car_7 = "");
-
-      e.vt_car_8
-        ? (e.vt_car_8 = Timestamp.fromDate(new Date(e.vt_car_8)))
-        : (e.vt_car_8 = "");
-
-      e.vt_car_9
-        ? (e.vt_car_9 = Timestamp.fromDate(new Date(e.vt_car_9)))
-        : (e.vt_car_9 = "");
-
-      e.vt_car_10
-        ? (e.vt_car_10 = Timestamp.fromDate(new Date(e.vt_car_10)))
-        : (e.vt_car_10 = "");
 
       e.initialSalary ? (e.salaryBasic = e.initialSalary) : (e.salaryBasic = 0);
 
@@ -1740,7 +1661,7 @@ export default function DbComponent(props: Props) {
                   style={{
                     height: "2.25rem",
                     border: "",
-                    width: "7rem",
+                    width: "",
                     background: "rgba(100 100 100/ 20%)",
                     padding: "0.5rem",
                     display: "flex",
@@ -1752,9 +1673,10 @@ export default function DbComponent(props: Props) {
                     cursor: "pointer",
                     marginTop: "0.25rem",
                     marginBottom: "0.25rem",
+                    gap: "1rem",
                   }}
                 >
-                  <p style={{ opacity: 0.75, fontSize: "0.85rem" }}>Selected</p>
+                  <Check color="dodgerblue" />
                   <p style={{ fontWeight: 600 }}>{checked.length}</p>
                 </div>
               )
@@ -2050,13 +1972,13 @@ export default function DbComponent(props: Props) {
                             onClick={() => {
                               setRecordSummary(true);
                               setName(post.name);
-                              id = post.id;
+                              setId(post.id);
                               setDocID(post.id);
 
                               setCivilNumber(post.civil_number);
                               setCivilExpiry(
                                 post.civil_expiry
-                                  ? moment(post.civil_expiry.toDate()).format(
+                                  ? moment(post.civil_expiry).format(
                                       "DD/MM/YYYY"
                                     )
                                   : ""
@@ -2091,7 +2013,7 @@ export default function DbComponent(props: Props) {
                               setPassportIssue(post.passportIssue);
                               setPassportExpiry(
                                 post.passportExpiry
-                                  ? moment(post.passportExpiry.toDate()).format(
+                                  ? moment(post.passportExpiry).format(
                                       "DD/MM/YYYY"
                                     )
                                   : null
@@ -2125,9 +2047,7 @@ export default function DbComponent(props: Props) {
 
                               setVtCar3(
                                 post.vt_car_3
-                                  ? moment(post.vt_car_3.toDate()).format(
-                                      "DD/MM/YYYY"
-                                    )
+                                  ? moment(post.vt_car_3).format("DD/MM/YYYY")
                                   : null
                               );
 
@@ -2724,7 +2644,7 @@ export default function DbComponent(props: Props) {
             setLeaveLog(true);
             fetchLeave();
             setLeaveList([]);
-            id = doc_id;
+            setId(doc_id);
           }}
           bottomTagValue={leaves}
           bottomValueLoading={fetchingLeave}

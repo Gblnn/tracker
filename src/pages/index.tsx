@@ -112,7 +112,7 @@ export default function Index() {
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
           <Back
             title="StarBoard"
-            subtitle={"v2.1.1"}
+            subtitle={"v2.0"}
             icon={<img src="/stardox-bg.png" style={{ width: "1.75rem" }} />}
             noback
             extra={

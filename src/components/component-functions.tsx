@@ -15,6 +15,7 @@ export const getBlank = async (category: string | undefined) => {
       "nativePhone",
       "initialSalary",
       "initialAllowance",
+      "type",
       "civil_number",
       "civil_DOB",
       "civil_expiry",
