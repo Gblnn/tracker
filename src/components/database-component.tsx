@@ -48,8 +48,6 @@ import {
   Book,
   Car,
   Check,
-  CheckCircle,
-  CheckCircle2,
   CheckSquare2,
   CircleDollarSign,
   CreditCard,
@@ -337,6 +335,8 @@ export default function DbComponent(props: Props) {
         }
       });
     });
+    console.log(id);
+    setLeaves(0);
   }, []);
 
   const AddHistory = async (
@@ -584,22 +584,6 @@ export default function DbComponent(props: Props) {
 
     // await leaveSum();
   };
-
-  // const leaveSum = async () => {
-  //   setFetchingLeave(true);
-  //   const snapshot = await getAggregateFromServer(
-  //     query(
-  //       collection(db, "leave-record"),
-  //       where("employeeID", "==", id),
-  //       where("pending", "==", false)
-  //     ),
-  //     {
-  //       days: sum("days"),
-  //     }
-  //   );
-  //   setFetchingLeave(false);
-  //   setLeaves(snapshot.data().days);
-  // };
 
   {
     /*///////////////////////////////////////////////////////////////////////////////////////////////////////*/
