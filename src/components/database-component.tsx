@@ -20,6 +20,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -440,7 +441,8 @@ export default function DbComponent(props: Props) {
       const recordQuery = query(
         RecordCollection,
         orderBy(sortby),
-        where("type", "in", [props.dbCategory, "omni"])
+        where("type", "in", [props.dbCategory, "omni"]),
+        limit(100)
       );
       const querySnapshot = await getDocs(recordQuery);
       const fetchedData: Array<Record> = [];
@@ -1971,7 +1973,7 @@ export default function DbComponent(props: Props) {
                               setCompletedOn(post.medical_completed_on);
                               setDueOn(
                                 post.medical_due_on
-                                  ? moment(post.medical_due_on.toDate()).format(
+                                  ? moment(post.medical_due_on).format(
                                       "DD/MM/YYYY"
                                     )
                                   : null
