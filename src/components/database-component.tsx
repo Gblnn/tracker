@@ -505,7 +505,7 @@ export default function DbComponent(props: Props) {
     try {
       await addDoc(collection(db, "salary-record"), {
         employeeID: doc_id,
-        created_on: Timestamp.fromDate(new Date()),
+        created_on: new Date(),
         salary: newSalary,
       });
       await updateDoc(doc(db, "records", doc_id), { salaryBasic: newSalary });
@@ -526,7 +526,7 @@ export default function DbComponent(props: Props) {
     try {
       await addDoc(collection(db, "allowance-record"), {
         employeeID: doc_id,
-        created_on: Timestamp.fromDate(new Date()),
+        created_on: new Date(),
         allowance: newAllowance,
       });
       await updateDoc(doc(db, "records", doc_id), { allowance: newAllowance });
@@ -596,7 +596,7 @@ export default function DbComponent(props: Props) {
     await addDoc(collection(db, "leave-record"), {
       name: name,
       employeeID: doc_id,
-      created_on: Timestamp.fromDate(new Date()),
+      created_on: new Date(),
       leaveFrom: editedLeaveFrom,
       leaveTill: editedLeaveTill ? editedLeaveTill : "Pending",
       days: moment(editedLeaveTill, "DD/MM/YYYY").diff(
@@ -659,7 +659,7 @@ export default function DbComponent(props: Props) {
     setLoading(true);
     await updateDoc(doc(db, "records", doc_id), {
       civil_expiry: TimeStamper(newExpiry),
-      modified_on: Timestamp.fromDate(new Date()),
+      modified_on: new Date(),
     });
     await AddHistory("renew", newExpiry, "", "Civil ID");
     setCivilExpiry(newExpiry);
@@ -726,8 +726,8 @@ export default function DbComponent(props: Props) {
       allowance: allowance,
       initialAllowance: allowance,
       contact: contact,
-      created_on: Timestamp.fromDate(new Date()),
-      modified_on: Timestamp.fromDate(new Date()),
+      created_on: new Date(),
+      modified_on: new Date(),
       type: props.dbCategory,
       notify: true,
       profile: imgUrl,
@@ -792,7 +792,7 @@ export default function DbComponent(props: Props) {
       initialSalary: editedSalarybasic ? editedSalarybasic : initialSalary,
       initialAllowance: editedAllowance ? editedAllowance : initialAllowance,
       contact: editedContact ? editedContact : contact,
-      modified_on: Timestamp.fromDate(new Date()),
+      modified_on: new Date(),
     });
 
     if (fileName != "") {
@@ -888,7 +888,7 @@ export default function DbComponent(props: Props) {
           ? TimeStamper(edited_civil_expiry)
           : "",
         civil_DOB: edited_civil_DOB,
-        modified_on: Timestamp.fromDate(new Date()),
+        modified_on: new Date(),
       });
       await AddHistory("addition", "Added", "", "Civil ID");
       setCivilNumber(edited_civil_number);
@@ -916,7 +916,7 @@ export default function DbComponent(props: Props) {
       civil_number: "",
       civil_expiry: "",
       civil_DOB: "",
-      modified_on: Timestamp.fromDate(new Date()),
+      modified_on: new Date(),
     });
     setLoading(true);
     await AddHistory("deletion", "Deleted", "", "Civil ID");
@@ -939,10 +939,10 @@ export default function DbComponent(props: Props) {
       await updateDoc(doc(db, "records", doc_id), {
         civil_number: edited_civil_number ? edited_civil_number : civil_number,
         civil_expiry: edited_civil_expiry
-          ? TimeStamper(edited_civil_expiry)
-          : TimeStamper(civil_expiry),
+          ? moment(edited_civil_expiry)
+          : moment(civil_expiry),
         civil_DOB: edited_civil_DOB ? edited_civil_DOB : civil_DOB,
-        modified_on: Timestamp.fromDate(new Date()),
+        modified_on: new Date(),
       });
       setLoading(true);
       await AddHistory("addition", "Updated", "", "Civil ID");
@@ -2009,25 +2009,21 @@ export default function DbComponent(props: Props) {
 
                               setHseInduction(
                                 post.vt_hse_induction
-                                  ? moment(
-                                      post.vt_hse_induction.toDate()
-                                    ).format("DD/MM/YYYY")
+                                  ? moment(post.vt_hse_induction).format(
+                                      "DD/MM/YYYY"
+                                    )
                                   : null
                               );
 
                               setVtCar1(
                                 post.vt_car_1
-                                  ? moment(post.vt_car_1.toDate()).format(
-                                      "DD/MM/YYYY"
-                                    )
+                                  ? moment(post.vt_car_1).format("DD/MM/YYYY")
                                   : null
                               );
 
                               setVtCar2(
                                 post.vt_car_2
-                                  ? moment(post.vt_car_2.toDate()).format(
-                                      "DD/MM/YYYY"
-                                    )
+                                  ? moment(post.vt_car_2).format("DD/MM/YYYY")
                                   : null
                               );
 
@@ -2039,57 +2035,43 @@ export default function DbComponent(props: Props) {
 
                               setVtCar4(
                                 post.vt_car_4
-                                  ? moment(post.vt_car_4.toDate()).format(
-                                      "DD/MM/YYYY"
-                                    )
+                                  ? moment(post.vt_car_4).format("DD/MM/YYYY")
                                   : null
                               );
 
                               setVtCar5(
                                 post.vt_car_5
-                                  ? moment(post.vt_car_5.toDate()).format(
-                                      "DD/MM/YYYY"
-                                    )
+                                  ? moment(post.vt_car_5).format("DD/MM/YYYY")
                                   : null
                               );
 
                               setVtCar6(
                                 post.vt_car_6
-                                  ? moment(post.vt_car_6.toDate()).format(
-                                      "DD/MM/YYYY"
-                                    )
+                                  ? moment(post.vt_car_6).format("DD/MM/YYYY")
                                   : null
                               );
 
                               setVtCar7(
                                 post.vt_car_7
-                                  ? moment(post.vt_car_7.toDate()).format(
-                                      "DD/MM/YYYY"
-                                    )
+                                  ? moment(post.vt_car_7).format("DD/MM/YYYY")
                                   : null
                               );
 
                               setVtCar8(
                                 post.vt_car_8
-                                  ? moment(post.vt_car_8.toDate()).format(
-                                      "DD/MM/YYYY"
-                                    )
+                                  ? moment(post.vt_car_8).format("DD/MM/YYYY")
                                   : null
                               );
 
                               setVtCar9(
                                 post.vt_car_9
-                                  ? moment(post.vt_car_9.toDate()).format(
-                                      "DD/MM/YYYY"
-                                    )
+                                  ? moment(post.vt_car_9).format("DD/MM/YYYY")
                                   : null
                               );
 
                               setVtCar10(
                                 post.vt_car_10
-                                  ? moment(post.vt_car_10.toDate()).format(
-                                      "DD/MM/YYYY"
-                                    )
+                                  ? moment(post.vt_car_10).format("DD/MM/YYYY")
                                   : null
                               );
 

@@ -398,92 +398,70 @@ export default function Inbox() {
 
       e.vt_hse_induction == ""
         ? {}
-        : Math.round(
-            moment(e.vt_hse_induction.toDate()).diff(moment(), "months")
-          ) <= 2
+        : Math.round(moment(e.vt_hse_induction).diff(moment(), "months")) <= 2
         ? (e.vt_hse_induction = String(
-            moment(e.vt_hse_induction.toDate()).format("DD/MM/YYYY")
+            moment(e.vt_hse_induction).format("DD/MM/YYYY")
           ))
         : (e.vt_hse_induction = "");
 
       e.vt_car_1 == ""
         ? {}
-        : Math.round(moment(e.vt_car_1.toDate()).diff(moment(), "months")) <= 2
-        ? (e.vt_car_1 = String(
-            moment(e.vt_car_1.toDate()).format("DD/MM/YYYY")
-          ))
+        : Math.round(moment(e.vt_car_1).diff(moment(), "months")) <= 2
+        ? (e.vt_car_1 = String(moment(e.vt_car_1).format("DD/MM/YYYY")))
         : (e.vt_car_1 = "");
 
       e.vt_car_2 == ""
         ? {}
-        : Math.round(moment(e.vt_car_2.toDate()).diff(moment(), "months")) <= 2
-        ? (e.vt_car_2 = String(
-            moment(e.vt_car_2.toDate()).format("DD/MM/YYYY")
-          ))
+        : Math.round(moment(e.vt_car_2).diff(moment(), "months")) <= 2
+        ? (e.vt_car_2 = String(moment(e.vt_car_2).format("DD/MM/YYYY")))
         : (e.vt_car_2 = "");
 
       e.vt_car_3 == ""
         ? {}
-        : Math.round(moment(e.vt_car_3.toDate()).diff(moment(), "months")) <= 2
-        ? (e.vt_car_3 = String(
-            moment(e.vt_car_3.toDate()).format("DD/MM/YYYY")
-          ))
+        : Math.round(moment(e.vt_car_3).diff(moment(), "months")) <= 2
+        ? (e.vt_car_3 = String(moment(e.vt_car_3).format("DD/MM/YYYY")))
         : (e.vt_car_3 = "");
 
       e.vt_car_4 == ""
         ? {}
-        : Math.round(moment(e.vt_car_4.toDate()).diff(moment(), "months")) <= 2
-        ? (e.vt_car_4 = String(
-            moment(e.vt_car_4.toDate()).format("DD/MM/YYYY")
-          ))
+        : Math.round(moment(e.vt_car_4).diff(moment(), "months")) <= 2
+        ? (e.vt_car_4 = String(moment(e.vt_car_4).format("DD/MM/YYYY")))
         : (e.vt_car_4 = "");
 
       e.vt_car_5 == ""
         ? {}
-        : Math.round(moment(e.vt_car_5.toDate()).diff(moment(), "months")) <= 2
-        ? (e.vt_car_5 = String(
-            moment(e.vt_car_5.toDate()).format("DD/MM/YYYY")
-          ))
+        : Math.round(moment(e.vt_car_5).diff(moment(), "months")) <= 2
+        ? (e.vt_car_5 = String(moment(e.vt_car_5).format("DD/MM/YYYY")))
         : (e.vt_car_5 = "");
 
       e.vt_car_6 == ""
         ? {}
-        : Math.round(moment(e.vt_car_6.toDate()).diff(moment(), "months")) <= 2
-        ? (e.vt_car_6 = String(
-            moment(e.vt_car_6.toDate()).format("DD/MM/YYYY")
-          ))
+        : Math.round(moment(e.vt_car_6).diff(moment(), "months")) <= 2
+        ? (e.vt_car_6 = String(moment(e.vt_car_6).format("DD/MM/YYYY")))
         : (e.vt_car_6 = "");
 
       e.vt_car_7 == ""
         ? {}
-        : Math.round(moment(e.vt_car_7.toDate()).diff(moment(), "months")) <= 2
-        ? (e.vt_car_7 = String(
-            moment(e.vt_car_7.toDate()).format("DD/MM/YYYY")
-          ))
+        : Math.round(moment(e.vt_car_7).diff(moment(), "months")) <= 2
+        ? (e.vt_car_7 = String(moment(e.vt_car_7).format("DD/MM/YYYY")))
         : (e.vt_car_7 = "");
 
       e.vt_car_8 == ""
         ? {}
-        : Math.round(moment(e.vt_car_8.toDate()).diff(moment(), "months")) <= 2
-        ? (e.vt_car_8 = String(
-            moment(e.vt_car_8.toDate()).format("DD/MM/YYYY")
-          ))
+        : Math.round(moment(e.vt_car_8).diff(moment(), "months")) <= 2
+        ? (e.vt_car_8 = String(moment(e.vt_car_8).format("DD/MM/YYYY")))
         : (e.vt_car_8 = "");
 
       e.vt_car_9 == ""
         ? {}
-        : Math.round(moment(e.vt_car_9.toDate()).diff(moment(), "months")) <= 2
-        ? (e.vt_car_9 = String(
-            moment(e.vt_car_9.toDate()).format("DD/MM/YYYY")
-          ))
+        : Math.round(moment(e.vt_car_9).diff(moment(), "months")) <= 2
+        ? (e.vt_car_9 = String(moment(e.vt_car_9).format("DD/MM/YYYY")))
         : (e.vt_car_9 = "");
 
       e.vt_car_10 == ""
         ? {}
-        : Math.round(moment(e.vt_car_10.toDate()).diff(moment(), "months")) <= 2
-        ? (e.vt_car_10 = String(
-            moment(e.vt_car_10.toDate()).format("DD/MM/YYYY")
-          ))
+        : Math.round(moment(e.vt_car_10).diff(moment(), "months")) <= 2
+        ? (e.vt_car_10 = String(moment(e.vt_car_10).format("DD/MM/YYYY")))
         : (e.vt_car_10 = "");
 
       delete e.profile_name;
