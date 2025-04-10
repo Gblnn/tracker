@@ -336,7 +336,7 @@ export default function DbComponent(props: Props) {
         }
       });
     });
-    console.log(id);
+    // console.log(id);
     setLeaves(0);
   }, []);
 
@@ -571,9 +571,9 @@ export default function DbComponent(props: Props) {
   const fetchLeave = async () => {
     setFetchingLeave(true);
     const leaveQuery = query(
-      collection(db, "leave-record"),
-      orderBy("created_on", "desc"),
-      where("employeeCode", "==", employeeCode)
+      collection(db, "leave- record"),
+      orderBy("created_on", "desc")
+      // where("employeeCode", "==", employeeCode)
     );
     const snapshot = await getDocs(leaveQuery);
     const LeaveData: any = [];
@@ -823,7 +823,7 @@ export default function DbComponent(props: Props) {
   const deleteRecord = async () => {
     setLoading(true);
     setRecordDeleteStatus("Deleting Record " + doc_id + " (1/2)");
-    await deleteDoc(doc(db, "records", doc_id));
+    await deleteDoc(doc(db, "records", id));
 
     if (profileName != null) {
       setRecordDeleteStatus("Deleting Image " + profileName + " (2/2)");
@@ -884,9 +884,7 @@ export default function DbComponent(props: Props) {
     try {
       await updateDoc(doc(db, "records", doc_id), {
         civil_number: edited_civil_number,
-        civil_expiry: edited_civil_expiry
-          ? TimeStamper(edited_civil_expiry)
-          : "",
+        civil_expiry: edited_civil_expiry ? new Date(edited_civil_expiry) : "",
         civil_DOB: edited_civil_DOB,
         modified_on: new Date(),
       });
@@ -1917,6 +1915,7 @@ export default function DbComponent(props: Props) {
                           //   whileInView={{ opacity: 1 }}
                           // >
                           <Directive
+                            id_subtitle={post.id}
                             className="record-item"
                             space
                             new={
@@ -2976,6 +2975,7 @@ export default function DbComponent(props: Props) {
           titleIcon={<X />}
           destructive
           title="Delete Record?"
+          desc={id}
           OkButtonText="Delete"
           onCancel={() => setUserDeletePrompt(false)}
           onOk={deleteRecord}

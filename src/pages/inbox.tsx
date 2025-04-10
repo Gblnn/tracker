@@ -157,17 +157,11 @@ export default function Inbox() {
           return (
             (record.civil_expiry &&
               Math.round(
-                moment(record.civil_expiry.toDate()).diff(
-                  moment(today),
-                  "months"
-                )
+                moment(record.civil_expiry).diff(moment(today), "months")
               ) <= 2) ||
             (record.license_expiry &&
               Math.round(
-                moment(record.license_expiry.toDate()).diff(
-                  moment(today),
-                  "months"
-                )
+                moment(record.license_expiry).diff(moment(today), "months")
               ) <= 2) ||
             (record.medical_due_on &&
               Math.round(
@@ -175,10 +169,7 @@ export default function Inbox() {
               ) <= 2) ||
             (record.passportExpiry &&
               Math.round(
-                moment(record.passportExpiry.toDate()).diff(
-                  moment(today),
-                  "months"
-                )
+                moment(record.passportExpiry).diff(moment(today), "months")
               ) <= 6) ||
             (record.vt_hse_induction &&
               Math.round(
@@ -358,41 +349,31 @@ export default function Inbox() {
     filteredData.forEach((e: any) => {
       e.civil_expiry == ""
         ? {}
-        : Math.round(
-            moment(e.civil_expiry.toDate()).diff(moment(), "months")
-          ) <= 2
-        ? (e.civil_expiry = String(
-            moment(e.civil_expiry.toDate()).format("DD/MM/YYYY")
-          ))
+        : Math.round(moment(e.civil_expiry).diff(moment(), "months")) <= 2
+        ? (e.civil_expiry = String(moment(e.civil_expiry).format("DD/MM/YYYY")))
         : (e.civil_expiry = "");
 
       e.license_expiry == ""
         ? {}
-        : Math.round(
-            moment(e.license_expiry.toDate()).diff(moment(), "months")
-          ) <= 2
+        : Math.round(moment(e.license_expiry).diff(moment(), "months")) <= 2
         ? (e.license_expiry = String(
-            moment(e.license_expiry.toDate()).format("DD/MM/YYYY")
+            moment(e.license_expiry).format("DD/MM/YYYY")
           ))
         : (e.license_expiry = "");
 
       e.medical_due_on == ""
         ? {}
-        : Math.round(
-            moment(e.medical_due_on.toDate()).diff(moment(), "months")
-          ) <= 2
+        : Math.round(moment(e.medical_due_on).diff(moment(), "months")) <= 2
         ? (e.medical_due_on = String(
-            moment(e.medical_due_on.toDate()).format("DD/MM/YYYY")
+            moment(e.medical_due_on).format("DD/MM/YYYY")
           ))
         : (e.medical_due_on = "");
 
       e.passportExpiry == ""
         ? {}
-        : Math.round(
-            moment(e.passportExpiry.toDate()).diff(moment(), "months")
-          ) <= 6
+        : Math.round(moment(e.passportExpiry).diff(moment(), "months")) <= 6
         ? (e.passportExpiry = String(
-            moment(e.passportExpiry.toDate()).format("DD/MM/YYYY")
+            moment(e.passportExpiry).format("DD/MM/YYYY")
           ))
         : (e.passportExpiry = "");
 
@@ -697,14 +678,14 @@ export default function Inbox() {
                     return (
                       (record.civil_expiry &&
                         Math.round(
-                          moment(record.civil_expiry.toDate()).diff(
+                          moment(record.civil_expiry).diff(
                             moment(today),
                             "months"
                           )
                         ) <= 2) ||
                       (record.license_expiry &&
                         Math.round(
-                          moment(record.license_expiry.toDate()).diff(
+                          moment(record.license_expiry).diff(
                             moment(today),
                             "months"
                           )
@@ -718,7 +699,7 @@ export default function Inbox() {
                         ) <= 2) ||
                       (record.passportExpiry &&
                         Math.round(
-                          moment(record.passportExpiry.toDate()).diff(
+                          moment(record.passportExpiry).diff(
                             moment(today),
                             "months"
                           )
@@ -834,16 +815,14 @@ export default function Inbox() {
                             " document(s) expiring soon :  \n\n" +
                             ("Civil ID expiry in " +
                               Math.round(
-                                moment(record.civil_expiry.toDate()).diff(
+                                moment(record.civil_expiry).diff(
                                   moment(today),
                                   "months"
                                 )
                               ) +
                               " month(s)" +
                               " on " +
-                              moment(record.civil_expiry.toDate()).format(
-                                "DD/MM/YYYY"
-                              ) +
+                              moment(record.civil_expiry).format("DD/MM/YYYY") +
                               "\n")
                         );
                       }}
