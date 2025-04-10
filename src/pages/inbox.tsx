@@ -156,8 +156,9 @@ export default function Inbox() {
         fetchedData.filter((record: any) => {
           return (
             (record.civil_expiry &&
-              Math.round(
-                moment(record.civil_expiry).diff(moment(today), "months")
+              moment(record.civil_expiry, "DD/MM/YYYY").diff(
+                moment(today),
+                "months"
               ) <= 2) ||
             (record.license_expiry &&
               Math.round(
@@ -303,18 +304,18 @@ export default function Inbox() {
   const DescGenerator = (date: any, months: number, name: string) => {
     return (
       date &&
-      Math.round(moment(date).diff(moment(new Date()), "months")) <= months &&
+      moment(date, "DD/MM/YYYY").diff(moment(new Date()), "months") <= months &&
       name +
         " expiry " +
-        moment(date).startOf("day").fromNow() +
+        moment(date, "DD/MM/YYYY").startOf("day").fromNow() +
         " on " +
-        moment(date).format("DD/MM/YYYY")
+        moment(date, "DD/MM/YYYY").format("DD/MM/YYYY")
     );
   };
 
   const OverdueGenerator = (date: any) => {
     return date &&
-      Math.round(moment(date).diff(moment(today).startOf("day"), "days")) <= 0
+      moment(date, "DD/MM/YYYY").diff(moment(today).startOf("day"), "days") <= 0
       ? true
       : false;
   };
@@ -349,13 +350,13 @@ export default function Inbox() {
     filteredData.forEach((e: any) => {
       e.civil_expiry == ""
         ? {}
-        : Math.round(moment(e.civil_expiry).diff(moment(), "months")) <= 2
+        : moment(e.civil_expiry).diff(moment(), "months") <= 2
         ? (e.civil_expiry = String(moment(e.civil_expiry).format("DD/MM/YYYY")))
         : (e.civil_expiry = "");
 
       e.license_expiry == ""
         ? {}
-        : Math.round(moment(e.license_expiry).diff(moment(), "months")) <= 2
+        : moment(e.license_expiry).diff(moment(), "months") <= 2
         ? (e.license_expiry = String(
             moment(e.license_expiry).format("DD/MM/YYYY")
           ))
@@ -371,7 +372,7 @@ export default function Inbox() {
 
       e.passportExpiry == ""
         ? {}
-        : Math.round(moment(e.passportExpiry).diff(moment(), "months")) <= 6
+        : moment(e.passportExpiry).diff(moment(), "months") <= 6
         ? (e.passportExpiry = String(
             moment(e.passportExpiry).format("DD/MM/YYYY")
           ))
@@ -677,18 +678,14 @@ export default function Inbox() {
                   .filter((record: any) => {
                     return (
                       (record.civil_expiry &&
-                        Math.round(
-                          moment(record.civil_expiry).diff(
-                            moment(today),
-                            "months"
-                          )
+                        moment(record.civil_expiry, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 2) ||
                       (record.license_expiry &&
-                        Math.round(
-                          moment(record.license_expiry).diff(
-                            moment(today),
-                            "months"
-                          )
+                        moment(record.license_expiry, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 2) ||
                       (record.medical_due_on != "" &&
                         Math.round(
@@ -803,29 +800,29 @@ export default function Inbox() {
                         setRenewDocDialog(true);
                         setDocID(record.id);
                       }}
-                      onReminderClick={() => {
-                        setReminderDialog(true);
-                        setMailTitle(
-                          record.name + "'s document expiry reminder"
-                        );
-                        setMailContent(
-                          "This is a gentle reminder regarding some of " +
-                            record.name +
-                            "'s" +
-                            " document(s) expiring soon :  \n\n" +
-                            ("Civil ID expiry in " +
-                              Math.round(
-                                moment(record.civil_expiry).diff(
-                                  moment(today),
-                                  "months"
-                                )
-                              ) +
-                              " month(s)" +
-                              " on " +
-                              moment(record.civil_expiry).format("DD/MM/YYYY") +
-                              "\n")
-                        );
-                      }}
+                      // onReminderClick={() => {
+                      //   setReminderDialog(true);
+                      //   setMailTitle(
+                      //     record.name + "'s document expiry reminder"
+                      //   );
+                      //   setMailContent(
+                      //     "This is a gentle reminder regarding some of " +
+                      //       record.name +
+                      //       "'s" +
+                      //       " document(s) expiring soon :  \n\n" +
+                      //       ("Civil ID expiry in " +
+                      //         Math.round(
+                      //           moment(record.civil_expiry, "DD/MM/YYYY").diff(
+                      //             moment(today),
+                      //             "months"
+                      //           )
+                      //         ) +
+                      //         " month(s)" +
+                      //         " on " +
+                      //         moment(record.civil_expiry).format("DD/MM/YYYY") +
+                      //         "\n")
+                      //   );
+                      // }}
                       key={record.id}
                       title={record.name}
                       civil_desc={DescGenerator(

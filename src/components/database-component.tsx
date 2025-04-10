@@ -884,7 +884,7 @@ export default function DbComponent(props: Props) {
     try {
       await updateDoc(doc(db, "records", doc_id), {
         civil_number: edited_civil_number,
-        civil_expiry: edited_civil_expiry ? new Date(edited_civil_expiry) : "",
+        civil_expiry: edited_civil_expiry ? edited_civil_expiry : "",
         civil_DOB: edited_civil_DOB,
         modified_on: new Date(),
       });
@@ -936,9 +936,7 @@ export default function DbComponent(props: Props) {
     try {
       await updateDoc(doc(db, "records", doc_id), {
         civil_number: edited_civil_number ? edited_civil_number : civil_number,
-        civil_expiry: edited_civil_expiry
-          ? moment(edited_civil_expiry)
-          : moment(civil_expiry),
+        civil_expiry: edited_civil_expiry ? edited_civil_expiry : civil_expiry,
         civil_DOB: edited_civil_DOB ? edited_civil_DOB : civil_DOB,
         modified_on: new Date(),
       });
@@ -970,7 +968,7 @@ export default function DbComponent(props: Props) {
     try {
       await updateDoc(doc(db, "records", doc_id), {
         license_number: vehicle_number,
-        license_expiry: TimeStamper(vehicle_expiry),
+        license_expiry: vehicle_expiry,
         license_issue: vehicle_issue,
         modified_on: Timestamp.fromDate(new Date()),
       });
@@ -1035,8 +1033,8 @@ export default function DbComponent(props: Props) {
           ? edited_vehicle_number
           : vehicle_number,
         license_expiry: edited_vehicle_expiry
-          ? TimeStamper(edited_vehicle_expiry)
-          : TimeStamper(vehicle_expiry),
+          ? edited_vehicle_expiry
+          : vehicle_expiry,
         license_issue: edited_vehicle_issue
           ? edited_vehicle_issue
           : vehicle_issue,
@@ -1961,13 +1959,7 @@ export default function DbComponent(props: Props) {
                               setDocID(post.id);
 
                               setCivilNumber(post.civil_number);
-                              setCivilExpiry(
-                                post.civil_expiry
-                                  ? moment(post.civil_expiry).format(
-                                      "DD/MM/YYYY"
-                                    )
-                                  : ""
-                              );
+                              setCivilExpiry(post.civil_expiry);
                               setCivilDOB(post.civil_DOB);
                               setCompletedOn(post.medical_completed_on);
                               setDueOn(
@@ -1979,11 +1971,7 @@ export default function DbComponent(props: Props) {
                               );
                               setVehicleNumber(post.license_number);
                               setVehicleExpiry(
-                                post.license_expiry
-                                  ? moment(post.license_expiry.toDate()).format(
-                                      "DD/MM/YYYY"
-                                    )
-                                  : ""
+                                post.license_expiry ? post.license_expiry : ""
                               );
                               setVehicleIssue(post.license_issue);
                               setModifiedOn(
