@@ -10,17 +10,7 @@ import { message } from "antd";
 import { signOut } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
-import {
-  ArrowUpDown,
-  Bug,
-  Car,
-  FileArchive,
-  FileText,
-  Globe,
-  KeyRound,
-  Mail,
-  QrCode,
-} from "lucide-react";
+import { Bug, FileArchive, KeyRound, Mail, QrCode } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -112,7 +102,7 @@ export default function Index() {
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
           <Back
             title="StarBoard"
-            subtitle={"v2.0"}
+            subtitle={"v1.1"}
             icon={<img src="/stardox-bg.png" style={{ width: "1.75rem" }} />}
             noback
             extra={
@@ -217,7 +207,7 @@ export default function Index() {
                 icon={<UserPlus width={"1.25rem"} color="dodgerblue" />}
               /> */}
 
-              <Directive
+              {/* <Directive
                 title={"Vehicles"}
                 icon={<Car color="salmon" width={"1.25rem"} />}
               />
@@ -226,7 +216,7 @@ export default function Index() {
                 to={"/website"}
                 title={"Website"}
                 icon={<Globe width={"1.25rem"} />}
-              />
+              /> */}
 
               {/* <Directive
                 to={"/add-remarks"}
@@ -240,7 +230,7 @@ export default function Index() {
                 icon={<QrCode width={"1.25rem"} />}
               />
 
-              <Directive
+              {/* <Directive
                 tag="Work In Progress"
                 to={"/movement-register"}
                 title={"Movement"}
@@ -253,7 +243,7 @@ export default function Index() {
                 to={"/lpos"}
                 title={"LPOs"}
                 icon={<FileText width={"1.25rem"} color="dodgerblue" />}
-              />
+              /> */}
 
               {/* <Directive
               notName
