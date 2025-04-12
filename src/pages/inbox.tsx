@@ -162,59 +162,101 @@ export default function Inbox() {
               ) <= 2) ||
             (record.license_expiry &&
               Math.round(
-                moment(record.license_expiry).diff(moment(today), "months")
+                moment(record.license_expiry, "DD/MM/YYYY").diff(
+                  moment(today),
+                  "months"
+                )
               ) <= 2) ||
             (record.medical_due_on &&
               Math.round(
-                moment(record.medical_due_on).diff(moment(today), "months")
+                moment(record.medical_due_on, "DD/MM/YYYY").diff(
+                  moment(today),
+                  "months"
+                )
               ) <= 2) ||
             (record.passportExpiry &&
               Math.round(
-                moment(record.passportExpiry).diff(moment(today), "months")
+                moment(record.passportExpiry, "DD/MM/YYYY").diff(
+                  moment(today),
+                  "months"
+                )
               ) <= 6) ||
             (record.vt_hse_induction &&
               Math.round(
-                moment(record.vt_hse_induction).diff(moment(today), "months")
+                moment(record.vt_hse_induction, "DD/MM/YYYY").diff(
+                  moment(today),
+                  "months"
+                )
               ) <= 2) ||
             (record.vt_car_1 &&
               Math.round(
-                moment(record.vt_car_1).diff(moment(today), "months")
+                moment(record.vt_car_1, "DD/MM/YYYY").diff(
+                  moment(today),
+                  "months"
+                )
               ) <= 2) ||
             (record.vt_car_2 &&
               Math.round(
-                moment(record.vt_car_2).diff(moment(today), "months")
+                moment(record.vt_car_2, "DD/MM/YYYY").diff(
+                  moment(today),
+                  "months"
+                )
               ) <= 2) ||
             (record.vt_car_3 &&
               Math.round(
-                moment(record.vt_car_3).diff(moment(today), "months")
+                moment(record.vt_car_3, "DD/MM/YYYY").diff(
+                  moment(today),
+                  "months"
+                )
               ) <= 2) ||
             (record.vt_car_4 &&
               Math.round(
-                moment(record.vt_car_4).diff(moment(today), "months")
+                moment(record.vt_car_4, "DD/MM/YYYY").diff(
+                  moment(today),
+                  "months"
+                )
               ) <= 2) ||
             (record.vt_car_5 &&
               Math.round(
-                moment(record.vt_car_5).diff(moment(today), "months")
+                moment(record.vt_car_5, "DD/MM/YYYY").diff(
+                  moment(today),
+                  "months"
+                )
               ) <= 2) ||
             (record.vt_car_6 &&
               Math.round(
-                moment(record.vt_car_6).diff(moment(today), "months")
+                moment(record.vt_car_6, "DD/MM/YYYY").diff(
+                  moment(today),
+                  "months"
+                )
               ) <= 2) ||
             (record.vt_car_7 &&
               Math.round(
-                moment(record.vt_car_7).diff(moment(today), "months")
+                moment(record.vt_car_7, "DD/MM/YYYY").diff(
+                  moment(today),
+                  "months"
+                )
               ) <= 2) ||
             (record.vt_car_8 &&
               Math.round(
-                moment(record.vt_car_8).diff(moment(today), "months")
+                moment(record.vt_car_8, "DD/MM/YYYY").diff(
+                  moment(today),
+                  "months"
+                )
               ) <= 2) ||
             (record.vt_car_9 &&
               Math.round(
-                moment(record.vt_car_9).diff(moment(today), "months")
+                moment(record.vt_car_9, "DD/MM/YYYY").diff(
+                  moment(today),
+                  "months"
+                )
               ) <= 2) ||
             (record.vt_car_10 &&
               Math.round(
-                moment(record.vt_car_10).diff(moment(today), "months")
+                moment(record.vt_car_10, "DD/MM/YYYY").diff(
+                  moment(today),
+                  "months"
+                )
               ) <= 2)
           );
         })
@@ -360,15 +402,13 @@ export default function Inbox() {
         ? {}
         : moment(e.license_expiry, "DD/MM/YYYY").diff(moment(), "months") <= 2
         ? (e.license_expiry = String(
-            moment(e.license_expiry).format("DD/MM/YYYY")
+            moment(e.license_expiry, "DD/MM/YYYY").format("DD/MM/YYYY")
           ))
         : (e.license_expiry = "");
 
       e.medical_due_on == ""
         ? {}
-        : Math.round(
-            moment(e.medical_due_on, "DD/MM/YYYY").diff(moment(), "months")
-          ) <= 2
+        : moment(e.medical_due_on, "DD/MM/YYYY").diff(moment(), "months") <= 2
         ? (e.medical_due_on = String(
             moment(e.medical_due_on, "DD/MM/YYYY").format("DD/MM/YYYY")
           ))
@@ -384,9 +424,7 @@ export default function Inbox() {
 
       e.vt_hse_induction == ""
         ? {}
-        : Math.round(
-            moment(e.vt_hse_induction, "DD/MM/YYYY").diff(moment(), "months")
-          ) <= 2
+        : moment(e.vt_hse_induction, "DD/MM/YYYY").diff(moment(), "months") <= 2
         ? (e.vt_hse_induction = String(
             moment(e.vt_hse_induction, "DD/MM/YYYY").format("DD/MM/YYYY")
           ))
@@ -394,9 +432,7 @@ export default function Inbox() {
 
       e.vt_car_1 == ""
         ? {}
-        : Math.round(
-            moment(e.vt_car_1, "DD/MM/YYYY").diff(moment(), "months")
-          ) <= 2
+        : moment(e.vt_car_1, "DD/MM/YYYY").diff(moment(), "months") <= 2
         ? (e.vt_car_1 = String(
             moment(e.vt_car_1, "DD/MM/YYYY").format("DD/MM/YYYY")
           ))
@@ -404,9 +440,7 @@ export default function Inbox() {
 
       e.vt_car_2 == ""
         ? {}
-        : Math.round(
-            moment(e.vt_car_2, "DD/MM/YYYY").diff(moment(), "months")
-          ) <= 2
+        : moment(e.vt_car_2, "DD/MM/YYYY").diff(moment(), "months") <= 2
         ? (e.vt_car_2 = String(
             moment(e.vt_car_2, "DD/MM/YYYY").format("DD/MM/YYYY")
           ))
@@ -414,9 +448,7 @@ export default function Inbox() {
 
       e.vt_car_3 == ""
         ? {}
-        : Math.round(
-            moment(e.vt_car_3, "DD/MM/YYYY").diff(moment(), "months")
-          ) <= 2
+        : moment(e.vt_car_3, "DD/MM/YYYY").diff(moment(), "months") <= 2
         ? (e.vt_car_3 = String(
             moment(e.vt_car_3, "DD/MM/YYYY").format("DD/MM/YYYY")
           ))
@@ -424,9 +456,7 @@ export default function Inbox() {
 
       e.vt_car_4 == ""
         ? {}
-        : Math.round(
-            moment(e.vt_car_4, "DD/MM/YYYY").diff(moment(), "months")
-          ) <= 2
+        : moment(e.vt_car_4, "DD/MM/YYYY").diff(moment(), "months") <= 2
         ? (e.vt_car_4 = String(
             moment(e.vt_car_4, "DD/MM/YYYY").format("DD/MM/YYYY")
           ))
@@ -434,9 +464,7 @@ export default function Inbox() {
 
       e.vt_car_5 == ""
         ? {}
-        : Math.round(
-            moment(e.vt_car_5, "DD/MM/YYYY").diff(moment(), "months")
-          ) <= 2
+        : moment(e.vt_car_5, "DD/MM/YYYY").diff(moment(), "months") <= 2
         ? (e.vt_car_5 = String(
             moment(e.vt_car_5, "DD/MM/YYYY").format("DD/MM/YYYY")
           ))
@@ -444,9 +472,7 @@ export default function Inbox() {
 
       e.vt_car_6 == ""
         ? {}
-        : Math.round(
-            moment(e.vt_car_6, "DD/MM/YYYY").diff(moment(), "months")
-          ) <= 2
+        : moment(e.vt_car_6, "DD/MM/YYYY").diff(moment(), "months") <= 2
         ? (e.vt_car_6 = String(
             moment(e.vt_car_6, "DD/MM/YYYY").format("DD/MM/YYYY")
           ))
@@ -454,9 +480,7 @@ export default function Inbox() {
 
       e.vt_car_7 == ""
         ? {}
-        : Math.round(
-            moment(e.vt_car_7, "DD/MM/YYYY").diff(moment(), "months")
-          ) <= 2
+        : moment(e.vt_car_7, "DD/MM/YYYY").diff(moment(), "months") <= 2
         ? (e.vt_car_7 = String(
             moment(e.vt_car_7, "DD/MM/YYYY").format("DD/MM/YYYY")
           ))
@@ -464,9 +488,7 @@ export default function Inbox() {
 
       e.vt_car_8 == ""
         ? {}
-        : Math.round(
-            moment(e.vt_car_8, "DD/MM/YYYY").diff(moment(), "months")
-          ) <= 2
+        : moment(e.vt_car_8, "DD/MM/YYYY").diff(moment(), "months") <= 2
         ? (e.vt_car_8 = String(
             moment(e.vt_car_8, "DD/MM/YYYY").format("DD/MM/YYYY")
           ))
@@ -474,9 +496,7 @@ export default function Inbox() {
 
       e.vt_car_9 == ""
         ? {}
-        : Math.round(
-            moment(e.vt_car_9, "DD/MM/YYYY").diff(moment(), "months")
-          ) <= 2
+        : moment(e.vt_car_9, "DD/MM/YYYY").diff(moment(), "months") <= 2
         ? (e.vt_car_9 = String(
             moment(e.vt_car_9, "DD/MM/YYYY").format("DD/MM/YYYY")
           ))
@@ -484,9 +504,7 @@ export default function Inbox() {
 
       e.vt_car_10 == ""
         ? {}
-        : Math.round(
-            moment(e.vt_car_10, "DD/MM/YYYY").diff(moment(), "months")
-          ) <= 2
+        : moment(e.vt_car_10, "DD/MM/YYYY").diff(moment(), "months") <= 2
         ? (e.vt_car_10 = String(
             moment(e.vt_car_10, "DD/MM/YYYY").format("DD/MM/YYYY")
           ))
@@ -734,65 +752,69 @@ export default function Inbox() {
                           "months"
                         ) <= 2) ||
                       (record.medical_due_on != "" &&
-                        Math.round(
-                          moment(record.medical_due_on).diff(
-                            moment(today),
-                            "months"
-                          )
+                        moment(record.medical_due_on, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 2) ||
                       (record.passportExpiry &&
-                        Math.round(
-                          moment(record.passportExpiry).diff(
-                            moment(today),
-                            "months"
-                          )
+                        moment(record.passportExpiry, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 6) ||
                       (record.vt_hse_induction &&
-                        Math.round(
-                          moment(record.vt_hse_induction).diff(
-                            moment(today),
-                            "months"
-                          )
+                        moment(record.vt_hse_induction, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 2) ||
                       (record.vt_car_1 &&
-                        Math.round(
-                          moment(record.vt_car_1).diff(moment(today), "months")
+                        moment(record.vt_car_1, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 2) ||
                       (record.vt_car_2 &&
-                        Math.round(
-                          moment(record.vt_car_2).diff(moment(today), "months")
+                        moment(record.vt_car_2, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 2) ||
                       (record.vt_car_3 &&
-                        Math.round(
-                          moment(record.vt_car_3).diff(moment(today), "months")
+                        moment(record.vt_car_3, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 2) ||
                       (record.vt_car_4 &&
-                        Math.round(
-                          moment(record.vt_car_4).diff(moment(today), "months")
+                        moment(record.vt_car_4, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 2) ||
                       (record.vt_car_5 &&
-                        Math.round(
-                          moment(record.vt_car_5).diff(moment(today), "months")
+                        moment(record.vt_car_5, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 2) ||
                       (record.vt_car_6 &&
-                        Math.round(
-                          moment(record.vt_car_6).diff(moment(today), "months")
+                        moment(record.vt_car_6, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 2) ||
                       (record.vt_car_7 &&
-                        Math.round(
-                          moment(record.vt_car_7).diff(moment(today), "months")
+                        moment(record.vt_car_7, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 2) ||
                       (record.vt_car_8 &&
-                        Math.round(
-                          moment(record.vt_car_8).diff(moment(today), "months")
+                        moment(record.vt_car_8, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 2) ||
                       (record.vt_car_9 &&
-                        Math.round(
-                          moment(record.vt_car_9).diff(moment(today), "months")
+                        moment(record.vt_car_9, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 2) ||
                       (record.vt_car_10 &&
-                        Math.round(
-                          moment(record.vt_car_10).diff(moment(today), "months")
+                        moment(record.vt_car_10, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
                         ) <= 2)
                     );
                   })

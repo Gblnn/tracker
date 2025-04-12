@@ -369,9 +369,9 @@ export default function DbComponent(props: Props) {
     flushHeldKeys;
   });
 
-  const TimeStamper = (date: any) => {
-    return Timestamp.fromDate(moment(date, "DD/MM/YYYY").toDate());
-  };
+  // const TimeStamper = (date: any) => {
+  //   return Timestamp.fromDate(moment(date, "DD/MM/YYYY").toDate());
+  // };
 
   // PAGE LOAD HANDLER
   useEffect(() => {
@@ -658,7 +658,7 @@ export default function DbComponent(props: Props) {
   const RenewID = async () => {
     setLoading(true);
     await updateDoc(doc(db, "records", doc_id), {
-      civil_expiry: TimeStamper(newExpiry),
+      civil_expiry: newExpiry,
       modified_on: new Date(),
     });
     await AddHistory("renew", newExpiry, "", "Civil ID");
@@ -1070,8 +1070,8 @@ export default function DbComponent(props: Props) {
       await updateDoc(doc(db, "records", doc_id), {
         license_issue: edited_vehicle_issue,
         license_expiry: edited_vehicle_expiry
-          ? TimeStamper(edited_vehicle_expiry)
-          : TimeStamper(vehicle_expiry),
+          ? edited_vehicle_expiry
+          : vehicle_expiry,
         modified_on: Timestamp.fromDate(new Date()),
       });
       await AddHistory("renew", edited_vehicle_expiry, "", "Vehicle ID");
@@ -1097,7 +1097,7 @@ export default function DbComponent(props: Props) {
     try {
       await updateDoc(doc(db, "records", doc_id), {
         medical_completed_on: medical_completed_on,
-        medical_due_on: TimeStamper(medical_due_on),
+        medical_due_on: medical_due_on,
         modified_on: Timestamp.fromDate(new Date()),
       });
       await AddHistory("addition", "Added", "", "Medical ID");
@@ -1120,9 +1120,7 @@ export default function DbComponent(props: Props) {
         medical_completed_on: editedCompletedOn
           ? editedCompletedOn
           : medical_completed_on,
-        medical_due_on: editedDueOn
-          ? TimeStamper(editedDueOn)
-          : TimeStamper(medical_due_on),
+        medical_due_on: editedDueOn ? editedDueOn : medical_due_on,
         modified_on: Timestamp.fromDate(new Date()),
       });
       await AddHistory("addition", "Updated", "", "Medical");
@@ -1149,8 +1147,8 @@ export default function DbComponent(props: Props) {
           ? editedPassportIssue
           : passportIssue,
         passportExpiry: editedPassportExpiry
-          ? TimeStamper(editedPassportExpiry)
-          : TimeStamper(passportExpiry),
+          ? editedPassportExpiry
+          : passportExpiry,
         nativePhone: editedNativePhone ? editedNativePhone : nativePhone,
         nativeAddress: editedNativeAddress
           ? editedNativeAddress
@@ -1186,9 +1184,7 @@ export default function DbComponent(props: Props) {
         medical_completed_on: editedCompletedOn
           ? editedCompletedOn
           : medical_completed_on,
-        medical_due_on: editedDueOn
-          ? TimeStamper(editedDueOn)
-          : TimeStamper(medical_due_on),
+        medical_due_on: editedDueOn ? editedDueOn : medical_due_on,
         modified_on: Timestamp.fromDate(new Date()),
       });
       await AddHistory("renew", editedCompletedOn, "", "Medical");
@@ -1214,7 +1210,7 @@ export default function DbComponent(props: Props) {
       await updateDoc(doc(db, "records", doc_id), {
         passportID: passportID,
         passportIssue: passportIssue,
-        passportExpiry: TimeStamper(passportExpiry),
+        passportExpiry: passportExpiry,
         nativePhone: nativePhone,
         nativeAddress: nativeAddress,
         modified_on: Timestamp.fromDate(new Date()),
@@ -1250,9 +1246,9 @@ export default function DbComponent(props: Props) {
   const renewPassport = async () => {
     setLoading(true);
     await updateDoc(doc(db, "records", doc_id), {
-      passportExpiry: TimeStamper(
-        editedPassportExpiry ? editedPassportExpiry : passportExpiry
-      ),
+      passportExpiry: editedPassportExpiry
+        ? editedPassportExpiry
+        : passportExpiry,
       passportIssue: editedPassportIssue ? editedPassportIssue : passportIssue,
       modified_on: Timestamp.fromDate(new Date()),
     });
@@ -1343,7 +1339,7 @@ export default function DbComponent(props: Props) {
 
     if (type == "hse_induction") {
       await updateDoc(doc(db, "records", doc_id), {
-        vt_hse_induction: TimeStamper(EditedTrainingAddDialogInput),
+        vt_hse_induction: EditedTrainingAddDialogInput,
         modified_on: Timestamp.fromDate(new Date()),
       });
       setHseInduction(EditedTrainingAddDialogInput);
@@ -1351,7 +1347,7 @@ export default function DbComponent(props: Props) {
 
     if (type == "car_1") {
       await updateDoc(doc(db, "records", doc_id), {
-        vt_car_1: TimeStamper(EditedTrainingAddDialogInput),
+        vt_car_1: EditedTrainingAddDialogInput,
         modified_on: Timestamp.fromDate(new Date()),
       });
       setVtCar1(EditedTrainingAddDialogInput);
@@ -1359,7 +1355,7 @@ export default function DbComponent(props: Props) {
 
     if (type == "car_2") {
       await updateDoc(doc(db, "records", doc_id), {
-        vt_car_2: TimeStamper(EditedTrainingAddDialogInput),
+        vt_car_2: EditedTrainingAddDialogInput,
         modified_on: Timestamp.fromDate(new Date()),
       });
       setVtCar2(EditedTrainingAddDialogInput);
@@ -1367,7 +1363,7 @@ export default function DbComponent(props: Props) {
 
     if (type == "car_3") {
       await updateDoc(doc(db, "records", doc_id), {
-        vt_car_3: TimeStamper(EditedTrainingAddDialogInput),
+        vt_car_3: EditedTrainingAddDialogInput,
         modified_on: Timestamp.fromDate(new Date()),
       });
       setVtCar3(EditedTrainingAddDialogInput);
@@ -1375,7 +1371,7 @@ export default function DbComponent(props: Props) {
 
     if (type == "car_4") {
       await updateDoc(doc(db, "records", doc_id), {
-        vt_car_4: TimeStamper(EditedTrainingAddDialogInput),
+        vt_car_4: EditedTrainingAddDialogInput,
         modified_on: Timestamp.fromDate(new Date()),
       });
       setVtCar4(EditedTrainingAddDialogInput);
@@ -1383,7 +1379,7 @@ export default function DbComponent(props: Props) {
 
     if (type == "car_5") {
       await updateDoc(doc(db, "records", doc_id), {
-        vt_car_5: TimeStamper(EditedTrainingAddDialogInput),
+        vt_car_5: EditedTrainingAddDialogInput,
         modified_on: Timestamp.fromDate(new Date()),
       });
       setVtCar5(EditedTrainingAddDialogInput);
@@ -1391,7 +1387,7 @@ export default function DbComponent(props: Props) {
 
     if (type == "car_6") {
       await updateDoc(doc(db, "records", doc_id), {
-        vt_car_6: TimeStamper(EditedTrainingAddDialogInput),
+        vt_car_6: EditedTrainingAddDialogInput,
         modified_on: Timestamp.fromDate(new Date()),
       });
       setVtCar6(EditedTrainingAddDialogInput);
@@ -1399,7 +1395,7 @@ export default function DbComponent(props: Props) {
 
     if (type == "car_7") {
       await updateDoc(doc(db, "records", doc_id), {
-        vt_car_7: TimeStamper(EditedTrainingAddDialogInput),
+        vt_car_7: EditedTrainingAddDialogInput,
         modified_on: Timestamp.fromDate(new Date()),
       });
       setVtCar7(EditedTrainingAddDialogInput);
@@ -1407,7 +1403,7 @@ export default function DbComponent(props: Props) {
 
     if (type == "car_8") {
       await updateDoc(doc(db, "records", doc_id), {
-        vt_car_8: TimeStamper(EditedTrainingAddDialogInput),
+        vt_car_8: EditedTrainingAddDialogInput,
         modified_on: Timestamp.fromDate(new Date()),
       });
       setVtCar8(EditedTrainingAddDialogInput);
@@ -1415,7 +1411,7 @@ export default function DbComponent(props: Props) {
 
     if (type == "car_9") {
       await updateDoc(doc(db, "records", doc_id), {
-        vt_car_9: TimeStamper(EditedTrainingAddDialogInput),
+        vt_car_9: EditedTrainingAddDialogInput,
         modified_on: Timestamp.fromDate(new Date()),
       });
       setVtCar9(EditedTrainingAddDialogInput);
@@ -1423,7 +1419,7 @@ export default function DbComponent(props: Props) {
 
     if (type == "car_10") {
       await updateDoc(doc(db, "records", doc_id), {
-        vt_car_10: TimeStamper(EditedTrainingAddDialogInput),
+        vt_car_10: EditedTrainingAddDialogInput,
         modified_on: Timestamp.fromDate(new Date()),
       });
       setVtCar10(EditedTrainingAddDialogInput);
@@ -1470,7 +1466,9 @@ export default function DbComponent(props: Props) {
       e.email ? (e.email = e.email) : (e.email = "");
 
       e.dateofJoin
-        ? (e.dateofJoin = moment(e.dateofJoin).format("DD/MM/YYYY"))
+        ? (e.dateofJoin = moment(e.dateofJoin, "DD/MM/YYYY").format(
+            "DD/MM/YYYY"
+          ))
         : (e.dateofJoin = "");
 
       e.initialSalary ? (e.salaryBasic = e.initialSalary) : (e.salaryBasic = 0);
@@ -1982,73 +1980,27 @@ export default function DbComponent(props: Props) {
                               setEmail(post.email);
                               setNotify(post.notify);
 
-                              setHseInduction(
-                                post.vt_hse_induction
-                                  ? moment(post.vt_hse_induction).format(
-                                      "DD/MM/YYYY"
-                                    )
-                                  : null
-                              );
+                              setHseInduction(post.vt_hse_induction);
 
-                              setVtCar1(
-                                post.vt_car_1
-                                  ? moment(post.vt_car_1).format("DD/MM/YYYY")
-                                  : null
-                              );
+                              setVtCar1(post.vt_car_1);
 
-                              setVtCar2(
-                                post.vt_car_2
-                                  ? moment(post.vt_car_2).format("DD/MM/YYYY")
-                                  : null
-                              );
+                              setVtCar2(post.vt_car_2);
 
-                              setVtCar3(
-                                post.vt_car_3
-                                  ? moment(post.vt_car_3).format("DD/MM/YYYY")
-                                  : null
-                              );
+                              setVtCar3(post.vt_car_3);
 
-                              setVtCar4(
-                                post.vt_car_4
-                                  ? moment(post.vt_car_4).format("DD/MM/YYYY")
-                                  : null
-                              );
+                              setVtCar4(post.vt_car_4);
 
-                              setVtCar5(
-                                post.vt_car_5
-                                  ? moment(post.vt_car_5).format("DD/MM/YYYY")
-                                  : null
-                              );
+                              setVtCar5(post.vt_car_5);
 
-                              setVtCar6(
-                                post.vt_car_6
-                                  ? moment(post.vt_car_6).format("DD/MM/YYYY")
-                                  : null
-                              );
+                              setVtCar6(post.vt_car_6);
 
-                              setVtCar7(
-                                post.vt_car_7
-                                  ? moment(post.vt_car_7).format("DD/MM/YYYY")
-                                  : null
-                              );
+                              setVtCar7(post.vt_car_7);
 
-                              setVtCar8(
-                                post.vt_car_8
-                                  ? moment(post.vt_car_8).format("DD/MM/YYYY")
-                                  : null
-                              );
+                              setVtCar8(post.vt_car_8);
 
-                              setVtCar9(
-                                post.vt_car_9
-                                  ? moment(post.vt_car_9).format("DD/MM/YYYY")
-                                  : null
-                              );
+                              setVtCar9(post.vt_car_9);
 
-                              setVtCar10(
-                                post.vt_car_10
-                                  ? moment(post.vt_car_10).format("DD/MM/YYYY")
-                                  : null
-                              );
+                              setVtCar10(post.vt_car_10);
 
                               setImage(post.profile);
                               setProfileName(post.profile_name);
