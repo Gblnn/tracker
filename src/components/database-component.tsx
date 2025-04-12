@@ -1962,13 +1962,7 @@ export default function DbComponent(props: Props) {
                               setCivilExpiry(post.civil_expiry);
                               setCivilDOB(post.civil_DOB);
                               setCompletedOn(post.medical_completed_on);
-                              setDueOn(
-                                post.medical_due_on
-                                  ? moment(post.medical_due_on).format(
-                                      "DD/MM/YYYY"
-                                    )
-                                  : null
-                              );
+                              setDueOn(post.medical_due_on);
                               setVehicleNumber(post.license_number);
                               setVehicleExpiry(
                                 post.license_expiry ? post.license_expiry : ""
@@ -1984,13 +1978,7 @@ export default function DbComponent(props: Props) {
                               );
                               setPassportID(post.passportID);
                               setPassportIssue(post.passportIssue);
-                              setPassportExpiry(
-                                post.passportExpiry
-                                  ? moment(post.passportExpiry).format(
-                                      "DD/MM/YYYY"
-                                    )
-                                  : null
-                              );
+                              setPassportExpiry(post.passportExpiry);
                               setEmail(post.email);
                               setNotify(post.notify);
 
