@@ -1142,30 +1142,58 @@ export default function DbComponent(props: Props) {
     setLoading(true);
     try {
       await updateDoc(doc(db, "records", doc_id), {
-        passportID: editedPassportID ? editedPassportID : passportID,
+        passportID: editedPassportID
+          ? editedPassportID
+          : passportID
+          ? passportID
+          : "",
         passportIssue: editedPassportIssue
           ? editedPassportIssue
-          : passportIssue,
+          : passportIssue
+          ? passportIssue
+          : "",
         passportExpiry: editedPassportExpiry
           ? editedPassportExpiry
-          : passportExpiry,
-        nativePhone: editedNativePhone ? editedNativePhone : nativePhone,
+          : passportExpiry
+          ? passportExpiry
+          : "",
+        nativePhone: editedNativePhone
+          ? editedNativePhone
+          : nativePhone
+          ? nativePhone
+          : "",
         nativeAddress: editedNativeAddress
           ? editedNativeAddress
-          : nativeAddress,
+          : nativeAddress
+          ? nativeAddress
+          : "",
         modified_on: Timestamp.fromDate(new Date()),
       });
       await AddHistory("addition", "Updated", "", "Passport");
       setPassportID(editedPassportID ? editedPassportID : passportID);
       setPassportIssue(
-        editedPassportIssue ? editedPassportIssue : passportIssue
+        editedPassportIssue
+          ? editedPassportIssue
+          : passportIssue
+          ? passportIssue
+          : ""
       );
       setPassportExpiry(
-        editedPassportExpiry ? editedPassportExpiry : passportExpiry
+        editedPassportExpiry
+          ? editedPassportExpiry
+          : passportExpiry
+          ? passportExpiry
+          : ""
       );
-      setNativePhone(editedNativePhone ? editedNativePhone : nativePhone);
+      setNativePhone(
+        editedNativePhone ? editedNativePhone : nativePhone ? nativePhone : ""
+      );
       setNativeAddress(
-        editedNativeAddress ? editedNativeAddress : nativeAddress
+        editedNativeAddress
+          ? editedNativeAddress
+          : nativeAddress
+          ? nativeAddress
+          : ""
       );
       setLoading(false);
       setEditPassportDialog(false);
@@ -1208,11 +1236,11 @@ export default function DbComponent(props: Props) {
     setLoading(true);
     try {
       await updateDoc(doc(db, "records", doc_id), {
-        passportID: passportID,
-        passportIssue: passportIssue,
+        passportID: passportID ? passportID : "",
+        passportIssue: passportIssue ? passportIssue : "",
         passportExpiry: passportExpiry,
-        nativePhone: nativePhone,
-        nativeAddress: nativeAddress,
+        nativePhone: nativePhone ? nativePhone : "",
+        nativeAddress: nativeAddress ? nativeAddress : "",
         modified_on: Timestamp.fromDate(new Date()),
       });
       await AddHistory("addition", "Added", "", "Passport");
@@ -2983,7 +3011,7 @@ export default function DbComponent(props: Props) {
                 paddingBottom: "1rem",
               }}
             >
-              {!civil_number || loading ? (
+              {!civil_expiry || loading ? (
                 <div style={{ height: "19ch", width: "32ch", display: "flex" }}>
                   <button
                     onClick={() => setAddcivil(true)}
@@ -3151,7 +3179,7 @@ export default function DbComponent(props: Props) {
                 paddingBottom: "1rem",
               }}
             >
-              {!vehicle_number || loading ? (
+              {!vehicle_expiry || loading ? (
                 <div style={{ height: "19ch", width: "32ch", display: "flex" }}>
                   <button
                     onClick={() => setAddVehicleID(true)}
@@ -3835,7 +3863,7 @@ export default function DbComponent(props: Props) {
                 paddingBottom: "1rem",
               }}
             >
-              {!passportID || loading ? (
+              {!passportExpiry || loading ? (
                 <div style={{ height: "19ch", width: "32ch", display: "flex" }}>
                   <button
                     onClick={() => setAddPassportDialog(true)}
