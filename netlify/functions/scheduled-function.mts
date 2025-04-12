@@ -115,9 +115,7 @@ export default async (req: Request) => {
               .fromNow() +
             " on " +
             String(
-              moment(element.civil_expiry, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.civil_expiry, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(element.civil_expiry, "DD/MM/YYYY").diff(
@@ -145,9 +143,7 @@ export default async (req: Request) => {
               .fromNow() +
             " on " +
             String(
-              moment(element.license_expiry, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.license_expiry, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(element.license_expiry, "DD/MM/YYYY").diff(
@@ -175,9 +171,7 @@ export default async (req: Request) => {
               .fromNow() +
             " on " +
             String(
-              moment(element.medical_due_on, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.medical_due_on, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(element.medical_due_on, "DD/MM/YYYY").diff(
@@ -205,9 +199,7 @@ export default async (req: Request) => {
               .fromNow() +
             " on " +
             String(
-              moment(element.passportExpiry, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.passportExpiry, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(element.passportExpiry, "DD/MM/YYYY").diff(
@@ -235,9 +227,9 @@ export default async (req: Request) => {
               .fromNow() +
             " on " +
             String(
-              moment(element.vt_hse_induction, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.vt_hse_induction, "DD/MM/YYYY").format(
+                "DD/MM/YYYY"
+              )
             ) +
             String(
               moment(element.vt_hse_induction, "DD/MM/YYYY").diff(
@@ -263,9 +255,7 @@ export default async (req: Request) => {
             moment(element.vt_car_1, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
             String(
-              moment(element.vt_car_1, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.vt_car_1, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(element.vt_car_1, "DD/MM/YYYY").diff(
@@ -291,9 +281,7 @@ export default async (req: Request) => {
             moment(element.vt_car_2, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
             String(
-              moment(element.vt_car_2, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.vt_car_2, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(element.vt_car_2, "DD/MM/YYYY").diff(
@@ -319,9 +307,7 @@ export default async (req: Request) => {
             moment(element.vt_car_3, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
             String(
-              moment(element.vt_car_3, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.vt_car_3, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(element.vt_car_3, "DD/MM/YYYY").diff(
@@ -347,9 +333,7 @@ export default async (req: Request) => {
             moment(element.vt_car_4, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
             String(
-              moment(element.vt_car_4, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.vt_car_4, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(element.vt_car_4, "DD/MM/YYYY").diff(
@@ -375,9 +359,7 @@ export default async (req: Request) => {
             moment(element.vt_car_5, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
             String(
-              moment(element.vt_car_5, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.vt_car_5, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(element.vt_car_5, "DD/MM/YYYY").diff(
@@ -403,9 +385,7 @@ export default async (req: Request) => {
             moment(element.vt_car_6, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
             String(
-              moment(element.vt_car_6, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.vt_car_6, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(element.vt_car_6, "DD/MM/YYYY").diff(
@@ -431,9 +411,7 @@ export default async (req: Request) => {
             moment(element.vt_car_7, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
             String(
-              moment(element.vt_car_7, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.vt_car_7, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(element.vt_car_7, "DD/MM/YYYY").diff(
@@ -459,9 +437,7 @@ export default async (req: Request) => {
             moment(element.vt_car_8, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
             String(
-              moment(element.vt_car_8, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.vt_car_8, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(element.vt_car_8, "DD/MM/YYYY").diff(
@@ -487,9 +463,7 @@ export default async (req: Request) => {
             moment(element.vt_car_9, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
             String(
-              moment(element.vt_car_9, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.vt_car_9, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(element.vt_car_9, "DD/MM/YYYY").diff(
@@ -515,9 +489,7 @@ export default async (req: Request) => {
             moment(element.vt_car_10, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
             String(
-              moment(element.vt_car_10, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(element.vt_car_10, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(element.vt_car_10, "DD/MM/YYYY").diff(
@@ -551,11 +523,7 @@ export default async (req: Request) => {
             "Civil ID expiry  " +
             moment(e.civil_expiry, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
-            String(
-              moment(e.civil_expiry, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
+            String(moment(e.civil_expiry, "DD/MM/YYYY").format("DD/MM/YYYY")) +
             String(
               moment(e.civil_expiry, "DD/MM/YYYY").diff(
                 moment(today).startOf("day"),
@@ -580,9 +548,7 @@ export default async (req: Request) => {
             moment(e.license_expiry, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
             String(
-              moment(e.license_expiry, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(e.license_expiry, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(e.license_expiry, "DD/MM/YYYY").diff(
@@ -608,9 +574,7 @@ export default async (req: Request) => {
             moment(e.medical_due_on, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
             String(
-              moment(e.medical_due_on, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(e.medical_due_on, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(e.medical_due_on, "DD/MM/YYYY").diff(
@@ -636,9 +600,7 @@ export default async (req: Request) => {
             moment(e.passportExpiry, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
             String(
-              moment(e.passportExpiry, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(e.passportExpiry, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(e.passportExpiry, "DD/MM/YYYY").diff(
@@ -664,9 +626,7 @@ export default async (req: Request) => {
             moment(e.vt_hse_induction, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
             String(
-              moment(e.vt_hse_induction, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
+              moment(e.vt_hse_induction, "DD/MM/YYYY").format("DD/MM/YYYY")
             ) +
             String(
               moment(e.vt_hse_induction, "DD/MM/YYYY").diff(
@@ -688,11 +648,7 @@ export default async (req: Request) => {
             "CAR - 1 Training expiry  " +
             moment(e.vt_car_1, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
-            String(
-              moment(e.vt_car_1, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
+            String(moment(e.vt_car_1, "DD/MM/YYYY").format("DD/MM/YYYY")) +
             String(
               moment(e.vt_car_1, "DD/MM/YYYY").diff(
                 moment(today).startOf("day"),
@@ -713,11 +669,7 @@ export default async (req: Request) => {
             "CAR - 2 Training expiry  " +
             moment(e.vt_car_2, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
-            String(
-              moment(e.vt_car_2, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
+            String(moment(e.vt_car_2, "DD/MM/YYYY").format("DD/MM/YYYY")) +
             String(
               moment(e.vt_car_2, "DD/MM/YYYY").diff(
                 moment(today).startOf("day"),
@@ -738,11 +690,7 @@ export default async (req: Request) => {
             "CAR - 3 Training expiry  " +
             moment(e.vt_car_3, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
-            String(
-              moment(e.vt_car_3, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
+            String(moment(e.vt_car_3, "DD/MM/YYYY").format("DD/MM/YYYY")) +
             String(
               moment(e.vt_car_3, "DD/MM/YYYY").diff(
                 moment(today).startOf("day"),
@@ -763,11 +711,7 @@ export default async (req: Request) => {
             "CAR - 4 Training expiry  " +
             moment(e.vt_car_4, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
-            String(
-              moment(e.vt_car_4, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
+            String(moment(e.vt_car_4, "DD/MM/YYYY").format("DD/MM/YYYY")) +
             String(
               moment(e.vt_car_4, "DD/MM/YYYY").diff(
                 moment(today).startOf("day"),
@@ -788,11 +732,7 @@ export default async (req: Request) => {
             "CAR - 5 Training expiry  " +
             moment(e.vt_car_5, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
-            String(
-              moment(e.vt_car_5, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
+            String(moment(e.vt_car_5, "DD/MM/YYYY").format("DD/MM/YYYY")) +
             String(
               moment(e.vt_car_5, "DD/MM/YYYY").diff(
                 moment(today).startOf("day"),
@@ -813,11 +753,7 @@ export default async (req: Request) => {
             "CAR - 6 Training expiry  " +
             moment(e.vt_car_6, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
-            String(
-              moment(e.vt_car_6, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
+            String(moment(e.vt_car_6, "DD/MM/YYYY").format("DD/MM/YYYY")) +
             String(
               moment(e.vt_car_6, "DD/MM/YYYY").diff(
                 moment(today).startOf("day"),
@@ -838,11 +774,7 @@ export default async (req: Request) => {
             "CAR - 7 Training expiry  " +
             moment(e.vt_car_7, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
-            String(
-              moment(e.vt_car_7, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
+            String(moment(e.vt_car_7, "DD/MM/YYYY").format("DD/MM/YYYY")) +
             String(
               moment(e.vt_car_7, "DD/MM/YYYY").diff(
                 moment(today).startOf("day"),
@@ -863,11 +795,7 @@ export default async (req: Request) => {
             "CAR - 8 Training expiry  " +
             moment(e.vt_car_8, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
-            String(
-              moment(e.vt_car_8, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
+            String(moment(e.vt_car_8, "DD/MM/YYYY").format("DD/MM/YYYY")) +
             String(
               moment(e.vt_car_8, "DD/MM/YYYY").diff(
                 moment(today).startOf("day"),
@@ -888,11 +816,7 @@ export default async (req: Request) => {
             "CAR - 9 Training expiry  " +
             moment(e.vt_car_9, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
-            String(
-              moment(e.vt_car_9, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
+            String(moment(e.vt_car_9, "DD/MM/YYYY").format("DD/MM/YYYY")) +
             String(
               moment(e.vt_car_9, "DD/MM/YYYY").diff(
                 moment(today).startOf("day"),
@@ -913,11 +837,7 @@ export default async (req: Request) => {
             "CAR - 10 Training expiry  " +
             moment(e.vt_car_10, "DD/MM/YYYY").startOf("day").fromNow() +
             " on " +
-            String(
-              moment(e.vt_car_10, "DD/MM/YYYY")
-                .add(1, "day")
-                .format("DD/MM/YYYY")
-            ) +
+            String(moment(e.vt_car_10, "DD/MM/YYYY").format("DD/MM/YYYY")) +
             String(
               moment(e.vt_car_10, "DD/MM/YYYY").diff(
                 moment(today).startOf("day"),
