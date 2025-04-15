@@ -1,16 +1,14 @@
+import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import Directive from "@/components/directive";
 import InputDialog from "@/components/input-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import DefaultDialog from "@/components/ui/default-dialog";
-import { auth, db } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import { message } from "antd";
-import { signOut } from "firebase/auth";
-import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { HistoryIcon, Inbox, KeyRound, Mail } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function RecordList() {
@@ -18,55 +16,100 @@ export default function RecordList() {
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [valeLoginPrompt, setValeLoginPrompt] = useState(false);
   const [logoutPrompt, setLogoutPrompt] = useState(false);
-  const usenavigate = useNavigate();
+  const navigate = useNavigate();
   const [verifyDialog, setVerifyDialog] = useState(false);
   const [ssuloading, setSSULoading] = useState(false);
   const [valeloading, setValeLoading] = useState(false);
+  const { userData, logOut } = useAuth();
 
-  const handleLoginPrompt = (e: string) => {
-    e == "ssu" && verify("ssu");
+  useEffect(() => {
+    if (!userData) {
+      navigate("/");
+    }
+  }, [userData, navigate]);
 
-    e == "vale" && verify("vale");
-  };
+  const handleLoginPrompt = async (type: "ssu" | "vale") => {
+    if (!userData) {
+      message.error("Authentication required");
+      navigate("/");
+      return;
+    }
 
-  const verify = async (e: string) => {
-    e == "ssu" ? setSSULoading(true) : e == "vale" && setValeLoading(true);
-    // setVerifyDialog(true);
     try {
-      const RecordCollection = collection(db, "users");
-      const recordQuery = query(
-        RecordCollection,
-        where("email", "==", window.name)
-      );
-      const querySnapshot = await getDocs(recordQuery);
-      const fetchedData: any = [];
-      querySnapshot.forEach((doc: any) => {
-        fetchedData.push({ id: doc.id, ...doc.data() });
-      });
-
-      // setVerifyDialog(false);
-
-      e == "ssu" && fetchedData[0].clearance == "All"
-        ? usenavigate("/records")
-        : e == "vale" && fetchedData[0].clearance == "All"
-        ? usenavigate("/vale-records")
-        : e == "ssu" && fetchedData[0].clearance == "none"
-        ? message.error("No Clearance to access")
-        : e == "vale" && fetchedData[0].clearance == "none"
-        ? message.error("No Clearance to access")
-        : e == "ssu" && fetchedData[0].clearance == "Sohar Star United"
-        ? usenavigate("/records")
-        : e == "vale" && fetchedData[0].clearance == "Vale"
-        ? usenavigate("/vale-records")
-        : message.error("No clearance to access");
-
-      e == "ssu" ? setSSULoading(false) : e == "vale" && setValeLoading(false);
+      if (type === "ssu") {
+        setSSULoading(true);
+        if (
+          userData.clearance === "All" ||
+          userData.clearance === "Sohar Star United"
+        ) {
+          await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay for loading state
+          navigate("/records");
+        } else {
+          message.error("No clearance to access SSU records");
+        }
+      } else {
+        setValeLoading(true);
+        if (userData.clearance === "All" || userData.clearance === "Vale") {
+          await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay for loading state
+          navigate("/vale-records");
+        } else {
+          message.error("No clearance to access Vale records");
+        }
+      }
     } catch (error) {
-      setVerifyDialog(false);
-      // setLoading(false);
-      message.error(String(error));
+      console.error("Navigation error:", error);
+      message.error("Failed to navigate");
+    } finally {
+      if (type === "ssu") {
+        setSSULoading(false);
+      } else {
+        setValeLoading(false);
+      }
     }
   };
+
+  const handleLogout = async () => {
+    try {
+      setLogoutPrompt(false); // Close the dialog first
+      await logOut();
+      // Clear any other state that might persist
+      setRequestDialog(false);
+      setLoginPrompt(false);
+      setValeLoginPrompt(false);
+      setVerifyDialog(false);
+      setSSULoading(false);
+      setValeLoading(false);
+      navigate("/", { replace: true }); // Use replace to prevent back navigation
+    } catch (error) {
+      console.error("Logout error:", error);
+      message.error("Failed to logout");
+      setLogoutPrompt(false); // Make sure dialog is closed even on error
+    }
+  };
+
+  const handleHistoryClick = () => {
+    navigate("/history");
+  };
+
+  const handleInboxClick = () => {
+    navigate("/inbox");
+  };
+
+  if (!userData) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          background: "linear-gradient(darkslateblue, midnightblue)",
+        }}
+      >
+        <LoadingOutlined style={{ fontSize: 24, color: "white" }} />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -101,14 +144,14 @@ export default function RecordList() {
                     paddingLeft: "1rem",
                     paddingRight: "1rem",
                   }}
-                  onClick={() => usenavigate("/history")}
+                  onClick={handleHistoryClick}
                 >
                   {/* <p style={{ fontSize: "0.8rem" }}></p> */}
                   <HistoryIcon width={"1.1rem"} color="dodgerblue" />
                 </button>
 
                 <button
-                  onClick={() => usenavigate("/inbox")}
+                  onClick={handleInboxClick}
                   style={{ width: "3rem", background: "rgba(220 20 60/ 20%)" }}
                 >
                   <Inbox width={"1.25rem"} className="" color="crimson" />
@@ -139,9 +182,9 @@ export default function RecordList() {
             />
 
             <Directive
+              loading={valeloading}
               onClick={() => handleLoginPrompt("vale")}
               title="Vale Team"
-              loading={valeloading}
               icon={
                 <Avatar
                   style={{ width: "1.25rem", height: "1.25rem", border: "" }}
@@ -200,7 +243,7 @@ export default function RecordList() {
           onCancel={() => setLoginPrompt(false)}
           OkButtonText="Continue"
           inputplaceholder="Password"
-          onOk={() => usenavigate("/records")}
+          onOk={() => navigate("/records")}
         />
 
         <InputDialog
@@ -218,7 +261,7 @@ export default function RecordList() {
           onCancel={() => setValeLoginPrompt(false)}
           OkButtonText="Continue"
           inputplaceholder="Password"
-          onOk={() => usenavigate("/vale-records")}
+          onOk={() => navigate("/vale-records")}
         />
 
         <DefaultDialog
@@ -227,13 +270,7 @@ export default function RecordList() {
           title={"Confirm Logout?"}
           open={logoutPrompt}
           onCancel={() => setLogoutPrompt(false)}
-          onOk={() => {
-            signOut(auth);
-            usenavigate("/");
-            window.name = "";
-            console.log(window.name);
-            window.location.reload();
-          }}
+          onOk={handleLogout}
         />
       </div>
     </>

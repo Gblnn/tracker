@@ -1,11 +1,25 @@
-import { Navigate, Outlet } from "react-router-dom"
+import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "./AuthProvider";
+import { LoadingOutlined } from "@ant-design/icons";
 
-interface Props{
-    user?:any
-}
+export default function ProtectedRoutes() {
+  const { user, userData, loading } = useAuth();
 
-export default function ProtectedRoutes(props:Props){
-    return(
-        props.user?<Outlet/>:<Navigate to={"/"}/>
-    )
+  if (loading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          background: "linear-gradient(darkslateblue, midnightblue)",
+        }}
+      >
+        <LoadingOutlined style={{ fontSize: 24, color: "white" }} />
+      </div>
+    );
+  }
+
+  return user && userData ? <Outlet /> : <Navigate to="/" />;
 }

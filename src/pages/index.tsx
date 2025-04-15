@@ -3,17 +3,16 @@ import Directive from "@/components/directive";
 import IndexDropDown from "@/components/index-dropdown";
 import InputDialog from "@/components/input-dialog";
 import DefaultDialog from "@/components/ui/default-dialog";
-import { auth, db } from "@/firebase";
+import { auth } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import emailjs from "@emailjs/browser";
 import { message } from "antd";
-import { signOut } from "firebase/auth";
-import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { Bug, FileArchive, KeyRound, Mail, QrCode } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function Index() {
   const [requestDialog, setRequestDialog] = useState(false);
@@ -21,11 +20,12 @@ export default function Index() {
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [valeLoginPrompt, setValeLoginPrompt] = useState(false);
   const [logoutPrompt, setLogoutPrompt] = useState(false);
-  const usenavigate = useNavigate();
+  const navigate = useNavigate();
   const [issue, setIssue] = useState("");
   const [loading, setLoading] = useState(false);
   const [access, setAccess] = useState(false);
   const [admin, setAdmin] = useState(false);
+  const { userData, logOut } = useAuth();
 
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
@@ -47,43 +47,35 @@ export default function Index() {
     setBugDialog(false);
   };
 
-  const verifyAccess = async () => {
-    try {
-      setLoading(true);
+  useEffect(() => {
+    if (userData) {
+      const hasAccess =
+        userData.clearance === "Sohar Star United" ||
+        userData.clearance === "Vale" ||
+        userData.clearance === "All";
+      setAccess(hasAccess);
+      setAdmin(userData.role === "admin");
 
-      const RecordCollection = collection(db, "users");
-      const recordQuery = query(
-        RecordCollection,
-        where("email", "==", window.name)
-      );
-      const querySnapshot = await getDocs(recordQuery);
-      const fetchedData: any = [];
-      querySnapshot.forEach((doc: any) => {
-        fetchedData.push({ id: doc.id, ...doc.data() });
-      });
-      setLoading(false);
-
-      fetchedData[0].clearance == "Sohar Star United" ||
-      fetchedData[0].clearance == "Vale" ||
-      fetchedData[0].clearance == "All"
-        ? setAccess(true)
-        : setAccess(false);
-
-      fetchedData[0].role == "admin" ? setAdmin(true) : setAdmin(false);
-
-      fetchedData[0].role == "profile" && usenavigate("/profile");
-    } catch (error) {
-      message.error(String(error));
+      if (userData.role === "profile") {
+        navigate("/profile");
+      }
     }
-  };
+  }, [userData, navigate]);
 
   const Authenticate = () => {
-    access ? usenavigate("/record-list") : message.error("Clearance required");
+    access ? navigate("/record-list") : message.error("Clearance required");
   };
 
-  useEffect(() => {
-    verifyAccess();
-  }, []);
+  const handleLogout = async () => {
+    try {
+      setLogoutPrompt(false);
+      await logOut();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+      message.error("Failed to logout");
+    }
+  };
 
   return (
     <>
@@ -143,7 +135,7 @@ export default function Index() {
                     whileInView={{ opacity: 1 }}
                   >
                     <button
-                      onClick={() => usenavigate("/admin")}
+                      onClick={() => navigate("/admin")}
                       style={{
                         fontSize: "0.75rem",
                         paddingLeft: "1rem",
@@ -174,7 +166,7 @@ export default function Index() {
 
                 <IndexDropDown
                   onLogout={() => setLogoutPrompt(true)}
-                  onProfile={() => usenavigate("/profile")}
+                  onProfile={() => navigate("/profile")}
                 />
               </div>
             }
@@ -357,7 +349,7 @@ export default function Index() {
           onCancel={() => setLoginPrompt(false)}
           OkButtonText="Continue"
           inputplaceholder="Password"
-          onOk={() => usenavigate("/records")}
+          onOk={() => navigate("/records")}
         />
 
         <InputDialog
@@ -375,25 +367,17 @@ export default function Index() {
           onCancel={() => setValeLoginPrompt(false)}
           OkButtonText="Continue"
           inputplaceholder="Password"
-          onOk={() => usenavigate("/vale-records")}
+          onOk={() => navigate("/vale-records")}
         />
 
         <DefaultDialog
+        
           destructive
+          title={"Logout"}
           OkButtonText="Logout"
-          title={"Confirm Logout?"}
           open={logoutPrompt}
-          onCancel={() => {
-            setLogoutPrompt(false);
-            window.location.reload();
-          }}
-          onOk={() => {
-            signOut(auth);
-            usenavigate("/");
-            window.name = "";
-            console.log(window.name);
-            window.location.reload();
-          }}
+          onCancel={() => setLogoutPrompt(false)}
+          onOk={handleLogout}
         />
       </div>
       {/* <ReleaseNote /> */}

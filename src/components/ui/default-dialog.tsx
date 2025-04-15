@@ -19,6 +19,7 @@ import {
 } from "./accordion";
 import { Button } from "./button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from "./dialog";
+import { useEffect } from "react";
 
 interface Props {
   open?: boolean;
@@ -71,6 +72,16 @@ interface Props {
 }
 
 export default function DefaultDialog(props: Props) {
+  useEffect(() => {
+    const root = document.getElementById("root");
+
+    if (!props.open) {
+      // On dialog close, force cleanup
+      root?.removeAttribute("aria-hidden");
+      root?.removeAttribute("inert");
+    }
+  }, [props.open]);
+
   return (
     <>
       <Dialog open={props.open}>

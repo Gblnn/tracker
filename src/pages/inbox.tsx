@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function Inbox() {
   const today: any = moment().toDate();
@@ -69,15 +70,31 @@ export default function Inbox() {
   const [selectedRecipientID, setSelectedRecipientID] = useState("");
   const [filterState, setFilterState] = useState("");
   const [filteredData, setFilteredData] = useState<any>([]);
-  const [access, setAccess] = useState(false);
   const [refreshCompleted, setRefreshCompleted] = useState(false);
+  const { userData } = useAuth();
+
+  // Derive access from userData
+  const access = userData?.role === "admin";
 
   // MAILJS VARIABLES
   const serviceId = "service_lunn2bp";
   const templateId = "template_1y0oq9l";
 
   useEffect(() => {
-    verifyAccess();
+    const fetchData = async () => {
+      setPageLoad(true);
+      const q = query(collection(db, "inbox"), orderBy("expiry", "asc"));
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const inboxData: any = [];
+        querySnapshot.forEach((doc) => {
+          inboxData.push({ ...doc.data(), id: doc.id });
+        });
+        setRecords(inboxData);
+        setFilteredData(inboxData);
+        setPageLoad(false);
+      });
+      return () => unsubscribe();
+    };
     fetchData();
   }, []);
 
@@ -85,30 +102,13 @@ export default function Inbox() {
     setCount(Number(document.getElementById("inboxes")?.childElementCount));
   }, [pageLoad]);
 
-  const verifyAccess = async () => {
-    try {
-      setLoading(true);
-
-      const RecordCollection = collection(db, "users");
-      const recordQuery = query(
-        RecordCollection,
-        where("email", "==", window.name)
-      );
-      const querySnapshot = await getDocs(recordQuery);
-      const fetchedData: any = [];
-      querySnapshot.forEach((doc: any) => {
-        fetchedData.push({ id: doc.id, ...doc.data() });
-      });
-      setLoading(false);
-
-      fetchedData[0].role == "admin" ? setAccess(true) : setAccess(false);
-    } catch (error) {
-      message.error(String(error));
-    }
-  };
-
   // FUNCTION TO SEND A TEST EMAIL
   const sendMail = async () => {
+    if (!userData) {
+      message.error("Authentication required");
+      return;
+    }
+
     try {
       setLoading(true);
       await emailjs.send(serviceId, templateId, {
@@ -134,6 +134,11 @@ export default function Inbox() {
   };
 
   const fetchData = async () => {
+    if (!userData) {
+      message.error("Authentication required");
+      return;
+    }
+
     try {
       setPageLoad(true);
       const RecordCollection = collection(db, "records");
@@ -194,75 +199,20 @@ export default function Inbox() {
                   moment(today),
                   "months"
                 )
-              ) <= 2) ||
-            (record.vt_car_2 &&
-              Math.round(
-                moment(record.vt_car_2, "DD/MM/YYYY").diff(
-                  moment(today),
-                  "months"
-                )
-              ) <= 2) ||
-            (record.vt_car_3 &&
-              Math.round(
-                moment(record.vt_car_3, "DD/MM/YYYY").diff(
-                  moment(today),
-                  "months"
-                )
-              ) <= 2) ||
-            (record.vt_car_4 &&
-              Math.round(
-                moment(record.vt_car_4, "DD/MM/YYYY").diff(
-                  moment(today),
-                  "months"
-                )
-              ) <= 2) ||
-            (record.vt_car_5 &&
-              Math.round(
-                moment(record.vt_car_5, "DD/MM/YYYY").diff(
-                  moment(today),
-                  "months"
-                )
-              ) <= 2) ||
-            (record.vt_car_6 &&
-              Math.round(
-                moment(record.vt_car_6, "DD/MM/YYYY").diff(
-                  moment(today),
-                  "months"
-                )
-              ) <= 2) ||
-            (record.vt_car_7 &&
-              Math.round(
-                moment(record.vt_car_7, "DD/MM/YYYY").diff(
-                  moment(today),
-                  "months"
-                )
-              ) <= 2) ||
-            (record.vt_car_8 &&
-              Math.round(
-                moment(record.vt_car_8, "DD/MM/YYYY").diff(
-                  moment(today),
-                  "months"
-                )
-              ) <= 2) ||
-            (record.vt_car_9 &&
-              Math.round(
-                moment(record.vt_car_9, "DD/MM/YYYY").diff(
-                  moment(today),
-                  "months"
-                )
-              ) <= 2) ||
-            (record.vt_car_10 &&
-              Math.round(
-                moment(record.vt_car_10, "DD/MM/YYYY").diff(
-                  moment(today),
-                  "months"
-                )
               ) <= 2)
           );
         })
       );
+
+      setRefreshCompleted(true);
+      setTimeout(() => {
+        setRefreshCompleted(false);
+      }, 1000);
     } catch (error) {
-      console.log(error);
+      console.error("Error fetching data:", error);
+      message.error("Failed to fetch records");
+      setPageLoad(false);
+      setLoading(false);
     }
   };
 
@@ -573,13 +523,12 @@ export default function Inbox() {
         }}
       >
         <Back
-          onTap={() => setAccess(!access)}
           editMode={access}
           title={"Alerts"}
           subtitle={count ? count : ""}
           extra={
             <div style={{ display: "flex", gap: "0.5rem" }}>
-              {window.name ? (
+              {userData?.email ? (
                 <button
                   onClick={() => {
                     setRecipientsDialog(true);

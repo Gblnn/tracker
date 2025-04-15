@@ -2,6 +2,7 @@ import emailjs from "@emailjs/browser";
 import { useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import ProtectedRoutes from "./components/protectedRoute";
+import AuthGuard from "./components/AuthGuard";
 import Index from "./pages";
 import AccessControl from "./pages/access-control";
 import AccessRequests from "./pages/access-requests";
@@ -33,8 +34,9 @@ export default function App() {
   useEffect(() => {
     emailjs.init("c8AePKR5BCK8UIn_E");
   }, []);
+
   return (
-    <>
+    <AuthGuard>
       {/* <Header updateInbox/> */}
       <div style={{ height: "" }}></div>
 
@@ -46,7 +48,7 @@ export default function App() {
         <Route path="/request-access" element={<RequestAccess />} />
         <Route path="/inbox" element={<Inbox />} />
 
-        <Route element={<ProtectedRoutes user={window.name} />}>
+        <Route element={<ProtectedRoutes />}>
           <Route path="/index" element={<Index />} />
           <Route path="/record-list" element={<RecordList />} />
           <Route path="/admin" element={<AdminPage />} />
@@ -64,19 +66,14 @@ export default function App() {
           <Route path="/qr-code-generator" element={<QRCodeGenerator />} />
           <Route path="/project-lpo" element={<ProjectLPO />} />
           <Route path="/movement-register" element={<MovementRegister />} />
-          <Route />
-
-          <Route element={<ProtectedRoutes user={"user"} />}>
-            <Route path="/records" element={<Records />} />
-            <Route path="/vale-records" element={<ValeRecords />} />
-          </Route>
-
+          <Route path="/records" element={<Records />} />
+          <Route path="/vale-records" element={<ValeRecords />} />
           <Route path="/medicals" element={<Medicals />} />
           <Route path="/history" element={<History />} />
         </Route>
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>
-    </>
+    </AuthGuard>
   );
 }

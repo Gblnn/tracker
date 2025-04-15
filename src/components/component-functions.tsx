@@ -43,6 +43,7 @@ export const getBlank = async (category: string | undefined) => {
     const Header = [
       "name",
       "type",
+      "state",
       "employeeCode",
       "companyName",
       "email",

@@ -1,57 +1,48 @@
 import { Checkbox } from "@/components/ui/checkbox";
-import { auth, db } from "@/firebase";
+import { auth } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import { message } from "antd";
 import {
+  browserLocalPersistence,
   browserSessionPersistence,
   setPersistence,
-  signInWithEmailAndPassword,
 } from "firebase/auth";
-import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function Login() {
-  const usenavigate = useNavigate();
+  const navigate = useNavigate();
+  const { loginUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
-  setPersistence(auth, browserSessionPersistence);
-
-  useEffect(() => {
-    window.name != "" && usenavigate("/index");
-  }, []);
-
-  const AuthenticateRole = async () => {
-    const RecordCollection = collection(db, "users");
-    const recordQuery = query(
-      RecordCollection,
-      where("email", "==", auth.currentUser?.email)
-    );
-    const querySnapshot = await getDocs(recordQuery);
-    const fetchedData: any = [];
-    querySnapshot.forEach((doc: any) => {
-      fetchedData.push({ id: doc.id, ...doc.data() });
-    });
-    console.log(fetchedData[0].role, fetchedData[0].email);
-    window.name = fetchedData[0].email;
-    window.location.reload();
-    setLoading(false);
-  };
+  const [stayLoggedIn, setStayLoggedIn] = useState(false);
 
   const handleLoginIn = async () => {
     try {
       setLoading(true);
-      await signInWithEmailAndPassword(auth, email, password);
-      AuthenticateRole();
-      // console.log(auth.currentUser);
+      await setPersistence(
+        auth,
+        stayLoggedIn ? browserLocalPersistence : browserSessionPersistence
+      );
+      const { userData } = await loginUser(email, password);
+
+      if (!userData) {
+        throw new Error("User not found in database");
+      }
+
+      // Store user data in localStorage for components that still rely on it
+      localStorage.setItem("userRole", userData.role);
+      localStorage.setItem("userEmail", userData.email);
+
+      navigate("/index");
     } catch (err: any) {
       setLoading(false);
       const errorMessage = err.message;
-      console.log(err.message);
+      console.error("Login error:", err);
       message.error(errorMessage);
     }
   };
@@ -80,8 +71,11 @@ export default function Login() {
           >
             <img src="/stardox-bg.png" style={{ width: "4rem", border: "" }} />
 
-            <div style={{ display: "flex", flexFlow: "column" }}>
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
+            >
               <p style={{ fontWeight: 400, fontSize: "2.25rem" }}>StarBoard</p>
+              <p>v1.1</p>
             </div>
           </div>
         </div>
@@ -177,7 +171,12 @@ export default function Login() {
                   }}
                 >
                   <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <Checkbox />
+                    <Checkbox
+                      checked={stayLoggedIn}
+                      onCheckedChange={(checked) =>
+                        setStayLoggedIn(checked === true)
+                      }
+                    />
                     <p style={{ fontSize: "0.75rem" }}>Stay logged in</p>
                   </div>
 

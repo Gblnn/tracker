@@ -27,6 +27,7 @@ import {
   Timestamp,
   updateDoc,
   where,
+  startAfter,
 } from "firebase/firestore";
 import {
   deleteObject,
@@ -94,6 +95,7 @@ import LazyLoader from "./lazy-loader";
 import RefreshButton from "./refresh-button";
 import SheetComponent from "./sheet-component";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type Record = {
   id: string;
@@ -111,6 +113,7 @@ interface Props {
 }
 
 export default function DbComponent(props: Props) {
+  const { windowName } = useCurrentUser();
   const [editAccess, setEditAccess] = useState(false);
   const [sensitive_data_access, setSensitiveDataAccess] = useState(false);
   const [contractDialog, setContractDialog] = useState(false);
@@ -141,7 +144,8 @@ export default function DbComponent(props: Props) {
   // BASIC PAGE VARIABLES
   // const [pageLoad, setPageLoad] = useState(false)
   const [notify, setNotify] = useState(true);
-  const [records, setRecords] = useState<any>([]);
+  const [records, setRecords] = useState<Record[]>([]);
+  const [totalRecords, setTotalRecords] = useState(0);
   const [name, setName] = useState("");
   const [doc_id, setDocID] = useState("");
   const [recordSummary, setRecordSummary] = useState(false);
@@ -318,6 +322,10 @@ export default function DbComponent(props: Props) {
   const [exportDialog, setExportDialog] = useState(false);
   const [id, setId] = useState("");
 
+  const [pageSize] = useState(50);
+  const [lastDoc, setLastDoc] = useState<any>(null);
+  const [hasMore, setHasMore] = useState(true);
+
   {
     /* //////////////////////////////////////////////////////////////////////////////////////////////////////*/
   }
@@ -348,7 +356,7 @@ export default function DbComponent(props: Props) {
   ) => {
     await addDoc(collection(db, "history"), {
       created_on: new Date(),
-      user: window.name,
+      user: windowName,
       newValue: newValue,
       previousValue: previousValue,
       fieldAltered: fieldAltered,
@@ -379,23 +387,38 @@ export default function DbComponent(props: Props) {
     fetchLeave();
     fetchSalary();
     fetchAllowance();
+    fetchTotalRecords();
   }, []);
 
   useEffect(() => {
     window.addEventListener("online", () => {
-      setStatus("true");
+      setStatus("online");
+      // Attempt to sync any pending changes when coming back online
+      fetchData();
     });
     window.addEventListener("offline", () => {
-      setStatus("false");
+      setStatus("offline");
     });
-  });
+
+    // Set initial status
+    setStatus(navigator.onLine ? "online" : "offline");
+
+    return () => {
+      window.removeEventListener("online", () => setStatus("online"));
+      window.removeEventListener("offline", () => setStatus("offline"));
+    };
+  }, []);
 
   useEffect(() => {
-    if (status == "true") {
-      message.success("Connection Established");
+    if (status === "online") {
+      // message.success("Connection Established");
       fetchData();
-    } else if (status == "false") {
-      message.error("Lost Connection.");
+    } else if (status === "offline") {
+      message.warning({
+        content: "You are offline. Some features may be limited.",
+
+        key: "offline-warning",
+      });
     }
   }, [status]);
 
@@ -404,6 +427,7 @@ export default function DbComponent(props: Props) {
     fetchLeave();
     fetchSalary();
     fetchAllowance();
+    fetchTotalRecords();
   }, [sortby]);
 
   const uploadFile = async () => {
@@ -434,16 +458,29 @@ export default function DbComponent(props: Props) {
   };
 
   //INITIAL DATA FETCH ON PAGE LOAD
-  const fetchData = async () => {
+  const fetchData = async (loadMore = false) => {
     try {
       setfetchingData(true);
       const RecordCollection = collection(db, "records");
-      const recordQuery = query(
-        RecordCollection,
-        orderBy(sortby),
-        where("type", "in", [props.dbCategory, "omni"]),
-        limit(100)
-      );
+      let recordQuery;
+
+      if (loadMore && lastDoc) {
+        recordQuery = query(
+          RecordCollection,
+          orderBy(sortby),
+          where("type", "in", [props.dbCategory, "omni"]),
+          startAfter(lastDoc),
+          limit(pageSize)
+        );
+      } else {
+        recordQuery = query(
+          RecordCollection,
+          orderBy(sortby),
+          where("type", "in", [props.dbCategory, "omni"]),
+          limit(pageSize)
+        );
+      }
+
       const querySnapshot = await getDocs(recordQuery);
       const fetchedData: Array<Record> = [];
 
@@ -451,22 +488,74 @@ export default function DbComponent(props: Props) {
         fetchedData.push({ id: doc.id, ...doc.data() });
       });
 
+      // Set the last document for pagination
+      const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+      setLastDoc(lastVisible);
+      setHasMore(querySnapshot.docs.length === pageSize);
+
       verifyAccess();
 
       setfetchingData(false);
       setRefreshCompleted(true);
-      setRecords(fetchedData);
+
+      if (loadMore) {
+        setRecords((prevRecords: Record[]) => [...prevRecords, ...fetchedData]);
+      } else {
+        setRecords(fetchedData);
+      }
+
       setChecked([]);
       setSelectable(false);
       setTimeout(() => {
         setRefreshCompleted(false);
       }, 1000);
-    } catch (error) {
-      console.log(error);
-      message.info(String(error));
-      setStatus("false");
+
+      // Clear any existing offline warning if we successfully fetched data
+      message.destroy("offline-warning");
+    } catch (error: any) {
+      console.error("Error fetching data:", error);
+
+      if (!navigator.onLine) {
+        message.warning({
+          content: "You are offline. Showing cached data.",
+          duration: 0,
+          key: "offline-warning",
+        });
+      } else {
+        message.error({
+          content: `Error fetching data: ${error.message}`,
+          duration: 3,
+        });
+      }
+
+      setStatus(navigator.onLine ? "error" : "offline");
+    } finally {
+      setfetchingData(false);
     }
   };
+
+  // Add an intersection observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !fetchingData) {
+          fetchData(true);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    const loadMoreTrigger = document.getElementById("load-more-trigger");
+    if (loadMoreTrigger) {
+      observer.observe(loadMoreTrigger);
+    }
+
+    return () => {
+      if (loadMoreTrigger) {
+        observer.unobserve(loadMoreTrigger);
+      }
+    };
+  }, [hasMore, fetchingData, lastDoc]);
 
   const fetchSalary = async () => {
     setFetchingSalary(true);
@@ -1536,7 +1625,7 @@ export default function DbComponent(props: Props) {
       const RecordCollection = collection(db, "users");
       const recordQuery = query(
         RecordCollection,
-        where("email", "==", window.name)
+        where("email", "==", windowName)
       );
       const querySnapshot = await getDocs(recordQuery);
       const fetchedData: any = [];
@@ -1553,6 +1642,20 @@ export default function DbComponent(props: Props) {
         : setEditAccess(false);
     } catch (error: any) {
       message.error(String(error));
+    }
+  };
+
+  const fetchTotalRecords = async () => {
+    try {
+      const RecordCollection = collection(db, "records");
+      const countQuery = query(
+        RecordCollection,
+        where("type", "in", [props.dbCategory, "omni"])
+      );
+      const snapshot = await getDocs(countQuery);
+      setTotalRecords(snapshot.size);
+    } catch (error) {
+      console.error("Error fetching total records:", error);
     }
   };
 
@@ -1597,13 +1700,8 @@ export default function DbComponent(props: Props) {
           {/* BACK BUTTON */}
           <Back
             editMode={access}
-            // onTap={() => setAccess(!access)}
-            title={
-              props.title
-
-              // +" ("+records.length+")"
-            }
-            subtitle={records.length}
+            title={props.title}
+            subtitle={totalRecords}
             extra={
               !selectable ? (
                 <div
@@ -2082,6 +2180,21 @@ export default function DbComponent(props: Props) {
                           // </motion.div>
                         ))
                     }
+                    {hasMore && (
+                      <div
+                        id="load-more-trigger"
+                        style={{
+                          width: "100%",
+                          height: "50px",
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          opacity: fetchingData ? 1 : 0,
+                        }}
+                      >
+                        {fetchingData && <div className="loader"></div>}
+                      </div>
+                    )}
                   </motion.div>
                 </div>
               </div>
@@ -4116,7 +4229,7 @@ export default function DbComponent(props: Props) {
                       ) == -1 ? (
                         <ArrowDown
                           strokeWidth={"3px"}
-                          width={"1rem"}
+                          width={"0.9rem"}
                           color="lightcoral"
                         />
                       ) : (salaryBasic - initialSalary) / initialSalary == 0 ? (
@@ -4124,7 +4237,7 @@ export default function DbComponent(props: Props) {
                       ) : (
                         <ArrowUp
                           strokeWidth={"3px"}
-                          width={"1rem"}
+                          width={"0.9rem"}
                           color="lightgreen"
                         />
                       )}
