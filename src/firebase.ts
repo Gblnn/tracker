@@ -1,17 +1,15 @@
 import { initializeApp } from "firebase/app";
 import {
-  getFirestore,
-  enableIndexedDbPersistence,
+  browserLocalPersistence,
+  getAuth,
+  setPersistence,
+} from "firebase/auth";
+import {
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
 } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import {
-  getAuth,
-  setPersistence,
-  browserLocalPersistence,
-} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD8LWJoohdEagKAhtVybbqlmzlJYD3w9KY",
