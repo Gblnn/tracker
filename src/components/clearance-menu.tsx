@@ -28,7 +28,7 @@ export default function ClearanceMenu(props: Props) {
           <KeyRound color="dodgerblue" width={"1.25rem"} />
           <p
             style={{
-              fontSize: "0.65rem",
+              fontSize: "0.5rem",
               position: "absolute",
               marginLeft: "2rem ",
               opacity: "0.5",

@@ -214,8 +214,12 @@ const AuthProvider = ({ children }: Props) => {
       await signOut(auth);
       setUser(null);
       setUserData(null);
-      localStorage.removeItem(CACHED_USER_KEY);
-      localStorage.removeItem(CACHED_AUTH_KEY);
+      // Clear all auth-related data from localStorage
+      localStorage.clear(); // This will clear all localStorage items
+      window.location.href = "/"; // Force a full page reload and redirect
+    } catch (error) {
+      console.error("Logout error:", error);
+      throw error; // Propagate the error to be handled by the caller
     } finally {
       setLoading(false);
     }
@@ -279,18 +283,7 @@ const AuthProvider = ({ children }: Props) => {
     logOut,
   };
 
-  // Render immediately if we have valid initial state
-  if (initialState.isValid) {
-    return (
-      <AuthContext.Provider value={authValue}>{children}</AuthContext.Provider>
-    );
-  }
-
-  // Don't render anything until we have valid state
-  if (!user || !userData) {
-    return null;
-  }
-
+  // Always provide auth context regardless of state
   return (
     <AuthContext.Provider value={authValue}>{children}</AuthContext.Provider>
   );

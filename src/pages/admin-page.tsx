@@ -4,9 +4,11 @@ import InputDialog from "@/components/input-dialog";
 import { motion } from "framer-motion";
 import { GitPullRequestArrow, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminPage() {
   const [addUserDialog, setAddUserDialog] = useState(false);
+  const usenavigate = useNavigate();
 
   return (
     <div
@@ -35,14 +37,14 @@ export default function AdminPage() {
           <Directive
             title="Users"
             icon={<Users width={"1.1rem"} color="dodgerblue" />}
-            onClick={() => setAddUserDialog(true)}
+            onClick={() => usenavigate("/users")}
             to={"/users"}
           />
 
           <Directive
             title="Access Requests"
             icon={<GitPullRequestArrow width={"1.1rem"} color="dodgerblue" />}
-            onClick={() => setAddUserDialog(true)}
+            // onClick={() => setAddUserDialog(true)}
             to={"/access-requests"}
           />
         </div>

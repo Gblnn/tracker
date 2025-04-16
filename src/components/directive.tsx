@@ -1,10 +1,17 @@
-import { LoadingOutlined } from "@ant-design/icons";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@radix-ui/react-tooltip";
+import { motion } from "framer-motion";
 import {
   Archive,
   BellOff,
   CheckSquare2,
   ChevronRight,
   Circle,
+  Dot,
   EllipsisVerticalIcon,
   LoaderCircle,
   LockKeyholeIcon,
@@ -12,14 +19,8 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import "./directive.css";
 import DropDown from "./dropdown";
-import { motion } from "framer-motion";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@radix-ui/react-tooltip";
 
 interface Props {
   title?: any;
@@ -51,6 +52,8 @@ interface Props {
   className?: string;
   editableTag?: boolean;
   dotColor?: string;
+  width?: any;
+  expiring?: boolean;
 }
 
 export default function Directive(props: Props) {
@@ -81,15 +84,24 @@ export default function Directive(props: Props) {
         display: "flex",
         opacity: props.archived ? 0.5 : 1,
         height: props.height ? props.height : "",
+        width: props.width ? props.width : "100%",
       }}
     >
       <button
         onClick={(e) => e.preventDefault()} // Prevent double firing
+        className="directive-button"
         style={{
-          paddingLeft: "1rem",
+          padding: "0.75rem",
           gap: "0.5rem",
           width: "100%",
+          display: "flex",
           justifyContent: "space-between",
+          alignItems: "center",
+          background: "rgba(100 100 100/ 0.1)",
+          borderRadius: "0.5rem",
+          border: "1px solid rgba(100 100 100/ 0.2)",
+          transition: "all 0.2s ease",
+          cursor: "pointer",
         }}
       >
         <div
@@ -97,7 +109,7 @@ export default function Directive(props: Props) {
             display: "flex",
             gap: "0.75rem",
             alignItems: "center",
-            border: "",
+            flex: 1,
           }}
         >
           {props.selectable ? (
@@ -130,36 +142,31 @@ export default function Directive(props: Props) {
             props.icon
           )}
 
-          <div style={{ border: "", width: "" }}>
-            {props.subtext ? (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {props.subtext && (
               <p
                 style={{
                   fontWeight: 400,
-                  width: "",
                   textAlign: "left",
                   fontSize: "0.6rem",
                   opacity: "0.6",
                   textTransform: "uppercase",
-                  maxWidth: "80px",
-                  textOverflow: "ellipsis",
                   overflow: "hidden",
+                  textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
-                  border: "",
                 }}
               >
-                {"" + props.subtext + ""}
+                {props.subtext}
               </p>
-            ) : null}
+            )}
 
             {props.customTitle ? (
               props.title
             ) : (
               <span
-                className=""
                 style={{
                   fontWeight: 400,
                   textAlign: "left",
-                  border: "",
                   fontSize: props.titleSize ? props.titleSize : "0.9rem",
                   display: "flex",
                   gap: "0.65rem",
@@ -167,18 +174,21 @@ export default function Directive(props: Props) {
                   width: "100%",
                 }}
               >
-                <div
-                  style={{ flex: "1 1 100%", minWidth: "0", maxWidth: "130px" }}
-                >
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
-                      overflow: props.notName ? "" : "hidden",
+                      display: "flex",
+                      alignItems: "center",
+                      overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
                       textTransform: props.notName ? "none" : "capitalize",
                     }}
                   >
                     {props.title}
+                    {props.expiring && (
+                      <Dot color="salmon" className="animate-pulse" />
+                    )}
                   </div>
                 </div>
 
@@ -198,15 +208,12 @@ export default function Directive(props: Props) {
                       <TooltipContent
                         style={{
                           background: "black",
-                          padding: "0.25rem",
-                          paddingRight: "0.5rem",
-                          paddingLeft: "0.5rem",
+                          padding: "0.25rem 0.5rem",
                           borderRadius: "0.5rem",
-                          marginBottom: "0.5rem",
                           border: "1px solid rgba(100 100 100/ 50%)",
                         }}
                       >
-                        {props.dotColor == "violet" ? "Omni" : "New"}
+                        {props.dotColor === "violet" ? "Omni" : "New"}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -214,27 +221,22 @@ export default function Directive(props: Props) {
               </span>
             )}
 
-            <p
-              style={{
-                fontSize: "0.7rem",
-                textAlign: "left",
-                color: "lightblue",
-                opacity: "0.75",
-                background: "",
-                borderRadius: "0.5rem",
-                paddingRight: "0.25rem",
-                paddingLeft: "",
-                height: "",
-                border: "",
-                alignItems: "center",
-              }}
-            >
-              {props.id_subtitle}
-            </p>
+            {props.id_subtitle && (
+              <p
+                style={{
+                  fontSize: "0.7rem",
+                  textAlign: "left",
+                  color: "lightblue",
+                  opacity: "0.75",
+                }}
+              >
+                {props.id_subtitle}
+              </p>
+            )}
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           {props.selectable ? null : props.notify ? (
             props.archived ? (
               ""
@@ -245,60 +247,54 @@ export default function Directive(props: Props) {
 
           {props.protected && <LockKeyholeIcon width={"1rem"} color="grey" />}
 
-          {props.tag ? (
-            props.loading ? (
-              <LoadingOutlined />
-            ) : (
-              <div
-                onClick={props.tagOnClick}
-                style={{
-                  background: "rgba(150 150 150/ 15%)",
-                  fontSize: "0.85rem",
-                  paddingLeft: "0.5rem",
-                  paddingRight: "0.5rem",
-                  borderRadius: "0.5rem",
-                  color:
-                    props.tag == "Expiring"
-                      ? "goldenrod"
-                      : props.tag == "Available"
-                      ? "lightgreen"
-                      : props.status
-                      ? "lightblue"
-                      : "goldenrod",
-                  width: "",
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                }}
-              >
-                {props.archived == true ? (
-                  <div
-                    style={{
-                      color: "white",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                    }}
-                  >
-                    <Archive width={"1rem"} />
-                  </div>
-                ) : (
-                  <p
-                    style={{
-                      textTransform: "capitalize",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                    }}
-                  >
-                    {props.editableTag && <PenLine width={"0.65rem"} />}
-                    {props.tag}
-                  </p>
-                )}
-              </div>
-            )
-          ) : null}
+          {props.tag && (
+            <div
+              onClick={props.tagOnClick}
+              style={{
+                // background: "rgba(150 150 150/ 15%)",
+                fontSize: "0.8rem",
+                padding: "0.25rem 0.5rem",
+                borderRadius: "0.5rem",
+                color:
+                  props.tag === "Expiring"
+                    ? "goldenrod"
+                    : props.tag === "Available"
+                    ? "lightgreen"
+                    : props.status
+                    ? "lightblue"
+                    : "goldenrod",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+              }}
+            >
+              {props.archived ? (
+                <div
+                  style={{
+                    color: "white",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <Archive width={"1rem"} />
+                </div>
+              ) : (
+                <p
+                  style={{
+                    textTransform: "capitalize",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
+                >
+                  {props.editableTag && <PenLine width={"0.65rem"} />}
+                  {props.tag}
+                </p>
+              )}
+            </div>
+          )}
 
           {props.selectable || props.noArrow ? (
             <div style={{ width: props.space ? "1rem" : "" }}></div>

@@ -31,7 +31,7 @@ export default function IOMenu(props: Props) {
           {props.icon}
           <p
             style={{
-              fontSize: "0.65rem",
+              fontSize: "0.5rem",
               position: "absolute",
               marginLeft: "2rem ",
               opacity: "0.5",

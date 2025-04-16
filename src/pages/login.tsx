@@ -1,3 +1,4 @@
+import { useAuth } from "@/components/AuthProvider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { auth } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
@@ -8,18 +9,18 @@ import {
   setPersistence,
 } from "firebase/auth";
 import { motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/components/AuthProvider";
+import { Link } from "react-router-dom";
 
 export default function Login() {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const { loginUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [stayLoggedIn, setStayLoggedIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLoginIn = async () => {
     try {
@@ -45,12 +46,14 @@ export default function Login() {
         await setPersistence(auth, browserLocalPersistence);
       }
 
-      navigate("/index");
+      // Use window.location.href instead of navigate to ensure a full page reload
+      window.location.href = "/index";
     } catch (err: any) {
-      setLoading(false);
       const errorMessage = err.message;
       console.error("Login error:", err);
       message.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -148,14 +151,39 @@ export default function Login() {
                 placeholder="Email Address"
               />
 
-              <input
-                id="password"
-                onChange={(e: any) => {
-                  setPassword(e.target.value);
-                }}
-                type="password"
-                placeholder="Password"
-              />
+              <div style={{ position: "relative", width: "100%" }}>
+                <input
+                  id="password"
+                  onChange={(e: any) => {
+                    setPassword(e.target.value);
+                  }}
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  style={{ width: "100%" }}
+                />
+                <button
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "0.75rem",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    padding: "0.25rem",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  type="button"
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} color="gray" />
+                  ) : (
+                    <Eye size={18} color="gray" />
+                  )}
+                </button>
+              </div>
               <p />
               <div
                 style={{

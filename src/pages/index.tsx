@@ -70,10 +70,9 @@ export default function Index() {
     try {
       setLogoutPrompt(false);
       await logOut();
-      navigate("/");
     } catch (error) {
       console.error("Logout error:", error);
-      message.error("Failed to logout");
+      message.error("Failed to logout. Please try again.");
     }
   };
 
@@ -94,7 +93,7 @@ export default function Index() {
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
           <Back
             title="StarBoard"
-            subtitle={"v1.1"}
+            subtitle={"v1.4"}
             icon={<img src="/stardox-bg.png" style={{ width: "1.75rem" }} />}
             noback
             extra={

@@ -11,6 +11,7 @@ import SearchBar from "@/components/search-bar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import VehicleID from "@/components/vehicle-id";
 import { db, storage } from "@/firebase";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { LoadingOutlined } from "@ant-design/icons";
 import * as XLSX from "@e965/xlsx";
 import { message, Tooltip } from "antd";
@@ -24,10 +25,10 @@ import {
   onSnapshot,
   orderBy,
   query,
+  startAfter,
   Timestamp,
   updateDoc,
   where,
-  startAfter,
 } from "firebase/firestore";
 import {
   deleteObject,
@@ -95,7 +96,6 @@ import LazyLoader from "./lazy-loader";
 import RefreshButton from "./refresh-button";
 import SheetComponent from "./sheet-component";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type Record = {
   id: string;
@@ -128,7 +128,7 @@ export default function DbComponent(props: Props) {
   const [archivePrompt, setArchivePrompt] = useState(false);
   const [state, setState] = useState("");
   const [imageDialog, setImageDialog] = useState(false);
-  const [created_on, setCreatedOn] = useState("");
+
   const [contact, setContact] = useState("");
   const [editedContact, setEditedContact] = useState("");
   const [nativePhone, setNativePhone] = useState("");
@@ -726,9 +726,9 @@ export default function DbComponent(props: Props) {
   const fetchLeave = async () => {
     setFetchingLeave(true);
     const leaveQuery = query(
-      collection(db, "leave- record"),
+      collection(db, "leave-record"),
+      where("employeeCode", "==", employeeCode),
       orderBy("created_on", "desc")
-      // where("employeeCode", "==", employeeCode)
     );
     const snapshot = await getDocs(leaveQuery);
     const LeaveData: any = [];
@@ -738,8 +738,6 @@ export default function DbComponent(props: Props) {
       setLeaveList(LeaveData);
     });
     setFetchingLeave(false);
-
-    // await leaveSum();
   };
 
   {
@@ -759,7 +757,7 @@ export default function DbComponent(props: Props) {
         "days"
       ),
       pending: editedLeaveTill ? false : true,
-      employeeCode: employeeCode,
+      employeeCode: employeeCode ? employeeCode : "",
     });
     await AddHistory("addition", editedLeaveFrom, "Leave", "Leave");
     setId(doc_id);
@@ -959,14 +957,34 @@ export default function DbComponent(props: Props) {
     }
 
     await updateDoc(doc(db, "records", doc_id), {
-      name: editedName ? editedName : name,
-      email: editedEmail ? editedEmail : email,
-      employeeCode: editedEmployeeCode ? editedEmployeeCode : employeeCode,
-      companyName: editedCompanyName ? editedCompanyName : companyName,
-      dateofJoin: editedDateofJoin ? editedDateofJoin : dateofJoin,
-      initialSalary: editedSalarybasic ? editedSalarybasic : initialSalary,
-      initialAllowance: editedAllowance ? editedAllowance : initialAllowance,
-      contact: editedContact ? editedContact : contact,
+      name: editedName ? editedName : name ? name : "",
+      email: editedEmail ? editedEmail : editedEmail == "" ? "" : email,
+      employeeCode: editedEmployeeCode
+        ? editedEmployeeCode
+        : employeeCode
+        ? employeeCode
+        : "",
+      companyName: editedCompanyName
+        ? editedCompanyName
+        : companyName
+        ? companyName
+        : "",
+      dateofJoin: editedDateofJoin
+        ? editedDateofJoin
+        : dateofJoin
+        ? dateofJoin
+        : "",
+      initialSalary: editedSalarybasic
+        ? editedSalarybasic
+        : initialSalary
+        ? initialSalary
+        : "",
+      initialAllowance: editedAllowance
+        ? editedAllowance
+        : initialAllowance
+        ? initialAllowance
+        : "",
+      contact: editedContact ? editedContact : contact ? contact : "",
       modified_on: new Date(),
     });
 
@@ -2189,9 +2207,9 @@ export default function DbComponent(props: Props) {
                                   ? moment(post.modified_on.toDate())
                                   : ""
                               );
-                              setCreatedOn(
-                                moment(post.created_on.toDate()).format("LL")
-                              );
+                              // setCreatedOn(
+                              //   moment(post.created_on.toDate()).format("LL")
+                              // );
                               setPassportID(post.passportID);
                               setPassportIssue(post.passportIssue);
                               setPassportExpiry(post.passportExpiry);
@@ -2644,7 +2662,7 @@ export default function DbComponent(props: Props) {
         {/* DISPLAY RECORD DIALOG */}
         <DefaultDialog
           code={employeeCode}
-          creation_date={created_on}
+          // creation_date={created_on}
           codeTooltip="Employee Code"
           tags
           onTitleClick={() =>
@@ -2922,29 +2940,196 @@ export default function DbComponent(props: Props) {
                 border: "",
                 width: "100%",
                 display: "flex",
-                flexFlow: "column",
+                flexFlow: "",
+                flexWrap: "wrap",
                 gap: "0.5rem",
                 paddingBottom: "",
                 paddingTop: "",
               }}
             >
-              <Directive
-                onClick={() => access && setCivil(true)}
-                icon={<CreditCard color="dodgerblue" />}
-                title="Civil ID"
-                tag={civil_expiry}
-                status={
-                  moment(civil_expiry, "DD/MM/YYYY").diff(
-                    moment(today),
-                    "months"
-                  ) <= 2
-                    ? false
-                    : true
-                }
-              />
+              <div
+                style={{
+                  display: "flex",
+                  width: "100%",
+                  gap: "0.5rem",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Directive
+                  noArrow
+                  id_subtitle={civil_expiry ? civil_expiry : "No Data"}
+                  onClick={() => access && setCivil(true)}
+                  icon={<CreditCard color="dodgerblue" />}
+                  title="Civil ID"
+                  // tag={civil_expiry}
+                  expiring={
+                    moment(civil_expiry, "DD/MM/YYYY").diff(
+                      moment(today),
+                      "months"
+                    ) <= 2
+                      ? true
+                      : false
+                  }
+                />
 
-              <Directive
-                tag={vehicle_expiry}
+                <Directive
+                  noArrow
+                  id_subtitle={passportExpiry ? passportExpiry : "No Data"}
+                  // tag={passportExpiry}
+                  onClick={() => access && setPassportDialog(true)}
+                  icon={<Book color="goldenrod" />}
+                  title="Passport"
+                  expiring={
+                    moment(passportExpiry, "DD/MM/YYYY").diff(
+                      moment(today),
+                      "months"
+                    ) <= 6
+                      ? true
+                      : false
+                  }
+                />
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  width: "100%",
+                  gap: "0.5rem",
+                  justifyContent: "space-between",
+                }}
+              >
+                {props.dbCategory == "vale" ||
+                  (omni && (
+                    <Directive
+                      noArrow
+                      id_subtitle={medical_due_on ? medical_due_on : "No Data"}
+                      // tag={medical_due_on}
+                      onClick={() => setHealthDialog(true)}
+                      icon={<HeartPulse color="tomato" />}
+                      title="Medical"
+                      expiring={
+                        moment(medical_due_on, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2
+                          ? true
+                          : false
+                      }
+                    />
+                  ))}
+
+                {!props.noTraining ||
+                  (omni && (
+                    <Directive
+                      noArrow
+                      id_subtitle={
+                        moment(vt_hse_induction, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_1, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_2, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_3, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_4, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_5, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_6, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_7, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_8, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_9, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_10, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2
+                          ? "Expiring"
+                          : "No Alerts"
+                      }
+                      onClick={() => {
+                        setValeTrainingDialog(true);
+                      }}
+                      icon={<GraduationCap color="lightgreen" />}
+                      title="Training"
+                      expiring={
+                        moment(vt_hse_induction, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_1, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_2, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_3, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_4, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_5, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_6, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_7, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_8, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_9, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2 ||
+                        moment(vt_car_10, "DD/MM/YYYY").diff(
+                          moment(today),
+                          "months"
+                        ) <= 2
+                          ? true
+                          : false
+                      }
+                    />
+                  ))}
+              </div>
+
+              {/* <Directive
+                id_subtitle={vehicle_expiry}
+                // tag={vehicle_expiry}
                 onClick={() => access && setVehicle(true)}
                 icon={<Car color="violet" />}
                 title="License"
@@ -2956,97 +3141,7 @@ export default function DbComponent(props: Props) {
                     ? false
                     : true
                 }
-              />
-
-              <Directive
-                tag={passportExpiry}
-                onClick={() => access && setPassportDialog(true)}
-                icon={<Book color="goldenrod" />}
-                title="Passport"
-                status={
-                  moment(passportExpiry, "DD/MM/YYYY").diff(
-                    moment(today),
-                    "months"
-                  ) <= 6
-                    ? false
-                    : true
-                }
-              />
-
-              {props.dbCategory == "vale" && (
-                <Directive
-                  tag={medical_due_on}
-                  onClick={() => setHealthDialog(true)}
-                  icon={<HeartPulse color="tomato" />}
-                  title="Medical"
-                  status={
-                    moment(medical_due_on, "DD/MM/YYYY").diff(
-                      moment(today),
-                      "months"
-                    ) <= 2
-                      ? false
-                      : true
-                  }
-                />
-              )}
-
-              {props.noTraining ? null : (
-                <Directive
-                  tag={
-                    moment(vt_hse_induction, "DD/MM/YYYY").diff(
-                      moment(today),
-                      "months"
-                    ) <= 2 ||
-                    moment(vt_car_1, "DD/MM/YYYY").diff(
-                      moment(today),
-                      "months"
-                    ) <= 2 ||
-                    moment(vt_car_2, "DD/MM/YYYY").diff(
-                      moment(today),
-                      "months"
-                    ) <= 2 ||
-                    moment(vt_car_3, "DD/MM/YYYY").diff(
-                      moment(today),
-                      "months"
-                    ) <= 2 ||
-                    moment(vt_car_4, "DD/MM/YYYY").diff(
-                      moment(today),
-                      "months"
-                    ) <= 2 ||
-                    moment(vt_car_5, "DD/MM/YYYY").diff(
-                      moment(today),
-                      "months"
-                    ) <= 2 ||
-                    moment(vt_car_6, "DD/MM/YYYY").diff(
-                      moment(today),
-                      "months"
-                    ) <= 2 ||
-                    moment(vt_car_7, "DD/MM/YYYY").diff(
-                      moment(today),
-                      "months"
-                    ) <= 2 ||
-                    moment(vt_car_8, "DD/MM/YYYY").diff(
-                      moment(today),
-                      "months"
-                    ) <= 2 ||
-                    moment(vt_car_9, "DD/MM/YYYY").diff(
-                      moment(today),
-                      "months"
-                    ) <= 2 ||
-                    moment(vt_car_10, "DD/MM/YYYY").diff(
-                      moment(today),
-                      "months"
-                    ) <= 2
-                      ? "Expiring"
-                      : ""
-                  }
-                  onClick={() => {
-                    setValeTrainingDialog(true);
-                  }}
-                  icon={<GraduationCap color="lightgreen" />}
-                  title="Training"
-                />
-              )}
+              /> */}
             </div>
           }
         />
@@ -4550,28 +4645,82 @@ export default function DbComponent(props: Props) {
                       </p>
                       -
                       <p>
-                        {String(
-                          moment(dateofJoin, "DD/MM/YYYY")
-                            .add(1.5, "years")
-                            .add(leaves, "days")
-                            .format("DD/MM/YYYY")
-                        )}
+                        {(function calculateBlockPeriodEnd() {
+                          const blockPeriodStart = moment(
+                            dateofJoin,
+                            "DD/MM/YYYY"
+                          );
+                          const originalBlockPeriodEnd = moment(
+                            dateofJoin,
+                            "DD/MM/YYYY"
+                          ).add(1.5, "years");
+                          let totalExtensionDays = 0;
+
+                          leaveList.forEach((leave: any) => {
+                            const leaveStartDate = moment(
+                              leave.leaveFrom,
+                              "DD/MM/YYYY"
+                            );
+                            if (
+                              leaveStartDate.isBetween(
+                                blockPeriodStart,
+                                originalBlockPeriodEnd,
+                                "day",
+                                "[]"
+                              )
+                            ) {
+                              totalExtensionDays += leave.days || 0;
+                            }
+                          });
+
+                          return String(
+                            originalBlockPeriodEnd
+                              .add(totalExtensionDays, "days")
+                              .format("DD/MM/YYYY")
+                          );
+                        })()}
                       </p>
                     </div>
                     <p style={{ height: "0.45rem" }}></p>
-                    {
-                      // leaves &&
-                      <p
-                        style={{
-                          fontSize: "0.7rem",
-                          opacity: 0.5,
-                          border: "",
-                          display: "flex",
-                        }}
-                      >
-                        extended by {leaves} days
-                      </p>
-                    }
+                    <p
+                      style={{
+                        fontSize: "0.7rem",
+                        opacity: 0.5,
+                        border: "",
+                        display: "flex",
+                      }}
+                    >
+                      {`extended by ${(function calculateExtensionDays() {
+                        const blockPeriodStart = moment(
+                          dateofJoin,
+                          "DD/MM/YYYY"
+                        );
+                        const originalBlockPeriodEnd = moment(
+                          dateofJoin,
+                          "DD/MM/YYYY"
+                        ).add(1.5, "years");
+                        let totalExtensionDays = 0;
+
+                        leaveList.forEach((leave: any) => {
+                          const leaveStartDate = moment(
+                            leave.leaveFrom,
+                            "DD/MM/YYYY"
+                          );
+                          if (
+                            leaveStartDate.isBetween(
+                              blockPeriodStart,
+                              originalBlockPeriodEnd,
+                              "day",
+                              "[]"
+                            )
+                          ) {
+                            totalExtensionDays += leave.days || 0;
+                          }
+                        });
+
+                        return totalExtensionDays;
+                      })()} days`}
+                    </p>
                   </div>
 
                   <div

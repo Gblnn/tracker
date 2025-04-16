@@ -102,8 +102,8 @@ export default function DefaultDialog(props: Props) {
                 style={{
                   userSelect: "none",
                   width: "100%",
-                  borderBottom: "1px solid rgba(100 100 100/ 50%)",
-                  paddingBottom: "1rem",
+                  // borderBottom: "1px solid rgba(100 100 100/ 50%)",
+                  // paddingBottom: "1rem",
                 }}
               >
                 <div
@@ -240,7 +240,7 @@ export default function DefaultDialog(props: Props) {
                   </p>
                 </div>
 
-                {props.creation_date && (
+                {props.contact && (
                   <div
                     style={{
                       display: "flex",
@@ -311,7 +311,7 @@ export default function DefaultDialog(props: Props) {
                   display: "flex",
                   flexFlow: "column",
                   gap: "0.5rem",
-                  border: "",
+
                   width: "100%",
                 }}
               >
@@ -338,6 +338,7 @@ export default function DefaultDialog(props: Props) {
                       flex: 1,
                       justifyContent: "center",
                       cursor: "pointer",
+                      overflow: "hidden",
                     }}
                   >
                     {props.tag1Alert ? (
@@ -351,7 +352,22 @@ export default function DefaultDialog(props: Props) {
                       <ScrollText width={"1rem"} color="dodgerblue" />
                     )}
 
-                    {props.tag1Text ? <p>{props.tag1Text}</p> : "No Data"}
+                    {props.tag1Text ? (
+                      <p
+                        style={{
+                          textTransform: "uppercase",
+                          fontSize: "0.7rem",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          maxWidth: "150px",
+                        }}
+                      >
+                        {props.tag1Text}
+                      </p>
+                    ) : (
+                      "No Data"
+                    )}
                   </div>
 
                   <div
@@ -369,7 +385,7 @@ export default function DefaultDialog(props: Props) {
                       cursor: "pointer",
                     }}
                   >
-                    <p style={{ opacity: 0.5 }}>Joined :</p>
+                    <p style={{ opacity: 0.5 }}>Joined </p>
                     <b>{props.tag2Text}</b>
                   </div>
                 </div>
@@ -411,7 +427,22 @@ export default function DefaultDialog(props: Props) {
               </p>
             ) : null}
 
-            {props.extra ? props.extra : null}
+            {props.extra && (
+              <div
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  flexFlow: "column",
+                  gap: "0.5rem",
+                  // maxHeight: props.dialogHeight || "60vh",
+                  overflowY: "auto",
+                  padding: "",
+                  border: "",
+                }}
+              >
+                {props.extra}
+              </div>
+            )}
 
             {props.tags ? (
               <div
