@@ -664,11 +664,11 @@ export default function Inbox() {
                   onClear={() => setFilterState("")}
                 />
 
-                {access && (
+                {
                   <button onClick={exportDB} style={{ width: "3rem" }}>
                     <FileSpreadsheet color="lightgreen" width={"1.1rem"} />
                   </button>
-                )}
+                }
               </div>
 
               <p style={{ height: "1.5rem" }}></p>

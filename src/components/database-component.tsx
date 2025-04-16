@@ -332,7 +332,7 @@ export default function DbComponent(props: Props) {
   useEffect(() => {
     window.addEventListener("online", () => {
       setStatus("online");
-          fetchData();
+      fetchData();
     });
     window.addEventListener("offline", () => {
       setStatus("offline");
@@ -348,7 +348,7 @@ export default function DbComponent(props: Props) {
 
   useEffect(() => {
     if (status === "online") {
-          fetchData();
+      fetchData();
     } else if (status === "offline") {
       message.warning({
         content: "You are offline. Some features may be limited.",
@@ -428,7 +428,7 @@ export default function DbComponent(props: Props) {
             change.type === "modified" ||
             change.type === "removed"
           ) {
-    fetchData();
+            fetchData();
           }
         });
       }
@@ -538,9 +538,9 @@ export default function DbComponent(props: Props) {
 
       if (loadMore && lastDoc) {
         recordQuery = query(
-        RecordCollection,
-        orderBy(sortby),
-        where("type", "in", [props.dbCategory, "omni"]),
+          RecordCollection,
+          orderBy(sortby),
+          where("type", "in", [props.dbCategory, "omni"]),
           startAfter(lastDoc),
           limit(pageSize)
         );
@@ -570,7 +570,7 @@ export default function DbComponent(props: Props) {
       if (loadMore) {
         setRecords((prevRecords: Record[]) => [...prevRecords, ...fetchedData]);
       } else {
-      setRecords(fetchedData);
+        setRecords(fetchedData);
       }
 
       setChecked([]);
@@ -858,8 +858,8 @@ export default function DbComponent(props: Props) {
         allRecords.push({ id: doc.id, ...doc.data() });
       });
 
-    await AddHistory("export", "", "", "Database Export");
-    setLoading(false);
+      await AddHistory("export", "", "", "Database Export");
+      setLoading(false);
       exportDatabase(allRecords, props.dbCategory);
     } catch (err: any) {
       console.error("Error exporting database:", err);
