@@ -1,8 +1,8 @@
 import emailjs from "@emailjs/browser";
-import { useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import ProtectedRoutes from "./components/protectedRoute";
 import AuthGuard from "./components/AuthGuard";
+import SplashScreen from "./components/SplashScreen";
 import Index from "./pages";
 import AccessControl from "./pages/access-control";
 import AccessRequests from "./pages/access-requests";
@@ -30,11 +30,10 @@ import ProjectLPO from "./pages/project-lpo";
 import MovementRegister from "./pages/movement-register";
 import AddRemarks from "./pages/add-remarks";
 
-export default function App() {
-  useEffect(() => {
-    emailjs.init("c8AePKR5BCK8UIn_E");
-  }, []);
+// Initialize emailjs once outside of component
+emailjs.init("c8AePKR5BCK8UIn_E");
 
+export default function App() {
   return (
     <AuthGuard>
       {/* <Header updateInbox/> */}

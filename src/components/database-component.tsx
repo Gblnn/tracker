@@ -326,28 +326,50 @@ export default function DbComponent(props: Props) {
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
 
-  {
-    /* //////////////////////////////////////////////////////////////////////////////////////////////////////*/
-  }
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
+  // Online/Offline handling
   useEffect(() => {
-    onSnapshot(query(collection(db, "records")), (snapshot: any) => {
-      snapshot.docChanges().forEach((change: any) => {
-        if (change.type === "added") {
-          fetchData();
-        }
-        if (change.type === "modified") {
-          fetchData();
-        }
-        if (change.type === "removed") {
-          fetchData();
-        }
-      });
+    window.addEventListener("online", () => {
+      setStatus("online");
+      fetchData();
     });
-    // console.log(id);
-    setLeaves(0);
+    window.addEventListener("offline", () => {
+      setStatus("offline");
+    });
+
+    setStatus(navigator.onLine ? "online" : "offline");
+
+    return () => {
+      window.removeEventListener("online", () => setStatus("online"));
+      window.removeEventListener("offline", () => setStatus("offline"));
+    };
   }, []);
 
+  useEffect(() => {
+    if (status === "online") {
+      fetchData();
+    } else if (status === "offline") {
+      message.warning({
+        content: "You are offline. Some features may be limited.",
+        key: "offline-warning",
+      });
+    }
+  }, [status]);
+
+  // Keyboard shortcuts
+  const { flushHeldKeys } = useKeyboardShortcut(["Control", "A"], () => {
+    setAddDialog(!addDialog);
+    setName("");
+    flushHeldKeys;
+  });
+
+  useKeyboardShortcut(["Control", "I"], () => {
+    usenavigate("/inbox");
+    flushHeldKeys;
+  });
+
+  // History tracking
   const AddHistory = async (
     method: string,
     newValue?: any,
@@ -366,70 +388,7 @@ export default function DbComponent(props: Props) {
     });
   };
 
-  const { flushHeldKeys } = useKeyboardShortcut(["Control", "A"], () => {
-    setAddDialog(!addDialog);
-    setName("");
-    flushHeldKeys;
-  });
-
-  const {} = useKeyboardShortcut(["Control", "I"], () => {
-    usenavigate("/inbox");
-    flushHeldKeys;
-  });
-
-  // const TimeStamper = (date: any) => {
-  //   return Timestamp.fromDate(moment(date, "DD/MM/YYYY").toDate());
-  // };
-
-  // PAGE LOAD HANDLER
-  useEffect(() => {
-    fetchData();
-    fetchLeave();
-    fetchSalary();
-    fetchAllowance();
-    fetchTotalRecords();
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener("online", () => {
-      setStatus("online");
-      // Attempt to sync any pending changes when coming back online
-      fetchData();
-    });
-    window.addEventListener("offline", () => {
-      setStatus("offline");
-    });
-
-    // Set initial status
-    setStatus(navigator.onLine ? "online" : "offline");
-
-    return () => {
-      window.removeEventListener("online", () => setStatus("online"));
-      window.removeEventListener("offline", () => setStatus("offline"));
-    };
-  }, []);
-
-  useEffect(() => {
-    if (status === "online") {
-      // message.success("Connection Established");
-      fetchData();
-    } else if (status === "offline") {
-      message.warning({
-        content: "You are offline. Some features may be limited.",
-
-        key: "offline-warning",
-      });
-    }
-  }, [status]);
-
-  useEffect(() => {
-    fetchData();
-    fetchLeave();
-    fetchSalary();
-    fetchAllowance();
-    fetchTotalRecords();
-  }, [sortby]);
-
+  // File upload handling
   const uploadFile = async () => {
     if (imageUpload === null) {
       message.info("No image attached");
@@ -438,26 +397,125 @@ export default function DbComponent(props: Props) {
     const imageRef = storageRef(storage, fileName);
 
     console.log("Uploading ", fileName);
-    fileName == ""
-      ? console.log("Skipped Upload")
-      : await uploadBytes(imageRef, imageUpload)
-          .then(async (snapshot) => {
-            await getDownloadURL(snapshot.ref).then((url: any) => {
-              imgUrl = url;
-              setFileName("");
-            });
-          })
-          .catch((error) => {
-            message.error(error.message);
-            console.log(error.message);
-          });
+    if (fileName === "") {
+      console.log("Skipped Upload");
+      return;
+    }
+
+    try {
+      const snapshot = await uploadBytes(imageRef, imageUpload);
+      const url = await getDownloadURL(snapshot.ref);
+      imgUrl = url;
+      setFileName("");
+    } catch (error: any) {
+      message.error(error.message);
+      console.log(error.message);
+    }
   };
 
   const fetchBlank = () => {
     getBlank(props.dbCategory);
   };
 
-  //INITIAL DATA FETCH ON PAGE LOAD
+  // Real-time updates
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      query(collection(db, "records")),
+      (snapshot: any) => {
+        snapshot.docChanges().forEach((change: any) => {
+          if (
+            change.type === "added" ||
+            change.type === "modified" ||
+            change.type === "removed"
+          ) {
+            fetchData();
+          }
+        });
+      }
+    );
+
+    setLeaves(0);
+    return () => unsubscribe();
+  }, []);
+
+  // Combine initial essential data fetch
+  const fetchInitialData = async () => {
+    try {
+      setfetchingData(true);
+      const RecordCollection = collection(db, "records");
+
+      // Combine queries into Promise.all for parallel execution
+      const [recordsSnapshot, accessData] = await Promise.all([
+        getDocs(
+          query(
+            RecordCollection,
+            orderBy(sortby),
+            where("type", "in", [props.dbCategory, "omni"]),
+            limit(pageSize)
+          )
+        ),
+        getDocs(
+          query(collection(db, "users"), where("email", "==", windowName))
+        ),
+      ]);
+
+      // Process records
+      const fetchedData: Record[] = [];
+      recordsSnapshot.forEach((doc: any) => {
+        fetchedData.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Process access data
+      const accessInfo = accessData.docs[0]?.data();
+      if (accessInfo) {
+        setAccess(accessInfo.editor === "true");
+        setSensitiveDataAccess(accessInfo.sensitive_data === "true");
+        setEditAccess(accessInfo.editor === "true");
+      }
+
+      // Set the last document for pagination
+      const lastVisible = recordsSnapshot.docs[recordsSnapshot.docs.length - 1];
+      setLastDoc(lastVisible);
+      setHasMore(recordsSnapshot.docs.length === pageSize);
+
+      // Update records
+      setRecords(fetchedData);
+
+      // Get total count in background
+      const countSnapshot = await getDocs(
+        query(RecordCollection, where("type", "in", [props.dbCategory, "omni"]))
+      );
+      setTotalRecords(countSnapshot.size);
+    } catch (error: any) {
+      console.error("Error fetching initial data:", error);
+      message.error({
+        content: `Error loading data: ${error.message}`,
+        duration: 3,
+      });
+    } finally {
+      setfetchingData(false);
+      setIsInitialLoad(false);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  // Secondary data load after initial render
+  useEffect(() => {
+    if (!isInitialLoad) {
+      // Load additional data only after initial render
+      Promise.all([fetchLeave(), fetchSalary(), fetchAllowance()]).catch(
+        (error) => {
+          console.error("Error loading secondary data:", error);
+        }
+      );
+    }
+  }, [isInitialLoad]);
+
+  // Modify the existing fetchData function to not verify access again
   const fetchData = async (loadMore = false) => {
     try {
       setfetchingData(true);
@@ -482,18 +540,15 @@ export default function DbComponent(props: Props) {
       }
 
       const querySnapshot = await getDocs(recordQuery);
-      const fetchedData: Array<Record> = [];
+      const fetchedData: Record[] = [];
 
       querySnapshot.forEach((doc: any) => {
         fetchedData.push({ id: doc.id, ...doc.data() });
       });
 
-      // Set the last document for pagination
       const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
       setLastDoc(lastVisible);
       setHasMore(querySnapshot.docs.length === pageSize);
-
-      verifyAccess();
 
       setfetchingData(false);
       setRefreshCompleted(true);
@@ -510,11 +565,9 @@ export default function DbComponent(props: Props) {
         setRefreshCompleted(false);
       }, 1000);
 
-      // Clear any existing offline warning if we successfully fetched data
       message.destroy("offline-warning");
     } catch (error: any) {
       console.error("Error fetching data:", error);
-
       if (!navigator.onLine) {
         message.warning({
           content: "You are offline. Showing cached data.",
@@ -527,7 +580,6 @@ export default function DbComponent(props: Props) {
           duration: 3,
         });
       }
-
       setStatus(navigator.onLine ? "error" : "offline");
     } finally {
       setfetchingData(false);
