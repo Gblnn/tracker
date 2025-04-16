@@ -1,11 +1,11 @@
 import emailjs from "@emailjs/browser";
 import { Route, Routes } from "react-router-dom";
-import ProtectedRoutes from "./components/protectedRoute";
 import AuthGuard from "./components/AuthGuard";
-import SplashScreen from "./components/SplashScreen";
+import ProtectedRoutes from "./components/protectedRoute";
 import Index from "./pages";
 import AccessControl from "./pages/access-control";
 import AccessRequests from "./pages/access-requests";
+import AddRemarks from "./pages/add-remarks";
 import AdminPage from "./pages/admin-page";
 import Archives from "./pages/archives";
 import History from "./pages/history";
@@ -13,10 +13,12 @@ import Inbox from "./pages/inbox";
 import Login from "./pages/login";
 import LPO from "./pages/lpo";
 import Medicals from "./pages/medicals";
+import MovementRegister from "./pages/movement-register";
 import NewHire from "./pages/new-hire";
 import Openings from "./pages/openings";
 import PageNotFound from "./pages/page-not-found";
 import Profile from "./pages/profile";
+import ProjectLPO from "./pages/project-lpo";
 import QRCodeGenerator from "./pages/qr-code";
 import RecordList from "./pages/record-list";
 import Records from "./pages/records";
@@ -26,9 +28,6 @@ import UserReset from "./pages/user-reset";
 import Users from "./pages/users";
 import ValeRecords from "./pages/vale-records";
 import Website from "./pages/website";
-import ProjectLPO from "./pages/project-lpo";
-import MovementRegister from "./pages/movement-register";
-import AddRemarks from "./pages/add-remarks";
 
 // Initialize emailjs once outside of component
 emailjs.init("c8AePKR5BCK8UIn_E");
