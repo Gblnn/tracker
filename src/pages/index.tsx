@@ -371,7 +371,6 @@ export default function Index() {
         />
 
         <DefaultDialog
-        
           destructive
           title={"Logout"}
           OkButtonText="Logout"

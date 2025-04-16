@@ -1,4 +1,5 @@
 // AuthProvider.js
+import { auth, db } from "@/firebase";
 import {
   User,
   createUserWithEmailAndPassword,
@@ -6,10 +7,9 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
-import { createContext, useContext, useEffect, useState } from "react";
-import PropTypes from "prop-types";
-import { auth, db } from "@/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import PropTypes from "prop-types";
+import { createContext, useContext, useEffect, useState } from "react";
 
 interface FirestoreUserData {
   id: string;
@@ -23,6 +23,7 @@ interface AuthContextType {
   user: User | null;
   userData: FirestoreUserData | null;
   loading: boolean;
+  initialized: boolean;
   createUser: (email: string, password: string) => Promise<any>;
   loginUser: (email: string, password: string) => Promise<any>;
   logOut: () => Promise<void>;
@@ -35,6 +36,35 @@ interface Props {
 const CACHED_USER_KEY = "cached_user_data";
 const CACHED_AUTH_KEY = "cached_auth_state";
 
+// Function to get initial state from cache
+const getInitialState = () => {
+  try {
+    const cachedAuth = localStorage.getItem(CACHED_AUTH_KEY);
+    const cachedUser = localStorage.getItem(CACHED_USER_KEY);
+
+    if (cachedAuth && cachedUser) {
+      const parsedAuth = JSON.parse(cachedAuth);
+      const parsedUser = JSON.parse(cachedUser);
+
+      if (
+        parsedAuth?.email &&
+        parsedUser?.email &&
+        parsedAuth.email === parsedUser.email
+      ) {
+        return {
+          user: parsedAuth,
+          userData: parsedUser,
+          isValid: true,
+        };
+      }
+    }
+    return { user: null, userData: null, isValid: false };
+  } catch (e) {
+    console.error("Error reading initial cache:", e);
+    return { user: null, userData: null, isValid: false };
+  }
+};
+
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export const useAuth = () => {
@@ -46,24 +76,15 @@ export const useAuth = () => {
 };
 
 const AuthProvider = ({ children }: Props) => {
-  const [user, setUser] = useState<User | null>(() => {
-    // Initialize with cached auth state if available
-    try {
-      const cached = localStorage.getItem(CACHED_AUTH_KEY);
-      return cached ? JSON.parse(cached) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [userData, setUserData] = useState<FirestoreUserData | null>(() => {
-    try {
-      const cached = localStorage.getItem(CACHED_USER_KEY);
-      return cached ? JSON.parse(cached) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [loading, setLoading] = useState(true);
+  // Get initial state from cache before first render
+  const initialState = getInitialState();
+
+  const [initialized] = useState(initialState.isValid);
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(initialState.user);
+  const [userData, setUserData] = useState<FirestoreUserData | null>(
+    initialState.userData
+  );
 
   const cacheUserData = (data: FirestoreUserData) => {
     try {
@@ -76,7 +97,6 @@ const AuthProvider = ({ children }: Props) => {
   const cacheAuthState = (user: User | null) => {
     try {
       if (user) {
-        // Only cache necessary user fields, not the entire Firebase User object
         const cachedUser = {
           uid: user.uid,
           email: user.email,
@@ -105,7 +125,15 @@ const AuthProvider = ({ children }: Props) => {
 
   const fetchUserData = async (email: string) => {
     try {
-      // Try to get data from Firestore first
+      if (!navigator.onLine) {
+        const cachedData = getCachedUserData();
+        if (cachedData && cachedData.email === email) {
+          setUserData(cachedData);
+          return cachedData;
+        }
+        throw new Error("No cached data available offline");
+      }
+
       const RecordCollection = collection(db, "users");
       const recordQuery = query(RecordCollection, where("email", "==", email));
       const querySnapshot = await getDocs(recordQuery);
@@ -121,7 +149,6 @@ const AuthProvider = ({ children }: Props) => {
         return userData;
       }
 
-      // If no data found in Firestore, try cache
       const cachedData = getCachedUserData();
       if (cachedData && cachedData.email === email) {
         setUserData(cachedData);
@@ -131,13 +158,12 @@ const AuthProvider = ({ children }: Props) => {
       return null;
     } catch (error) {
       console.error("Error fetching user data:", error);
-      // If offline or error, try to get from cache
       const cachedData = getCachedUserData();
       if (cachedData && cachedData.email === email) {
         setUserData(cachedData);
         return cachedData;
       }
-      return null;
+      throw error;
     }
   };
 
@@ -197,38 +223,73 @@ const AuthProvider = ({ children }: Props) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      cacheAuthState(currentUser);
-
-      if (currentUser?.email) {
-        // Try to get cached data first while fetching from Firestore
-        const cachedData = getCachedUserData();
-        if (cachedData && cachedData.email === currentUser.email) {
-          setUserData(cachedData);
+      if (!currentUser) {
+        if (user || userData) {
+          setUser(null);
+          setUserData(null);
+          localStorage.removeItem(CACHED_USER_KEY);
+          localStorage.removeItem(CACHED_AUTH_KEY);
         }
-        // Then try to fetch fresh data
-        await fetchUserData(currentUser.email);
-      } else {
-        setUserData(null);
-        localStorage.removeItem(CACHED_USER_KEY);
-        localStorage.removeItem(CACHED_AUTH_KEY);
+        return;
       }
-      setLoading(false);
+
+      // Only set loading if we need to fetch new data
+      const cachedData = getCachedUserData();
+      const needsFetch = !(
+        cachedData?.email &&
+        currentUser.email &&
+        cachedData.email === currentUser.email
+      );
+
+      if (needsFetch) {
+        setLoading(true);
+        try {
+          if (currentUser.email) {
+            const userData = await fetchUserData(currentUser.email);
+            if (!userData) {
+              await signOut(auth);
+              setUser(null);
+              setUserData(null);
+              localStorage.removeItem(CACHED_USER_KEY);
+              localStorage.removeItem(CACHED_AUTH_KEY);
+            }
+          }
+        } catch (error) {
+          console.error("Error in auth state change:", error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        // Use cached data immediately
+        setUser(currentUser);
+        setUserData(cachedData);
+      }
     });
 
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   const authValue: AuthContextType = {
     user,
     userData,
     loading,
+    initialized,
     createUser,
     loginUser,
     logOut,
   };
+
+  // Render immediately if we have valid initial state
+  if (initialState.isValid) {
+    return (
+      <AuthContext.Provider value={authValue}>{children}</AuthContext.Provider>
+    );
+  }
+
+  // Don't render anything until we have valid state
+  if (!user || !userData) {
+    return null;
+  }
 
   return (
     <AuthContext.Provider value={authValue}>{children}</AuthContext.Provider>

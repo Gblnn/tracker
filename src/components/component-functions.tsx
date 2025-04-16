@@ -6,6 +6,9 @@ export const getBlank = async (category: string | undefined) => {
   try {
     const myHeader = [
       "name",
+      "type",
+      "state",
+      "remarks",
       "employeeCode",
       "companyName",
       "email",
@@ -44,6 +47,7 @@ export const getBlank = async (category: string | undefined) => {
       "name",
       "type",
       "state",
+      "remarks",
       "employeeCode",
       "companyName",
       "email",
@@ -103,6 +107,9 @@ export const getBlank = async (category: string | undefined) => {
 export const exportRaw = (records: any) => {
   const myHeader = [
     "name",
+    "type",
+    "state",
+    "remarks",
     "employeeCode",
     "companyName",
     "email",
@@ -223,6 +230,9 @@ export const exportDatabase = (records: any, category: string | undefined) => {
   const myHeader = [
     "id",
     "name",
+    "type",
+    "state",
+    "remarks",
     "employeeCode",
     "companyName",
     "email",
@@ -259,6 +269,9 @@ export const exportDatabase = (records: any, category: string | undefined) => {
   const Header = [
     "id",
     "name",
+    "type",
+    "state",
+    "remarks",
     "employeeCode",
     "companyName",
     "email",
@@ -292,75 +305,75 @@ export const exportDatabase = (records: any, category: string | undefined) => {
     "vt_car_10",
   ];
 
-  records.forEach((e: any) => {
-    e.civil_expiry == ""
-      ? {}
-      : (e.civil_expiry = String(moment(e.civil_expiry).format("DD/MM/YYYY")));
+  // records.forEach((e: any) => {
+  //   e.civil_expiry == ""
+  //     ? {}
+  //     : (e.civil_expiry = String(moment(e.civil_expiry).format("DD/MM/YYYY")));
 
-    e.license_expiry == ""
-      ? {}
-      : (e.license_expiry = String(
-          moment(e.license_expiry).format("DD/MM/YYYY")
-        ));
+  //   e.license_expiry == ""
+  //     ? {}
+  //     : (e.license_expiry = String(
+  //         moment(e.license_expiry).format("DD/MM/YYYY")
+  //       ));
 
-    e.medical_due_on == ""
-      ? {}
-      : (e.medical_due_on = String(
-          moment(e.medical_due_on).format("DD/MM/YYYY")
-        ));
+  //   e.medical_due_on == ""
+  //     ? {}
+  //     : (e.medical_due_on = String(
+  //         moment(e.medical_due_on).format("DD/MM/YYYY")
+  //       ));
 
-    e.passportExpiry == ""
-      ? {}
-      : (e.passportExpiry = String(
-          moment(e.passportExpiry).format("DD/MM/YYYY")
-        ));
+  //   e.passportExpiry == ""
+  //     ? {}
+  //     : (e.passportExpiry = String(
+  //         moment(e.passportExpiry).format("DD/MM/YYYY")
+  //       ));
 
-    e.vt_hse_induction == ""
-      ? {}
-      : (e.vt_hse_induction = String(
-          moment(e.vt_hse_induction).format("DD/MM/YYYY")
-        ));
+  //   e.vt_hse_induction == ""
+  //     ? {}
+  //     : (e.vt_hse_induction = String(
+  //         moment(e.vt_hse_induction).format("DD/MM/YYYY")
+  //       ));
 
-    e.vt_car_1 == ""
-      ? {}
-      : (e.vt_car_1 = String(moment(e.vt_car_1).format("DD/MM/YYYY")));
+  //   e.vt_car_1 == ""
+  //     ? {}
+  //     : (e.vt_car_1 = String(moment(e.vt_car_1).format("DD/MM/YYYY")));
 
-    e.vt_car_2 == ""
-      ? {}
-      : (e.vt_car_2 = String(moment(e.vt_car_2).format("DD/MM/YYYY")));
+  //   e.vt_car_2 == ""
+  //     ? {}
+  //     : (e.vt_car_2 = String(moment(e.vt_car_2).format("DD/MM/YYYY")));
 
-    e.vt_car_3 == ""
-      ? {}
-      : (e.vt_car_3 = String(moment(e.vt_car_3).format("DD/MM/YYYY")));
+  //   e.vt_car_3 == ""
+  //     ? {}
+  //     : (e.vt_car_3 = String(moment(e.vt_car_3).format("DD/MM/YYYY")));
 
-    e.vt_car_4 == ""
-      ? {}
-      : (e.vt_car_4 = String(moment(e.vt_car_4).format("DD/MM/YYYY")));
+  //   e.vt_car_4 == ""
+  //     ? {}
+  //     : (e.vt_car_4 = String(moment(e.vt_car_4).format("DD/MM/YYYY")));
 
-    e.vt_car_5 == ""
-      ? {}
-      : (e.vt_car_5 = String(moment(e.vt_car_5).format("DD/MM/YYYY")));
+  //   e.vt_car_5 == ""
+  //     ? {}
+  //     : (e.vt_car_5 = String(moment(e.vt_car_5).format("DD/MM/YYYY")));
 
-    e.vt_car_6 == ""
-      ? {}
-      : (e.vt_car_6 = String(moment(e.vt_car_6).format("DD/MM/YYYY")));
+  //   e.vt_car_6 == ""
+  //     ? {}
+  //     : (e.vt_car_6 = String(moment(e.vt_car_6).format("DD/MM/YYYY")));
 
-    e.vt_car_7 == ""
-      ? {}
-      : (e.vt_car_7 = String(moment(e.vt_car_7).format("DD/MM/YYYY")));
+  //   e.vt_car_7 == ""
+  //     ? {}
+  //     : (e.vt_car_7 = String(moment(e.vt_car_7).format("DD/MM/YYYY")));
 
-    e.vt_car_8 == ""
-      ? {}
-      : (e.vt_car_8 = String(moment(e.vt_car_8).format("DD/MM/YYYY")));
+  //   e.vt_car_8 == ""
+  //     ? {}
+  //     : (e.vt_car_8 = String(moment(e.vt_car_8).format("DD/MM/YYYY")));
 
-    e.vt_car_9 == ""
-      ? {}
-      : (e.vt_car_9 = String(moment(e.vt_car_9).format("DD/MM/YYYY")));
+  //   e.vt_car_9 == ""
+  //     ? {}
+  //     : (e.vt_car_9 = String(moment(e.vt_car_9).format("DD/MM/YYYY")));
 
-    e.vt_car_10 == ""
-      ? {}
-      : (e.vt_car_10 = String(moment(e.vt_car_10).format("DD/MM/YYYY")));
-  });
+  //   e.vt_car_10 == ""
+  //     ? {}
+  //     : (e.vt_car_10 = String(moment(e.vt_car_10).format("DD/MM/YYYY")));
+  // });
 
   const worksheet = XLSX.utils.json_to_sheet(records, {
     header: category == "personal" ? Header : myHeader,

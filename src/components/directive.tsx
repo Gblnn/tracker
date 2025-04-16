@@ -10,7 +10,7 @@ import {
   LockKeyholeIcon,
   PenLine,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import DropDown from "./dropdown";
 import { motion } from "framer-motion";
@@ -54,22 +54,37 @@ interface Props {
 }
 
 export default function Directive(props: Props) {
-  const [selected, setSelected] = useState(false);
+  const [internalSelected, setInternalSelected] = useState(false);
+
+  // Sync internal state with parent's selected prop
+  useEffect(() => {
+    setInternalSelected(!!props.selected);
+  }, [props.selected]);
+
+  const handleSelect = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent Link navigation
+    if (props.selectable) {
+      const newState = !internalSelected;
+      setInternalSelected(newState);
+      if (props.onSelect) {
+        props.onSelect();
+      }
+    }
+  };
 
   return (
     <Link
-      onClick={() => (props.selectable ? setSelected(!selected) : null)}
+      onClick={(e) => (props.selectable ? handleSelect(e) : props.onClick?.(e))}
       to={props.to}
       className={props.className}
       style={{
         display: "flex",
-
         opacity: props.archived ? 0.5 : 1,
         height: props.height ? props.height : "",
       }}
     >
       <button
-        onClick={props.selectable ? props.onSelect : props.onClick}
+        onClick={(e) => e.preventDefault()} // Prevent double firing
         style={{
           paddingLeft: "1rem",
           gap: "0.5rem",
@@ -99,11 +114,9 @@ export default function Directive(props: Props) {
                   height={"1.75rem"}
                   className="check-square"
                   fill={
-                    selected || props.selected
-                      ? "dodgerblue"
-                      : "rgba(100 100 100/ 50%)"
+                    internalSelected ? "dodgerblue" : "rgba(100 100 100/ 50%)"
                   }
-                  stroke={selected || props.selected ? "white" : "none"}
+                  stroke={internalSelected ? "white" : "none"}
                 />
               </motion.div>
             </div>

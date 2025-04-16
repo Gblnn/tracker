@@ -24,10 +24,12 @@ export default function Login() {
   const handleLoginIn = async () => {
     try {
       setLoading(true);
+      // Set persistence before login attempt
       await setPersistence(
         auth,
         stayLoggedIn ? browserLocalPersistence : browserSessionPersistence
       );
+
       const { userData } = await loginUser(email, password);
 
       if (!userData) {
@@ -37,6 +39,11 @@ export default function Login() {
       // Store user data in localStorage for components that still rely on it
       localStorage.setItem("userRole", userData.role);
       localStorage.setItem("userEmail", userData.email);
+
+      // Force persistence check after successful login
+      if (stayLoggedIn) {
+        await setPersistence(auth, browserLocalPersistence);
+      }
 
       navigate("/index");
     } catch (err: any) {

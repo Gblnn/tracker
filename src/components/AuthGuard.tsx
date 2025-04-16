@@ -1,30 +1,48 @@
 import { useAuth } from "./AuthProvider";
 import { Navigate, useLocation } from "react-router-dom";
 import { LoadingOutlined } from "@ant-design/icons";
+import { useEffect, useState } from "react";
 
-const CACHED_USER_KEY = "cached_user_data";
+const LOADING_TIMEOUT = 5000; // 5 seconds timeout
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, userData, loading } = useAuth();
+  const { user, userData, loading, initialized } = useAuth();
   const location = useLocation();
+  const [isTimedOut, setIsTimedOut] = useState(false);
 
-  // Helper function to check if we have valid cached data
-  const getCachedUserData = () => {
-    try {
-      const cached = localStorage.getItem(CACHED_USER_KEY);
-      if (!cached) return null;
-
-      const parsedData = JSON.parse(cached);
-      // Verify the cached data matches the current user
-      return parsedData && parsedData.email === user?.email ? parsedData : null;
-    } catch (error) {
-      console.error("Error reading cached user data:", error);
-      return null;
+  // Add timeout to prevent infinite loading
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (loading && !isTimedOut) {
+      timeoutId = setTimeout(() => {
+        setIsTimedOut(true);
+      }, LOADING_TIMEOUT);
     }
-  };
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [loading, isTimedOut]);
 
-  // Show loading spinner while checking auth state
-  if (loading) {
+  // If we have valid auth state and we're on the login page, redirect immediately
+  if (user && userData && location.pathname === "/") {
+    return <Navigate to="/index" replace />;
+  }
+
+  // For protected routes with valid auth, render immediately
+  const publicRoutes = ["/", "/user-reset", "/request-access"];
+  if (user && userData && !publicRoutes.includes(location.pathname)) {
+    return <>{children}</>;
+  }
+
+  // For public routes with no auth required
+  if (publicRoutes.includes(location.pathname)) {
+    return <>{children}</>;
+  }
+
+  // Show loading state only if explicitly loading
+  if (loading && !isTimedOut) {
     return (
       <div
         style={{
@@ -40,17 +58,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If user is authenticated and we're on the login page, redirect to index
-  // In offline mode, we'll use cached data if available
-  if (user && location.pathname === "/") {
-    const cachedData = getCachedUserData();
-    if (userData || cachedData) {
-      return <Navigate to="/index" replace />;
-    }
-  }
-
-  // If user is not authenticated and we're not on public routes, redirect to login
-  const publicRoutes = ["/", "/user-reset", "/request-access"];
+  // If no valid auth state and not on a public route, redirect to login
   if (!user && !publicRoutes.includes(location.pathname)) {
     return <Navigate to="/" replace />;
   }

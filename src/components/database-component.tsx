@@ -332,7 +332,7 @@ export default function DbComponent(props: Props) {
   useEffect(() => {
     window.addEventListener("online", () => {
       setStatus("online");
-      fetchData();
+          fetchData();
     });
     window.addEventListener("offline", () => {
       setStatus("offline");
@@ -348,7 +348,7 @@ export default function DbComponent(props: Props) {
 
   useEffect(() => {
     if (status === "online") {
-      fetchData();
+          fetchData();
     } else if (status === "offline") {
       message.warning({
         content: "You are offline. Some features may be limited.",
@@ -428,7 +428,7 @@ export default function DbComponent(props: Props) {
             change.type === "modified" ||
             change.type === "removed"
           ) {
-            fetchData();
+    fetchData();
           }
         });
       }
@@ -444,7 +444,7 @@ export default function DbComponent(props: Props) {
       setfetchingData(true);
       const RecordCollection = collection(db, "records");
 
-      // Combine queries into Promise.all for parallel execution
+      // Try to get data from cache first
       const [recordsSnapshot, accessData] = await Promise.all([
         getDocs(
           query(
@@ -486,12 +486,26 @@ export default function DbComponent(props: Props) {
         query(RecordCollection, where("type", "in", [props.dbCategory, "omni"]))
       );
       setTotalRecords(countSnapshot.size);
+
+      // Show offline warning if needed
+      if (!navigator.onLine) {
+        message.warning({
+          content: "You are offline. Showing cached data.",
+          duration: 0,
+          key: "offline-warning",
+        });
+      } else {
+        message.destroy("offline-warning");
+      }
+
+      setStatus(navigator.onLine ? "online" : "offline");
     } catch (error: any) {
       console.error("Error fetching initial data:", error);
       message.error({
         content: `Error loading data: ${error.message}`,
         duration: 3,
       });
+      setStatus("error");
     } finally {
       setfetchingData(false);
       setIsInitialLoad(false);
@@ -524,9 +538,9 @@ export default function DbComponent(props: Props) {
 
       if (loadMore && lastDoc) {
         recordQuery = query(
-          RecordCollection,
-          orderBy(sortby),
-          where("type", "in", [props.dbCategory, "omni"]),
+        RecordCollection,
+        orderBy(sortby),
+        where("type", "in", [props.dbCategory, "omni"]),
           startAfter(lastDoc),
           limit(pageSize)
         );
@@ -556,7 +570,7 @@ export default function DbComponent(props: Props) {
       if (loadMore) {
         setRecords((prevRecords: Record[]) => [...prevRecords, ...fetchedData]);
       } else {
-        setRecords(fetchedData);
+      setRecords(fetchedData);
       }
 
       setChecked([]);
@@ -829,9 +843,29 @@ export default function DbComponent(props: Props) {
 
   const exportDB = async () => {
     setLoading(true);
+    try {
+      // Fetch all records
+      const RecordCollection = collection(db, "records");
+      const recordQuery = query(
+        RecordCollection,
+        where("type", "in", [props.dbCategory, "omni"]),
+        orderBy(sortby)
+      );
+
+      const querySnapshot = await getDocs(recordQuery);
+      const allRecords: Record[] = [];
+      querySnapshot.forEach((doc: any) => {
+        allRecords.push({ id: doc.id, ...doc.data() });
+      });
+
     await AddHistory("export", "", "", "Database Export");
     setLoading(false);
-    exportDatabase(records, props.dbCategory);
+      exportDatabase(allRecords, props.dbCategory);
+    } catch (err: any) {
+      console.error("Error exporting database:", err);
+      message.error("Failed to export database");
+      setLoading(false);
+    }
   };
 
   const exportRawDB = async () => {
@@ -1440,19 +1474,16 @@ export default function DbComponent(props: Props) {
 
   const handleSelect = (id: any) => {
     const index = checked.indexOf(id);
-    // console.log(index, id)
-
-    if (index == -1) {
-      setChecked((data: any) => [...data, id]);
+    if (index === -1) {
+      setChecked((prev: any) => [...prev, id]);
     } else {
-      const newVal = [...checked];
-      newVal.splice(index, 1);
-      setChecked(newVal);
-
-      // const newVal = [...checked]
-      // checked.filter((i:any) => i != id);
-      // setChecked(newVal)
+      setChecked((prev: any) => prev.filter((item: any) => item !== id));
     }
+    // Update selectAll state based on whether all items are now selected
+    const allSelected = records.every(
+      (record: any) => checked.includes(record.id) || record.id === id
+    );
+    setSelectAll(allSelected);
   };
 
   const handleBulkDelete = async () => {
@@ -1711,6 +1742,13 @@ export default function DbComponent(props: Props) {
   //   }
   // };
 
+  // Add effect to handle sort changes
+  useEffect(() => {
+    if (!isInitialLoad) {
+      fetchData();
+    }
+  }, [sortby]);
+
   return (
     <>
       {status == "false" ? (
@@ -1808,13 +1846,15 @@ export default function DbComponent(props: Props) {
                 <div
                   className="transitions"
                   onClick={() => {
-                    setSelectAll(!selectAll);
-                    !selectAll ? setSelected(true) : setSelected(false);
-                    !selectAll
-                      ? records.forEach((item: any) => {
-                          setChecked((data: any) => [...data, item.id]);
-                        })
-                      : setChecked([]);
+                    const newSelectAll = !selectAll;
+                    setSelectAll(newSelectAll);
+                    if (newSelectAll) {
+                      const allIds = records.map((item: any) => item.id);
+                      setChecked(allIds);
+                    } else {
+                      setChecked([]);
+                    }
+                    setSelected(newSelectAll);
                   }}
                   style={{
                     height: "2.25rem",
@@ -1990,13 +2030,19 @@ export default function DbComponent(props: Props) {
                     }}
                   />
 
-                  <Select defaultValue="name" onValueChange={setSortBy}>
+                  <Select
+                    value={sortby}
+                    onValueChange={(value) => {
+                      setSortBy(value);
+                      setLastDoc(null); // Reset pagination when sort changes
+                    }}
+                  >
                     <SelectTrigger
                       style={{ width: "fit-content", background: "" }}
                     >
-                      {sortby == "name" ? (
+                      {sortby === "name" ? (
                         <ArrowDownAZ width={"1.25rem"} color="dodgerblue" />
-                      ) : sortby == "created_on" ? (
+                      ) : sortby === "created_on" ? (
                         <ListStart width={"1.25rem"} color="dodgerblue" />
                       ) : (
                         <ArrowDown01 width={"1.25rem"} color="dodgerblue" />
@@ -2009,12 +2055,6 @@ export default function DbComponent(props: Props) {
                       >
                         Name
                       </SelectItem>
-                      {/* <SelectItem
-                        style={{ justifyContent: "flex-start" }}
-                        value="employeeCode"
-                      >
-                        Code
-                      </SelectItem> */}
                       <SelectItem
                         style={{ justifyContent: "flex-start" }}
                         value="created_on"
@@ -2790,8 +2830,7 @@ export default function DbComponent(props: Props) {
           }}
           bigDate={() =>
             message.info(
-              "Last Modified : " +
-                String(moment(new Date(modified_on)).format("LLL"))
+              "Last Modified : " + String(moment(modified_on).format("LLL"))
             )
           }
           created_on={
@@ -2841,7 +2880,7 @@ export default function DbComponent(props: Props) {
                           color: "",
                         }}
                       >
-                        <Archive width={"1.15rem"} />
+                        <Archive width={"1.1rem"} />
                       </button>
                     </Tooltip>
                   )}
@@ -4716,9 +4755,9 @@ export default function DbComponent(props: Props) {
         />
 
         <DefaultDialog
+          destructive
           open={deleteLeaveDialog}
           title={"Delete Leave?"}
-          destructive
           OkButtonText="Delete"
           updating={loading}
           disabled={loading}
