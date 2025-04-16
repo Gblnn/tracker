@@ -1671,45 +1671,45 @@ export default function DbComponent(props: Props) {
       : message.info("Omniscience Disabled");
   };
 
-  const verifyAccess = async () => {
-    try {
-      setLoading(true);
-      const RecordCollection = collection(db, "users");
-      const recordQuery = query(
-        RecordCollection,
-        where("email", "==", windowName)
-      );
-      const querySnapshot = await getDocs(recordQuery);
-      const fetchedData: any = [];
-      querySnapshot.forEach((doc: any) => {
-        fetchedData.push({ id: doc.id, ...doc.data() });
-      });
-      setLoading(false);
-      fetchedData[0].editor == "true" ? setAccess(true) : setAccess(false);
-      fetchedData[0].sensitive_data == "true"
-        ? setSensitiveDataAccess(true)
-        : setSensitiveDataAccess(false);
-      fetchedData[0].editor == "true"
-        ? setEditAccess(true)
-        : setEditAccess(false);
-    } catch (error: any) {
-      message.error(String(error));
-    }
-  };
+  // const verifyAccess = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const RecordCollection = collection(db, "users");
+  //     const recordQuery = query(
+  //       RecordCollection,
+  //       where("email", "==", windowName)
+  //     );
+  //     const querySnapshot = await getDocs(recordQuery);
+  //     const fetchedData: any = [];
+  //     querySnapshot.forEach((doc: any) => {
+  //       fetchedData.push({ id: doc.id, ...doc.data() });
+  //     });
+  //     setLoading(false);
+  //     fetchedData[0].editor == "true" ? setAccess(true) : setAccess(false);
+  //     fetchedData[0].sensitive_data == "true"
+  //       ? setSensitiveDataAccess(true)
+  //       : setSensitiveDataAccess(false);
+  //     fetchedData[0].editor == "true"
+  //       ? setEditAccess(true)
+  //       : setEditAccess(false);
+  //   } catch (error: any) {
+  //     message.error(String(error));
+  //   }
+  // };
 
-  const fetchTotalRecords = async () => {
-    try {
-      const RecordCollection = collection(db, "records");
-      const countQuery = query(
-        RecordCollection,
-        where("type", "in", [props.dbCategory, "omni"])
-      );
-      const snapshot = await getDocs(countQuery);
-      setTotalRecords(snapshot.size);
-    } catch (error) {
-      console.error("Error fetching total records:", error);
-    }
-  };
+  // const fetchTotalRecords = async () => {
+  //   try {
+  //     const RecordCollection = collection(db, "records");
+  //     const countQuery = query(
+  //       RecordCollection,
+  //       where("type", "in", [props.dbCategory, "omni"])
+  //     );
+  //     const snapshot = await getDocs(countQuery);
+  //     setTotalRecords(snapshot.size);
+  //   } catch (error) {
+  //     console.error("Error fetching total records:", error);
+  //   }
+  // };
 
   return (
     <>
