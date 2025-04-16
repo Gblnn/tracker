@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 const LOADING_TIMEOUT = 5000; // 5 seconds timeout
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, userData, loading, initialized } = useAuth();
+  const { user, userData, loading } = useAuth();
   const location = useLocation();
   const [isTimedOut, setIsTimedOut] = useState(false);
 
