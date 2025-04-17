@@ -29,62 +29,64 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,json}"],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/firestore\.googleapis\.com\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "firebase-data",
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 24 * 60 * 60, // 24 hours
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "google-fonts",
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-              },
-            },
-          },
-          {
-            urlPattern: /\.(?:js|css)$/i,
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "static-resources",
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 24 * 60 * 60, // 24 hours
-              },
-            },
-          },
-          {
-            urlPattern: new RegExp("^https://.*"),
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "external-resources",
-              networkTimeoutSeconds: 10,
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 24 * 60 * 60, // 24 hours
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-        ],
+        // runtimeCaching: [
+        //   {
+        //     urlPattern:
+        //       /^https:\/\/firestore\.googleapis\.com\/(?!.*\/Listen\/channel).*/i,
+        //     handler: "NetworkFirst",
+        //     options: {
+        //       cacheName: "firebase-data",
+        //       expiration: {
+        //         maxEntries: 100,
+        //         maxAgeSeconds: 24 * 60 * 60, // 24 hours
+        //       },
+        //       cacheableResponse: {
+        //         statuses: [0, 200],
+        //       },
+        //     },
+        //   },
+        //   {
+        //     urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+        //     handler: "CacheFirst",
+        //     options: {
+        //       cacheName: "google-fonts",
+        //       expiration: {
+        //         maxEntries: 10,
+        //         maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+        //       },
+        //     },
+        //   },
+        //   {
+        //     urlPattern: /\.(?:js|css)$/i,
+        //     handler: "StaleWhileRevalidate",
+        //     options: {
+        //       cacheName: "static-resources",
+        //       expiration: {
+        //         maxEntries: 50,
+        //         maxAgeSeconds: 24 * 60 * 60, // 24 hours
+        //       },
+        //     },
+        //   },
+        //   {
+        //     urlPattern: new RegExp("^https://.*"),
+        //     handler: "NetworkFirst",
+        //     options: {
+        //       cacheName: "external-resources",
+        //       networkTimeoutSeconds: 10,
+        //       expiration: {
+        //         maxEntries: 50,
+        //         maxAgeSeconds: 24 * 60 * 60, // 24 hours
+        //       },
+        //       cacheableResponse: {
+        //         statuses: [0, 200],
+        //       },
+        //     },
+        //   },
+        // ],
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
+        disableDevLogs: true,
       },
       devOptions: {
         enabled: true,

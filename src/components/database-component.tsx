@@ -327,7 +327,7 @@ export default function DbComponent(props: Props) {
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
 
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  // const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Online/Offline handling
   useEffect(() => {
@@ -501,36 +501,26 @@ export default function DbComponent(props: Props) {
       setStatus(navigator.onLine ? "online" : "offline");
     } catch (error: any) {
       console.error("Error fetching initial data:", error);
-      message.error({
-        content: `Error loading data: ${error.message}`,
-        duration: 3,
-      });
       setStatus("error");
+      message.error(`Error fetching data: ${error.message}`);
     } finally {
       setfetchingData(false);
-      setIsInitialLoad(false);
     }
   };
 
-  // Initial load
+  // Initial load - only fetch essential data
   useEffect(() => {
     fetchInitialData();
   }, []);
 
-  // Secondary data load after initial render
+  // Handle sort changes
   useEffect(() => {
-    if (!isInitialLoad) {
-      // Load additional data only after initial render
-      Promise.all([fetchLeave(), fetchSalary(), fetchAllowance()]).catch(
-        (error) => {
-          console.error("Error loading secondary data:", error);
-        }
-      );
-    }
-  }, [isInitialLoad]);
+    fetchData();
+  }, [sortby]);
 
   // Modify the existing fetchData function to not verify access again
   const fetchData = async (loadMore = false) => {
+    console.log("Record Fetch");
     try {
       setfetchingData(true);
       const RecordCollection = collection(db, "records");
@@ -632,6 +622,7 @@ export default function DbComponent(props: Props) {
   }, [hasMore, fetchingData, lastDoc]);
 
   const fetchSalary = async () => {
+    console.log("Salary Fetch");
     setFetchingSalary(true);
     const salaryQuery = query(
       collection(db, "salary-record"),
@@ -648,6 +639,7 @@ export default function DbComponent(props: Props) {
   };
 
   const fetchAllowance = async () => {
+    console.log("Allowance Fetch");
     setFetchingAllowance(true);
     const allowanceQuery = query(
       collection(db, "allowance-record"),
@@ -663,75 +655,8 @@ export default function DbComponent(props: Props) {
     setFetchingAllowance(false);
   };
 
-  const addNewSalary = async () => {
-    setLoading(true);
-    try {
-      await addDoc(collection(db, "salary-record"), {
-        employeeID: doc_id,
-        created_on: new Date(),
-        salary: newSalary,
-      });
-      await updateDoc(doc(db, "records", doc_id), { salaryBasic: newSalary });
-
-      AddHistory("updation", newSalary, salaryBasic, "salary");
-
-      setSalaryBasic(newSalary);
-      fetchSalary();
-      setNewSalary(0);
-      setLoading(false);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const addNewAllowance = async () => {
-    setLoading(true);
-    try {
-      await addDoc(collection(db, "allowance-record"), {
-        employeeID: doc_id,
-        created_on: new Date(),
-        allowance: newAllowance,
-      });
-      await updateDoc(doc(db, "records", doc_id), { allowance: newAllowance });
-
-      AddHistory("updation", newAllowance, allowance, "allowance");
-      setAllowance(newAllowance);
-      fetchAllowance();
-      setNewAllowance(0);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-    }
-  };
-
-  const deleteSalary = async () => {
-    setLoading(true);
-    await deleteDoc(doc(db, "salary-record", salaryID));
-    setId(doc_id);
-
-    setDeleteSalaryDialog(false);
-    if (salaryList.length == 1) {
-      setSalaryList([]);
-      // await updateDoc(doc(db, 'record', doc_id),{salaryBasic:initialSalary})
-    }
-
-    AddHistory("deletion", salaryBasic, null, "salary");
-    setLoading(false);
-    fetchSalary();
-  };
-
-  const deleteAllowance = async () => {
-    setLoading(true);
-    await deleteDoc(doc(db, "allowance-record", allowanceID));
-    AddHistory("deletion", allowance, null, "allowance");
-    setId(doc_id);
-    setLoading(false);
-    fetchAllowance();
-    setDeleteAllowanceDialog(false);
-    allowanceList.length == 1 && setAllowanceList([]);
-  };
-
   const fetchLeave = async () => {
+    console.log("Leave Fetch");
     setLeaves(0);
     setFetchingLeave(true);
     const leaveQuery = query(
@@ -1001,6 +926,8 @@ export default function DbComponent(props: Props) {
         : initialAllowance
         ? initialAllowance
         : "",
+      salaryBasic: editedSalarybasic ? editedSalarybasic : "",
+      allowance: editedAllowance ? editedAllowance : "",
       contact: editedContact ? editedContact : contact ? contact : "",
       modified_on: new Date(),
     });
@@ -1737,52 +1664,98 @@ export default function DbComponent(props: Props) {
       : message.info("Omniscience Disabled");
   };
 
-  // const verifyAccess = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const RecordCollection = collection(db, "users");
-  //     const recordQuery = query(
-  //       RecordCollection,
-  //       where("email", "==", windowName)
-  //     );
-  //     const querySnapshot = await getDocs(recordQuery);
-  //     const fetchedData: any = [];
-  //     querySnapshot.forEach((doc: any) => {
-  //       fetchedData.push({ id: doc.id, ...doc.data() });
-  //     });
-  //     setLoading(false);
-  //     fetchedData[0].editor == "true" ? setAccess(true) : setAccess(false);
-  //     fetchedData[0].sensitive_data == "true"
-  //       ? setSensitiveDataAccess(true)
-  //       : setSensitiveDataAccess(false);
-  //     fetchedData[0].editor == "true"
-  //       ? setEditAccess(true)
-  //       : setEditAccess(false);
-  //   } catch (error: any) {
-  //     message.error(String(error));
-  //   }
-  // };
-
-  // const fetchTotalRecords = async () => {
-  //   try {
-  //     const RecordCollection = collection(db, "records");
-  //     const countQuery = query(
-  //       RecordCollection,
-  //       where("type", "in", [props.dbCategory, "omni"])
-  //     );
-  //     const snapshot = await getDocs(countQuery);
-  //     setTotalRecords(snapshot.size);
-  //   } catch (error) {
-  //     console.error("Error fetching total records:", error);
-  //   }
-  // };
-
   // Add effect to handle sort changes
   useEffect(() => {
-    if (!isInitialLoad) {
-      fetchData();
-    }
+    fetchData();
   }, [sortby]);
+
+  // Dialog open handlers with list resets
+  const handleSalaryDialogOpen = () => {
+    setSalaryDialog(true);
+    setSalaryList([]); // Reset the list before fetching
+    fetchSalary();
+  };
+
+  const handleAllowanceDialogOpen = () => {
+    setAllowanceDialog(true);
+    setAllowanceList([]); // Reset the list before fetching
+    fetchAllowance();
+  };
+
+  const handleLeaveDialogOpen = () => {
+    setLeaveLog(true);
+    setLeaveList([]); // Reset the list before fetching
+    setId(doc_id);
+    fetchLeave();
+  };
+
+  const addNewSalary = async () => {
+    setLoading(true);
+    try {
+      await addDoc(collection(db, "salary-record"), {
+        employeeID: doc_id,
+        created_on: new Date(),
+        salary: newSalary,
+      });
+      await updateDoc(doc(db, "records", doc_id), { salaryBasic: newSalary });
+
+      await AddHistory("updation", newSalary, salaryBasic, "salary");
+
+      setSalaryBasic(newSalary);
+      fetchSalary();
+      setNewSalary(0);
+      setLoading(false);
+    } catch (error) {
+      console.log(error);
+      setLoading(false);
+    }
+  };
+
+  const addNewAllowance = async () => {
+    setLoading(true);
+    try {
+      await addDoc(collection(db, "allowance-record"), {
+        employeeID: doc_id,
+        created_on: new Date(),
+        allowance: newAllowance,
+      });
+      await updateDoc(doc(db, "records", doc_id), { allowance: newAllowance });
+
+      await AddHistory("updation", newAllowance, allowance, "allowance");
+      setAllowance(newAllowance);
+      fetchAllowance();
+      setNewAllowance(0);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+    }
+  };
+
+  const deleteSalary = async () => {
+    setLoading(true);
+    await deleteDoc(doc(db, "salary-record", salaryID));
+    setId(doc_id);
+
+    setDeleteSalaryDialog(false);
+    if (salaryList.length == 1) {
+      setSalaryList([]);
+    }
+
+    await AddHistory("deletion", salaryBasic, null, "salary");
+    setLoading(false);
+    fetchSalary();
+  };
+
+  const deleteAllowance = async () => {
+    setLoading(true);
+    await deleteDoc(doc(db, "allowance-record", allowanceID));
+    await AddHistory("deletion", allowance, null, "allowance");
+    setId(doc_id);
+    setLoading(false);
+    fetchAllowance();
+    setDeleteAllowanceDialog(false);
+    allowanceList.length == 1 && setAllowanceList([]);
+  };
 
   return (
     <>
@@ -2786,7 +2759,7 @@ export default function DbComponent(props: Props) {
                   </p>
                 )}
 
-                <p>
+                {/* <p>
                   {Math.sign((salaryBasic - initialSalary) / initialSalary) ==
                   -1 ? (
                     <ArrowDown
@@ -2803,7 +2776,7 @@ export default function DbComponent(props: Props) {
                       color="lightgreen"
                     />
                   )}
-                </p>
+                </p> */}
               </div>
             </div>
           }
@@ -2830,16 +2803,13 @@ export default function DbComponent(props: Props) {
                 {Math.abs((allowance - initialAllowance) / initialAllowance) >
                   0 && (
                   <p style={{ opacity: 0.5 }}>
-                    {"(" +
-                      Math.abs(
-                        (allowance - initialAllowance) / initialAllowance
-                      ) +
-                      "%" +
-                      ")"}
+                    {Math.abs(
+                      (allowance - initialAllowance) / initialAllowance
+                    ) + "%"}
                   </p>
                 )}
 
-                <p>
+                {/* <p>
                   {Math.sign(
                     (allowance - initialAllowance) / initialAllowance
                   ) == -1 ? (
@@ -2857,26 +2827,13 @@ export default function DbComponent(props: Props) {
                       color="lightgreen"
                     />
                   )}
-                </p>
+                </p> */}
               </div>
             </div>
           }
-          tag3OnClick={() => {
-            setSalaryDialog(true);
-            fetchSalary();
-            setSalaryList([]);
-          }}
-          tag4OnClick={() => {
-            setAllowanceDialog(true);
-            fetchAllowance();
-            setAllowanceList([]);
-          }}
-          onBottomTagClick={() => {
-            setLeaveLog(true);
-            fetchLeave();
-            setLeaveList([]);
-            setId(doc_id);
-          }}
+          tag3OnClick={handleSalaryDialogOpen}
+          tag4OnClick={handleAllowanceDialogOpen}
+          onBottomTagClick={handleLeaveDialogOpen}
           // bottomTagValue={leaves}
           bottomValueLoading={fetchingLeave}
           titleIcon={

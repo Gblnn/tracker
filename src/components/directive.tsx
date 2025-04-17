@@ -188,11 +188,11 @@ export default function Directive(props: Props) {
                     {props.title}
                     {props.expiring && (
                       <Circle
-                        color="salmon"
+                        color="crimson"
                         width={"0.5rem"}
                         height={"0.5rem"}
-                        className="animate-pulse"
-                        fill="salmon"
+                        // className="animate-bounce"
+                        fill="crimson"
                       />
                     )}
                   </div>
