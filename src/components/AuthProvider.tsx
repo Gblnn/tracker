@@ -98,7 +98,7 @@ const AuthProvider = ({ children }: Props) => {
   const [userData, setUserData] = useState<FirestoreUserData | null>(
     initialState.userData
   );
-  const [cachedAuthState, setCachedAuthState] = useState(false);
+  const [cachedAuthState] = useState(false);
 
   const cacheUserData = (data: FirestoreUserData) => {
     try {

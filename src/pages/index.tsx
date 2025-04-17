@@ -26,7 +26,7 @@ export default function Index() {
   const [loading, setLoading] = useState(false);
   const [access, setAccess] = useState(false);
   const [admin, setAdmin] = useState(false);
-  const { userData, logOut } = useAuth();
+  const { userData, logoutUser: logOut } = useAuth();
 
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
