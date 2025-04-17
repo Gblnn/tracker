@@ -11,10 +11,11 @@ import {
 import { motion } from "framer-motion";
 import { ChevronRight, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function Login() {
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { loginUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,8 +47,9 @@ export default function Login() {
         await setPersistence(auth, browserLocalPersistence);
       }
 
-      // Use window.location.href instead of navigate to ensure a full page reload
-      window.location.href = "/index";
+      // Navigate to the return path or index, using replace to avoid history stack
+      const returnPath = location.state?.returnPath || "/index";
+      navigate(returnPath, { replace: true });
     } catch (err: any) {
       const errorMessage = err.message;
       console.error("Login error:", err);

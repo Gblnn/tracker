@@ -4,7 +4,7 @@ import { LoadingOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 
 const LOADING_TIMEOUT = 5000; // 5 seconds timeout
-const PUBLIC_ROUTES = ["/", "/user-reset", "/request-access"];
+const PUBLIC_ROUTES = ["/user-reset", "/request-access"]; // Remove "/" from public routes
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, userData, loading } = useAuth();
@@ -43,19 +43,26 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If authenticated and on login page, redirect to index
-  if (user && userData && location.pathname === "/") {
-    return <Navigate to="/index" replace />;
-  }
-
-  // For public routes, allow access
+  // For public routes, allow access regardless of auth state
   if (PUBLIC_ROUTES.includes(location.pathname)) {
     return <>{children}</>;
   }
 
-  // For protected routes, require authentication
+  // Handle login page (/) access
+  if (location.pathname === "/") {
+    // If authenticated, redirect to index
+    if (user && userData) {
+      return <Navigate to="/index" replace />;
+    }
+    // If not authenticated, show login page
+    return <>{children}</>;
+  }
+
+  // For all other routes, require authentication
   if (!user || !userData) {
-    return <Navigate to="/" replace />;
+    // Save the attempted path to redirect back after login
+    const returnPath = location.pathname !== "/" ? location.pathname : "/index";
+    return <Navigate to="/" replace state={{ returnPath }} />;
   }
 
   // If all checks pass, render the protected route

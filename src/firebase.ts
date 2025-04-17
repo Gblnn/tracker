@@ -20,20 +20,29 @@ const firebaseConfig = {
   appId: "1:834882723630:web:f8efe9cbbfad7e69bd64bf",
 };
 
-// Initialize Firebase
-export const app = initializeApp(firebaseConfig);
+// Initialize Firebase with performance settings
+export const app = initializeApp(firebaseConfig, {
+  automaticDataCollectionEnabled: false, // Only enable data collection when needed
+});
 
-// Initialize Firestore with multi-tab persistence
+// Initialize Firestore with optimized persistence settings
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager(),
+    cacheSizeBytes: 50 * 1024 * 1024, // 50MB cache size
   }),
+  experimentalForceLongPolling: false, // Use WebSocket when possible
 });
 
-export const storage = getStorage();
-export const auth = getAuth();
+// Initialize storage with custom settings
+export const storage = getStorage(app);
 
-// Set default persistence for Auth
+// Configure storage settings after initialization
+storage.maxOperationRetryTime = 15000; // 15 seconds max retry
+
+export const auth = getAuth(app);
+
+// Set default persistence for Auth with error handling
 setPersistence(auth, browserLocalPersistence).catch((err) => {
   console.error("Error setting auth persistence:", err);
 });

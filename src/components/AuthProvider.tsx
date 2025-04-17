@@ -10,6 +10,7 @@ import {
 import { collection, getDocs, query, where } from "firebase/firestore";
 import PropTypes from "prop-types";
 import { createContext, useContext, useEffect, useState } from "react";
+import { LoadingOutlined } from "@ant-design/icons";
 
 interface FirestoreUserData {
   id: string;
@@ -79,8 +80,8 @@ const AuthProvider = ({ children }: Props) => {
   // Get initial state from cache before first render
   const initialState = getInitialState();
 
-  const [initialized] = useState(initialState.isValid);
-  const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(initialState.isValid);
+  const [loading, setLoading] = useState(!initialState.isValid); // Only show loading if no valid cache
   const [user, setUser] = useState<User | null>(initialState.user);
   const [userData, setUserData] = useState<FirestoreUserData | null>(
     initialState.userData
@@ -234,10 +235,12 @@ const AuthProvider = ({ children }: Props) => {
           localStorage.removeItem(CACHED_USER_KEY);
           localStorage.removeItem(CACHED_AUTH_KEY);
         }
+        setLoading(false);
+        setInitialized(true);
         return;
       }
 
-      // Only set loading if we need to fetch new data
+      // Only set loading if we need to fetch new data and don't have valid cache
       const cachedData = getCachedUserData();
       const needsFetch = !(
         cachedData?.email &&
@@ -245,7 +248,7 @@ const AuthProvider = ({ children }: Props) => {
         cachedData.email === currentUser.email
       );
 
-      if (needsFetch) {
+      if (needsFetch && !initialState.isValid) {
         setLoading(true);
         try {
           if (currentUser.email) {
@@ -256,6 +259,9 @@ const AuthProvider = ({ children }: Props) => {
               setUserData(null);
               localStorage.removeItem(CACHED_USER_KEY);
               localStorage.removeItem(CACHED_AUTH_KEY);
+            } else {
+              setUser(currentUser);
+              setUserData(userData);
             }
           }
         } catch (error) {
@@ -267,11 +273,30 @@ const AuthProvider = ({ children }: Props) => {
         // Use cached data immediately
         setUser(currentUser);
         setUserData(cachedData);
+        setLoading(false);
       }
+      setInitialized(true);
     });
 
     return () => unsubscribe();
   }, []);
+
+  // Only show loading state if we're actually loading and not initialized
+  if (loading && !initialized) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          background: "linear-gradient(darkslateblue, midnightblue)",
+        }}
+      >
+        <LoadingOutlined style={{ fontSize: 24, color: "white" }} />
+      </div>
+    );
+  }
 
   const authValue: AuthContextType = {
     user,

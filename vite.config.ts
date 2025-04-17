@@ -37,7 +37,7 @@ export default defineConfig({
               cacheName: "firebase-data",
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 24 * 60 * 60,
+                maxAgeSeconds: 24 * 60 * 60, // 24 hours
               },
               cacheableResponse: {
                 statuses: [0, 200],
@@ -51,7 +51,33 @@ export default defineConfig({
               cacheName: "google-fonts",
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+            },
+          },
+          {
+            urlPattern: /\.(?:js|css)$/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "static-resources",
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 24 * 60 * 60, // 24 hours
+              },
+            },
+          },
+          {
+            urlPattern: new RegExp("^https://.*"),
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "external-resources",
+              networkTimeoutSeconds: 10,
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 24 * 60 * 60, // 24 hours
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
               },
             },
           },
@@ -59,6 +85,10 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
+      },
+      devOptions: {
+        enabled: true,
+        type: "module",
       },
     }),
   ],
