@@ -20,15 +20,29 @@ interface FirestoreUserData {
   [key: string]: any;
 }
 
-interface AuthContextType {
+const initialState = {
+  user: null,
+  userData: null,
+  loading: true,
+  cachedAuthState: false,
+  createUser: async () => {},
+  loginUser: async () => {},
+  logoutUser: async () => {},
+  resetPassword: async () => {},
+  updateUserData: async () => {},
+};
+
+export const AuthContext = createContext<{
   user: User | null;
   userData: FirestoreUserData | null;
   loading: boolean;
-  initialized: boolean;
+  cachedAuthState: boolean;
   createUser: (email: string, password: string) => Promise<any>;
   loginUser: (email: string, password: string) => Promise<any>;
-  logOut: () => Promise<void>;
-}
+  logoutUser: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updateUserData: (data: Partial<FirestoreUserData>) => Promise<void>;
+}>(initialState);
 
 interface Props {
   children: React.ReactNode;
@@ -66,8 +80,6 @@ const getInitialState = () => {
   }
 };
 
-export const AuthContext = createContext<AuthContextType | null>(null);
-
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -86,6 +98,7 @@ const AuthProvider = ({ children }: Props) => {
   const [userData, setUserData] = useState<FirestoreUserData | null>(
     initialState.userData
   );
+  const [cachedAuthState, setCachedAuthState] = useState(false);
 
   const cacheUserData = (data: FirestoreUserData) => {
     try {
@@ -313,14 +326,26 @@ const AuthProvider = ({ children }: Props) => {
     );
   }
 
-  const authValue: AuthContextType = {
+  const authValue: {
+    user: User | null;
+    userData: FirestoreUserData | null;
+    loading: boolean;
+    cachedAuthState: boolean;
+    createUser: (email: string, password: string) => Promise<any>;
+    loginUser: (email: string, password: string) => Promise<any>;
+    logoutUser: () => Promise<void>;
+    resetPassword: (email: string) => Promise<void>;
+    updateUserData: (data: Partial<FirestoreUserData>) => Promise<void>;
+  } = {
     user,
     userData,
     loading,
-    initialized,
+    cachedAuthState,
     createUser,
     loginUser,
-    logOut,
+    logoutUser: logOut,
+    resetPassword: async () => {},
+    updateUserData: async () => {},
   };
 
   // Always provide auth context regardless of state

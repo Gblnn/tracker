@@ -204,10 +204,10 @@ export default function Directive(props: Props) {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Sparkles
-                          style={{ width: "1rem" }}
-                          color={"goldenrod"}
-                          // fill="goldenrod"
+                        <Circle
+                          style={{ width: "0.5rem" }}
+                          color={props.dotColor}
+                          fill={props.dotColor}
                         />
                       </TooltipTrigger>
                       <TooltipContent

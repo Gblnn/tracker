@@ -7,14 +7,14 @@ const LOADING_TIMEOUT = 5000; // 5 seconds timeout
 const PUBLIC_ROUTES = ["/user-reset", "/request-access"]; // Remove "/" from public routes
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, userData, loading } = useAuth();
+  const { user, userData, loading, cachedAuthState } = useAuth();
   const location = useLocation();
   const [isTimedOut, setIsTimedOut] = useState(false);
 
   // Add timeout to prevent infinite loading
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-    if (loading && !isTimedOut) {
+    if (loading && !isTimedOut && !cachedAuthState) {
       timeoutId = setTimeout(() => {
         setIsTimedOut(true);
       }, LOADING_TIMEOUT);
@@ -24,10 +24,10 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         clearTimeout(timeoutId);
       }
     };
-  }, [loading, isTimedOut]);
+  }, [loading, isTimedOut, cachedAuthState]);
 
-  // Show loading state only if explicitly loading and not timed out
-  if (loading && !isTimedOut) {
+  // Show loading state only if explicitly loading, not timed out, and no cached state
+  if (loading && !isTimedOut && !cachedAuthState) {
     return (
       <div
         style={{
