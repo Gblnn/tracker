@@ -529,13 +529,13 @@ export default function DefaultDialog(props: Props) {
                                 paddingRight: "0.75rem",
                                 paddingLeft: "0.75rem",
                                 borderRadius: "0.5rem",
-                                gap: "0.25rem",
+                                gap: "0.45rem",
                                 flex: 1,
                                 justifyContent: "center",
                                 cursor: "pointer",
                               }}
                             >
-                              <p style={{ opacity: 0.5 }}></p>
+                              <p style={{ opacity: 0.5 }}>Basic</p>
                               <b>{props.tag3Text}</b>
                             </div>
 
@@ -549,13 +549,13 @@ export default function DefaultDialog(props: Props) {
                                 paddingRight: "0.75rem",
                                 paddingLeft: "0.75rem",
                                 borderRadius: "0.5rem",
-                                gap: "0.25rem",
+                                gap: "0.45rem",
                                 flex: 1,
                                 justifyContent: "center",
                                 cursor: "pointer",
                               }}
                             >
-                              <p style={{ opacity: 0.5 }}></p>
+                              <p style={{ opacity: 0.5 }}>Allowance</p>
                               <b style={{ fontSize: "0.8rem" }}>
                                 {props.tag4Text}
                               </b>

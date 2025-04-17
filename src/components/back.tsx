@@ -108,7 +108,7 @@ export default function Back(props: Props) {
                     background: "white",
                     color: "black",
                     padding: "0.25rem",
-
+                    paddingTop: "0.335rem",
                     paddingLeft: "0.35rem",
                     paddingRight: "0.35rem",
                     fontWeight: "500",

@@ -1,4 +1,4 @@
-import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { EllipsisVerticalIcon, LogOut, RefreshCcw, User } from "lucide-react";
 import {
   DropdownMenu,
@@ -23,12 +23,12 @@ export default function IndexDropDown(props: Props) {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger
+        <DropdownMenuPrimitive.Trigger
           className={props.className}
           style={{ outline: "none" }}
         >
           <EllipsisVerticalIcon width={"1.1rem"} />
-        </DropdownMenuTrigger>
+        </DropdownMenuPrimitive.Trigger>
 
         <DropdownMenuContent
           style={{ margin: "0.25rem", marginRight: "1.25rem" }}

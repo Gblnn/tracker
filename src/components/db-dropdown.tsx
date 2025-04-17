@@ -1,4 +1,4 @@
-import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import {
   Archive,
   DownloadCloud,
@@ -27,12 +27,12 @@ export default function DbDropDown(props: Props) {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger
+        <DropdownMenuPrimitive.Trigger
           className={props.className}
           style={{ outline: "none" }}
         >
           {props.trigger}
-        </DropdownMenuTrigger>
+        </DropdownMenuPrimitive.Trigger>
 
         <DropdownMenuContent
           style={{ margin: "0.25rem", marginRight: "1.25rem" }}

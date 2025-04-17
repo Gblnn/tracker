@@ -20,12 +20,14 @@ import {
   collection,
   deleteDoc,
   doc,
+  getAggregateFromServer,
   getDocs,
   limit,
   onSnapshot,
   orderBy,
   query,
   startAfter,
+  sum,
   Timestamp,
   updateDoc,
   where,
@@ -241,7 +243,6 @@ export default function DbComponent(props: Props) {
 
   const [progress, setProgress] = useState("");
 
-  const [selected, setSelected] = useState(false);
   const [fetchingData, setfetchingData] = useState(false);
   const [status, setStatus] = useState("");
 
@@ -434,7 +435,6 @@ export default function DbComponent(props: Props) {
       }
     );
 
-    setLeaves(0);
     return () => unsubscribe();
   }, []);
 
@@ -569,12 +569,20 @@ export default function DbComponent(props: Props) {
 
       if (loadMore) {
         setRecords((prevRecords: Record[]) => [...prevRecords, ...fetchedData]);
+        // If in selection mode and selectAll is true, add new records to checked array
+        if (selectable && selectAll) {
+          setChecked((prev: any) => [
+            ...prev,
+            ...fetchedData.map((record) => record.id),
+          ]);
+        }
       } else {
         setRecords(fetchedData);
+        // Only reset selection state on fresh load, not during pagination
+        setChecked([]);
+        setSelectable(false);
       }
 
-      setChecked([]);
-      setSelectable(false);
       setTimeout(() => {
         setRefreshCompleted(false);
       }, 1000);
@@ -724,6 +732,7 @@ export default function DbComponent(props: Props) {
   };
 
   const fetchLeave = async () => {
+    setLeaves(0);
     setFetchingLeave(true);
     const leaveQuery = query(
       collection(db, "leave-record"),
@@ -731,12 +740,17 @@ export default function DbComponent(props: Props) {
       orderBy("created_on", "desc")
     );
     const snapshot = await getDocs(leaveQuery);
+    const total_leaves = await getAggregateFromServer(leaveQuery, {
+      total_leaves: sum("days"),
+    });
     const LeaveData: any = [];
 
     snapshot.forEach((doc: any) => {
       LeaveData.push({ id: doc.id, ...doc.data() });
       setLeaveList(LeaveData);
     });
+
+    setLeaves(total_leaves.data().total_leaves);
     setFetchingLeave(false);
   };
 
@@ -751,11 +765,14 @@ export default function DbComponent(props: Props) {
       employeeID: doc_id,
       created_on: new Date(),
       leaveFrom: editedLeaveFrom,
-      leaveTill: editedLeaveTill ? editedLeaveTill : "Pending",
-      days: moment(editedLeaveTill, "DD/MM/YYYY").diff(
-        moment(editedLeaveFrom, "DD/MM/YYYY"),
-        "days"
-      ),
+      leaveTill: editedLeaveTill ? editedLeaveTill : 0,
+      days:
+        leaveTill || editedLeaveTill
+          ? moment(editedLeaveTill, "DD/MM/YYYY").diff(
+              moment(editedLeaveFrom, "DD/MM/YYYY"),
+              "days"
+            )
+          : 0,
       pending: editedLeaveTill ? false : true,
       employeeCode: employeeCode ? employeeCode : "",
     });
@@ -776,7 +793,7 @@ export default function DbComponent(props: Props) {
       expectedReturn: expectedReturn ? expectedReturn : "",
       pending: leaveTill == "" ? true : false,
       days:
-        leaveTill != "Pending" &&
+        leaveTill != 0 &&
         moment(leaveTill, "DD/MM/YYYY").diff(
           moment(leaveFrom, "DD/MM/YYYY"),
           "days"
@@ -1872,7 +1889,6 @@ export default function DbComponent(props: Props) {
                     } else {
                       setChecked([]);
                     }
-                    setSelected(newSelectAll);
                   }}
                   style={{
                     height: "2.25rem",
@@ -2032,7 +2048,6 @@ export default function DbComponent(props: Props) {
                       onClick={() => {
                         setSelectable(!selectable);
                         selectable && setChecked([]);
-                        !selectable && setSelected(false);
                       }}
                     >
                       <CheckSquare2
@@ -2158,6 +2173,70 @@ export default function DbComponent(props: Props) {
                             dotColor={selectable ? "violet" : "dodgerblue"}
                             notify={!post.notify}
                             archived={post.state == "archived" ? true : false}
+                            expiring={
+                              moment(post.civil_expiry, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2 ||
+                              moment(post.license_expiry, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2 ||
+                              moment(post.medical_due_on, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2 ||
+                              moment(post.passportExpiry, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2 ||
+                              moment(post.vt_hse_induction, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2 ||
+                              moment(post.vt_car_1, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2 ||
+                              moment(post.vt_car_2, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2 ||
+                              moment(post.vt_car_3, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2 ||
+                              moment(post.vt_car_4, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2 ||
+                              moment(post.vt_car_5, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2 ||
+                              moment(post.vt_car_6, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2 ||
+                              moment(post.vt_car_7, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2 ||
+                              moment(post.vt_car_8, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2 ||
+                              moment(post.vt_car_9, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2 ||
+                              moment(post.vt_car_10, "DD/MM/YYYY").diff(
+                                moment(),
+                                "months"
+                              ) < 2
+                                ? true
+                                : false
+                            }
                             tag={
                               post.civil_expiry != "" ||
                               post.license_expiry != "" ||
@@ -2179,7 +2258,7 @@ export default function DbComponent(props: Props) {
                                   : ""
                                 : "No Data"
                             }
-                            selected={selected}
+                            selected={checked.includes(post.id)}
                             selectable={selectable}
                             status
                             // ON CLICK
@@ -2258,7 +2337,6 @@ export default function DbComponent(props: Props) {
                               post.type == "omni"
                                 ? setOmni(true)
                                 : setOmni(false);
-                              fetchLeave();
                             }}
                             key={post.id}
                             title={post.name}
@@ -2700,12 +2778,14 @@ export default function DbComponent(props: Props) {
                   textAlign: "center",
                 }}
               >
-                <p style={{ opacity: 0.5 }}>
-                  {"(" +
-                    Math.abs((salaryBasic - initialSalary) / initialSalary) +
-                    "%" +
-                    ")"}
-                </p>
+                {Math.abs((salaryBasic - initialSalary) / initialSalary) >
+                  0 && (
+                  <p style={{ opacity: 0.5 }}>
+                    {Math.abs((salaryBasic - initialSalary) / initialSalary) +
+                      "%"}
+                  </p>
+                )}
+
                 <p>
                   {Math.sign((salaryBasic - initialSalary) / initialSalary) ==
                   -1 ? (
@@ -2741,19 +2821,24 @@ export default function DbComponent(props: Props) {
                 style={{
                   border: "",
                   display: "flex",
+
                   justifyContent: "center",
                   alignItems: "center",
                   textAlign: "center",
                 }}
               >
-                <p style={{ opacity: 0.5 }}>
-                  {"(" +
-                    Math.abs(
-                      (allowance - initialAllowance) / initialAllowance
-                    ) +
-                    "%" +
-                    ")"}
-                </p>
+                {Math.abs((allowance - initialAllowance) / initialAllowance) >
+                  0 && (
+                  <p style={{ opacity: 0.5 }}>
+                    {"(" +
+                      Math.abs(
+                        (allowance - initialAllowance) / initialAllowance
+                      ) +
+                      "%" +
+                      ")"}
+                  </p>
+                )}
+
                 <p>
                   {Math.sign(
                     (allowance - initialAllowance) / initialAllowance
@@ -2792,7 +2877,7 @@ export default function DbComponent(props: Props) {
             setLeaveList([]);
             setId(doc_id);
           }}
-          bottomTagValue={leaves}
+          // bottomTagValue={leaves}
           bottomValueLoading={fetchingLeave}
           titleIcon={
             <div onClick={() => (image ? setImageDialog(true) : {})}>

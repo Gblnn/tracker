@@ -11,7 +11,6 @@ import {
   CheckSquare2,
   ChevronRight,
   Circle,
-  Dot,
   EllipsisVerticalIcon,
   LoaderCircle,
   LockKeyholeIcon,
@@ -182,12 +181,19 @@ export default function Directive(props: Props) {
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
+                      gap: "0.5rem",
                       textTransform: props.notName ? "none" : "capitalize",
                     }}
                   >
                     {props.title}
                     {props.expiring && (
-                      <Dot color="salmon" className="animate-pulse" />
+                      <Circle
+                        color="salmon"
+                        width={"0.5rem"}
+                        height={"0.5rem"}
+                        className="animate-pulse"
+                        fill="salmon"
+                      />
                     )}
                   </div>
                 </div>
