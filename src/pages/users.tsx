@@ -34,7 +34,6 @@ import { useEffect, useState } from "react";
 
 // Constants for localStorage keys
 const CACHED_USER_KEY = "cached_user_data";
-const CACHED_AUTH_KEY = "cached_auth_state";
 
 export default function Users() {
   const [addUserDialog, setAddUserDialog] = useState(false);
