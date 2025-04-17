@@ -186,19 +186,34 @@ const AuthProvider = ({ children }: Props) => {
   const loginUser = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      cacheAuthState(result.user);
-      const userData = await fetchUserData(email);
-      return { result, userData };
+      // Try online login first
+      if (navigator.onLine) {
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        cacheAuthState(result.user);
+        const userData = await fetchUserData(email);
+        return { result, userData };
+      } else {
+        // Offline login with cached credentials
+        const cachedAuth = localStorage.getItem(CACHED_AUTH_KEY);
+        const cachedUser = cachedAuth ? JSON.parse(cachedAuth) : null;
+        const cachedData = getCachedUserData();
+
+        if (cachedUser?.email === email && cachedData?.email === email) {
+          setUser(cachedUser);
+          setUserData(cachedData);
+          return { result: { user: cachedUser }, userData: cachedData };
+        }
+        throw new Error(
+          "Cannot login offline without valid cached credentials"
+        );
+      }
     } catch (error) {
-      // If offline, try to validate against cached credentials
+      // If online login fails, try offline login as fallback
       const cachedAuth = localStorage.getItem(CACHED_AUTH_KEY);
       const cachedUser = cachedAuth ? JSON.parse(cachedAuth) : null;
       const cachedData = getCachedUserData();
 
       if (cachedUser?.email === email && cachedData?.email === email) {
-        // In offline mode, we can't verify the password against Firebase
-        // but we can allow access if they have valid cached credentials
         setUser(cachedUser);
         setUserData(cachedData);
         return { result: { user: cachedUser }, userData: cachedData };

@@ -323,7 +323,7 @@ export default function DbComponent(props: Props) {
   const [exportDialog, setExportDialog] = useState(false);
   const [id, setId] = useState("");
 
-  const [pageSize] = useState(50);
+  const [pageSize] = useState(100);
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
 
@@ -2493,6 +2493,7 @@ export default function DbComponent(props: Props) {
         />
 
         <DefaultDialog
+          close
           progress={progress}
           progressItem={progressItem}
           open={importDialog}
@@ -3301,7 +3302,7 @@ export default function DbComponent(props: Props) {
           onCancel={() => setCivil(false)}
           OkButtonText="Add"
           title_extra={
-            civil_number ? (
+            civil_expiry ? (
               <div
                 style={{ display: "flex", gap: "0.5rem", height: "2.25rem" }}
               >
