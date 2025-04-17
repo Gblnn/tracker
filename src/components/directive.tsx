@@ -15,6 +15,7 @@ import {
   LoaderCircle,
   LockKeyholeIcon,
   PenLine,
+  Sparkles,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -181,6 +182,7 @@ export default function Directive(props: Props) {
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
+
                       gap: "0.5rem",
                       textTransform: props.notName ? "none" : "capitalize",
                     }}
@@ -202,13 +204,10 @@ export default function Directive(props: Props) {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Circle
-                          style={{
-                            height: "auto",
-                            width: "0.5rem",
-                          }}
-                          color={props.dotColor}
-                          fill={props.dotColor}
+                        <Sparkles
+                          style={{ width: "1rem" }}
+                          color={"goldenrod"}
+                          // fill="goldenrod"
                         />
                       </TooltipTrigger>
                       <TooltipContent

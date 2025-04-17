@@ -9,7 +9,7 @@ import { message } from "antd";
 import { motion } from "framer-motion";
 import { HistoryIcon, Inbox, KeyRound, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function RecordList() {
   const [requestDialog, setRequestDialog] = useState(false);
@@ -17,6 +17,7 @@ export default function RecordList() {
   const [valeLoginPrompt, setValeLoginPrompt] = useState(false);
   const [logoutPrompt, setLogoutPrompt] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const [verifyDialog, setVerifyDialog] = useState(false);
   const [ssuloading, setSSULoading] = useState(false);
   const [valeloading, setValeLoading] = useState(false);
@@ -26,7 +27,13 @@ export default function RecordList() {
     if (!userData) {
       navigate("/");
     }
-  }, [userData, navigate]);
+    // Show error message if redirected due to lack of clearance
+    if (location.state?.error) {
+      message.error(location.state.error);
+      // Clear the error from location state
+      navigate(location.pathname, { replace: true });
+    }
+  }, [userData, navigate, location]);
 
   const handleLoginPrompt = async (type: "ssu" | "vale") => {
     if (!userData) {

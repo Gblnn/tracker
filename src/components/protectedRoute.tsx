@@ -1,9 +1,16 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import { LoadingOutlined } from "@ant-design/icons";
 
+// Define routes that require specific clearance
+const CLEARANCE_ROUTES = {
+  "/records": ["All", "Sohar Star United"],
+  "/vale-records": ["All", "Vale"],
+};
+
 export default function ProtectedRoutes() {
   const { user, userData, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -21,5 +28,27 @@ export default function ProtectedRoutes() {
     );
   }
 
-  return user && userData ? <Outlet /> : <Navigate to="/" />;
+  // First check if user is authenticated
+  if (!user || !userData) {
+    return <Navigate to="/" />;
+  }
+
+  // Then check clearance for protected routes
+  const requiredClearance =
+    CLEARANCE_ROUTES[location.pathname as keyof typeof CLEARANCE_ROUTES];
+  if (requiredClearance) {
+    const hasClearance = requiredClearance.includes(userData.clearance);
+    if (!hasClearance) {
+      // If no clearance, redirect to record-list with error state
+      return (
+        <Navigate
+          to="/record-list"
+          state={{ error: "No clearance to access this route" }}
+          replace
+        />
+      );
+    }
+  }
+
+  return <Outlet />;
 }

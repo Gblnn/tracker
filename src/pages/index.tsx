@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function Index() {
+  const usenavigate = useNavigate();
   const [requestDialog, setRequestDialog] = useState(false);
   const [bugDialog, setBugDialog] = useState(false);
   const [loginPrompt, setLoginPrompt] = useState(false);
@@ -216,6 +217,7 @@ export default function Index() {
               /> */}
 
               <Directive
+                onClick={() => usenavigate("/qr-code-generator")}
                 to={"/qr-code-generator"}
                 title={"QR Generator"}
                 icon={<QrCode width={"1.25rem"} />}

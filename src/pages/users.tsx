@@ -1,4 +1,5 @@
 import Back from "@/components/back";
+import { useAuth } from "@/components/AuthProvider";
 import ClearanceMenu from "@/components/clearance-menu";
 import Directive from "@/components/directive";
 import IOMenu from "@/components/editorMenu";
@@ -31,11 +32,16 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+// Constants for localStorage keys
+const CACHED_USER_KEY = "cached_user_data";
+const CACHED_AUTH_KEY = "cached_auth_state";
+
 export default function Users() {
   const [addUserDialog, setAddUserDialog] = useState(false);
   const [fetchingData, setfetchingData] = useState(false);
   const [users, setUsers] = useState([]);
   const [userDialog, setUserDialog] = useState(false);
+  const { userData: currentUserData } = useAuth();
 
   const [refreshCompleted, setRefreshCompleted] = useState(false);
   const [name, setName] = useState("");
@@ -46,7 +52,6 @@ export default function Users() {
 
   const [display_name, setDisplayName] = useState("");
   const [display_email, setDisplayEmail] = useState("");
-  // const [role, setRole] = useState("");
   const [docid, setDocid] = useState("");
   const [deleteConfirmDiaog, setDeleteConfirmDialog] = useState(false);
   const [role, setRole] = useState("");
@@ -55,6 +60,26 @@ export default function Users() {
   const [sensitive_data, setSensitiveData] = useState("");
 
   const auth = getAuth();
+
+  // Function to update local cache if the updated user is the current user
+  const updateLocalCache = (email: string, updatedData: any) => {
+    try {
+      // Only update cache if the updated user is the current logged-in user
+      if (currentUserData?.email === email) {
+        const cachedUser = localStorage.getItem(CACHED_USER_KEY);
+        if (cachedUser) {
+          const parsedUser = JSON.parse(cachedUser);
+          const updatedUser = { ...parsedUser, ...updatedData };
+          localStorage.setItem(CACHED_USER_KEY, JSON.stringify(updatedUser));
+
+          // Force a page reload to update the app state with new permissions
+          window.location.reload();
+        }
+      }
+    } catch (error) {
+      console.error("Error updating local cache:", error);
+    }
+  };
 
   const createUser = async () => {
     try {
@@ -77,13 +102,6 @@ export default function Users() {
       message.error(String(error));
     }
   };
-
-  // const [email, setEmail] = useState("")
-  // const [password, setPassword] = useState("")
-
-  // const Authenticate = () => {
-
-  // }
 
   useEffect(() => {
     fetchUsers();
@@ -119,12 +137,18 @@ export default function Users() {
   const updateUser = async () => {
     try {
       setLoading(true);
-      await updateDoc(doc(db, "users", docid), {
+      const updatedData = {
         role: role,
         clearance: clearance,
         editor: editor,
         sensitive_data: sensitive_data,
-      });
+      };
+
+      await updateDoc(doc(db, "users", docid), updatedData);
+
+      // Update local cache if the updated user is the current user
+      updateLocalCache(display_email, updatedData);
+
       setLoading(false);
       setUserDialog(false);
       message.success("Updated User");

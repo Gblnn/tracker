@@ -12,6 +12,10 @@ import DefaultDialog from "@/components/ui/default-dialog";
 import VehicleID from "@/components/vehicle-id";
 import { db, storage } from "@/firebase";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import {
+  exportExpiringRecords,
+  importExpiringRecords,
+} from "@/utils/excelUtils";
 import { LoadingOutlined } from "@ant-design/icons";
 import * as XLSX from "@e965/xlsx";
 import { message, Tooltip } from "antd";
@@ -31,6 +35,7 @@ import {
   Timestamp,
   updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import {
   deleteObject,
@@ -41,13 +46,13 @@ import {
 } from "firebase/storage";
 import { motion } from "framer-motion";
 import {
+  AlertCircle,
   Archive,
   ArrowDown,
   ArrowDown01,
   ArrowDownAZ,
   ArrowUp,
   BarChart3,
-  BarChart3Icon,
   BellOff,
   BellRing,
   Book,
@@ -63,9 +68,9 @@ import {
   Eye,
   File,
   FileDown,
+  FileWarning,
   Globe,
   GraduationCap,
-  HandHelping,
   HeartPulse,
   Image,
   ImageOff,
@@ -102,6 +107,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select";
 type Record = {
   id: string;
   name: string;
+  employeeCode?: string;
+  // Add other potential fields
 };
 
 // Running Notes
@@ -113,6 +120,18 @@ interface Props {
   loader?: any;
   noTraining?: boolean;
 }
+
+// interface DbDropDownProps {
+//   onUpload: () => void;
+//   onExport: () => void;
+//   onInbox: () => void;
+//   onArchives: () => void;
+//   onExportExpiring: () => void;
+//   onImportExpiring: () => void;
+//   exportLoading?: boolean;
+//   importLoading?: boolean;
+//   trigger: React.ReactNode;
+// }
 
 export default function DbComponent(props: Props) {
   const { windowName } = useCurrentUser();
@@ -156,6 +175,8 @@ export default function DbComponent(props: Props) {
   const [addcivil, setAddcivil] = useState(false);
   const [modified_on, setModifiedOn] = useState<any>();
   const [loading, setLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [deleteMedicalIDdialog, setDeleteMedicalIDdialog] = useState(false);
   const [email, setEmail] = useState("");
   const [editedName, setEditedName] = useState("");
@@ -236,7 +257,7 @@ export default function DbComponent(props: Props) {
   const [selectable, setSelectable] = useState(false);
   const [search, setSearch] = useState("");
 
-  const [checked, setChecked] = useState<any>([]);
+  const [checked, setChecked] = useState<string[]>([]);
   const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false);
 
   // const [recipientsDialog, setRecipientsDialog] = useState(false)
@@ -1599,15 +1620,81 @@ export default function DbComponent(props: Props) {
       reader.onload = (e: any) => {
         const data = e.target.result;
         const workbook = XLSX.read(data, {
-          type: "binary",
+          type: "array",
           cellDates: true,
           dateNF: "DD/MM/YYYY",
         });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet);
-        const string = JSON.stringify(json, null, 2);
-        setJsonData(JSON.parse(string));
+
+        // Convert all date cells to DD/MM/YYYY format
+        const dateColumns = [
+          "civil_expiry",
+          "license_expiry",
+          "medical_due_on",
+          "passportExpiry",
+          "vt_hse_induction",
+          "vt_car_1",
+          "vt_car_2",
+          "vt_car_3",
+          "vt_car_4",
+          "vt_car_5",
+          "vt_car_6",
+          "vt_car_7",
+          "vt_car_8",
+          "vt_car_9",
+          "vt_car_10",
+        ];
+        const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
+
+        // Get header row to find column indices
+        const headers: { [key: string]: number } = {};
+        const headerRow = range.s.r;
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const cellRef = XLSX.utils.encode_cell({ r: headerRow, c: C });
+          const headerCell = worksheet[cellRef];
+          if (headerCell && headerCell.v) {
+            headers[headerCell.v] = C;
+          }
+        }
+
+        // Process date cells
+        for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+          for (const dateCol of dateColumns) {
+            if (headers[dateCol] !== undefined) {
+              const cellRef = XLSX.utils.encode_cell({
+                r: R,
+                c: headers[dateCol],
+              });
+              const cell = worksheet[cellRef];
+              if (cell && cell.v) {
+                let formattedDate;
+                if (cell.t === "d") {
+                  // Handle Excel date cells
+                  formattedDate = moment(cell.v).format("DD/MM/YYYY");
+                } else {
+                  // Handle string dates
+                  const parsedDate = moment(cell.v, [
+                    "DD/MM/YYYY",
+                    "M/D/YYYY",
+                    "YYYY-MM-DD",
+                  ]);
+                  if (parsedDate.isValid()) {
+                    formattedDate = parsedDate.format("DD/MM/YYYY");
+                  }
+                }
+                if (formattedDate) {
+                  cell.v = formattedDate;
+                  cell.t = "s"; // Set type to string
+                }
+              }
+            }
+          }
+        }
+
+        const parsedJson = XLSX.utils.sheet_to_json(worksheet);
+        const jsonString = JSON.stringify(parsedJson, null, 2);
+        setJsonData(JSON.parse(jsonString));
       };
       reader.readAsArrayBuffer(file);
     }
@@ -1616,40 +1703,72 @@ export default function DbComponent(props: Props) {
   const uploadJson = async () => {
     setLoading(true);
     await AddHistory("import", "", "", jsonData.length + " records from XLSX");
-    let counts = 0;
-    let percentage = 100 / jsonData.length;
 
-    jsonData.forEach((e: any) => {
-      e.type = e.type == "omni" ? "omni" : props.dbCategory;
-      e.created_on = new Date();
-      e.modified_on = new Date();
-      e.notify = true;
-      e.state = "active";
-      e.email ? (e.email = e.email) : (e.email = "");
+    try {
+      // Process data first
+      jsonData.forEach((e: any) => {
+        e.type = e.type == "omni" ? "omni" : props.dbCategory;
+        e.created_on = new Date();
+        e.modified_on = new Date();
+        e.notify = true;
+        e.state = "active";
+        e.email = e.email || "";
+        e.dateofJoin = e.dateofJoin
+          ? moment(e.dateofJoin, "DD/MM/YYYY").format("DD/MM/YYYY")
+          : "";
+        e.salaryBasic = e.initialSalary || 0;
+        e.allowance = e.initialAllowance || 0;
+      });
 
-      e.dateofJoin
-        ? (e.dateofJoin = moment(e.dateofJoin, "DD/MM/YYYY").format(
-            "DD/MM/YYYY"
-          ))
-        : (e.dateofJoin = "");
+      let successCount = 0;
+      let errorCount = 0;
+      const batchSize = 500; // Firestore batch limit
+      const batches = [];
+      let currentBatch = writeBatch(db);
+      let currentBatchSize = 0;
 
-      e.initialSalary ? (e.salaryBasic = e.initialSalary) : (e.salaryBasic = 0);
+      // Process records in batches
+      for (const record of jsonData) {
+        try {
+          const docRef = doc(collection(db, "records"));
+          currentBatch.set(docRef, record);
+          currentBatchSize++;
+          successCount++;
 
-      e.initialAllowance
-        ? (e.allowance = e.initialAllowance)
-        : (e.allowance = 0);
-    });
+          // If batch is full, add it to batches array and create new batch
+          if (currentBatchSize === batchSize) {
+            batches.push(currentBatch);
+            currentBatch = writeBatch(db);
+            currentBatchSize = 0;
+          }
+        } catch (error) {
+          console.error("Error processing record:", error);
+          errorCount++;
+        }
+      }
 
-    for (let e of jsonData) {
-      await addDoc(collection(db, "records"), e);
-      counts++;
-      setProgress(String(percentage * counts) + "%");
-      setProgressItem(String(e.name));
+      // Add the last batch if it has any operations
+      if (currentBatchSize > 0) {
+        batches.push(currentBatch);
+      }
+
+      // Execute all batches in parallel
+      await Promise.all(batches.map((batch) => batch.commit()));
+
+      message.success(`Imported ${successCount} records successfully`);
+      if (errorCount > 0) {
+        message.warning(`Failed to import ${errorCount} records`);
+      }
+
+      window.location.reload();
+    } catch (error) {
+      console.error("Import error:", error);
+      message.error("Failed to import records");
+    } finally {
+      setLoading(false);
+      setImportDialog(false);
+      fetchData();
     }
-    window.location.reload();
-    setLoading(false);
-    setImportDialog(false);
-    fetchData();
   };
 
   const ToggleOmniscience = async () => {
@@ -1757,6 +1876,40 @@ export default function DbComponent(props: Props) {
     allowanceList.length == 1 && setAllowanceList([]);
   };
 
+  const handleExportExpiring = async () => {
+    try {
+      setExportLoading(true);
+      await exportExpiringRecords(records);
+      setExportDialog(false);
+      window.location.reload();
+    } catch (error) {
+      console.error("Error exporting expiring records:", error);
+      message.error("Failed to export expiring records");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleImportExpiring = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        setImportLoading(true);
+        await importExpiringRecords(file);
+        setImportDialog(false);
+        window.location.reload();
+        fetchData();
+      } catch (error) {
+        console.error("Error importing updates:", error);
+        message.error("Failed to import updates");
+      } finally {
+        setImportLoading(false);
+      }
+    }
+  };
+
   return (
     <>
       {status == "false" ? (
@@ -1824,7 +1977,10 @@ export default function DbComponent(props: Props) {
                         onExport={() => setExportDialog(true)}
                         onInbox={() => usenavigate("/inbox")}
                         onArchives={() => usenavigate("/archives")}
-                        // onAccess={() => usenavigate("/access-control")}
+                        onExportExpiring={handleExportExpiring}
+                        onImportExpiring={() =>
+                          document.getElementById("excelImport")?.click()
+                        }
                         trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
                       />
                     </div>
@@ -2138,11 +2294,11 @@ export default function DbComponent(props: Props) {
                             id_subtitle={post.id}
                             className="record-item"
                             space
-                            new={
-                              moment(post.created_on.toDate()).fromNow() ==
-                                "a few seconds ago" ||
-                              (selectable && post.type == "omni")
-                            }
+                            // new={
+                            //   moment(post.created_on.toDate()).fromNow() ==
+                            //     "a few seconds ago" ||
+                            //   (selectable && post.type == "omni")
+                            // }
                             dotColor={selectable ? "violet" : "dodgerblue"}
                             notify={!post.notify}
                             archived={post.state == "archived" ? true : false}
@@ -2214,7 +2370,7 @@ export default function DbComponent(props: Props) {
                               post.civil_expiry != "" ||
                               post.license_expiry != "" ||
                               post.medical_due_on != "" ||
-                              post.passportID != "" ||
+                              post.passportExpiry != "" ||
                               post.vt_hse_induction != "" ||
                               post.vt_car_1 != "" ||
                               post.vt_car_2 != "" ||
@@ -2225,11 +2381,11 @@ export default function DbComponent(props: Props) {
                               post.vt_car_7 != "" ||
                               post.vt_car_8 != "" ||
                               post.vt_car_9 != "" ||
-                              post.vt_car_10 != ""
-                                ? post.state == "archived"
-                                  ? "Archived"
-                                  : ""
-                                : "No Data"
+                              post.vt_car_10 != "" ? (
+                                ""
+                              ) : (
+                                <FileWarning width={"1rem"} />
+                              )
                             }
                             selected={checked.includes(post.id)}
                             selectable={selectable}
@@ -2462,42 +2618,47 @@ export default function DbComponent(props: Props) {
                 loading={loading}
                 icon={<File width={"1.25rem"} color="dodgerblue" />}
                 title={"Export Records"}
-                // tag={<DownloadCloud width={"1.25rem"} />}
                 status
                 onClick={exportDB}
               />
-              <Directive
+              {/* <Directive
                 icon={<BarChart3Icon color="violet" width={"1.25rem"} />}
                 title={"Export Leave Log"}
-                // tag={<DownloadCloud width={"1.25rem"} />}
                 status
-                // noArrow
               />
               <Directive
                 title={"Export Salary Log"}
                 icon={<CircleDollarSign width={"1.25rem"} color="lightgreen" />}
-                // tag={<DownloadCloud width={"1.25rem"} />}
                 status
-                // noArrow
               />
               <Directive
                 notName
                 title={"Export Allowance Log"}
                 icon={<HandHelping color="salmon" />}
-                // tag={<DownloadCloud width={"1.25rem"} />}
                 status
-                // noArrow
+              /> */}
+              <Directive
+                icon={
+                  exportLoading ? (
+                    <LoaderCircle className="animate-spin" />
+                  ) : (
+                    <AlertCircle width={"1.25rem"} color="orange" />
+                  )
+                }
+                title={"Export Expiring Documents"}
+                status
+                loading={exportLoading}
+                onClick={handleExportExpiring}
               />
             </div>
           }
         />
 
         <DefaultDialog
-          close
           progress={progress}
           progressItem={progressItem}
           open={importDialog}
-          created_on={jsonData.length == 0 ? "" : "" + jsonData.length}
+          created_on={jsonData.length === 0 ? "" : jsonData.length.toString()}
           title={"Upload XLSX"}
           titleIcon={<UploadCloud color="salmon" />}
           codeIcon={<File width={"0.8rem"} />}
@@ -2509,7 +2670,7 @@ export default function DbComponent(props: Props) {
             setJsonData([]);
             window.location.reload();
           }}
-          disabled={jsonData.length > 0 ? false : true}
+          disabled={!jsonData.length}
           updating={loading}
           onOk={uploadJson}
           title_extra={
@@ -2523,27 +2684,23 @@ export default function DbComponent(props: Props) {
                   paddingRight: "1rem",
                 }}
               >
-                {
-                  <>
-                    <FileDown color="lightgreen" width={"1rem"} />
-                    Template
-                  </>
-                }
+                <FileDown color="lightgreen" width={"1rem"} />
+                Template
               </button>
             </div>
           }
           extra={
             <>
-              {jsonData.length == 0 ? (
+              {jsonData.length === 0 ? (
                 <div
                   style={{
                     width: "100%",
                     border: "3px dashed rgba(100 100 100/ 50%)",
                     height: "2.5rem",
                     borderRadius: "0.5rem",
-                    marginBottom: "",
+                    marginBottom: "0.5rem",
                   }}
-                ></div>
+                />
               ) : (
                 <div
                   className="recipients"
@@ -2559,9 +2716,9 @@ export default function DbComponent(props: Props) {
                     marginBottom: "0.5rem",
                   }}
                 >
-                  {jsonData.map((e: any) => (
+                  {jsonData.map((record: Record) => (
                     <motion.div
-                      key={e.name}
+                      key={record.name}
                       initial={{ opacity: 0 }}
                       whileInView={{ opacity: 1 }}
                     >
@@ -2569,28 +2726,35 @@ export default function DbComponent(props: Props) {
                         status={true}
                         noArrow
                         onClick={() => {}}
-                        tag={e.employeeCode}
-                        title={e.name}
+                        tag={record.employeeCode}
+                        title={record.name}
                         titleSize="0.75rem"
-                        key={e.id}
                         icon={<UserCircle width={"1.25rem"} color="salmon" />}
                       />
                     </motion.div>
                   ))}
                 </div>
               )}
-
               <div style={{ display: "flex", gap: "0.5rem", width: "100%" }}>
                 <input
                   style={{ fontSize: "0.8rem" }}
                   type="file"
                   accept=".xls, .xlsx"
-                  onChange={(e: any) => setFile(e.target.files[0])}
+                  onChange={(e: any) => {
+                    if (e.target.files?.[0]) {
+                      setFile(e.target.files[0]);
+                      setJsonData([]);
+                    }
+                  }}
                 />
                 <button
                   className={file ? "" : "disabled"}
                   onClick={() => {
-                    jsonData.length > 0 ? setJsonData([]) : handleImport();
+                    if (jsonData.length > 0) {
+                      setJsonData([]);
+                    } else {
+                      handleImport();
+                    }
                   }}
                   style={{
                     fontSize: "0.8rem",
@@ -2600,6 +2764,31 @@ export default function DbComponent(props: Props) {
                 >
                   {jsonData.length > 0 ? "Clear" : "Add"}
                 </button>
+              </div>
+              <div style={{ marginTop: "1rem" }}>
+                <Directive
+                  icon={<RefreshCcw width={"1.25rem"} color="orange" />}
+                  title={"Import as Updates"}
+                  id_subtitle={"Update existing records with new data"}
+                  status={true}
+                  loading={importLoading}
+                  onClick={() => {
+                    if (file) {
+                      setImportLoading(true);
+                      importExpiringRecords(file)
+                        .then(() => {
+                          setImportDialog(false);
+                          setFile(null);
+                          setJsonData([]);
+                          setImportLoading(false);
+                          fetchData();
+                        })
+                        .catch(() => {
+                          setImportLoading(false);
+                        });
+                    }
+                  }}
+                />
               </div>
             </>
           }
@@ -2715,6 +2904,7 @@ export default function DbComponent(props: Props) {
         <DefaultDialog
           code={employeeCode}
           // creation_date={created_on}
+          email={email}
           codeTooltip="Employee Code"
           tags
           onTitleClick={() =>
@@ -5234,6 +5424,14 @@ export default function DbComponent(props: Props) {
             )}
           </>
         }
+      />
+      {/* Add hidden file input for Excel import */}
+      <input
+        type="file"
+        id="excelImport"
+        accept=".xlsx,.xls"
+        style={{ display: "none" }}
+        onChange={handleImportExpiring}
       />
     </>
   );

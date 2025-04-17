@@ -2,6 +2,7 @@ import { LoadingOutlined } from "@ant-design/icons";
 import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import { Tooltip } from "antd";
 import {
+  AtSign,
   ChevronLeft,
   Hash,
   Info,
@@ -69,6 +70,7 @@ interface Props {
   contact?: string;
   titleinfo?: boolean;
   onTitleClick?: any;
+  email?: string;
 }
 
 export default function DefaultDialog(props: Props) {
@@ -265,20 +267,38 @@ export default function DefaultDialog(props: Props) {
                       style={{
                         display: "flex",
                         gap: "0.5rem",
-                        marginLeft: "0.75rem",
+                        marginLeft: "0.35rem",
                         alignItems: "center",
                       }}
                     >
-                      <p
+                      {/* <p
                         style={{
                           fontSize: "0.8rem",
                           opacity: "0.5",
                           fontWeight: 400,
                         }}
-                      ></p>
-                      <p style={{ fontSize: "0.8rem", color: "dodgerblue" }}>
+                      ></p> */}
+                      {/* <p style={{ fontSize: "0.8rem", color: "dodgerblue" }}>
                         {props.creation_date}
-                      </p>
+                      </p> */}
+                      <a
+                        style={{
+                          display: "flex",
+                          gap: "0.5rem",
+                          alignItems: "center",
+                          // marginRight: "0.35rem",
+                          border: "",
+                          background: "rgba(150 150 150/ 15%)",
+                          borderRadius: "0.5rem",
+                          paddingLeft: "0.5rem",
+                          paddingRight: "0.75rem",
+                        }}
+                      >
+                        <AtSign color="dodgerblue" width={"0.8rem"} />
+                        <p style={{ fontSize: "0.8rem", fontWeight: "500" }}>
+                          {props.email ? props.email : "Email Address"}
+                        </p>
+                      </a>
                     </div>
 
                     {props.contact && (

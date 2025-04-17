@@ -1,4 +1,10 @@
-import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Archive,
   DownloadCloud,
@@ -6,12 +12,6 @@ import {
   RefreshCcw,
   UploadCloud,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-} from "./ui/dropdown-menu";
 
 interface Props {
   trigger?: any;
@@ -21,18 +21,25 @@ interface Props {
   onUpload?: any;
   onInbox?: any;
   className?: any;
+  onExportExpiring: () => void;
+  onImportExpiring: () => void;
+  exportLoading?: boolean;
+  importLoading?: boolean;
 }
 
 export default function DbDropDown(props: Props) {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuPrimitive.Trigger
-          className={props.className}
-          style={{ outline: "none" }}
-        >
-          {props.trigger}
-        </DropdownMenuPrimitive.Trigger>
+        <DropdownMenuTrigger asChild>
+          <button
+            style={{
+              width: "2.5rem",
+            }}
+          >
+            {props.trigger}
+          </button>
+        </DropdownMenuTrigger>
 
         <DropdownMenuContent
           style={{ margin: "0.25rem", marginRight: "1.25rem" }}
