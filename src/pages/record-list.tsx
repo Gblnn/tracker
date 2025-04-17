@@ -21,7 +21,7 @@ export default function RecordList() {
   const [verifyDialog, setVerifyDialog] = useState(false);
   const [ssuloading, setSSULoading] = useState(false);
   const [valeloading, setValeLoading] = useState(false);
-  const { userData, logOut } = useAuth();
+  const { userData, logoutUser: logOut } = useAuth();
 
   useEffect(() => {
     if (!userData) {
