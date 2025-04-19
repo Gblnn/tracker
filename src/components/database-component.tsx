@@ -140,7 +140,7 @@ export default function DbComponent(props: Props) {
   const [contractDialog, setContractDialog] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
   const [deleteKey, setDeleteKey] = useState("");
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState<File | null>(null);
   const [jsonData, setJsonData] = useState<any>([]);
   const [companyName, setCompanyName] = useState("");
   const [thumbnails, setThumbnails] = useState(false);
@@ -1618,124 +1618,167 @@ export default function DbComponent(props: Props) {
     if (file) {
       const reader = new FileReader();
       reader.onload = (e: any) => {
-        const data = e.target.result;
-        const workbook = XLSX.read(data, {
-          type: "array",
-          cellDates: true,
-          dateNF: "DD/MM/YYYY",
-        });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
+        try {
+          const data = e.target.result;
+          const workbook = XLSX.read(data, {
+            type: "array",
+            cellDates: true,
+            dateNF: "DD/MM/YYYY",
+          });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
 
-        // Convert all date cells to DD/MM/YYYY format
-        const dateColumns = [
-          "civil_expiry",
-          "license_expiry",
-          "medical_due_on",
-          "passportExpiry",
-          "vt_hse_induction",
-          "vt_car_1",
-          "vt_car_2",
-          "vt_car_3",
-          "vt_car_4",
-          "vt_car_5",
-          "vt_car_6",
-          "vt_car_7",
-          "vt_car_8",
-          "vt_car_9",
-          "vt_car_10",
-        ];
-        const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
+          // Convert all date cells to DD/MM/YYYY format
+          const dateColumns = [
+            "civil_expiry",
+            "license_expiry",
+            "medical_due_on",
+            "passportExpiry",
+            "vt_hse_induction",
+            "vt_car_1",
+            "vt_car_2",
+            "vt_car_3",
+            "vt_car_4",
+            "vt_car_5",
+            "vt_car_6",
+            "vt_car_7",
+            "vt_car_8",
+            "vt_car_9",
+            "vt_car_10",
+          ];
+          const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
 
-        // Get header row to find column indices
-        const headers: { [key: string]: number } = {};
-        const headerRow = range.s.r;
-        for (let C = range.s.c; C <= range.e.c; ++C) {
-          const cellRef = XLSX.utils.encode_cell({ r: headerRow, c: C });
-          const headerCell = worksheet[cellRef];
-          if (headerCell && headerCell.v) {
-            headers[headerCell.v] = C;
+          // Get header row to find column indices
+          const headers: { [key: string]: number } = {};
+          const headerRow = range.s.r;
+          for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cellRef = XLSX.utils.encode_cell({ r: headerRow, c: C });
+            const headerCell = worksheet[cellRef];
+            if (headerCell && headerCell.v) {
+              headers[headerCell.v] = C;
+            }
           }
-        }
 
-        // Process date cells
-        for (let R = range.s.r + 1; R <= range.e.r; ++R) {
-          for (const dateCol of dateColumns) {
-            if (headers[dateCol] !== undefined) {
-              const cellRef = XLSX.utils.encode_cell({
-                r: R,
-                c: headers[dateCol],
-              });
-              const cell = worksheet[cellRef];
-              if (cell && cell.v) {
-                let formattedDate;
-                if (cell.t === "d") {
-                  // Handle Excel date cells
-                  formattedDate = moment(cell.v).format("DD/MM/YYYY");
-                } else {
-                  // Handle string dates
-                  const parsedDate = moment(cell.v, [
-                    "DD/MM/YYYY",
-                    "M/D/YYYY",
-                    "YYYY-MM-DD",
-                  ]);
-                  if (parsedDate.isValid()) {
-                    formattedDate = parsedDate.format("DD/MM/YYYY");
+          // Process date cells
+          for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+            for (const dateCol of dateColumns) {
+              if (headers[dateCol] !== undefined) {
+                const cellRef = XLSX.utils.encode_cell({
+                  r: R,
+                  c: headers[dateCol],
+                });
+                const cell = worksheet[cellRef];
+                if (cell && cell.v) {
+                  let formattedDate;
+                  if (cell.t === "d") {
+                    // Handle Excel date cells
+                    formattedDate = moment(cell.v).format("DD/MM/YYYY");
+                  } else {
+                    // Handle string dates
+                    const parsedDate = moment(cell.v, [
+                      "DD/MM/YYYY",
+                      "M/D/YYYY",
+                      "YYYY-MM-DD",
+                    ]);
+                    if (parsedDate.isValid()) {
+                      formattedDate = parsedDate.format("DD/MM/YYYY");
+                    }
                   }
-                }
-                if (formattedDate) {
-                  cell.v = formattedDate;
-                  cell.t = "s"; // Set type to string
+                  if (formattedDate) {
+                    cell.v = formattedDate;
+                    cell.t = "s"; // Set type to string
+                  }
                 }
               }
             }
           }
-        }
 
-        const parsedJson = XLSX.utils.sheet_to_json(worksheet);
-        const jsonString = JSON.stringify(parsedJson, null, 2);
-        setJsonData(JSON.parse(jsonString));
+          const parsedJson = XLSX.utils.sheet_to_json(worksheet);
+          const jsonString = JSON.stringify(parsedJson, null, 2);
+          const parsedData = JSON.parse(jsonString);
+          setJsonData(parsedData);
+
+          // Check for duplicates using the existing records array
+          const duplicates = parsedData.filter(
+            (newRecord: any) =>
+              newRecord.employeeCode &&
+              records.some(
+                (existingRecord) =>
+                  existingRecord.employeeCode === newRecord.employeeCode
+              )
+          );
+
+          setDuplicateRecords(duplicates);
+        } catch (error) {
+          console.error(error);
+          message.error("Error reading file");
+        }
       };
       reader.readAsArrayBuffer(file);
     }
   };
 
-  const uploadJson = async () => {
+  // const [overwriteDialog, setOverwriteDialog] = useState(false);
+  // const [existingRecords, setExistingRecords] = useState<any[]>([]);
+  // const [pendingImport, setPendingImport] = useState<any[]>([]);
+
+  const uploadJson = async (overwrite: boolean = false) => {
     setLoading(true);
-    await AddHistory("import", "", "", jsonData.length + " records from XLSX");
 
     try {
       // Process data first
-      jsonData.forEach((e: any) => {
-        e.type = e.type == "omni" ? "omni" : props.dbCategory;
-        e.created_on = new Date();
-        e.modified_on = new Date();
-        e.notify = true;
-        e.state = "active";
-        e.email = e.email || "";
-        e.dateofJoin = e.dateofJoin
+      const processedData = jsonData.map((e: { [key: string]: any }) => ({
+        ...e,
+        type: e.type == "omni" ? "omni" : props.dbCategory,
+        created_on: new Date(),
+        modified_on: new Date(),
+        notify: true,
+        state: "active",
+        email: e.email || "",
+        dateofJoin: e.dateofJoin
           ? moment(e.dateofJoin, "DD/MM/YYYY").format("DD/MM/YYYY")
-          : "";
-        e.salaryBasic = e.initialSalary || 0;
-        e.allowance = e.initialAllowance || 0;
-      });
+          : "",
+        salaryBasic: e.initialSalary || 0,
+        allowance: e.initialAllowance || 0,
+      }));
 
-      let successCount = 0;
-      let errorCount = 0;
-      const batchSize = 500; // Firestore batch limit
+      await AddHistory(
+        "import",
+        "",
+        "",
+        processedData.length + " records from XLSX"
+      );
+
+      const batchSize = 500;
       const batches = [];
       let currentBatch = writeBatch(db);
       let currentBatchSize = 0;
+      let successCount = 0;
+      let errorCount = 0;
 
-      // Process records in batches
-      for (const record of jsonData) {
+      for (const record of processedData) {
         try {
-          const docRef = doc(collection(db, "records"));
-          currentBatch.set(docRef, record);
+          let docRef;
+          if (overwrite && record.employeeCode) {
+            // For overwrite, query existing record
+            const snapshot = await getDocs(
+              query(
+                collection(db, "records"),
+                where("employeeCode", "==", record.employeeCode)
+              )
+            );
+            docRef = snapshot.empty
+              ? doc(collection(db, "records"))
+              : doc(db, "records", snapshot.docs[0].id);
+          } else {
+            // For ignore mode or records without employee code, always create new record
+            docRef = doc(collection(db, "records"));
+          }
+
+          currentBatch.set(docRef, record, { merge: overwrite });
           currentBatchSize++;
           successCount++;
 
-          // If batch is full, add it to batches array and create new batch
           if (currentBatchSize === batchSize) {
             batches.push(currentBatch);
             currentBatch = writeBatch(db);
@@ -1747,12 +1790,10 @@ export default function DbComponent(props: Props) {
         }
       }
 
-      // Add the last batch if it has any operations
       if (currentBatchSize > 0) {
         batches.push(currentBatch);
       }
 
-      // Execute all batches in parallel
       await Promise.all(batches.map((batch) => batch.commit()));
 
       message.success(`Imported ${successCount} records successfully`);
@@ -1767,6 +1808,9 @@ export default function DbComponent(props: Props) {
     } finally {
       setLoading(false);
       setImportDialog(false);
+      setFile(null);
+      setJsonData([]);
+      setImportMode("ignore");
       fetchData();
     }
   };
@@ -1890,25 +1934,32 @@ export default function DbComponent(props: Props) {
     }
   };
 
-  const handleImportExpiring = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      try {
-        setImportLoading(true);
-        await importExpiringRecords(file);
-        setImportDialog(false);
-        window.location.reload();
-        fetchData();
-      } catch (error) {
-        console.error("Error importing updates:", error);
-        message.error("Failed to import updates");
-      } finally {
-        setImportLoading(false);
-      }
-    }
-  };
+  // const handleImportExpiring = async (
+  //   e: React.ChangeEvent<HTMLInputElement>
+  // ) => {
+  //   const file = e.target.files?.[0];
+  //   if (file) {
+  //     try {
+  //       setImportLoading(true);
+  //       await importExpiringRecords(file);
+  //       setImportDialog(false);
+  //       window.location.reload();
+  //       fetchData();
+  //     } catch (error) {
+  //       console.error("Error importing updates:", error);
+  //       message.error("Failed to import updates");
+  //     } finally {
+  //       setImportLoading(false);
+  //     }
+  //   }
+  // };
+
+  const [importMode, setImportMode] = useState<"overwrite" | "ignore">(
+    "ignore"
+  );
+
+  // Add state for tracking duplicate records near other state declarations
+  const [duplicateRecords, setDuplicateRecords] = useState<any[]>([]);
 
   return (
     <>
@@ -2667,12 +2718,14 @@ export default function DbComponent(props: Props) {
           onCancel={() => {
             setImportDialog(false);
             setFile(null);
-            setJsonData([]);
             window.location.reload();
+            setJsonData([]);
+            setDuplicateRecords([]);
+            setImportMode("ignore"); // Reset to default
           }}
           disabled={!jsonData.length}
           updating={loading}
-          onOk={uploadJson}
+          onOk={() => uploadJson(importMode === "overwrite")}
           title_extra={
             <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
               <button
@@ -2735,6 +2788,68 @@ export default function DbComponent(props: Props) {
                   ))}
                 </div>
               )}
+              {jsonData.length != 0 && duplicateRecords.length > 0 && (
+                <div
+                  style={{
+                    border: "",
+                    display: "flex",
+                    flexFlow: "column",
+                    gap: "0.75rem",
+                  }}
+                >
+                  <p style={{ fontSize: "0.8rem", textAlign: "center" }}>
+                    {duplicateRecords.length} duplicate record(s) found
+                  </p>
+
+                  <div
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      gap: "0.5rem",
+                      height: "2.25rem",
+                    }}
+                  >
+                    <button
+                      onClick={() => setImportMode("overwrite")}
+                      style={{
+                        flex: 1,
+                        background:
+                          importMode === "overwrite"
+                            ? "rgba(30, 144, 255, 0.2)"
+                            : "",
+                        color: importMode === "overwrite" ? "dodgerblue" : "",
+                        border:
+                          importMode === "overwrite"
+                            ? "1px solid dodgerblue"
+                            : "",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                    >
+                      Overwrite
+                    </button>
+                    <button
+                      onClick={() => setImportMode("ignore")}
+                      style={{
+                        flex: 1,
+                        background:
+                          importMode === "ignore"
+                            ? "rgba(30, 144, 255, 0.2)"
+                            : "",
+                        color: importMode === "ignore" ? "dodgerblue" : "",
+                        border:
+                          importMode === "ignore" ? "1px solid dodgerblue" : "",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                    >
+                      Ignore
+                    </button>
+                  </div>
+                  <p></p>
+                </div>
+              )}
+
               <div style={{ display: "flex", gap: "0.5rem", width: "100%" }}>
                 <input
                   style={{ fontSize: "0.8rem" }}
@@ -2754,6 +2869,16 @@ export default function DbComponent(props: Props) {
                       setJsonData([]);
                     } else {
                       handleImport();
+
+                      // const hasDuplicates = records.some((item2) =>
+                      //   jsonData.some(
+                      //     (item1: any) =>
+                      //       item1.employeeCode === item2.employeeCode
+                      //   )
+                      // );
+                      // message.info(
+                      //   hasDuplicates ? "Duplicates Found" : "No Duplicates"
+                      // );
                     }
                   }}
                   style={{
@@ -5426,13 +5551,110 @@ export default function DbComponent(props: Props) {
         }
       />
       {/* Add hidden file input for Excel import */}
-      <input
+      {/* <input
         type="file"
         id="excelImport"
-        accept=".xlsx,.xls"
+        accept=".xlsx,.xls" 
         style={{ display: "none" }}
         onChange={handleImportExpiring}
-      />
+      /> */}
+      {/* <DefaultDialog
+        title="Existing Records Found"
+        open={overwriteDialog}
+        onCancel={() => {
+          setOverwriteDialog(false);
+          // Process only new records
+          uploadJson(false);
+        }}
+        OkButtonText="Overwrite"
+        onOk={() => {
+          // Process all records with overwrite
+          uploadJson(true);
+        }}
+        extra={
+          <div>
+            <p style={{ marginBottom: "1rem" }}>
+              {existingRecords.length} record(s) with matching Employee Codes
+              already exist.
+            </p>
+            <p>
+              • Click "Overwrite" to update existing records
+              <br />
+              • Click "Cancel" to import only new records
+              <br />• Records without Employee Codes will be imported as new
+              records
+            </p>
+          </div>
+        }
+      /> */}
+      {/* <DefaultDialog
+        title={"Import Records"}
+        open={importDialog}
+        onCancel={() => {
+          setImportDialog(false);
+          setFile(null);
+          setJsonData([]);
+          setImportMode(null);
+        }}
+        OkButtonText="Add"
+        onOk={() => {
+          if (file) {
+            setImportLoading(true);
+            uploadJson(importMode === "overwrite");
+          }
+        }}
+        extra={
+          <div style={{ display: "flex", flexFlow: "column", gap: "1rem" }}>
+            <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
+              <p style={{ opacity: 0.75, fontSize: "0.9rem" }}>
+                How should duplicate records be handled?
+              </p>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button
+                  onClick={() => setImportMode("overwrite")}
+                  style={{
+                    background:
+                      importMode === "overwrite"
+                        ? "rgba(30, 144, 255, 0.2)"
+                        : "",
+                    color: importMode === "overwrite" ? "dodgerblue" : "",
+                  }}
+                >
+                  Overwrite
+                </button>
+                <button
+                  onClick={() => setImportMode("ignore")}
+                  style={{
+                    background:
+                      importMode === "ignore" ? "rgba(30, 144, 255, 0.2)" : "",
+                    color: importMode === "ignore" ? "dodgerblue" : "",
+                  }}
+                >
+                  Ignore
+                </button>
+              </div>
+            </div>
+            <div
+              style={{
+                width: "100%",
+                height: "1px",
+                background: "rgba(255 255 255/ 10%)",
+              }}
+            />
+            <input
+              type="file"
+              accept=".xlsx"
+              onChange={(e) => {
+                handleImport();
+                setFile(e.target.files?.[0] || null);
+              }}
+              style={{ fontSize: "0.85rem" }}
+            />
+          </div>
+        }
+        disabled={!file || !importMode}
+        updating={importLoading}
+      /> */}
     </>
   );
 }
