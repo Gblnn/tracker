@@ -6,9 +6,50 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>StarBoard</title>
+    <style>
+      #root:empty {
+        display: none;
+      }
+      .initial-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(darkslateblue, midnightblue);
+        opacity: 1;
+        transition: opacity 0.3s;
+      }
+      .initial-loader.hidden {
+        opacity: 0;
+      }
+      .initial-loader img {
+        width: 50px;
+        height: 50px;
+      }
+    </style>
   </head>
   <body>
+    <div class="initial-loader">
+      <img src="/stardox-bg.png" alt="Loading..." />
+    </div>
     <div id="root"></div>
+    <script>
+      // Hide loader once React mounts
+      const observer = new MutationObserver((mutations) => {
+        if (document.getElementById('root').children.length > 0) {
+          document.querySelector('.initial-loader').classList.add('hidden');
+          setTimeout(() => {
+            document.querySelector('.initial-loader').remove();
+          }, 300);
+          observer.disconnect();
+        }
+      });
+      observer.observe(document.getElementById('root'), { childList: true });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
