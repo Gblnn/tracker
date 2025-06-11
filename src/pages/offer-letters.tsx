@@ -1,5 +1,4 @@
 import Back from "@/components/back";
-import RefreshButton from "@/components/refresh-button";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { auth } from "@/firebase";
@@ -9,7 +8,7 @@ import { Drawer, message } from "antd";
 import { motion } from "framer-motion";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import { Bug, Menu } from "lucide-react";
+import { Bug, Menu, Sparkles } from "lucide-react";
 import moment from "moment";
 import { useRef, useState } from "react";
 
@@ -149,7 +148,8 @@ export default function OfferLetters() {
   const renderInputForm = () => (
     <div
       style={{
-        padding: "1rem",
+        border: "",
+        padding: "",
         display: "flex",
         flexDirection: "column",
         gap: "1rem",
@@ -158,220 +158,216 @@ export default function OfferLetters() {
         fontSize: "0.8rem",
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Candidate Name</label>
-        <input
-          type="text"
-          name="candidateName"
-          value={formData.candidateName}
-          onChange={handleInputChange}
-          placeholder="Enter candidate name"
-          style={inputStyle}
-        />
+      <div
+        style={{
+          position: "absolute",
+          width: "50ch",
+          display: "flex",
+          padding: "1.25rem",
+          border: "",
+          background: "rgba(100 100 100/ 1%)",
+          backdropFilter: "blur(16px)",
+          borderTopLeftRadius: "1rem",
+        }}
+      >
+        <h2>Offer Letter Details</h2>
       </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Position</label>
-        <input
-          type="text"
-          name="position"
-          value={formData.position}
-          onChange={handleInputChange}
-          placeholder="Enter position"
-          style={inputStyle}
-        />
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Location</label>
-        <input
-          type="text"
-          name="workLocation"
-          value={formData.workLocation}
-          onChange={handleInputChange}
-          placeholder="Enter work location"
-          style={inputStyle}
-        />
-      </div>
-
-      {/* <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Department</label>
-        <select
-          name="department"
-          value={formData.department}
-          onChange={handleInputChange}
-          style={inputStyle}
-        >
-          <option value="">Select Department</option>
-          <option value="IT">IT</option>
-          <option value="HR">HR</option>
-          <option value="Finance">Finance</option>
-          <option value="Operations">Operations</option>
-        </select>
-      </div> */}
-
-      {/* <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Joining Date</label>
-        <input
-          type="date"
-          name="joiningDate"
-          value={formData.joiningDate}
-          onChange={handleInputChange}
-          style={inputStyle}
-        />
-      </div> */}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Basic Salary (OMR)</label>
-        <input
-          type="number"
-          name="salary"
-          value={formData.salary}
-          onChange={handleInputChange}
-          placeholder="Enter salary"
-          style={inputStyle}
-        />
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Allowance (OMR)</label>
-        <input
-          type="number"
-          name="allowance"
-          value={formData.allowance}
-          onChange={handleInputChange}
-          placeholder="Enter Allowance"
-          style={inputStyle}
-        />
-      </div>
-
-      {/* <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Gross Salary (OMR)</label>
-        <input
-          type="number"
-          name="salary"
-          value={formData.grossSalary}
-          onChange={handleInputChange}
-          placeholder="Gross Salary"
-          style={inputStyle}
-        />
-      </div> */}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Attendance</label>
-        <input
-          type="text"
-          name="attendance"
-          value={formData.attendance}
-          onChange={handleInputChange}
-          placeholder="Enter Attendance Criteria"
-          style={inputStyle}
-        />
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Probation Period</label>
-        <input
-          type="text"
-          name="probation"
-          value={formData.probation}
-          onChange={handleInputChange}
-          placeholder="Enter Probation Period"
-          style={inputStyle}
-        />
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Report for Duty</label>
-        <input
-          type="number"
-          name="reporting"
-          value={formData.reportingDate}
-          onChange={handleInputChange}
-          placeholder="Enter Reporting Date"
-          style={inputStyle}
-        />
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Contract Period</label>
-        <input
-          type="number"
-          name="contract_period"
-          value={formData.contractPeriod}
-          onChange={handleInputChange}
-          placeholder="Enter Contract Period"
-          style={inputStyle}
-        />
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Notice Period</label>
-        <input
-          type="number"
-          name="notice_period"
-          value={formData.noticePeriod}
-          onChange={handleInputChange}
-          placeholder="Enter Notice Period"
-          style={inputStyle}
-        />
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Gratuity</label>
-        <input
-          type="text"
-          name="gratuity"
-          value={formData.gratuity}
-          onChange={handleInputChange}
-          placeholder="Enter Gratuity"
-          style={inputStyle}
-        />
-      </div>
-
-      <br />
-
-      {/* <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <label>Reporting Manager</label>
-        <input
-          type="text"
-          name="reportingManager"
-          value={formData.reportingManager}
-          onChange={handleInputChange}
-          placeholder="Enter reporting manager"
-          style={inputStyle}
-        />
-      </div> */}
 
       <div
         style={{
-          border: "",
+          padding: "1.5rem",
           display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-
-          bottom: 0,
+          flexFlow: "column",
+          gap: "0.75rem",
+          paddingTop: "5rem",
         }}
       >
-        <button
-          onClick={handleGeneratePDF}
+        <div
           style={{
-            width: "100%",
-            padding: "0.5rem 1rem",
-            background: pdfLoading ? "lightblue" : "dodgerblue",
-            color: "white",
-            border: "none",
-            borderRadius: "0.5rem",
-            cursor: pdfLoading ? "not-allowed" : "pointer",
-
-            opacity: pdfLoading ? 0.7 : 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.5rem",
           }}
-          disabled={pdfLoading}
         >
-          {pdfLoading ? "Generating PDF..." : "Generate & Save"}
-        </button>
+          <label>Candidate Name</label>
+          <input
+            type="text"
+            name="candidateName"
+            value={formData.candidateName}
+            onChange={handleInputChange}
+            placeholder="Enter candidate name"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Position</label>
+          <input
+            type="text"
+            name="position"
+            value={formData.position}
+            onChange={handleInputChange}
+            placeholder="Enter position"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Location</label>
+          <input
+            type="text"
+            name="workLocation"
+            value={formData.workLocation}
+            onChange={handleInputChange}
+            placeholder="Enter work location"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Basic Salary (OMR)</label>
+          <input
+            type="number"
+            name="salary"
+            value={formData.salary}
+            onChange={handleInputChange}
+            placeholder="Enter salary"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Allowance (OMR)</label>
+          <input
+            type="number"
+            name="allowance"
+            value={formData.allowance}
+            onChange={handleInputChange}
+            placeholder="Enter Allowance"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Attendance</label>
+          <input
+            type="text"
+            name="attendance"
+            value={formData.attendance}
+            onChange={handleInputChange}
+            placeholder="Enter Attendance Criteria"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Probation Period</label>
+          <input
+            type="text"
+            name="probation"
+            value={formData.probation}
+            onChange={handleInputChange}
+            placeholder="Enter Probation Period"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Report for Duty</label>
+          <input
+            type="number"
+            name="reporting"
+            value={formData.reportingDate}
+            onChange={handleInputChange}
+            placeholder="Enter Reporting Date"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Contract Period</label>
+          <input
+            type="number"
+            name="contract_period"
+            value={formData.contractPeriod}
+            onChange={handleInputChange}
+            placeholder="Enter Contract Period"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Notice Period</label>
+          <input
+            type="number"
+            name="notice_period"
+            value={formData.noticePeriod}
+            onChange={handleInputChange}
+            placeholder="Enter Notice Period"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Gratuity</label>
+          <input
+            type="text"
+            name="gratuity"
+            value={formData.gratuity}
+            onChange={handleInputChange}
+            placeholder="Enter Gratuity"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Leave Encashment</label>
+          <input
+            type="text"
+            name="leaveEncashment"
+            value={formData.leaveEncashment}
+            onChange={handleInputChange}
+            placeholder="Enter Leave Encashment Terms"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Insurance</label>
+          <input
+            type="text"
+            name="insurance"
+            value={formData.insurance}
+            onChange={handleInputChange}
+            placeholder="Enter Leave Encashment"
+            style={inputStyle}
+          />
+        </div>
       </div>
-      <br />
     </div>
   );
 
@@ -582,11 +578,14 @@ export default function OfferLetters() {
                 <td style={tableCellStyle}>{formData.gratuity || "N/A"}</td>
               </tr>
             )}
-
-            <tr>
-              <td style={tableCellStyle}>Leave Encashment</td>
-              <td style={tableCellStyle}>N/A</td>
-            </tr>
+            {formData.leaveEncashment && (
+              <tr>
+                <td style={tableCellStyle}>Leave Encashment</td>
+                <td style={tableCellStyle}>
+                  {formData.leaveEncashment || "N/A"}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -716,24 +715,50 @@ export default function OfferLetters() {
         </div> */}
       <div
         style={{
-          padding: "1.25rem",
+          padding: "",
           background:
             "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
           height: "100svh",
         }}
       >
         <motion.div>
+          <button
+            style={{
+              position: "fixed",
+              bottom: 0,
+              right: 0,
+              zIndex: 10,
+              margin: "2rem",
+            }}
+            onClick={() => setDrawerVisible(true)}
+            className="mobile-menu-button"
+          >
+            <Menu color="black" width="1.5rem" />
+          </button>
           <Back
-            title="Prepare Offer Letter"
+            fixed
+            // title="Doc"
+            // icon={<File color="dodgerblue" />}
             extra={
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 <button
-                  onClick={() => setDrawerVisible(true)}
-                  className="mobile-menu-button"
+                  onClick={handleGeneratePDF}
+                  style={{
+                    width: "100%",
+                    padding: "0.5rem 1rem",
+                    background: pdfLoading ? "lightblue" : "dodgerblue",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "0.5rem",
+                    cursor: pdfLoading ? "not-allowed" : "pointer",
+
+                    opacity: pdfLoading ? 0.7 : 1,
+                  }}
+                  disabled={pdfLoading}
                 >
-                  <Menu width="1.5rem" />
+                  <Sparkles color="white" width={"1rem"} />
+                  {pdfLoading ? "Generating..." : "Generate"}
                 </button>
-                <RefreshButton />
               </div>
             }
           />
@@ -758,6 +783,7 @@ export default function OfferLetters() {
                 height: "calc(100vh - 8rem)",
                 border: "",
                 justifyContent: "center",
+                paddingTop: "5rem",
               }}
             >
               {/* Input Form - Hidden on mobile */}

@@ -13,6 +13,7 @@ interface Props {
   editMode?: boolean;
   fontSize?: string;
   editModeLoading?: boolean;
+  fixed?: boolean;
 }
 
 export default function Back(props: Props) {
@@ -27,6 +28,11 @@ export default function Back(props: Props) {
         gap: "0.75rem",
         zIndex: 5,
         justifyContent: "space-between",
+        padding: props.fixed ? "1.25rem" : " ",
+        position: props.fixed ? "fixed" : "inherit",
+        width: "100%",
+        background: "rgba(100 100 100/ 1%)",
+        backdropFilter: "blur(16px)",
       }}
     >
       <div style={{ display: "flex" }}>
