@@ -28,6 +28,7 @@ import UserReset from "./pages/user-reset";
 import Users from "./pages/users";
 import ValeRecords from "./pages/vale-records";
 import Website from "./pages/website";
+import OfferLetters from "./pages/offer-letters";
 
 // Initialize emailjs once outside of component
 emailjs.init("c8AePKR5BCK8UIn_E");
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="access-requests" element={<AccessRequests />} />
           <Route path="/user" element={<UserPage />} />
           <Route path="/new-hire" element={<NewHire />} />
+          <Route path="/offer-letters" element={<OfferLetters />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/openings" element={<Openings />} />
           <Route path="/website" element={<Website />} />

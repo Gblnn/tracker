@@ -1,11 +1,23 @@
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import { EllipsisVerticalIcon, LogOut, RefreshCcw, User } from "lucide-react";
+import {
+  Bug,
+  EllipsisVerticalIcon,
+  LogOut,
+  RefreshCcw,
+  User,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
 } from "./ui/dropdown-menu";
+import DefaultDialog from "./ui/default-dialog";
+import { useState } from "react";
+import { auth } from "@/firebase";
+import emailjs from "@emailjs/browser";
+import moment from "moment";
+import { message } from "antd";
 
 interface Props {
   trigger?: any;
@@ -20,6 +32,30 @@ interface Props {
 }
 
 export default function IndexDropDown(props: Props) {
+  const [issue, setIssue] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [bugDialog, setBugDialog] = useState(false);
+
+  const serviceId = "service_fixajl8";
+  const templateId = "template_0f3zy3e";
+
+  const sendBugReport = async () => {
+    setLoading(true);
+    await emailjs.send(serviceId, templateId, {
+      name: auth.currentUser?.email,
+      subject:
+        "Bug Report - " +
+        moment().format("ll") +
+        " from " +
+        auth.currentUser?.email,
+      recipient: "it@soharstar.com",
+      message: issue,
+    });
+    setLoading(false);
+    message.success("Bug Report sent");
+    setBugDialog(false);
+  };
+
   return (
     <>
       <DropdownMenu>
@@ -79,6 +115,14 @@ export default function IndexDropDown(props: Props) {
               <span style={{ width: "100%" }}>Force Reload</span>
             </DropdownMenuItem>
 
+            <DropdownMenuItem
+              onClick={() => setBugDialog(true)}
+              style={{ width: "100%" }}
+            >
+              <Bug className="mr-2 " color="lightgreen" />
+              <span style={{ width: "100%" }}>Report Bug</span>
+            </DropdownMenuItem>
+
             {props.onProfile && (
               <DropdownMenuItem onClick={props.onProfile}>
                 <User className="mr-2" color="dodgerblue" />
@@ -96,6 +140,36 @@ export default function IndexDropDown(props: Props) {
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <DefaultDialog
+        title={"Report a Bug"}
+        titleIcon={<Bug color="lightgreen" />}
+        extra={
+          <div
+            style={{
+              display: "flex",
+              width: "100%",
+              flexFlow: "column",
+              gap: "0.75rem",
+              paddingBottom: "0.5rem",
+            }}
+          >
+            <textarea
+              onChange={(e) => setIssue(e.target.value)}
+              rows={5}
+              placeholder="Describe issue"
+            />
+          </div>
+        }
+        open={bugDialog}
+        onCancel={() => setBugDialog(false)}
+        OkButtonText="Report"
+        disabled={issue == ""}
+        onOk={() => {
+          issue != "" ? sendBugReport() : "";
+        }}
+        updating={loading}
+      />
     </>
   );
 }

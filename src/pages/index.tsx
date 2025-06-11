@@ -1,3 +1,4 @@
+import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import Directive from "@/components/directive";
 import IndexDropDown from "@/components/index-dropdown";
@@ -8,11 +9,17 @@ import { LoadingOutlined } from "@ant-design/icons";
 import emailjs from "@emailjs/browser";
 import { message } from "antd";
 import { motion } from "framer-motion";
-import { Bug, FileArchive, KeyRound, Mail, QrCode } from "lucide-react";
+import {
+  Bug,
+  FileArchive,
+  KeyRound,
+  Mail,
+  QrCode,
+  UserCheck,
+} from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/components/AuthProvider";
 
 export default function Index() {
   const usenavigate = useNavigate();
@@ -193,11 +200,12 @@ export default function Index() {
                 icon={<FileArchive color="violet" width={"1.25rem"} />}
               />
 
-              {/* <Directive
+              <Directive
+                onClick={() => usenavigate("/new-hire")}
                 to={"/new-hire"}
                 title={"New Hire"}
-                icon={<UserPlus width={"1.25rem"} color="dodgerblue" />}
-              /> */}
+                icon={<UserCheck width={"1.25rem"} color="salmon" />}
+              />
 
               {/* <Directive
                 title={"Vehicles"}

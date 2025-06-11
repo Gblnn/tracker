@@ -91,6 +91,7 @@ export default function Directive(props: Props) {
         className="directive-button"
         style={{
           padding: "0.75rem",
+
           gap: "0.5rem",
           width: "100%",
           display: "flex",
@@ -101,6 +102,7 @@ export default function Directive(props: Props) {
           border: "1px solid rgba(100 100 100/ 0.2)",
           transition: "all 0.2s ease",
           cursor: "pointer",
+          paddingLeft: "1rem",
         }}
       >
         <div
@@ -109,6 +111,7 @@ export default function Directive(props: Props) {
             gap: "0.75rem",
             alignItems: "center",
             flex: 1,
+            border: "",
           }}
         >
           {props.selectable ? (
@@ -145,7 +148,8 @@ export default function Directive(props: Props) {
             {props.subtext && (
               <p
                 style={{
-                  fontWeight: 400,
+                  fontWeight: 500,
+                  letterSpacing: "0.06rem",
                   textAlign: "left",
                   fontSize: "0.6rem",
                   opacity: "0.6",

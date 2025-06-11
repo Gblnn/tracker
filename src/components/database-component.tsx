@@ -1727,20 +1727,24 @@ export default function DbComponent(props: Props) {
 
     try {
       // Process data first
-      const processedData = jsonData.map((e: { [key: string]: any }) => ({
-        ...e,
-        type: e.type == "omni" ? "omni" : props.dbCategory,
-        created_on: new Date(),
-        modified_on: new Date(),
-        notify: true,
-        state: "active",
-        email: e.email || "",
-        dateofJoin: e.dateofJoin
-          ? moment(e.dateofJoin, "DD/MM/YYYY").format("DD/MM/YYYY")
-          : "",
-        salaryBasic: e.initialSalary || 0,
-        allowance: e.initialAllowance || 0,
-      }));
+      const processedData = jsonData.map((e: { [key: string]: any }) => {
+        // Create a new object without the id field
+        const { id, ...recordWithoutId } = e;
+        return {
+          ...recordWithoutId,
+          type: e.type == "omni" ? "omni" : props.dbCategory,
+          created_on: new Date(),
+          modified_on: new Date(),
+          notify: true,
+          state: "active",
+          email: e.email || "",
+          dateofJoin: e.dateofJoin
+            ? moment(e.dateofJoin, "DD/MM/YYYY").format("DD/MM/YYYY")
+            : "",
+          salaryBasic: e.initialSalary || 0,
+          allowance: e.initialAllowance || 0,
+        };
+      });
 
       await AddHistory(
         "import",
@@ -2850,6 +2854,16 @@ export default function DbComponent(props: Props) {
                 </div>
               )}
 
+              <p
+                style={{
+                  color: "indianred",
+                  fontSize: "0.8rem",
+                  fontWeight: 500,
+                }}
+              >
+                Exclude ID before upload
+              </p>
+
               <div style={{ display: "flex", gap: "0.5rem", width: "100%" }}>
                 <input
                   style={{ fontSize: "0.8rem" }}
@@ -2890,10 +2904,12 @@ export default function DbComponent(props: Props) {
                   {jsonData.length > 0 ? "Clear" : "Add"}
                 </button>
               </div>
+
               <div style={{ marginTop: "1rem" }}>
                 <Directive
                   icon={<RefreshCcw width={"1.25rem"} color="orange" />}
                   title={"Import as Updates"}
+                  subtext={"Include ID"}
                   id_subtitle={"Update existing records with new data"}
                   status={true}
                   loading={importLoading}

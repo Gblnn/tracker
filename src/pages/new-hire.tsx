@@ -5,7 +5,7 @@ import DefaultDialog from "@/components/ui/default-dialog";
 import { auth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { motion } from "framer-motion";
-import { File, KeyRound, Mail } from "lucide-react";
+import { Binary, File, KeyRound, Mail } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -70,9 +70,14 @@ export default function NewHire() {
 
           <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
             <Directive
-              to={""}
-              title={"Offer Letters"}
+              onClick={() => usenavigate("/offer-letters")}
+              to={"/offer-letters"}
+              title={"Prepare Offer Letter"}
               icon={<File color="violet" width={"1.25rem"} />}
+            />
+            <Directive
+              title={"Assign Employee Code"}
+              icon={<Binary color="dodgerblue" />}
             />
 
             {/* <Directive
