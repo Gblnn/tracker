@@ -78,6 +78,7 @@ export default function NewHire() {
             <Directive
               title={"Assign Employee Code"}
               icon={<Binary color="dodgerblue" />}
+              tag={"Maintenance"}
             />
 
             {/* <Directive

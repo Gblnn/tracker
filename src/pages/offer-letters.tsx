@@ -273,13 +273,13 @@ export default function OfferLetters() {
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
-          <label>Probation Period</label>
+          <label>Probation</label>
           <input
             type="text"
             name="probation"
             value={formData.probation}
             onChange={handleInputChange}
-            placeholder="Enter Probation Period"
+            placeholder="Enter Visa Terms"
             style={inputStyle}
           />
         </div>
@@ -289,8 +289,8 @@ export default function OfferLetters() {
         >
           <label>Report for Duty</label>
           <input
-            type="number"
-            name="reporting"
+            type="date"
+            name="Report for Duty"
             value={formData.reportingDate}
             onChange={handleInputChange}
             placeholder="Enter Reporting Date"
@@ -303,8 +303,8 @@ export default function OfferLetters() {
         >
           <label>Contract Period</label>
           <input
-            type="number"
-            name="contract_period"
+            type="text"
+            name="contractPeriod"
             value={formData.contractPeriod}
             onChange={handleInputChange}
             placeholder="Enter Contract Period"
@@ -317,11 +317,81 @@ export default function OfferLetters() {
         >
           <label>Notice Period</label>
           <input
-            type="number"
-            name="notice_period"
+            type="text"
+            name="noticePeriod"
             value={formData.noticePeriod}
             onChange={handleInputChange}
             placeholder="Enter Notice Period"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Accomodation</label>
+          <input
+            type="text"
+            name="accomodation"
+            value={formData.accomodation}
+            onChange={handleInputChange}
+            placeholder="Enter Accomodation Terms"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Food</label>
+          <input
+            type="text"
+            name="food"
+            value={formData.food}
+            onChange={handleInputChange}
+            placeholder="Enter Food Terms"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Transport</label>
+          <input
+            type="text"
+            name="transport"
+            value={formData.transport}
+            onChange={handleInputChange}
+            placeholder="Enter Transport Terms"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Visa Status</label>
+          <input
+            type="text"
+            name="visaStatus"
+            value={formData.visaStatus}
+            onChange={handleInputChange}
+            placeholder="Enter Visa Terms"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Insurance</label>
+          <input
+            type="text"
+            name="insurance"
+            value={formData.insurance}
+            onChange={handleInputChange}
+            placeholder="Enter Leave Encashment"
             style={inputStyle}
           />
         </div>
@@ -350,20 +420,6 @@ export default function OfferLetters() {
             value={formData.leaveEncashment}
             onChange={handleInputChange}
             placeholder="Enter Leave Encashment Terms"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Insurance</label>
-          <input
-            type="text"
-            name="insurance"
-            value={formData.insurance}
-            onChange={handleInputChange}
-            placeholder="Enter Leave Encashment"
             style={inputStyle}
           />
         </div>
@@ -517,34 +573,36 @@ export default function OfferLetters() {
             <tr>
               <td style={tableCellStyle}>Notice Period</td>
               <td style={tableCellStyle}>
-                No notice period shall be accepted until the end of the project
+                {formData.noticePeriod ||
+                  "No notice period shall be accepted until the end of the project"}
               </td>
             </tr>
             <tr>
               <td style={tableCellStyle}>Accommodation</td>
               <td style={tableCellStyle}>
-                Single Room Bachelors Accommodation shall be provided by the
-                Company
+                {formData.accomodation ||
+                  "Single Room Bachelors Accommodation shall be provided by the Company"}
               </td>
             </tr>
             <tr>
               <td style={tableCellStyle}>Food</td>
               <td style={tableCellStyle}>
-                Shall be provided by the Company in Site Office and at Camp
+                {formData.food ||
+                  "Shall be provided by the Company in Site Office and at Camp"}
               </td>
             </tr>
             <tr>
               <td style={tableCellStyle}>Transport</td>
               <td style={tableCellStyle}>
-                A Car shall be provided by the Company for official use only
+                {formData.transport ||
+                  "A Car shall be provided by the Company for official use only"}
               </td>
             </tr>
             <tr>
               <td style={tableCellStyle}>VISA Status</td>
               <td style={tableCellStyle}>
-                Work VISA shall be provided by the Company. Employee agrees that
-                he shall not join any competing business until the end of the
-                Contract Project
+                {formData.visaStatus ||
+                  "Work VISA shall be provided by the Company. Employee agrees that he shall not join any competing business until the end of the Contract Project"}
               </td>
             </tr>
             <tr>
@@ -555,16 +613,18 @@ export default function OfferLetters() {
             </tr>
             <tr>
               <td style={tableCellStyle}>Medical</td>
-              <td style={tableCellStyle}>
-                Shall be provided by Company as per Omani Labor Law
-              </td>
+              <td style={tableCellStyle}>Shall be provided by Company</td>
             </tr>
-            <tr>
-              <td style={tableCellStyle}>Insurance</td>
-              <td style={tableCellStyle}>
-                WC, Medical & Group Life Insurance, under the Company account
-              </td>
-            </tr>
+            {formData.insurance && (
+              <tr>
+                <td style={tableCellStyle}>Insurance</td>
+                <td style={tableCellStyle}>
+                  {formData.insurance ||
+                    "WC, Medical & Group Life Insurance, under the Company account"}
+                </td>
+              </tr>
+            )}
+
             <tr>
               <td style={tableCellStyle}>Annual Leave</td>
               <td style={tableCellStyle}>
@@ -636,24 +696,31 @@ export default function OfferLetters() {
         >
           Other Terms & Conditions
         </h3>
-        <ul style={{ marginBottom: "2rem", paddingLeft: 24 }}>
+        <ul
+          style={{
+            marginBottom: "2rem",
+            paddingLeft: 24,
+            display: "flex",
+            flexFlow: "column",
+            gap: "0.75rem",
+          }}
+        >
           <li>
-            Company Asset if any in possession are bound to be returned at the
-            end of services. Otherwise, the cost shall be deducted from the
-            final dues.
+            Company Assets, if any in possession are to be returned at the end
+            of services, else the cost shall be deducted from the final dues.
           </li>
           <li>
-            VISA expenses shall be borne by the Company even in case of
+            VISA expenses will be borne by the Company even in case of
             termination during contract period, but not in case the employee
             resigns during the contract period.
           </li>
           <li>
             If you damage any company assets, furniture or vehicles, the company
-            will have the full right to recover from your dues.
+            will have all rights to recover its compensation from your dues.
           </li>
           <li>
             If the employee does not sign this agreement within the seven days,
-            then the agreement shall be deemed null and void.
+            the agreement shall be deemed null and void.
           </li>
           <li>
             In case of failure to report to duty in Oman, the offer letter shall
