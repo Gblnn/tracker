@@ -8,7 +8,7 @@ import { Drawer, message } from "antd";
 import { motion } from "framer-motion";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import { Bug, Menu, Sparkles } from "lucide-react";
+import { Bug, Menu, Printer, Sparkles } from "lucide-react";
 import moment from "moment";
 import { useRef, useState } from "react";
 
@@ -140,6 +140,48 @@ export default function OfferLetters() {
       pdf.save(`Offer_Letter_${formData.candidateName || "Candidate"}.pdf`);
     } catch (err) {
       message.error("Failed to generate PDF");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  // Print PDF and open in print dialog
+  const handlePrintPDFPreview = async () => {
+    setPdfLoading(true);
+    try {
+      const tableNode = tableRef.current;
+      const restNode = restRef.current;
+      if (!tableNode || !restNode) return;
+
+      // Render table (page 1)
+      const tableCanvas = await html2canvas(tableNode, { scale: 2 });
+      const tableImgData = tableCanvas.toDataURL("image/png");
+      const pdf = new jsPDF({ unit: "px", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const tableProps = pdf.getImageProperties(tableImgData);
+      const tableHeight = (tableProps.height * pageWidth) / tableProps.width;
+      pdf.addImage(tableImgData, "PNG", 0, 0, pageWidth, tableHeight);
+
+      // Render rest (page 2)
+      const restCanvas = await html2canvas(restNode, { scale: 2 });
+      const restImgData = restCanvas.toDataURL("image/png");
+      pdf.addPage();
+      const restProps = pdf.getImageProperties(restImgData);
+      const restHeight = (restProps.height * pageWidth) / restProps.width;
+      pdf.addImage(restImgData, "PNG", 0, 0, pageWidth, restHeight);
+
+      // Open PDF in new tab and trigger print
+      const pdfBlob = pdf.output("blob");
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const printWindow = window.open(blobUrl);
+      if (printWindow) {
+        printWindow.onload = function () {
+          printWindow.focus();
+          printWindow.print();
+        };
+      }
+    } catch (err) {
+      message.error("Failed to generate PDF for print");
     } finally {
       setPdfLoading(false);
     }
@@ -449,7 +491,7 @@ export default function OfferLetters() {
           overflowX: "auto",
         }}
       >
-        <div
+        {/* <div
           style={{
             position: "absolute",
             border: "",
@@ -471,7 +513,7 @@ export default function OfferLetters() {
               // margin: "2rem",
             }}
           />
-        </div>
+        </div> */}
 
         <br />
         <br />
@@ -490,7 +532,7 @@ export default function OfferLetters() {
           JOB CONTRACT AGREEMENT LETTER
         </h2>
         {/* Intro Paragraph */}
-        <p style={{ marginBottom: "1rem", textAlign: "justify" }}>
+        <p style={{ marginBottom: "1.25rem", textAlign: "justify" }}>
           We at <b>Sohar Star United LLC</b>, Sohar, Sultanate of Oman, are
           delighted to offer you the position of{" "}
           <b style={{ textTransform: "uppercase" }}>
@@ -818,13 +860,26 @@ export default function OfferLetters() {
                     border: "none",
                     borderRadius: "0.5rem",
                     cursor: pdfLoading ? "not-allowed" : "pointer",
-
                     opacity: pdfLoading ? 0.7 : 1,
                   }}
                   disabled={pdfLoading}
                 >
                   <Sparkles color="white" width={"1rem"} />
                   {pdfLoading ? "Generating..." : "Generate"}
+                </button>
+                <button
+                  onClick={handlePrintPDFPreview}
+                  style={{
+                    width: "100%",
+                    padding: "0.5rem 1rem",
+                    background: "rgba(100 100 100/ 50%)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "0.5rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  <Printer width={"1.25rem"} />
                 </button>
               </div>
             }
