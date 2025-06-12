@@ -538,7 +538,7 @@ export default function OfferLetters() {
         <br />
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           {
-            <p style={{ fontWeight: 600 }}>
+            <p style={{ fontWeight: 600, textTransform: "uppercase" }}>
               {formData.refNo && "REF: " + formData.refNo}
             </p>
           }
@@ -881,6 +881,7 @@ export default function OfferLetters() {
                   onClick={handleGeneratePDF}
                   style={{
                     width: "100%",
+                    fontSize: "0.9rem",
                     padding: "0.5rem 1rem",
                     background: pdfLoading ? "lightblue" : "dodgerblue",
                     color: "white",
