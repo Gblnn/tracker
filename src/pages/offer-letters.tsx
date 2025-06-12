@@ -8,7 +8,7 @@ import { Drawer, message } from "antd";
 import { motion } from "framer-motion";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import { Bug, Database, File, Menu, Sparkles } from "lucide-react";
+import { Bug, Database, Eye, File, Menu, Sparkles } from "lucide-react";
 import moment from "moment";
 import { useRef, useState } from "react";
 import {
@@ -514,6 +514,19 @@ export default function OfferLetters() {
   const renderPreview = () => (
     <ScrollArea>
       {/* Page 1: Table only */}
+      <div
+        style={{
+          display: "flex",
+          gap: "0.5rem",
+          alignItems: "center",
+          marginBottom: "1rem",
+          marginLeft: "1rem",
+        }}
+      >
+        <Eye />
+        <h2>Preview</h2>
+      </div>
+
       <div
         ref={tableRef}
         style={{

@@ -1,15 +1,67 @@
 import { motion } from "framer-motion";
 import { ChevronRight, PenLine, Users } from "lucide-react";
+import { useState } from "react";
+import { Modal, Input, Select, Checkbox, Button, message } from "antd";
+import { db } from "@/firebase";
+import { doc, updateDoc, deleteDoc } from "firebase/firestore";
 
 interface Props {
+  id?: string;
   date?: string;
   designation?: string;
   experience?: string;
   desc?: string;
   mailto?: string;
+  jobType?: string;
+  activelyHiring?: boolean;
 }
 
 export default function Work(props: Props) {
+  const [editOpen, setEditOpen] = useState(false);
+  const [editData, setEditData] = useState({
+    jobType: props.jobType || "full-time",
+    jobTitle: props.designation || "",
+    description: props.desc || "",
+    activelyHiring: props.activelyHiring || false,
+  });
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleSave = async () => {
+    if (!props.id) return;
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, "openings", props.id), {
+        jobType: editData.jobType,
+        jobTitle: editData.jobTitle,
+        description: editData.description,
+        activelyHiring: editData.activelyHiring,
+      });
+      message.success("Opening updated");
+      setEditOpen(false);
+      window.location.reload();
+    } catch (err) {
+      message.error("Failed to update opening");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!props.id) return;
+    setDeleting(true);
+    try {
+      await deleteDoc(doc(db, "openings", props.id));
+      message.success("Opening deleted");
+      setEditOpen(false);
+      window.location.reload();
+    } catch (err) {
+      message.error("Failed to delete opening");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -44,7 +96,10 @@ export default function Work(props: Props) {
             padding: "1rem",
           }}
         >
-          <button style={{ marginBottom: "" }}>
+          <button
+            style={{ marginBottom: "" }}
+            onClick={() => setEditOpen(true)}
+          >
             <PenLine width={"1.25rem"} />
           </button>
         </div>
@@ -63,7 +118,7 @@ export default function Work(props: Props) {
                 marginBottom: "1rem",
               }}
             >
-              FULL TIME
+              {props.jobType ? props.jobType.toUpperCase() : "FULL TIME"}
             </p>
 
             <p
@@ -118,30 +173,97 @@ export default function Work(props: Props) {
             </p>
             <ChevronRight width={"1rem"} />
           </div>
-
-          {/* <a href={`mailto:${props.mailto}`}>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            style={{
-              background: "crimson",
-              padding: "0.5rem 1rem",
-              borderRadius: "0.5rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              border: "none",
-              cursor: "pointer",
-              color: "white",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-            }}
-          >
-            <Mail width="1rem" />
-            Apply
-          </motion.button>
-        </a> */}
         </div>
       </div>
+      <Modal
+        title="Edit Job Posting"
+        open={editOpen}
+        onCancel={() => setEditOpen(false)}
+        onOk={handleSave}
+        confirmLoading={saving}
+        okText="Save"
+        cancelText="Cancel"
+        footer={[
+          <Button
+            key="delete"
+            danger
+            loading={deleting}
+            onClick={handleDelete}
+            disabled={saving}
+          >
+            Delete
+          </Button>,
+          <Button
+            key="cancel"
+            onClick={() => setEditOpen(false)}
+            disabled={saving || deleting}
+          >
+            Cancel
+          </Button>,
+          <Button
+            key="save"
+            type="primary"
+            onClick={handleSave}
+            loading={saving}
+            disabled={deleting}
+          >
+            Save
+          </Button>,
+        ]}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div>
+            <label>Job Type</label>
+            <Select
+              value={editData.jobType}
+              onChange={(value) =>
+                setEditData((prev) => ({ ...prev, jobType: value }))
+              }
+              style={{ width: "100%" }}
+            >
+              <Select.Option value="full-time">Full Time</Select.Option>
+              <Select.Option value="part-time">Part Time</Select.Option>
+            </Select>
+          </div>
+          <div>
+            <label>Job Title</label>
+            <Input
+              value={editData.jobTitle}
+              onChange={(e) =>
+                setEditData((prev) => ({ ...prev, jobTitle: e.target.value }))
+              }
+              placeholder="Enter job title"
+            />
+          </div>
+          <div>
+            <label>Description</label>
+            <Input.TextArea
+              value={editData.description}
+              onChange={(e) =>
+                setEditData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
+              placeholder="Enter job description"
+              rows={4}
+            />
+          </div>
+          <div>
+            <Checkbox
+              checked={editData.activelyHiring}
+              onChange={(e) =>
+                setEditData((prev) => ({
+                  ...prev,
+                  activelyHiring: e.target.checked,
+                }))
+              }
+            >
+              Actively Hiring
+            </Checkbox>
+          </div>
+        </div>
+      </Modal>
     </motion.div>
   );
 }
