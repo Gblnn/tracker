@@ -19,7 +19,7 @@ const styles = {
   },
   inputForm: {
     width: "30%",
-    background: "rgba(255 255 255/ 5%)",
+    // background: "rgba(255 255 255/ 5%)",
     borderRadius: "0.5rem",
   },
   preview: {
@@ -191,6 +191,7 @@ export default function OfferLetters() {
   const renderInputForm = () => (
     <div
       style={{
+        position: "fixed",
         border: "",
         padding: "",
         display: "flex",
@@ -199,16 +200,16 @@ export default function OfferLetters() {
         height: "100%",
         overflowY: "auto",
         fontSize: "0.8rem",
+        maxHeight: "60ch",
       }}
     >
       <div
         style={{
-          position: "absolute",
           width: "50ch",
           display: "flex",
           padding: "1.25rem",
           border: "",
-          background: "rgba(100 100 100/ 1%)",
+          // background: "rgba(100 100 100/ 1%)",
           backdropFilter: "blur(16px)",
           borderTopLeftRadius: "1rem",
         }}
@@ -222,7 +223,7 @@ export default function OfferLetters() {
           display: "flex",
           flexFlow: "column",
           gap: "0.75rem",
-          paddingTop: "5rem",
+          paddingTop: "",
         }}
       >
         <div
@@ -350,7 +351,7 @@ export default function OfferLetters() {
           <label>Report for Duty</label>
           <input
             type="date"
-            name="Report for Duty"
+            name="reportingDate"
             value={formData.reportingDate}
             onChange={handleInputChange}
             placeholder="Enter Reporting Date"
@@ -618,7 +619,9 @@ export default function OfferLetters() {
               </td>
             </tr>
             <tr>
-              <td style={tableCellStyle}>Attendance</td>
+              <td style={tableCellStyle}>
+                Site/ Office Attendance, including overtime
+              </td>
               <td style={tableCellStyle}>{formData.attendance || "N/A"}</td>
             </tr>
             <tr>
