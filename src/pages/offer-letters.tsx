@@ -56,6 +56,7 @@ export default function OfferLetters() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [formData, setFormData] = useState({
+    refNo: "",
     candidateName: "",
     position: "",
     workLocation: "",
@@ -224,6 +225,23 @@ export default function OfferLetters() {
           paddingTop: "5rem",
         }}
       >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.5rem",
+          }}
+        >
+          <label>Reference No : </label>
+          <input
+            type="text"
+            name="refNo"
+            value={formData.refNo}
+            onChange={handleInputChange}
+            placeholder="Enter Reference Number"
+            style={inputStyle}
+          />
+        </div>
         <div
           style={{
             display: "flex",
@@ -518,6 +536,13 @@ export default function OfferLetters() {
         <br />
         <br />
         <br />
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          {formData.refNo && (
+            <p style={{ fontWeight: 600 }}>{"REF: " + formData.refNo}</p>
+          )}
+
+          <p style={{ fontWeight: 600 }}>{moment().format("DD/MM/YYYY")}</p>
+        </div>
         {/* Title */}
         <h2
           style={{
