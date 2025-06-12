@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { PenLine, Zap } from "lucide-react";
+import { ChevronRight, PenLine, Users } from "lucide-react";
 
 interface Props {
   date?: string;
@@ -41,7 +41,7 @@ export default function Work(props: Props) {
             border: "",
             display: "flex",
             justifyContent: "flex-end",
-            padding: "0.75rem",
+            padding: "1rem",
           }}
         >
           <button style={{ marginBottom: "" }}>
@@ -108,10 +108,15 @@ export default function Work(props: Props) {
               display: "flex",
               alignItems: "center",
               gap: "0.5rem",
+              justifyContent: "space-between",
             }}
           >
-            <Zap width="1rem" color="crimson" />
-            <p style={{ fontSize: "0.85rem", opacity: 0.8 }}>Actively Hiring</p>
+            <Users width="1rem" color="crimson" />
+            <div></div>
+            <p style={{ fontSize: "0.85rem", opacity: 0.8 }}>
+              <b>0</b> Applicants
+            </p>
+            <ChevronRight width={"1rem"} />
           </div>
 
           {/* <a href={`mailto:${props.mailto}`}>

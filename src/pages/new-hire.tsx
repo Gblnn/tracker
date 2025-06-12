@@ -5,14 +5,7 @@ import DefaultDialog from "@/components/ui/default-dialog";
 import { auth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { motion } from "framer-motion";
-import {
-  Binary,
-  BriefcaseBusiness,
-  File,
-  KeyRound,
-  Mail,
-  Users,
-} from "lucide-react";
+import { Binary, BriefcaseBusiness, File, KeyRound, Mail } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -81,10 +74,10 @@ export default function NewHire() {
               icon={<BriefcaseBusiness width={"1.25rem"} color="salmon" />}
               title={"Openings"}
             />
-            <Directive
+            {/* <Directive
               title={"Applicants"}
               icon={<Users width={"1.25rem"} color="dodgerblue" />}
-            />
+            /> */}
             <Directive
               onClick={() => usenavigate("/offer-letters")}
               to={"/offer-letters"}
