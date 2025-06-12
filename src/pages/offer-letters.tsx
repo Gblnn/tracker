@@ -537,9 +537,11 @@ export default function OfferLetters() {
         <br />
         <br />
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          {formData.refNo && (
-            <p style={{ fontWeight: 600 }}>{"REF: " + formData.refNo}</p>
-          )}
+          {
+            <p style={{ fontWeight: 600 }}>
+              {formData.refNo && "REF: " + formData.refNo}
+            </p>
+          }
 
           <p style={{ fontWeight: 600 }}>{moment().format("DD/MM/YYYY")}</p>
         </div>
