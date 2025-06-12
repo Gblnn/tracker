@@ -45,7 +45,7 @@ export default function Work(props: Props) {
           }}
         >
           <button style={{ marginBottom: "" }}>
-            <PenLine />
+            <PenLine width={"1.25rem"} />
           </button>
         </div>
 

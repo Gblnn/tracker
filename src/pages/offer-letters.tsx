@@ -1,16 +1,24 @@
 import Back from "@/components/back";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { auth } from "@/firebase";
+import { auth, db } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import emailjs from "@emailjs/browser";
 import { Drawer, message } from "antd";
 import { motion } from "framer-motion";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import { Bug, Menu, Sparkles } from "lucide-react";
+import { Bug, Database, File, Menu, Sparkles } from "lucide-react";
 import moment from "moment";
 import { useRef, useState } from "react";
+import {
+  addDoc,
+  collection,
+  Timestamp,
+  getDocs,
+  query,
+  orderBy,
+} from "firebase/firestore";
 
 // Add styles at the top of the file
 const styles = {
@@ -55,7 +63,31 @@ export default function OfferLetters() {
   const [loading, setLoading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    refNo: string;
+    candidateName: string;
+    position: string;
+    workLocation: string;
+    salary: string;
+    allowance: string;
+    grossSalary: string;
+    attendance: string;
+    probation: string;
+    reportingDate: string;
+    contractPeriod: string;
+    noticePeriod: string;
+    accomodation: string;
+    food: string;
+    transport: string;
+    visaStatus: string;
+    communication: string;
+    medical: string;
+    insurance: string;
+    annualLeave: string;
+    gratuity: string;
+    leaveEncashment: string;
+    [key: string]: string;
+  }>({
     refNo: "",
     candidateName: "",
     position: "",
@@ -85,6 +117,11 @@ export default function OfferLetters() {
 
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
+
+  const [offerLettersDrawerVisible, setOfferLettersDrawerVisible] =
+    useState(false);
+  const [offerLetters, setOfferLetters] = useState<any[]>([]);
+  const [offerLettersLoading, setOfferLettersLoading] = useState(false);
 
   const sendBugReport = async () => {
     setLoading(true);
@@ -117,6 +154,13 @@ export default function OfferLetters() {
   const handleGeneratePDF = async () => {
     setPdfLoading(true);
     try {
+      // Save offer letter details to Firestore
+      await addDoc(collection(db, "offer_letters"), {
+        ...formData,
+        generated_at: Timestamp.now(),
+        generated_by: auth.currentUser?.email || null,
+      });
+      message.success("Offer letter details saved to database");
       const tableNode = tableRef.current;
       const restNode = restRef.current;
       if (!tableNode || !restNode) return;
@@ -140,9 +184,27 @@ export default function OfferLetters() {
 
       pdf.save(`Offer_Letter_${formData.candidateName || "Candidate"}.pdf`);
     } catch (err) {
-      message.error("Failed to generate PDF");
+      message.error("Failed to generate PDF or save to database");
     } finally {
       setPdfLoading(false);
+    }
+  };
+
+  // Fetch offer letters when drawer opens
+  const fetchOfferLetters = async () => {
+    setOfferLettersLoading(true);
+    try {
+      const q = query(
+        collection(db, "offer_letters"),
+        orderBy("generated_at", "desc")
+      );
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setOfferLetters(data);
+    } catch (err) {
+      message.error("Failed to fetch offer letters");
+    } finally {
+      setOfferLettersLoading(false);
     }
   };
 
@@ -170,8 +232,11 @@ export default function OfferLetters() {
           // background: "rgba(100 100 100/ 1%)",
           backdropFilter: "blur(16px)",
           borderTopLeftRadius: "1rem",
+          alignItems: "center",
+          gap: "0.5rem",
         }}
       >
+        <File />
         <h2>Offer Letter Details</h2>
       </div>
 
@@ -856,6 +921,15 @@ export default function OfferLetters() {
                   <Sparkles color="white" width={"1rem"} />
                   {pdfLoading ? "Generating..." : "Generate"}
                 </button>
+                <button
+                  style={{ background: "rgba(100 100 100/ 50%)" }}
+                  onClick={() => {
+                    setOfferLettersDrawerVisible(true);
+                    fetchOfferLetters();
+                  }}
+                >
+                  <Database width={"1.25rem"} />
+                </button>
                 {/* <button
                   onClick={handlePrintPDFPreview}
                   style={{
@@ -950,6 +1024,88 @@ export default function OfferLetters() {
           }}
           updating={loading}
         />
+
+        {/* Offer Letters Drawer */}
+        <Drawer
+          title="Offer Letters"
+          placement="right"
+          onClose={() => setOfferLettersDrawerVisible(false)}
+          open={offerLettersDrawerVisible}
+          width={window.innerWidth <= 768 ? "100%" : 500}
+        >
+          {offerLettersLoading ? (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: 200,
+              }}
+            >
+              <LoadingOutlined style={{ fontSize: 32, color: "dodgerblue" }} />
+            </div>
+          ) : offerLetters.length === 0 ? (
+            <div style={{ textAlign: "center", color: "#888" }}>
+              No offer letters found.
+            </div>
+          ) : (
+            <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
+              {offerLetters.map((ol) => (
+                <div
+                  key={ol.id}
+                  style={{
+                    border: "1px solid #eee",
+                    borderRadius: 8,
+                    padding: 16,
+                    marginBottom: 12,
+                    background: "#fafbfc",
+                    cursor: "pointer",
+                    transition: "box-shadow 0.2s",
+                  }}
+                  onClick={() => {
+                    // Only copy fields that exist in formData
+                    setFormData((prev) => {
+                      const newData = { ...prev };
+                      Object.keys(newData).forEach((key) => {
+                        if (ol[key] !== undefined) newData[key] = ol[key];
+                      });
+                      return newData;
+                    });
+                    setOfferLettersDrawerVisible(false);
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 16,
+                      color: "black",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {ol.candidateName || "[No Name]"}
+                  </div>
+                  <div
+                    style={{
+                      color: "#555",
+                      fontSize: 14,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {ol.position || "[No Position]"}
+                  </div>
+                  <div style={{ color: "#888", fontSize: 12 }}>
+                    {ol.generated_at && ol.generated_at.toDate
+                      ? "Generated : " +
+                        moment(ol.generated_at.toDate()).format(
+                          "DD MMM YYYY, h:mm A"
+                        )
+                      : ""}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Drawer>
       </div>
       {/* <ReleaseNote /> */}
 
