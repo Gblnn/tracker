@@ -232,7 +232,7 @@ export default function OfferLetters() {
             gap: "0.5rem",
           }}
         >
-          <label>Reference No : </label>
+          <label>Reference Number</label>
           <input
             type="text"
             name="refNo"
