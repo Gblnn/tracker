@@ -162,7 +162,10 @@ export default function IndexDropDown(props: Props) {
           </div>
         }
         open={bugDialog}
-        onCancel={() => setBugDialog(false)}
+        onCancel={() => {
+          setBugDialog(false);
+          window.location.reload();
+        }}
         OkButtonText="Report"
         disabled={issue == ""}
         onOk={() => {

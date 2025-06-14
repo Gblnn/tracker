@@ -84,7 +84,7 @@ export default function Work(props: Props) {
       className="work-card"
       style={{
         width: "32ch",
-        height: "32ch",
+        height: "",
         borderRadius: "0.75rem",
         overflow: "hidden",
         border: "1px solid rgba(255,255,255,0.1)",
@@ -156,8 +156,12 @@ export default function Work(props: Props) {
               fontSize: "0.85rem",
               opacity: 0.7,
               lineHeight: "1.6",
-              height: "3rem",
-              border: "",
+              height: "2.5rem",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
             }}
           >
             {props.desc}
