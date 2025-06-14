@@ -8,7 +8,15 @@ import { Drawer, message } from "antd";
 import { motion } from "framer-motion";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import { Bug, Database, Eye, File, Menu, Sparkles } from "lucide-react";
+import {
+  Bug,
+  Database,
+  Eye,
+  File,
+  Menu,
+  MinusCircle,
+  Sparkles,
+} from "lucide-react";
 import moment from "moment";
 import { useRef, useState } from "react";
 import {
@@ -64,6 +72,7 @@ export default function OfferLetters() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [formData, setFormData] = useState<{
+    date: string;
     refNo: string;
     candidateName: string;
     position: string;
@@ -76,6 +85,7 @@ export default function OfferLetters() {
     reportingDate: string;
     contractPeriod: string;
     noticePeriod: string;
+    noticePeriodSubsections: string[];
     accomodation: string;
     food: string;
     transport: string;
@@ -86,8 +96,9 @@ export default function OfferLetters() {
     annualLeave: string;
     gratuity: string;
     leaveEncashment: string;
-    [key: string]: string;
+    [key: string]: string | string[];
   }>({
+    date: Date(),
     refNo: "",
     candidateName: "",
     position: "",
@@ -100,6 +111,7 @@ export default function OfferLetters() {
     reportingDate: "",
     contractPeriod: "",
     noticePeriod: "",
+    noticePeriodSubsections: [],
     accomodation: "",
     food: "",
     transport: "",
@@ -147,6 +159,31 @@ export default function OfferLetters() {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  const handleAddNoticePeriodSubsection = () => {
+    setFormData((prev) => ({
+      ...prev,
+      noticePeriodSubsections: [...prev.noticePeriodSubsections, ""],
+    }));
+  };
+
+  const handleRemoveNoticePeriodSubsection = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      noticePeriodSubsections: prev.noticePeriodSubsections.filter(
+        (_, i) => i !== index
+      ),
+    }));
+  };
+
+  const handleNoticePeriodSubsectionChange = (index: number, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      noticePeriodSubsections: prev.noticePeriodSubsections.map(
+        (subsection, i) => (i === index ? value : subsection)
+      ),
     }));
   };
 
@@ -408,6 +445,78 @@ export default function OfferLetters() {
             placeholder="Enter Notice Period"
             style={inputStyle}
           />
+          <div style={{ marginTop: "0.5rem" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "0.5rem",
+              }}
+            >
+              <label style={{ fontSize: "0.9rem", opacity: 0.8 }}>
+                Sub-sections
+              </label>
+              <button
+                onClick={handleAddNoticePeriodSubsection}
+                style={{
+                  background: "dodgerblue",
+                  color: "white",
+                  border: "none",
+                  padding: "0.25rem 0.5rem",
+                  borderRadius: "0.25rem",
+                  cursor: "pointer",
+                  fontSize: "0.8rem",
+                }}
+              >
+                Add Sub-section
+              </button>
+            </div>
+            {formData.noticePeriodSubsections.map((subsection, index) => (
+              <div
+                key={index}
+                style={{
+                  border: "1px solid rgba(100 100 100/ 20%)",
+                  borderRadius: "0.5rem",
+                  padding: "0.75rem",
+                  marginBottom: "",
+                  background: "rgba(100 100 100/ 5%)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: "",
+                  }}
+                >
+                  <input
+                    type="text"
+                    value={subsection}
+                    onChange={(e) =>
+                      handleNoticePeriodSubsectionChange(index, e.target.value)
+                    }
+                    placeholder="Enter sub-section content"
+                    style={inputStyle}
+                  />
+                  <button
+                    onClick={() => handleRemoveNoticePeriodSubsection(index)}
+                    style={{
+                      color: "white",
+                      border: "none",
+                      padding: "0.25rem 0.5rem",
+                      borderRadius: "0.25rem",
+                      cursor: "pointer",
+                      fontSize: "0.8rem",
+                      marginLeft: "0.5rem",
+                    }}
+                  >
+                    <MinusCircle width={"1.25rem"} color="crimson" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div
@@ -521,10 +630,23 @@ export default function OfferLetters() {
           alignItems: "center",
           marginBottom: "1rem",
           marginLeft: "1rem",
+          justifyContent: "space-between",
         }}
       >
-        <Eye />
-        <h2>Preview</h2>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <Eye />
+          <h2>Preview</h2>
+        </div>
+
+        <input
+          style={{ width: "fit-content" }}
+          type="date"
+          name="date"
+          value={formData.date}
+          defaultValue={Date()}
+          onChange={handleInputChange}
+          placeholder="Enter Date"
+        ></input>
       </div>
 
       <div
@@ -580,7 +702,9 @@ export default function OfferLetters() {
             </p>
           }
 
-          <p style={{ fontWeight: 600 }}>{moment().format("DD/MM/YYYY")}</p>
+          <p style={{ fontWeight: 600 }}>
+            {moment(formData.date).format("DD/MM/YYYY")}
+          </p>
         </div>
         {/* Title */}
         <h2
@@ -679,12 +803,37 @@ export default function OfferLetters() {
               <td style={tableCellStyle}>{formData.contractPeriod || "N/A"}</td>
             </tr>
             <tr>
-              <td style={tableCellStyle}>Notice Period</td>
+              <td
+                style={{
+                  padding: "8px 12px",
+                  fontSize: "0.7rem",
+                  verticalAlign: "top",
+                  border: "none",
+                }}
+              >
+                Notice Period
+              </td>
               <td style={tableCellStyle}>
                 {formData.noticePeriod ||
                   "No notice period shall be accepted until the end of the project"}
               </td>
             </tr>
+            {formData.noticePeriodSubsections.map((subsection, index) => (
+              <tr key={index}>
+                <td
+                  style={{
+                    ...tableCellStyle,
+                    borderTop: "none",
+                    borderBottom: "none",
+                    borderRight: "none",
+                    background: "transparent",
+                  }}
+                ></td>
+                <td style={{ ...tableCellStyle, borderTop: "none" }}>
+                  {subsection}
+                </td>
+              </tr>
+            ))}
             <tr>
               <td style={tableCellStyle}>Accommodation</td>
               <td style={tableCellStyle}>

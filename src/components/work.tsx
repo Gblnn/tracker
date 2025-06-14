@@ -83,6 +83,9 @@ export default function Work(props: Props) {
     >
       <div
         style={{
+          display: "flex",
+          flexFlow: "column",
+          flex: 1,
           background: "linear-gradient(120deg, #002244, midnightblue)",
           padding: "",
           borderBottom: "1px solid rgba(255,255,255,0.1)",
@@ -152,6 +155,10 @@ export default function Work(props: Props) {
         <div
           style={{
             padding: "1.25rem 2rem",
+
+            border: "1px solid rgba(100 100 100/ 10%)",
+            borderBottomLeftRadius: "0.5rem",
+            borderBottomRightRadius: "0.5rem",
             background: "rgba(0,0,0,0.7)",
             display: "flex",
             justifyContent: "space-between",
