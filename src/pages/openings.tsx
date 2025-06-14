@@ -169,11 +169,10 @@ export default function Openings() {
                 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
               >
                 <button
-                  style={{ fontSize: "0.8rem", padding: "0.75rem 1rem" }}
+                  style={{ fontSize: "0.8rem", padding: "0.65rem 1rem" }}
                   onClick={() => setAllApplicationsModalOpen(true)}
                 >
                   <FileText width={"0.9rem"} />
-                  All Applications
                 </button>
                 <RefreshButton
                   onClick={fetchData}
