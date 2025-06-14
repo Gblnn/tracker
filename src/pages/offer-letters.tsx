@@ -4,7 +4,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { auth, db } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import emailjs from "@emailjs/browser";
-import { Drawer, message } from "antd";
+import { Drawer, Input, message, Modal } from "antd";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  orderBy,
+  query,
+  Timestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { motion } from "framer-motion";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -15,18 +26,13 @@ import {
   File,
   Menu,
   MinusCircle,
+  Save,
   Sparkles,
+  Trash2,
+  X,
 } from "lucide-react";
 import moment from "moment";
 import { useRef, useState } from "react";
-import {
-  addDoc,
-  collection,
-  Timestamp,
-  getDocs,
-  query,
-  orderBy,
-} from "firebase/firestore";
 
 // Add styles at the top of the file
 const styles = {
@@ -134,6 +140,13 @@ export default function OfferLetters() {
     useState(false);
   const [offerLetters, setOfferLetters] = useState<any[]>([]);
   const [offerLettersLoading, setOfferLettersLoading] = useState(false);
+  const [editingLetter, setEditingLetter] = useState<any>(null);
+  const [editDialogVisible, setEditDialogVisible] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loadedLetterId, setLoadedLetterId] = useState<string | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [originalFormData, setOriginalFormData] = useState<any>(null);
 
   const sendBugReport = async () => {
     setLoading(true);
@@ -156,10 +169,17 @@ export default function OfferLetters() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => {
+      const newData = { ...prev, [name]: value };
+      // Compare with original data to detect changes
+      if (originalFormData) {
+        const hasChanges = Object.keys(newData).some(
+          (key) => newData[key] !== originalFormData[key]
+        );
+        setHasChanges(hasChanges);
+      }
+      return newData;
+    });
   };
 
   const handleAddNoticePeriodSubsection = () => {
@@ -245,6 +265,103 @@ export default function OfferLetters() {
     }
   };
 
+  const handleEditLetter = async () => {
+    if (!editingLetter?.id) return;
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, "offer_letters", editingLetter.id), {
+        ...editingLetter,
+        updated_at: Timestamp.now(),
+      });
+      message.success("Offer letter updated");
+      setEditDialogVisible(false);
+      fetchOfferLetters();
+    } catch (err) {
+      message.error("Failed to update offer letter");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteLetter = async (id: string) => {
+    setDeleting(true);
+    try {
+      await deleteDoc(doc(db, "offer_letters", id));
+      message.success("Offer letter deleted");
+      fetchOfferLetters();
+    } catch (err) {
+      message.error("Failed to delete offer letter");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!loadedLetterId) return;
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, "offer_letters", loadedLetterId), {
+        ...formData,
+        updated_at: Timestamp.now(),
+      });
+      message.success("Offer letter updated");
+      setLoadedLetterId(null);
+      setHasChanges(false);
+      setOriginalFormData(null);
+      fetchOfferLetters();
+    } catch (err) {
+      message.error("Failed to update offer letter");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLetterClick = (ol: any) => {
+    setFormData((prev) => {
+      const newData = { ...prev };
+      Object.keys(newData).forEach((key) => {
+        if (ol[key] !== undefined) newData[key] = ol[key];
+      });
+      return newData;
+    });
+    setOriginalFormData(ol); // Store original data for comparison
+    setLoadedLetterId(ol.id);
+    setHasChanges(false);
+    setOfferLettersDrawerVisible(false);
+  };
+
+  const handleClearForm = () => {
+    setFormData({
+      date: Date(),
+      refNo: "",
+      candidateName: "",
+      position: "",
+      workLocation: "",
+      salary: "",
+      allowance: "",
+      grossSalary: "",
+      attendance: "",
+      probation: "",
+      reportingDate: "",
+      contractPeriod: "",
+      noticePeriod: "",
+      noticePeriodSubsections: [],
+      accomodation: "",
+      food: "",
+      transport: "",
+      visaStatus: "",
+      communication: "",
+      medical: "",
+      insurance: "",
+      annualLeave: "",
+      gratuity: "",
+      leaveEncashment: "",
+    });
+    setLoadedLetterId(null);
+    setHasChanges(false);
+    setOriginalFormData(null);
+  };
+
   const renderInputForm = () => (
     <div
       style={{
@@ -266,15 +383,33 @@ export default function OfferLetters() {
           display: "flex",
           padding: "1.25rem",
           border: "",
-          // background: "rgba(100 100 100/ 1%)",
           backdropFilter: "blur(16px)",
           borderTopLeftRadius: "1rem",
           alignItems: "center",
-          gap: "0.5rem",
+          justifyContent: "space-between",
         }}
       >
-        <File />
-        <h2>Offer Letter Details</h2>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <File />
+          <h2>Offer Letter Details</h2>
+        </div>
+        <button
+          onClick={handleClearForm}
+          style={{
+            background: "rgba(100 100 100/ 40%)",
+            padding: "0.15rem 0.75rem",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            color: "crimson",
+            fontSize: "0.8rem",
+          }}
+        >
+          <X width="0.9rem" />
+          Clear
+        </button>
       </div>
 
       <div
@@ -1083,6 +1218,7 @@ export default function OfferLetters() {
                   <Sparkles color="white" width={"1rem"} />
                   {pdfLoading ? "Generating..." : "Generate"}
                 </button>
+
                 <button
                   style={{ background: "rgba(100 100 100/ 50%)" }}
                   onClick={() => {
@@ -1224,50 +1360,110 @@ export default function OfferLetters() {
                     cursor: "pointer",
                     transition: "box-shadow 0.2s",
                   }}
-                  onClick={() => {
-                    // Only copy fields that exist in formData
-                    setFormData((prev) => {
-                      const newData = { ...prev };
-                      Object.keys(newData).forEach((key) => {
-                        if (ol[key] !== undefined) newData[key] = ol[key];
-                      });
-                      return newData;
-                    });
-                    setOfferLettersDrawerVisible(false);
-                  }}
                 >
                   <div
                     style={{
-                      fontWeight: 600,
-                      fontSize: 16,
-                      color: "black",
-                      textTransform: "uppercase",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
                     }}
                   >
-                    {ol.candidateName || "[No Name]"}
-                  </div>
-                  <div
-                    style={{
-                      color: "#555",
-                      fontSize: 14,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {ol.position || "[No Position]"}
-                  </div>
-                  <div style={{ color: "#888", fontSize: 12 }}>
-                    {ol.generated_at && ol.generated_at.toDate
-                      ? "Generated : " +
-                        moment(ol.generated_at.toDate()).format(
-                          "DD MMM YYYY, h:mm A"
-                        )
-                      : ""}
+                    <div
+                      style={{ flex: 1 }}
+                      onClick={() => handleLetterClick(ol)}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          fontSize: 16,
+                          color: "black",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {ol.candidateName || "[No Name]"}
+                      </div>
+                      <div
+                        style={{
+                          color: "#555",
+                          fontSize: 14,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {ol.position || "[No Position]"}
+                      </div>
+                      <div style={{ color: "#888", fontSize: 12 }}>
+                        {ol.generated_at && ol.generated_at.toDate
+                          ? "Generated : " +
+                            moment(ol.generated_at.toDate()).format(
+                              "DD MMM YYYY, h:mm A"
+                            )
+                          : ""}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "0.5rem",
+                        marginLeft: "1rem",
+                      }}
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          Modal.confirm({
+                            title: "Delete Offer Letter",
+                            content:
+                              "Are you sure you want to delete this offer letter?",
+                            okText: "Yes",
+                            okType: "danger",
+                            cancelText: "No",
+                            onOk: () => handleDeleteLetter(ol.id),
+                          });
+                        }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "0.25rem",
+                        }}
+                      >
+                        {deleting ? (
+                          <LoadingOutlined />
+                        ) : (
+                          <Trash2 width="1.25rem" color="crimson" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
         </Drawer>
+        {loadedLetterId && hasChanges && (
+          <button
+            onClick={handleSaveChanges}
+            style={{
+              margin: "1rem",
+              position: "fixed",
+              bottom: 0,
+              right: 0,
+              width: "",
+              fontSize: "0.9rem",
+              padding: "0.5rem 1rem",
+              background: "rgba(100 100 100/ 40%)",
+              color: "white",
+              border: "none",
+              borderRadius: "0.5rem",
+              cursor: saving ? "not-allowed" : "pointer",
+              opacity: saving ? 0.7 : 1,
+            }}
+            disabled={saving}
+          >
+            <Save color="white" width={"1rem"} />
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+        )}
       </div>
       {/* <ReleaseNote /> */}
 
@@ -1293,6 +1489,101 @@ export default function OfferLetters() {
           }
         }
       `}</style>
+
+      <Modal
+        title="Edit Offer Letter"
+        open={editDialogVisible}
+        onCancel={() => setEditDialogVisible(false)}
+        onOk={handleEditLetter}
+        confirmLoading={saving}
+        okText="Save"
+        cancelText="Cancel"
+      >
+        {editingLetter && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <label>Candidate Name</label>
+              <Input
+                value={editingLetter.candidateName}
+                onChange={(e) =>
+                  setEditingLetter((prev: any) => ({
+                    ...prev,
+                    candidateName: e.target.value,
+                  }))
+                }
+                placeholder="Enter candidate name"
+              />
+            </div>
+            <div>
+              <label>Position</label>
+              <Input
+                value={editingLetter.position}
+                onChange={(e) =>
+                  setEditingLetter((prev: any) => ({
+                    ...prev,
+                    position: e.target.value,
+                  }))
+                }
+                placeholder="Enter position"
+              />
+            </div>
+            <div>
+              <label>Reference Number</label>
+              <Input
+                value={editingLetter.refNo}
+                onChange={(e) =>
+                  setEditingLetter((prev: any) => ({
+                    ...prev,
+                    refNo: e.target.value,
+                  }))
+                }
+                placeholder="Enter reference number"
+              />
+            </div>
+            <div>
+              <label>Work Location</label>
+              <Input
+                value={editingLetter.workLocation}
+                onChange={(e) =>
+                  setEditingLetter((prev: any) => ({
+                    ...prev,
+                    workLocation: e.target.value,
+                  }))
+                }
+                placeholder="Enter work location"
+              />
+            </div>
+            <div>
+              <label>Salary (OMR)</label>
+              <Input
+                type="number"
+                value={editingLetter.salary}
+                onChange={(e) =>
+                  setEditingLetter((prev: any) => ({
+                    ...prev,
+                    salary: e.target.value,
+                  }))
+                }
+                placeholder="Enter salary"
+              />
+            </div>
+            <div>
+              <label>Allowance (OMR)</label>
+              <Input
+                type="number"
+                value={editingLetter.allowance}
+                onChange={(e) =>
+                  setEditingLetter((prev: any) => ({
+                    ...prev,
+                    allowance: e.target.value,
+                  }))
+                }
+                placeholder="Enter allowance"
+              />
+            </div>
+          </div>
+        )}
+      </Modal>
     </>
   );
 }
