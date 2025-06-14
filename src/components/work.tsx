@@ -14,10 +14,18 @@ interface Props {
   mailto?: string;
   jobType?: string;
   activelyHiring?: boolean;
+  applicants?: any;
+  applicantsList?: Array<{
+    name: string;
+    email: string;
+    phone: string;
+    cv: string;
+  }>;
 }
 
 export default function Work(props: Props) {
   const [editOpen, setEditOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [editData, setEditData] = useState({
     jobType: props.jobType || "full-time",
     jobTitle: props.designation || "",
@@ -76,6 +84,7 @@ export default function Work(props: Props) {
       className="work-card"
       style={{
         width: "32ch",
+        height: "32ch",
         borderRadius: "0.75rem",
         overflow: "hidden",
         border: "1px solid rgba(255,255,255,0.1)",
@@ -100,10 +109,11 @@ export default function Work(props: Props) {
           }}
         >
           <button
-            style={{ marginBottom: "" }}
+            style={{ padding: "0.15rem 0.75rem", fontSize: "0.8rem" }}
             onClick={() => setEditOpen(true)}
           >
-            <PenLine width={"1.25rem"} />
+            <PenLine width={"0.8rem"} />
+            Update
           </button>
         </div>
 
@@ -146,6 +156,8 @@ export default function Work(props: Props) {
               fontSize: "0.85rem",
               opacity: 0.7,
               lineHeight: "1.6",
+              height: "3rem",
+              border: "",
             }}
           >
             {props.desc}
@@ -155,7 +167,6 @@ export default function Work(props: Props) {
         <div
           style={{
             padding: "1.25rem 2rem",
-
             border: "1px solid rgba(100 100 100/ 10%)",
             borderBottomLeftRadius: "0.5rem",
             borderBottomRightRadius: "0.5rem",
@@ -163,7 +174,13 @@ export default function Work(props: Props) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            cursor: "pointer",
           }}
+          onClick={() =>
+            props.applicants &&
+            Number(props.applicants) > 0 &&
+            setDrawerOpen(true)
+          }
         >
           <div
             style={{
@@ -176,14 +193,15 @@ export default function Work(props: Props) {
             <Users width="1rem" color="crimson" />
             <div></div>
             <p style={{ fontSize: "0.85rem", opacity: 0.8 }}>
-              <b>0</b> Applicants
+              <b>{props.applicants}</b>{" "}
+              {Number(props.applicants) > 1 ? "Applicants" : "Applicant"}
             </p>
             <ChevronRight width={"1rem"} />
           </div>
         </div>
       </div>
       <Modal
-        title="Edit Job Posting"
+        title="Update Job Posting"
         open={editOpen}
         onCancel={() => setEditOpen(false)}
         onOk={handleSave}
@@ -270,6 +288,65 @@ export default function Work(props: Props) {
             </Checkbox>
           </div>
         </div>
+      </Modal>
+      {/* Applicants Drawer */}
+      <Modal
+        title="Applicants"
+        open={drawerOpen}
+        onCancel={() => setDrawerOpen(false)}
+        footer={null}
+        width={600}
+      >
+        {props.applicantsList && props.applicantsList.length > 0 ? (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#f5f5f5" }}>
+                <th style={{ padding: 8, border: "1px solid #eee" }}>Name</th>
+                <th style={{ padding: 8, border: "1px solid #eee" }}>Email</th>
+                <th style={{ padding: 8, border: "1px solid #eee" }}>Phone</th>
+                <th style={{ padding: 8, border: "1px solid #eee" }}>CV</th>
+              </tr>
+            </thead>
+            <tbody>
+              {props.applicantsList.map((app, idx) => (
+                <tr key={idx}>
+                  <td style={{ padding: 8, border: "1px solid #eee" }}>
+                    {app.name}
+                  </td>
+                  <td style={{ padding: 8, border: "1px solid #eee" }}>
+                    <a href={"mailto:" + app.email}>{app.email}</a>
+                  </td>
+                  <td style={{ padding: 8, border: "1px solid #eee" }}>
+                    <a href={"tel:" + app.phone}>{app.phone}</a>
+                  </td>
+                  <td style={{ padding: 8, border: "1px solid #eee" }}>
+                    {app.cv ? (
+                      <a
+                        href={app.cv}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => {
+                          if (!app.cv) {
+                            e.preventDefault();
+                            message.error("CV URL is not available");
+                          }
+                        }}
+                      >
+                        View CV
+                      </a>
+                    ) : (
+                      <span style={{ color: "#888" }}>No CV available</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div style={{ textAlign: "center", color: "#888" }}>
+            No applicants found.
+          </div>
+        )}
       </Modal>
     </motion.div>
   );

@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 export default function Openings() {
   const [fetchingData, setfetchingData] = useState(false);
   const [records, setRecords] = useState([]);
+  const [applications, setApplications] = useState<any>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newOpening, setNewOpening] = useState({
     jobType: "full-time",
@@ -25,6 +26,7 @@ export default function Openings() {
 
   useEffect(() => {
     fetchData();
+    fetchApplications();
   }, []);
 
   const fetchData = async () => {
@@ -44,6 +46,18 @@ export default function Openings() {
     } catch (error) {
       console.log(error);
     }
+  };
+
+  const fetchApplications = async () => {
+    const RecordCollection = collection(db, "applications");
+    const recordQuery = query(RecordCollection);
+    const querySnapshot = await getDocs(recordQuery);
+    const fetchedData: any = [];
+
+    querySnapshot.forEach((doc: any) => {
+      fetchedData.push({ id: doc.id, ...doc.data() });
+    });
+    setApplications(fetchedData);
   };
 
   const handleAddOpening = async () => {
@@ -122,18 +136,35 @@ export default function Openings() {
                 paddingTop: "6rem",
               }}
             >
-              {records.map((record: any) => (
-                <Work
-                  key={record.id}
-                  id={record.id}
-                  date={moment(record.created_at.toDate()).format("LL")}
-                  designation={record.jobTitle}
-                  mailto={record.mailto}
-                  desc={record.description}
-                  jobType={record.jobType}
-                  activelyHiring={record.activelyHiring}
-                />
-              ))}
+              {records.map((record: any) => {
+                let applicants = 0;
+                const applicantsList = applications
+                  .filter((e: any) => e.jobId === record.id)
+                  .map((e: any) => {
+                    console.log("CV URL for applicant:", e.name, ":", e.cv);
+                    return {
+                      name: e.name,
+                      email: e.email,
+                      phone: e.phone,
+                      cv: e.cvLink,
+                    };
+                  });
+                applicants = applicantsList.length;
+                return (
+                  <Work
+                    key={record.id}
+                    id={record.id}
+                    date={moment(record.created_at.toDate()).format("LL")}
+                    designation={record.jobTitle}
+                    mailto={record.mailto}
+                    desc={record.description}
+                    jobType={record.jobType}
+                    activelyHiring={record.activelyHiring}
+                    applicants={applicants}
+                    applicantsList={applicantsList}
+                  />
+                );
+              })}
             </motion.div>
           ) : (
             <div

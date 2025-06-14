@@ -24,8 +24,10 @@ import {
   Database,
   Eye,
   File,
+  LoaderCircle,
   Menu,
   MinusCircle,
+  Plus,
   Save,
   Sparkles,
   Trash2,
@@ -63,7 +65,7 @@ const inputStyle = {
 const tableCellStyle = {
   border: "1px solid rgba(100 100 100/ 50%)",
   padding: "8px 12px",
-  fontSize: "0.7rem",
+  fontSize: "0.65rem",
   verticalAlign: "top",
   fontFamily: "",
   background: "#fff",
@@ -205,6 +207,25 @@ export default function OfferLetters() {
         (subsection, i) => (i === index ? value : subsection)
       ),
     }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await addDoc(collection(db, "offer_letters"), {
+        ...formData,
+        generated_at: Timestamp.now(),
+        generated_by: auth.currentUser?.email || null,
+      });
+      message.success("Offer letter details saved to database");
+      const tableNode = tableRef.current;
+      const restNode = restRef.current;
+      if (!tableNode || !restNode) return;
+    } catch (error) {
+      message.error("Failed to generate PDF or save to database");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // PDF Generation Handler (multi-page)
@@ -403,7 +424,7 @@ export default function OfferLetters() {
             display: "flex",
             alignItems: "center",
             gap: "0.5rem",
-            color: "crimson",
+            color: "indianred",
             fontSize: "0.8rem",
           }}
         >
@@ -595,15 +616,16 @@ export default function OfferLetters() {
               <button
                 onClick={handleAddNoticePeriodSubsection}
                 style={{
-                  background: "dodgerblue",
-                  color: "white",
+                  background: "rgba(100 100 100/ 40%)",
+                  color: "skyblue",
                   border: "none",
-                  padding: "0.25rem 0.5rem",
+                  padding: "0.13rem 0.75rem",
                   borderRadius: "0.25rem",
                   cursor: "pointer",
                   fontSize: "0.8rem",
                 }}
               >
+                <Plus width={"0.8rem"} />
                 Add Sub-section
               </button>
             </div>
@@ -773,15 +795,35 @@ export default function OfferLetters() {
           <h2>Preview</h2>
         </div>
 
-        <input
-          style={{ width: "fit-content" }}
-          type="date"
-          name="date"
-          value={formData.date}
-          defaultValue={Date()}
-          onChange={handleInputChange}
-          placeholder="Enter Date"
-        ></input>
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <input
+            style={{ width: "fit-content" }}
+            type="date"
+            name="date"
+            value={formData.date}
+            defaultValue={Date()}
+            onChange={handleInputChange}
+            placeholder="Enter Date"
+          ></input>
+          {!loadedLetterId && (
+            <button
+              onClick={handleSave}
+              style={{
+                background: "rgba(100 100 100/ 40%)",
+                fontSize: "0.8rem",
+                padding: "0.5rem 1rem ",
+              }}
+            >
+              {saving ? (
+                <LoaderCircle width={"1rem"} className="animate-spin" />
+              ) : (
+                <Save width={"1rem"} color="dodgerblue" />
+              )}
+
+              {saving ? "Saving" : "Save"}
+            </button>
+          )}
+        </div>
       </div>
 
       <div
@@ -855,7 +897,13 @@ export default function OfferLetters() {
           JOB CONTRACT AGREEMENT LETTER
         </h2>
         {/* Intro Paragraph */}
-        <p style={{ marginBottom: "1.25rem", textAlign: "justify" }}>
+        <p
+          style={{
+            marginBottom: "1.25rem",
+            textAlign: "justify",
+            fontSize: "0.75rem",
+          }}
+        >
           We at <b>Sohar Star United LLC</b>, Sohar, Sultanate of Oman, are
           delighted to offer you the position of{" "}
           <b style={{ textTransform: "uppercase" }}>
@@ -941,7 +989,7 @@ export default function OfferLetters() {
               <td
                 style={{
                   padding: "8px 12px",
-                  fontSize: "0.7rem",
+                  fontSize: "0.65rem",
                   verticalAlign: "top",
                   border: "none",
                 }}
