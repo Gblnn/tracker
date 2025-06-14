@@ -104,7 +104,13 @@ export default function Openings() {
             margin: "0 auto",
           }}
         >
-          <Back title={"Openings"} fixed extra={<RefreshButton />} />
+          <Back
+            title={"Openings"}
+            fixed
+            extra={
+              <RefreshButton onClick={fetchData} fetchingData={fetchingData} />
+            }
+          />
 
           {fetchingData ? (
             <div
