@@ -735,6 +735,20 @@ export default function OfferLetters() {
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
+          <label>Communications</label>
+          <input
+            type="text"
+            name="communication"
+            value={formData.communication}
+            onChange={handleInputChange}
+            placeholder="Enter Communication Terms"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
           <label>Insurance</label>
           <input
             type="text"
@@ -742,6 +756,20 @@ export default function OfferLetters() {
             value={formData.insurance}
             onChange={handleInputChange}
             placeholder="Enter Leave Encashment"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Annual Leave</label>
+          <input
+            type="text"
+            name="annualLeave"
+            value={formData.annualLeave}
+            onChange={handleInputChange}
+            placeholder="Enter Annual Leave Terms"
             style={inputStyle}
           />
         </div>
@@ -1048,12 +1076,18 @@ export default function OfferLetters() {
             <tr>
               <td style={tableCellStyle}>Communications</td>
               <td style={tableCellStyle}>
-                A postpaid Company SIM shall be provided for official use only
+                {formData.communication ||
+                  "A postpaid Company SIM shall be provided for official use only"}
               </td>
             </tr>
             <tr>
               <td style={tableCellStyle}>Medical</td>
-              <td style={tableCellStyle}>Shall be provided by Company</td>
+              <td style={tableCellStyle}>
+                During the service period the company will bear all medical
+                expenses for self- excluding dependents, dental, optical,
+                gynecology and congenital, if any, shall be borne by the
+                company.
+              </td>
             </tr>
             {formData.insurance && (
               <tr>
@@ -1068,8 +1102,8 @@ export default function OfferLetters() {
             <tr>
               <td style={tableCellStyle}>Annual Leave</td>
               <td style={tableCellStyle}>
-                No leave shall be granted throughout the project unless there is
-                an extreme emergency.
+                {formData.annualLeave ||
+                  "No leave shall be granted throughout the project unless there is an extreme emergency."}
               </td>
             </tr>
             {formData.gratuity && (
@@ -1143,6 +1177,7 @@ export default function OfferLetters() {
             display: "flex",
             flexFlow: "column",
             gap: "0.75rem",
+            fontSize: "0.7rem",
           }}
         >
           <li>
@@ -1168,6 +1203,74 @@ export default function OfferLetters() {
             agreement.
           </li>
         </ul>
+        <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+          <h3
+            style={{
+              fontWeight: "600",
+              marginBottom: "0.5rem",
+              fontSize: "0.9rem",
+            }}
+          >
+            Air Passage
+          </h3>
+          <p>
+            While going on sanctioned leave, to and fro air ticket on a direct
+            flight from Oman to the nearest international airport to your
+            hometown, once on completion of 18 months.
+          </p>
+          <br />
+          <p>
+            <b>Sector of Travel : </b>MUSCAT - (Nearest Hometown International
+            Airport )
+          </p>
+          <p>
+            <b>Class of Travel : </b>Economy Class by any Airline
+          </p>
+        </div>
+        <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+          <h3
+            style={{
+              fontWeight: "600",
+              marginBottom: "0.5rem",
+              fontSize: "0.9rem",
+            }}
+          >
+            Increment Terms
+          </h3>
+          <p>
+            Based on the performance of the individual and the company, at the
+            discretion of management.
+          </p>
+        </div>
+
+        <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+          <h3
+            style={{
+              fontWeight: "600",
+              marginBottom: "0.5rem",
+              fontSize: "0.9rem",
+            }}
+          >
+            Working Hours
+          </h3>
+          <p>
+            <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+              <h3
+                style={{
+                  fontWeight: "600",
+                  marginBottom: "0.5rem",
+                  fontSize: "0.9rem",
+                }}
+              >
+                Increment Terms
+              </h3>
+              <p>
+                Based on the performance of the individual and the company, at
+                the discretion of management.
+              </p>
+            </div>
+          </p>
+        </div>
         {/* Acknowledgment */}
         <h3
           style={{
@@ -1178,7 +1281,13 @@ export default function OfferLetters() {
         >
           Acknowledgment:
         </h3>
-        <p style={{ marginBottom: "2rem", textAlign: "justify" }}>
+        <p
+          style={{
+            marginBottom: "2rem",
+            textAlign: "justify",
+            fontSize: "0.7rem",
+          }}
+        >
           You hereby confirm and undertake that you shall not, at any time,
           either during the continuance of your employment or after the
           completion of your employment, divulge or use any information acquired
@@ -1189,24 +1298,24 @@ export default function OfferLetters() {
         {/* Signature Lines */}
         <div
           style={{
-            marginTop: "5rem",
+            marginTop: "4rem",
             display: "flex",
             flexFlow: "column",
             justifyContent: "flex-start",
           }}
         >
           <div style={{}}>
-            <div style={{ marginBottom: "2.5rem" }}>
+            <div style={{ marginBottom: "2rem" }}>
               Employee Signature _____________________________________
             </div>
           </div>
           <div style={{}}>
-            <div style={{ marginBottom: "2.5rem" }}>
+            <div style={{ marginBottom: "2rem" }}>
               HR Manager _____________________________________________
             </div>
           </div>
           <div style={{}}>
-            <div style={{ marginBottom: "2.5rem" }}>
+            <div style={{ marginBottom: "2rem" }}>
               Managing Director ______________________________________
             </div>
           </div>

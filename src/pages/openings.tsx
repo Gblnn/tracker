@@ -6,7 +6,7 @@ import { db } from "@/firebase";
 import { Checkbox, Input, message, Modal, Select } from "antd";
 import { addDoc, collection, getDocs, query } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { LoaderCircle, Plus } from "lucide-react";
+import { FileText, LoaderCircle, Plus } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 // import { Opening } from "@/components/opening";
@@ -26,10 +26,10 @@ export default function Openings() {
 
   useEffect(() => {
     fetchData();
-    fetchApplications();
   }, []);
 
   const fetchData = async () => {
+    fetchApplications();
     try {
       setfetchingData(true);
       const RecordCollection = collection(db, "openings");
@@ -108,7 +108,18 @@ export default function Openings() {
             title={"Openings"}
             fixed
             extra={
-              <RefreshButton onClick={fetchData} fetchingData={fetchingData} />
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+              >
+                <button style={{ fontSize: "0.8rem", padding: "0.75rem 1rem" }}>
+                  <FileText width={"0.9rem"} />
+                  All Applications
+                </button>
+                <RefreshButton
+                  onClick={fetchData}
+                  fetchingData={fetchingData}
+                />
+              </div>
             }
           />
 
