@@ -104,6 +104,7 @@ export default function OfferLetters() {
     annualLeave: string;
     gratuity: string;
     leaveEncashment: string;
+    workingHours: string;
     [key: string]: string | string[];
   }>({
     date: Date(),
@@ -130,10 +131,12 @@ export default function OfferLetters() {
     annualLeave: "",
     gratuity: "",
     leaveEncashment: "",
+    workingHours: "",
   });
 
   const tableRef = useRef<HTMLDivElement>(null);
   const restRef = useRef<HTMLDivElement>(null);
+  const signatureRef = useRef<HTMLDivElement>(null);
 
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
@@ -220,7 +223,8 @@ export default function OfferLetters() {
       message.success("Offer letter details saved to database");
       const tableNode = tableRef.current;
       const restNode = restRef.current;
-      if (!tableNode || !restNode) return;
+      const signatureNode = signatureRef.current;
+      if (!tableNode || !restNode || !signatureNode) return;
     } catch (error) {
       message.error("Failed to generate PDF or save to database");
     } finally {
@@ -241,7 +245,8 @@ export default function OfferLetters() {
       message.success("Offer letter details saved to database");
       const tableNode = tableRef.current;
       const restNode = restRef.current;
-      if (!tableNode || !restNode) return;
+      const signatureNode = signatureRef.current;
+      if (!tableNode || !restNode || !signatureNode) return;
 
       // Render table (page 1)
       const tableCanvas = await html2canvas(tableNode, { scale: 2 });
@@ -259,6 +264,15 @@ export default function OfferLetters() {
       const restProps = pdf.getImageProperties(restImgData);
       const restHeight = (restProps.height * pageWidth) / restProps.width;
       pdf.addImage(restImgData, "PNG", 0, 0, pageWidth, restHeight);
+
+      // Render signatures (page 3)
+      const signatureCanvas = await html2canvas(signatureNode, { scale: 2 });
+      const signatureImgData = signatureCanvas.toDataURL("image/png");
+      pdf.addPage();
+      const signatureProps = pdf.getImageProperties(signatureImgData);
+      const signatureHeight =
+        (signatureProps.height * pageWidth) / signatureProps.width;
+      pdf.addImage(signatureImgData, "PNG", 0, 0, pageWidth, signatureHeight);
 
       pdf.save(`Offer_Letter_${formData.candidateName || "Candidate"}.pdf`);
     } catch (err) {
@@ -377,6 +391,7 @@ export default function OfferLetters() {
       annualLeave: "",
       gratuity: "",
       leaveEncashment: "",
+      workingHours: "",
     });
     setLoadedLetterId(null);
     setHasChanges(false);
@@ -755,7 +770,7 @@ export default function OfferLetters() {
             name="insurance"
             value={formData.insurance}
             onChange={handleInputChange}
-            placeholder="Enter Leave Encashment"
+            placeholder="Enter Insurance Terms"
             style={inputStyle}
           />
         </div>
@@ -798,6 +813,20 @@ export default function OfferLetters() {
             value={formData.leaveEncashment}
             onChange={handleInputChange}
             placeholder="Enter Leave Encashment Terms"
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <label>Working Hours</label>
+          <input
+            type="text"
+            name="workingHours"
+            value={formData.workingHours}
+            onChange={handleInputChange}
+            placeholder="Enter Working Terms"
             style={inputStyle}
           />
         </div>
@@ -1160,49 +1189,6 @@ export default function OfferLetters() {
         <br />
         <br />
         <br />
-        {/* Other Terms & Conditions */}
-        <h3
-          style={{
-            fontWeight: "600",
-            marginBottom: "0.5rem",
-            fontSize: "0.9rem",
-          }}
-        >
-          Other Terms & Conditions
-        </h3>
-        <ul
-          style={{
-            marginBottom: "2rem",
-            paddingLeft: 24,
-            display: "flex",
-            flexFlow: "column",
-            gap: "0.75rem",
-            fontSize: "0.7rem",
-          }}
-        >
-          <li>
-            Company Assets, if any in possession are to be returned at the end
-            of services, else the cost shall be deducted from the final dues.
-          </li>
-          <li>
-            VISA expenses will be borne by the Company even in case of
-            termination during contract period, but not in case the employee
-            resigns during the contract period.
-          </li>
-          <li>
-            If you damage any company assets, furniture or vehicles, the company
-            will have all rights to recover its compensation from your dues.
-          </li>
-          <li>
-            If the employee does not sign this agreement within the seven days,
-            the agreement shall be deemed null and void.
-          </li>
-          <li>
-            In case of failure to report to duty in Oman, the offer letter shall
-            become null and void after seven days from the date of the signed
-            agreement.
-          </li>
-        </ul>
         <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
           <h3
             style={{
@@ -1254,24 +1240,229 @@ export default function OfferLetters() {
             Working Hours
           </h3>
           <p>
-            <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
-              <h3
-                style={{
-                  fontWeight: "600",
-                  marginBottom: "0.5rem",
-                  fontSize: "0.9rem",
-                }}
-              >
-                Increment Terms
-              </h3>
-              <p>
-                Based on the performance of the individual and the company, at
-                the discretion of management.
-              </p>
-            </div>
+            {formData.workingHours ||
+              "As laid down by the company from time to time. Your post being a senior level executive in nature you are not eligible for any overtime; though you shall be available during 24 hours of the day on call basis."}
           </p>
         </div>
+
+        <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+          <h3
+            style={{
+              fontWeight: "600",
+              marginBottom: "0.5rem",
+              fontSize: "0.9rem",
+            }}
+          >
+            Medical Fitness
+          </h3>
+          <p>
+            Your employment with us shall be subject to your medical fitness,
+            which will be ascertained after a medical examination by the
+            Ministry of Health, Sultanate of Oman, as soon as you arrive and
+            periodically thereafter, on being found medically unfit, your
+            services are liable to be terminated.
+          </p>
+        </div>
+
+        <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+          <h3
+            style={{
+              fontWeight: "600",
+              marginBottom: "0.5rem",
+              fontSize: "0.9rem",
+            }}
+          >
+            Code of Conduct
+          </h3>
+          <p>
+            The Company expects you to strictly maintain a non-alcoholic
+            environment. Unlawful Possession of or being under the influence of
+            alcoholic drinks or any other items creating mental stimulus will
+            invite termination of service without prior notice. You are expected
+            to conduct yourself properly to ensure that your conduct and
+            dealings are proper, professional and ethical. Your behavior and
+            conduct should not in anyway be damaging to the Company’s image and
+            welfare. In all cases of inappropriate behavior or misconduct, the
+            Company would ensure that the office is communicated to you in
+            writing and that every opportunity is afforded for you to defend.
+            However, the company reserves the right to terminate your service
+            without notice pay when it is justified that you are guilty of
+            misconduct. Your services may be terminated by the Company for any
+            breach of terms of employment or where the Company finds that your
+            services are not satisfactory or where the Company feels it is not
+            of its interest to continue your employment.
+          </p>
+        </div>
+
+        <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+          <h3
+            style={{
+              fontWeight: "600",
+              marginBottom: "0.5rem",
+              fontSize: "0.9rem",
+            }}
+          >
+            Documentary Evidence
+          </h3>
+          <p>
+            Your date of birth as recorded by the Company on the basis of
+            documentary evidence produced by you at the time of your appointment
+            is considered as the authenticated date of birth for all purposes
+            throughout your service with the Company and will not be changed
+            under any circumstances.
+          </p>
+        </div>
+
+        <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+          <h3
+            style={{
+              fontWeight: "600",
+              marginBottom: "0.5rem",
+              fontSize: "0.9rem",
+            }}
+          >
+            Confidentiality
+          </h3>
+          <p>
+            During the tenure of your contract with us you may come into
+            possession of various information concerned the Company’s business.
+            All such information shall be held by you with utmost strict
+            confidentiality and shall not be divulged to outsiders unless
+            otherwise authorized to do so by the Company during the term of your
+            contract and beyond up to five years. In the event of acting in any
+            manner contrary to or in breach of this covenant during the course
+            of your employment with the Company or thereafter, the company will
+            be at the liberty to initiate appropriate action to safeguard its
+            interest.
+          </p>
+        </div>
+      </div>
+
+      {/* Page break for preview */}
+      <div style={{ height: 40 }} />
+      <div
+        style={{
+          width: "100%",
+          textAlign: "center",
+          color: "#aaa",
+          fontSize: "0.9rem",
+          marginBottom: "2rem",
+        }}
+      >
+        --- Page 3 ---
+      </div>
+      {/* Page 3: Acknowledgment and Signatures */}
+      <div
+        ref={signatureRef}
+        style={{
+          border: "",
+          width: "100%",
+          maxWidth: 800,
+          boxSizing: "border-box",
+          padding: "4rem",
+          background: "white",
+          color: "black",
+          borderRadius: "0.5rem",
+          boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
+          minHeight: "1100px",
+          fontFamily: "Aptos",
+          fontSize: "0.8rem",
+          margin: "1 auto",
+          overflowX: "auto",
+          marginBottom: "4rem",
+        }}
+      >
+        <br />
+        <br />
+        <br />
         {/* Acknowledgment */}
+
+        <div
+          style={{
+            marginBottom: "1.5rem",
+            fontSize: "0.7rem",
+            display: "flex",
+            flexFlow: "column",
+            gap: "0.5rem",
+          }}
+        >
+          <h3
+            style={{
+              fontWeight: "600",
+              marginBottom: "0.5rem",
+              fontSize: "0.9rem",
+            }}
+          >
+            General Terms
+          </h3>
+          <p>
+            In the event of your resignation within two years from your date of
+            joining the Company, the costs incurred by the Company towards your
+            initial mobilization like recruitment fee, processing charges for
+            visa and resident card and other related expenses, and/(or) subject
+            to “Employment Bond” if any, will be recovered from you.
+          </p>
+          <p>
+            You shall communicate to the Company any change in your address as
+            well as details of next of kin. All communications sent to you in
+            the normal course on the address given by you shall be deemed to
+            have been received at your end.
+          </p>
+          <p>
+            You are expected to give your whole time of service to us and not
+            directly or indirectly enter into any other employment or business
+            without our specific consent in writing during the tenure of this
+            contract. However, you will be free to seek alternative employment
+            after expiry of the period of employment of this contract. You also
+            agree to work and reside where we require and to abide by all
+            applicable regulations, practices and instructions in operation for
+            the guidance and conduct of our staff and the business.
+          </p>
+        </div>
+
+        {/* Other Terms & Conditions */}
+        <h3
+          style={{
+            fontWeight: "600",
+            marginBottom: "0.5rem",
+            fontSize: "0.9rem",
+          }}
+        >
+          Other Terms & Conditions
+        </h3>
+        <ul
+          style={{
+            marginBottom: "2rem",
+            paddingLeft: 24,
+            display: "flex",
+            flexFlow: "column",
+            gap: "0.75rem",
+            fontSize: "0.7rem",
+          }}
+        >
+          <li>
+            Company Assets, if any in possession are to be returned at the end
+            of services, else the cost shall be deducted from the final dues.
+          </li>
+          <li>
+            VISA expenses will be borne by the Company even in case of
+            termination during contract period, but not in case the employee
+            resigns during the contract period.
+          </li>
+          <li>
+            If you damage any company assets, furniture or vehicles, the company
+            will have all rights to recover its compensation from your dues.
+          </li>
+          <li>
+            If the employee does not sign this agreement within the seven days,
+            the agreement shall be deemed null and void.
+          </li>
+          <li>
+            In case of failure to report to duty in Oman, the offer letter shall
+            become null and void after seven days from the date of the signed
+            agreement.
+          </li>
+        </ul>
         <h3
           style={{
             fontWeight: "600",

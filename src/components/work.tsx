@@ -194,7 +194,9 @@ export default function Work(props: Props) {
             <div></div>
             <p style={{ fontSize: "0.85rem", opacity: 0.8 }}>
               <b>{props.applicants}</b>{" "}
-              {Number(props.applicants) > 1 ? "Applicants" : "Applicant"}
+              {Number(props.applicants) > 1 || Number(props.applicants) == 0
+                ? "Applicants"
+                : "Applicant"}
             </p>
             <ChevronRight width={"1rem"} />
           </div>

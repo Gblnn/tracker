@@ -4,18 +4,37 @@ import RefreshButton from "@/components/refresh-button";
 import Work from "@/components/work";
 import { db } from "@/firebase";
 import { Checkbox, Input, message, Modal, Select } from "antd";
-import { addDoc, collection, getDocs, query } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  writeBatch,
+} from "firebase/firestore";
 import { motion } from "framer-motion";
-import { FileText, LoaderCircle, Plus } from "lucide-react";
+import { FileText, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 // import { Opening } from "@/components/opening";
 
+interface JobOpening {
+  id: string;
+  jobTitle: string;
+  jobType: string;
+  description: string;
+  activelyHiring: boolean;
+  created_at: any;
+}
+
 export default function Openings() {
   const [fetchingData, setfetchingData] = useState(false);
-  const [records, setRecords] = useState([]);
+  const [records, setRecords] = useState<JobOpening[]>([]);
   const [applications, setApplications] = useState<any>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [allApplicationsModalOpen, setAllApplicationsModalOpen] =
+    useState(false);
   const [newOpening, setNewOpening] = useState({
     jobType: "full-time",
     jobTitle: "",
@@ -23,6 +42,7 @@ export default function Openings() {
     activelyHiring: false,
   });
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -86,6 +106,43 @@ export default function Openings() {
     }
   };
 
+  const handleDeleteApplication = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "applications", id));
+      message.success("Application deleted");
+      fetchApplications();
+    } catch (err) {
+      message.error("Failed to delete application");
+    }
+  };
+
+  const handleClearAllApplications = async () => {
+    Modal.confirm({
+      title: "Clear All Applications",
+      content:
+        "Are you sure you want to delete all applications? This action cannot be undone.",
+      okText: "Yes",
+      okType: "danger",
+      cancelText: "No",
+      onOk: async () => {
+        setDeleting(true);
+        try {
+          const batch = writeBatch(db);
+          applications.forEach((app: any) => {
+            batch.delete(doc(db, "applications", app.id));
+          });
+          await batch.commit();
+          message.success("All applications cleared");
+          fetchApplications();
+        } catch (err) {
+          message.error("Failed to clear applications");
+        } finally {
+          setDeleting(false);
+        }
+      },
+    });
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
       <div
@@ -111,7 +168,10 @@ export default function Openings() {
               <div
                 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
               >
-                <button style={{ fontSize: "0.8rem", padding: "0.75rem 1rem" }}>
+                <button
+                  style={{ fontSize: "0.8rem", padding: "0.75rem 1rem" }}
+                  onClick={() => setAllApplicationsModalOpen(true)}
+                >
                   <FileText width={"0.9rem"} />
                   All Applications
                 </button>
@@ -284,6 +344,182 @@ export default function Openings() {
               Actively Hiring
             </Checkbox>
           </div>
+        </div>
+      </Modal>
+
+      {/* All Applications Modal */}
+      <Modal
+        title={
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span>All Applications</span>
+            <button
+              onClick={handleClearAllApplications}
+              style={{
+                background: "none",
+                border: "none",
+                color: "crimson",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                fontSize: "0.9rem",
+                marginRight: "2rem",
+              }}
+              disabled={deleting || applications.length === 0}
+            >
+              Clear All
+            </button>
+          </div>
+        }
+        open={allApplicationsModalOpen}
+        onCancel={() => setAllApplicationsModalOpen(false)}
+        width={1000}
+        footer={null}
+      >
+        <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#f5f5f5" }}>
+                <th
+                  style={{
+                    padding: "12px",
+                    textAlign: "left",
+                    borderBottom: "1px solid #eee",
+                  }}
+                >
+                  Name
+                </th>
+                <th
+                  style={{
+                    padding: "12px",
+                    textAlign: "left",
+                    borderBottom: "1px solid #eee",
+                  }}
+                >
+                  Email
+                </th>
+                <th
+                  style={{
+                    padding: "12px",
+                    textAlign: "left",
+                    borderBottom: "1px solid #eee",
+                  }}
+                >
+                  Phone
+                </th>
+                <th
+                  style={{
+                    padding: "12px",
+                    textAlign: "left",
+                    borderBottom: "1px solid #eee",
+                  }}
+                >
+                  Applied For
+                </th>
+                <th
+                  style={{
+                    padding: "12px",
+                    textAlign: "left",
+                    borderBottom: "1px solid #eee",
+                  }}
+                >
+                  Applied On
+                </th>
+                <th
+                  style={{
+                    padding: "12px",
+                    textAlign: "left",
+                    borderBottom: "1px solid #eee",
+                  }}
+                >
+                  CV
+                </th>
+                <th
+                  style={{
+                    padding: "12px",
+                    textAlign: "left",
+                    borderBottom: "1px solid #eee",
+                  }}
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {applications.map((app: any) => {
+                const jobTitle =
+                  records.find((r: any) => r.id === app.jobId)?.jobTitle ||
+                  "Unknown Position";
+                return (
+                  <tr key={app.id} style={{ borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "12px" }}>{app.name}</td>
+                    <td style={{ padding: "12px" }}>
+                      <a href={`mailto:${app.email}`}>{app.email}</a>
+                    </td>
+                    <td style={{ padding: "12px" }}>
+                      <a href={`tel:${app.phone}`}>{app.phone}</a>
+                    </td>
+                    <td style={{ padding: "12px" }}>{jobTitle}</td>
+                    <td style={{ padding: "12px" }}>
+                      {app.created_at?.toDate
+                        ? moment(app.created_at.toDate()).format("LL")
+                        : "N/A"}
+                    </td>
+                    <td style={{ padding: "12px" }}>
+                      {app.cvLink ? (
+                        <a
+                          href={app.cvLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View CV
+                        </a>
+                      ) : (
+                        "No CV"
+                      )}
+                    </td>
+                    <td style={{ padding: "12px" }}>
+                      <button
+                        onClick={() => {
+                          Modal.confirm({
+                            title: "Delete Application",
+                            content:
+                              "Are you sure you want to delete this application?",
+                            okText: "Yes",
+                            okType: "danger",
+                            cancelText: "No",
+                            onOk: () => handleDeleteApplication(app.id),
+                          });
+                        }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "crimson",
+                          cursor: "pointer",
+                          padding: "4px",
+                        }}
+                      >
+                        <Trash2 width="1rem" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {applications.length === 0 && (
+            <div
+              style={{ textAlign: "center", padding: "2rem", color: "#888" }}
+            >
+              No applications found
+            </div>
+          )}
         </div>
       </Modal>
     </motion.div>
