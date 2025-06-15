@@ -958,7 +958,7 @@ export default function OfferLetters() {
           style={{
             marginBottom: "1.25rem",
             textAlign: "justify",
-            fontSize: "0.75rem",
+            fontSize: "0.7rem",
           }}
         >
           We at <b>Sohar Star United LLC</b>, Sohar, Sultanate of Oman, are
