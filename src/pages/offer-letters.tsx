@@ -1,4 +1,5 @@
 import Back from "@/components/back";
+import { Checkbox } from "@/components/ui/checkbox";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { auth, db } from "@/firebase";
@@ -105,6 +106,7 @@ export default function OfferLetters() {
     gratuity: string;
     leaveEncashment: string;
     workingHours: string;
+
     [key: string]: string | string[];
   }>({
     date: Date(),
@@ -152,6 +154,7 @@ export default function OfferLetters() {
   const [loadedLetterId, setLoadedLetterId] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [originalFormData, setOriginalFormData] = useState<any>(null);
+  const [air_passage, setAirPassage] = useState(true);
 
   const sendBugReport = async () => {
     setLoading(true);
@@ -217,6 +220,7 @@ export default function OfferLetters() {
     try {
       await addDoc(collection(db, "offer_letters"), {
         ...formData,
+        air_passage: air_passage,
         generated_at: Timestamp.now(),
         generated_by: auth.currentUser?.email || null,
       });
@@ -830,6 +834,14 @@ export default function OfferLetters() {
             style={inputStyle}
           />
         </div>
+
+        <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
+          <Checkbox
+            checked={air_passage}
+            onClick={() => setAirPassage(!air_passage)}
+          />
+          <p>Air Passage</p>
+        </div>
       </div>
     </div>
   );
@@ -1189,30 +1201,33 @@ export default function OfferLetters() {
         <br />
         <br />
         <br />
-        <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
-          <h3
-            style={{
-              fontWeight: "600",
-              marginBottom: "0.5rem",
-              fontSize: "0.9rem",
-            }}
-          >
-            Air Passage
-          </h3>
-          <p>
-            While going on sanctioned leave, to and fro air ticket on a direct
-            flight from Oman to the nearest international airport to your
-            hometown, once on completion of 18 months.
-          </p>
-          <br />
-          <p>
-            <b>Sector of Travel : </b>MUSCAT - (Nearest Hometown International
-            Airport )
-          </p>
-          <p>
-            <b>Class of Travel : </b>Economy Class by any Airline
-          </p>
-        </div>
+        {air_passage && (
+          <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+            <h3
+              style={{
+                fontWeight: "600",
+                marginBottom: "0.5rem",
+                fontSize: "0.9rem",
+              }}
+            >
+              Air Passage
+            </h3>
+            <p>
+              While going on sanctioned leave, to and fro air ticket on a direct
+              flight from Oman to the nearest international airport to your
+              hometown, once on completion of 18 months.
+            </p>
+            <br />
+            <p>
+              <b>Sector of Travel : </b>MUSCAT - (Nearest Hometown International
+              Airport )
+            </p>
+            <p>
+              <b>Class of Travel : </b>Economy Class by any Airline
+            </p>
+          </div>
+        )}
+
         <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
           <h3
             style={{
