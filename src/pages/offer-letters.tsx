@@ -356,6 +356,7 @@ export default function OfferLetters() {
       });
       return newData;
     });
+    setAirPassage(ol.air_passage);
     setOriginalFormData(ol); // Store original data for comparison
     setLoadedLetterId(ol.id);
     setHasChanges(false);
