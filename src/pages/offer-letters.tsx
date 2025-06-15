@@ -957,7 +957,7 @@ export default function OfferLetters() {
             letterSpacing: 1,
           }}
         >
-          JOB CONTRACT AGREEMENT LETTER
+          JOB OFFER LETTER
         </h2>
         {/* Intro Paragraph */}
         <p
