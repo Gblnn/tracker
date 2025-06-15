@@ -155,6 +155,8 @@ export default function OfferLetters() {
   const [hasChanges, setHasChanges] = useState(false);
   const [originalFormData, setOriginalFormData] = useState<any>(null);
   const [air_passage, setAirPassage] = useState(true);
+  const [comm, setComm] = useState(true);
+  const [visaS, setVisaS] = useState(true);
 
   const sendBugReport = async () => {
     setLoading(true);
@@ -221,6 +223,8 @@ export default function OfferLetters() {
       await addDoc(collection(db, "offer_letters"), {
         ...formData,
         air_passage: air_passage,
+        comm: comm,
+        visaS: visaS,
         generated_at: Timestamp.now(),
         generated_by: auth.currentUser?.email || null,
       });
@@ -357,6 +361,8 @@ export default function OfferLetters() {
       return newData;
     });
     setAirPassage(ol.air_passage);
+    setComm(ol.comm);
+    setVisaS(ol.visaS);
     setOriginalFormData(ol); // Store original data for comparison
     setLoadedLetterId(ol.id);
     setHasChanges(false);
@@ -829,12 +835,30 @@ export default function OfferLetters() {
           />
         </div>
 
-        <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
-          <Checkbox
-            checked={air_passage}
-            onClick={() => setAirPassage(!air_passage)}
-          />
-          <p>Air Passage</p>
+        <div
+          style={{
+            display: "flex",
+            gap: "0.5rem",
+            marginTop: "1rem",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <p>Communication</p>
+            <Checkbox checked={comm} onClick={() => setComm(!comm)} />
+          </div>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <p>Air Passage</p>
+            <Checkbox
+              checked={air_passage}
+              onClick={() => setAirPassage(!air_passage)}
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <p>Visa Status</p>
+            <Checkbox checked={visaS} onClick={() => setVisaS(!visaS)} />
+          </div>
         </div>
       </div>
     </div>
@@ -1052,7 +1076,7 @@ export default function OfferLetters() {
               <td
                 style={{
                   padding: "8px 12px",
-                  fontSize: "0.65rem",
+                  fontSize: "0.75rem",
                   verticalAlign: "top",
                   border: "none",
                 }}
@@ -1101,21 +1125,27 @@ export default function OfferLetters() {
                   "A Car shall be provided by the Company for official use only"}
               </td>
             </tr>
-            <tr>
-              <td style={tableCellStyle}>VISA Status</td>
-              <td style={tableCellStyle}>
-                {formData.visaStatus ||
-                  "Work VISA shall be provided by the Company. Employee agrees that he shall not join any competing business until the end of the Contract Project"}
-              </td>
-            </tr>
-            <tr>
-              <td style={tableCellStyle}>Communications</td>
-              <td style={tableCellStyle}>
-                {formData.communication ||
-                  "A postpaid Company SIM shall be provided for official use only"}
-              </td>
-            </tr>
-            <tr>
+            {visaS && (
+              <tr>
+                <td style={tableCellStyle}>VISA Status</td>
+                <td style={tableCellStyle}>
+                  {formData.visaStatus ||
+                    "Work VISA shall be provided by the Company. Employee agrees that he shall not join any competing business until the end of the Contract Project"}
+                </td>
+              </tr>
+            )}
+
+            {comm && (
+              <tr>
+                <td style={tableCellStyle}>Communications</td>
+                <td style={tableCellStyle}>
+                  {formData.communication ||
+                    "A postpaid Company SIM shall be provided for official use only"}
+                </td>
+              </tr>
+            )}
+
+            {/* <tr>
               <td style={tableCellStyle}>Medical</td>
               <td style={tableCellStyle}>
                 During the service period the company will bear all medical
@@ -1123,7 +1153,7 @@ export default function OfferLetters() {
                 gynecology and congenital, if any, shall be borne by the
                 company.
               </td>
-            </tr>
+            </tr> */}
             {formData.insurance && (
               <tr>
                 <td style={tableCellStyle}>Insurance</td>
@@ -1221,6 +1251,23 @@ export default function OfferLetters() {
             </p>
           </div>
         )}
+
+        <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
+          <h3
+            style={{
+              fontWeight: "600",
+              marginBottom: "0.5rem",
+              fontSize: "0.9rem",
+            }}
+          >
+            Medical
+          </h3>
+          <p>
+            During the service period the company will bear all medical expenses
+            for self - excluding dependents, dental, optical, gynecology and
+            congenital.
+          </p>
+        </div>
 
         <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
           <h3
