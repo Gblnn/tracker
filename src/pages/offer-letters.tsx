@@ -1009,6 +1009,7 @@ export default function OfferLetters() {
         <br />
         <br />
         <br />
+        <br />
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           {
             <p style={{ fontWeight: 600, textTransform: "uppercase" }}>
@@ -1829,9 +1830,7 @@ export default function OfferLetters() {
           }
 
           {offerLetters.length === 0 ? (
-            <div style={{ textAlign: "center", color: "#888" }}>
-              No offer letters found.
-            </div>
+            <div style={{ textAlign: "center", color: "#888" }}></div>
           ) : (
             <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
               {offerLetters.map((ol) => (
