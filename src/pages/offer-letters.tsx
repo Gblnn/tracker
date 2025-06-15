@@ -66,7 +66,7 @@ const inputStyle = {
 const tableCellStyle = {
   border: "1px solid rgba(100 100 100/ 50%)",
   padding: "8px 12px",
-  fontSize: "0.65rem",
+  fontSize: "0.75rem",
   verticalAlign: "top",
   fontFamily: "",
   background: "#fff",
@@ -236,17 +236,10 @@ export default function OfferLetters() {
     }
   };
 
-  // PDF Generation Handler (multi-page)
-  const handleGeneratePDF = async () => {
+  // Update the PDF generation handler to remove database saving
+  const handlePrintPDF = async () => {
     setPdfLoading(true);
     try {
-      // Save offer letter details to Firestore
-      await addDoc(collection(db, "offer_letters"), {
-        ...formData,
-        generated_at: Timestamp.now(),
-        generated_by: auth.currentUser?.email || null,
-      });
-      message.success("Offer letter details saved to database");
       const tableNode = tableRef.current;
       const restNode = restRef.current;
       const signatureNode = signatureRef.current;
@@ -280,7 +273,7 @@ export default function OfferLetters() {
 
       pdf.save(`Offer_Letter_${formData.candidateName || "Candidate"}.pdf`);
     } catch (err) {
-      message.error("Failed to generate PDF or save to database");
+      message.error("Failed to generate PDF");
     } finally {
       setPdfLoading(false);
     }
@@ -970,7 +963,7 @@ export default function OfferLetters() {
           style={{
             marginBottom: "1.25rem",
             textAlign: "justify",
-            fontSize: "0.7rem",
+            fontSize: "0.8rem",
           }}
         >
           We at <b>Sohar Star United LLC</b>, Sohar, Sultanate of Oman, are
@@ -1202,7 +1195,7 @@ export default function OfferLetters() {
         <br />
         <br />
         {air_passage && (
-          <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+          <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
             <h3
               style={{
                 fontWeight: "600",
@@ -1228,7 +1221,7 @@ export default function OfferLetters() {
           </div>
         )}
 
-        <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+        <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
           <h3
             style={{
               fontWeight: "600",
@@ -1244,7 +1237,7 @@ export default function OfferLetters() {
           </p>
         </div>
 
-        <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+        <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
           <h3
             style={{
               fontWeight: "600",
@@ -1260,7 +1253,7 @@ export default function OfferLetters() {
           </p>
         </div>
 
-        <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+        <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
           <h3
             style={{
               fontWeight: "600",
@@ -1279,7 +1272,7 @@ export default function OfferLetters() {
           </p>
         </div>
 
-        <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+        <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
           <h3
             style={{
               fontWeight: "600",
@@ -1296,7 +1289,7 @@ export default function OfferLetters() {
             invite termination of service without prior notice. You are expected
             to conduct yourself properly to ensure that your conduct and
             dealings are proper, professional and ethical. Your behavior and
-            conduct should not in anyway be damaging to the Company’s image and
+            conduct should not in anyway be damaging to the Company's image and
             welfare. In all cases of inappropriate behavior or misconduct, the
             Company would ensure that the office is communicated to you in
             writing and that every opportunity is afforded for you to defend.
@@ -1309,7 +1302,7 @@ export default function OfferLetters() {
           </p>
         </div>
 
-        <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+        <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
           <h3
             style={{
               fontWeight: "600",
@@ -1328,7 +1321,7 @@ export default function OfferLetters() {
           </p>
         </div>
 
-        <div style={{ marginBottom: "1.5rem", fontSize: "0.7rem" }}>
+        <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
           <h3
             style={{
               fontWeight: "600",
@@ -1340,7 +1333,7 @@ export default function OfferLetters() {
           </h3>
           <p>
             During the tenure of your contract with us you may come into
-            possession of various information concerned the Company’s business.
+            possession of various information concerned the Company's business.
             All such information shall be held by you with utmost strict
             confidentiality and shall not be divulged to outsiders unless
             otherwise authorized to do so by the Company during the term of your
@@ -1395,7 +1388,7 @@ export default function OfferLetters() {
         <div
           style={{
             marginBottom: "1.5rem",
-            fontSize: "0.7rem",
+            fontSize: "0.8rem",
             display: "flex",
             flexFlow: "column",
             gap: "0.5rem",
@@ -1415,7 +1408,7 @@ export default function OfferLetters() {
             joining the Company, the costs incurred by the Company towards your
             initial mobilization like recruitment fee, processing charges for
             visa and resident card and other related expenses, and/(or) subject
-            to “Employment Bond” if any, will be recovered from you.
+            to "Employment Bond" if any, will be recovered from you.
           </p>
           <p>
             You shall communicate to the Company any change in your address as
@@ -1452,7 +1445,7 @@ export default function OfferLetters() {
             display: "flex",
             flexFlow: "column",
             gap: "0.75rem",
-            fontSize: "0.7rem",
+            fontSize: "0.8rem",
           }}
         >
           <li>
@@ -1491,7 +1484,7 @@ export default function OfferLetters() {
           style={{
             marginBottom: "2rem",
             textAlign: "justify",
-            fontSize: "0.7rem",
+            fontSize: "0.8rem",
           }}
         >
           You hereby confirm and undertake that you shall not, at any time,
@@ -1564,7 +1557,7 @@ export default function OfferLetters() {
             extra={
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 <button
-                  onClick={handleGeneratePDF}
+                  onClick={handlePrintPDF}
                   style={{
                     width: "100%",
                     fontSize: "0.9rem",
@@ -1591,20 +1584,6 @@ export default function OfferLetters() {
                 >
                   <Database width={"1.25rem"} />
                 </button>
-                {/* <button
-                  onClick={handlePrintPDFPreview}
-                  style={{
-                    width: "100%",
-                    padding: "0.5rem 1rem",
-                    background: "rgba(100 100 100/ 50%)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "0.5rem",
-                    cursor: "pointer",
-                  }}
-                >
-                  <Printer width={"1.25rem"} />
-                </button> */}
               </div>
             }
           />
