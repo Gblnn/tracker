@@ -108,13 +108,7 @@ export default function OfferLetters() {
     leaveEncashment: string;
     workingHours: string;
     airPassage: string;
-    jobSummary: string;
-    responsibilities: string;
-    roles: Array<{ title: string; description: string }>;
-    [key: string]:
-      | string
-      | string[]
-      | Array<{ title: string; description: string }>;
+    [key: string]: string | string[];
   }>({
     date: Date(),
     refNo: "",
@@ -142,9 +136,6 @@ export default function OfferLetters() {
     leaveEncashment: "",
     workingHours: "",
     airPassage: "",
-    jobSummary: "",
-    responsibilities: "",
-    roles: [],
   });
 
   const tableRef = useRef<HTMLDivElement>(null);
@@ -188,9 +179,7 @@ export default function OfferLetters() {
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => {
@@ -227,33 +216,6 @@ export default function OfferLetters() {
       ...prev,
       noticePeriodSubsections: prev.noticePeriodSubsections.map(
         (subsection, i) => (i === index ? value : subsection)
-      ),
-    }));
-  };
-
-  const handleAddRole = () => {
-    setFormData((prev) => ({
-      ...prev,
-      roles: [...prev.roles, { title: "", description: "" }],
-    }));
-  };
-
-  const handleRemoveRole = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      roles: prev.roles.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleRoleChange = (
-    index: number,
-    field: "title" | "description",
-    value: string
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      roles: prev.roles.map((role, i) =>
-        i === index ? { ...role, [field]: value } : role
       ),
     }));
   };
@@ -483,9 +445,6 @@ export default function OfferLetters() {
       leaveEncashment: "",
       workingHours: "",
       airPassage: "",
-      jobSummary: "",
-      responsibilities: "",
-      roles: [],
     });
     setLoadedLetterId(null);
     setHasChanges(false);
@@ -914,92 +873,6 @@ export default function OfferLetters() {
             style={inputStyle}
           />
         </div>
-        <br />
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "0.5rem",
-              marginBottom: "0.5rem",
-            }}
-          >
-            <h3 style={{ fontSize: "1rem" }}>Roles & Responsibilities</h3>
-            <button
-              onClick={handleAddRole}
-              style={{
-                background: "rgba(100 100 100/ 40%)",
-                color: "skyblue",
-                border: "none",
-                padding: "0.13rem 0.75rem",
-                borderRadius: "0.5rem",
-                cursor: "pointer",
-                fontSize: "0.8rem",
-              }}
-            >
-              <Plus width={"0.8rem"} />
-              Add Role
-            </button>
-          </div>
-          {formData.roles.map((role, index) => (
-            <div
-              key={index}
-              style={{
-                border: "1px solid rgba(100 100 100/ 20%)",
-                borderRadius: "0.5rem",
-                padding: "0.75rem",
-                marginBottom: "",
-                background: "rgba(100 100 100/ 5%)",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "0.5rem",
-                }}
-              >
-                <input
-                  type="text"
-                  value={role.title}
-                  onChange={(e) =>
-                    handleRoleChange(index, "title", e.target.value)
-                  }
-                  placeholder="Enter role title"
-                  style={inputStyle}
-                />
-                <button
-                  onClick={() => handleRemoveRole(index)}
-                  style={{
-                    color: "white",
-                    border: "none",
-                    padding: "0.25rem 0.5rem",
-                    borderRadius: "0.25rem",
-                    cursor: "pointer",
-                    fontSize: "0.8rem",
-                    marginLeft: "0.5rem",
-                  }}
-                >
-                  <MinusCircle width={"1.25rem"} color="crimson" />
-                </button>
-              </div>
-              <textarea
-                value={role.description}
-                onChange={(e) =>
-                  handleRoleChange(index, "description", e.target.value)
-                }
-                placeholder="Enter role description"
-                style={{ ...inputStyle, width: "100%" }}
-                rows={3}
-              />
-            </div>
-          ))}
-        </div>
-        <br />
 
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
@@ -1084,7 +957,7 @@ export default function OfferLetters() {
                 <Save width={"1rem"} color="dodgerblue" />
               )}
 
-              {saving ? "Saving" : !loadedLetterId ? "Save" : "Save as New"}
+              {saving ? "Saving" : "Save"}
             </button>
           }
         </div>
@@ -1379,81 +1252,7 @@ export default function OfferLetters() {
       >
         --- Page 2 ---
       </div>
-      {/* Page 2: Roles and Responsibilities */}
-      <div
-        style={{
-          border: "",
-          width: "100%",
-          maxWidth: 800,
-          boxSizing: "border-box",
-          padding: "4rem",
-          background: "white",
-          color: "black",
-          borderRadius: "0.5rem",
-          boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
-          minHeight: "1100px",
-          fontFamily: "Aptos",
-          fontSize: "0.8rem",
-          margin: "1 auto",
-          overflowX: "auto",
-          marginBottom: "4rem",
-        }}
-      >
-        <br />
-        <br />
-        <br />
-        <h2
-          style={{
-            fontWeight: "600",
-            marginBottom: "1rem",
-            fontSize: "1rem",
-            textTransform: "uppercase",
-          }}
-        >
-          Roles & Responsibilities
-        </h2>
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
-        >
-          {formData.roles.length > 0 ? (
-            formData.roles.map((role, index) => (
-              <div key={index}>
-                <h3
-                  style={{
-                    fontSize: "0.9rem",
-                    fontWeight: "600",
-                    marginBottom: "0.5rem",
-                  }}
-                >
-                  {role.title || "[ROLE TITLE]"}
-                </h3>
-                <p style={{ fontSize: "0.9rem", color: "#444" }}>
-                  {role.description || "[ROLE DESCRIPTION]"}
-                </p>
-              </div>
-            ))
-          ) : (
-            <p style={{ fontSize: "0.9rem", color: "#888" }}>
-              No roles and responsibilities defined.
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Page break for preview */}
-      <div style={{ height: 40 }} />
-      <div
-        style={{
-          width: "100%",
-          textAlign: "center",
-          color: "#aaa",
-          fontSize: "0.9rem",
-          marginBottom: "2rem",
-        }}
-      >
-        --- Page 3 ---
-      </div>
-      {/* Page 3: Rest of content */}
+      {/* Page 2: Rest of content */}
       <div
         ref={restRef}
         style={{
@@ -1514,8 +1313,9 @@ export default function OfferLetters() {
               Visa Status
             </h3>
             <p>
-              {formData.visaStatus ||
-                "Work VISA shall be provided by the Company. Employee agrees that he shall not join any competing business until the end of the Contract Project"}
+              Work VISA shall be provided by the Company. Employee agrees that
+              he shall not join any competing business until the end of the
+              Contract Project
             </p>
           </div>
         )}
