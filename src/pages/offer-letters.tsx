@@ -23,6 +23,7 @@ import jsPDF from "jspdf";
 import {
   Bug,
   Database,
+  Dot,
   Eye,
   File,
   LoaderCircle,
@@ -157,6 +158,7 @@ export default function OfferLetters() {
   const [air_passage, setAirPassage] = useState(true);
   const [comm, setComm] = useState(true);
   const [visaS, setVisaS] = useState(true);
+  const [offerLettersCache, setOfferLettersCache] = useState<any[]>([]);
 
   const sendBugReport = async () => {
     setLoading(true);
@@ -217,17 +219,65 @@ export default function OfferLetters() {
     }));
   };
 
+  const fetchOfferLetters = async () => {
+    // Immediately show cached letters if available
+    if (offerLettersCache.length > 0) {
+      setOfferLetters(offerLettersCache);
+    }
+
+    setOfferLettersLoading(true);
+    try {
+      const q = query(
+        collection(db, "offer_letters"),
+        orderBy("generated_at", "desc")
+      );
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+      // Merge new letters with cached ones, avoiding duplicates
+      const mergedLetters = [...data];
+      offerLettersCache.forEach((cachedLetter) => {
+        if (!mergedLetters.some((letter) => letter.id === cachedLetter.id)) {
+          mergedLetters.push(cachedLetter);
+        }
+      });
+
+      // Sort by generated_at
+      // mergedLetters.sort((a, b) => {
+      //   const dateA = a.generated_at?.toDate?.() || new Date(0);
+      //   const dateB = b.generated_at?.toDate?.() || new Date(0);
+      //   return dateB.getTime() - dateA.getTime();
+      // });
+
+      setOfferLetters(mergedLetters);
+      setOfferLettersCache(mergedLetters);
+    } catch (err) {
+      message.error("Failed to fetch offer letters");
+    } finally {
+      setOfferLettersLoading(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      await addDoc(collection(db, "offer_letters"), {
+      const newLetter = {
         ...formData,
         air_passage: air_passage,
         comm: comm,
         visaS: visaS,
         generated_at: Timestamp.now(),
         generated_by: auth.currentUser?.email || null,
-      });
+      };
+
+      const docRef = await addDoc(collection(db, "offer_letters"), newLetter);
+      const savedLetter = { id: docRef.id, ...newLetter };
+
+      // Update cache with new letter
+      const updatedCache = [savedLetter, ...offerLettersCache];
+      setOfferLettersCache(updatedCache);
+      setOfferLetters(updatedCache);
+
       message.success("Offer letter details saved to database");
       const tableNode = tableRef.current;
       const restNode = restRef.current;
@@ -240,7 +290,6 @@ export default function OfferLetters() {
     }
   };
 
-  // Update the PDF generation handler to remove database saving
   const handlePrintPDF = async () => {
     setPdfLoading(true);
     try {
@@ -283,24 +332,6 @@ export default function OfferLetters() {
     }
   };
 
-  // Fetch offer letters when drawer opens
-  const fetchOfferLetters = async () => {
-    setOfferLettersLoading(true);
-    try {
-      const q = query(
-        collection(db, "offer_letters"),
-        orderBy("generated_at", "desc")
-      );
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setOfferLetters(data);
-    } catch (err) {
-      message.error("Failed to fetch offer letters");
-    } finally {
-      setOfferLettersLoading(false);
-    }
-  };
-
   const handleEditLetter = async () => {
     if (!editingLetter?.id) return;
     setSaving(true);
@@ -323,8 +354,15 @@ export default function OfferLetters() {
     setDeleting(true);
     try {
       await deleteDoc(doc(db, "offer_letters", id));
+
+      // Update cache by removing deleted letter
+      const updatedCache = offerLettersCache.filter(
+        (letter) => letter.id !== id
+      );
+      setOfferLettersCache(updatedCache);
+      setOfferLetters(updatedCache);
+
       message.success("Offer letter deleted");
-      fetchOfferLetters();
     } catch (err) {
       message.error("Failed to delete offer letter");
     } finally {
@@ -336,15 +374,24 @@ export default function OfferLetters() {
     if (!loadedLetterId) return;
     setSaving(true);
     try {
-      await updateDoc(doc(db, "offer_letters", loadedLetterId), {
+      const updatedLetter = {
         ...formData,
         updated_at: Timestamp.now(),
-      });
+      };
+
+      await updateDoc(doc(db, "offer_letters", loadedLetterId), updatedLetter);
+
+      // Update cache with modified letter
+      const updatedCache = offerLettersCache.map((letter) =>
+        letter.id === loadedLetterId ? { ...letter, ...updatedLetter } : letter
+      );
+      setOfferLettersCache(updatedCache);
+      setOfferLetters(updatedCache);
+
       message.success("Offer letter updated");
       setLoadedLetterId(null);
       setHasChanges(false);
       setOriginalFormData(null);
-      fetchOfferLetters();
     } catch (err) {
       message.error("Failed to update offer letter");
     } finally {
@@ -754,7 +801,11 @@ export default function OfferLetters() {
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
-          <label>Communications</label>
+          <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
+            <Checkbox checked={comm} onClick={() => setComm(!comm)} />
+            <label>Communications</label>
+          </div>
+
           <input
             type="text"
             name="communication"
@@ -1125,7 +1176,7 @@ export default function OfferLetters() {
                   "A Car shall be provided by the Company for official use only"}
               </td>
             </tr>
-            {visaS && (
+            {/* {visaS && (
               <tr>
                 <td style={tableCellStyle}>VISA Status</td>
                 <td style={tableCellStyle}>
@@ -1133,7 +1184,7 @@ export default function OfferLetters() {
                     "Work VISA shall be provided by the Company. Employee agrees that he shall not join any competing business until the end of the Contract Project"}
                 </td>
               </tr>
-            )}
+            )} */}
 
             {comm && (
               <tr>
@@ -1248,6 +1299,24 @@ export default function OfferLetters() {
             </p>
             <p>
               <b>Class of Travel : </b>Economy Class by any Airline
+            </p>
+          </div>
+        )}
+        {visaS && (
+          <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
+            <h3
+              style={{
+                fontWeight: "600",
+                marginBottom: "0.5rem",
+                fontSize: "0.9rem",
+              }}
+            >
+              Visa Status
+            </h3>
+            <p>
+              Work VISA shall be provided by the Company. Employee agrees that
+              he shall not join any competing business until the end of the
+              Contract Project
             </p>
           </div>
         )}
@@ -1626,7 +1695,12 @@ export default function OfferLetters() {
                 <button
                   style={{ background: "rgba(100 100 100/ 50%)" }}
                   onClick={() => {
+                    // Show cached letters immediately
+                    if (offerLettersCache.length > 0) {
+                      setOfferLetters(offerLettersCache);
+                    }
                     setOfferLettersDrawerVisible(true);
+                    // Fetch new letters in background
                     fetchOfferLetters();
                   }}
                 >
@@ -1721,18 +1795,42 @@ export default function OfferLetters() {
           open={offerLettersDrawerVisible}
           width={window.innerWidth <= 768 ? "100%" : 500}
         >
-          {offerLettersLoading ? (
-            <div
+          {
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
               style={{
                 display: "flex",
+                background: "",
+                color: "black",
+                fontSize: "0.8rem",
+                gap: "0.5rem",
                 justifyContent: "center",
                 alignItems: "center",
-                height: 200,
+                marginBottom: "1rem",
+                height: "1rem",
               }}
             >
-              <LoadingOutlined style={{ fontSize: 32, color: "dodgerblue" }} />
-            </div>
-          ) : offerLetters.length === 0 ? (
+              {offerLettersLoading ? (
+                <>
+                  <LoaderCircle width={"0.8rem"} className="animate-spin" />
+                  <p>Fetching</p>
+                </>
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <Dot />
+                  {"Fetched " + offerLetters.length + " Letter(s)"}
+                </div>
+              )}
+            </motion.div>
+          }
+
+          {offerLetters.length === 0 ? (
             <div style={{ textAlign: "center", color: "#888" }}>
               No offer letters found.
             </div>
