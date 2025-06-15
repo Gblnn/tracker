@@ -107,7 +107,7 @@ export default function OfferLetters() {
     gratuity: string;
     leaveEncashment: string;
     workingHours: string;
-
+    airPassage: string;
     [key: string]: string | string[];
   }>({
     date: Date(),
@@ -135,6 +135,7 @@ export default function OfferLetters() {
     gratuity: "",
     leaveEncashment: "",
     workingHours: "",
+    airPassage: "",
   });
 
   const tableRef = useRef<HTMLDivElement>(null);
@@ -443,6 +444,7 @@ export default function OfferLetters() {
       gratuity: "",
       leaveEncashment: "",
       workingHours: "",
+      airPassage: "",
     });
     setLoadedLetterId(null);
     setHasChanges(false);
@@ -787,20 +789,6 @@ export default function OfferLetters() {
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
-          <label>Visa Status</label>
-          <input
-            type="text"
-            name="visaStatus"
-            value={formData.visaStatus}
-            onChange={handleInputChange}
-            placeholder="Enter Visa Terms"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
           <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
             <Checkbox checked={comm} onClick={() => setComm(!comm)} />
             <label>Communications</label>
@@ -887,29 +875,40 @@ export default function OfferLetters() {
         </div>
 
         <div
-          style={{
-            display: "flex",
-            gap: "0.5rem",
-            marginTop: "1rem",
-            justifyContent: "space-between",
-          }}
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            <p>Communication</p>
-            <Checkbox checked={comm} onClick={() => setComm(!comm)} />
-          </div>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <p>Air Passage</p>
+          <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
             <Checkbox
               checked={air_passage}
               onClick={() => setAirPassage(!air_passage)}
             />
+            <label>Air Passage</label>
           </div>
 
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            <p>Visa Status</p>
+          <input
+            type="text"
+            name="airPassage"
+            value={formData.airPassage}
+            onChange={handleInputChange}
+            placeholder="Enter Air Passage Terms"
+            style={inputStyle}
+          />
+        </div>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
             <Checkbox checked={visaS} onClick={() => setVisaS(!visaS)} />
+            <label>Visa Status</label>
           </div>
+          <input
+            type="text"
+            name="visaStatus"
+            value={formData.visaStatus}
+            onChange={handleInputChange}
+            placeholder="Enter Visa Terms"
+            style={inputStyle}
+          />
         </div>
       </div>
     </div>
@@ -943,7 +942,7 @@ export default function OfferLetters() {
             onChange={handleInputChange}
             placeholder="Enter Date"
           ></input>
-          {!loadedLetterId && (
+          {
             <button
               onClick={handleSave}
               style={{
@@ -960,7 +959,7 @@ export default function OfferLetters() {
 
               {saving ? "Saving" : "Save"}
             </button>
-          )}
+          }
         </div>
       </div>
 
@@ -1288,9 +1287,8 @@ export default function OfferLetters() {
               Air Passage
             </h3>
             <p>
-              While going on sanctioned leave, to and fro air ticket on a direct
-              flight from Oman to the nearest international airport to your
-              hometown, once on completion of 18 months.
+              {formData.airPassage ||
+                "While going on sanctioned leave, to and fro air ticket on a direct flight from Oman to the nearest international airport to your hometown, once on completion of 18 months."}
             </p>
             <br />
             <p>
