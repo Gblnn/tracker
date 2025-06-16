@@ -185,9 +185,9 @@ export default function OfferLetters() {
   const [selectedPreset, setSelectedPreset] = useState<string>("");
   const [presetName, setPresetName] = useState("");
   const [presetDialogVisible, setPresetDialogVisible] = useState(false);
-  const [selectedPresetData, setSelectedPresetData] = useState<FormData | null>(
-    null
-  );
+  // const [selectedPresetData, setSelectedPresetData] = useState<FormData | null>(
+  //   null
+  // );
 
   // Add this after other useEffect hooks
   useEffect(() => {
@@ -195,15 +195,15 @@ export default function OfferLetters() {
   }, []);
 
   // Add this new useEffect to track changes
-  useEffect(() => {
-    if (selectedPreset && selectedPresetData) {
-      const hasChanges =
-        JSON.stringify(formData) !== JSON.stringify(selectedPresetData);
-      setHasChanges(hasChanges);
-    } else {
-      setHasChanges(false);
-    }
-  }, [formData, selectedPreset, selectedPresetData]);
+  // useEffect(() => {
+  //   if (selectedPreset && selectedPresetData) {
+  //     const hasChanges =
+  //       JSON.stringify(formData) !== JSON.stringify(selectedPresetData);
+  //     setHasChanges(hasChanges);
+  //   } else {
+  //     setHasChanges(false);
+  //   }
+  // }, [formData, selectedPreset, selectedPresetData]);
 
   const fetchPresets = async () => {
     try {
@@ -229,6 +229,7 @@ export default function OfferLetters() {
     }
 
     try {
+      setLoading(true);
       const newPreset = {
         name: presetName,
         data: formData,
@@ -240,7 +241,9 @@ export default function OfferLetters() {
       setPresetDialogVisible(false);
       setPresetName("");
       fetchPresets();
+      setLoading(false);
     } catch (err) {
+      setLoading(false);
       message.error("Failed to save preset");
     }
   };
@@ -250,22 +253,22 @@ export default function OfferLetters() {
     if (preset) {
       setFormData(preset.data);
       setSelectedPreset(presetId);
-      setSelectedPresetData(preset.data);
+      // setSelectedPresetData(preset.data);
     }
   };
 
-  const handleDeletePreset = async (presetId: string) => {
-    try {
-      await deleteDoc(doc(db, "offer_letter_presets", presetId));
-      message.success("Preset deleted successfully");
-      fetchPresets();
-      if (selectedPreset === presetId) {
-        setSelectedPreset("");
-      }
-    } catch (err) {
-      message.error("Failed to delete preset");
-    }
-  };
+  // const handleDeletePreset = async (presetId: string) => {
+  //   try {
+  //     await deleteDoc(doc(db, "offer_letter_presets", presetId));
+  //     message.success("Preset deleted successfully");
+  //     fetchPresets();
+  //     if (selectedPreset === presetId) {
+  //       setSelectedPreset("");
+  //     }
+  //   } catch (err) {
+  //     message.error("Failed to delete preset");
+  //   }
+  // };
 
   const handleUpdatePreset = async () => {
     if (!selectedPreset) {
@@ -583,7 +586,12 @@ export default function OfferLetters() {
         updated_at: Timestamp.now(),
       };
 
-      await updateDoc(doc(db, "offer_letters", loadedLetterId), updatedLetter);
+      await updateDoc(doc(db, "offer_letters", loadedLetterId), {
+        updatedLetter,
+        air_passage: air_passage,
+        comm: comm,
+        visaS: visaS,
+      });
 
       // Update cache with modified letter
       const updatedCache = offerLettersCache.map((letter) =>
@@ -688,7 +696,7 @@ export default function OfferLetters() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <File />
-          <h2>Offer Letter Details</h2>
+          <h2>Offer Letter </h2>
         </div>
         <button
           onClick={handleClearForm}
@@ -782,18 +790,26 @@ export default function OfferLetters() {
             <SelectTrigger className="w-full h-[38px]">
               <SelectValue placeholder="Select a preset" />
             </SelectTrigger>
-            <SelectContent
-              position="popper"
-              className="w-[var(--radix-select-trigger-width)]"
-            >
+            <SelectContent position="popper" className="">
               {presets.map((preset) => (
-                <SelectItem key={preset.id} value={preset.id}>
+                <SelectItem
+                  style={{ display: "flex", justifyContent: "flex-start" }}
+                  key={preset.id}
+                  value={preset.id}
+                >
                   {preset.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "0.5rem",
+              marginTop: "0.5rem",
+              fontSize: "0.6rem",
+            }}
+          >
             <button
               onClick={handleUpdatePreset}
               disabled={!selectedPreset || !hasChanges}
@@ -802,7 +818,7 @@ export default function OfferLetters() {
                 background: "rgba(100 100 100/ 40%)",
                 color: "",
                 border: "none",
-                padding: "0.15rem 1rem",
+                padding: "0.25rem 1rem",
                 borderRadius: "0.5rem",
                 cursor:
                   selectedPreset && hasChanges ? "pointer" : "not-allowed",
@@ -826,9 +842,9 @@ export default function OfferLetters() {
               }}
             >
               <Save color="mediumslateblue" width={"0.8rem"} />
-              Update
+              Update Preset
             </button>
-            <button
+            {/* <button
               onClick={() => {
                 if (selectedPreset) {
                   Modal.confirm({
@@ -847,7 +863,7 @@ export default function OfferLetters() {
                 background: "rgba(100 100 100/ 40%)",
                 color: "",
                 border: "none",
-                padding: "0.15rem 1rem",
+                padding: "0.25rem 1rem",
                 borderRadius: "0.5rem",
                 cursor: selectedPreset ? "pointer" : "not-allowed",
                 fontSize: "0.8rem",
@@ -870,8 +886,8 @@ export default function OfferLetters() {
               }}
             >
               <X color="indianred" width={"0.8rem"} />
-              Remove
-            </button>
+              Remove Preset
+            </button> */}
           </div>
         </div>
 
@@ -1169,7 +1185,12 @@ export default function OfferLetters() {
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
           <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
-            <Checkbox checked={comm} onClick={() => setComm(!comm)} />
+            <Checkbox
+              checked={comm}
+              onClick={() => {
+                setComm(!comm);
+              }}
+            />
             <label>Communications</label>
           </div>
 
@@ -1430,11 +1451,17 @@ export default function OfferLetters() {
             >
               {saving ? (
                 <LoaderCircle width={"1rem"} className="animate-spin" />
+              ) : !loadedLetterId ? (
+                <Plus width={"1rem"} color="dodgerblue" />
               ) : (
                 <Save width={"1rem"} color="dodgerblue" />
               )}
 
-              {saving ? "Saving" : !loadedLetterId ? "Save" : "Save as New"}
+              {saving
+                ? "Saving"
+                : !loadedLetterId
+                ? "Add to Database"
+                : "Save as New"}
             </button>
           }
         </div>
@@ -1654,13 +1681,13 @@ export default function OfferLetters() {
               </td>
             </tr>
             {/* {visaS && (
-              <tr>
-                <td style={tableCellStyle}>VISA Status</td>
-                <td style={tableCellStyle}>
-                  {formData.visaStatus ||
-                    "Work VISA shall be provided by the Company. Employee agrees that he shall not join any competing business until the end of the Contract Project"}
-                </td>
-              </tr>
+            <tr>
+              <td style={tableCellStyle}>VISA Status</td>
+              <td style={tableCellStyle}>
+                {formData.visaStatus ||
+                  "Work VISA shall be provided by the Company. Employee agrees that he shall not join any competing business until the end of the Contract Project"}
+              </td>
+            </tr>
             )} */}
 
             {comm && (
@@ -2232,7 +2259,7 @@ export default function OfferLetters() {
                   disabled={pdfLoading}
                 >
                   <Sparkles color="white" width={"1rem"} />
-                  {pdfLoading ? "Generating..." : "Generate"}
+                  {pdfLoading ? "Generating..." : "Generate PDF"}
                 </button>
 
                 <button
@@ -2633,6 +2660,8 @@ export default function OfferLetters() {
       <DefaultDialog
         titleIcon={<Save />}
         title="Save as Preset"
+        updating={loading}
+        disabled={loading}
         open={presetDialogVisible}
         onCancel={() => {
           setPresetDialogVisible(false);
