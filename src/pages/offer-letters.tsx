@@ -605,8 +605,7 @@ export default function OfferLetters() {
       setOfferLetters(updatedCache);
 
       message.success("Offer letter updated");
-      setLoadedLetterId(null);
-      setHasChanges(false);
+
       setOriginalFormData(null);
     } catch (err) {
       message.error("Failed to update offer letter");
@@ -1202,6 +1201,7 @@ export default function OfferLetters() {
               checked={comm}
               onClick={() => {
                 setComm(!comm);
+                setHasChanges(true);
               }}
             />
             <label>Communications</label>
@@ -1391,7 +1391,10 @@ export default function OfferLetters() {
           <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
             <Checkbox
               checked={air_passage}
-              onClick={() => setAirPassage(!air_passage)}
+              onClick={() => {
+                setAirPassage(!air_passage);
+                setHasChanges(true);
+              }}
             />
             <label>Air Passage</label>
           </div>
@@ -1409,7 +1412,13 @@ export default function OfferLetters() {
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
           <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
-            <Checkbox checked={visaS} onClick={() => setVisaS(!visaS)} />
+            <Checkbox
+              checked={visaS}
+              onClick={() => {
+                setVisaS(!visaS);
+                setHasChanges(true);
+              }}
+            />
             <label>Visa Status</label>
           </div>
           <input
@@ -2527,7 +2536,6 @@ export default function OfferLetters() {
               border: "none",
               borderRadius: "0.5rem",
               cursor: saving ? "not-allowed" : "pointer",
-              opacity: saving ? 0.7 : 1,
             }}
             disabled={saving}
           >
