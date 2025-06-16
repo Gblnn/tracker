@@ -1100,7 +1100,11 @@ export default function OfferLetters() {
                       handleNoticePeriodSubsectionChange(index, e.target.value)
                     }
                     placeholder="Enter sub-section content"
-                    style={{ fontSize: "1rem", background: "none" }}
+                    style={{
+                      fontSize: "1rem",
+                      background: "",
+                      borderRadius: "0.25rem",
+                    }}
                   />
                   <button
                     onClick={() => handleRemoveNoticePeriodSubsection(index)}
