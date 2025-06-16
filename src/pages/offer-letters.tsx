@@ -24,7 +24,7 @@ import {
   Timestamp,
   updateDoc,
 } from "firebase/firestore";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import {
@@ -37,6 +37,7 @@ import {
   Menu,
   MinusCircle,
   Plus,
+  RefreshCcw,
   Save,
   Sparkles,
   Trash2,
@@ -160,6 +161,8 @@ export default function OfferLetters() {
   const rolesRef = useRef<HTMLDivElement>(null);
   const restRef = useRef<HTMLDivElement>(null);
   const signatureRef = useRef<HTMLDivElement>(null);
+  const lastRoleRef = useRef<HTMLDivElement>(null);
+  const lastSubsectionRef = useRef<HTMLDivElement>(null);
 
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
@@ -334,6 +337,13 @@ export default function OfferLetters() {
       ...prev,
       noticePeriodSubsections: [...prev.noticePeriodSubsections, ""],
     }));
+    // Scroll after a small delay to ensure the new input is rendered
+    setTimeout(() => {
+      lastSubsectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 100);
   };
 
   const handleRemoveNoticePeriodSubsection = (index: number) => {
@@ -376,18 +386,17 @@ export default function OfferLetters() {
   };
 
   const handleAddRole = () => {
-    setFormData((prev) => {
-      const newData = {
-        ...prev,
-        roles: [...prev.roles, { title: "", description: "" }],
-      };
-      if (originalFormData) {
-        const hasChanges =
-          JSON.stringify(newData) !== JSON.stringify(originalFormData);
-        setHasChanges(hasChanges);
-      }
-      return newData;
-    });
+    setFormData((prev) => ({
+      ...prev,
+      roles: [...prev.roles, { title: "", description: "" }],
+    }));
+    // Scroll after a small delay to ensure the new input is rendered
+    setTimeout(() => {
+      lastRoleRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 100);
   };
 
   const handleRemoveRole = (index: number) => {
@@ -481,7 +490,7 @@ export default function OfferLetters() {
       message.success("Offer letter saved successfully");
 
       // Reset form state after saving
-      setLoadedLetterId(null);
+      setLoadedLetterId(docRef.id);
       setHasChanges(false);
       setOriginalFormData(null);
     } catch (error) {
@@ -789,7 +798,7 @@ export default function OfferLetters() {
               }}
             >
               <Plus width={"0.8rem"} />
-              Add as New
+              Add New
             </button>
           </div>
           <Select value={selectedPreset} onValueChange={handleLoadPreset}>
@@ -805,7 +814,9 @@ export default function OfferLetters() {
               <SelectValue
                 placeholder={presetsLoading ? "Fetching" : "Select a preset"}
               />
-              {!presetsLoading && <ChevronDown width={"1rem"} />}
+              {!presetsLoading && (
+                <ChevronDown style={{ opacity: 0.5 }} width={"0.8rem"} />
+              )}
             </SelectTrigger>
             <SelectContent position="popper" className="">
               {presets.map((preset) => (
@@ -834,7 +845,7 @@ export default function OfferLetters() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "0.25rem",
+                gap: "0.5rem",
                 background: "rgba(100 100 100/ 40%)",
                 color: "",
                 border: "none",
@@ -846,6 +857,7 @@ export default function OfferLetters() {
                 transition: "all 0.2s ease",
                 flex: 1,
                 justifyContent: "center",
+                fontSize: "0.8rem",
               }}
               onMouseOver={(e) => {
                 if (selectedPreset && hasChanges) {
@@ -858,7 +870,7 @@ export default function OfferLetters() {
                 }
               }}
             >
-              <Save color="mediumslateblue" width={"0.8rem"} />
+              <RefreshCcw color="mediumslateblue" width={"0.8rem"} />
               Update
             </button>
             <button
@@ -872,7 +884,7 @@ export default function OfferLetters() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "0.25rem",
+                gap: "0.5rem",
                 background: "rgba(100 100 100/ 40%)",
                 color: "",
                 border: "none",
@@ -883,6 +895,7 @@ export default function OfferLetters() {
                 transition: "all 0.2s ease",
                 flex: 1,
                 justifyContent: "center",
+                fontSize: "0.8rem",
               }}
               onMouseOver={(e) => {
                 if (selectedPreset) {
@@ -902,11 +915,7 @@ export default function OfferLetters() {
         </div>
 
         <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.5rem",
-          }}
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
           <label>Reference Number</label>
           <input
@@ -1075,27 +1084,35 @@ export default function OfferLetters() {
                 Sub-sections
               </label>
             </div>
-            {formData.noticePeriodSubsections.map((subsection, index) => (
-              <div
-                key={index}
-                style={{
-                  border: "1px solid rgba(100 100 100/ 20%)",
-                  borderRadius: "0.75rem",
-                  padding: "0.35rem",
-                  marginBottom: "0.75rem",
-                  background: "rgba(100 100 100/ 5%)",
-                  gap: "",
-                }}
-              >
-                <div
+            <AnimatePresence mode="sync">
+              {formData.noticePeriodSubsections.map((subsection, index) => (
+                <motion.div
+                  key={index}
+                  ref={
+                    index === formData.noticePeriodSubsections.length - 1
+                      ? lastSubsectionRef
+                      : null
+                  }
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{
+                    duration: 0.15,
+                    ease: [0.4, 0, 0.2, 1],
+                  }}
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    border: "1px solid rgba(100 100 100/ 20%)",
+                    borderRadius: "0.75rem",
+                    padding: "0.35rem",
+                    marginBottom: "0.75rem",
+                    background: "rgba(100 100 100/ 5%)",
+                    willChange: "transform, opacity",
                   }}
                 >
                   <input
-                    type="text"
                     value={subsection}
                     onChange={(e) =>
                       handleNoticePeriodSubsectionChange(index, e.target.value)
@@ -1106,51 +1123,52 @@ export default function OfferLetters() {
                       background: "none",
                     }}
                   />
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => handleRemoveNoticePeriodSubsection(index)}
                     style={{
-                      color: "white",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "rgba(100 100 100/ 40%)",
+                      color: "indianred",
                       border: "none",
-                      padding: "0.25rem 0.5rem",
+                      padding: "0.5rem 0.75rem",
                       borderRadius: "0.45rem",
                       cursor: "pointer",
-                      fontSize: "0.8rem",
-                      marginLeft: "0.45rem",
+                      fontSize: "0.95rem",
+                      willChange: "transform",
                     }}
                   >
-                    <MinusCircle width={"1.25rem"} color="crimson" />
-                  </button>
-                </div>
-              </div>
-            ))}
-            <button
+                    <MinusCircle width={"1rem"} />
+                  </motion.button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleAddNoticePeriodSubsection}
               style={{
-                width: "100%",
+                fontSize: "0.85rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
                 background: "rgba(100 100 100/ 40%)",
                 color: "mediumslateblue",
                 border: "none",
                 padding: "0.5rem 1rem",
                 borderRadius: "0.5rem",
                 cursor: "pointer",
-                fontSize: "0.8rem",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.5rem",
+                width: "100%",
                 marginTop: "0.5rem",
-                transition: "all 0.2s ease",
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = "rgba(100 100 100/ 50%)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = "rgba(100 100 100/ 40%)";
+                willChange: "transform",
               }}
             >
               <Plus width={"0.8rem"} />
               Add Sub-section
-            </button>
+            </motion.button>
           </div>
         </div>
 
@@ -1305,94 +1323,110 @@ export default function OfferLetters() {
           >
             <h3 style={{ fontSize: "1rem" }}>Roles & Responsibilities</h3>
           </div>
-          {formData.roles.map((role, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                flexFlow: "column",
-                border: "1px solid rgba(100 100 100/ 20%)",
-                borderRadius: "0.5rem",
-                padding: "0.45rem",
-                marginBottom: "0.5rem",
-                background: "rgba(100 100 100/ 5%)",
-              }}
-            >
-              <div
+          <AnimatePresence mode="sync">
+            {formData.roles.map((role, index) => (
+              <motion.div
+                key={index}
+                ref={index === formData.roles.length - 1 ? lastRoleRef : null}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{
+                  duration: 0.15,
+                  ease: [0.4, 0, 0.2, 1],
+                }}
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
+                  flexFlow: "column",
+                  border: "1px solid rgba(100 100 100/ 20%)",
+                  borderRadius: "0.5rem",
+                  padding: "0.45rem",
                   marginBottom: "0.5rem",
+                  background: "rgba(100 100 100/ 5%)",
+                  willChange: "transform, opacity",
                 }}
               >
-                <input
-                  type="text"
-                  value={role.title}
-                  onChange={(e) =>
-                    handleRoleChange(index, "title", e.target.value)
-                  }
-                  placeholder="Enter role title"
-                  style={{ fontSize: "0.95rem", background: "" }}
-                />
-                <button
-                  onClick={() => handleRemoveRole(index)}
+                <div
                   style={{
-                    color: "white",
-                    border: "none",
-                    padding: "0.25rem 0.5rem",
-                    borderRadius: "0.45rem",
-                    cursor: "pointer",
-                    fontSize: "0.8rem",
-                    marginLeft: "0.5rem",
-                    background: "",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    marginBottom: "0.5rem",
                   }}
                 >
-                  <MinusCircle width={"1.25rem"} color="crimson" />
-                </button>
-              </div>
-              <textarea
-                value={role.description}
-                onChange={(e) =>
-                  handleRoleChange(index, "description", e.target.value)
-                }
-                placeholder="Enter role description"
-                style={{
-                  width: "100%",
-                  fontSize: "0.95rem",
-                  background: "none",
-                  borderRadius: "0.5rem",
-                }}
-                rows={5}
-              />
-            </div>
-          ))}
-          <button
+                  <input
+                    type="text"
+                    name={`role-title-${index}`}
+                    value={role.title}
+                    onChange={(e) =>
+                      handleRoleChange(index, "title", e.target.value)
+                    }
+                    placeholder="Enter role title"
+                    style={{ fontSize: "0.95rem", background: "" }}
+                  />
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleRemoveRole(index)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "rgba(100 100 100/ 40%)",
+                      color: "indianred",
+                      border: "none",
+                      padding: "0.5rem 0.75rem",
+                      borderRadius: "0.45rem",
+                      cursor: "pointer",
+                      fontSize: "0.95rem",
+                      marginLeft: "",
+                      willChange: "transform",
+                    }}
+                  >
+                    <MinusCircle width={"1rem"} />
+                  </motion.button>
+                </div>
+                <textarea
+                  name={`role-description-${index}`}
+                  value={role.description}
+                  onChange={(e) =>
+                    handleRoleChange(index, "description", e.target.value)
+                  }
+                  placeholder="Enter role description"
+                  style={{
+                    width: "100%",
+                    fontSize: "0.95rem",
+                    background: "none",
+                    borderRadius: "0.5rem",
+                  }}
+                  rows={5}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={handleAddRole}
             style={{
+              fontSize: "0.85rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem",
               background: "rgba(100 100 100/ 40%)",
               color: "mediumslateblue",
               border: "none",
               padding: "0.5rem 1rem",
               borderRadius: "0.5rem",
               cursor: "pointer",
-              fontSize: "0.8rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
+              width: "100%",
               marginTop: "0.5rem",
-              transition: "all 0.2s ease",
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = "rgba(100 100 100/ 50%)";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = "rgba(100 100 100/ 40%)";
+              willChange: "transform",
             }}
           >
             <Plus width={"0.8rem"} />
             Add Role
-          </button>
+          </motion.button>
         </div>
         <br />
 
@@ -1461,6 +1495,14 @@ export default function OfferLetters() {
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           {/* <Eye />
           <h2>Preview</h2> */}
+          {loadedLetterId && (
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+            >
+              <Database width={"1rem"} color="mediumslateblue" />
+              <p>{loadedLetterId}</p>
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -1484,9 +1526,9 @@ export default function OfferLetters() {
               {saving ? (
                 <LoaderCircle width={"1rem"} className="animate-spin" />
               ) : !loadedLetterId ? (
-                <Plus width={"1rem"} color="dodgerblue" />
+                <Plus width={"1rem"} color="mediumslateblue" />
               ) : (
-                <Save width={"1rem"} color="dodgerblue" />
+                <Plus width={"1rem"} color="mediumslateblue" />
               )}
 
               {saving
@@ -2281,7 +2323,9 @@ export default function OfferLetters() {
                     width: "100%",
                     fontSize: "0.9rem",
                     padding: "0.5rem 1rem",
-                    background: pdfLoading ? "lightblue" : "dodgerblue",
+                    background: pdfLoading
+                      ? "darkslateblue"
+                      : "mediumslateblue",
                     color: "white",
                     border: "none",
                     borderRadius: "0.5rem",
@@ -2415,20 +2459,26 @@ export default function OfferLetters() {
             >
               {offerLettersLoading ? (
                 <>
-                  <LoaderCircle width={"0.8rem"} className="animate-spin" />
+                  <LoaderCircle
+                    width={"0.8rem"}
+                    color="mediumslateblue"
+                    className="animate-spin"
+                  />
                   <p>Fetching</p>
                 </>
               ) : (
-                <div
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
                   style={{
                     display: "flex",
                     alignItems: "center",
                   }}
                 >
-                  <Dot />
+                  <Dot color="mediumslateblue" />
                   {"Fetched " + offerLetters.length + " "}
                   {offerLetters.length > 1 ? "Items" : "Item"}
-                </div>
+                </motion.div>
               )}
             </motion.div>
           }
@@ -2533,7 +2583,7 @@ export default function OfferLetters() {
           <button
             onClick={handleSaveChanges}
             style={{
-              margin: "1rem",
+              margin: "1.5rem",
               position: "fixed",
               bottom: 0,
               right: 0,
@@ -2549,7 +2599,7 @@ export default function OfferLetters() {
             }}
             disabled={saving}
           >
-            <Save color="white" width={"1rem"} />
+            <Save color="mediumslateblue" width={"1rem"} />
             {saving ? "Saving..." : "Save Changes"}
           </button>
         )}
