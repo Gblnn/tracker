@@ -1081,7 +1081,7 @@ export default function OfferLetters() {
                 style={{
                   border: "1px solid rgba(100 100 100/ 20%)",
                   borderRadius: "0.5rem",
-                  padding: "0.75rem",
+                  padding: "0.35rem",
                   marginBottom: "0.75rem",
                   background: "rgba(100 100 100/ 5%)",
                   gap: "",
@@ -1101,7 +1101,7 @@ export default function OfferLetters() {
                       handleNoticePeriodSubsectionChange(index, e.target.value)
                     }
                     placeholder="Enter sub-section content"
-                    style={inputStyle}
+                    style={{ fontSize: "1rem", background: "none" }}
                   />
                   <button
                     onClick={() => handleRemoveNoticePeriodSubsection(index)}
@@ -1308,7 +1308,7 @@ export default function OfferLetters() {
               style={{
                 border: "1px solid rgba(100 100 100/ 20%)",
                 borderRadius: "0.5rem",
-                padding: "0.75rem",
+                padding: "0.45rem",
                 marginBottom: "",
                 background: "rgba(100 100 100/ 5%)",
               }}
@@ -1327,7 +1327,7 @@ export default function OfferLetters() {
                     handleRoleChange(index, "title", e.target.value)
                   }
                   placeholder="Enter role title"
-                  style={inputStyle}
+                  style={{ fontSize: "0.95rem", background: "" }}
                 />
                 <button
                   onClick={() => handleRemoveRole(index)}
@@ -1339,6 +1339,7 @@ export default function OfferLetters() {
                     cursor: "pointer",
                     fontSize: "0.8rem",
                     marginLeft: "0.5rem",
+                    background: "",
                   }}
                 >
                   <MinusCircle width={"1.25rem"} color="crimson" />
@@ -1350,7 +1351,11 @@ export default function OfferLetters() {
                   handleRoleChange(index, "description", e.target.value)
                 }
                 placeholder="Enter role description"
-                style={{ ...inputStyle, width: "100%" }}
+                style={{
+                  width: "100%",
+                  fontSize: "0.95rem",
+                  background: "none",
+                }}
                 rows={3}
               />
             </div>
