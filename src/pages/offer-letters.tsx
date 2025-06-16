@@ -1079,7 +1079,7 @@ export default function OfferLetters() {
                 key={index}
                 style={{
                   border: "1px solid rgba(100 100 100/ 20%)",
-                  borderRadius: "0.5rem",
+                  borderRadius: "0.75rem",
                   padding: "0.35rem",
                   marginBottom: "0.75rem",
                   background: "rgba(100 100 100/ 5%)",
@@ -1103,7 +1103,6 @@ export default function OfferLetters() {
                     style={{
                       fontSize: "1rem",
                       background: "",
-                      borderRadius: "0.25rem",
                     }}
                   />
                   <button
@@ -1112,10 +1111,10 @@ export default function OfferLetters() {
                       color: "white",
                       border: "none",
                       padding: "0.25rem 0.5rem",
-                      borderRadius: "0.25rem",
+                      borderRadius: "0.45rem",
                       cursor: "pointer",
                       fontSize: "0.8rem",
-                      marginLeft: "0.5rem",
+                      marginLeft: "0.45rem",
                     }}
                   >
                     <MinusCircle width={"1.25rem"} color="crimson" />
@@ -1340,7 +1339,7 @@ export default function OfferLetters() {
                     color: "white",
                     border: "none",
                     padding: "0.25rem 0.5rem",
-                    borderRadius: "0.25rem",
+                    borderRadius: "0.45rem",
                     cursor: "pointer",
                     fontSize: "0.8rem",
                     marginLeft: "0.5rem",
