@@ -826,33 +826,6 @@ export default function OfferLetters() {
             </div>
           </div>
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            {selectedPreset && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setRenameDialogVisible(true)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "none",
-
-                  fontSize: "0.75rem",
-                  border: "1px solid rgba(100 100 100/ 40%)",
-                  padding: "0.5rem 1rem",
-                  borderRadius: "0.5rem",
-                  cursor: "pointer",
-                  height: "2.45rem",
-                  willChange: "transform",
-                }}
-              >
-                <TextCursor color="mediumslateblue" width={"0.8rem"} />
-                Rename
-              </motion.button>
-            )}
             <Select value={selectedPreset} onValueChange={handleLoadPreset}>
               <SelectTrigger
                 disabled={presetsLoading}
@@ -882,6 +855,31 @@ export default function OfferLetters() {
                 ))}
               </SelectContent>
             </Select>
+            {selectedPreset && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setRenameDialogVisible(true)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "none",
+                  fontSize: "0.75rem",
+                  border: "1px solid rgba(100 100 100/ 40%)",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  height: "2.45rem",
+                  willChange: "transform",
+                }}
+              >
+                <TextCursor color="mediumslateblue" width={"0.8rem"} />
+              </motion.button>
+            )}
           </div>
 
           <div
@@ -963,7 +961,7 @@ export default function OfferLetters() {
               }}
             >
               <X color="indianred" width={"0.8rem"} />
-              Delete
+              Delete Preset
             </button>
           </div>
         </div>
@@ -1059,8 +1057,8 @@ export default function OfferLetters() {
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
           <label>Attendance</label>
-          <input
-            type="text"
+          <textarea
+            rows={4}
             name="attendance"
             value={formData.attendance}
             onChange={handleInputChange}
@@ -1073,8 +1071,8 @@ export default function OfferLetters() {
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
           <label>Probation</label>
-          <input
-            type="text"
+          <textarea
+            rows={4}
             name="probation"
             value={formData.probation}
             onChange={handleInputChange}
@@ -1101,8 +1099,8 @@ export default function OfferLetters() {
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
           <label>Contract Period</label>
-          <input
-            type="text"
+          <textarea
+            rows={4}
             name="contractPeriod"
             value={formData.contractPeriod}
             onChange={handleInputChange}
@@ -1115,8 +1113,8 @@ export default function OfferLetters() {
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
           <label>Notice Period</label>
-          <input
-            type="text"
+          <textarea
+            rows={4}
             name="noticePeriod"
             value={formData.noticePeriod}
             onChange={handleInputChange}
@@ -1230,8 +1228,8 @@ export default function OfferLetters() {
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
           <label>Accomodation</label>
-          <input
-            type="text"
+          <textarea
+            rows={4}
             name="accomodation"
             value={formData.accomodation}
             onChange={handleInputChange}
@@ -1244,8 +1242,8 @@ export default function OfferLetters() {
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
           <label>Food</label>
-          <input
-            type="text"
+          <textarea
+            rows={4}
             name="food"
             value={formData.food}
             onChange={handleInputChange}
@@ -1258,8 +1256,8 @@ export default function OfferLetters() {
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
           <label>Transport</label>
-          <input
-            type="text"
+          <textarea
+            rows={4}
             name="transport"
             value={formData.transport}
             onChange={handleInputChange}
@@ -1282,8 +1280,8 @@ export default function OfferLetters() {
             <label>Communications</label>
           </div>
 
-          <input
-            type="text"
+          <textarea
+            rows={4}
             name="communication"
             value={formData.communication}
             onChange={handleInputChange}
@@ -1296,8 +1294,8 @@ export default function OfferLetters() {
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
           <label>Insurance</label>
-          <input
-            type="text"
+          <textarea
+            rows={4}
             name="insurance"
             value={formData.insurance}
             onChange={handleInputChange}
@@ -1498,8 +1496,8 @@ export default function OfferLetters() {
             <label>Air Passage</label>
           </div>
 
-          <input
-            type="text"
+          <textarea
+            rows={4}
             name="airPassage"
             value={formData.airPassage}
             onChange={handleInputChange}
@@ -1520,8 +1518,8 @@ export default function OfferLetters() {
             />
             <label>Visa Status</label>
           </div>
-          <input
-            type="text"
+          <textarea
+            rows={4}
             name="visaStatus"
             value={formData.visaStatus}
             onChange={handleInputChange}
