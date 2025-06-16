@@ -736,7 +736,7 @@ export default function OfferLetters() {
             flexDirection: "column",
             gap: "0.75rem",
             marginBottom: "1.5rem",
-            padding: "1.25rem",
+            padding: "0.75rem",
             background: "rgba(100 100 100/ 5%)",
             borderRadius: "0.75rem",
             border: "1px solid rgba(100 100 100/ 10%)",
@@ -1071,7 +1071,9 @@ export default function OfferLetters() {
                 marginBottom: "0.5rem",
               }}
             >
-              <label style={{ fontSize: "0.9rem", opacity: 0.8 }}>
+              <label
+                style={{ fontSize: "0.7rem", fontWeight: 500, opacity: 0.8 }}
+              >
                 Sub-sections
               </label>
             </div>
