@@ -63,9 +63,6 @@ const styles = {
 
 // Input style for all fields
 const inputStyle = {
-  padding: "0.5rem",
-  borderRadius: "0.5rem",
-  border: "1px solid rgba(100 100 100/ 50%)",
   fontSize: "1rem",
 };
 
