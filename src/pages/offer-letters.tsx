@@ -185,11 +185,25 @@ export default function OfferLetters() {
   const [selectedPreset, setSelectedPreset] = useState<string>("");
   const [presetName, setPresetName] = useState("");
   const [presetDialogVisible, setPresetDialogVisible] = useState(false);
+  const [selectedPresetData, setSelectedPresetData] = useState<FormData | null>(
+    null
+  );
 
   // Add this after other useEffect hooks
   useEffect(() => {
     fetchPresets();
   }, []);
+
+  // Add this new useEffect to track changes
+  useEffect(() => {
+    if (selectedPreset && selectedPresetData) {
+      const hasChanges =
+        JSON.stringify(formData) !== JSON.stringify(selectedPresetData);
+      setHasChanges(hasChanges);
+    } else {
+      setHasChanges(false);
+    }
+  }, [formData, selectedPreset, selectedPresetData]);
 
   const fetchPresets = async () => {
     try {
@@ -236,21 +250,40 @@ export default function OfferLetters() {
     if (preset) {
       setFormData(preset.data);
       setSelectedPreset(presetId);
+      setSelectedPresetData(preset.data);
     }
   };
 
-  // const handleDeletePreset = async (presetId: string) => {
-  //   try {
-  //     await deleteDoc(doc(db, "offer_letter_presets", presetId));
-  //     message.success("Preset deleted successfully");
-  //     fetchPresets();
-  //     if (selectedPreset === presetId) {
-  //       setSelectedPreset("");
-  //     }
-  //   } catch (err) {
-  //     message.error("Failed to delete preset");
-  //   }
-  // };
+  const handleDeletePreset = async (presetId: string) => {
+    try {
+      await deleteDoc(doc(db, "offer_letter_presets", presetId));
+      message.success("Preset deleted successfully");
+      fetchPresets();
+      if (selectedPreset === presetId) {
+        setSelectedPreset("");
+      }
+    } catch (err) {
+      message.error("Failed to delete preset");
+    }
+  };
+
+  const handleUpdatePreset = async () => {
+    if (!selectedPreset) {
+      message.error("Please select a preset to update");
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, "offer_letter_presets", selectedPreset), {
+        data: formData,
+        updated_at: Timestamp.now(),
+      });
+      message.success("Preset updated successfully");
+      fetchPresets();
+    } catch (err) {
+      message.error("Failed to update preset");
+    }
+  };
 
   const sendBugReport = async () => {
     setLoading(true);
@@ -760,6 +793,86 @@ export default function OfferLetters() {
               ))}
             </SelectContent>
           </Select>
+          <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+            <button
+              onClick={handleUpdatePreset}
+              disabled={!selectedPreset || !hasChanges}
+              style={{
+                flex: 1,
+                background: "rgba(100 100 100/ 40%)",
+                color: "",
+                border: "none",
+                padding: "0.15rem 1rem",
+                borderRadius: "0.5rem",
+                cursor:
+                  selectedPreset && hasChanges ? "pointer" : "not-allowed",
+                fontSize: "0.8rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                opacity: selectedPreset && hasChanges ? 1 : 0.5,
+                transition: "all 0.2s ease",
+              }}
+              onMouseOver={(e) => {
+                if (selectedPreset && hasChanges) {
+                  e.currentTarget.style.background = "rgba(100 100 100/ 50%)";
+                }
+              }}
+              onMouseOut={(e) => {
+                if (selectedPreset && hasChanges) {
+                  e.currentTarget.style.background = "rgba(100 100 100/ 40%)";
+                }
+              }}
+            >
+              <Save color="mediumslateblue" width={"0.8rem"} />
+              Update
+            </button>
+            <button
+              onClick={() => {
+                if (selectedPreset) {
+                  Modal.confirm({
+                    title: "Delete Preset",
+                    content: "Are you sure you want to delete this preset?",
+                    okText: "Yes",
+                    okType: "danger",
+                    cancelText: "No",
+                    onOk: () => handleDeletePreset(selectedPreset),
+                  });
+                }
+              }}
+              disabled={!selectedPreset}
+              style={{
+                flex: 1,
+                background: "rgba(100 100 100/ 40%)",
+                color: "",
+                border: "none",
+                padding: "0.15rem 1rem",
+                borderRadius: "0.5rem",
+                cursor: selectedPreset ? "pointer" : "not-allowed",
+                fontSize: "0.8rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                opacity: selectedPreset ? 1 : 0.5,
+                transition: "all 0.2s ease",
+              }}
+              onMouseOver={(e) => {
+                if (selectedPreset) {
+                  e.currentTarget.style.background = "rgba(100 100 100/ 50%)";
+                }
+              }}
+              onMouseOut={(e) => {
+                if (selectedPreset) {
+                  e.currentTarget.style.background = "rgba(100 100 100/ 40%)";
+                }
+              }}
+            >
+              <X color="indianred" width={"0.8rem"} />
+              Remove
+            </button>
+          </div>
         </div>
 
         <div
