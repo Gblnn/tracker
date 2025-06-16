@@ -2496,7 +2496,7 @@ export default function OfferLetters() {
             </div>
           )}
         </Drawer>
-        {loadedLetterId && hasChanges && (
+        {loadedLetterId && (
           <button
             onClick={handleSaveChanges}
             style={{
