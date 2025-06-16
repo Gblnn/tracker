@@ -2,6 +2,13 @@ import Back from "@/components/back";
 import { Checkbox } from "@/components/ui/checkbox";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { auth, db } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import emailjs from "@emailjs/browser";
@@ -36,7 +43,7 @@ import {
   X,
 } from "lucide-react";
 import moment from "moment";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Add styles at the top of the file
 const styles = {
@@ -73,6 +80,45 @@ const tableCellStyle = {
   background: "#fff",
 };
 
+type FormData = {
+  date: string;
+  refNo: string;
+  candidateName: string;
+  position: string;
+  workLocation: string;
+  salary: string;
+  allowance: string;
+  grossSalary: string;
+  attendance: string;
+  probation: string;
+  reportingDate: string;
+  contractPeriod: string;
+  noticePeriod: string;
+  noticePeriodSubsections: string[];
+  accomodation: string;
+  food: string;
+  transport: string;
+  visaStatus: string;
+  communication: string;
+  medical: string;
+  insurance: string;
+  annualLeave: string;
+  gratuity: string;
+  leaveEncashment: string;
+  workingHours: string;
+  airPassage: string;
+  jobSummary: string;
+  responsibilities: string;
+  roles: Array<{ title: string; description: string }>;
+};
+
+type Preset = {
+  id: string;
+  name: string;
+  data: FormData;
+  created_at: any;
+};
+
 export default function OfferLetters() {
   //   const usenavigate = useNavigate();
 
@@ -81,41 +127,7 @@ export default function OfferLetters() {
   const [loading, setLoading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
-  const [formData, setFormData] = useState<{
-    date: string;
-    refNo: string;
-    candidateName: string;
-    position: string;
-    workLocation: string;
-    salary: string;
-    allowance: string;
-    grossSalary: string;
-    attendance: string;
-    probation: string;
-    reportingDate: string;
-    contractPeriod: string;
-    noticePeriod: string;
-    noticePeriodSubsections: string[];
-    accomodation: string;
-    food: string;
-    transport: string;
-    visaStatus: string;
-    communication: string;
-    medical: string;
-    insurance: string;
-    annualLeave: string;
-    gratuity: string;
-    leaveEncashment: string;
-    workingHours: string;
-    airPassage: string;
-    jobSummary: string;
-    responsibilities: string;
-    roles: Array<{ title: string; description: string }>;
-    [key: string]:
-      | string
-      | string[]
-      | Array<{ title: string; description: string }>;
-  }>({
+  const [formData, setFormData] = useState<FormData>({
     date: Date(),
     refNo: "",
     candidateName: "",
@@ -148,6 +160,7 @@ export default function OfferLetters() {
   });
 
   const tableRef = useRef<HTMLDivElement>(null);
+  const rolesRef = useRef<HTMLDivElement>(null);
   const restRef = useRef<HTMLDivElement>(null);
   const signatureRef = useRef<HTMLDivElement>(null);
 
@@ -169,6 +182,76 @@ export default function OfferLetters() {
   const [comm, setComm] = useState(true);
   const [visaS, setVisaS] = useState(true);
   const [offerLettersCache, setOfferLettersCache] = useState<any[]>([]);
+  const [presets, setPresets] = useState<Preset[]>([]);
+  const [selectedPreset, setSelectedPreset] = useState<string>("");
+  const [presetName, setPresetName] = useState("");
+  const [presetDialogVisible, setPresetDialogVisible] = useState(false);
+
+  // Add this after other useEffect hooks
+  useEffect(() => {
+    fetchPresets();
+  }, []);
+
+  const fetchPresets = async () => {
+    try {
+      const q = query(
+        collection(db, "offer_letter_presets"),
+        orderBy("created_at", "desc")
+      );
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Preset[];
+      setPresets(data);
+    } catch (err) {
+      message.error("Failed to fetch presets");
+    }
+  };
+
+  const handleSavePreset = async () => {
+    if (!presetName.trim()) {
+      message.error("Please enter a preset name");
+      return;
+    }
+
+    try {
+      const newPreset = {
+        name: presetName,
+        data: formData,
+        created_at: Timestamp.now(),
+      };
+
+      await addDoc(collection(db, "offer_letter_presets"), newPreset);
+      message.success("Preset saved successfully");
+      setPresetDialogVisible(false);
+      setPresetName("");
+      fetchPresets();
+    } catch (err) {
+      message.error("Failed to save preset");
+    }
+  };
+
+  const handleLoadPreset = (presetId: string) => {
+    const preset = presets.find((p) => p.id === presetId);
+    if (preset) {
+      setFormData(preset.data);
+      setSelectedPreset(presetId);
+    }
+  };
+
+  // const handleDeletePreset = async (presetId: string) => {
+  //   try {
+  //     await deleteDoc(doc(db, "offer_letter_presets", presetId));
+  //     message.success("Preset deleted successfully");
+  //     fetchPresets();
+  //     if (selectedPreset === presetId) {
+  //       setSelectedPreset("");
+  //     }
+  //   } catch (err) {
+  //     message.error("Failed to delete preset");
+  //   }
+  // };
 
   const sendBugReport = async () => {
     setLoading(true);
@@ -197,9 +280,8 @@ export default function OfferLetters() {
       const newData = { ...prev, [name]: value };
       // Compare with original data to detect changes
       if (originalFormData) {
-        const hasChanges = Object.keys(newData).some(
-          (key) => newData[key] !== originalFormData[key]
-        );
+        const hasChanges =
+          JSON.stringify(newData) !== JSON.stringify(originalFormData);
         setHasChanges(hasChanges);
       }
       return newData;
@@ -231,31 +313,55 @@ export default function OfferLetters() {
     }));
   };
 
-  const handleAddRole = () => {
-    setFormData((prev) => ({
-      ...prev,
-      roles: [...prev.roles, { title: "", description: "" }],
-    }));
-  };
-
-  const handleRemoveRole = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      roles: prev.roles.filter((_, i) => i !== index),
-    }));
-  };
-
   const handleRoleChange = (
     index: number,
     field: "title" | "description",
     value: string
   ) => {
-    setFormData((prev) => ({
-      ...prev,
-      roles: prev.roles.map((role, i) =>
-        i === index ? { ...role, [field]: value } : role
-      ),
-    }));
+    setFormData((prev) => {
+      const newData = {
+        ...prev,
+        roles: prev.roles.map((role, i) =>
+          i === index ? { ...role, [field]: value } : role
+        ),
+      };
+      if (originalFormData) {
+        const hasChanges =
+          JSON.stringify(newData) !== JSON.stringify(originalFormData);
+        setHasChanges(hasChanges);
+      }
+      return newData;
+    });
+  };
+
+  const handleAddRole = () => {
+    setFormData((prev) => {
+      const newData = {
+        ...prev,
+        roles: [...prev.roles, { title: "", description: "" }],
+      };
+      if (originalFormData) {
+        const hasChanges =
+          JSON.stringify(newData) !== JSON.stringify(originalFormData);
+        setHasChanges(hasChanges);
+      }
+      return newData;
+    });
+  };
+
+  const handleRemoveRole = (index: number) => {
+    setFormData((prev) => {
+      const newData = {
+        ...prev,
+        roles: prev.roles.filter((_, i) => i !== index),
+      };
+      if (originalFormData) {
+        const hasChanges =
+          JSON.stringify(newData) !== JSON.stringify(originalFormData);
+        setHasChanges(hasChanges);
+      }
+      return newData;
+    });
   };
 
   const fetchOfferLetters = async () => {
@@ -300,6 +406,15 @@ export default function OfferLetters() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Validate required fields
+      if (!formData.candidateName || !formData.position) {
+        message.error(
+          "Please fill in the required fields (Candidate Name and Position)"
+        );
+        setSaving(false);
+        return;
+      }
+
       const newLetter = {
         ...formData,
         air_passage: air_passage,
@@ -309,7 +424,12 @@ export default function OfferLetters() {
         generated_by: auth.currentUser?.email || null,
       };
 
+      console.log("Attempting to save letter:", newLetter);
+
+      // Always create a new document, regardless of loadedLetterId
       const docRef = await addDoc(collection(db, "offer_letters"), newLetter);
+      console.log("Document saved with ID:", docRef.id);
+
       const savedLetter = { id: docRef.id, ...newLetter };
 
       // Update cache with new letter
@@ -317,13 +437,17 @@ export default function OfferLetters() {
       setOfferLettersCache(updatedCache);
       setOfferLetters(updatedCache);
 
-      message.success("Offer letter details saved to database");
-      const tableNode = tableRef.current;
-      const restNode = restRef.current;
-      const signatureNode = signatureRef.current;
-      if (!tableNode || !restNode || !signatureNode) return;
+      message.success("Offer letter saved successfully");
+
+      // Reset form state after saving
+      setLoadedLetterId(null);
+      setHasChanges(false);
+      setOriginalFormData(null);
     } catch (error) {
-      message.error("Failed to generate PDF or save to database");
+      console.error("Error saving offer letter:", error);
+      message.error(
+        error instanceof Error ? error.message : "Failed to save offer letter"
+      );
     } finally {
       setSaving(false);
     }
@@ -333,9 +457,10 @@ export default function OfferLetters() {
     setPdfLoading(true);
     try {
       const tableNode = tableRef.current;
+      const rolesNode = rolesRef.current;
       const restNode = restRef.current;
       const signatureNode = signatureRef.current;
-      if (!tableNode || !restNode || !signatureNode) return;
+      if (!tableNode || !rolesNode || !restNode || !signatureNode) return;
 
       // Render table (page 1)
       const tableCanvas = await html2canvas(tableNode, { scale: 2 });
@@ -346,7 +471,15 @@ export default function OfferLetters() {
       const tableHeight = (tableProps.height * pageWidth) / tableProps.width;
       pdf.addImage(tableImgData, "PNG", 0, 0, pageWidth, tableHeight);
 
-      // Render rest (page 2)
+      // Render roles (page 2)
+      const rolesCanvas = await html2canvas(rolesNode, { scale: 2 });
+      const rolesImgData = rolesCanvas.toDataURL("image/png");
+      pdf.addPage();
+      const rolesProps = pdf.getImageProperties(rolesImgData);
+      const rolesHeight = (rolesProps.height * pageWidth) / rolesProps.width;
+      pdf.addImage(rolesImgData, "PNG", 0, 0, pageWidth, rolesHeight);
+
+      // Render rest (page 3)
       const restCanvas = await html2canvas(restNode, { scale: 2 });
       const restImgData = restCanvas.toDataURL("image/png");
       pdf.addPage();
@@ -354,7 +487,7 @@ export default function OfferLetters() {
       const restHeight = (restProps.height * pageWidth) / restProps.width;
       pdf.addImage(restImgData, "PNG", 0, 0, pageWidth, restHeight);
 
-      // Render signatures (page 3)
+      // Render signatures (page 4)
       const signatureCanvas = await html2canvas(signatureNode, { scale: 2 });
       const signatureImgData = signatureCanvas.toDataURL("image/png");
       pdf.addPage();
@@ -442,14 +575,15 @@ export default function OfferLetters() {
     setFormData((prev) => {
       const newData = { ...prev };
       Object.keys(newData).forEach((key) => {
-        if (ol[key] !== undefined) newData[key] = ol[key];
+        if (ol[key] !== undefined)
+          newData[key as keyof typeof newData] = ol[key];
       });
       return newData;
     });
     setAirPassage(ol.air_passage);
     setComm(ol.comm);
     setVisaS(ol.visaS);
-    setOriginalFormData(ol); // Store original data for comparison
+    setOriginalFormData(ol);
     setLoadedLetterId(ol.id);
     setHasChanges(false);
     setOfferLettersDrawerVisible(false);
@@ -490,6 +624,7 @@ export default function OfferLetters() {
     setLoadedLetterId(null);
     setHasChanges(false);
     setOriginalFormData(null);
+    setSelectedPreset(""); // Clear the preset selection
   };
 
   const renderInputForm = () => (
@@ -551,6 +686,83 @@ export default function OfferLetters() {
           paddingTop: "",
         }}
       >
+        {/* Add Presets section */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem",
+            marginBottom: "1.5rem",
+            padding: "1.25rem",
+            background: "rgba(100 100 100/ 5%)",
+            borderRadius: "0.75rem",
+            border: "1px solid rgba(100 100 100/ 10%)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                fontSize: "0.9rem",
+                fontWeight: "500",
+                color: "",
+              }}
+            >
+              <File width="1rem" color="mediumslateblue" />
+              <span>Presets</span>
+            </div>
+            <button
+              onClick={() => setPresetDialogVisible(true)}
+              style={{
+                background: "rgba(100 100 100/ 40%)",
+                color: "mediumslateblue",
+                border: "none",
+                padding: "0.15rem 0.75rem",
+                borderRadius: "0.5rem",
+                cursor: "pointer",
+                fontSize: "0.8rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                transition: "all 0.2s ease",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = "rgba(100 100 100/ 50%)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = "rgba(100 100 100/ 40%)";
+              }}
+            >
+              <Plus width={"0.8rem"} />
+              Add as New
+            </button>
+          </div>
+          <Select value={selectedPreset} onValueChange={handleLoadPreset}>
+            <SelectTrigger className="w-full h-[38px]">
+              <SelectValue placeholder="Select a preset" />
+            </SelectTrigger>
+            <SelectContent
+              position="popper"
+              className="w-[var(--radix-select-trigger-width)]"
+            >
+              {presets.map((preset) => (
+                <SelectItem key={preset.id} value={preset.id}>
+                  {preset.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div
           style={{
             display: "flex",
@@ -722,21 +934,6 @@ export default function OfferLetters() {
               <label style={{ fontSize: "0.9rem", opacity: 0.8 }}>
                 Sub-sections
               </label>
-              <button
-                onClick={handleAddNoticePeriodSubsection}
-                style={{
-                  background: "rgba(100 100 100/ 40%)",
-                  color: "skyblue",
-                  border: "none",
-                  padding: "0.13rem 0.75rem",
-                  borderRadius: "0.25rem",
-                  cursor: "pointer",
-                  fontSize: "0.8rem",
-                }}
-              >
-                <Plus width={"0.8rem"} />
-                Add Sub-section
-              </button>
             </div>
             {formData.noticePeriodSubsections.map((subsection, index) => (
               <div
@@ -745,8 +942,9 @@ export default function OfferLetters() {
                   border: "1px solid rgba(100 100 100/ 20%)",
                   borderRadius: "0.5rem",
                   padding: "0.75rem",
-                  marginBottom: "",
+                  marginBottom: "0.75rem",
                   background: "rgba(100 100 100/ 5%)",
+                  gap: "",
                 }}
               >
                 <div
@@ -782,6 +980,34 @@ export default function OfferLetters() {
                 </div>
               </div>
             ))}
+            <button
+              onClick={handleAddNoticePeriodSubsection}
+              style={{
+                width: "100%",
+                background: "rgba(100 100 100/ 40%)",
+                color: "mediumslateblue",
+                border: "none",
+                padding: "0.5rem 1rem",
+                borderRadius: "0.5rem",
+                cursor: "pointer",
+                fontSize: "0.8rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                marginTop: "0.5rem",
+                transition: "all 0.2s ease",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = "rgba(100 100 100/ 50%)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = "rgba(100 100 100/ 40%)";
+              }}
+            >
+              <Plus width={"0.8rem"} />
+              Add Sub-section
+            </button>
           </div>
         </div>
 
@@ -929,21 +1155,6 @@ export default function OfferLetters() {
             }}
           >
             <h3 style={{ fontSize: "1rem" }}>Roles & Responsibilities</h3>
-            <button
-              onClick={handleAddRole}
-              style={{
-                background: "rgba(100 100 100/ 40%)",
-                color: "skyblue",
-                border: "none",
-                padding: "0.13rem 0.75rem",
-                borderRadius: "0.5rem",
-                cursor: "pointer",
-                fontSize: "0.8rem",
-              }}
-            >
-              <Plus width={"0.8rem"} />
-              Add Role
-            </button>
           </div>
           {formData.roles.map((role, index) => (
             <div
@@ -998,6 +1209,33 @@ export default function OfferLetters() {
               />
             </div>
           ))}
+          <button
+            onClick={handleAddRole}
+            style={{
+              background: "rgba(100 100 100/ 40%)",
+              color: "mediumslateblue",
+              border: "none",
+              padding: "0.5rem 1rem",
+              borderRadius: "0.5rem",
+              cursor: "pointer",
+              fontSize: "0.8rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem",
+              marginTop: "0.5rem",
+              transition: "all 0.2s ease",
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = "rgba(100 100 100/ 50%)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = "rgba(100 100 100/ 40%)";
+            }}
+          >
+            <Plus width={"0.8rem"} />
+            Add Role
+          </button>
         </div>
         <br />
 
@@ -1381,6 +1619,7 @@ export default function OfferLetters() {
       </div>
       {/* Page 2: Roles and Responsibilities */}
       <div
+        ref={rolesRef}
         style={{
           border: "",
           width: "100%",
@@ -1850,6 +2089,9 @@ export default function OfferLetters() {
           // background:
           //   "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
           height: "100svh",
+          overflowY: "scroll",
+          scrollbarWidth: "thin",
+          scrollbarColor: "rgba(100 100 100/ 40%) transparent",
         }}
       >
         <motion.div>
@@ -2137,6 +2379,7 @@ export default function OfferLetters() {
               fontSize: "0.9rem",
               padding: "0.5rem 1rem",
               background: "rgba(100 100 100/ 40%)",
+              backdropFilter: "blur(16px)",
               color: "white",
               border: "none",
               borderRadius: "0.5rem",
@@ -2172,6 +2415,20 @@ export default function OfferLetters() {
           .preview {
             width: 100%;
           }
+        }
+        /* Custom scrollbar styles */
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: rgba(100 100 100/ 40%);
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgba(100 100 100/ 60%);
         }
       `}</style>
 
@@ -2269,6 +2526,76 @@ export default function OfferLetters() {
           </div>
         )}
       </Modal>
+
+      {/* Add Preset Dialog */}
+      <DefaultDialog
+        titleIcon={<Save />}
+        title="Save as Preset"
+        open={presetDialogVisible}
+        onCancel={() => {
+          setPresetDialogVisible(false);
+          setPresetName("");
+        }}
+        onOk={handleSavePreset}
+        OkButtonText="Save"
+        CancelButtonText="Cancel"
+        extra={
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "1rem",
+              padding: "1rem 0",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+              }}
+            >
+              <label
+                style={{
+                  fontSize: "0.9rem",
+                  color: "",
+                  fontWeight: "500",
+                }}
+              >
+                Preset Name
+              </label>
+              <input
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                placeholder="Enter preset name"
+                style={{
+                  padding: "0.75rem",
+                  borderRadius: "0.5rem",
+                  border: "1px solid rgba(100 100 100/ 20%)",
+                  fontSize: "1rem",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(100 100 100/ 40%)";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(100 100 100/ 20%)";
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.outline = "none";
+                  e.currentTarget.style.borderColor = "skyblue";
+                  e.currentTarget.style.boxShadow =
+                    "0 0 0 2px rgba(135, 206, 235, 0.2)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(100 100 100/ 20%)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              />
+            </div>
+          </div>
+        }
+      />
     </>
   );
 }
