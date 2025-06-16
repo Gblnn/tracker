@@ -14,6 +14,7 @@ interface Props {
   fontSize?: string;
   editModeLoading?: boolean;
   fixed?: boolean;
+  blurBG?: boolean;
 }
 
 export default function Back(props: Props) {
@@ -31,8 +32,8 @@ export default function Back(props: Props) {
         padding: props.fixed ? "1.25rem" : " ",
         position: props.fixed ? "fixed" : "inherit",
         width: "100%",
-        background: "rgba(100 100 100/ 1%)",
-        backdropFilter: "blur(16px)",
+        background: props.blurBG ? "rgba(100 100 100/ 1%)" : "none",
+        backdropFilter: props.blurBG ? "blur(16px)" : "",
       }}
     >
       <div style={{ display: "flex" }}>

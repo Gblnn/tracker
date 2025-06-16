@@ -2394,12 +2394,13 @@ export default function OfferLetters() {
                     padding: "0.5rem 1rem",
                     background: pdfLoading
                       ? "darkslateblue"
-                      : "mediumslateblue",
+                      : "rgba(123 104 238/ 80%	)",
                     color: "white",
                     border: "none",
                     borderRadius: "0.5rem",
                     cursor: pdfLoading ? "not-allowed" : "pointer",
                     opacity: pdfLoading ? 0.7 : 1,
+                    boxShadow: "1px 1px 10px rgba(0 0 0/ 30%)",
                   }}
                   disabled={pdfLoading}
                 >
