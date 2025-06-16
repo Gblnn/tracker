@@ -82,7 +82,7 @@ export default function NewHire() {
               onClick={() => usenavigate("/offer-letters")}
               to={"/offer-letters"}
               title={"Prepare Offer Letter"}
-              icon={<File color="violet" width={"1.25rem"} />}
+              icon={<File color="mediumslateblue" width={"1.25rem"} />}
             />
             <Directive
               title={"Assign Employee Code"}

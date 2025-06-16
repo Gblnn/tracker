@@ -30,9 +30,11 @@ import jsPDF from "jspdf";
 import {
   Bug,
   ChevronDown,
+  CloudUpload,
   Database,
   Dot,
   File,
+  FileText,
   LoaderCircle,
   Menu,
   MinusCircle,
@@ -723,11 +725,11 @@ export default function OfferLetters() {
             display: "flex",
             alignItems: "center",
             gap: "0.5rem",
-            color: "indianred",
+            color: "",
             fontSize: "0.8rem",
           }}
         >
-          <X width="0.9rem" />
+          <X color="indianred" width="0.9rem" />
           Clear
         </button>
       </div>
@@ -772,7 +774,7 @@ export default function OfferLetters() {
                 color: "",
               }}
             >
-              <File width="1rem" color="mediumslateblue" />
+              <FileText width="1rem" color="mediumslateblue" />
               <span>Presets</span>
             </div>
             <button
@@ -2599,7 +2601,7 @@ export default function OfferLetters() {
             }}
             disabled={saving}
           >
-            <Save color="mediumslateblue" width={"1rem"} />
+            <CloudUpload width={"1.25rem"} />
             {saving ? "Saving..." : "Save Changes"}
           </button>
         )}
