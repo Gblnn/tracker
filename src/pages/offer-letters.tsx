@@ -1358,7 +1358,7 @@ export default function OfferLetters() {
                 style={{
                   width: "100%",
                   fontSize: "0.95rem",
-                  background: "",
+                  background: "none",
                   borderRadius: "0.5rem",
                 }}
                 rows={3}
