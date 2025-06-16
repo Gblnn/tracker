@@ -711,12 +711,12 @@ export default function OfferLetters() {
         height: "100%",
         overflowY: "auto",
         fontSize: "0.8rem",
-        maxHeight: "60ch",
+        maxHeight: "72%",
       }}
     >
       <div
         style={{
-          width: "50ch",
+          width: "",
           display: "flex",
           padding: "1.25rem",
           border: "",
@@ -791,6 +791,7 @@ export default function OfferLetters() {
             >
               <FileText width="1rem" color="mediumslateblue" />
               <span>Presets</span>
+              <div style={{ width: "3.5rem" }}></div>
             </div>
             <div style={{ display: "flex", gap: "0.5rem" }}>
               <button
@@ -829,8 +830,12 @@ export default function OfferLetters() {
             <Select value={selectedPreset} onValueChange={handleLoadPreset}>
               <SelectTrigger
                 disabled={presetsLoading}
-                className="w-full h-[38px]"
-                style={{ display: "flex", alignItems: "center" }}
+                className="w-full"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "1rem",
+                }}
               >
                 {presetsLoading && (
                   <LoaderCircle width={"0.9rem"} className="animate-spin" />
@@ -2464,11 +2469,12 @@ export default function OfferLetters() {
 
         {/* Mobile Drawer */}
         <Drawer
+          style={{ background: "black", color: "white" }}
           title="Offer Letter Details"
           placement="left"
           onClose={() => setDrawerVisible(false)}
           open={drawerVisible}
-          width="80%"
+          width="100%"
         >
           {renderInputForm()}
         </Drawer>
