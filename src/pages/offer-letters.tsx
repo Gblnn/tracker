@@ -31,7 +31,6 @@ import {
   Bug,
   Database,
   Dot,
-  Eye,
   File,
   LoaderCircle,
   Menu,
@@ -1293,8 +1292,8 @@ export default function OfferLetters() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <Eye />
-          <h2>Preview</h2>
+          {/* <Eye />
+          <h2>Preview</h2> */}
         </div>
 
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -1639,8 +1638,7 @@ export default function OfferLetters() {
         }}
       >
         <br />
-        <br />
-        <br />
+
         <h2
           style={{
             fontWeight: "600",
@@ -1666,7 +1664,7 @@ export default function OfferLetters() {
                 >
                   {role.title || "[ROLE TITLE]"}
                 </h3>
-                <p style={{ fontSize: "0.9rem", color: "#444" }}>
+                <p style={{ fontSize: "0.8rem", color: "#444" }}>
                   {role.description || "[ROLE DESCRIPTION]"}
                 </p>
               </div>
@@ -1714,10 +1712,9 @@ export default function OfferLetters() {
         }}
       >
         <br />
-        <br />
-        <br />
+
         {air_passage && (
-          <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
+          <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
             <h3
               style={{
                 fontWeight: "600",
@@ -1742,7 +1739,7 @@ export default function OfferLetters() {
           </div>
         )}
         {visaS && (
-          <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
+          <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
             <h3
               style={{
                 fontWeight: "600",
@@ -1759,7 +1756,7 @@ export default function OfferLetters() {
           </div>
         )}
 
-        <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
+        <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
           <h3
             style={{
               fontWeight: "600",
@@ -1776,7 +1773,7 @@ export default function OfferLetters() {
           </p>
         </div>
 
-        <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
+        <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
           <h3
             style={{
               fontWeight: "600",
@@ -1792,7 +1789,7 @@ export default function OfferLetters() {
           </p>
         </div>
 
-        <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
+        <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
           <h3
             style={{
               fontWeight: "600",
@@ -1808,7 +1805,7 @@ export default function OfferLetters() {
           </p>
         </div>
 
-        <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
+        <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
           <h3
             style={{
               fontWeight: "600",
@@ -1827,7 +1824,7 @@ export default function OfferLetters() {
           </p>
         </div>
 
-        <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
+        <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
           <h3
             style={{
               fontWeight: "600",
@@ -1838,26 +1835,22 @@ export default function OfferLetters() {
             Code of Conduct
           </h3>
           <p>
-            The Company expects you to strictly maintain a non-alcoholic
-            environment. Unlawful Possession of or being under the influence of
-            alcoholic drinks or any other items creating mental stimulus will
-            invite termination of service without prior notice. You are expected
-            to conduct yourself properly to ensure that your conduct and
-            dealings are proper, professional and ethical. Your behavior and
-            conduct should not in anyway be damaging to the Company's image and
-            welfare. In all cases of inappropriate behavior or misconduct, the
-            Company would ensure that the office is communicated to you in
-            writing and that every opportunity is afforded for you to defend.
-            However, the company reserves the right to terminate your service
-            without notice pay when it is justified that you are guilty of
-            misconduct. Your services may be terminated by the Company for any
-            breach of terms of employment or where the Company finds that your
-            services are not satisfactory or where the Company feels it is not
-            of its interest to continue your employment.
+            The Company maintains a strict non-alcoholic environment. Unlawful
+            possession of or being under the influence of alcohol or any
+            mind-altering substances will result in immediate termination
+            without prior notice. You are expected to act professionally,
+            ethically, and in a manner that upholds the Company's image and
+            welfare. Any misconduct or inappropriate behavior will be formally
+            communicated in writing, and you will be given a chance to respond.
+            However, the Company reserves the right to terminate employment
+            without notice or pay if misconduct is confirmed. Your services may
+            also be terminated for breach of employment terms, unsatisfactory
+            performance, or if continued employment is deemed not in the
+            Company's interest.
           </p>
         </div>
 
-        <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
+        <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
           <h3
             style={{
               fontWeight: "600",
@@ -1876,7 +1869,7 @@ export default function OfferLetters() {
           </p>
         </div>
 
-        <div style={{ marginBottom: "1.5rem", fontSize: "0.8rem" }}>
+        <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
           <h3
             style={{
               fontWeight: "600",
@@ -1887,16 +1880,12 @@ export default function OfferLetters() {
             Confidentiality
           </h3>
           <p>
-            During the tenure of your contract with us you may come into
-            possession of various information concerned the Company's business.
-            All such information shall be held by you with utmost strict
-            confidentiality and shall not be divulged to outsiders unless
-            otherwise authorized to do so by the Company during the term of your
-            contract and beyond up to five years. In the event of acting in any
-            manner contrary to or in breach of this covenant during the course
-            of your employment with the Company or thereafter, the company will
-            be at the liberty to initiate appropriate action to safeguard its
-            interest.
+            During your contract, you may access confidential business
+            information. You must maintain strict confidentiality and not
+            disclose any such information without Company authorization, both
+            during your contract and for five years after. Any breach of this
+            obligation, during or after employment, may result in the Company
+            taking appropriate action to protect its interests.
           </p>
         </div>
       </div>
