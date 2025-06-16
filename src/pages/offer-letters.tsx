@@ -185,6 +185,7 @@ export default function OfferLetters() {
   const [selectedPreset, setSelectedPreset] = useState<string>("");
   const [presetName, setPresetName] = useState("");
   const [presetDialogVisible, setPresetDialogVisible] = useState(false);
+  const [presetsLoading, setPresetsLoading] = useState(false);
   // const [selectedPresetData, setSelectedPresetData] = useState<FormData | null>(
   //   null
   // );
@@ -207,6 +208,7 @@ export default function OfferLetters() {
 
   const fetchPresets = async () => {
     try {
+      setPresetsLoading(true);
       const q = query(
         collection(db, "offer_letter_presets"),
         orderBy("created_at", "desc")
@@ -217,8 +219,10 @@ export default function OfferLetters() {
         ...doc.data(),
       })) as Preset[];
       setPresets(data);
+      setPresetsLoading(false);
     } catch (err) {
       message.error("Failed to fetch presets");
+      setPresetsLoading(false);
     }
   };
 
@@ -787,8 +791,17 @@ export default function OfferLetters() {
             </button>
           </div>
           <Select value={selectedPreset} onValueChange={handleLoadPreset}>
-            <SelectTrigger className="w-full h-[38px]">
-              <SelectValue placeholder="Select a preset" />
+            <SelectTrigger
+              disabled={presetsLoading}
+              className="w-full h-[38px]"
+            >
+              {presetsLoading && (
+                <LoaderCircle width={"0.9rem"} className="animate-spin" />
+              )}
+
+              <SelectValue
+                placeholder={presetsLoading ? "Fetching" : "Select a preset"}
+              />
             </SelectTrigger>
             <SelectContent position="popper" className="">
               {presets.map((preset) => (
@@ -818,7 +831,7 @@ export default function OfferLetters() {
                 background: "rgba(100 100 100/ 40%)",
                 color: "",
                 border: "none",
-                padding: "0.25rem 1rem",
+                padding: "0.45rem 1rem",
                 borderRadius: "0.5rem",
                 cursor:
                   selectedPreset && hasChanges ? "pointer" : "not-allowed",
@@ -842,7 +855,7 @@ export default function OfferLetters() {
               }}
             >
               <Save color="mediumslateblue" width={"0.8rem"} />
-              Update Preset
+              Update
             </button>
             {/* <button
               onClick={() => {
@@ -2394,7 +2407,8 @@ export default function OfferLetters() {
                   }}
                 >
                   <Dot />
-                  {"Fetched " + offerLetters.length + " Letter(s)"}
+                  {"Fetched " + offerLetters.length + " "}
+                  {offerLetters.length > 1 ? "Items" : "Item"}
                 </div>
               )}
             </motion.div>
