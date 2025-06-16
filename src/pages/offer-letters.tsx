@@ -1305,6 +1305,8 @@ export default function OfferLetters() {
             <div
               key={index}
               style={{
+                display: "flex",
+                flexFlow: "column",
                 border: "1px solid rgba(100 100 100/ 20%)",
                 borderRadius: "0.5rem",
                 padding: "0.45rem",
@@ -1353,7 +1355,8 @@ export default function OfferLetters() {
                 style={{
                   width: "100%",
                   fontSize: "0.95rem",
-                  background: "none",
+                  background: "",
+                  borderRadius: "0.5rem",
                 }}
                 rows={3}
               />
