@@ -35,6 +35,7 @@ import {
   Dot,
   File,
   FileText,
+  FileX,
   LoaderCircle,
   Menu,
   MinusCircle,
@@ -42,6 +43,7 @@ import {
   RefreshCcw,
   Save,
   Sparkles,
+  TextCursor,
   Trash2,
   X,
 } from "lucide-react";
@@ -188,6 +190,7 @@ export default function OfferLetters() {
   const [selectedPreset, setSelectedPreset] = useState("");
   const [presetName, setPresetName] = useState("");
   const [presetDialogVisible, setPresetDialogVisible] = useState(false);
+  const [renameDialogVisible, setRenameDialogVisible] = useState(false);
   const [presetsLoading, setPresetsLoading] = useState(false);
   const [originalPresetData, setOriginalPresetData] = useState<FormData | null>(
     null
@@ -239,9 +242,12 @@ export default function OfferLetters() {
 
     try {
       setLoading(true);
+      // Create a copy of formData without the date field
+      const { date, ...presetData } = formData;
+
       const newPreset = {
         name: presetName,
-        data: formData,
+        data: presetData,
         created_at: Timestamp.now(),
       };
 
@@ -250,17 +256,21 @@ export default function OfferLetters() {
       setPresetDialogVisible(false);
       setPresetName("");
       fetchPresets();
-      setLoading(false);
     } catch (err) {
-      setLoading(false);
       message.error("Failed to save preset");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleLoadPreset = (presetId: string) => {
     const preset = presets.find((p) => p.id === presetId);
     if (preset) {
-      setFormData(preset.data);
+      // Merge the preset data with the current date
+      setFormData({
+        ...preset.data,
+        date: formData.date, // Keep the current date
+      });
       setSelectedPreset(presetId);
       setOriginalPresetData(preset.data);
       setHasChanges(false);
@@ -288,12 +298,16 @@ export default function OfferLetters() {
 
     try {
       setLoading(true);
+      // Create a copy of formData without the date field
+      const { date, ...presetData } = formData;
+
       await updateDoc(doc(db, "offer_letter_presets", selectedPreset), {
-        data: formData,
+        data: presetData,
       });
       message.success("Preset updated successfully");
       setHasChanges(false);
-      setOriginalPresetData(formData);
+      // Add the current date back to the preset data for state management
+      setOriginalPresetData({ ...presetData, date: formData.date });
       fetchPresets();
     } catch (err) {
       message.error("Failed to update preset");
@@ -646,8 +660,9 @@ export default function OfferLetters() {
   };
 
   const handleClearForm = () => {
+    const currentDate = new Date().toLocaleDateString();
     setFormData({
-      date: "",
+      date: currentDate,
       refNo: "",
       candidateName: "",
       position: "",
@@ -725,12 +740,12 @@ export default function OfferLetters() {
             display: "flex",
             alignItems: "center",
             gap: "0.5rem",
-            color: "",
-            fontSize: "0.8rem",
+
+            fontSize: "0.75rem",
           }}
         >
-          <X color="indianred" width="0.9rem" />
-          Clear
+          <FileX color="indianred" width="0.9rem" />
+          Clear Form
         </button>
       </div>
 
@@ -777,61 +792,98 @@ export default function OfferLetters() {
               <FileText width="1rem" color="mediumslateblue" />
               <span>Presets</span>
             </div>
-            <button
-              onClick={() => setPresetDialogVisible(true)}
-              style={{
-                background: "rgba(100 100 100/ 40%)",
-                color: "mediumslateblue",
-                border: "none",
-                padding: "0.15rem 0.75rem",
-                borderRadius: "0.5rem",
-                cursor: "pointer",
-                fontSize: "0.8rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                transition: "all 0.2s ease",
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = "rgba(100 100 100/ 50%)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = "rgba(100 100 100/ 40%)";
-              }}
-            >
-              <Plus width={"0.8rem"} />
-              Add New
-            </button>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                onClick={() => setPresetDialogVisible(true)}
+                style={{
+                  color: "mediumslateblue",
+                  border: "none",
+                  padding: "0.15rem 0.75rem",
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  fontSize: "0.8rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = "rgba(100 100 100/ 50%)";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = "rgba(100 100 100/ 40%)";
+                }}
+              >
+                <Plus width={"0.8rem"} />
+                Add New
+              </button>
+              <button
+                onClick={handleClearForm}
+                style={{ padding: "0.15rem 0.75rem", fontSize: "0.75rem" }}
+              >
+                Clear
+              </button>
+            </div>
           </div>
-          <Select value={selectedPreset} onValueChange={handleLoadPreset}>
-            <SelectTrigger
-              disabled={presetsLoading}
-              className="w-full h-[38px]"
-              style={{ display: "flex", alignItems: "center" }}
-            >
-              {presetsLoading && (
-                <LoaderCircle width={"0.9rem"} className="animate-spin" />
-              )}
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            {selectedPreset && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setRenameDialogVisible(true)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "none",
 
-              <SelectValue
-                placeholder={presetsLoading ? "Fetching" : "Select a preset"}
-              />
-              {!presetsLoading && (
-                <ChevronDown style={{ opacity: 0.5 }} width={"0.8rem"} />
-              )}
-            </SelectTrigger>
-            <SelectContent position="popper" className="">
-              {presets.map((preset) => (
-                <SelectItem
-                  style={{ display: "flex", justifyContent: "flex-start" }}
-                  key={preset.id}
-                  value={preset.id}
-                >
-                  {preset.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                  fontSize: "0.75rem",
+                  border: "1px solid rgba(100 100 100/ 40%)",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  height: "2.45rem",
+                  willChange: "transform",
+                }}
+              >
+                <TextCursor color="mediumslateblue" width={"0.8rem"} />
+                Rename
+              </motion.button>
+            )}
+            <Select value={selectedPreset} onValueChange={handleLoadPreset}>
+              <SelectTrigger
+                disabled={presetsLoading}
+                className="w-full h-[38px]"
+                style={{ display: "flex", alignItems: "center" }}
+              >
+                {presetsLoading && (
+                  <LoaderCircle width={"0.9rem"} className="animate-spin" />
+                )}
+
+                <SelectValue
+                  placeholder={presetsLoading ? "Fetching" : "Select a preset"}
+                />
+                {!presetsLoading && (
+                  <ChevronDown style={{ opacity: 0.5 }} width={"0.8rem"} />
+                )}
+              </SelectTrigger>
+              <SelectContent position="popper" className="">
+                {presets.map((preset) => (
+                  <SelectItem
+                    style={{ display: "flex", justifyContent: "flex-start" }}
+                    key={preset.id}
+                    value={preset.id}
+                  >
+                    {preset.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div
             style={{
               display: "flex",
@@ -2283,6 +2335,23 @@ export default function OfferLetters() {
     </ScrollArea>
   );
 
+  const handleRenamePreset = async (newName: string) => {
+    if (!selectedPreset) return;
+
+    try {
+      setLoading(true);
+      await updateDoc(doc(db, "offer_letter_presets", selectedPreset), {
+        name: newName,
+      });
+      message.success("Preset renamed successfully");
+      fetchPresets();
+    } catch (err) {
+      message.error("Failed to rename preset");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       {/* <div style={{border:"", display:"flex", alignItems:"center", justifyContent:'center'}}>
@@ -2834,6 +2903,41 @@ export default function OfferLetters() {
         OkButtonText="Delete"
         CancelButtonText="Cancel"
         destructive
+      />
+
+      <DefaultDialog
+        open={renameDialogVisible}
+        onCancel={() => {
+          setRenameDialogVisible(false);
+          setPresetName("");
+        }}
+        onOk={() => {
+          handleRenamePreset(presetName);
+          setRenameDialogVisible(false);
+          setPresetName("");
+        }}
+        title="Rename Preset"
+        titleIcon={<FileText color="mediumslateblue" />}
+        extra={
+          <input
+            type="text"
+            value={presetName}
+            onChange={(e) => setPresetName(e.target.value)}
+            placeholder="Enter new preset name"
+            style={{
+              width: "100%",
+              padding: "0.5rem",
+              borderRadius: "0.5rem",
+              border: "1px solid rgba(100 100 100/ 20%)",
+              fontSize: "1rem",
+              background: "none",
+            }}
+          />
+        }
+        OkButtonText="Rename"
+        CancelButtonText="Cancel"
+        disabled={!presetName.trim()}
+        updating={loading}
       />
     </>
   );
