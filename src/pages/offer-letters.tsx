@@ -1845,7 +1845,11 @@ export default function OfferLetters() {
             <div
               style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
             >
-              <Database width={"1rem"} color="mediumslateblue" />
+              {saving ? (
+                <LoaderCircle className="animate-spin" width={"1rem"} />
+              ) : (
+                <Database width={"1rem"} color="mediumslateblue" />
+              )}
               <p>{loadedLetterId}</p>
             </div>
           )}
