@@ -7,6 +7,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -35,6 +40,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import {
   Bug,
+  ChevronDown,
   CloudUpload,
   Database,
   Dot,
@@ -47,6 +53,7 @@ import {
   MinusCircle,
   MoreVertical,
   Plus,
+  RefreshCcw,
   Save,
   Sparkles,
   TextCursor,
@@ -826,7 +833,7 @@ export default function OfferLetters() {
             >
               <FileText width="1rem" color="mediumslateblue" />
               <span>Presets</span>
-              <div style={{ width: "3.5rem" }}></div>
+              <div style={{ width: "7rem" }}></div>
             </div>
             <div style={{ display: "flex", gap: "0.5rem" }}>
               <button
@@ -853,12 +860,12 @@ export default function OfferLetters() {
                 <Plus width={"0.8rem"} />
                 Add New
               </button>
-              <button
+              {/* <button
                 onClick={handleClearForm}
                 style={{ padding: "0.15rem 0.75rem", fontSize: "0.75rem" }}
               >
                 Clear
-              </button>
+              </button> */}
             </div>
           </div>
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -886,7 +893,12 @@ export default function OfferLetters() {
               </SelectTrigger>
               <SelectContent
                 position="popper"
-                className="w-[var(--radix-select-trigger-width)]"
+                className=""
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-start",
+                  border: "",
+                }}
               >
                 {presets.map((preset) => (
                   <SelectItem key={preset.id} value={preset.id}>
@@ -911,7 +923,7 @@ export default function OfferLetters() {
                       background: "none",
                       fontSize: "0.75rem",
                       border: "1px solid rgba(100 100 100/ 40%)",
-                      padding: "0.5rem 1rem",
+                      padding: "0.5rem 0.75rem",
                       borderRadius: "0.5rem",
                       cursor: "pointer",
                       height: "2.45rem",
@@ -922,31 +934,59 @@ export default function OfferLetters() {
                   </motion.button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
+                  <Popover>
+                    <PopoverTrigger
+                      style={{
+                        padding: 0,
+                        background: "none",
+                        width: "100%",
+                      }}
+                    >
+                      <div
+                        className="hover:bg-slate-800"
+                        style={{
+                          borderRadius: "0.25rem",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          width: "100%",
+                          fontSize: "0.8rem",
+                          padding: "0.45rem",
+                        }}
+                        // onClick={() => setRenameDialogVisible(true)}
+                      >
+                        <TextCursor className="w-4" />
+                        <span>Rename</span>
+                        <p></p>
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent>
+                      <div style={{ height: "5rem" }}></div>
+                    </PopoverContent>
+                  </Popover>
+
                   <DropdownMenuItem
-                    onClick={() => setRenameDialogVisible(true)}
-                  >
-                    <TextCursor className="mr-2 h-4 w-4" />
-                    <span>Rename</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setDeleteId(selectedPreset);
-                      setDeleteDialogVisible(true);
-                    }}
-                    className="text-red-500"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    <span>Delete</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
+                    style={{ display: "flex", justifyContent: "space-between" }}
                     onClick={handleUpdatePreset}
                     disabled={!hasChanges}
                     className={
                       !hasChanges ? "opacity-50 cursor-not-allowed" : ""
                     }
                   >
-                    <Save className="mr-2 h-4 w-4" />
+                    <RefreshCcw color="mediumslateblue" className="w-4" />
                     <span>Update</span>
+                    <p></p>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                    onClick={() => {
+                      setDeleteId(selectedPreset);
+                      setDeleteDialogVisible(true);
+                    }}
+                    className="text-red-500"
+                  >
+                    <Trash2 className="w-4" />
+                    <span>Delete</span>
+                    <p></p>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1648,28 +1688,27 @@ export default function OfferLetters() {
             placeholder="Enter Date"
           ></input>
           {
-            <button
-              onClick={handleSave}
-              style={{
-                background: "rgba(100 100 100/ 40%)",
-                fontSize: "0.8rem",
-                padding: "0.5rem 1rem ",
-              }}
-            >
-              {saving ? (
-                <LoaderCircle width={"1rem"} className="animate-spin" />
-              ) : !loadedLetterId ? (
-                <Plus width={"1rem"} color="mediumslateblue" />
-              ) : (
-                <Plus width={"1rem"} color="mediumslateblue" />
-              )}
-
-              {saving
-                ? "Saving"
-                : !loadedLetterId
-                ? "Add to Database"
-                : "Save as New"}
-            </button>
+            // <button
+            //   onClick={handleSave}
+            //   style={{
+            //     background: "rgba(100 100 100/ 40%)",
+            //     fontSize: "0.8rem",
+            //     padding: "0.5rem 1rem ",
+            //   }}
+            // >
+            //   {saving ? (
+            //     <LoaderCircle width={"1rem"} className="animate-spin" />
+            //   ) : !loadedLetterId ? (
+            //     <Plus width={"1rem"} color="mediumslateblue" />
+            //   ) : (
+            //     <Plus width={"1rem"} color="mediumslateblue" />
+            //   )}
+            //   {saving
+            //     ? "Saving"
+            //     : !loadedLetterId
+            //     ? "Add to Database"
+            //     : "Save as New"}
+            // </button>
           }
         </div>
       </div>
@@ -2421,7 +2460,7 @@ export default function OfferLetters() {
     if (!selectedPreset) return;
 
     try {
-      setLoading(true);
+      setPresetsLoading(true);
       await updateDoc(doc(db, "offer_letter_presets", selectedPreset), {
         name: newName,
       });
@@ -2430,7 +2469,7 @@ export default function OfferLetters() {
     } catch (err) {
       message.error("Failed to rename preset");
     } finally {
-      setLoading(false);
+      setPresetsLoading(false);
     }
   };
 
@@ -2491,6 +2530,106 @@ export default function OfferLetters() {
                   <Sparkles color="white" width={"1rem"} />
                   {pdfLoading ? "Generating..." : "Generate PDF"}
                 </button>
+
+                {/* <button
+                  onClick={!loadedLetterId ? handleSave : handleSaveChanges}
+                >
+                  {saving ? (
+                    <LoaderCircle className="animate-spin" />
+                  ) : !loadedLetterId ? (
+                    <Save color="mediumslateblue" />
+                  ) : (
+                    <CloudUpload color="mediumslateblue" />
+                  )}
+                </button> */}
+
+                {!loadedLetterId ? (
+                  <motion.button
+                    onClick={!loadedLetterId ? handleSave : handleSaveChanges}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "none",
+                      fontSize: "0.75rem",
+                      border: "1px solid rgba(100 100 100/ 40%)",
+                      padding: "0.5rem 0.75rem",
+                      borderRadius: "0.5rem",
+                      cursor: "pointer",
+                      height: "2.45rem",
+                      willChange: "transform",
+                    }}
+                  >
+                    {saving ? (
+                      <LoaderCircle className="animate-spin" />
+                    ) : (
+                      <Save color="mediumslateblue" />
+                    )}
+                  </motion.button>
+                ) : (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <motion.button
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: "none",
+                          fontSize: "0.75rem",
+                          border: "1px solid rgba(100 100 100/ 40%)",
+                          padding: "0.5rem 0.75rem",
+                          borderRadius: "0.5rem",
+                          cursor: "pointer",
+                          height: "2.45rem",
+                          willChange: "transform",
+                        }}
+                      >
+                        {saving ? (
+                          <LoaderCircle className="animate-spin" />
+                        ) : !loadedLetterId ? (
+                          <Save color="mediumslateblue" />
+                        ) : (
+                          <CloudUpload color="mediumslateblue" />
+                        )}
+                        <ChevronDown width={"1rem"} opacity={0.7} />
+                      </motion.button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem
+                        style={{
+                          display: "flex",
+                          justifyContent: "flex-start",
+                        }}
+                        onClick={handleSaveChanges}
+                      >
+                        <CloudUpload color="mediumslateblue" className="w-4" />
+                        <span>Save </span>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        style={{
+                          display: "flex",
+                          justifyContent: "flex-start",
+                        }}
+                        onClick={handleSave}
+                      >
+                        <Save className="w-4" />
+                        <span>Save as New</span>
+                        <p></p>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
 
                 <button
                   style={{ background: "rgba(100 100 100/ 50%)" }}
@@ -2669,7 +2808,7 @@ export default function OfferLetters() {
                       <div
                         style={{
                           fontWeight: 600,
-                          fontSize: 16,
+                          fontSize: 14,
                           color: "black",
                           textTransform: "uppercase",
                         }}
@@ -2679,12 +2818,23 @@ export default function OfferLetters() {
                       <div
                         style={{
                           color: "#555",
-                          fontSize: 14,
+                          fontSize: 11,
                           textTransform: "uppercase",
                         }}
                       >
                         {ol.position || "[No Position]"}
+                        {/* <p
+                          style={{
+                            fontSize: "0.7rem",
+                            textTransform: "lowercase",
+                            color: "royalblue",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {ol.id}
+                        </p> */}
                       </div>
+
                       <div style={{ color: "#888", fontSize: 12 }}>
                         {ol.generated_at && ol.generated_at.toDate
                           ? "Generated : " +
@@ -2734,7 +2884,7 @@ export default function OfferLetters() {
             </div>
           )}
         </Drawer>
-        {loadedLetterId && (
+        {/* {loadedLetterId && (
           <button
             onClick={handleSaveChanges}
             style={{
@@ -2757,7 +2907,7 @@ export default function OfferLetters() {
             <CloudUpload width={"1.25rem"} />
             {saving ? "Saving..." : "Save Changes"}
           </button>
-        )}
+        )} */}
       </div>
       {/* <ReleaseNote /> */}
 
