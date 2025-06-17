@@ -41,10 +41,10 @@ import jsPDF from "jspdf";
 import {
   Bug,
   ChevronDown,
-  CloudUpload,
   Database,
   Dot,
   File,
+  FilePlus2,
   FileText,
   FileX,
   Loader2,
@@ -124,6 +124,7 @@ type FormData = {
   jobSummary: string;
   responsibilities: string;
   roles: Array<{ title: string; description: string }>;
+  allowances: Array<{ title: string; description: string }>;
 };
 
 type Preset = {
@@ -171,6 +172,7 @@ export default function OfferLetters() {
     jobSummary: "",
     responsibilities: "",
     roles: [],
+    allowances: [],
   });
 
   const tableRef = useRef<HTMLDivElement>(null);
@@ -178,6 +180,7 @@ export default function OfferLetters() {
   const restRef = useRef<HTMLDivElement>(null);
   const signatureRef = useRef<HTMLDivElement>(null);
   const lastRoleRef = useRef<HTMLDivElement>(null);
+  const lastAllowanceRef = useRef<HTMLDivElement>(null);
   const lastSubsectionRef = useRef<HTMLDivElement>(null);
 
   const serviceId = "service_fixajl8";
@@ -393,6 +396,27 @@ export default function OfferLetters() {
     }));
   };
 
+  const handleAllowanceChange = (
+    index: number,
+    field: "title" | "description",
+    value: string
+  ) => {
+    setFormData((prev) => {
+      const newData = {
+        ...prev,
+        allowances: prev.allowances.map((role, i) =>
+          i === index ? { ...role, [field]: value } : role
+        ),
+      };
+      if (originalFormData) {
+        const hasChanges =
+          JSON.stringify(newData) !== JSON.stringify(originalFormData);
+        setHasChanges(hasChanges);
+      }
+      return newData;
+    });
+  };
+
   const handleRoleChange = (
     index: number,
     field: "title" | "description",
@@ -404,6 +428,35 @@ export default function OfferLetters() {
         roles: prev.roles.map((role, i) =>
           i === index ? { ...role, [field]: value } : role
         ),
+      };
+      if (originalFormData) {
+        const hasChanges =
+          JSON.stringify(newData) !== JSON.stringify(originalFormData);
+        setHasChanges(hasChanges);
+      }
+      return newData;
+    });
+  };
+
+  const handleAddAllowance = () => {
+    setFormData((prev) => ({
+      ...prev,
+      allowances: [...prev.allowances, { title: "", description: "" }],
+    }));
+    // Scroll after a small delay to ensure the new input is rendered
+    setTimeout(() => {
+      lastAllowanceRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 100);
+  };
+
+  const handleRemoveAllowance = (index: number) => {
+    setFormData((prev) => {
+      const newData = {
+        ...prev,
+        allowances: prev.allowances.filter((_, i) => i !== index),
       };
       if (originalFormData) {
         const hasChanges =
@@ -687,6 +740,7 @@ export default function OfferLetters() {
       jobSummary: ol.jobSummary,
       responsibilities: ol.responsibilities,
       roles: ol.roles,
+      allowances: ol.allowances,
     });
     setAirPassage(ol.air_passage);
     setComm(ol.comm);
@@ -733,6 +787,7 @@ export default function OfferLetters() {
       jobSummary: "",
       responsibilities: "",
       roles: [{ title: "", description: "" }],
+      allowances: [{ title: "", description: "" }],
     });
     setSelectedPreset("");
     setOriginalPresetData(null);
@@ -884,7 +939,7 @@ export default function OfferLetters() {
                     }}
                   >
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Loading presets...</span>
+                    <span>Fetching</span>
                   </div>
                 )}
                 {!presetsLoading && (
@@ -901,7 +956,11 @@ export default function OfferLetters() {
                 }}
               >
                 {presets.map((preset) => (
-                  <SelectItem key={preset.id} value={preset.id}>
+                  <SelectItem
+                    style={{ display: "flex", justifyContent: "flex-start" }}
+                    key={preset.id}
+                    value={preset.id}
+                  >
                     {preset.name}
                   </SelectItem>
                 ))}
@@ -934,35 +993,22 @@ export default function OfferLetters() {
                   </motion.button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <Popover>
-                    <PopoverTrigger
-                      style={{
-                        padding: 0,
-                        background: "none",
-                        width: "100%",
-                      }}
-                    >
-                      <div
-                        className="hover:bg-slate-800"
-                        style={{
-                          borderRadius: "0.25rem",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          width: "100%",
-                          fontSize: "0.8rem",
-                          padding: "0.45rem",
-                        }}
-                        // onClick={() => setRenameDialogVisible(true)}
-                      >
-                        <TextCursor className="w-4" />
-                        <span>Rename</span>
-                        <p></p>
-                      </div>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                      <div style={{ height: "5rem" }}></div>
-                    </PopoverContent>
-                  </Popover>
+                  <DropdownMenuItem
+                    className="hover:bg-slate-800"
+                    style={{
+                      borderRadius: "0.25rem",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      width: "100%",
+                      fontSize: "",
+                      padding: "0.45rem",
+                    }}
+                    // onClick={() => setRenameDialogVisible(true)}
+                  >
+                    <TextCursor className="w-4" />
+                    <span>Rename</span>
+                    <p></p>
+                  </DropdownMenuItem>
 
                   <DropdownMenuItem
                     style={{ display: "flex", justifyContent: "space-between" }}
@@ -1162,6 +1208,130 @@ export default function OfferLetters() {
             placeholder="Enter Allowance"
             style={inputStyle}
           />
+        </div>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "0.5rem",
+              marginBottom: "",
+              marginTop: "0.5rem",
+            }}
+          >
+            <h3 style={{ fontSize: "0.8rem" }}>Additional Allowances</h3>
+          </div>
+          <AnimatePresence mode="sync">
+            {formData.allowances.map((role, index) => (
+              <motion.div
+                key={index}
+                ref={
+                  index === formData.allowances.length - 1
+                    ? lastAllowanceRef
+                    : null
+                }
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{
+                  duration: 0.15,
+                  ease: [0.4, 0, 0.2, 1],
+                }}
+                style={{
+                  display: "flex",
+                  flexFlow: "column",
+                  border: "1px solid rgba(100 100 100/ 20%)",
+                  borderRadius: "0.5rem",
+                  padding: "0.45rem",
+                  marginBottom: "0.5rem",
+                  background: "rgba(100 100 100/ 5%)",
+                  willChange: "transform, opacity",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  <input
+                    type="text"
+                    name={`role-title-${index}`}
+                    value={role.title}
+                    onChange={(e) =>
+                      handleAllowanceChange(index, "title", e.target.value)
+                    }
+                    placeholder="Enter Allowance type"
+                    style={{ fontSize: "0.95rem", background: "" }}
+                  />
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleRemoveAllowance(index)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "rgba(100 100 100/ 40%)",
+                      color: "indianred",
+                      border: "none",
+                      padding: "0.5rem 0.75rem",
+                      borderRadius: "0.45rem",
+                      cursor: "pointer",
+                      fontSize: "0.95rem",
+                      marginLeft: "",
+                      willChange: "transform",
+                    }}
+                  >
+                    <MinusCircle width={"1rem"} />
+                  </motion.button>
+                </div>
+                <input
+                  name={`role-description-${index}`}
+                  value={role.description}
+                  onChange={(e) =>
+                    handleAllowanceChange(index, "description", e.target.value)
+                  }
+                  placeholder="Enter Allowance Amount"
+                  style={{
+                    width: "100%",
+                    fontSize: "0.95rem",
+                    background: "",
+                    borderRadius: "0.5rem",
+                  }}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleAddAllowance}
+            style={{
+              fontSize: "0.85rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem",
+              background: "rgba(100 100 100/ 40%)",
+              color: "mediumslateblue",
+              border: "none",
+              padding: "0.5rem 1rem",
+              borderRadius: "0.5rem",
+              cursor: "pointer",
+              width: "100%",
+              marginTop: "0.5rem",
+              willChange: "transform",
+            }}
+          >
+            <Plus width={"0.8rem"} />
+            Add Allowance
+          </motion.button>
         </div>
 
         <div
@@ -1768,7 +1938,7 @@ export default function OfferLetters() {
           }
 
           <p style={{ fontWeight: 600 }}>
-            {moment(formData.date).format("DD/MM/YYYY")}
+            {moment(new Date(formData.date)).format("DD/MM/YYYY")}
           </p>
         </div>
         {/* Title */}
@@ -1836,16 +2006,36 @@ export default function OfferLetters() {
                 OMR {formData.salary || "[Basic Salary]"}
               </td>
             </tr>
-            <tr>
-              <td style={tableCellStyle}>Allowance</td>
-              <td style={tableCellStyle}>{formData.allowance || "N/A"}</td>
-            </tr>
+            {formData.allowances.length < 1 && (
+              <tr>
+                <td style={tableCellStyle}>Allowance</td>
+                <td style={tableCellStyle}>{formData.allowance || "N/A"}</td>
+              </tr>
+            )}
+
+            {formData.allowances.length > 0 &&
+              formData.allowances.map((role, index) => (
+                <tr key={index}>
+                  <td style={tableCellStyle}>
+                    {role.title || "[ALLOWANCE TYPE]"}
+                  </td>
+                  <td style={tableCellStyle}>
+                    {role.description || "[ALLOWANCE AMOUNT]"}
+                  </td>
+                </tr>
+              ))}
             <tr>
               <td style={tableCellStyle}>Gross Salary</td>
               <td style={tableCellStyle}>
                 OMR{" "}
-                {Number(formData.salary) +
-                  Number(formData.allowance) +
+                {(formData.allowances?.reduce(
+                  (sum: number, a: any) => sum + Number(a.description),
+                  0
+                ) || 0) +
+                  Number(formData.salary) +
+                  Number(
+                    formData.allowances.length > 0 ? 0 : formData.allowance
+                  ) +
                   " (Monthly)" || "[Gross Salary]"}
               </td>
             </tr>
@@ -2508,7 +2698,14 @@ export default function OfferLetters() {
             // title="Doc"
             // icon={<File color="dodgerblue" />}
             extra={
-              <div style={{ display: "flex", gap: "0.5rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "0.5rem",
+                  border: "",
+                  height: "2.75rem",
+                }}
+              >
                 <button
                   onClick={handlePrintPDF}
                   style={{
@@ -2558,17 +2755,17 @@ export default function OfferLetters() {
                       background: "none",
                       fontSize: "0.75rem",
                       border: "1px solid rgba(100 100 100/ 40%)",
-                      padding: "0.5rem 0.75rem",
+                      padding: "0.5rem 1rem",
                       borderRadius: "0.5rem",
                       cursor: "pointer",
-                      height: "2.45rem",
+                      height: "",
                       willChange: "transform",
                     }}
                   >
                     {saving ? (
                       <LoaderCircle className="animate-spin" />
                     ) : (
-                      <Save color="mediumslateblue" />
+                      <Save width={"1.25rem"} color="mediumslateblue" />
                     )}
                   </motion.button>
                 ) : (
@@ -2587,20 +2784,21 @@ export default function OfferLetters() {
                           background: "none",
                           fontSize: "0.75rem",
                           border: "1px solid rgba(100 100 100/ 40%)",
-                          padding: "0.5rem 0.75rem",
+                          padding: "0.65rem 1rem",
                           borderRadius: "0.5rem",
                           cursor: "pointer",
-                          height: "2.45rem",
+                          height: "",
                           willChange: "transform",
                         }}
                       >
                         {saving ? (
                           <LoaderCircle className="animate-spin" />
                         ) : !loadedLetterId ? (
-                          <Save color="mediumslateblue" />
+                          <Save color="mediumslateblue" width={"1.25rem"} />
                         ) : (
-                          <CloudUpload color="mediumslateblue" />
+                          <Save color="mediumslateblue" width={"1.25rem"} />
                         )}
+
                         <ChevronDown width={"1rem"} opacity={0.7} />
                       </motion.button>
                     </DropdownMenuTrigger>
@@ -2612,7 +2810,7 @@ export default function OfferLetters() {
                         }}
                         onClick={handleSaveChanges}
                       >
-                        <CloudUpload color="mediumslateblue" className="w-4" />
+                        <Save color="mediumslateblue" className="w-4" />
                         <span>Save </span>
                       </DropdownMenuItem>
 
@@ -2623,7 +2821,7 @@ export default function OfferLetters() {
                         }}
                         onClick={handleSave}
                       >
-                        <Save className="w-4" />
+                        <FilePlus2 className="w-4" />
                         <span>Save as New</span>
                         <p></p>
                       </DropdownMenuItem>
@@ -2631,8 +2829,17 @@ export default function OfferLetters() {
                   </DropdownMenu>
                 )}
 
-                <button
-                  style={{ background: "rgba(100 100 100/ 50%)" }}
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  style={{
+                    border: "1px solid rgba(100 100 100/ 30%)",
+                    background: "rgba(100 100 100/ 10%)",
+                    padding: "0.5rem 0.75rem",
+                  }}
                   onClick={() => {
                     // Show cached letters immediately
                     if (offerLettersCache.length > 0) {
@@ -2643,8 +2850,8 @@ export default function OfferLetters() {
                     fetchOfferLetters();
                   }}
                 >
-                  <Database width={"1.25rem"} />
-                </button>
+                  <Database color="salmon" width={"1.25rem"} />
+                </motion.button>
               </div>
             }
           />
@@ -2807,17 +3014,22 @@ export default function OfferLetters() {
                     >
                       <div
                         style={{
-                          fontWeight: 600,
+                          fontWeight: 500,
                           fontSize: 14,
                           color: "black",
                           textTransform: "uppercase",
+                          display: "flex",
+                          gap: "0.5rem",
+                          alignItems: "center",
+                          marginBottom: "",
                         }}
                       >
                         {ol.candidateName || "[No Name]"}
                       </div>
                       <div
                         style={{
-                          color: "#555",
+                          color: "royalblue",
+                          fontWeight: 500,
                           fontSize: 11,
                           textTransform: "uppercase",
                         }}
@@ -2835,7 +3047,7 @@ export default function OfferLetters() {
                         </p> */}
                       </div>
 
-                      <div style={{ color: "#888", fontSize: 12 }}>
+                      <div style={{ color: "#888", fontSize: 10 }}>
                         {ol.generated_at && ol.generated_at.toDate
                           ? "Generated : " +
                             moment(ol.generated_at.toDate()).format(
@@ -2865,17 +3077,15 @@ export default function OfferLetters() {
                           });
                         }}
                         style={{
-                          background: "none",
+                          background: "rgba(150 150 150/ 10%)",
                           border: "none",
                           cursor: "pointer",
-                          padding: "0.25rem",
+                          padding: "0.15rem 0.5rem",
+                          color: "indianred",
+                          fontSize: "0.7rem",
                         }}
                       >
-                        {deleting ? (
-                          <LoadingOutlined />
-                        ) : (
-                          <Trash2 width="1.25rem" color="crimson" />
-                        )}
+                        {deleting ? <LoadingOutlined /> : "Delete"}
                       </button>
                     </div>
                   </div>
