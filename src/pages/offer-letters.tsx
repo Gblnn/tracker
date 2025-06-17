@@ -7,11 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -677,32 +672,40 @@ export default function OfferLetters() {
 
   const handleSaveChanges = async () => {
     if (!loadedLetterId) return;
-    setSaving(true);
-    try {
-      const updatedLetter = {
-        ...formData,
-        updated_at: Timestamp.now(),
-      };
 
-      await updateDoc(doc(db, "offer_letters", loadedLetterId), {
-        updatedLetter,
+    try {
+      setSaving(true);
+      const letterRef = doc(db, "offer_letters", loadedLetterId);
+
+      // Create a copy of formData without the date field for the preset
+      const { date, ...presetData } = formData;
+
+      await updateDoc(letterRef, {
+        ...presetData,
         air_passage: air_passage,
         comm: comm,
-        joiningDate: joiningDate,
         visaS: visaS,
+        joiningDate: joiningDate,
+        generated_at: Timestamp.now(),
+        generated_by: auth.currentUser?.email || null,
       });
 
-      // Update cache with modified letter
-      const updatedCache = offerLettersCache.map((letter) =>
-        letter.id === loadedLetterId ? { ...letter, ...updatedLetter } : letter
-      );
-      setOfferLettersCache(updatedCache);
-      setOfferLetters(updatedCache);
+      // Update the original form data to match the new state
+      setOriginalFormData({
+        ...formData,
+        air_passage: air_passage,
+        comm: comm,
+        visaS: visaS,
+        joiningDate: joiningDate,
+      });
 
-      message.success("Offer letter updated");
+      setHasChanges(false);
+      message.success("Offer letter updated successfully");
 
-      setOriginalFormData(null);
-    } catch (err) {
+      // Refresh the offer letters list
+      fetchOfferLetters();
+    } catch (error) {
+      console.error("Error updating offer letter:", error);
       message.error("Failed to update offer letter");
     } finally {
       setSaving(false);
