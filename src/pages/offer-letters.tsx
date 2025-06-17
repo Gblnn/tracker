@@ -1,6 +1,12 @@
 import Back from "@/components/back";
 import { Checkbox } from "@/components/ui/checkbox";
 import DefaultDialog from "@/components/ui/default-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -29,23 +35,22 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import {
   Bug,
-  ChevronDown,
   CloudUpload,
   Database,
   Dot,
   File,
   FileText,
   FileX,
+  Loader2,
   LoaderCircle,
   Menu,
   MinusCircle,
+  MoreVertical,
   Plus,
-  RefreshCcw,
   Save,
   Sparkles,
   TextCursor,
   Trash2,
-  X,
 } from "lucide-react";
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
@@ -197,6 +202,7 @@ export default function OfferLetters() {
   );
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [deleteId, setDeleteId] = useState("");
+  const [joiningDate, setJoiningDate] = useState(true);
 
   // Add this after other useEffect hooks
   useEffect(() => {
@@ -486,6 +492,7 @@ export default function OfferLetters() {
         air_passage: air_passage,
         comm: comm,
         visaS: visaS,
+        joiningDate: joiningDate,
         generated_at: Timestamp.now(),
         generated_by: auth.currentUser?.email || null,
       };
@@ -621,6 +628,7 @@ export default function OfferLetters() {
         updatedLetter,
         air_passage: air_passage,
         comm: comm,
+        joiningDate: joiningDate,
         visaS: visaS,
       });
 
@@ -642,19 +650,46 @@ export default function OfferLetters() {
   };
 
   const handleLetterClick = (ol: any) => {
-    setFormData((prev) => {
-      const newData = { ...prev };
-      Object.keys(newData).forEach((key) => {
-        if (ol[key] !== undefined)
-          newData[key as keyof typeof newData] = ol[key];
-      });
-      return newData;
+    setFormData({
+      date: ol.date,
+      refNo: ol.refNo,
+      candidateName: ol.candidateName,
+      position: ol.position,
+      workLocation: ol.workLocation,
+      salary: ol.salary,
+      allowance: ol.allowance,
+      grossSalary: ol.grossSalary,
+      attendance: ol.attendance,
+      probation: ol.probation,
+      reportingDate: ol.reportingDate,
+      contractPeriod: ol.contractPeriod,
+      noticePeriod: ol.noticePeriod,
+      noticePeriodSubsections: ol.noticePeriodSubsections,
+      accomodation: ol.accomodation,
+      food: ol.food,
+      transport: ol.transport,
+      visaStatus: ol.visaStatus,
+      communication: ol.communication,
+      medical: ol.medical,
+      insurance: ol.insurance,
+      annualLeave: ol.annualLeave,
+      gratuity: ol.gratuity,
+      leaveEncashment: ol.leaveEncashment,
+      workingHours: ol.workingHours,
+      airPassage: ol.airPassage,
+      jobSummary: ol.jobSummary,
+      responsibilities: ol.responsibilities,
+      roles: ol.roles,
     });
     setAirPassage(ol.air_passage);
     setComm(ol.comm);
     setVisaS(ol.visaS);
+    setJoiningDate(ol.joiningDate);
     setOriginalFormData(ol);
     setLoadedLetterId(ol.id);
+    // Reset preset related states
+    setSelectedPreset("");
+    setOriginalPresetData(null);
     setHasChanges(false);
     setOfferLettersDrawerVisible(false);
   };
@@ -830,64 +865,95 @@ export default function OfferLetters() {
             <Select value={selectedPreset} onValueChange={handleLoadPreset}>
               <SelectTrigger
                 disabled={presetsLoading}
-                className="w-full"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "1rem",
-                }}
+                className="w-full h-[38px]"
+                style={{ display: "flex", alignItems: "center" }}
               >
                 {presetsLoading && (
-                  <LoaderCircle width={"0.9rem"} className="animate-spin" />
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Loading presets...</span>
+                  </div>
                 )}
-
-                <SelectValue
-                  placeholder={presetsLoading ? "Fetching" : "Select a preset"}
-                />
                 {!presetsLoading && (
-                  <ChevronDown style={{ opacity: 0.5 }} width={"0.8rem"} />
+                  <SelectValue placeholder="Select a preset" />
                 )}
               </SelectTrigger>
-              <SelectContent position="popper" className="">
+              <SelectContent
+                position="popper"
+                className="w-[var(--radix-select-trigger-width)]"
+              >
                 {presets.map((preset) => (
-                  <SelectItem
-                    style={{ display: "flex", justifyContent: "flex-start" }}
-                    key={preset.id}
-                    value={preset.id}
-                  >
+                  <SelectItem key={preset.id} value={preset.id}>
                     {preset.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {selectedPreset && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setRenameDialogVisible(true)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "none",
-                  fontSize: "0.75rem",
-                  border: "1px solid rgba(100 100 100/ 40%)",
-                  padding: "0.5rem 1rem",
-                  borderRadius: "0.5rem",
-                  cursor: "pointer",
-                  height: "2.45rem",
-                  willChange: "transform",
-                }}
-              >
-                <TextCursor color="mediumslateblue" width={"0.8rem"} />
-              </motion.button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "none",
+                      fontSize: "0.75rem",
+                      border: "1px solid rgba(100 100 100/ 40%)",
+                      padding: "0.5rem 1rem",
+                      borderRadius: "0.5rem",
+                      cursor: "pointer",
+                      height: "2.45rem",
+                      willChange: "transform",
+                    }}
+                  >
+                    <MoreVertical color="mediumslateblue" width={"0.8rem"} />
+                  </motion.button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onClick={() => setRenameDialogVisible(true)}
+                  >
+                    <TextCursor className="mr-2 h-4 w-4" />
+                    <span>Rename</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setDeleteId(selectedPreset);
+                      setDeleteDialogVisible(true);
+                    }}
+                    className="text-red-500"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>Delete</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleUpdatePreset}
+                    disabled={!hasChanges}
+                    className={
+                      !hasChanges ? "opacity-50 cursor-not-allowed" : ""
+                    }
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    <span>Update</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
 
-          <div
+          {/* <div
             style={{
               display: "flex",
               gap: "0.5rem",
@@ -968,7 +1034,7 @@ export default function OfferLetters() {
               <X color="indianred" width={"0.8rem"} />
               Delete Preset
             </button>
-          </div>
+          </div> */}
         </div>
 
         <div
@@ -1089,7 +1155,17 @@ export default function OfferLetters() {
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
-          <label>Report for Duty</label>
+          <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
+            <Checkbox
+              checked={joiningDate}
+              onClick={() => {
+                setJoiningDate(!joiningDate);
+                setHasChanges(true);
+              }}
+            />
+            <label>Joining Date</label>
+          </div>
+
           <input
             type="date"
             name="reportingDate"
@@ -1744,16 +1820,19 @@ export default function OfferLetters() {
               <td style={tableCellStyle}>Probation Period</td>
               <td style={tableCellStyle}>{formData.probation || "N/A"}</td>
             </tr>
-            <tr>
-              <td style={tableCellStyle}>Report for Duty On</td>
-              <td style={tableCellStyle}>
-                {formData.reportingDate
-                  ? `On or before ${moment(formData.reportingDate).format(
-                      "DD MMMM YYYY"
-                    )}`
-                  : "[Reporting Date]"}
-              </td>
-            </tr>
+            {joiningDate && (
+              <tr>
+                <td style={tableCellStyle}>Joining Date</td>
+                <td style={tableCellStyle}>
+                  {formData.reportingDate
+                    ? `On or before ${moment(formData.reportingDate).format(
+                        "DD MMMM YYYY"
+                      )}`
+                    : "[joining Date]"}
+                </td>
+              </tr>
+            )}
+
             <tr>
               <td style={tableCellStyle}>Contract Period</td>
               <td style={tableCellStyle}>{formData.contractPeriod || "N/A"}</td>

@@ -301,7 +301,7 @@ export default function Work(props: Props) {
         open={drawerOpen}
         onCancel={() => setDrawerOpen(false)}
         footer={null}
-        width={600}
+        width={800}
       >
         {props.applicantsList && props.applicantsList.length > 0 ? (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -311,6 +311,7 @@ export default function Work(props: Props) {
                 <th style={{ padding: 8, border: "1px solid #eee" }}>Email</th>
                 <th style={{ padding: 8, border: "1px solid #eee" }}>Phone</th>
                 <th style={{ padding: 8, border: "1px solid #eee" }}>CV</th>
+                <th style={{ padding: 8, border: "1px solid #eee" }}></th>
               </tr>
             </thead>
             <tbody>
@@ -343,6 +344,32 @@ export default function Work(props: Props) {
                     ) : (
                       <span style={{ color: "#888" }}>No CV available</span>
                     )}
+                  </td>
+                  <td>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "0.5rem",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: "",
+                      }}
+                    >
+                      <button
+                        style={{ padding: "0.15rem 1rem", fontSize: "0.8rem" }}
+                      >
+                        Shortlist
+                      </button>
+                      <button
+                        style={{
+                          padding: "0.15rem 1rem",
+                          fontSize: "0.8rem",
+                          color: "indianred",
+                        }}
+                      >
+                        Decline
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

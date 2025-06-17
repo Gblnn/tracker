@@ -1,4 +1,3 @@
-import AddRecordButton from "@/components/add-record-button";
 import Back from "@/components/back";
 import RefreshButton from "@/components/refresh-button";
 import Work from "@/components/work";
@@ -14,7 +13,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { FileText, LoaderCircle, Plus, Trash2 } from "lucide-react";
+import { LoaderCircle, Trash2 } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 // import { Opening } from "@/components/opening";
@@ -28,7 +27,7 @@ interface JobOpening {
   created_at: any;
 }
 
-export default function Openings() {
+export default function Shortlist() {
   const [fetchingData, setfetchingData] = useState(false);
   const [records, setRecords] = useState<JobOpening[]>([]);
   const [applications, setApplications] = useState<any>([]);
@@ -52,7 +51,7 @@ export default function Openings() {
     fetchApplications();
     try {
       setfetchingData(true);
-      const RecordCollection = collection(db, "openings");
+      const RecordCollection = collection(db, "shortlist");
       const recordQuery = query(RecordCollection);
       const querySnapshot = await getDocs(recordQuery);
       const fetchedData: any = [];
@@ -162,18 +161,12 @@ export default function Openings() {
           }}
         >
           <Back
-            title={"Openings"}
+            title={"Shortlist"}
             fixed
             extra={
               <div
                 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
               >
-                <button
-                  style={{ fontSize: "0.8rem", padding: "0.65rem 1rem" }}
-                  onClick={() => setAllApplicationsModalOpen(true)}
-                >
-                  <FileText width={"0.9rem"} />
-                </button>
                 <RefreshButton
                   onClick={fetchData}
                   fetchingData={fetchingData}
@@ -271,17 +264,13 @@ export default function Openings() {
                     textAlign: "center",
                   }}
                 >
-                  <p>No Openings Found</p>
-                  <p style={{ fontSize: "0.6rem" }}>Add a New Opening</p>
+                  <p>No Short Listed Candidates</p>
+                  <p style={{ fontSize: "0.6rem" }}></p>
                 </div>
               </motion.div>
             </div>
           )}
         </div>
-        <AddRecordButton
-          icon={<Plus />}
-          onClick={() => setAddDialogOpen(true)}
-        />
       </div>
       <Modal
         title="Add New Job Opening"
