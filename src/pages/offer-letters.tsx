@@ -2759,9 +2759,9 @@ export default function OfferLetters() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: "none",
+                      background: "rgba(150 150 150/ 40%)",
                       fontSize: "0.75rem",
-                      border: "1px solid rgba(100 100 100/ 40%)",
+                      // border: "1px solid rgba(100 100 100/ 40%)",
                       padding: "0.5rem 1rem",
                       borderRadius: "0.5rem",
                       cursor: "pointer",
@@ -2788,9 +2788,9 @@ export default function OfferLetters() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          background: "none",
+                          background: "rgba(150 150 150/ 40%)",
                           fontSize: "0.75rem",
-                          border: "1px solid rgba(100 100 100/ 40%)",
+                          // border: "1px solid rgba(100 100 100/ 40%)",
                           padding: "0.65rem 1rem",
                           borderRadius: "0.5rem",
                           cursor: "pointer",
@@ -2806,7 +2806,7 @@ export default function OfferLetters() {
                           <Save color="mediumslateblue" width={"1.25rem"} />
                         )}
 
-                        <ChevronDown width={"1rem"} opacity={0.7} />
+                        <ChevronDown width={"1rem"} />
                       </motion.button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
@@ -2817,7 +2817,7 @@ export default function OfferLetters() {
                         }}
                         onClick={handleSaveChanges}
                       >
-                        <Save color="mediumslateblue" className="w-4" />
+                        <Save color="royalblue" className="w-4" />
                         <span>Save </span>
                       </DropdownMenuItem>
 
@@ -2843,8 +2843,8 @@ export default function OfferLetters() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   style={{
-                    border: "1px solid rgba(100 100 100/ 30%)",
-                    background: "rgba(100 100 100/ 10%)",
+                    // border: "1px solid rgba(100 100 100/ 30%)",
+                    background: "rgba(150 150 150/ 40%)",
                     padding: "0.5rem 0.75rem",
                   }}
                   onClick={() => {
@@ -2857,7 +2857,7 @@ export default function OfferLetters() {
                     fetchOfferLetters();
                   }}
                 >
-                  <Database color="salmon" width={"1.25rem"} />
+                  <Database width={"1.25rem"} />
                 </motion.button>
               </div>
             }
