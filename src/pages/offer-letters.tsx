@@ -3107,7 +3107,7 @@ export default function OfferLetters() {
 
                       <div style={{ color: "#888", fontSize: 10 }}>
                         {ol.generated_at && ol.generated_at.toDate
-                          ? "Generated : " +
+                          ? "Last Modified : " +
                             moment(ol.generated_at.toDate()).format(
                               "DD MMM YYYY, h:mm A"
                             )
