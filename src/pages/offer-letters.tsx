@@ -38,7 +38,6 @@ import {
   ChevronDown,
   Database,
   Dot,
-  File,
   FilePlus2,
   FileText,
   FileX,
@@ -827,7 +826,7 @@ export default function OfferLetters() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <File />
+          {/* <File /> */}
           <h2>Offer Letter </h2>
         </div>
         <button
@@ -1841,7 +1840,7 @@ export default function OfferLetters() {
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           {/* <Eye />
           <h2>Preview</h2> */}
-          {loadedLetterId && (
+          {/* {loadedLetterId && (
             <div
               style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
             >
@@ -1850,9 +1849,13 @@ export default function OfferLetters() {
               ) : (
                 <Database width={"1rem"} color="mediumslateblue" />
               )}
-              <p>{loadedLetterId}</p>
+              <p
+                style={{ textTransform: "uppercase", letterSpacing: "0.05rem" }}
+              >
+                {formData.candidateName}
+              </p>
             </div>
-          )}
+          )} */}
         </div>
 
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -2701,6 +2704,7 @@ export default function OfferLetters() {
             <Menu color="black" width="1.5rem" />
           </button>
           <Back
+            blurBG
             fixed
             // title={
             //   loadedLetterId && (
@@ -2723,6 +2727,34 @@ export default function OfferLetters() {
             // }
             // title="Doc"
             // icon={<File color="dodgerblue" />}
+            subtitle={
+              formData.position && (
+                <p style={{ textTransform: "uppercase" }}>
+                  {formData.position}
+                </p>
+              )
+            }
+            title={
+              <p
+                style={{
+                  fontSize: "1rem",
+                  display: "flex",
+                  gap: "0.5rem",
+                  alignItems: "center",
+                  textTransform: "uppercase",
+                }}
+              >
+                {saving ? (
+                  <LoaderCircle className="animate-spin" width={"1rem"} />
+                ) : (
+                  loadedLetterId && (
+                    <Database color="mediumslateblue" width={"1rem"} />
+                  )
+                )}
+
+                {formData.candidateName}
+              </p>
+            }
             extra={
               <div
                 style={{

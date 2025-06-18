@@ -94,7 +94,7 @@ export default function NewHire() {
               icon={<File color="mediumslateblue" width={"1.25rem"} />}
             />
             <Directive
-              title={"Allocation"}
+              title={"Resources Allocation"}
               icon={<Binary color="dodgerblue" />}
               tag={"Maintenance"}
             />
