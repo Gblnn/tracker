@@ -450,9 +450,9 @@ export default function Openings() {
             </thead>
             <tbody>
               {applications.map((app: any) => {
-                const jobTitle =
-                  records.find((r: any) => r.id === app.jobId)?.jobTitle ||
-                  "Unknown Position";
+                // const jobTitle =
+                //   records.find((r: any) => r.id === app.jobId)?.jobTitle ||
+                //   "Unknown Position";
                 return (
                   <tr key={app.id} style={{ borderBottom: "1px solid #eee" }}>
                     <td style={{ padding: "12px" }}>{app.name}</td>
@@ -462,7 +462,7 @@ export default function Openings() {
                     <td style={{ padding: "12px" }}>
                       <a href={`tel:${app.phone}`}>{app.phone}</a>
                     </td>
-                    <td style={{ padding: "12px" }}>{jobTitle}</td>
+                    <td style={{ padding: "12px" }}>{app.jobTitle}</td>
                     <td style={{ padding: "12px" }}>
                       {app.created_at?.toDate
                         ? moment(app.created_at.toDate()).format("LL")
