@@ -2767,7 +2767,7 @@ export default function OfferLetters() {
                   )
                 )}
 
-                {formData.candidateName}
+                {loadedLetterId}
               </p>
             }
             extra={
