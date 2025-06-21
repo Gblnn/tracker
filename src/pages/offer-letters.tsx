@@ -207,6 +207,7 @@ export default function OfferLetters() {
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [deleteId, setDeleteId] = useState("");
   const [joiningDate, setJoiningDate] = useState(true);
+  const [allowanceVisible, setAllowanceVisible] = useState(true);
 
   // Add this after other useEffect hooks
   useEffect(() => {
@@ -546,6 +547,7 @@ export default function OfferLetters() {
         air_passage: air_passage,
         comm: comm,
         visaS: visaS,
+        allowanceVisible: allowanceVisible,
         joiningDate: joiningDate,
         generated_at: Timestamp.now(),
         generated_by: auth.currentUser?.email || null,
@@ -683,6 +685,7 @@ export default function OfferLetters() {
         ...presetData,
         air_passage: air_passage,
         comm: comm,
+        allowanceVisible: allowanceVisible,
         visaS: visaS,
         joiningDate: joiningDate,
         generated_at: Timestamp.now(),
@@ -694,6 +697,7 @@ export default function OfferLetters() {
         ...formData,
         air_passage: air_passage,
         comm: comm,
+        allowanceVisible: allowanceVisible,
         visaS: visaS,
         joiningDate: joiningDate,
       });
@@ -746,6 +750,7 @@ export default function OfferLetters() {
     });
     setAirPassage(ol.air_passage);
     setComm(ol.comm);
+    setAllowanceVisible(ol.allowanceVisible);
     setVisaS(ol.visaS);
     setJoiningDate(ol.joiningDate);
     setOriginalFormData(ol);
@@ -1201,7 +1206,17 @@ export default function OfferLetters() {
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
-          <label>Allowance (OMR)</label>
+          <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
+            <Checkbox
+              checked={allowanceVisible}
+              onClick={() => {
+                setAllowanceVisible(!allowanceVisible);
+                setHasChanges(true);
+              }}
+            />
+            <label>Allowance (OMR)</label>
+          </div>
+
           <input
             type="number"
             name="allowance"
@@ -2016,7 +2031,7 @@ export default function OfferLetters() {
                 OMR {formData.salary || "[Basic Salary]"}
               </td>
             </tr>
-            {formData.allowances.length < 1 && (
+            {formData.allowances.length < 1 && allowanceVisible && (
               <tr>
                 <td style={tableCellStyle}>Allowance</td>
                 <td style={tableCellStyle}>{formData.allowance || "N/A"}</td>
@@ -2869,7 +2884,7 @@ export default function OfferLetters() {
                         onClick={handleSaveChanges}
                       >
                         <Save color="royalblue" className="w-4" />
-                        <span>Save </span>
+                        <span>Save Changes</span>
                       </DropdownMenuItem>
 
                       <DropdownMenuItem

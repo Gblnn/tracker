@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import {
   Bug,
   FileArchive,
+  FileText,
   KeyRound,
   Mail,
   QrCode,
@@ -205,6 +206,13 @@ export default function Index() {
                 to={"/new-hire"}
                 title={"New Hire"}
                 icon={<UserCheck width={"1.25rem"} color="salmon" />}
+              />
+
+              <Directive
+                onClick={() => usenavigate("/agreements")}
+                to={"/agreements"}
+                title={"Agreements"}
+                icon={<FileText width={"1.25rem"} color="royalblue" />}
               />
 
               {/* <Directive

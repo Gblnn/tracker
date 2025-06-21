@@ -14,7 +14,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { FileText, LoaderCircle, Plus, Trash2 } from "lucide-react";
+import { Check, FileText, LoaderCircle, Plus, X } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 // import { Opening } from "@/components/opening";
@@ -169,10 +169,11 @@ export default function Openings() {
                 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
               >
                 <button
-                  style={{ fontSize: "0.8rem", padding: "0.65rem 1rem" }}
+                  style={{ fontSize: "0.8rem", padding: "0.65rem 1.25rem" }}
                   onClick={() => setAllApplicationsModalOpen(true)}
                 >
                   <FileText width={"0.9rem"} />
+                  Applications
                 </button>
                 <RefreshButton
                   onClick={fetchData}
@@ -481,7 +482,23 @@ export default function Openings() {
                         "No CV"
                       )}
                     </td>
-                    <td style={{ padding: "12px" }}>
+                    <td
+                      style={{
+                        padding: "12px",
+                        display: "flex",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      <button
+                        style={{
+                          fontSize: "0.8rem",
+                          padding: "0.15rem 0.75rem",
+                          color: "midnightblue",
+                        }}
+                      >
+                        <Check width={"1rem"} />
+                        Shortlist
+                      </button>
                       <button
                         onClick={() => {
                           Modal.confirm({
@@ -495,14 +512,13 @@ export default function Openings() {
                           });
                         }}
                         style={{
-                          background: "none",
-                          border: "none",
+                          fontSize: "0.8rem",
+                          padding: "0.15rem 0.75rem",
                           color: "crimson",
-                          cursor: "pointer",
-                          padding: "4px",
                         }}
                       >
-                        <Trash2 width="1rem" />
+                        <X width={"1rem"} />
+                        Decline
                       </button>
                     </td>
                   </tr>
