@@ -207,7 +207,6 @@ export default function OfferLetters() {
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [deleteId, setDeleteId] = useState("");
   const [joiningDate, setJoiningDate] = useState(true);
-  const [allowanceVisible, setAllowanceVisible] = useState(true);
 
   // Add this after other useEffect hooks
   useEffect(() => {
@@ -547,7 +546,6 @@ export default function OfferLetters() {
         air_passage: air_passage,
         comm: comm,
         visaS: visaS,
-        allowanceVisible: allowanceVisible,
         joiningDate: joiningDate,
         generated_at: Timestamp.now(),
         generated_by: auth.currentUser?.email || null,
@@ -685,7 +683,6 @@ export default function OfferLetters() {
         ...presetData,
         air_passage: air_passage,
         comm: comm,
-        allowanceVisible: allowanceVisible,
         visaS: visaS,
         joiningDate: joiningDate,
         generated_at: Timestamp.now(),
@@ -697,7 +694,6 @@ export default function OfferLetters() {
         ...formData,
         air_passage: air_passage,
         comm: comm,
-        allowanceVisible: allowanceVisible,
         visaS: visaS,
         joiningDate: joiningDate,
       });
@@ -750,7 +746,6 @@ export default function OfferLetters() {
     });
     setAirPassage(ol.air_passage);
     setComm(ol.comm);
-    setAllowanceVisible(ol.allowanceVisible);
     setVisaS(ol.visaS);
     setJoiningDate(ol.joiningDate);
     setOriginalFormData(ol);
@@ -1164,13 +1159,13 @@ export default function OfferLetters() {
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
-          <label>Position</label>
+          <label>Job Title</label>
           <input
             type="text"
             name="position"
             value={formData.position}
             onChange={handleInputChange}
-            placeholder="Enter position"
+            placeholder="Enter Job Title"
             style={inputStyle}
           />
         </div>
@@ -1206,17 +1201,7 @@ export default function OfferLetters() {
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
-          <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
-            <Checkbox
-              checked={allowanceVisible}
-              onClick={() => {
-                setAllowanceVisible(!allowanceVisible);
-                setHasChanges(true);
-              }}
-            />
-            <label>Allowance (OMR)</label>
-          </div>
-
+          <label>Allowance (OMR)</label>
           <input
             type="number"
             name="allowance"
@@ -2013,14 +1998,14 @@ export default function OfferLetters() {
               </td>
             </tr>
             <tr>
-              <td style={tableCellStyle}>Position</td>
+              <td style={tableCellStyle}>Job Title</td>
               <td style={tableCellStyle}>
                 {formData.position || "[Position]"}
               </td>
             </tr>
 
             <tr>
-              <td style={tableCellStyle}>Location</td>
+              <td style={tableCellStyle}>Place of Work</td>
               <td style={tableCellStyle}>
                 {formData.workLocation || "Anywhere in Oman"}
               </td>
@@ -2031,7 +2016,7 @@ export default function OfferLetters() {
                 OMR {formData.salary || "[Basic Salary]"}
               </td>
             </tr>
-            {formData.allowances.length < 1 && allowanceVisible && (
+            {formData.allowances.length < 1 && (
               <tr>
                 <td style={tableCellStyle}>Allowance</td>
                 <td style={tableCellStyle}>{formData.allowance || "N/A"}</td>
@@ -2209,91 +2194,87 @@ export default function OfferLetters() {
       </div>
       {/* Page break for preview */}
       <div style={{ height: 40 }} />
-      <div
-        style={{
-          width: "100%",
-          textAlign: "center",
-          color: "#aaa",
-          fontSize: "0.9rem",
-          marginBottom: "2rem",
-        }}
-      >
-        --- Page 2 ---
-      </div>
-      {/* Page 2: Roles and Responsibilities */}
-      <div
-        ref={rolesRef}
-        style={{
-          border: "",
-          width: "100%",
-          maxWidth: 800,
-          boxSizing: "border-box",
-          padding: "4rem",
-          background: "white",
-          color: "black",
-          borderRadius: "0.5rem",
-          boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
-          minHeight: "1100px",
-          fontFamily: "Aptos",
-          fontSize: "0.8rem",
-          margin: "1 auto",
-          overflowX: "auto",
-          marginBottom: "4rem",
-        }}
-      >
-        <br />
+      {/* Conditionally render Page 2: Roles and Responsibilities */}
+      {formData.roles &&
+        formData.roles.length > 0 &&
+        formData.roles.some(
+          (role) => role.title.trim() || role.description.trim()
+        ) && (
+          <>
+            <div
+              style={{
+                width: "100%",
+                textAlign: "center",
+                color: "#aaa",
+                fontSize: "0.9rem",
+                marginBottom: "2rem",
+              }}
+            >
+              --- Page 2 ---
+            </div>
+            <div
+              ref={rolesRef}
+              style={{
+                border: "",
+                width: "100%",
+                maxWidth: 800,
+                boxSizing: "border-box",
+                padding: "4rem",
+                background: "white",
+                color: "black",
+                borderRadius: "0.5rem",
+                boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
+                minHeight: "1100px",
+                fontFamily: "Aptos",
+                fontSize: "0.8rem",
+                margin: "1 auto",
+                overflowX: "auto",
+                marginBottom: "4rem",
+              }}
+            >
+              <br />
 
-        <h2
-          style={{
-            fontWeight: "600",
-            marginBottom: "1rem",
-            fontSize: "1rem",
-            textTransform: "uppercase",
-          }}
-        >
-          Roles & Responsibilities
-        </h2>
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
-        >
-          {formData.roles.length > 0 ? (
-            formData.roles.map((role, index) => (
-              <div key={index}>
-                <h3
-                  style={{
-                    fontSize: "0.9rem",
-                    fontWeight: "600",
-                    marginBottom: "0.5rem",
-                  }}
-                >
-                  {role.title || "[ROLE TITLE]"}
-                </h3>
-                <p style={{ fontSize: "0.8rem", color: "#444" }}>
-                  {role.description || "[ROLE DESCRIPTION]"}
-                </p>
+              <h2
+                style={{
+                  fontWeight: "600",
+                  marginBottom: "1rem",
+                  fontSize: "1rem",
+                  textTransform: "uppercase",
+                }}
+              >
+                Roles & Responsibilities
+              </h2>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1.5rem",
+                }}
+              >
+                {formData.roles.map((role, index) =>
+                  role.title.trim() || role.description.trim() ? (
+                    <div key={index}>
+                      <h3
+                        style={{
+                          fontSize: "0.9rem",
+                          fontWeight: "600",
+                          marginBottom: "0.5rem",
+                        }}
+                      >
+                        {role.title || "[ROLE TITLE]"}
+                      </h3>
+                      <p style={{ fontSize: "0.8rem", color: "#444" }}>
+                        {role.description || "[ROLE DESCRIPTION]"}
+                      </p>
+                    </div>
+                  ) : null
+                )}
               </div>
-            ))
-          ) : (
-            <p style={{ fontSize: "0.9rem", color: "#888" }}>
-              No roles and responsibilities defined.
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Page break for preview */}
-      <div style={{ height: 40 }} />
-      <div
-        style={{
-          width: "100%",
-          textAlign: "center",
-          color: "#aaa",
-          fontSize: "0.9rem",
-          marginBottom: "2rem",
-        }}
-      >
-        --- Page 3 ---
-      </div>
+            </div>
+            {/* Page break for preview */}
+            <div style={{ height: 40 }} />
+          </>
+        )}
       {/* Page 3: Rest of content */}
       <div
         ref={restRef}
@@ -2496,17 +2477,6 @@ export default function OfferLetters() {
 
       {/* Page break for preview */}
       <div style={{ height: 40 }} />
-      <div
-        style={{
-          width: "100%",
-          textAlign: "center",
-          color: "#aaa",
-          fontSize: "0.9rem",
-          marginBottom: "2rem",
-        }}
-      >
-        --- Page 3 ---
-      </div>
       {/* Page 3: Acknowledgment and Signatures */}
       <div
         ref={signatureRef}
@@ -2742,13 +2712,13 @@ export default function OfferLetters() {
             // }
             // title="Doc"
             // icon={<File color="dodgerblue" />}
-            // subtitle={
-            //   formData.position && (
-            //     <p style={{ textTransform: "uppercase" }}>
-            //       {formData.position}
-            //     </p>
-            //   )
-            // }
+            subtitle={
+              formData.position && (
+                <p style={{ textTransform: "uppercase" }}>
+                  {formData.position}
+                </p>
+              )
+            }
             title={
               <p
                 style={{
@@ -2767,7 +2737,7 @@ export default function OfferLetters() {
                   )
                 )}
 
-                {loadedLetterId}
+                {formData.candidateName}
               </p>
             }
             extra={

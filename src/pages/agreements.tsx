@@ -236,7 +236,7 @@ export default function Agreements() {
   const handlePrintPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(12);
-    doc.text(" AGREEMENT", 105, 20, { align: "center" });
+    doc.text("SUBCONTRACT AGREEMENT", 105, 20, { align: "center" });
     doc.setFontSize(10);
     let y = 35;
     doc.text(`Date: ${formData.date}`, 15, y);
@@ -296,6 +296,7 @@ export default function Agreements() {
         }
         fixed
         blurBG
+        title="Subcontract Agreement"
       />
       {loading ? (
         <div
@@ -313,16 +314,13 @@ export default function Agreements() {
           style={{
             display: "flex",
             gap: "1rem",
-            width: "100%",
-            height: "",
+            height: "calc(100vh - 8rem)",
             justifyContent: "center",
-            paddingTop: "7rem",
-            paddingLeft: "3rem",
-            border: "",
+            paddingTop: "5rem",
           }}
         >
           {/* Input Form - Hidden on mobile */}
-          <div className="" style={styles.inputForm}>
+          <div className="input-form" style={styles.inputForm}>
             {/* Form Section */}
             <div
               style={{
@@ -335,7 +333,6 @@ export default function Agreements() {
                 fontSize: "0.8rem",
                 maxHeight: "72%",
                 width: "30%",
-                border: "",
               }}
             >
               <div
@@ -356,7 +353,7 @@ export default function Agreements() {
                     gap: "0.5rem",
                   }}
                 >
-                  <h2>Agreement</h2>
+                  <h2>Subcontract Agreement</h2>
                 </div>
                 <button
                   onClick={handleClearForm}
