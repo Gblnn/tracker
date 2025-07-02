@@ -199,7 +199,7 @@ export default function Index() {
                       style={{ width: "1.25rem" }}
                     />
                   }
-                  extra={true}
+                  extra={userData?.role == "admin" ? true : false}
                   extraOnEdit={(e: any) => {
                     if (e) e.stopPropagation();
                     handleEditLink(link);
