@@ -38,20 +38,25 @@ emailjs.init("c8AePKR5BCK8UIn_E");
 
 export default function App() {
   return (
-    <AuthGuard>
-      {/* <Header updateInbox/> */}
+    <>
       <div style={{ height: "" }}></div>
-
       <div style={{ display: "flex", paddingLeft: "1.5rem" }}></div>
-
       <Routes>
+        {/* Public routes */}
         <Route path="/" element={<Login />} />
         <Route path="/user-reset" element={<UserReset />} />
         <Route path="/request-access" element={<RequestAccess />} />
         <Route path="/inbox" element={<Inbox />} />
         <Route path="/quick-links" element={<QuickLinks />} />
 
-        <Route element={<ProtectedRoutes />}>
+        {/* Protected routes */}
+        <Route
+          element={
+            <AuthGuard>
+              <ProtectedRoutes />
+            </AuthGuard>
+          }
+        >
           <Route path="/index" element={<Index />} />
           <Route path="/record-list" element={<RecordList />} />
           <Route path="/admin" element={<AdminPage />} />
@@ -63,7 +68,6 @@ export default function App() {
           <Route path="/new-hire" element={<NewHire />} />
           <Route path="/offer-letters" element={<OfferLetters />} />
           <Route path="/agreements" element={<Agreements />} />
-
           <Route path="/shortlist" element={<Shortlist />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/openings" element={<Openings />} />
@@ -81,6 +85,6 @@ export default function App() {
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>
-    </AuthGuard>
+    </>
   );
 }
