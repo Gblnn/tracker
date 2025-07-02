@@ -31,6 +31,7 @@ import Website from "./pages/website";
 import OfferLetters from "./pages/offer-letters";
 import Shortlist from "./pages/shortlist";
 import Agreements from "./pages/agreements";
+import QuickLinks from "./pages/quick-links";
 
 // Initialize emailjs once outside of component
 emailjs.init("c8AePKR5BCK8UIn_E");
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="/user-reset" element={<UserReset />} />
         <Route path="/request-access" element={<RequestAccess />} />
         <Route path="/inbox" element={<Inbox />} />
+        <Route path="/quick-links" element={<QuickLinks />} />
 
         <Route element={<ProtectedRoutes />}>
           <Route path="/index" element={<Index />} />
@@ -61,6 +63,7 @@ export default function App() {
           <Route path="/new-hire" element={<NewHire />} />
           <Route path="/offer-letters" element={<OfferLetters />} />
           <Route path="/agreements" element={<Agreements />} />
+
           <Route path="/shortlist" element={<Shortlist />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/openings" element={<Openings />} />

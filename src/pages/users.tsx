@@ -27,6 +27,7 @@ import {
   Eye,
   MinusCircle,
   PenLine,
+  ShieldPlus,
   User,
   UserPlus,
 } from "lucide-react";
@@ -231,6 +232,8 @@ export default function Users() {
                 icon={
                   user.role == "admin" ? (
                     <Eye width={"1.25rem"} color="dodgerblue" />
+                  ) : user.role == "hr" ? (
+                    <ShieldPlus width={"1.25rem"} color="dodgerblue" />
                   ) : (
                     <User width={"1.25rem"} color="dodgerblue" />
                   )

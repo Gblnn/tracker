@@ -236,6 +236,11 @@ export default function Directive(props: Props) {
                   textAlign: "left",
                   color: "lightblue",
                   opacity: "0.75",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  width: "30ch",
+                  border: "",
                 }}
               >
                 {props.id_subtitle}

@@ -14,7 +14,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { Check, FileText, LoaderCircle, Plus, X } from "lucide-react";
+import { Check, File, FileText, LoaderCircle, Plus, X } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 // import { Opening } from "@/components/opening";
@@ -437,9 +437,7 @@ export default function Openings() {
                     textAlign: "left",
                     borderBottom: "1px solid #eee",
                   }}
-                >
-                  CV
-                </th>
+                ></th>
                 <th
                   style={{
                     padding: "12px",
@@ -471,13 +469,23 @@ export default function Openings() {
                     </td>
                     <td style={{ padding: "12px" }}>
                       {app.cvLink ? (
-                        <a
-                          href={app.cvLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          style={{
+                            fontSize: "0.8rem",
+                            padding: "0.15rem 0.75rem",
+                            color: "dodgerblue",
+                          }}
                         >
-                          View CV
-                        </a>
+                          <a
+                            href={app.cvLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
+                            <File width={"1rem"} />
+                            View CV
+                          </a>
+                        </button>
                       ) : (
                         "No CV"
                       )}

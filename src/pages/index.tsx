@@ -14,8 +14,10 @@ import {
   FileArchive,
   FileText,
   KeyRound,
+  Link,
   Mail,
   QrCode,
+  SquareUser,
   UserCheck,
 } from "lucide-react";
 import moment from "moment";
@@ -202,6 +204,24 @@ export default function Index() {
               />
 
               <Directive
+                to={access ? "/record-list" : ""}
+                onClick={() =>
+                  userData?.role == "hr"
+                    ? usenavigate("/human-resources")
+                    : message.error("No Clearance to Access")
+                }
+                title={"Human Resources"}
+                icon={<SquareUser color="royalblue" width={"1.25rem"} />}
+              />
+
+              <Directive
+                onClick={() => usenavigate("/quick-links")}
+                to={"/quick-links"}
+                title={"Quick Links"}
+                icon={<Link color="orange" width={"1.25rem"} />}
+              />
+
+              <Directive
                 onClick={() => usenavigate("/new-hire")}
                 to={"/new-hire"}
                 title={"New Hire"}
@@ -212,7 +232,7 @@ export default function Index() {
                 onClick={() => usenavigate("/agreements")}
                 to={"/agreements"}
                 title={"Agreements"}
-                icon={<FileText width={"1.25rem"} color="royalblue" />}
+                icon={<FileText width={"1.25rem"} color="mediumslateblue" />}
               />
 
               {/* <Directive
