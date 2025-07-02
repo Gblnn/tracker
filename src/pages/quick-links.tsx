@@ -127,10 +127,8 @@ export default function Index() {
               title="Quick Links"
               icon={
                 <div style={{}}>
-                  {!userData ? (
+                  {!userData && (
                     <img src="/sohar_star_logo.png" style={{ width: "2rem" }} />
-                  ) : (
-                    <Link style={{ width: "1.25rem" }} />
                   )}
                 </div>
               }
