@@ -212,19 +212,21 @@ export default function Index() {
               ))
             )}
           </div>
-          <button
-            onClick={() => setAddModalOpen(true)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              position: "absolute",
-              bottom: "2rem",
-              right: "2rem",
-              padding: "0.75rem",
-            }}
-          >
-            <Plus />
-          </button>
+          {userData?.role == "admin" && (
+            <button
+              onClick={() => setAddModalOpen(true)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                position: "absolute",
+                bottom: "2rem",
+                right: "2rem",
+                padding: "0.75rem",
+              }}
+            >
+              <Plus />
+            </button>
+          )}
         </motion.div>
       </div>
 
