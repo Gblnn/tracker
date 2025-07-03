@@ -587,7 +587,11 @@ export default function OfferLetters() {
       const rolesNode = rolesRef.current;
       const restNode = restRef.current;
       const signatureNode = signatureRef.current;
-      if (!tableNode || !rolesNode || !restNode || !signatureNode) return;
+      if (!tableNode || !restNode || !signatureNode) {
+        message.error("Failed to generate PDF: missing sections");
+        setPdfLoading(false);
+        return;
+      }
 
       // Render table (page 1)
       const tableCanvas = await html2canvas(tableNode, { scale: 2 });
@@ -598,13 +602,15 @@ export default function OfferLetters() {
       const tableHeight = (tableProps.height * pageWidth) / tableProps.width;
       pdf.addImage(tableImgData, "PNG", 0, 0, pageWidth, tableHeight);
 
-      // Render roles (page 2)
-      const rolesCanvas = await html2canvas(rolesNode, { scale: 2 });
-      const rolesImgData = rolesCanvas.toDataURL("image/png");
-      pdf.addPage();
-      const rolesProps = pdf.getImageProperties(rolesImgData);
-      const rolesHeight = (rolesProps.height * pageWidth) / rolesProps.width;
-      pdf.addImage(rolesImgData, "PNG", 0, 0, pageWidth, rolesHeight);
+      // Render roles (page 2) if present
+      if (rolesNode) {
+        const rolesCanvas = await html2canvas(rolesNode, { scale: 2 });
+        const rolesImgData = rolesCanvas.toDataURL("image/png");
+        pdf.addPage();
+        const rolesProps = pdf.getImageProperties(rolesImgData);
+        const rolesHeight = (rolesProps.height * pageWidth) / rolesProps.width;
+        pdf.addImage(rolesImgData, "PNG", 0, 0, pageWidth, rolesHeight);
+      }
 
       // Render rest (page 3)
       const restCanvas = await html2canvas(restNode, { scale: 2 });
@@ -615,13 +621,15 @@ export default function OfferLetters() {
       pdf.addImage(restImgData, "PNG", 0, 0, pageWidth, restHeight);
 
       // Render signatures (page 4)
-      const signatureCanvas = await html2canvas(signatureNode, { scale: 2 });
-      const signatureImgData = signatureCanvas.toDataURL("image/png");
-      pdf.addPage();
-      const signatureProps = pdf.getImageProperties(signatureImgData);
-      const signatureHeight =
-        (signatureProps.height * pageWidth) / signatureProps.width;
-      pdf.addImage(signatureImgData, "PNG", 0, 0, pageWidth, signatureHeight);
+      if (signatureNode) {
+        const signatureCanvas = await html2canvas(signatureNode, { scale: 2 });
+        const signatureImgData = signatureCanvas.toDataURL("image/png");
+        pdf.addPage();
+        const signatureProps = pdf.getImageProperties(signatureImgData);
+        const signatureHeight =
+          (signatureProps.height * pageWidth) / signatureProps.width;
+        pdf.addImage(signatureImgData, "PNG", 0, 0, pageWidth, signatureHeight);
+      }
 
       pdf.save(`Offer_Letter_${formData.candidateName || "Candidate"}.pdf`);
     } catch (err) {
