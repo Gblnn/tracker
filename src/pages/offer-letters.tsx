@@ -2306,181 +2306,146 @@ export default function OfferLetters() {
       >
         <br />
 
-        {air_passage && (
-          <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
-            <h3
-              style={{
-                fontWeight: "600",
-                marginBottom: "0.5rem",
-                fontSize: "0.9rem",
-              }}
+        {/* Numbered main clauses */}
+        {(() => {
+          // Collect all main clause data in an array for numbering
+          const clauses = [];
+          if (air_passage)
+            clauses.push({
+              title: "Air Passage",
+              content: (
+                <>
+                  <p>
+                    {formData.airPassage ||
+                      "While going on sanctioned leave, to and fro air ticket on a direct flight from Oman to the nearest international airport to your hometown, once on completion of 12 months."}
+                  </p>
+                  <br />
+                  <p>
+                    <b>Sector of Travel : </b>MUSCAT - (Nearest Hometown
+                    International Airport )
+                  </p>
+                  <p>
+                    <b>Class of Travel : </b>Economy Class by any Airline
+                  </p>
+                </>
+              ),
+            });
+          if (visaS)
+            clauses.push({
+              title: "Visa Status",
+              content: (
+                <p>
+                  {formData.visaStatus ||
+                    "Work VISA shall be provided by the Company. Employee agrees that he shall not join any competing business until the end of the Contract Project"}
+                </p>
+              ),
+            });
+          clauses.push(
+            {
+              title: "Medical",
+              content: (
+                <p>
+                  During the service period the company will bear all medical
+                  expenses for self - excluding dependents, dental, optical,
+                  gynecology and congenital.
+                </p>
+              ),
+            },
+            {
+              title: "Increment Terms",
+              content: (
+                <p>
+                  Based on the performance of the individual and the company, at
+                  the discretion of management.
+                </p>
+              ),
+            },
+            {
+              title: "Working Hours",
+              content: (
+                <p>
+                  {formData.workingHours ||
+                    "As laid down by the company from time to time. Your post being a senior level executive in nature you are not eligible for any overtime; though you shall be available during 24 hours of the day on call basis."}
+                </p>
+              ),
+            },
+            {
+              title: "Medical Fitness",
+              content: (
+                <p>
+                  Your employment with us shall be subject to your medical
+                  fitness, which will be ascertained after a medical examination
+                  by the Ministry of Health, Sultanate of Oman, as soon as you
+                  arrive and periodically thereafter, on being found medically
+                  unfit, your services are liable to be terminated.
+                </p>
+              ),
+            },
+            {
+              title: "Code of Conduct",
+              content: (
+                <p>
+                  The Company maintains a strict non-alcoholic environment.
+                  Unlawful possession of or being under the influence of alcohol
+                  or any mind-altering substances will result in immediate
+                  termination without prior notice. You are expected to act
+                  professionally, ethically, and in a manner that upholds the
+                  Company's image and welfare. Any misconduct or inappropriate
+                  behavior will be formally communicated in writing, and you
+                  will be given a chance to respond. However, the Company
+                  reserves the right to terminate employment without notice or
+                  pay if misconduct is confirmed. Your services may also be
+                  terminated for breach of employment terms, unsatisfactory
+                  performance, or if continued employment is deemed not in the
+                  Company's interest.
+                </p>
+              ),
+            },
+            {
+              title: "Documentary Evidence",
+              content: (
+                <p>
+                  Your date of birth as recorded by the Company on the basis of
+                  documentary evidence produced by you at the time of your
+                  appointment is considered as the authenticated date of birth
+                  for all purposes throughout your service with the Company and
+                  will not be changed under any circumstances.
+                </p>
+              ),
+            },
+            {
+              title: "Confidentiality",
+              content: (
+                <p>
+                  During your contract, you may access confidential business
+                  information. You must maintain strict confidentiality and not
+                  disclose any such information without Company authorization,
+                  both during your contract and for five years after. Any breach
+                  of this obligation, during or after employment, may result in
+                  the Company taking appropriate action to protect its
+                  interests.
+                </p>
+              ),
+            }
+          );
+          return clauses.map((clause, idx) => (
+            <div
+              key={clause.title}
+              style={{ marginBottom: "1rem", fontSize: "0.8rem" }}
             >
-              Air Passage
-            </h3>
-            <p>
-              {formData.airPassage ||
-                "While going on sanctioned leave, to and fro air ticket on a direct flight from Oman to the nearest international airport to your hometown, once on completion of 18 months."}
-            </p>
-            <br />
-            <p>
-              <b>Sector of Travel : </b>MUSCAT - (Nearest Hometown International
-              Airport )
-            </p>
-            <p>
-              <b>Class of Travel : </b>Economy Class by any Airline
-            </p>
-          </div>
-        )}
-        {visaS && (
-          <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
-            <h3
-              style={{
-                fontWeight: "600",
-                marginBottom: "0.5rem",
-                fontSize: "0.9rem",
-              }}
-            >
-              Visa Status
-            </h3>
-            <p>
-              {formData.visaStatus ||
-                "Work VISA shall be provided by the Company. Employee agrees that he shall not join any competing business until the end of the Contract Project"}
-            </p>
-          </div>
-        )}
-
-        <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
-          <h3
-            style={{
-              fontWeight: "600",
-              marginBottom: "0.5rem",
-              fontSize: "0.9rem",
-            }}
-          >
-            Medical
-          </h3>
-          <p>
-            During the service period the company will bear all medical expenses
-            for self - excluding dependents, dental, optical, gynecology and
-            congenital.
-          </p>
-        </div>
-
-        <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
-          <h3
-            style={{
-              fontWeight: "600",
-              marginBottom: "0.5rem",
-              fontSize: "0.9rem",
-            }}
-          >
-            Increment Terms
-          </h3>
-          <p>
-            Based on the performance of the individual and the company, at the
-            discretion of management.
-          </p>
-        </div>
-
-        <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
-          <h3
-            style={{
-              fontWeight: "600",
-              marginBottom: "0.5rem",
-              fontSize: "0.9rem",
-            }}
-          >
-            Working Hours
-          </h3>
-          <p>
-            {formData.workingHours ||
-              "As laid down by the company from time to time. Your post being a senior level executive in nature you are not eligible for any overtime; though you shall be available during 24 hours of the day on call basis."}
-          </p>
-        </div>
-
-        <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
-          <h3
-            style={{
-              fontWeight: "600",
-              marginBottom: "0.5rem",
-              fontSize: "0.9rem",
-            }}
-          >
-            Medical Fitness
-          </h3>
-          <p>
-            Your employment with us shall be subject to your medical fitness,
-            which will be ascertained after a medical examination by the
-            Ministry of Health, Sultanate of Oman, as soon as you arrive and
-            periodically thereafter, on being found medically unfit, your
-            services are liable to be terminated.
-          </p>
-        </div>
-
-        <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
-          <h3
-            style={{
-              fontWeight: "600",
-              marginBottom: "0.5rem",
-              fontSize: "0.9rem",
-            }}
-          >
-            Code of Conduct
-          </h3>
-          <p>
-            The Company maintains a strict non-alcoholic environment. Unlawful
-            possession of or being under the influence of alcohol or any
-            mind-altering substances will result in immediate termination
-            without prior notice. You are expected to act professionally,
-            ethically, and in a manner that upholds the Company's image and
-            welfare. Any misconduct or inappropriate behavior will be formally
-            communicated in writing, and you will be given a chance to respond.
-            However, the Company reserves the right to terminate employment
-            without notice or pay if misconduct is confirmed. Your services may
-            also be terminated for breach of employment terms, unsatisfactory
-            performance, or if continued employment is deemed not in the
-            Company's interest.
-          </p>
-        </div>
-
-        <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
-          <h3
-            style={{
-              fontWeight: "600",
-              marginBottom: "0.5rem",
-              fontSize: "0.9rem",
-            }}
-          >
-            Documentary Evidence
-          </h3>
-          <p>
-            Your date of birth as recorded by the Company on the basis of
-            documentary evidence produced by you at the time of your appointment
-            is considered as the authenticated date of birth for all purposes
-            throughout your service with the Company and will not be changed
-            under any circumstances.
-          </p>
-        </div>
-
-        <div style={{ marginBottom: "1rem", fontSize: "0.8rem" }}>
-          <h3
-            style={{
-              fontWeight: "600",
-              marginBottom: "0.5rem",
-              fontSize: "0.9rem",
-            }}
-          >
-            Confidentiality
-          </h3>
-          <p>
-            During your contract, you may access confidential business
-            information. You must maintain strict confidentiality and not
-            disclose any such information without Company authorization, both
-            during your contract and for five years after. Any breach of this
-            obligation, during or after employment, may result in the Company
-            taking appropriate action to protect its interests.
-          </p>
-        </div>
+              <h3
+                style={{
+                  fontWeight: "600",
+                  marginBottom: "0.5rem",
+                  fontSize: "0.9rem",
+                }}
+              >
+                ({idx + 1}) {clause.title}
+              </h3>
+              {clause.content}
+            </div>
+          ));
+        })()}
       </div>
 
       {/* Page break for preview */}
