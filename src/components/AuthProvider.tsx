@@ -98,7 +98,8 @@ const AuthProvider = ({ children }: Props) => {
   const [userData, setUserData] = useState<FirestoreUserData | null>(
     initialState.userData
   );
-  const [cachedAuthState] = useState(false);
+  // Track if we are using cached auth state (offline mode)
+  const [cachedAuthState, setCachedAuthState] = useState(initialState.isValid);
 
   const cacheUserData = (data: FirestoreUserData) => {
     try {
@@ -257,12 +258,30 @@ const AuthProvider = ({ children }: Props) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
+        // If we have valid cached data, use it for offline mode
+        const cachedAuth = localStorage.getItem(CACHED_AUTH_KEY);
+        const cachedUser = cachedAuth ? JSON.parse(cachedAuth) : null;
+        const cachedData = getCachedUserData();
+        if (
+          cachedUser?.email &&
+          cachedData?.email &&
+          cachedUser.email === cachedData.email
+        ) {
+          setUser(cachedUser);
+          setUserData(cachedData);
+          setCachedAuthState(true);
+          setLoading(false);
+          setInitialized(true);
+          return;
+        }
+        // No valid cache, clear state
         if (user || userData) {
           setUser(null);
           setUserData(null);
           localStorage.removeItem(CACHED_USER_KEY);
           localStorage.removeItem(CACHED_AUTH_KEY);
         }
+        setCachedAuthState(false);
         setLoading(false);
         setInitialized(true);
         return;
@@ -287,9 +306,11 @@ const AuthProvider = ({ children }: Props) => {
               setUserData(null);
               localStorage.removeItem(CACHED_USER_KEY);
               localStorage.removeItem(CACHED_AUTH_KEY);
+              setCachedAuthState(false);
             } else {
               setUser(currentUser);
               setUserData(userData);
+              setCachedAuthState(false);
             }
           }
         } catch (error) {
@@ -301,6 +322,7 @@ const AuthProvider = ({ children }: Props) => {
         // Use cached data immediately
         setUser(currentUser);
         setUserData(cachedData);
+        setCachedAuthState(false);
         setLoading(false);
       }
       setInitialized(true);

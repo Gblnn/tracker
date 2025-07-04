@@ -39,8 +39,7 @@ emailjs.init("c8AePKR5BCK8UIn_E");
 export default function App() {
   return (
     <>
-      <div style={{ height: "" }}></div>
-      <div style={{ display: "flex", paddingLeft: "1.5rem" }}></div>
+      <AuthGuard>
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Login />} />
@@ -85,6 +84,7 @@ export default function App() {
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>
+      </AuthGuard>
     </>
   );
 }

@@ -51,7 +51,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   // Handle login page (/) access
   if (location.pathname === "/") {
     // If authenticated, redirect to index
-    if (user && userData) {
+    if ((user && userData) || cachedAuthState) {
       return <Navigate to="/index" replace />;
     }
     // If not authenticated, show login page
@@ -59,11 +59,14 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   // For all other routes, require authentication
-  if (!user || !userData) {
+  // Allow access if we have valid cached auth state (offline mode)
+  if ((!user || !userData) && !cachedAuthState) {
     // Save the attempted path to redirect back after login
     const returnPath = location.pathname !== "/" ? location.pathname : "/index";
     return <Navigate to="/" replace state={{ returnPath }} />;
   }
+  // If we have cachedAuthState (offline mode), treat as authenticated
+  // (userData will be set from cache)
 
   // If all checks pass, render the protected route
   return <>{children}</>;

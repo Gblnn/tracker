@@ -12,13 +12,12 @@ import { motion } from "framer-motion";
 import {
   Bug,
   FileArchive,
-  FileText,
   KeyRound,
   Link,
   Mail,
   QrCode,
   SquareUser,
-  UserCheck,
+  UserCheck
 } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
@@ -228,12 +227,12 @@ export default function Index() {
                 icon={<UserCheck width={"1.25rem"} color="salmon" />}
               />
 
-              <Directive
+              {/* <Directive
                 onClick={() => usenavigate("/agreements")}
                 to={"/agreements"}
                 title={"Agreements"}
                 icon={<FileText width={"1.25rem"} color="mediumslateblue" />}
-              />
+              /> */}
 
               {/* <Directive
                 title={"Vehicles"}
