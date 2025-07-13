@@ -28,22 +28,51 @@ export default function Index() {
   const [saving, setSaving] = useState(false);
   const { userData } = useAuth();
 
+  const LINKS_CACHE_KEY = "quick_links_cache";
+
+  // Load cached links from localStorage (robust, always set array)
+  useEffect(() => {
+    let loadedFromCache = false;
+    try {
+      const cached = localStorage.getItem(LINKS_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setLinks(parsed);
+          loadedFromCache = true;
+        }
+      }
+    } catch (e) {
+      // fallback: clear bad cache
+      localStorage.removeItem(LINKS_CACHE_KEY);
+    }
+    // If no cache, set empty array to avoid undefined state
+    if (!loadedFromCache) setLinks([]);
+    // Always fetch in background
+    fetchLinks();
+    // eslint-disable-next-line
+  }, []);
+
+  // Fetch links from Firestore and update cache
   const fetchLinks = async () => {
     setLoading(true);
     try {
       const snapshot = await getDocs(collection(db, "quick-links"));
       const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setLinks(data);
+      // Write to localStorage robustly
+      try {
+        localStorage.setItem(LINKS_CACHE_KEY, JSON.stringify(data));
+      } catch (e) {
+        // If quota exceeded or other error, clear cache
+        localStorage.removeItem(LINKS_CACHE_KEY);
+      }
     } catch (err) {
       message.error("Failed to fetch links");
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchLinks();
-  }, []);
 
   const handleAddLink = async () => {
     if (!newLink.title.trim() || !newLink.url.trim()) {
@@ -60,7 +89,7 @@ export default function Index() {
       message.success("Link added");
       setAddModalOpen(false);
       setNewLink({ title: "", url: "" });
-      fetchLinks();
+      await fetchLinks();
     } catch (err) {
       message.error("Failed to add link");
     } finally {
@@ -87,7 +116,7 @@ export default function Index() {
       message.success("Link updated");
       setEditModalOpen(false);
       setEditLink(null);
-      fetchLinks();
+      await fetchLinks();
     } catch (err) {
       message.error("Failed to update link");
     } finally {
@@ -101,7 +130,7 @@ export default function Index() {
       await deleteDoc(doc(db, "quick-links", id));
       message.success("Link deleted");
       setDeleteId(null);
-      fetchLinks();
+      await fetchLinks();
     } catch (err) {
       message.error("Failed to delete link");
     } finally {
@@ -125,6 +154,7 @@ export default function Index() {
             <Back
               noback={userData ? false : true}
               title="Quick Links"
+              subtitle={links.length}
               icon={
                 <div style={{}}>
                   {!userData && (
@@ -153,7 +183,7 @@ export default function Index() {
 
           <br />
           <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
-            {loading ? (
+            {links.length==0&&loading ? (
               <div
                 style={{
                   position: "absolute",

@@ -94,6 +94,16 @@ export default function DefaultDialog(props: Props) {
             backgroundSize: "contain",
             backgroundPosition: "center",
             border: "none",
+            maxWidth: "480px", // Prevent stretching
+            width: "95vw", // Responsive for mobile
+            minWidth: "320px",
+            boxSizing: "border-box",
+            overflow: "hidden",
+            ...(
+              props.dialogHeight
+                ? { height: props.dialogHeight, maxHeight: "90vh" }
+                : { maxHeight: "90vh" }
+            ),
           }}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
@@ -342,6 +352,7 @@ export default function DefaultDialog(props: Props) {
                     width: "100%",
                     display: "flex",
                     gap: "0.5rem",
+                    minWidth: 0,
                   }}
                 >
                   <div
@@ -359,6 +370,8 @@ export default function DefaultDialog(props: Props) {
                       justifyContent: "center",
                       cursor: "pointer",
                       overflow: "hidden",
+                      minWidth: 0,
+                      maxWidth: "100%",
                     }}
                   >
                     {props.tag1Alert ? (
@@ -380,7 +393,7 @@ export default function DefaultDialog(props: Props) {
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
-                          maxWidth: "150px",
+                          maxWidth: "100%",
                         }}
                       >
                         {props.tag1Text}
@@ -389,7 +402,6 @@ export default function DefaultDialog(props: Props) {
                       "No Data"
                     )}
                   </div>
-
                   <div
                     style={{
                       background: "rgba(150 150 150/ 15%)",
@@ -403,8 +415,11 @@ export default function DefaultDialog(props: Props) {
                       flex: 1,
                       justifyContent: "center",
                       cursor: "pointer",
+                      minWidth: 0,
+                      maxWidth: "100%",
                     }}
                   >
+                  
                     <p style={{ opacity: 0.5 }}>Joined </p>
                     <b>{props.tag2Text}</b>
                   </div>
