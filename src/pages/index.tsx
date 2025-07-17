@@ -222,7 +222,12 @@ export default function Index() {
               />
 
               <Directive
-                onClick={() => usenavigate("/new-hire")}
+              onClick={() =>
+                  userData?.role == "hr" || "admin"
+                    ? usenavigate("/new-hire")
+                    : toast.error("No Clearance to Access")
+                }
+              
                 to={"/new-hire"}
                 title={"New Hire"}
                 icon={<UserCheck width={"1.25rem"} color="salmon" />}
