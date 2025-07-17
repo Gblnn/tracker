@@ -130,7 +130,7 @@ type Preset = {
 
 export default function OfferLetters() {
   //   const usenavigate = useNavigate();
-
+const [searchTerm, setSearchTerm] = useState("");
   const [bugDialog, setBugDialog] = useState(false);
   const [issue, setIssue] = useState("");
   const [loading, setLoading] = useState(false);
@@ -2952,164 +2952,178 @@ export default function OfferLetters() {
 
         {/* Offer Letters Drawer */}
         <Drawer
-          title="Offer Letters"
-          placement="right"
-          onClose={() => setOfferLettersDrawerVisible(false)}
-          open={offerLettersDrawerVisible}
-          width={window.innerWidth <= 768 ? "100%" : 500}
-        >
-          {
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
+      title="Offer Letters"
+      placement="right"
+      onClose={() => setOfferLettersDrawerVisible(false)}
+      open={offerLettersDrawerVisible}
+      width={window.innerWidth <= 768 ? "100%" : 500}
+    >
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        style={{
+          display: "flex",
+          color: "black",
+          fontSize: "0.8rem",
+          gap: "0.5rem",
+          justifyContent: "center",
+          alignItems: "center",
+          marginBottom: "1rem",
+          height: "1rem",
+        }}
+      >
+        {
+        offerLettersLoading ? (
+          <>
+            <LoaderCircle
+              width={"0.8rem"}
+              color="mediumslateblue"
+              className="animate-spin"
+            />
+            <p>Fetching</p>
+          </>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            style={{ display: "flex", alignItems: "center" }}
+          >
+            <Dot color="mediumslateblue" />
+            {"Fetched " + offerLetters.length + " "}
+            {offerLetters.length > 1 ? "Items" : "Item"}
+          </motion.div>
+        )}
+      </motion.div>
+
+      {offerLetters.length === 0 ? (
+        <div style={{ textAlign: "center", color: "#888" }}></div>
+      ) : (
+        <div style={{ maxHeight: "70vh", overflowY: "auto", paddingBottom: "4rem" }}>
+          {offerLetters
+          .filter((ol) =>
+    (ol.candidateName + " " + ol.position)
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  )
+          .map((ol:any) => (
+            <div
+              key={ol.id}
               style={{
-                display: "flex",
-                background: "",
-                color: "black",
-                fontSize: "0.8rem",
-                gap: "0.5rem",
-                justifyContent: "center",
-                alignItems: "center",
-                marginBottom: "1rem",
-                height: "1rem",
+                border: "1px solid #eee",
+                borderRadius: 8,
+                padding: 16,
+                marginBottom: 12,
+                background: "#fafbfc",
+                cursor: "pointer",
+                transition: "box-shadow 0.2s",
               }}
             >
-              {offerLettersLoading ? (
-                <>
-                  <LoaderCircle
-                    width={"0.8rem"}
-                    color="mediumslateblue"
-                    className="animate-spin"
-                  />
-                  <p>Fetching</p>
-                </>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <Dot color="mediumslateblue" />
-                  {"Fetched " + offerLetters.length + " "}
-                  {offerLetters.length > 1 ? "Items" : "Item"}
-                </motion.div>
-              )}
-            </motion.div>
-          }
-
-          {offerLetters.length === 0 ? (
-            <div style={{ textAlign: "center", color: "#888" }}></div>
-          ) : (
-            <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
-              {offerLetters.map((ol) => (
-                <div
-                  key={ol.id}
-                  style={{
-                    border: "1px solid #eee",
-                    borderRadius: 8,
-                    padding: 16,
-                    marginBottom: 12,
-                    background: "#fafbfc",
-                    cursor: "pointer",
-                    transition: "box-shadow 0.2s",
-                  }}
-                >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                }}
+              >
+                <div style={{ flex: 1 }} onClick={() => handleLetterClick(ol)}>
                   <div
                     style={{
+                      fontWeight: 500,
+                      fontSize: 14,
+                      color: "black",
+                      textTransform: "uppercase",
                       display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
+                      gap: "0.5rem",
+                      alignItems: "center",
                     }}
                   >
-                    <div
-                      style={{ flex: 1 }}
-                      onClick={() => handleLetterClick(ol)}
-                    >
-                      <div
-                        style={{
-                          fontWeight: 500,
-                          fontSize: 14,
-                          color: "black",
-                          textTransform: "uppercase",
-                          display: "flex",
-                          gap: "0.5rem",
-                          alignItems: "center",
-                          marginBottom: "",
-                        }}
-                      >
-                        {ol.candidateName || "[No Name]"}
-                      </div>
-                      <div
-                        style={{
-                          color: "royalblue",
-                          fontWeight: 500,
-                          fontSize: 11,
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        {ol.position || "[No Position]"}
-                        {/* <p
-                          style={{
-                            fontSize: "0.7rem",
-                            textTransform: "lowercase",
-                            color: "royalblue",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {ol.id}
-                        </p> */}
-                      </div>
+                    {ol.candidateName || "[No Name]"}
+                  </div>
+                  <div
+                    style={{
+                      color: "royalblue",
+                      fontWeight: 500,
+                      fontSize: 11,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {ol.position || "[No Position]"}
+                  </div>
 
-                      <div style={{ color: "#888", fontSize: 10 }}>
-                        {ol.generated_at && ol.generated_at.toDate
-                          ? "Last Modified : " +
-                            moment(ol.generated_at.toDate()).format(
-                              "DD MMM YYYY, h:mm A"
-                            )
-                          : ""}
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "0.5rem",
-                        marginLeft: "1rem",
-                      }}
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          Modal.confirm({
-                            title: "Delete Offer Letter",
-                            content:
-                              "Are you sure you want to delete this offer letter?",
-                            okText: "Yes",
-                            okType: "danger",
-                            cancelText: "No",
-                            onOk: () => handleDeleteLetter(ol.id),
-                          });
-                        }}
-                        style={{
-                          background: "rgba(150 150 150/ 10%)",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: "0.15rem 0.5rem",
-                          color: "indianred",
-                          fontSize: "0.7rem",
-                        }}
-                      >
-                        {deleting ? <LoadingOutlined /> : "Delete"}
-                      </button>
-                    </div>
+                  <div style={{ color: "#888", fontSize: 10 }}>
+                    {ol.generated_at && ol.generated_at.toDate
+                      ? "Last Modified : " +
+                        moment(ol.generated_at.toDate()).format(
+                          "DD MMM YYYY, h:mm A"
+                        )
+                      : ""}
                   </div>
                 </div>
-              ))}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "0.5rem",
+                    marginLeft: "1rem",
+                  }}
+                >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      Modal.confirm({
+                        title: "Delete Offer Letter",
+                        content:
+                          "Are you sure you want to delete this offer letter?",
+                        okText: "Yes",
+                        okType: "danger",
+                        cancelText: "No",
+                        onOk: () => handleDeleteLetter(ol.id),
+                      });
+                    }}
+                    style={{
+                      background: "rgba(150 150 150/ 10%)",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "0.15rem 0.5rem",
+                      color: "indianred",
+                      fontSize: "0.7rem",
+                    }}
+                  >
+                    {deleting ? <LoadingOutlined /> : "Delete"}
+                  </button>
+                </div>
+              </div>
             </div>
-          )}
-        </Drawer>
+          ))}
+
+          <div
+            style={{
+              position: "fixed",
+              bottom: 0,
+              width: "100%",
+              paddingRight: "1rem",
+              display: "flex",
+              alignItems: "center",
+              paddingBottom: "1rem",
+              background: "white",
+            }}
+          >
+            <input
+              style={{
+                background: "rgba(100 100 100/0.1)",
+                color: "black",
+                width: "49ch",
+                padding: "0.3rem 0.6rem",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
+              }}
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+      )}
+    </Drawer>
         {/* {loadedLetterId && (
           <button
             onClick={handleSaveChanges}

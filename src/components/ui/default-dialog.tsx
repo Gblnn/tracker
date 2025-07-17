@@ -89,21 +89,16 @@ export default function DefaultDialog(props: Props) {
       <Dialog open={props.open}>
         <DialogContent
           style={{
-            background: props.dialogBackground,
-            backgroundRepeat: "no-repeat",
-            backgroundSize: "contain",
-            backgroundPosition: "center",
-            border: "none",
-            maxWidth: "480px", // Prevent stretching
-            width: "95vw", // Responsive for mobile
-            minWidth: "320px",
-            boxSizing: "border-box",
-            overflow: "hidden",
-            ...(
-              props.dialogHeight
-                ? { height: props.dialogHeight, maxHeight: "90vh" }
-                : { maxHeight: "90vh" }
-            ),
+            
+           
+           
+            border: "",
+            maxWidth: "", // Prevent stretching
+            width: "", // Responsive for mobile
+            minWidth: "",
+          
+           
+           
           }}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
@@ -158,7 +153,7 @@ export default function DefaultDialog(props: Props) {
                         <p
                           style={{
                             border: "",
-                            maxWidth: "150px",
+                            // maxWidth: "150px",
                             textOverflow: "ellipsis",
                             textAlign: "left",
                             overflow: "hidden",
@@ -462,7 +457,8 @@ export default function DefaultDialog(props: Props) {
               </p>
             ) : null}
 
-            {props.extra && (
+            {
+            props.extra && (
               <div
                 style={{
                   width: "100%",
@@ -477,7 +473,8 @@ export default function DefaultDialog(props: Props) {
               >
                 {props.extra}
               </div>
-            )}
+            )
+            }
 
             {props.tags ? (
               <div

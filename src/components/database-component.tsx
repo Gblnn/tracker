@@ -2573,7 +2573,7 @@ export default function DbComponent(props: Props) {
             )
           }
 
-          <br />
+       
 
           {/* <Pagination style={{cursor:"pointer"}}>
                     <PaginationContent>
@@ -3312,10 +3312,10 @@ export default function DbComponent(props: Props) {
             <div
               style={{
                 border: "",
-                width: "100%",
+                width: "",
                 display: "flex",
                 flexFlow: "",
-                flexWrap: "wrap",
+              flexWrap:"wrap",
                 gap: "0.5rem",
                 paddingBottom: "",
                 paddingTop: "",
@@ -3324,12 +3324,14 @@ export default function DbComponent(props: Props) {
               <div
                 style={{
                   display: "flex",
-                  width: "100%",
+                  width: "",
+                  border: "",
                   gap: "0.5rem",
-                  justifyContent: "space-between",
+                  justifyContent: "",
                 }}
               >
                 <Directive
+                width={""}
                   noArrow
                   id_subtitle={civil_expiry ? civil_expiry : "No Data"}
                   onClick={() => access && setCivil(true)}
@@ -3347,6 +3349,7 @@ export default function DbComponent(props: Props) {
                 />
 
                 <Directive
+                width={""}
                   noArrow
                   id_subtitle={passportExpiry ? passportExpiry : "No Data"}
                   // tag={passportExpiry}
@@ -3367,14 +3370,17 @@ export default function DbComponent(props: Props) {
               <div
                 style={{
                   display: "flex",
-                  width: "100%",
+                  width: "",
+                  border:"",
                   gap: "0.5rem",
-                  justifyContent: "space-between",
+                  justifyContent: "",
+                  
                 }}
               >
                 {props.dbCategory == "vale" ||
                   (omni && (
                     <Directive
+                  
                       noArrow
                       id_subtitle={medical_due_on ? medical_due_on : "No Data"}
                       // tag={medical_due_on}
@@ -3395,6 +3401,7 @@ export default function DbComponent(props: Props) {
                 {!props.noTraining ||
                   (omni && (
                     <Directive
+                    width={""}
                       noArrow
                       id_subtitle={
                         moment(vt_hse_induction, "DD/MM/YYYY").diff(

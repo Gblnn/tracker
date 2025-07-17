@@ -1,4 +1,4 @@
-import { Info, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import InputDialog from "./input-dialog";
 
 interface Props{
@@ -40,7 +40,7 @@ export default function AddRecordDialog(props:Props){
     return(
         <InputDialog open={props.open} OkButtonIcon={<Plus width={"1rem"}/>} 
 
-            image={<input type="file" style={{fontSize:"0.8rem"}} onChange={props.onImageChange}/>}
+            // image={<input type="file" style={{fontSize:"0.8rem"}} onChange={props.onImageChange}/>}
             title={props.title} OkButtonText="Add" onCancel={props.onCancel} onOk={props.onOK}
 
             inputplaceholder="Enter Full Name" 
@@ -79,11 +79,11 @@ export default function AddRecordDialog(props:Props){
             
             disabled={props.disabled} updating={props.updating}  
                 
-            extra={
+            // extra={
 
 
-                <div style={{textAlign:"center", fontSize:"0.7rem", display:"flex", alignItems:"center", gap:"0.5rem", width:"100%", border:"", justifyContent:"center", padding:"0.25rem",background:"linear-gradient(90deg, rgba(100 100 100/ 0%), rgba(100 100 100/ 20%),rgba(100 100 100/ 20%), rgba(100 100 100/ 0%))"}}><Info width={"1rem"} color="violet"/><p style={{opacity:"0.75"}}>We require email to notify the document owner</p></div>
-                }
+            //     <div style={{textAlign:"center", fontSize:"0.7rem", display:"flex", alignItems:"center", gap:"0.5rem", width:"100%", border:"", justifyContent:"center", padding:"0.25rem",background:"linear-gradient(90deg, rgba(100 100 100/ 0%), rgba(100 100 100/ 20%),rgba(100 100 100/ 20%), rgba(100 100 100/ 0%))"}}><Info width={"1rem"} color="violet"/><p style={{opacity:"0.75"}}>We require email to notify the document owner</p></div>
+            //     }
             />
     )
 }

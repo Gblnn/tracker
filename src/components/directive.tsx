@@ -81,20 +81,21 @@ export default function Directive(props: Props) {
       className={props.className}
       style={{
         display: "flex",
+        border:"",
         opacity: props.archived ? 0.5 : 1,
         height: props.height ? props.height : "",
-        width: props.width ? props.width : "100%",
+        width: props.width ? props.width : "",
       }}
     >
       <button
         onClick={(e) => e.preventDefault()} // Prevent double firing
-        className="directive-button"
+        className=""
         style={{
-          padding: "0.75rem",
-
-          gap: "0.5rem",
-          width: "100%",
           display: "flex",
+          padding: "0.75rem",
+          flex:1,
+          width:"14ch",
+          gap: "0.5rem",
           justifyContent: "space-between",
           alignItems: "center",
           background: "rgba(100 100 100/ 0.1)",
