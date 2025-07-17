@@ -39,7 +39,7 @@ export default function Back(props: Props) {
       <div style={{ display: "flex" }}>
         {props.noback ? null : (
           <motion.button
-            whileTap={{ scale: 0.7 }}
+            whileTap={{ scale: 0.85}}
             onClick={() => {
               usenavigate(-1);
             }}

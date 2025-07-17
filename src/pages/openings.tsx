@@ -480,7 +480,7 @@ export default function Openings() {
                             href={app.cvLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ display: "flex", alignItems: "center" }}
+                            style={{ display: "flex", alignItems: "center", gap:"0.5rem" }}
                           >
                             <File width={"1rem"} />
                             View CV

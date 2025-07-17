@@ -78,17 +78,20 @@ export default function Directive(props: Props) {
         display: "flex",
         opacity: props.archived ? 0.5 : 1,
         height: props.height ? props.height : "",
-        width: props.width ? props.width : "100%",
+        width: props.width ? props.width : "",
+        flex:1,
+        border:""
       }}
     >
-      <motion.button
+      
+      <motion.div
         whileTap={{ scale: 0.99 }}
         onClick={(e) => e.preventDefault()} // Prevent double firing
         className="directive-button"
         style={{
           padding: "0.75rem",
           gap: "0.5rem",
-          width: "100%",
+          flex:1,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -299,7 +302,7 @@ export default function Directive(props: Props) {
             </motion.div>
           )}
         </div>
-      </motion.button>
+      </motion.div>
     </Link>
   );
 }

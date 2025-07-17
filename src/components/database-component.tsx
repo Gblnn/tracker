@@ -103,6 +103,7 @@ import LazyLoader from "./lazy-loader";
 import RefreshButton from "./refresh-button";
 import SheetComponent from "./sheet-component";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select";
+import { toast } from "sonner";
 
 type Record = {
   id: string;
@@ -372,10 +373,10 @@ export default function DbComponent(props: Props) {
     if (status === "online") {
       fetchData();
     } else if (status === "offline") {
-      message.warning({
-        content: "You are offline. Some features may be limited.",
-        key: "offline-warning",
-      });
+      toast.warning(
+         "You are offline. Some features may be limited."
+        
+      );
     }
   }, [status]);
 
@@ -413,7 +414,7 @@ export default function DbComponent(props: Props) {
   // File upload handling
   const uploadFile = async () => {
     if (imageUpload === null) {
-      message.info("No image attached");
+      // message.info("No image attached");
       return;
     }
     const imageRef = storageRef(storage, fileName);
@@ -430,7 +431,7 @@ export default function DbComponent(props: Props) {
       imgUrl = url;
       setFileName("");
     } catch (error: any) {
-      message.error(error.message);
+      toast.error(error.message);
       console.log(error.message);
     }
   };
@@ -510,11 +511,9 @@ export default function DbComponent(props: Props) {
 
       // Show offline warning if needed
       if (!navigator.onLine) {
-        message.warning({
-          content: "You are offline. Showing cached data.",
-          duration: 0,
-          key: "offline-warning",
-        });
+        toast.warning(
+          "You are offline. Showing cached data.",
+      );
       } else {
         message.destroy("offline-warning");
       }
@@ -523,7 +522,7 @@ export default function DbComponent(props: Props) {
     } catch (error: any) {
       console.error("Error fetching initial data:", error);
       setStatus("error");
-      message.error(`Error fetching data: ${error.message}`);
+      toast.error(`Error fetching data: ${error.message}`);
     } finally {
       setfetchingData(false);
     }
@@ -602,16 +601,14 @@ export default function DbComponent(props: Props) {
     } catch (error: any) {
       console.error("Error fetching data:", error);
       if (!navigator.onLine) {
-        message.warning({
-          content: "You are offline. Showing cached data.",
-          duration: 0,
-          key: "offline-warning",
-        });
+        toast.warning(
+          "You are offline. Showing cached data."
+        
+        );
       } else {
-        message.error({
-          content: `Error fetching data: ${error.message}`,
-          duration: 3,
-        });
+        toast.error(
+        `Error fetching data: ${error.message}`,
+          );
       }
       setStatus(navigator.onLine ? "error" : "offline");
     } finally {
@@ -824,7 +821,7 @@ export default function DbComponent(props: Props) {
       exportDatabase(allRecords, props.dbCategory);
     } catch (err: any) {
       console.error("Error exporting database:", err);
-      message.error("Failed to export database");
+      toast.error("Failed to export database");
       setLoading(false);
     }
   };
@@ -1061,7 +1058,7 @@ export default function DbComponent(props: Props) {
       setNewCivilExpiry("");
       setNewCivilNumber("");
       setLoading(false);
-      message.info("ID generation failed " + String(error));
+      toast.info("ID generation failed " + String(error));
     }
   };
 
@@ -1111,7 +1108,7 @@ export default function DbComponent(props: Props) {
     } catch (error) {
       console.log(error);
       setLoading(false);
-      message.info(String(error));
+      toast.info(String(error));
     }
   };
 
@@ -1142,7 +1139,7 @@ export default function DbComponent(props: Props) {
       setNewCivilExpiry("");
       setNewCivilNumber("");
       setLoading(false);
-      message.info("ID generation failed " + String(error));
+      toast.info("ID generation failed " + String(error));
     }
   };
 
@@ -1218,7 +1215,7 @@ export default function DbComponent(props: Props) {
     } catch (error) {
       console.log(error);
       setLoading(false);
-      message.info(String(error));
+      toast.info(String(error));
     }
   };
 
@@ -1244,7 +1241,7 @@ export default function DbComponent(props: Props) {
       fetchData();
       setModifiedOn(new Date());
     } catch (error) {
-      message.error(String(error));
+      toast.error(String(error));
       setLoading(false);
     }
   };
@@ -1267,7 +1264,7 @@ export default function DbComponent(props: Props) {
       setCompletedOn("");
       setDueOn("");
       setLoading(false);
-      message.info("ID generation failed " + String(error));
+      toast.info("ID generation failed " + String(error));
     }
   };
 
@@ -1292,7 +1289,7 @@ export default function DbComponent(props: Props) {
       fetchData();
       setModifiedOn(new Date());
     } catch (error) {
-      message.error(String(error));
+      toast.error(String(error));
     }
   };
 
@@ -1358,7 +1355,7 @@ export default function DbComponent(props: Props) {
       fetchData();
       setModifiedOn(new Date());
     } catch (error) {
-      message.error(String(error));
+      toast.error(String(error));
       setLoading(false);
     }
   };
@@ -1384,7 +1381,7 @@ export default function DbComponent(props: Props) {
       fetchData();
       setModifiedOn(new Date());
     } catch (error) {
-      message.error(String(error));
+      toast.error(String(error));
       setLoading(false);
     }
   };
@@ -1406,7 +1403,7 @@ export default function DbComponent(props: Props) {
       fetchData();
       setModifiedOn(new Date());
     } catch (error) {
-      message.error(String(error));
+      toast.error(String(error));
       setLoading(false);
     }
   };
@@ -1503,7 +1500,7 @@ export default function DbComponent(props: Props) {
       );
     } catch (error) {
       setLoading(false);
-      message.info(String(error));
+      toast.info(String(error));
     }
   };
 
@@ -1513,8 +1510,8 @@ export default function DbComponent(props: Props) {
     setNotify(!notify);
     setNotifyLoading(false);
     notify == true
-      ? message.info("Notifications Disabled")
-      : message.success("Notifications Enabled");
+      ? toast.info("Notifications Disabled")
+      : toast.success("Notifications Enabled");
   };
 
   const addTraining = async (type: any) => {
@@ -1711,7 +1708,7 @@ export default function DbComponent(props: Props) {
           setDuplicateRecords(duplicates);
         } catch (error) {
           console.error(error);
-          message.error("Error reading file");
+          toast.error("Error reading file");
         }
       };
       reader.readAsArrayBuffer(file);
@@ -1800,15 +1797,15 @@ export default function DbComponent(props: Props) {
 
       await Promise.all(batches.map((batch) => batch.commit()));
 
-      message.success(`Imported ${successCount} records successfully`);
+      toast.success(`Imported ${successCount} records successfully`);
       if (errorCount > 0) {
-        message.warning(`Failed to import ${errorCount} records`);
+        toast.warning(`Failed to import ${errorCount} records`);
       }
 
       window.location.reload();
     } catch (error) {
       console.error("Import error:", error);
-      message.error("Failed to import records");
+      toast.error("Failed to import records");
     } finally {
       setLoading(false);
       setImportDialog(false);
@@ -1827,8 +1824,8 @@ export default function DbComponent(props: Props) {
     setOmniLoad(false);
     setOmni(!omni);
     !omni
-      ? message.success("Omniscience Enabled")
-      : message.info("Omniscience Disabled");
+      ? toast.success("Omniscience Enabled")
+      : toast.info("Omniscience Disabled");
   };
 
   // Add effect to handle sort changes
@@ -1932,7 +1929,7 @@ export default function DbComponent(props: Props) {
       window.location.reload();
     } catch (error) {
       console.error("Error exporting expiring records:", error);
-      message.error("Failed to export expiring records");
+      toast.error("Failed to export expiring records");
     } finally {
       setExportLoading(false);
     }
@@ -3051,7 +3048,7 @@ export default function DbComponent(props: Props) {
           onTitleClick={() =>
             props.dbCategory == "personal"
               ? access && ToggleOmniscience()
-              : message.info("Omniscience retrace on parent record")
+              : toast.info("Omniscience retrace on parent record")
           }
           contact={contact}
           renumeration={
@@ -3221,7 +3218,7 @@ export default function DbComponent(props: Props) {
             setEmail("");
           }}
           bigDate={() =>
-            message.info(
+            toast.info(
               "Last Modified : " + String(moment(modified_on).format("LLL"))
             )
           }
@@ -3325,13 +3322,16 @@ export default function DbComponent(props: Props) {
                 style={{
                   display: "flex",
                   width: "",
-                  border: "",
+                  flex:1,
+                  border: "solid",
                   gap: "0.5rem",
+                  flexFlow:"column",
+                  alignItems: "center",
                   justifyContent: "",
                 }}
               >
                 <Directive
-                width={"15ch"}
+                
                   noArrow
                   id_subtitle={civil_expiry ? civil_expiry : "No Data"}
                   onClick={() => access && setCivil(true)}
@@ -3349,7 +3349,7 @@ export default function DbComponent(props: Props) {
                 />
 
                 <Directive
-                width={"15ch"}
+                
                   noArrow
                   id_subtitle={passportExpiry ? passportExpiry : "No Data"}
                   // tag={passportExpiry}

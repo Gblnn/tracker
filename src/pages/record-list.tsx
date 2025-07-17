@@ -5,11 +5,11 @@ import InputDialog from "@/components/input-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { LoadingOutlined } from "@ant-design/icons";
-import { message } from "antd";
 import { motion } from "framer-motion";
 import { HistoryIcon, Inbox, KeyRound, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function RecordList() {
   const [requestDialog, setRequestDialog] = useState(false);
@@ -29,7 +29,7 @@ export default function RecordList() {
     }
     // Show error message if redirected due to lack of clearance
     if (location.state?.error) {
-      message.error(location.state.error);
+      toast.error(location.state.error);
       // Clear the error from location state
       navigate(location.pathname, { replace: true });
     }
@@ -37,7 +37,7 @@ export default function RecordList() {
 
   const handleLoginPrompt = async (type: "ssu" | "vale") => {
     if (!userData) {
-      message.error("Authentication required");
+      toast.error("Authentication required");
       navigate("/");
       return;
     }
@@ -52,7 +52,7 @@ export default function RecordList() {
           await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay for loading state
           navigate("/records");
         } else {
-          message.error("No clearance to access SSU records");
+          toast.error("No clearance to access SSU records");
         }
       } else {
         setValeLoading(true);
@@ -60,12 +60,12 @@ export default function RecordList() {
           await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay for loading state
           navigate("/vale-records");
         } else {
-          message.error("No clearance to access Vale records");
+          toast.error("No clearance to access Vale records");
         }
       }
     } catch (error) {
       console.error("Navigation error:", error);
-      message.error("Failed to navigate");
+      toast.error("Failed to navigate");
     } finally {
       if (type === "ssu") {
         setSSULoading(false);
@@ -89,7 +89,7 @@ export default function RecordList() {
       navigate("/", { replace: true }); // Use replace to prevent back navigation
     } catch (error) {
       console.error("Logout error:", error);
-      message.error("Failed to logout");
+      toast.error("Failed to logout");
       setLogoutPrompt(false); // Make sure dialog is closed even on error
     }
   };

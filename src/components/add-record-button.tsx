@@ -16,7 +16,7 @@ export default function AddRecordButton(props:Props){
     return(
         <>
         <motion.button
-            whileTap={{ scale: 0.7 }} 
+            whileTap={{ scale: 0.8 }} 
         style={{position:"fixed", bottom:0, right:0, marginRight:"2.5rem",marginBottom:"2.5rem", gap:"0.5rem", paddingRight:"0.5rem", paddingLeft:"0.5rem",padding:"0.75rem", flex:1, background:props.style}} onClick={props.onClickSwap?props.alternateOnClick:props.onClick}>
             {props.icon}
             {

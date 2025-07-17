@@ -205,10 +205,11 @@ export default function Index() {
               <Directive
                 to={access ? "/record-list" : ""}
                 onClick={() =>
-                  userData?.role == "hr"
+                  userData?.role == "hr" || "admin"
                     ? usenavigate("/human-resources")
                     : toast.error("No Clearance to Access")
                 }
+                // protected={userData?.role == "hr" ? false:true}
                 title={"Human Resources"}
                 icon={<SquareUser color="royalblue" width={"1.25rem"} />}
               />
@@ -217,7 +218,7 @@ export default function Index() {
                 onClick={() => usenavigate("/quick-links")}
                 to={"/quick-links"}
                 title={"Quick Links"}
-                icon={<Link color="orange" width={"1.25rem"} />}
+                icon={<Link color="mediumslateblue" width={"1.25rem"} />}
               />
 
               <Directive

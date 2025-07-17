@@ -514,12 +514,12 @@ export default function Inbox() {
   // }
 
   return (
-    <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
+    <motion.div style={{padding:"1rem", background:
+            "linear-gradient(rgba(209 20 58/ 15%), rgba(100 100 100/ 0%)", height:"100svh"}} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
       <div
         style={{
-          padding: "1.25rem",
-          background:
-            "linear-gradient(rgba(209 20 58/ 15%), rgba(100 100 100/ 0%)",
+          padding: "",
+          
         }}
       >
         <Back
@@ -575,7 +575,7 @@ export default function Inbox() {
               <div
                 style={{
                   width: "100%",
-                  height: "80svh",
+                  height: "",
                   display: "flex",
                   justifyContent: "center",
                   alignItems: "center",

@@ -202,18 +202,22 @@ export default function Users() {
               alignItems: "center",
               justifyContent: "center",
               height: "75svh",
+              
             }}
           >
             <LoadingOutlined style={{ color: "dodgerblue", scale: "2" }} />
           </div>
         ) : (
           <div
+          className="record-list"
+          
             style={{
               display: "flex",
               flexFlow: "column",
               gap: "0.5rem",
               border: "",
               height: "82svh",
+              overflowY: "auto",
             }}
           >
             {users.map((user: any) => (
