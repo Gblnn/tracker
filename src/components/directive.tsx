@@ -1,9 +1,4 @@
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@radix-ui/react-tooltip";
+
 import { motion } from "framer-motion";
 import {
   Archive,
@@ -19,7 +14,7 @@ import {
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "./directive.css";
-import DropDown from "./dropdown";
+import DropDown from "@/components/dropdown";
 
 interface Props {
   title?: any;
@@ -81,21 +76,20 @@ export default function Directive(props: Props) {
       className={props.className}
       style={{
         display: "flex",
-        border:"",
         opacity: props.archived ? 0.5 : 1,
         height: props.height ? props.height : "",
-        width: props.width ? props.width : "",
+        width: props.width ? props.width : "100%",
       }}
     >
-      <button
+      <motion.button
+        whileTap={{ scale: 0.99 }}
         onClick={(e) => e.preventDefault()} // Prevent double firing
-        className=""
+        className="directive-button"
         style={{
-          display: "flex",
           padding: "0.75rem",
-          flex:1,
-          width:"14ch",
           gap: "0.5rem",
+          width: "100%",
+          display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           background: "rgba(100 100 100/ 0.1)",
@@ -204,29 +198,7 @@ export default function Directive(props: Props) {
                   </div>
                 </div>
 
-                {props.new && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Circle
-                          style={{ width: "0.5rem" }}
-                          color={props.dotColor}
-                          fill={props.dotColor}
-                        />
-                      </TooltipTrigger>
-                      <TooltipContent
-                        style={{
-                          background: "black",
-                          padding: "0.25rem 0.5rem",
-                          borderRadius: "0.5rem",
-                          border: "1px solid rgba(100 100 100/ 50%)",
-                        }}
-                      >
-                        {props.dotColor === "violet" ? "Omni" : "New"}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
+                
               </span>
             )}
 
@@ -327,7 +299,7 @@ export default function Directive(props: Props) {
             </motion.div>
           )}
         </div>
-      </button>
+      </motion.button>
     </Link>
   );
 }

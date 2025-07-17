@@ -3,7 +3,9 @@ import Back from "@/components/back";
 import Directive from "@/components/directive";
 import RefreshButton from "@/components/refresh-button";
 import { db } from "@/firebase";
-import { message, Modal } from "antd";
+import { Modal } from "antd";
+import { toast } from "sonner";
+
 import {
   addDoc,
   collection,
@@ -68,7 +70,7 @@ export default function Index() {
         localStorage.removeItem(LINKS_CACHE_KEY);
       }
     } catch (err) {
-      message.error("Failed to fetch links");
+      toast.error("Failed to fetch links");
     } finally {
       setLoading(false);
     }
@@ -76,7 +78,7 @@ export default function Index() {
 
   const handleAddLink = async () => {
     if (!newLink.title.trim() || !newLink.url.trim()) {
-      message.error("Please enter both title and link");
+      toast.error("Please enter both title and link");
       return;
     }
     setSaving(true);
@@ -86,12 +88,12 @@ export default function Index() {
         url: newLink.url,
         created_at: Timestamp.now(),
       });
-      message.success("Link added");
+      toast.success("Link added");
       setAddModalOpen(false);
       setNewLink({ title: "", url: "" });
       await fetchLinks();
     } catch (err) {
-      message.error("Failed to add link");
+      toast.error("Failed to add link");
     } finally {
       setSaving(false);
     }
@@ -104,7 +106,7 @@ export default function Index() {
 
   const handleUpdateLink = async () => {
     if (!editLink.title.trim() || !editLink.url.trim()) {
-      message.error("Please enter both title and link");
+      toast.error("Please enter both title and link");
       return;
     }
     setSaving(true);
@@ -113,12 +115,12 @@ export default function Index() {
         title: editLink.title,
         url: editLink.url,
       });
-      message.success("Link updated");
+      toast.success("Link updated");
       setEditModalOpen(false);
       setEditLink(null);
       await fetchLinks();
     } catch (err) {
-      message.error("Failed to update link");
+      toast.error("Failed to update link");
     } finally {
       setSaving(false);
     }
@@ -128,11 +130,11 @@ export default function Index() {
     setSaving(true);
     try {
       await deleteDoc(doc(db, "quick-links", id));
-      message.success("Link deleted");
+      toast.success("Link deleted");
       setDeleteId(null);
       await fetchLinks();
     } catch (err) {
-      message.error("Failed to delete link");
+      toast.error("Failed to delete link");
     } finally {
       setSaving(false);
     }
@@ -239,6 +241,7 @@ export default function Index() {
                     setDeleteId(link.id);
                   }}
                 />
+           
               ))
             )}
           </div>

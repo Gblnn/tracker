@@ -11,9 +11,11 @@
     "generate-pwa-assets": "pwa-assets-generator --preset minimal public/sohar_star_logo.png"
   },
   "dependencies": {
+    "@ashwamegh/react-link-preview": "^1.0.1",
     "@e965/xlsx": "^0.20.2-released.0",
     "@emailjs/browser": "^4.3.3",
     "@emailjs/nodejs": "^2.2.0",
+    "@microlink/react": "^5.5.23",
     "@netlify/functions": "^2.7.0",
     "@pusher/push-notifications-server": "^1.0.1",
     "@pusher/push-notifications-web": "^1.1.0",
@@ -55,14 +57,14 @@
     "react-dom": "^18.2.0",
     "react-lazy-load-image-component": "^1.6.2",
     "react-line-graph": "^1.0.6",
-  
     "react-router-dom": "^6.23.1",
     "react-time-ago": "^7.3.3",
     "recharts": "^2.12.7",
-    "sonner": "^1.4.41",
+    "sonner": "^1.7.4",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
     "tesseract.js": "^5.1.0",
+    "url": "^0.11.4",
     "use-keyboard-shortcut": "^1.1.6",
     "vaul": "^1.1.2"
   },

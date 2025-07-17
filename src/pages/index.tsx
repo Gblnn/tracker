@@ -7,7 +7,6 @@ import DefaultDialog from "@/components/ui/default-dialog";
 import { auth } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import emailjs from "@emailjs/browser";
-import { message } from "antd";
 import { motion } from "framer-motion";
 import {
   Bug,
@@ -22,6 +21,7 @@ import {
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function Index() {
   const usenavigate = useNavigate();
@@ -53,7 +53,7 @@ export default function Index() {
       message: issue,
     });
     setLoading(false);
-    message.success("Bug Report sent");
+    toast.success("Bug Report sent");
     setBugDialog(false);
   };
 
@@ -73,7 +73,7 @@ export default function Index() {
   }, [userData, navigate]);
 
   const Authenticate = () => {
-    access ? navigate("/record-list") : message.error("Clearance required");
+    access ? navigate("/record-list") : toast.error("Clearance required");
   };
 
   const handleLogout = async () => {
@@ -82,7 +82,7 @@ export default function Index() {
       await logOut();
     } catch (error) {
       console.error("Logout error:", error);
-      message.error("Failed to logout. Please try again.");
+      toast.error("Failed to logout. Please try again.");
     }
   };
 
@@ -207,7 +207,7 @@ export default function Index() {
                 onClick={() =>
                   userData?.role == "hr"
                     ? usenavigate("/human-resources")
-                    : message.error("No Clearance to Access")
+                    : toast.error("No Clearance to Access")
                 }
                 title={"Human Resources"}
                 icon={<SquareUser color="royalblue" width={"1.25rem"} />}

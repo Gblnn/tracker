@@ -3331,7 +3331,7 @@ export default function DbComponent(props: Props) {
                 }}
               >
                 <Directive
-                width={""}
+                width={"15ch"}
                   noArrow
                   id_subtitle={civil_expiry ? civil_expiry : "No Data"}
                   onClick={() => access && setCivil(true)}
@@ -3349,7 +3349,7 @@ export default function DbComponent(props: Props) {
                 />
 
                 <Directive
-                width={""}
+                width={"15ch"}
                   noArrow
                   id_subtitle={passportExpiry ? passportExpiry : "No Data"}
                   // tag={passportExpiry}
@@ -3380,7 +3380,7 @@ export default function DbComponent(props: Props) {
                 {props.dbCategory == "vale" ||
                   (omni && (
                     <Directive
-                  
+                      width={"15ch"}
                       noArrow
                       id_subtitle={medical_due_on ? medical_due_on : "No Data"}
                       // tag={medical_due_on}
@@ -3401,7 +3401,7 @@ export default function DbComponent(props: Props) {
                 {!props.noTraining ||
                   (omni && (
                     <Directive
-                    width={""}
+                    width={"15ch"}
                       noArrow
                       id_subtitle={
                         moment(vt_hse_induction, "DD/MM/YYYY").diff(

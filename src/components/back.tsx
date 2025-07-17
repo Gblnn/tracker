@@ -38,14 +38,15 @@ export default function Back(props: Props) {
     >
       <div style={{ display: "flex" }}>
         {props.noback ? null : (
-          <button
+          <motion.button
+            whileTap={{ scale: 0.7 }}
             onClick={() => {
               usenavigate(-1);
             }}
             style={{ backdropFilter: "blur(16px)" }}
           >
             <ChevronLeft />
-          </button>
+          </motion.button>
         )}
 
         <div
