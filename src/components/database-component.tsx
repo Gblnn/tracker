@@ -645,7 +645,7 @@ export default function DbComponent(props: Props) {
     const salaryQuery = query(
       collection(db, "salary-record"),
       orderBy("created_on", "desc"),
-      where("employeeCode", "==", employeeCode)
+      where("employeeID", "==", doc_id)
     );
     const snapshot = await getDocs(salaryQuery);
     const SalaryData: any = [];
@@ -662,7 +662,7 @@ export default function DbComponent(props: Props) {
     const allowanceQuery = query(
       collection(db, "allowance-record"),
       orderBy("created_on", "desc"),
-      where("employeeCode", "==", employeeCode)
+      where("employeeID", "==", doc_id)
     );
     const snapshot = await getDocs(allowanceQuery);
     const AllowanceData: any = [];
@@ -2535,9 +2535,8 @@ export default function DbComponent(props: Props) {
                                   height={"1.75rem"}
                                 />
                               ) : (
-                                <motion.div
-                                  initial={{ opacity: 0 }}
-                                  whileInView={{ opacity: 1 }}
+                                <div
+                                  
                                 >
                                   <LazyLoader
                                     gradient
@@ -2548,7 +2547,7 @@ export default function DbComponent(props: Props) {
                                     state={post.state}
                                     omni={post.type == "omni"}
                                   />
-                                </motion.div>
+                                </div>
                               )
                             }
                           />
@@ -2947,7 +2946,7 @@ export default function DbComponent(props: Props) {
           OkButtonText="Update"
           OkButtonIcon={<RefreshCcw width={"1rem"} />}
           open={remarksDialog}
-          onCancel={() => setRemarksDialog(false)}
+          onCancel={() => {setRemarksDialog(false);setRecordSummary(true)}}
           inputOnChange={(e: any) => setRemarks(e.target.value)}
           onOk={addRemark}
           updating={loading}
@@ -2971,7 +2970,7 @@ export default function DbComponent(props: Props) {
           titleIcon={<ScrollText color="dodgerblue" />}
           title={"Contract"}
           open={contractDialog}
-          onCancel={() => setContractDialog(false)}
+          onCancel={() => {setContractDialog(false);setRecordSummary(true)}}
           extra={
             <div
               style={{
@@ -3062,10 +3061,10 @@ export default function DbComponent(props: Props) {
               ? true
               : false
           }
-          remarksOnClick={() => access && setRemarksDialog(true)}
+          remarksOnClick={() => {access && setRemarksDialog(true);setRecordSummary(false)}}
           remarksValue={remarks}
           tag1Text={companyName}
-          tag1OnClick={() => setContractDialog(true)}
+          tag1OnClick={() => {setContractDialog(true);setRecordSummary(false)}}
           tag2Text={dateofJoin}
           tag3Text={
             <div
@@ -3166,7 +3165,7 @@ export default function DbComponent(props: Props) {
               </div>
             </div>
           }
-          tag3OnClick={handleSalaryDialogOpen}
+          tag3OnClick={()=>{handleSalaryDialogOpen();setRecordSummary(false)}}
           tag4OnClick={handleAllowanceDialogOpen}
           onBottomTagClick={handleLeaveDialogOpen}
           // bottomTagValue={leaves}
@@ -3291,7 +3290,7 @@ export default function DbComponent(props: Props) {
                     fetchAllowance();
                   }}
                   onEdit={() => {
-                    setUserEditPrompt(true);
+                    setUserEditPrompt(true);setRecordSummary(false);
                   }}
                   trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
                 />
@@ -3564,6 +3563,7 @@ export default function DbComponent(props: Props) {
         <AddRecordDialog
           open={userEditPrompt}
           onCancel={() => {
+            setRecordSummary(true);
             setUserEditPrompt(false);
             setEditedName("");
           }}
@@ -4700,7 +4700,7 @@ export default function DbComponent(props: Props) {
           title={"Initial Salary"}
           titleIcon={<CircleDollarSign />}
           open={salaryDialog}
-          onCancel={() => setSalaryDialog(false)}
+          onCancel={() => {setSalaryDialog(false);setRecordSummary(true)}}
           title_extra={
             <button
               onClick={fetchSalary}

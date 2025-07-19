@@ -896,7 +896,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 color: "",
               }}
             >
-              <FileText width="1rem" color="indigo" />
+              <FileText width="1rem" color="mediumslateblue" />
               <span>Presets</span>
               <div style={{ width: "7rem" }}></div>
             </div>
@@ -905,7 +905,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 onClick={() => setPresetDialogVisible(true)}
                 style={{
                   background: "rgba(100 100 100/ 10%)",
-                  color: "indigo",
+                  color: "mediumslateblue",
                   border: "none",
                   padding: "0.15rem 0.75rem",
                   borderRadius: "0.5rem",
@@ -2776,7 +2776,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     {saving ? (
                       <LoaderCircle className="animate-spin" />
                     ) : (
-                      <Save width={"1.25rem"} color="indigo" />
+                      <Save width={"1.25rem"} color="mediumslateblue" />
                     )}
                   </motion.button>
                 ) : (

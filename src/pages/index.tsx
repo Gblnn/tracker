@@ -200,7 +200,7 @@ export default function Index() {
                 to={access ? "/record-list" : ""}
                 onClick={Authenticate}
                 title={"Records Master"}
-                icon={<FileArchive color="crimson" width={"1.25rem"} />}
+                icon={<FileArchive color="violet" width={"1.25rem"} />}
               />
 
               <Directive
@@ -231,7 +231,7 @@ export default function Index() {
               
                 to={"/new-hire"}
                 title={"New Hire"}
-                icon={<UserCheck width={"1.25rem"} color="indigo" />}
+                icon={<UserCheck width={"1.25rem"} color="salmon" />}
               />
 
               {/* <Directive

@@ -86,7 +86,7 @@ export default function DefaultDialog(props: Props) {
 
   return (
     <>
-      <Dialog open={props.open}>
+      <Dialog open={props.open} onOpenChange={props.onCancel}>
         <DialogContent
           style={{
             border: "",
@@ -629,7 +629,7 @@ export default function DefaultDialog(props: Props) {
               {props.close ? (
                 <button
                   onClick={props.onCancel}
-                  style={{ width: "100%", fontSize: "0.9rem" }}
+                  style={{ width: "100%", fontSize: "0.9rem", display:props.back?"flex":"none" }}
                 >
                   {props.back ? (
                     <>

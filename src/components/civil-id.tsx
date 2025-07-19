@@ -17,7 +17,7 @@ export default function CivilID(props: Props) {
         style={{
           width: "32ch",
           height: "19ch",
-          background: "rgba(100 100 100/ 15%)",
+          background: "rgba(100 100 100/ 8%)",
           borderRadius: "0.75rem",
           zIndex: 0,
           userSelect: "none",
