@@ -77,9 +77,11 @@ export default function Directive(props: Props) {
       style={{
         display: "flex",
         opacity: props.archived ? 0.5 : 1,
-        height: props.height ? props.height : "",
-        width: props.width ? props.width : "",
-        flex:1,
+        
+        width: props.width || "auto",
+        minWidth: props.width || 0,
+        maxWidth: "100%",
+        flex: props.width ? "0 0 auto" : 1,
         border:""
       }}
     >
@@ -89,9 +91,13 @@ export default function Directive(props: Props) {
         onClick={(e) => e.preventDefault()} // Prevent double firing
         className="directive-button"
         style={{
+          height: props.height ? props.height : "",
           padding: "0.75rem",
           gap: "0.5rem",
-          flex:1,
+          flex: 1,
+          width: props.width || "100%",
+          minWidth: props.width || 0,
+          maxWidth: "100%",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",

@@ -62,7 +62,8 @@ export default function Index() {
       const hasAccess =
         userData.clearance === "Sohar Star United" ||
         userData.clearance === "Vale" ||
-        userData.clearance === "All";
+        userData.clearance === "All" 
+        
       setAccess(hasAccess);
       setAdmin(userData.role === "admin");
 
@@ -203,9 +204,9 @@ export default function Index() {
               />
 
               <Directive
-                to={access ? "/record-list" : ""}
+                
                 onClick={() =>
-                  userData?.role == "hr" || "admin"
+                  access
                     ? usenavigate("/human-resources")
                     : toast.error("No Clearance to Access")
                 }
@@ -223,7 +224,7 @@ export default function Index() {
 
               <Directive
               onClick={() =>
-                  userData?.role == "hr" || "admin"
+                  access || userData?.role === "hr"
                     ? usenavigate("/new-hire")
                     : toast.error("No Clearance to Access")
                 }

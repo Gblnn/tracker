@@ -2975,7 +2975,7 @@ export default function DbComponent(props: Props) {
                 border: "",
               }}
             >
-              <div
+              {/* <div
                 style={{
                   border: "",
                   height: "28ch",
@@ -3000,7 +3000,7 @@ export default function DbComponent(props: Props) {
                     No Preview
                   </p>
                 </div>
-              </div>
+              </div> */}
               {/* <p
                 style={{
                   textAlign: "center",
@@ -3308,36 +3308,33 @@ export default function DbComponent(props: Props) {
           extra={
             <div
               style={{
-                border: "",
-                width: "",
                 display: "flex",
-                flexFlow: "",
-              flexWrap:"wrap",
+                flexDirection: "column",
                 gap: "0.5rem",
-                paddingBottom: "",
-                paddingTop: "",
+                minWidth: 0,
+                width:"",
+                overflow: "hidden",
+                border:""
               }}
             >
               <div
                 style={{
                   display: "flex",
-                  width: "",
-                  flex:1,
-                  border: "solid",
                   gap: "0.5rem",
-                  flexFlow:"column",
                   alignItems: "center",
-                  justifyContent: "",
+                  width: "100%",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  overflow: "hidden",
+                  border:""
                 }}
               >
                 <Directive
-                
                   noArrow
                   id_subtitle={civil_expiry ? civil_expiry : "No Data"}
                   onClick={() => access && setCivil(true)}
                   icon={<CreditCard color="dodgerblue" />}
                   title="Civil ID"
-                  // tag={civil_expiry}
                   expiring={
                     moment(civil_expiry, "DD/MM/YYYY").diff(
                       moment(today),
@@ -3349,10 +3346,8 @@ export default function DbComponent(props: Props) {
                 />
 
                 <Directive
-                
                   noArrow
                   id_subtitle={passportExpiry ? passportExpiry : "No Data"}
-                  // tag={passportExpiry}
                   onClick={() => access && setPassportDialog(true)}
                   icon={<Book color="goldenrod" />}
                   title="Passport"
@@ -3370,20 +3365,19 @@ export default function DbComponent(props: Props) {
               <div
                 style={{
                   display: "flex",
-                  width: "",
-                  border:"",
                   gap: "0.5rem",
-                  justifyContent: "",
-                  
+                  alignItems: "center",
+                  width: "100%",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  flex: 1
                 }}
               >
                 {props.dbCategory == "vale" ||
                   (omni && (
                     <Directive
-                      width={"15ch"}
                       noArrow
                       id_subtitle={medical_due_on ? medical_due_on : "No Data"}
-                      // tag={medical_due_on}
                       onClick={() => setHealthDialog(true)}
                       icon={<HeartPulse color="tomato" />}
                       title="Medical"
@@ -3401,7 +3395,6 @@ export default function DbComponent(props: Props) {
                 {!props.noTraining ||
                   (omni && (
                     <Directive
-                    width={"15ch"}
                       noArrow
                       id_subtitle={
                         moment(vt_hse_induction, "DD/MM/YYYY").diff(

@@ -89,16 +89,10 @@ export default function DefaultDialog(props: Props) {
       <Dialog open={props.open}>
         <DialogContent
           style={{
-            
-           
-           
             border: "",
             maxWidth: "", // Prevent stretching
             width: "", // Responsive for mobile
             minWidth: "",
-          
-           
-           
           }}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
@@ -300,9 +294,9 @@ export default function DefaultDialog(props: Props) {
                         }}
                       >
                         <AtSign color="dodgerblue" width={"0.8rem"} />
-                        <p style={{ fontSize: "0.8rem", fontWeight: "500" }}>
+                        <a href={"mailto:"+props.email} style={{ fontSize: "0.8rem", fontWeight: "500" }}>
                           {props.email ? props.email : "Email Address"}
-                        </p>
+                        </a>
                       </a>
                     </div>
 
@@ -328,7 +322,10 @@ export default function DefaultDialog(props: Props) {
                   </div>
                 )}
               </DialogTitle>
+            
             }
+          </DialogHeader>
+         
 
             {props.tags ? (
               <div
@@ -420,25 +417,6 @@ export default function DefaultDialog(props: Props) {
                   </div>
                 </div>
 
-                {/* <div style={{height:"2rem", border:"", width:"100%", display:'flex', gap:"0.5rem"}}>
-
-                            <div onClick={props.tag3OnClick} style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.75rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
-
-                            <p style={{opacity:0.5}}>Basic : </p><b>{props.tag3Text}</b>  
-
-                            
-                            </div>
-
-                            <div onClick={props.tag4OnClick} style={{background:"rgba(100 100 100/ 25%)", fontSize:"0.75rem", display:"flex", alignItems:"center", paddingRight:"0.75rem", paddingLeft:"0.75rem", borderRadius:"0.5rem", gap:"0.25rem", flex:1, justifyContent:"center", cursor:"pointer"}}>
-
-                            <p style={{opacity:0.5}}>
-                            Allow : 
-                            </p>
-                            <b style={{fontSize:"0.8rem"}}>{props.tag4Text}</b>
-                            
-                            </div>
-                            
-                        </div> */}
               </div>
             ) : null}
 
@@ -461,14 +439,13 @@ export default function DefaultDialog(props: Props) {
             props.extra && (
               <div
                 style={{
-                  width: "100%",
+                  width: "",
                   display: "flex",
-                  flexFlow: "column",
+                  flexDirection: "column",
                   gap: "0.5rem",
-                  // maxHeight: props.dialogHeight || "60vh",
-                  overflowY: "auto",
-                  padding: "",
-                  border: "",
+                  maxWidth: "100%",
+                  minWidth: 0,
+                  border:""
                 }}
               >
                 {props.extra}
@@ -635,7 +612,7 @@ export default function DefaultDialog(props: Props) {
                 </div>
               </div>
             ) : null}
-          </DialogHeader>
+        
           <DialogDescription style={{ display: "none" }} />
 
           <DialogFooter>
