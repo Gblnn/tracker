@@ -2348,6 +2348,7 @@ export default function DbComponent(props: Props) {
                           //   whileInView={{ opacity: 1 }}
                           // >
                           <Directive
+                          noArrow
                             id_subtitle={post.id}
                             className="record-item"
                             space
