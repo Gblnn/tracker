@@ -840,7 +840,7 @@ const [searchTerm, setSearchTerm] = useState("");
         <button
           onClick={handleClearForm}
           style={{
-            background: "rgba(100 100 100/ 40%)",
+            background: "rgba(100 100 100/ 10%)",
             padding: "0.15rem 0.75rem",
             border: "none",
             cursor: "pointer",
@@ -875,7 +875,7 @@ const [searchTerm, setSearchTerm] = useState("");
             padding: "0.75rem",
             background: "rgba(100 100 100/ 5%)",
             borderRadius: "0.75rem",
-            border: "1px solid rgba(100 100 100/ 10%)",
+            // border: "1px solid rgba(100 100 100/ 10%)",
           }}
         >
           <div
@@ -904,6 +904,7 @@ const [searchTerm, setSearchTerm] = useState("");
               <button
                 onClick={() => setPresetDialogVisible(true)}
                 style={{
+                  background: "rgba(100 100 100/ 10%)",
                   color: "mediumslateblue",
                   border: "none",
                   padding: "0.15rem 0.75rem",
@@ -915,12 +916,7 @@ const [searchTerm, setSearchTerm] = useState("");
                   gap: "0.5rem",
                   transition: "all 0.2s ease",
                 }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = "rgba(100 100 100/ 50%)";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = "rgba(100 100 100/ 40%)";
-                }}
+                
               >
                 <Plus width={"0.8rem"} />
                 Add New
@@ -1328,7 +1324,7 @@ const [searchTerm, setSearchTerm] = useState("");
               alignItems: "center",
               justifyContent: "center",
               gap: "0.5rem",
-              background: "rgba(100 100 100/ 40%)",
+              background: "rgba(100 100 100/ 10%)",
               color: "mediumslateblue",
               border: "none",
               padding: "0.5rem 1rem",
@@ -1508,7 +1504,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "0.5rem",
-                background: "rgba(100 100 100/ 40%)",
+                background: "rgba(100 100 100/ 10%)",
                 color: "mediumslateblue",
                 border: "none",
                 padding: "0.5rem 1rem",
@@ -1766,7 +1762,7 @@ const [searchTerm, setSearchTerm] = useState("");
               alignItems: "center",
               justifyContent: "center",
               gap: "0.5rem",
-              background: "rgba(100 100 100/ 40%)",
+              background: "rgba(100 100 100/ 10%)",
               color: "mediumslateblue",
               border: "none",
               padding: "0.5rem 1rem",
@@ -1912,7 +1908,7 @@ const [searchTerm, setSearchTerm] = useState("");
           background: "white",
           color: "black",
           borderRadius: "0.5rem",
-          boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
+          // boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
           minHeight: "1100px",
           fontFamily: "Aptos",
           fontSize: "0.8rem",
@@ -2639,6 +2635,7 @@ const [searchTerm, setSearchTerm] = useState("");
       <div
         style={{
           padding: "",
+          background:"rgba(100 100 100/ 8%)",
           // background:
           //   "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
           height: "100svh",

@@ -89,7 +89,7 @@ export default function Directive(props: Props) {
       <motion.div
         whileTap={{ scale: 0.99 }}
         onClick={(e) => e.preventDefault()} // Prevent double firing
-        className="directive-button"
+        className=""
         style={{
           height: props.height ? props.height : "",
           padding: "0.75rem",
@@ -101,9 +101,9 @@ export default function Directive(props: Props) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          background: "rgba(100 100 100/ 0.1)",
+          background: "rgba(100 100 100/ 0.07)",
           borderRadius: "0.5rem",
-          border: "1px solid rgba(100 100 100/ 0.2)",
+          // border: "1px solid rgba(100 100 100/ 0.2)",
           transition: "all 0.2s ease",
           cursor: "pointer",
           paddingLeft: "1rem",
@@ -214,15 +214,16 @@ export default function Directive(props: Props) {
             {props.id_subtitle && (
               <p
                 style={{
-                  fontSize: "0.7rem",
+                  fontSize: "0.6rem",
                   textAlign: "left",
-                  color: "lightblue",
+                  color: "dodgerblue",
                   opacity: "0.75",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
                   width: "30ch",
                   border: "",
+                  fontWeight:600
                 }}
               >
                 {props.id_subtitle}
@@ -256,7 +257,7 @@ export default function Directive(props: Props) {
                     : props.tag === "Available"
                     ? "lightgreen"
                     : props.status
-                    ? "lightblue"
+                    ? "dodgerblue"
                     : "goldenrod",
                 fontWeight: 600,
                 display: "flex",

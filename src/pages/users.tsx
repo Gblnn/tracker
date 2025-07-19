@@ -163,8 +163,8 @@ export default function Users() {
     <div
       style={{
         padding: "1.25rem",
-        background:
-          "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
+        // background:
+        //   "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
         height: "100svh",
       }}
     >

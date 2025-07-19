@@ -63,7 +63,7 @@ export default function InboxComponent(props:Props){
         <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
         <Link className={props.hidden==true?"hidden":"visible"} to={props.to}>
 
-            <div onClick={props.onClick} style={{ gap:"0.5rem", width:"100%", justifyContent:"space-between", background:"rgba(100 100 100/ 20%)", padding:"1rem", paddingLeft:"1rem", borderRadius:"0.75rem"}}>
+            <div onClick={props.onClick} style={{ gap:"0.5rem", width:"100%", justifyContent:"space-between", background:"rgba(100 100 100/ 10%)", padding:"1rem", paddingLeft:"1rem", borderRadius:"0.75rem"}}>
 
                 <div style={{display:"flex", gap:"1rem", alignItems:"center", border:'', padding:"0.15rem"}}>
 
@@ -80,7 +80,8 @@ export default function InboxComponent(props:Props){
 
                         <div style={{fontWeight:500, width:"100%", textAlign:"left", fontSize:"1rem", border:"", display:"flex", gap:"0.5rem", alignItems:"center"}}>
                             
-                            <div style={{border:"", display:"flex", alignItems:"center", fontSize:"1.1rem", fontWeight:500}}><p>{props.title}</p></div>
+                            <div style={{border:"", display:"flex", alignItems:"center", fontSize:"1.1rem", fontWeight:500}}><p>{props.title}</p>
+                            </div>
                             {
                                 props.tag?
                                 <p style={{display:"flex", background:"rgba(100 100 100/ 20%)", fontSize:"0.8rem", alignItems:"center", padding:"", paddingLeft:"0.5rem", paddingRight:"0.5rem", borderRadius:"0.5rem", border:""}}>{props.tag}</p>

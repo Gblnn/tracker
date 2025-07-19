@@ -16,7 +16,7 @@ export default function Passport(props: Props) {
   return (
     <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
       <div
-        className="civil-id"
+        className=""
         style={{
           width: "32ch",
           height: "19ch",

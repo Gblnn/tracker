@@ -32,7 +32,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(150 150 150/ 18%);
+  background-color: rgba(100 100 100/ 10%);
   font-weight: 500;
   transition: 0.3s;
   gap: 0.5rem;
@@ -124,7 +124,7 @@ input {
   width: 100%;
   padding: 0.5rem;
   padding-left: 1rem;
-  background-color: rgba(150 150 150/ 20%);
+  background-color: rgba(150 150 150/ 10%);
   border-radius: 0.5rem;
   transition: 0.3s;
 }
@@ -160,7 +160,7 @@ textarea {
   width: 100%;
   padding: 0.5rem;
   padding-left: 1rem;
-  background: rgba(100 100 100/ 20%);
+  background: rgba(100 100 100/ 10%);
   border-radius: 0.75rem;
   transition: 0.3s;
 }

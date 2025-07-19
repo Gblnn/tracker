@@ -45,8 +45,8 @@ function QRCodeGenerator() {
     <div
       style={{
         height: "100svh",
-        background:
-          "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
+        // background:
+        //   "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
       }}
     >
       <div style={{ padding: "1.5rem" }}>

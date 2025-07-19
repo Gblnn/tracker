@@ -531,7 +531,7 @@ export default function DefaultDialog(props: Props) {
                             <div
                               onClick={props.tag3OnClick}
                               style={{
-                                background: "rgba(100 100 100/ 25%)",
+                                background: "rgba(100 100 100/ 15%)",
                                 fontSize: "0.75rem",
                                 display: "flex",
                                 alignItems: "center",
@@ -544,14 +544,14 @@ export default function DefaultDialog(props: Props) {
                                 cursor: "pointer",
                               }}
                             >
-                              <p style={{ opacity: 0.5 }}>Basic</p>
-                              <b>{props.tag3Text}</b>
+                              <p style={{}}>Basic</p>
+                              {/* <b>{props.tag3Text}</b> */}
                             </div>
 
                             <div
                               onClick={props.tag4OnClick}
                               style={{
-                                background: "rgba(100 100 100/ 25%)",
+                                background: "rgba(100 100 100/ 15%)",
                                 fontSize: "0.75rem",
                                 display: "flex",
                                 alignItems: "center",
@@ -564,9 +564,9 @@ export default function DefaultDialog(props: Props) {
                                 cursor: "pointer",
                               }}
                             >
-                              <p style={{ opacity: 0.5 }}>Allowance</p>
+                              <p style={{}}>Allowance</p>
                               <b style={{ fontSize: "0.8rem" }}>
-                                {props.tag4Text}
+                                {/* {props.tag4Text} */}
                               </b>
                             </div>
                           </div>

@@ -107,13 +107,13 @@ export default function Back(props: Props) {
                 <p
                   style={{
                     fontSize: "0.75rem",
-                    border: "",
+                    // border: "1px solid",
                     opacity: "",
                     display: "flex",
                     alignItems: "center",
                     height: "1.25rem",
                     borderRadius: "0.5rem",
-                    background: "white",
+                    background: "rgba(100 100 100/ 0.15)",
                     color: "black",
                     padding: "0.25rem",
                     paddingTop: "0.335rem",

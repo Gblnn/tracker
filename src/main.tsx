@@ -16,7 +16,7 @@ TimeAgo.addDefaultLocale(en);
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <AuthProvider>
-      <ThemeProvider defaultTheme="dark">
+      <ThemeProvider defaultTheme="light">
         <Toaster/>
         <App />
       </ThemeProvider>

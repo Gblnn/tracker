@@ -1994,8 +1994,8 @@ export default function DbComponent(props: Props) {
           padding: "1.25rem",
           height: "100svh",
           border: "",
-          background:
-            "linear-gradient(rgba(67 57 129/ 30%), rgba(100 100 100/ 0%)",
+          // background:
+          //   "linear-gradient(rgba(67 57 129/ 30%), rgba(100 100 100/ 0%)",
         }}
       >
         {/* Main Component */}
@@ -2309,20 +2309,21 @@ export default function DbComponent(props: Props) {
                 <div
                   className="record-list"
                   style={{
-                    display: "flex",
-                    gap: "0.6rem",
-
                     overflowY: "auto",
                     height: "74svh",
+                    padding: "0.25rem",
                   }}
                 >
                   <motion.div
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                     style={{
-                      display: "flex",
-                      flexFlow: "column",
+                      display: "grid",
                       gap: "0.6rem",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                      maxWidth: "100%",
+                      paddingTop:"1rem",
+                      paddingBottom:"5rem"
                     }}
                   >
                     {
@@ -3690,7 +3691,7 @@ export default function DbComponent(props: Props) {
                     onClick={() => setAddcivil(true)}
                     style={{
                       width: "100%",
-                      border: "2px solid rgba(100 100 100/ 50%)",
+                      // border: "2px solid rgba(100 100 100/ 50%)",
                     }}
                   >
                     {!loading ? (
@@ -3858,7 +3859,7 @@ export default function DbComponent(props: Props) {
                     onClick={() => setAddVehicleID(true)}
                     style={{
                       width: "100%",
-                      border: "2px solid rgba(100 100 100/ 50%)",
+                      // border: "2px solid rgba(100 100 100/ 50%)",
                     }}
                   >
                     {!loading ? (
@@ -4114,7 +4115,7 @@ export default function DbComponent(props: Props) {
                     onClick={() => setMedicalIDdialog(true)}
                     style={{
                       width: "100%",
-                      border: "2px solid rgba(100 100 100/ 50%)",
+                      // border: "2px solid rgba(100 100 100/ 50%)",
                     }}
                   >
                     {!loading ? (
@@ -4542,7 +4543,7 @@ export default function DbComponent(props: Props) {
                     onClick={() => setAddPassportDialog(true)}
                     style={{
                       width: "100%",
-                      border: "2px solid rgba(100 100 100/ 50%)",
+                      // border: "2px solid rgba(100 100 100/ 50%)",
                     }}
                   >
                     {!loading ? (

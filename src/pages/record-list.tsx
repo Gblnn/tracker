@@ -52,7 +52,7 @@ export default function RecordList() {
           await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay for loading state
           navigate("/records");
         } else {
-          toast.error("No clearance to access SSU records");
+          toast.error("No clearance to access");
         }
       } else {
         setValeLoading(true);
@@ -60,7 +60,7 @@ export default function RecordList() {
           await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay for loading state
           navigate("/vale-records");
         } else {
-          toast.error("No clearance to access Vale records");
+          toast.error("No clearance to access");
         }
       }
     } catch (error) {
@@ -126,8 +126,8 @@ export default function RecordList() {
       <div
         style={{
           padding: "1.25rem",
-          background:
-            "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
+          // background:
+          //   "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
           height: "100svh",
         }}
       >
