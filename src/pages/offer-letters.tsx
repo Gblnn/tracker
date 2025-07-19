@@ -896,7 +896,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 color: "",
               }}
             >
-              <FileText width="1rem" color="mediumslateblue" />
+              <FileText width="1rem" color="indigo" />
               <span>Presets</span>
               <div style={{ width: "7rem" }}></div>
             </div>
@@ -905,7 +905,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 onClick={() => setPresetDialogVisible(true)}
                 style={{
                   background: "rgba(100 100 100/ 10%)",
-                  color: "mediumslateblue",
+                  color: "indigo",
                   border: "none",
                   padding: "0.15rem 0.75rem",
                   borderRadius: "0.5rem",
@@ -2725,9 +2725,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     width: "100%",
                     fontSize: "0.9rem",
                     padding: "0.5rem 1rem",
-                    background: pdfLoading
-                      ? "darkslateblue"
-                      : "rgba(123 104 238/ 80%	)",
+                    background: "indigo",
                     color: "white",
                     border: "none",
                     borderRadius: "0.5rem",
@@ -2765,7 +2763,7 @@ const [searchTerm, setSearchTerm] = useState("");
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: "rgba(150 150 150/ 40%)",
+                      background: "rgba(100 100 100/ 10%)",
                       fontSize: "0.75rem",
                       // border: "1px solid rgba(100 100 100/ 40%)",
                       padding: "0.5rem 1rem",
@@ -2778,7 +2776,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     {saving ? (
                       <LoaderCircle className="animate-spin" />
                     ) : (
-                      <Save width={"1.25rem"} color="mediumslateblue" />
+                      <Save width={"1.25rem"} color="indigo" />
                     )}
                   </motion.button>
                 ) : (
@@ -2794,7 +2792,7 @@ const [searchTerm, setSearchTerm] = useState("");
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          background: "rgba(150 150 150/ 40%)",
+                          background: "rgba(100 100 100/ 10%)",
                           fontSize: "0.75rem",
                           // border: "1px solid rgba(100 100 100/ 40%)",
                           padding: "0.65rem 1rem",
@@ -2850,7 +2848,7 @@ const [searchTerm, setSearchTerm] = useState("");
                   whileTap={{ scale: 0.95 }}
                   style={{
                     // border: "1px solid rgba(100 100 100/ 30%)",
-                    background: "rgba(150 150 150/ 40%)",
+                    background: "rgba(100 100 100/ 10%)",
                     padding: "0.5rem 0.75rem",
                   }}
                   onClick={() => {
