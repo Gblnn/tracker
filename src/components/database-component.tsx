@@ -2295,6 +2295,10 @@ export default function DbComponent(props: Props) {
                     {/* <p style={{opacity:0.5, fontWeight:400}}>Thumbnails</p> */}
                   </button>
 
+              
+                 
+
+
                   {/* <button onClick={()=>setImportDialog(true)}>
                             <UploadCloud color="salmon"/>
                         </button> */}
@@ -3333,7 +3337,7 @@ export default function DbComponent(props: Props) {
                 <Directive
                   noArrow
                   id_subtitle={civil_expiry ? civil_expiry : "No Data"}
-                  onClick={() => access && setCivil(true)}
+                  onClick={() => {access && setCivil(true); setRecordSummary(false)}}
                   icon={<CreditCard color="dodgerblue" />}
                   title="Civil ID"
                   expiring={
@@ -3349,7 +3353,7 @@ export default function DbComponent(props: Props) {
                 <Directive
                   noArrow
                   id_subtitle={passportExpiry ? passportExpiry : "No Data"}
-                  onClick={() => access && setPassportDialog(true)}
+                  onClick={() => {access && setPassportDialog(true);setRecordSummary(false)}}
                   icon={<Book color="goldenrod" />}
                   title="Passport"
                   expiring={
@@ -3379,7 +3383,7 @@ export default function DbComponent(props: Props) {
                     <Directive
                       noArrow
                       id_subtitle={medical_due_on ? medical_due_on : "No Data"}
-                      onClick={() => setHealthDialog(true)}
+                      onClick={() => {setHealthDialog(true);setRecordSummary(false)}}
                       icon={<HeartPulse color="tomato" />}
                       title="Medical"
                       expiring={
@@ -3446,7 +3450,7 @@ export default function DbComponent(props: Props) {
                           : "No Alerts"
                       }
                       onClick={() => {
-                        setValeTrainingDialog(true);
+                        setValeTrainingDialog(true);setRecordSummary(false)
                       }}
                       icon={<GraduationCap color="lightgreen" />}
                       title="Training"
@@ -3631,7 +3635,7 @@ export default function DbComponent(props: Props) {
           titleIcon={<CreditCard color="dodgerblue" />}
           title="Civil ID"
           open={civil}
-          onCancel={() => setCivil(false)}
+          onCancel={() => {setCivil(false); setRecordSummary(true)}}
           OkButtonText="Add"
           title_extra={
             civil_expiry ? (
@@ -4056,7 +4060,7 @@ export default function DbComponent(props: Props) {
           titleIcon={<HeartPulse color="tomato" />}
           title="Medical ID"
           open={healthDialog}
-          onCancel={() => setHealthDialog(false)}
+          onCancel={() => {setHealthDialog(false); setRecordSummary(true)}}
           back
           title_extra={
             medical_due_on ? (
@@ -4234,7 +4238,7 @@ export default function DbComponent(props: Props) {
             />
           }
           title={"Vale Training"}
-          onCancel={() => setValeTrainingDialog(false)}
+        onCancel={() => {setValeTrainingDialog(false);setRecordSummary(true)}}
           close
           back
           title_extra={
@@ -4484,7 +4488,7 @@ export default function DbComponent(props: Props) {
           titleIcon={<Book color="goldenrod" />}
           title="Passport"
           open={passportDialog}
-          onCancel={() => setPassportDialog(false)}
+          onCancel={() => {setPassportDialog(false);setRecordSummary(true)}}
           back
           title_extra={
             passportExpiry ? (

@@ -258,7 +258,7 @@ export default function DefaultDialog(props: Props) {
                         : "center",
                       height: "2.25rem",
                       border: props.contact
-                        ? "1px solid rgba(100 100 100/50%)"
+                        ? "1px solid rgba(100 100 100/30%)"
                         : "",
                     }}
                   >
@@ -281,6 +281,7 @@ export default function DefaultDialog(props: Props) {
                         {props.creation_date}
                       </p> */}
                       <a
+                      href={"mailto:"+props.email} 
                         style={{
                           display: "flex",
                           gap: "0.5rem",
@@ -294,9 +295,9 @@ export default function DefaultDialog(props: Props) {
                         }}
                       >
                         <AtSign color="dodgerblue" width={"0.8rem"} />
-                        <a href={"mailto:"+props.email} style={{ fontSize: "0.8rem", fontWeight: "500" }}>
+                        <p style={{ fontSize: "0.8rem", fontWeight: "500" }}>
                           {props.email ? props.email : "Email Address"}
-                        </a>
+                        </p>
                       </a>
                     </div>
 
