@@ -3338,7 +3338,7 @@ export default function DbComponent(props: Props) {
                 <Directive
                   noArrow
                   id_subtitle={civil_expiry ? civil_expiry : "No Data"}
-                  onClick={() => {access && setCivil(true) && setRecordSummary(false)}}
+                  onClick={() => {access && setRecordSummary(false); setCivil(true)}}
                   icon={<CreditCard color="dodgerblue" />}
                   title="Civil ID"
                   expiring={
@@ -3354,7 +3354,7 @@ export default function DbComponent(props: Props) {
                 <Directive
                   noArrow
                   id_subtitle={passportExpiry ? passportExpiry : "No Data"}
-                  onClick={() => {access && setPassportDialog(true)&&setRecordSummary(false)}}
+                  onClick={() => {access && setRecordSummary(false); setPassportDialog(true)}}
                   icon={<Book color="goldenrod" />}
                   title="Passport"
                   expiring={
@@ -3384,7 +3384,7 @@ export default function DbComponent(props: Props) {
                     <Directive
                       noArrow
                       id_subtitle={medical_due_on ? medical_due_on : "No Data"}
-                      onClick={() => {access && setHealthDialog(true)&&setRecordSummary(false)}}
+                      onClick={() => {access && setRecordSummary(false); setHealthDialog(true)}}
                       icon={<HeartPulse color="tomato" />}
                       title="Medical"
                       expiring={

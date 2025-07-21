@@ -78,7 +78,7 @@ export default function Profile() {
               {/* <button style={{ paddingLeft: "1rem", paddingRight: "1rem" }}>
                 v2.0
               </button> */}
-              <IndexDropDown onLogout={() => setLogoutPrompt(true)} />
+              <IndexDropDown onProfile={()=>{}} onLogout={() => setLogoutPrompt(true)} />
             </div>
           }
         />
