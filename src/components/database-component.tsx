@@ -2025,6 +2025,7 @@ export default function DbComponent(props: Props) {
                   {access && (
                     <div style={{ display: "flex" }} className="transitions">
                       <DbDropDown
+                      
                         onUpload={() => setImportDialog(true)}
                         onExport={() => setExportDialog(true)}
                         onInbox={() => usenavigate("/inbox")}
@@ -3337,7 +3338,7 @@ export default function DbComponent(props: Props) {
                 <Directive
                   noArrow
                   id_subtitle={civil_expiry ? civil_expiry : "No Data"}
-                  onClick={() => {access && setCivil(true); setRecordSummary(false)}}
+                  onClick={() => {access && setCivil(true) && setRecordSummary(false)}}
                   icon={<CreditCard color="dodgerblue" />}
                   title="Civil ID"
                   expiring={
@@ -3353,7 +3354,7 @@ export default function DbComponent(props: Props) {
                 <Directive
                   noArrow
                   id_subtitle={passportExpiry ? passportExpiry : "No Data"}
-                  onClick={() => {access && setPassportDialog(true);setRecordSummary(false)}}
+                  onClick={() => {access && setPassportDialog(true)&&setRecordSummary(false)}}
                   icon={<Book color="goldenrod" />}
                   title="Passport"
                   expiring={
@@ -3383,7 +3384,7 @@ export default function DbComponent(props: Props) {
                     <Directive
                       noArrow
                       id_subtitle={medical_due_on ? medical_due_on : "No Data"}
-                      onClick={() => {setHealthDialog(true);setRecordSummary(false)}}
+                      onClick={() => {access && setHealthDialog(true)&&setRecordSummary(false)}}
                       icon={<HeartPulse color="tomato" />}
                       title="Medical"
                       expiring={
@@ -4266,10 +4267,11 @@ export default function DbComponent(props: Props) {
                 icon={<Disc color="dodgerblue" />}
                 title="HSE Induction"
                 onClick={() => {
-                  setTrainingAddDialogTitle("HSE Induction");
+                  access&&
                   setTrainingAddDialog(true);
+                  setTrainingAddDialogTitle("HSE Induction");
                   setTrainingType("hse_induction");
-                  setTrainingAddDialogInputValue(vt_hse_induction);
+                  setTrainingAddDialogInputValue(vt_hse_induction)
                 }}
                 status={
                   moment(vt_hse_induction, "DD/MM/YYYY").diff(
@@ -4286,8 +4288,10 @@ export default function DbComponent(props: Props) {
                 icon={<Disc color="dodgerblue" />}
                 title="CAR - 1"
                 onClick={() => {
-                  setTrainingAddDialogTitle("CAR - 1");
+                  access&&
                   setTrainingAddDialog(true);
+                  setTrainingAddDialogTitle("CAR - 1");
+                  
                   setTrainingType("car_1");
                   setTrainingAddDialogInputValue(vt_car_1);
                 }}
@@ -4306,8 +4310,10 @@ export default function DbComponent(props: Props) {
                 icon={<Disc color="dodgerblue" />}
                 title="CAR - 2"
                 onClick={() => {
-                  setTrainingAddDialogTitle("CAR - 2");
+                  access&&
                   setTrainingAddDialog(true);
+                  setTrainingAddDialogTitle("CAR - 2");
+                  
                   setTrainingType("car_2");
                   setTrainingAddDialogInputValue(vt_car_2);
                 }}
@@ -4326,8 +4332,10 @@ export default function DbComponent(props: Props) {
                 icon={<Disc color="dodgerblue" />}
                 title="CAR - 3"
                 onClick={() => {
-                  setTrainingAddDialogTitle("CAR - 3");
+                  access&&
                   setTrainingAddDialog(true);
+                  setTrainingAddDialogTitle("CAR - 3");
+                  
                   setTrainingType("car_3");
                   setTrainingAddDialogInputValue(vt_car_3);
                 }}
@@ -4346,8 +4354,10 @@ export default function DbComponent(props: Props) {
                 icon={<Disc color="dodgerblue" />}
                 title="CAR - 4"
                 onClick={() => {
-                  setTrainingAddDialogTitle("CAR - 4");
+                  access&&
                   setTrainingAddDialog(true);
+                  setTrainingAddDialogTitle("CAR - 4");
+                  
                   setTrainingType("car_4");
                   setTrainingAddDialogInputValue(vt_car_4);
                 }}
@@ -4366,8 +4376,10 @@ export default function DbComponent(props: Props) {
                 icon={<Disc color="dodgerblue" />}
                 title="CAR - 5"
                 onClick={() => {
-                  setTrainingAddDialogTitle("CAR - 5");
+                  access&&
                   setTrainingAddDialog(true);
+                  setTrainingAddDialogTitle("CAR - 5");
+                  
                   setTrainingType("car_5");
                   setTrainingAddDialogInputValue(vt_car_5);
                 }}
@@ -4386,8 +4398,10 @@ export default function DbComponent(props: Props) {
                 icon={<Disc color="dodgerblue" />}
                 title="CAR - 6"
                 onClick={() => {
-                  setTrainingAddDialogTitle("CAR - 6");
+                  access&&
                   setTrainingAddDialog(true);
+                  setTrainingAddDialogTitle("CAR - 6");
+                  
                   setTrainingType("car_6");
                   setTrainingAddDialogInputValue(vt_car_6);
                 }}
@@ -4406,8 +4420,10 @@ export default function DbComponent(props: Props) {
                 icon={<Disc color="dodgerblue" />}
                 title="CAR - 7"
                 onClick={() => {
-                  setTrainingAddDialogTitle("CAR - 7");
+                  access&&
                   setTrainingAddDialog(true);
+                  setTrainingAddDialogTitle("CAR - 7");
+                  
                   setTrainingType("car_7");
                   setTrainingAddDialogInputValue(vt_car_7);
                 }}
@@ -4426,8 +4442,10 @@ export default function DbComponent(props: Props) {
                 icon={<Disc color="dodgerblue" />}
                 title="CAR - 8"
                 onClick={() => {
-                  setTrainingAddDialogTitle("CAR - 8");
+                  access&&
                   setTrainingAddDialog(true);
+                  setTrainingAddDialogTitle("CAR - 8");
+                  
                   setTrainingType("car_8");
                   setTrainingAddDialogInputValue(vt_car_8);
                 }}
@@ -4446,8 +4464,10 @@ export default function DbComponent(props: Props) {
                 icon={<Disc color="dodgerblue" />}
                 title="CAR - 9"
                 onClick={() => {
-                  setTrainingAddDialogTitle("CAR - 9");
+                  access&&
                   setTrainingAddDialog(true);
+                  setTrainingAddDialogTitle("CAR - 9");
+                  
                   setTrainingType("car_9");
                   setTrainingAddDialogInputValue(vt_car_9);
                 }}
@@ -4466,8 +4486,10 @@ export default function DbComponent(props: Props) {
                 icon={<Disc color="dodgerblue" />}
                 title="CAR - 10"
                 onClick={() => {
-                  setTrainingAddDialogTitle("CAR - 10");
+                  access&&
                   setTrainingAddDialog(true);
+                  setTrainingAddDialogTitle("CAR - 10");
+                  
                   setTrainingType("car_10");
                   setTrainingAddDialogInputValue(vt_car_10);
                 }}

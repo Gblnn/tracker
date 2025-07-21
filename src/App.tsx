@@ -1,12 +1,13 @@
-import emailjs from "@emailjs/browser";
 import { Route, Routes } from "react-router-dom";
 import AuthGuard from "./components/AuthGuard";
 import ProtectedRoutes from "./components/protectedRoute";
+import { AuthProvider } from "./context/auth-context";
 import Index from "./pages";
 import AccessControl from "./pages/access-control";
 import AccessRequests from "./pages/access-requests";
 import AddRemarks from "./pages/add-remarks";
 import AdminPage from "./pages/admin-page";
+import Agreements from "./pages/agreements";
 import Archives from "./pages/archives";
 import History from "./pages/history";
 import Inbox from "./pages/inbox";
@@ -15,33 +16,31 @@ import LPO from "./pages/lpo";
 import Medicals from "./pages/medicals";
 import MovementRegister from "./pages/movement-register";
 import NewHire from "./pages/new-hire";
+import OfferLetters from "./pages/offer-letters";
 import Openings from "./pages/openings";
 import PageNotFound from "./pages/page-not-found";
 import Profile from "./pages/profile";
 import ProjectLPO from "./pages/project-lpo";
 import QRCodeGenerator from "./pages/qr-code";
+import QuickLinks from "./pages/quick-links";
 import RecordList from "./pages/record-list";
 import Records from "./pages/records";
 import RequestAccess from "./pages/request-access";
+import Shortlist from "./pages/shortlist";
 import UserPage from "./pages/user";
 import UserReset from "./pages/user-reset";
 import Users from "./pages/users";
 import ValeRecords from "./pages/vale-records";
 import Website from "./pages/website";
-import OfferLetters from "./pages/offer-letters";
-import Shortlist from "./pages/shortlist";
-import Agreements from "./pages/agreements";
-import QuickLinks from "./pages/quick-links";
 
-// Initialize emailjs once outside of component
-emailjs.init("c8AePKR5BCK8UIn_E");
 
 export default function App() {
   return (
-    <>
+    <AuthProvider>
+     
       <AuthGuard>
-      <Routes>
-        {/* Public routes */}
+        <Routes>
+          {/* Public routes */}
         <Route path="/" element={<Login />} />
         <Route path="/user-reset" element={<UserReset />} />
         <Route path="/request-access" element={<RequestAccess />} />
@@ -85,6 +84,6 @@ export default function App() {
         <Route path="*" element={<PageNotFound />} />
       </Routes>
       </AuthGuard>
-    </>
+    </AuthProvider>
   );
 }

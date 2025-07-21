@@ -17,8 +17,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <AuthProvider>
       <ThemeProvider defaultTheme="dark">
-        <Toaster/>
         <App />
+        <Toaster/>
       </ThemeProvider>
     </AuthProvider>
   </BrowserRouter>

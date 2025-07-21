@@ -6,13 +6,12 @@ import { auth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { motion } from "framer-motion";
 import {
-  Binary,
   BriefcaseBusiness,
   File,
   KeyRound,
   List,
   Mail,
-  PartyPopper,
+  PartyPopper
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -93,11 +92,11 @@ export default function NewHire() {
               title={"Prepare Offer Letter"}
               icon={<File color="mediumslateblue" width={"1.25rem"} />}
             />
-            <Directive
+            {/* <Directive
               title={"Resources Allocation"}
               icon={<Binary color="dodgerblue" />}
               tag={"Maintenance"}
-            />
+            /> */}
 
             <Directive
               title={"OnBoarding"}

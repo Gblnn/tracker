@@ -1,178 +1,202 @@
-import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import {
-  Bug,
-  EllipsisVerticalIcon,
-  LogOut,
-  RefreshCcw,
-  User,
-} from "lucide-react";
+import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
+import { Bug, LoaderCircle, LogOut, RefreshCcw, UserX } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
 } from "./ui/dropdown-menu";
-import DefaultDialog from "./ui/default-dialog";
+import { Avatar, AvatarFallback } from "./ui/avatar";
 import { useState } from "react";
-import { auth } from "@/firebase";
+import { useAuth } from "@/components/AuthProvider";
+import DefaultDialog from "./ui/default-dialog";
 import emailjs from "@emailjs/browser";
 import moment from "moment";
-import { message } from "antd";
+import { auth } from "@/firebase";
+import { toast } from "sonner";
 
 interface Props {
-  trigger?: any;
-  onExport?: any;
-  onAccess?: any;
-  onArchives?: any;
-  onUpload?: any;
-  onInbox?: any;
-  className?: any;
-  onLogout?: any;
-  onProfile?: any;
+  className?: string;
+  onLogout: () => void;
+  onProfile: () => void;
+  onBug?: () => void;
 }
 
-export default function IndexDropDown(props: Props) {
-  const [issue, setIssue] = useState("");
+export default function IndexDropDown(props:Props) {
+  const { userData } = useAuth();
   const [loading, setLoading] = useState(false);
   const [bugDialog, setBugDialog] = useState(false);
+  const [issue, setIssue] = useState("");
 
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
 
-  const sendBugReport = async () => {
+  const handleBugReport = async () => {
+    if (!issue.trim()) return;
+    
     setLoading(true);
-    await emailjs.send(serviceId, templateId, {
-      name: auth.currentUser?.email,
-      subject:
-        "Bug Report - " +
-        moment().format("ll") +
-        " from " +
-        auth.currentUser?.email,
-      recipient: "it@soharstar.com",
-      message: issue,
-    });
-    setLoading(false);
-    message.success("Bug Report sent");
-    setBugDialog(false);
+    try {
+      await emailjs.init("c8AePKR5BCK8UIn_E"); // Initialize EmailJS with your public key
+      
+      await emailjs.send(serviceId, templateId, {
+        name: auth.currentUser?.email,
+        subject: "Bug Report - " + moment().format("ll") + " from " + auth.currentUser?.email,
+        recipient: "goblinn688@gmail.com",
+        message: issue,
+      });
+      
+      // First close the dialog and reset state
+      setBugDialog(false);
+      setIssue("");
+      
+      // Then show the success message in the next tick
+      setTimeout(() => {
+        toast.success("Bug Report sent");
+      }, 0);
+      
+    } catch (error) {
+      // Show error in the next tick
+      setTimeout(() => {
+        toast.error("Failed to send bug report");
+      }, 0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
   };
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuPrimitive.Trigger
-          className={props.className}
-          style={{ outline: "none" }}
-        >
-          <EllipsisVerticalIcon width={"1.1rem"} />
-        </DropdownMenuPrimitive.Trigger>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={props.className}
+        style={{
+          outline: "none",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "none",
+          height: "2.5rem",
+          width: "2.5rem",
+          background: "rgba(30 30 30/ 65%)",
+          borderRadius: "0.375rem",
+        }}
+      >
+        {userData?.email ? (
+          <p className="text-sm">{getInitials(userData.name.split("@")[0])}</p>
+        ) : (
+          <UserX className="opacity-50" />
+        )}
+      </DropdownMenuTrigger>
 
-        <DropdownMenuContent
-          style={{ margin: "0.25rem", marginRight: "1.25rem" }}
-        >
-          <DropdownMenuGroup>
-            {/* <DropdownMenuItem
-              onClick={props.onExport}
-              style={{ width: "100%" }}
-            >
-              <DownloadCloud className="mr-2" color="lightgreen" />
-              <span style={{ width: "100%" }}>Export xlsx</span>
-            </DropdownMenuItem> */}
-
-            {/* <DropdownMenuItem
-              onClick={props.onUpload}
-              style={{ width: "100%" }}
-            >
-              <UploadCloud className="mr-2" color="salmon" />
-              <span style={{ width: "100%" }}>Upload xlsx</span>
-            </DropdownMenuItem> */}
-
-            {/* <DropdownMenuItem
-              onClick={props.onAccess}
-              style={{ width: "100%" }}
-            >
-              <KeyRound className="mr-2 " color="dodgerblue" />
-              <span style={{ width: "100%" }}>Access Control</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              onClick={props.onArchives}
-              style={{ width: "100%" }}
-            >
-              <Archive className="mr-2 " color="goldenrod" />
-              <span style={{ width: "100%" }}>Archives</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem onClick={props.onInbox} style={{ width: "100%" }}>
-              <Inbox className="mr-2 " color="crimson" />
-              <span style={{ width: "100%" }}>Inbox</span>
-            </DropdownMenuItem> */}
-
-            <DropdownMenuItem
-              onClick={() => window.location.reload()}
-              style={{ width: "100%" }}
-            >
-              <RefreshCcw className="mr-2 " color="dodgerblue" />
-              <span style={{ width: "100%" }}>Force Reload</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              onClick={() => setBugDialog(true)}
-              style={{ width: "100%" }}
-            >
-              <Bug className="mr-2 " color="lightgreen" />
-              <span style={{ width: "100%" }}>Report Bug</span>
-            </DropdownMenuItem>
-
-            {props.onProfile && (
-              <DropdownMenuItem onClick={props.onProfile}>
-                <User className="mr-2" color="dodgerblue" />
-                <span style={{ width: "100%" }}>Profile</span>
-              </DropdownMenuItem>
-            )}
-
-            <DropdownMenuItem
-              onClick={props.onLogout}
-              style={{ width: "100%" }}
-            >
-              <LogOut className="mr-2 " color="salmon" />
-              <span style={{ width: "100%" }}>Logout</span>
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DefaultDialog
-        title={"Report a Bug"}
-        titleIcon={<Bug color="lightgreen" />}
-        extra={
-          <div
-            style={{
-              display: "flex",
-              width: "100%",
-              flexFlow: "column",
-              gap: "0.75rem",
-              paddingBottom: "0.5rem",
-            }}
+      <DropdownMenuContent className="w-60 mr-5 mt-1">
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            onClick={props.onProfile}
+            className="p-4 cursor-pointer"
           >
-            <textarea
-              onChange={(e) => setIssue(e.target.value)}
-              rows={5}
-              placeholder="Describe issue"
-            />
-          </div>
-        }
-        open={bugDialog}
-        onCancel={() => {
-          setBugDialog(false);
-          window.location.reload();
-        }}
-        OkButtonText="Report"
-        disabled={issue == ""}
-        onOk={() => {
-          issue != "" ? sendBugReport() : "";
-        }}
-        updating={loading}
-      />
+            <div className="flex ">
+              <Avatar  className="h-12 w-12">
+                <AvatarFallback style={{fontWeight:"600", background:"rgba(100 100 100/ 20%)"}} className="text-lg">
+                  {userData?.name
+                    ? getInitials(userData.email.split("@")[0])
+                    : "?"}
+                </AvatarFallback>
+              </Avatar>
+              <div style={{border:"", alignItems:"flex-start", gap:"0.1rem"}} className="flex flex-col ">
+                <p className="text-base font-semibold truncate">
+                  {userData?.name?.split("@")[0] || "No name"}
+                </p>
+                <p className="text-xs text-primary font-semibold opacity-75 truncate">
+                  {userData?.email}
+                </p>
+                <span
+                  style={{ width: "fit-content" }}
+                  className="inline-flex items-center rounded-full px-2 py-0.5 mt-1 text-xs font-medium bg-primary/10 text-primary"
+                >
+                  {userData?.role || "User"}
+                </span>
+              </div>
+            </div>
+          </DropdownMenuItem>
+
+          <div className="h-px bg-border my-1" />
+
+          <DropdownMenuItem
+            onClick={() => window.location.reload()}
+            className="cursor-pointer"
+            style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}
+          >
+            <RefreshCcw color="dodgerblue" className="mr-2 h-4 w-4 text-primary" />
+            <span>Force Reload</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => setBugDialog(true)}
+            className="cursor-pointer"
+            style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}
+          >
+            <Bug className="mr-2 h-4 w-4 text-green-500" />
+            <span>Report Bug</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={props.onLogout}
+            className="cursor-pointer"
+            disabled={loading}
+            style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}
+          >
+            {loading ? (
+              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <LogOut color="salmon" className="mr-2 h-4 w-4 " />
+            )}
+            <span>{loading ? "Logging out..." : "Logout"}</span>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+
+    <DefaultDialog
+      title={"Report a Bug"}
+      titleIcon={<Bug color="lightgreen" />}
+      extra={
+        <div
+          style={{
+            display: "flex",
+            width: "100%",
+            flexFlow: "column",
+            gap: "0.75rem",
+            paddingBottom: "0.5rem",
+          }}
+        >
+          <textarea
+            onChange={(e) => setIssue(e.target.value)}
+            value={issue}
+            rows={5}
+            placeholder="Describe issue"
+          />
+        </div>
+      }
+      open={bugDialog}
+      onCancel={() => {
+        setBugDialog(false);
+        setIssue("");
+      }}
+      OkButtonText="Report"
+      disabled={!issue.trim()}
+      onOk={handleBugReport}
+      updating={loading}
+    />
     </>
   );
+  
 }
+

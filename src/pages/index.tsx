@@ -103,8 +103,9 @@ export default function Index() {
       >
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
           <Back
+          editMode={userData?.editor===true? true : false}
             title="StarBoard"
-            subtitle={"v1.4"}
+            subtitle={userData?.role}
             icon={<img src="/stardox-bg.png" style={{ width: "1.75rem" }} />}
             noback
             extra={
@@ -161,7 +162,9 @@ export default function Index() {
                       )}
                     </button>
                   </motion.div>
-                )}
+                )
+                
+                }
 
                 {/* <button
                   style={{
@@ -175,6 +178,7 @@ export default function Index() {
                 </button> */}
 
                 <IndexDropDown
+                
                   onLogout={() => setLogoutPrompt(true)}
                   onProfile={() => navigate("/profile")}
                 />
@@ -215,12 +219,7 @@ export default function Index() {
                 icon={<SquareUser color="royalblue" width={"1.25rem"} />}
               />
 
-              <Directive
-                onClick={() => usenavigate("/quick-links")}
-                to={"/quick-links"}
-                title={"Quick Links"}
-                icon={<Link width={"1.25rem"} />}
-              />
+              
 
               <Directive
               onClick={() =>
@@ -232,6 +231,13 @@ export default function Index() {
                 to={"/new-hire"}
                 title={"New Hire"}
                 icon={<UserCheck width={"1.25rem"} color="salmon" />}
+              />
+
+              <Directive
+                onClick={() => usenavigate("/quick-links")}
+                to={"/quick-links"}
+                title={"Quick Links"}
+                icon={<Link width={"1.25rem"} />}
               />
 
               {/* <Directive
