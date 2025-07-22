@@ -141,11 +141,11 @@ const [searchTerm, setSearchTerm] = useState("");
     const numbers = existingLetters
       .map((letter: {refNo?: string}) => {
         const match = letter.refNo?.match(/SSU\/HO\/(\d+)\/\d+/);
-        return match ? parseInt(match[1]) : 315;  // Start from 315 if no matches found
+        return match ? parseInt(match[1]) : 316;  // Start from 316 if no matches found
       })
       .filter((num: number) => !isNaN(num));
 
-    const highestNumber = Math.max(315, ...numbers);
+    const highestNumber = Math.max(316, ...numbers);
     // Format: SSU/HO/XXX/YY where XXX is sequential and YY is last two digits of year
     const year = new Date().getFullYear().toString().slice(-2);
     const nextNumber = (highestNumber + 1).toString();
@@ -575,8 +575,12 @@ const [searchTerm, setSearchTerm] = useState("");
         return;
       }
 
+      // Get a fresh reference number for the new letter
+      const nextRef = getNextReferenceNumber(offerLetters);
+      
       const newLetter = {
         ...formData,
+        refNo: nextRef,  // Use the new reference number
         air_passage: air_passage,
         comm: comm,
         visaS: visaS,
@@ -598,7 +602,7 @@ const [searchTerm, setSearchTerm] = useState("");
       setOfferLettersCache(updatedCache);
       setOfferLetters(updatedCache);
 
-      message.success("Offer letter saved successfully");
+      message.success(`Offer letter saved successfully with reference number: ${nextRef}`);
 
       // Reset form state after saving
       setLoadedLetterId(docRef.id);
