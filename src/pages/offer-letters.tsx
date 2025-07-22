@@ -3079,7 +3079,8 @@ const [searchTerm, setSearchTerm] = useState("");
                   </div>
                   <div
                     style={{
-                      opacity: 0.5,
+                      color:"black",
+                      opacity:"0.45",
                       fontWeight: 600,
                       fontSize: 11,
                       textTransform: "uppercase",
