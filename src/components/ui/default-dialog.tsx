@@ -241,25 +241,25 @@ export default function DefaultDialog(props: Props) {
                   </p>
                 </div>
 
-                {props.contact && (
+                {props.email&& (
                   <div
                     style={{
                       display: "flex",
                       alignItems: "center",
                       gap: "0.5rem",
                       marginTop: "0.95rem",
-                      background: props.contact
-                        ? ""
-                        : "linear-gradient(90deg, rgba(0 0 0/ 0%), rgba(100 100 100/ 25%), rgba(0 0 0/ 0%))",
+                      // background: props.contact
+                      //   ? ""
+                      //   : "linear-gradient(90deg, rgba(0 0 0/ 0%), rgba(100 100 100/ 25%), rgba(0 0 0/ 0%))",
                       padding: "",
                       borderRadius: "0.75rem",
-                      justifyContent: props.contact
-                        ? "space-between"
-                        : "center",
+                      justifyContent:
+                       "space-between",
+                      
                       height: "2.25rem",
-                      border: props.contact
-                        ? "1px solid rgba(100 100 100/30%)"
-                        : "",
+                      border:
+                      "1px solid rgba(100 100 100/30%)"
+                        
                     }}
                   >
                     <div
@@ -301,6 +301,7 @@ export default function DefaultDialog(props: Props) {
                       </a>
                     </div>
 
+                    <div>
                     {props.contact && (
                       <a
                         href={"tel:" + props.contact}
@@ -320,6 +321,7 @@ export default function DefaultDialog(props: Props) {
                         <p style={{ fontSize: "1rem" }}>{props.contact}</p>
                       </a>
                     )}
+                    </div>
                   </div>
                 )}
               </DialogTitle>

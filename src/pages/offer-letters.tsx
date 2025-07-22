@@ -136,6 +136,22 @@ const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const getNextReferenceNumber = (existingLetters: Array<{refNo?: string}>) => {
+    // Extract existing reference numbers and find the highest one
+    const numbers = existingLetters
+      .map((letter: {refNo?: string}) => {
+        const match = letter.refNo?.match(/SSU\/HO\/(\d+)\/\d+/);
+        return match ? parseInt(match[1]) : 315;  // Start from 315 if no matches found
+      })
+      .filter((num: number) => !isNaN(num));
+
+    const highestNumber = Math.max(315, ...numbers);
+    // Format: SSU/HO/XXX/YY where XXX is sequential and YY is last two digits of year
+    const year = new Date().getFullYear().toString().slice(-2);
+    const nextNumber = (highestNumber + 1).toString();
+    return `SSU/HO/${nextNumber}/${year}`;
+  };
+
   const [formData, setFormData] = useState<FormData>({
     date: Date(),
     refNo: "",
@@ -168,6 +184,11 @@ const [searchTerm, setSearchTerm] = useState("");
     roles: [],
     allowances: [],
   });
+
+  useEffect(() => {
+    // Fetch letters and set initial reference number when component mounts
+    fetchOfferLetters();
+  }, []);
 
   const tableRef = useRef<HTMLDivElement>(null);
   const rolesRef = useRef<HTMLDivElement>(null);
@@ -494,6 +515,11 @@ const [searchTerm, setSearchTerm] = useState("");
     // Immediately show cached letters if available
     if (offerLettersCache.length > 0) {
       setOfferLetters(offerLettersCache);
+      // Set next reference number if form is empty
+      if (!formData.refNo) {
+        const nextRef = getNextReferenceNumber(offerLettersCache);
+        setFormData(prev => ({...prev, refNo: nextRef}));
+      }
     }
 
     setOfferLettersLoading(true);
@@ -504,6 +530,14 @@ const [searchTerm, setSearchTerm] = useState("");
       );
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      
+      // Set next reference number if form is empty
+      if (!formData.refNo) {
+        const nextRef = getNextReferenceNumber(
+          data.map((letter: any) => ({ refNo: letter.refNo }))
+        );
+        setFormData(prev => ({...prev, refNo: nextRef}));
+      }
 
       // Merge new letters with cached ones, avoiding duplicates
       const mergedLetters = [...data];
@@ -767,9 +801,11 @@ const [searchTerm, setSearchTerm] = useState("");
 
   const handleClearForm = () => {
     const currentDate = new Date().toLocaleDateString();
+    // Get the next reference number
+    const nextRef = getNextReferenceNumber(offerLetters);
     setFormData({
       date: currentDate,
-      refNo: "",
+      refNo: nextRef,
       candidateName: "",
       position: "",
       workLocation: "",
@@ -1283,7 +1319,7 @@ const [searchTerm, setSearchTerm] = useState("");
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: "rgba(100 100 100/ 40%)",
+                      background: "rgba(100 100 100/ 10%)",
                       color: "indianred",
                       border: "none",
                       padding: "0.5rem 0.75rem",
@@ -1479,7 +1515,7 @@ const [searchTerm, setSearchTerm] = useState("");
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: "rgba(100 100 100/ 40%)",
+                      background: "rgba(100 100 100/ 10%)",
                       color: "indianred",
                       border: "none",
                       padding: "0.5rem 0.75rem",
@@ -1720,7 +1756,7 @@ const [searchTerm, setSearchTerm] = useState("");
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: "rgba(100 100 100/ 40%)",
+                      background: "rgba(100 100 100/ 10%)",
                       color: "indianred",
                       border: "none",
                       padding: "0.5rem 0.75rem",
@@ -2020,7 +2056,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 OMR {formData.salary || "[Basic Salary]"}
               </td>
             </tr>
-            {formData.allowances.length < 1 && (
+            {formData.allowance && (
               <tr>
                 <td style={tableCellStyle}>Allowance</td>
                 <td style={tableCellStyle}>{formData.allowance || "N/A"}</td>
@@ -2112,20 +2148,27 @@ const [searchTerm, setSearchTerm] = useState("");
                 </td>
               </tr>
             ))}
-            <tr>
+            {
+              formData.accomodation && 
+              <tr>
               <td style={tableCellStyle}>Accommodation</td>
               <td style={tableCellStyle}>
                 {formData.accomodation ||
                   "Single Room Bachelors Accommodation shall be provided by the Company"}
               </td>
             </tr>
-            <tr>
+            }
+            {
+              formData.food &&
+              <tr>
               <td style={tableCellStyle}>Food</td>
               <td style={tableCellStyle}>
                 {formData.food ||
                   "Shall be provided by the Company in Site Office and at Camp"}
               </td>
             </tr>
+            }
+            
             <tr>
               <td style={tableCellStyle}>Transport</td>
               <td style={tableCellStyle}>
@@ -3026,7 +3069,7 @@ const [searchTerm, setSearchTerm] = useState("");
                       fontWeight: 500,
                       fontSize: 14,
                       color: "black",
-                      textTransform: "uppercase",
+                      textTransform: "capitalize",
                       display: "flex",
                       gap: "0.5rem",
                       alignItems: "center",
@@ -3036,6 +3079,16 @@ const [searchTerm, setSearchTerm] = useState("");
                   </div>
                   <div
                     style={{
+                      opacity: 0.5,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {ol.refNo || "[No Reference Number]"}
+                  </div>
+                  {/* <div
+                    style={{
                       color: "royalblue",
                       fontWeight: 500,
                       fontSize: 11,
@@ -3043,7 +3096,8 @@ const [searchTerm, setSearchTerm] = useState("");
                     }}
                   >
                     {ol.position || "[No Position]"}
-                  </div>
+                  </div> */}
+                  
 
                   <div style={{ color: "#888", fontSize: 10 }}>
                     {ol.generated_at && ol.generated_at.toDate
