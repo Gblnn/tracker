@@ -87,6 +87,8 @@ export default function Back(props: Props) {
               style={{
                 letterSpacing: "0.025rem",
                 fontWeight: 400,
+                border:"",
+                width: "max-content",
                 fontSize: props.fontSize ? props.fontSize : "1.5rem",
               }}
               onClick={props.onTap}

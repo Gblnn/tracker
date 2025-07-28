@@ -634,7 +634,7 @@ const [searchTerm, setSearchTerm] = useState("");
       // Render table (page 1)
       const tableCanvas = await html2canvas(tableNode, { scale: 2 });
       const tableImgData = tableCanvas.toDataURL("image/png");
-      const pdf = new jsPDF({ unit: "px", format: "a4" });
+      const pdf = new jsPDF({ unit: "px", format: "a4", userUnit:1000 });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const tableProps = pdf.getImageProperties(tableImgData);
       const tableHeight = (tableProps.height * pageWidth) / tableProps.width;
@@ -1940,12 +1940,14 @@ const [searchTerm, setSearchTerm] = useState("");
       <div
         ref={tableRef}
         style={{
-          border: "",
+                border: "",
           width: "100%",
           maxWidth: 800,
           boxSizing: "border-box",
           padding: "4rem",
-          background: "white",
+          background: "url(/letter-head.png)",
+          backgroundSize: "contain",
+          backgroundPosition:"center",
           color: "black",
           borderRadius: "0.5rem",
           // boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
@@ -1984,6 +1986,7 @@ const [searchTerm, setSearchTerm] = useState("");
         <br />
         <br />
         <br />
+        <br/>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           {
             <p style={{ fontWeight: 600, textTransform: "uppercase" }}>
@@ -2032,9 +2035,10 @@ const [searchTerm, setSearchTerm] = useState("");
             fontSize: "0.9rem",
             border: "1px solid",
             textTransform: "uppercase",
+        
           }}
         >
-          <tbody>
+          <tbody style={{}}>
             <tr style={{ fontSize: "0.8rem" }}>
               <td style={tableCellStyle}>Name</td>
               <td style={tableCellStyle}>
@@ -2180,15 +2184,7 @@ const [searchTerm, setSearchTerm] = useState("");
                   "A Car shall be provided by the Company for official use only"}
               </td>
             </tr>
-            {/* {visaS && (
-            <tr>
-              <td style={tableCellStyle}>VISA Status</td>
-              <td style={tableCellStyle}>
-                {formData.visaStatus ||
-                  "Work VISA shall be provided by the Company. Employee agrees that he shall not join any competing business until the end of the Contract Project"}
-              </td>
-            </tr>
-            )} */}
+            
 
             {comm && (
               <tr>
@@ -2200,15 +2196,7 @@ const [searchTerm, setSearchTerm] = useState("");
               </tr>
             )}
 
-            {/* <tr>
-              <td style={tableCellStyle}>Medical</td>
-              <td style={tableCellStyle}>
-                During the service period the company will bear all medical
-                expenses for self- excluding dependents, dental, optical,
-                gynecology and congenital, if any, shall be borne by the
-                company.
-              </td>
-            </tr> */}
+            
             {formData.insurance && (
               <tr>
                 <td style={tableCellStyle}>Insurance</td>
@@ -2242,6 +2230,7 @@ const [searchTerm, setSearchTerm] = useState("");
             )}
           </tbody>
         </table>
+        <img style={{ width:"7.5rem", marginLeft:"30rem", position:"absolute"}} src={"/ssu_stamp.png"}/>
       </div>
       {/* Page break for preview */}
       <div style={{ height: 40 }} />
@@ -2348,6 +2337,7 @@ const [searchTerm, setSearchTerm] = useState("");
         }}
       >
         <br />
+        <img style={{position:"absolute", width:"7.5rem", marginLeft:"20rem", marginTop:"55rem"}} src={"/ssu_stamp.png"}/>
 
         {/* Numbered main clauses */}
         {(() => {
@@ -2472,6 +2462,7 @@ const [searchTerm, setSearchTerm] = useState("");
             }
           );
           return clauses.map((clause, idx) => (
+            <>
             <div
               key={clause.title}
               style={{ marginBottom: "1rem", fontSize: "0.8rem" }}
@@ -2486,9 +2477,14 @@ const [searchTerm, setSearchTerm] = useState("");
                 ({idx + 1}) {clause.title}
               </h3>
               {clause.content}
+              
             </div>
+            
+            </>
           ));
+          
         })()}
+        
       </div>
 
       {/* Page break for preview */}
@@ -2638,6 +2634,8 @@ const [searchTerm, setSearchTerm] = useState("");
           }}
         >
           <div style={{}}>
+            <img style={{position:"absolute", width:"7.5rem", marginLeft:"15rem"}} src={"/ssu_stamp.png"}/>
+            <img style={{position:"absolute", width:"6rem", marginLeft:"6rem", marginTop:"1rem"}} src={"/sunil_sign.png"}/>
             <div style={{ marginBottom: "2rem" }}>
               Employee Signature _____________________________________
             </div>

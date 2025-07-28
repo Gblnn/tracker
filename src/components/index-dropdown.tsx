@@ -96,13 +96,13 @@ export default function IndexDropDown(props:Props) {
         )}
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent className="w-60 mr-5 mt-1">
+      <DropdownMenuContent className="mr-5 mt-1" style={{display:"flex", justifyContent:"flex-start", alignItems:"flex-start"}}>
         <DropdownMenuGroup>
           <DropdownMenuItem
             onClick={props.onProfile}
             className="p-4 cursor-pointer"
           >
-            <div className="flex ">
+            <div style={{paddingRight:"1.5rem"}} className="flex">
               <Avatar  className="h-12 w-12">
                 <AvatarFallback style={{fontWeight:"600", background:"rgba(100 100 100/ 20%)"}} className="text-lg">
                   {userData?.name

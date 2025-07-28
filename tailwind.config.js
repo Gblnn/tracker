@@ -16,6 +16,42 @@ export const theme = {
     },
   },
   extend: {
+    keyframes: {
+      "fade-in": {
+        from: { opacity: 0 },
+        to: { opacity: 1 },
+      },
+      "fade-out": {
+        from: { opacity: 1 },
+        to: { opacity: 0 },
+      },
+      "slide-in-from-top": {
+        from: { transform: "translateY(-100%)" },
+        to: { transform: "translateY(0)" },
+      },
+      "slide-out-to-bottom": {
+        from: { transform: "translateY(0)" },
+        to: { transform: "translateY(100%)" },
+      },
+      "zoom-in": {
+        from: { transform: "scale(0.95)" },
+        to: { transform: "scale(1)" },
+      },
+      "zoom-out": {
+        from: { transform: "scale(1)" },
+        to: { transform: "scale(0.95)" },
+      },
+    },
+    animation: {
+      "fade-in": "fade-in 300ms ease-out",
+      "fade-out": "fade-out 300ms ease-out",
+      "slide-in": "slide-in-from-top 300ms ease-out",
+      "slide-out": "slide-out-to-bottom 300ms ease-out",
+      "zoom-in": "zoom-in 300ms ease-out",
+      "zoom-out": "zoom-out 300ms ease-out",
+      "in": "fade-in 300ms ease-out, slide-in 300ms ease-out, zoom-in 300ms ease-out",
+      "out": "fade-out 300ms ease-out, slide-out 300ms ease-out, zoom-out 300ms ease-out",
+    },
     colors: {
       border: "hsl(var(--border))",
       input: "hsl(var(--input))",

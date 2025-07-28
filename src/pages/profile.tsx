@@ -1,56 +1,104 @@
+import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import Directive from "@/components/directive";
 import IndexDropDown from "@/components/index-dropdown";
 import InputDialog from "@/components/input-dialog";
-import LazyLoader from "@/components/lazy-loader";
 import DefaultDialog from "@/components/ui/default-dialog";
-import { auth, db } from "@/firebase";
-import { signOut } from "firebase/auth";
+import { db } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
-import CircularProgress from "../components/circular-progress";
 import {
-  Book,
-  Car,
   CreditCard,
-  Disc,
-  HeartPulse,
-  UserPlus,
+  UserPlus
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
   const [addUserDialog, setAddUserDialog] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("");
+  
   const [logoutPrompt, setLogoutPrompt] = useState(false);
+  const { userData, logoutUser: logOut } = useAuth();
+  
+  interface DocumentStatus {
+    isValid: boolean;
+    expiryDate?: Date | null;
+    completionDate?: Date | null;
+  }
 
-  const usenavigate = useNavigate();
+  interface DocumentStates {
+    civilId: DocumentStatus;
+    license: DocumentStatus;
+    passport: DocumentStatus;
+    medical: DocumentStatus;
+    training: DocumentStatus;
+  }
+
+  // Document states
+  const [documents, setDocuments] = useState<DocumentStates>({
+    civilId: { isValid: false, expiryDate: null },
+    license: { isValid: false, expiryDate: null },
+    passport: { isValid: false, expiryDate: null },
+    medical: { isValid: false, expiryDate: null },
+    training: { isValid: false, completionDate: null }
+  });
 
   useEffect(() => {
-    fetchUsers();
+
+    fetchDocumentStatus();
   }, []);
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    const RecordCollection = collection(db, "users");
-    const recordQuery = query(
-      RecordCollection,
-      where("email", "==", window.name)
-    );
-    const querySnapshot = await getDocs(recordQuery);
-    setLoading(false);
-    const fetchedData: any = [];
-
-    querySnapshot.forEach((doc: any) => {
-      fetchedData.push({ id: doc.id, ...doc.data() });
-    });
-    setName(fetchedData[0].name);
-    setRole(fetchedData[0].role);
+  const isExpiring = (date: Date | null | undefined): boolean => {
+    if (!date) return false;
+    const expiryTime = date.getTime();
+    const currentTime = new Date().getTime();
+    const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+    return expiryTime - currentTime < thirtyDaysInMs;
   };
+
+  const fetchDocumentStatus = async () => {
+    try {
+      setLoading(true);
+      const docQuery = query(
+        collection(db, "records"),
+        where("email", "==", window.name)
+      );
+      const docSnapshot = await getDocs(docQuery);
+      
+      if (!docSnapshot.empty) {
+        const docData = docSnapshot.docs[0].data();
+        setDocuments({
+          civilId: { 
+            isValid: docData.civilId?.isValid || false,
+            expiryDate: docData.civilId?.expiryDate ? new Date(docData.civilId.expiryDate) : null 
+          },
+          license: { 
+            isValid: docData.license?.isValid || false,
+            expiryDate: docData.license?.expiryDate ? new Date(docData.license.expiryDate) : null 
+          },
+          passport: { 
+            isValid: docData.passport?.isValid || false,
+            expiryDate: docData.passport?.expiryDate ? new Date(docData.passport.expiryDate) : null 
+          },
+          medical: { 
+            isValid: docData.medical?.isValid || false,
+            expiryDate: docData.medical?.expiryDate ? new Date(docData.medical.expiryDate) : null 
+          },
+          training: { 
+            isValid: docData.training?.isValid || false,
+            completionDate: docData.training?.completionDate ? new Date(docData.training.completionDate) : null 
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching document status:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  
 
   return (
     <div
@@ -63,22 +111,24 @@ export default function Profile() {
     >
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
         <Back
-          noback={role == "profile"}
-          title={role == "profile" ? "StarBoard" : "Profile"}
-          subtitle={role == "profile" ? "v2.1.1" : ""}
+          noback={userData?.role == "profile"}
+          title={userData?.role == "profile" ? "StarBoard" : "Profile"}
+          subtitle={userData?.role == "profile" ? "v1.4" : ""}
+        
           icon={
-            role == "profile" ? (
+            userData?.role == "profile" ? (
               <img style={{ width: "2rem" }} src="stardox-bg.png" />
             ) : (
               ""
             )
           }
           extra={
-            <div style={{ display: "flex", gap: "0.5rem" }}>
+            <div style={{ display: "flex", gap: "0.75rem", alignItems:"center" }}>
               {/* <button style={{ paddingLeft: "1rem", paddingRight: "1rem" }}>
                 v2.0
               </button> */}
               <IndexDropDown onProfile={()=>{}} onLogout={() => setLogoutPrompt(true)} />
+              
             </div>
           }
         />
@@ -99,137 +149,21 @@ export default function Profile() {
           </div>
         ) : (
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
-            <div
-              style={{
-                display: "flex",
-                flexFlow: "row",
-                flexWrap: "wrap",
-                gap: "0.5rem",
-                border: "",
-                // borderBottom: "1px solid rgba(100 100 100/ 50%)",
-                borderTop: "1px solid rgba(100 100 100/ 50%)",
-                paddingBottom: "1.5rem",
-                paddingTop: "1.5rem",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  gap: "1rem",
-                  border: "",
-                  width: "fit-content",
-                  alignItems: "center",
-                }}
-              >
-                <LazyLoader
-                  gradient
-                  block
-                  name={name}
-                  width="5rem"
-                  height="5rem"
-                  fontSize="2rem"
-                />
-                <div style={{ border: "" }}>
-                  <p
-                    style={{
-                      fontWeight: "600",
-                      fontSize: "1.5rem",
-                      lineHeight: "1.25rem",
-                    }}
-                  >
-                    {name}
-                  </p>
-                  <p style={{ fontSize: "0.8rem", lineHeight: "2rem" }}>
-                    {window.name}
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "0.65rem",
-                      background: "white",
-                      width: "fit-content",
-                      paddingLeft: "0.35rem",
-                      paddingRight: "0.35rem",
-                      borderRadius: "0.5rem",
-                      color: "black",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {role}
-                  </p>
-                </div>
-              </div>
-              <div
-                className=""
-                style={{
-                  justifyContent: "center",
-                  alignItems: "center",
-                  width: "100%",
-                  border: "",
-                  display: "flex",
-                  gap: "2rem",
-                  marginTop: "1rem",
-                  marginBottom: "1.5rem",
-                }}
-              >
-                <CircularProgress percentage={78} title="Average" />
-                <CircularProgress percentage={95} title="Top" />
-                <CircularProgress percentage={59} title="Me" />
-              </div>
+            
 
-              {/* <button
-                style={{
-                  paddingLeft: "1rem",
-                  paddingRight: "1rem",
-                  marginRight: "1rem",
-                  fontSize: "0.8rem",
-                }}
-              >
-                Edit
-              </button> */}
-
-              {/* <Directive
-            title="Users"
-            icon={<Users width={"1.1rem"} color="dodgerblue" />}
-            onClick={() => setAddUserDialog(true)}
-            to={"/users"}
-          />
-
-          <Directive
-            title="Access Requests"
-            icon={<GitPullRequestArrow width={"1.1rem"} color="dodgerblue" />}
-            onClick={() => setAddUserDialog(true)}
-            to={"/access-requests"}
-          /> */}
-            </div>
-
-            <br />
+          
             <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
               <Directive
-                title={"Civil ID"}
+                title={"Update documents"}
                 icon={<CreditCard color="dodgerblue" width={"1.25rem"} />}
+                onClick={() =>{}}
+                to="/civil-id"
+                status={documents.civilId.isValid}
+                
+                expiring={isExpiring(documents.civilId.expiryDate)}
               />
 
-              <Directive
-                title={"License"}
-                icon={<Car color="violet" width={"1.25rem"} />}
-              />
-
-              <Directive
-                title={"Passport"}
-                icon={<Book color="goldenrod" width={"1.25rem"} />}
-              />
-
-              <Directive
-                title={"Medical"}
-                icon={<HeartPulse width={"1.25rem"} color="tomato" />}
-              />
-
-              <Directive
-                icon={<Disc width={"1.25rem"} color="dodgerblue" />}
-                title={"Training"}
-              />
+              
             </div>
             {/* <div
               style={{
@@ -267,12 +201,12 @@ export default function Profile() {
           setLogoutPrompt(false);
           window.location.reload();
         }}
-        onOk={() => {
-          signOut(auth);
-          usenavigate("/");
-          window.name = "";
-          console.log(window.name);
-          window.location.reload();
+        onOk={async () => {
+          try {
+            await logOut();
+          } catch (error) {
+            console.error("Logout error:", error);
+          }
         }}
       />
 

@@ -32,6 +32,7 @@ import UserReset from "./pages/user-reset";
 import Users from "./pages/users";
 import ValeRecords from "./pages/vale-records";
 import Website from "./pages/website";
+import CreateAccount from "./pages/create-account";
 
 
 export default function App() {
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/" element={<Login />} />
         <Route path="/user-reset" element={<UserReset />} />
         <Route path="/request-access" element={<RequestAccess />} />
+        <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/inbox" element={<Inbox />} />
         <Route path="/quick-links" element={<QuickLinks />} />
 
