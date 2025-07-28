@@ -1,10 +1,9 @@
 import Back from "@/components/back";
 import { motion } from "framer-motion";
-import { useState } from "react";
 
 export default function CreateAccount() {
-    const [email, setEmail] = useState("");
-    const [name, setName] = useState("");
+    // const [email, setEmail] = useState("");
+    // const [name, setName] = useState("");
     return(
         <>
         <div
@@ -66,9 +65,9 @@ export default function CreateAccount() {
               ></input> */}
 
               <input
-                onChange={(e) => {
-                  setName(e.target.value);
-                }}
+                // onChange={(e) => {
+                //   setName(e.target.value);
+                // }}
                 placeholder="Enter Name"
               ></input>
 
