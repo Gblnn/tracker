@@ -631,42 +631,52 @@ const [searchTerm, setSearchTerm] = useState("");
         return;
       }
 
+      const html2canvasOptions = {
+        scale: 1.5, // Reduced scale for better performance while maintaining readability
+        useCORS: true,
+        logging: false,
+        backgroundColor: null
+      };
+
+      const compressImage = (canvas: HTMLCanvasElement) => {
+        return canvas.toDataURL("image/jpeg", 0.7); // Using JPEG with 70% quality for better compression
+      };
+
       // Render table (page 1)
-      const tableCanvas = await html2canvas(tableNode, { scale: 2 });
-      const tableImgData = tableCanvas.toDataURL("image/png");
-      const pdf = new jsPDF({ unit: "px", format: "a4", userUnit:1000 });
+      const tableCanvas = await html2canvas(tableNode, html2canvasOptions);
+      const tableImgData = compressImage(tableCanvas);
+      const pdf = new jsPDF({ unit: "px", format: "a4" });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const tableProps = pdf.getImageProperties(tableImgData);
       const tableHeight = (tableProps.height * pageWidth) / tableProps.width;
-      pdf.addImage(tableImgData, "PNG", 0, 0, pageWidth, tableHeight);
+      pdf.addImage(tableImgData, "JPEG", 0, 0, pageWidth, tableHeight, undefined, 'FAST');
 
       // Render roles (page 2) if present
       if (rolesNode) {
-        const rolesCanvas = await html2canvas(rolesNode, { scale: 2 });
-        const rolesImgData = rolesCanvas.toDataURL("image/png");
+        const rolesCanvas = await html2canvas(rolesNode, html2canvasOptions);
+        const rolesImgData = compressImage(rolesCanvas);
         pdf.addPage();
         const rolesProps = pdf.getImageProperties(rolesImgData);
         const rolesHeight = (rolesProps.height * pageWidth) / rolesProps.width;
-        pdf.addImage(rolesImgData, "PNG", 0, 0, pageWidth, rolesHeight);
+        pdf.addImage(rolesImgData, "JPEG", 0, 0, pageWidth, rolesHeight, undefined, 'FAST');
       }
 
       // Render rest (page 3)
-      const restCanvas = await html2canvas(restNode, { scale: 2 });
-      const restImgData = restCanvas.toDataURL("image/png");
+      const restCanvas = await html2canvas(restNode, html2canvasOptions);
+      const restImgData = compressImage(restCanvas);
       pdf.addPage();
       const restProps = pdf.getImageProperties(restImgData);
       const restHeight = (restProps.height * pageWidth) / restProps.width;
-      pdf.addImage(restImgData, "PNG", 0, 0, pageWidth, restHeight);
+      pdf.addImage(restImgData, "JPEG", 0, 0, pageWidth, restHeight, undefined, 'FAST');
 
       // Render signatures (page 4)
       if (signatureNode) {
-        const signatureCanvas = await html2canvas(signatureNode, { scale: 2 });
-        const signatureImgData = signatureCanvas.toDataURL("image/png");
+        const signatureCanvas = await html2canvas(signatureNode, html2canvasOptions);
+        const signatureImgData = compressImage(signatureCanvas);
         pdf.addPage();
         const signatureProps = pdf.getImageProperties(signatureImgData);
-        const signatureHeight =
-          (signatureProps.height * pageWidth) / signatureProps.width;
-        pdf.addImage(signatureImgData, "PNG", 0, 0, pageWidth, signatureHeight);
+        const signatureHeight = (signatureProps.height * pageWidth) / signatureProps.width;
+        pdf.addImage(signatureImgData, "JPEG", 0, 0, pageWidth, signatureHeight, undefined, 'FAST');
       }
 
       pdf.save(`Offer_Letter_${formData.candidateName || "Candidate"}.pdf`);
