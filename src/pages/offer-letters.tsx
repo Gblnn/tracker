@@ -85,7 +85,7 @@ const tableCellStyle = {
   fontSize: "0.75rem",
   verticalAlign: "top",
   fontFamily: "",
-  background: "#fff",
+  background: "none",
 };
 
 type FormData = {
@@ -2045,11 +2045,12 @@ const [searchTerm, setSearchTerm] = useState("");
             fontSize: "0.9rem",
             border: "1px solid",
             textTransform: "uppercase",
+            background:"none"
         
           }}
         >
           <tbody style={{}}>
-            <tr style={{ fontSize: "0.8rem" }}>
+            <tr style={{ fontSize: "0.8rem",  }}>
               <td style={tableCellStyle}>Name</td>
               <td style={tableCellStyle}>
                 {formData.candidateName || "[Candidate Name]"}
