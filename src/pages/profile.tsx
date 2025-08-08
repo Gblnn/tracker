@@ -10,7 +10,11 @@ import { LoadingOutlined } from "@ant-design/icons";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
 import {
+  AtSign,
+  Building2,
   CreditCard,
+  Factory,
+  HardHat,
   NotebookTabs,
   Phone,
   UserPlus
@@ -200,7 +204,7 @@ export default function Profile() {
             }}>
               <div style={{
                 display: "flex",
-                gap: "1.5rem",
+                gap: "1.25rem",
                 alignItems: "center"
               }}>
                 <LazyLoader 
@@ -214,20 +218,21 @@ export default function Profile() {
                 <div style={{
                   display: "flex",
                   flexFlow: "column",
-                  gap: "0.25rem",
+                  gap: "0.15rem",
                   flex: 1,
                   fontSize:"0.8rem"
                 }}>
                   <h2 style={{ color: "#fff" }}>{userDetails.name}</h2>
                   <div style={{ textTransform: "capitalize" }}>{userDetails.role}</div>
-                    <div>{userDetails.email}</div>
+                    {/* <div>{userDetails.email}</div> */}
                     
                     <div>{userDetails.employeeCode}</div>
                   
                 </div>
               </div>
 
-              <div style={{border:""}}>
+              <div style={{border:"", display:"flex", flexFlow:"column", gap:"0.5rem" }}>
+                
                 <div style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
@@ -235,8 +240,15 @@ export default function Profile() {
                   alignItems: "center",
                   
                 }}>
-                  <Directive noArrow icon={<Phone color="dodgerblue" width={"1.25rem"}/>} title={userDetails.contact}/>
-                  <Directive noArrow icon={<UserPlus color="dodgerblue" width={"1rem"}/>} title={userDetails.dateofJoin}/>
+                  <Directive icon={<Building2 color="dodgerblue" width={"1.25rem"}/>} title={userDetails.project}/>
+                  {
+                    userDetails.site &&
+                    <Directive icon={<HardHat color="dodgerblue" width={"1.25rem"}/>} title={userDetails.site||"N/A"}/>
+                  }
+                  
+                  <Directive icon={<Phone color="dodgerblue" width={"1.25rem"}/>} title={userDetails.contact}/>
+                  <Directive notName icon={<AtSign color="dodgerblue" width={"1.25rem"}/>} title={userDetails.email}/>
+                  
                 </div>
               </div>
 
