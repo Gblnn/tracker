@@ -116,7 +116,7 @@ export default function Phonebook() {
 
         <div style={{ 
             border:"",
-            paddingTop: "10rem",
+            paddingTop: "",
             marginTop: "",
             padding: "1.25rem",
             display: "flex",
@@ -124,6 +124,7 @@ export default function Phonebook() {
             gap: "0.75rem",
             zIndex: ""
         }}>
+            <div style={{border:"", height:"7rem"}}></div>
 
             {filteredRecords.map((record) => (
                 <Directive
