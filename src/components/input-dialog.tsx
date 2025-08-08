@@ -24,6 +24,9 @@ interface Props{
     input7OnChange?:any
     input8OnChange?:any
     input9OnChange?:any
+    input10OnChange?:any
+    input11OnChange?:any
+    input12OnChange?:any
     input3placeholder?:string
     input4placeholder?:string
     input5placeholder?:string
@@ -31,6 +34,9 @@ interface Props{
     input7placeholder?:string
     input8placeholder?:string
     input9placeholder?:string
+    input10placeholder?:string
+    input11placeholder?:string
+    input12placeholder?:string
     disabled?:boolean
     OkButtonIcon?:any
     updating?:boolean
@@ -43,6 +49,9 @@ interface Props{
     input7Value?:string
     input8Value?:string
     input9Value?:string
+    input10Value?:string
+    input11Value?:string
+    input12Value?:string
     input1Label?:string
     input2Label?:string
     input3Label?:string
@@ -52,6 +61,9 @@ interface Props{
     input7Label?:string
     input8Label?:string
     input9Label?:string
+    input10Label?:string
+    input11Label?:string
+    input12Label?:string
     input1Type?:string
     extra?:any
     image?:any
@@ -87,13 +99,13 @@ export default function InputDialog(props:Props){
 
                         <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
                             
-                            {
+                            {/* {
                                 props.input1Label?
                                 <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
                                     {props.input1Label}
                                 </p>
                                 :null
-                            }
+                            } */}
                         
                             <input id='input-1' type={props.input1Type} style={{letterSpacing:props.input1Type?"0.15rem":""}} defaultValue={props.input1Value} placeholder={props.inputplaceholder} onChange={props.inputOnChange}/>
 
@@ -102,13 +114,13 @@ export default function InputDialog(props:Props){
                         props.input2placeholder?
                         <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
 
-                            {
+                            {/* {
                                 props.input2Label?
                                 <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
                                     {props.input2Label}
                                 </p>
                                 :null
-                            }
+                            } */}
                             
                             <input id='input-2' defaultValue={props.input2Value} placeholder={props.input2placeholder} onChange={props.input2OnChange}/>
                         </div>
@@ -119,13 +131,13 @@ export default function InputDialog(props:Props){
 {
                         props.input3placeholder?
                         <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
-                            {
+                            {/* {
                                 props.input3Label?
                                 <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
                                     {props.input3Label}
                                 </p>
                                 :null
-                            }
+                            } */}
                             
                             <input id='input-3' defaultValue={props.input3Value} placeholder={props.input3placeholder} onChange={props.input3OnChange}/>
                         </div>
@@ -136,13 +148,13 @@ export default function InputDialog(props:Props){
                     {
                         props.input4placeholder?
                         <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
-                            {
+                            {/* {
                                 props.input4Label?
                                 <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
                                     {props.input4Label}
                                 </p>
                                 :null
-                            }
+                            } */}
                             
                             <input id='input-4' defaultValue={props.input4Value} placeholder={props.input4placeholder} onChange={props.input4OnChange}/>
                         </div>
@@ -153,87 +165,137 @@ export default function InputDialog(props:Props){
                     {
                         props.input5placeholder?
                         <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
-                            {
+                            {/* {
                                 props.input5Label?
-                                <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                <p style={{width:"", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
                                     {props.input5Label}
                                 </p>
                                 :null
-                            }
+                            } */}
                             
                             <input id='input-5' defaultValue={props.input5Value} placeholder={props.input5placeholder} onChange={props.input5OnChange}/>
                         </div>
                         
                         :null
                     }
-
-{
+                    {props.input10placeholder && (
+                                <div style={{display:"flex", alignItems:"center", gap:"1rem", flex: 1}}>
+                                    {/* {props.input10Label && (
+                                        <p style={{width:"", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                            {props.input10Label}
+                                        </p>
+                                    )} */}
+                                    <input id='input-10' defaultValue={props.input10Value} placeholder={props.input10placeholder} onChange={props.input10OnChange} style={{flex: 1}}/>
+                                </div>
+                            )}
+                    <div style={{display:"flex",gap:"0.5rem"}} >
+                        {
                         props.input6placeholder?
                         <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
-                            {
+                            {/* {
                                 props.input6Label?
                                 <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
                                     {props.input6Label}
                                 </p>
                                 :null
-                            }
+                            } */}
                             
                             <input id='input-6' defaultValue={props.input6Value} placeholder={props.input6placeholder} onChange={props.input6OnChange}/>
                         </div>
                         
                         :null
                     }
-
                     {
-                        props.input7placeholder?
-                        <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
-                            {
-                                props.input7Label?
-                                <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
-                                    {props.input7Label}
-                                </p>
-                                :null
-                            }
+                        (props.input7placeholder) &&
+                        <div style={{display:"flex", gap:"0.5rem"}}>
+                            {props.input7placeholder && (
+                                <div style={{display:"flex", alignItems:"center", gap:"1rem", flex: 1}}>
+                                    {/* {props.input7Label && (
+                                        <p style={{width:"", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                            {props.input7Label}
+                                        </p>
+                                    )} */}
+                                    <input id='input-7' defaultValue={props.input7Value} placeholder={props.input7placeholder} onChange={props.input7OnChange} style={{flex: 1}}/>
+                                </div>
+                            )}
                             
-                            <input id='input-7' defaultValue={props.input7Value} placeholder={props.input7placeholder} onChange={props.input7OnChange}/>
                         </div>
-                        
-                        :null
                     }
+                    </div>
+                    
+                    
 
-                    {
-                        props.input8placeholder?
-                        <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
-                            {
-                                props.input8Label?
+                    <div style={{display:"flex", gap:"0.5rem"}}>
+
+
+                    
+                    {props.input8placeholder && (
+                                <div style={{display:"flex", alignItems:"center", gap:"1rem", flex: 1}}>
+                                    {/* {props.input8Label && (
+                                        <p style={{width:"", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                            {props.input8Label}
+                                        </p>
+                                    )} */}
+                                    <input id='input-8' defaultValue={props.input8Value} placeholder={props.input8placeholder} onChange={props.input8OnChange} style={{flex: 1}}/>
+                                </div>
+                            )}
+                            {props.input9placeholder && (
+                                <div style={{display:"flex", alignItems:"center", gap:"1rem", flex: 1}}>
+                                    {/* {props.input9Label && (
+                                        <p style={{width:"", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                            {props.input9Label}
+                                        </p>
+                                    )} */}
+                                    <input id='input-9' defaultValue={props.input9Value} placeholder={props.input9placeholder} onChange={props.input9OnChange} style={{flex: 1}}/>
+                                </div>
+                            )}
+                    </div>
+
+                    
+
+                    {/* Contact and CUG side by side */}
+                    
+
+                    {/* Site and Project side by side */}
+                   
+
+                    <div style={{display:"flex", gap:"0.5rem"}}>
+                        {
+                        props.input11placeholder?
+                        <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
+                            {/* {
+                                props.input11Label?
                                 <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
-                                    {props.input8Label}
+                                    {props.input11Label}
                                 </p>
                                 :null
-                            }
+                            } */}
                             
-                            <input id='input-8' defaultValue={props.input8Value} placeholder={props.input8placeholder} onChange={props.input8OnChange}/>
+                            <input id='input-11' defaultValue={props.input11Value} placeholder={props.input11placeholder} onChange={props.input11OnChange}/>
                         </div>
-                        
                         :null 
                     }
 
                     {
-                        props.input9placeholder?
-                        <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
-                            {
-                                props.input9Label?
+                        props.input12placeholder?
+                        <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
+                            {/* {
+                                props.input12Label?
                                 <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
-                                    {props.input9Label}
+                                    {props.input12Label}
                                 </p>
                                 :null
-                            }
+                            } */}
                             
-                            <input id='input-9' defaultValue={props.input9Value} placeholder={props.input9placeholder} onChange={props.input9OnChange}/>
+                            <input id='input-12' defaultValue={props.input12Value} placeholder={props.input12placeholder} onChange={props.input12OnChange}/>
                         </div>
-                        
                         :null 
-                    }                    {/* {
+                    }
+
+                    </div>
+
+                     
+                                       {/* {
                         props.combo1?
                         <div>
 

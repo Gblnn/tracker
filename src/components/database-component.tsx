@@ -182,6 +182,9 @@ export default function DbComponent(props: Props) {
   const [editedName, setEditedName] = useState("");
   const [editedEmail, setEditedEmail] = useState("");
   const [editedCug, setEditedCug] = useState("");
+  const [editedRole, setEditedRole] = useState("");
+  const [editedSite, setEditedSite] = useState("");
+  const [editedProject, setEditedProject] = useState("");
   const [editedEmployeeCode, setEditedEmployeeCode] = useState("");
   const [editedCompanyName, setEditedCompanyName] = useState("");
   const [editedDateofJoin, setEditedDateofJoin] = useState("");
@@ -305,6 +308,9 @@ export default function DbComponent(props: Props) {
   const [salaryBasic, setSalaryBasic] = useState(0);
   const [allowance, setAllowance] = useState(0);
   const [cug, setCug] = useState("");
+  const [role, setRole] = useState("");
+  const [site, setSite] = useState("");
+  const [project, setProject] = useState("");
 
   const [newSalary, setNewSalary] = useState(0);
   const [newAllowance, setNewAllowance] = useState(0);
@@ -867,6 +873,9 @@ export default function DbComponent(props: Props) {
       profile: imgUrl,
       profile_name: fileName,
       cug: cug,
+      role: role,
+      site: site,
+      project: project,
       civil_number: "",
       civil_expiry: "",
       civil_DOB: "",
@@ -927,6 +936,9 @@ export default function DbComponent(props: Props) {
         ? employeeCode
         : "",
       cug: editedCug ? editedCug : cug ? cug : "",
+      role: editedRole ? editedRole : role ? role : "",
+      site: editedSite ? editedSite : site ? site : "",
+      project: editedProject ? editedProject : project ? project : "",
       companyName: editedCompanyName
         ? editedCompanyName
         : companyName
@@ -2461,7 +2473,8 @@ export default function DbComponent(props: Props) {
                               setName(post.name);
                               setId(post.id);
                               setDocID(post.id);
-
+                              setCug(post.cug);
+                              setRole(post.role)
                               setCivilNumber(post.civil_number);
                               setCivilExpiry(post.civil_expiry);
                               setCivilDOB(post.civil_DOB);
@@ -3570,20 +3583,32 @@ export default function DbComponent(props: Props) {
           input5OnChange={(e: any) => setDateofJoin(e.target.value)}
           
           input6Label="Basic Salary"
-          input6placeholder="Enter Basic Salary"
+          input6placeholder="Basic Salary"
           input6OnChange={(e: any) => setSalaryBasic(e.target.value)}
           
           input7Label="Allowance"
-          input7placeholder="Enter Allowance"
+          input7placeholder="Allowance"
           input7OnChange={(e: any) => setAllowance(e.target.value)}
           
           input8Label="Contact"
-          input8placeholder="Enter Contact Number"
+          input8placeholder="Enter Contact"
           input8OnChange={(e: any) => setContact(e.target.value)}
           
           input9Label="CUG"
-          input9placeholder="Enter CUG Number"
+          input9placeholder="Enter CUG "
           input9OnChange={(e: any) => setCug(e.target.value)}
+
+          input10Label="Role"
+          input10placeholder="Enter Role"
+          input10OnChange={(e: any) => setRole(e.target.value)}
+
+          input11Label="Site"
+          input11placeholder="Enter Site"
+          input11OnChange={(e: any) => setSite(e.target.value)}
+
+          input12Label="Project"
+          input12placeholder="Enter Project"
+          input12OnChange={(e: any) => setProject(e.target.value)}
         />
 
         {/* EDIT RECORD DIALOG */}
@@ -3644,6 +3669,21 @@ export default function DbComponent(props: Props) {
           input9placeholder="Enter CUG Number"
           input9OnChange={(e: any) => setEditedCug(e.target.value)}
           input9Value={cug}
+
+          input10Label="Role"
+          input10placeholder="Enter Role"
+          input10OnChange={(e: any) => setEditedRole(e.target.value)}
+          input10Value={role}
+
+          input11Label="Site"
+          input11placeholder="Enter Site"
+          input11OnChange={(e: any) => setEditedSite(e.target.value)}
+          input11Value={site}
+
+          input12Label="Project"
+          input12placeholder="Enter Project"
+          input12OnChange={(e: any) => setEditedProject(e.target.value)}
+          input12Value={project}
         />
 
         {/* DELETE RECORD DIALOG */}
