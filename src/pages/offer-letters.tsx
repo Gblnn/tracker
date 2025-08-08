@@ -1955,6 +1955,7 @@ const [searchTerm, setSearchTerm] = useState("");
           maxWidth: 800,
           boxSizing: "border-box",
           padding: "4rem",
+          backgroundColor:"white",
           background: "url(/letter-head.png)",
           backgroundSize: "contain",
           backgroundPosition:"center",
@@ -2045,7 +2046,8 @@ const [searchTerm, setSearchTerm] = useState("");
             fontSize: "0.9rem",
             border: "1px solid",
             textTransform: "uppercase",
-            background:"none"
+            background:"none",
+            
         
           }}
         >

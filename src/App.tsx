@@ -33,6 +33,7 @@ import Users from "./pages/users";
 import ValeRecords from "./pages/vale-records";
 import Website from "./pages/website";
 import CreateAccount from "./pages/create-account";
+import Phonebook from "./pages/phonebook";
 
 
 export default function App() {
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="/user" element={<UserPage />} />
           <Route path="/new-hire" element={<NewHire />} />
           <Route path="/offer-letters" element={<OfferLetters />} />
+          <Route path="/phonebook" element={<Phonebook />} />
           <Route path="/agreements" element={<Agreements />} />
           <Route path="/shortlist" element={<Shortlist />} />
           <Route path="/profile" element={<Profile />} />

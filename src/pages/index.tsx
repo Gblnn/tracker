@@ -11,11 +11,11 @@ import { motion } from "framer-motion";
 import {
   Bug,
   FileArchive,
+  FilePen,
   KeyRound,
   Link,
   Mail,
   QrCode,
-  SquareUser,
   UserCheck
 } from "lucide-react";
 import moment from "moment";
@@ -207,8 +207,9 @@ export default function Index() {
                 icon={<FileArchive color="violet" width={"1.25rem"} />}
               />
 
-              <Directive
-                
+              <Directive onClick={()=>usenavigate("/documents")} title={"Document Generation"} icon={<FilePen width={"1.25rem"} color="mediumslateblue"/>} />
+
+              {/* <Directive
                 onClick={() =>
                   access
                     ? usenavigate("/human-resources")
@@ -217,7 +218,7 @@ export default function Index() {
                 // protected={userData?.role == "hr" ? false:true}
                 title={"Human Resources"}
                 icon={<SquareUser color="royalblue" width={"1.25rem"} />}
-              />
+              /> */}
 
               
 

@@ -10,9 +10,11 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
 import {
   CreditCard,
+  NotebookTabs,
   UserPlus
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
   const [addUserDialog, setAddUserDialog] = useState(false);
@@ -20,6 +22,8 @@ export default function Profile() {
   
   const [logoutPrompt, setLogoutPrompt] = useState(false);
   const { userData, logoutUser: logOut } = useAuth();
+
+  const navigate = useNavigate();
   
   interface DocumentStatus {
     isValid: boolean;
@@ -162,6 +166,8 @@ export default function Profile() {
                 
                 expiring={isExpiring(documents.civilId.expiryDate)}
               />
+
+              <Directive onClick={()=>navigate("/phonebook")}  title={"Phonebook"} icon={<NotebookTabs color="dodgerblue" width={"1.25rem"}/>}/>
 
               
             </div>

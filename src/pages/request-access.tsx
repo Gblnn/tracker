@@ -1,14 +1,14 @@
 import Back from "@/components/back";
-import { message } from "antd";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { motion } from "framer-motion";
-import { useState } from "react";
-import { LoadingOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
 import { db } from "@/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { toast } from "sonner";
+import { LoadingOutlined } from "@ant-design/icons";
+import { message } from "antd";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { motion } from "framer-motion";
 import { ChevronLeft, LoaderCircle } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function RequestAccess() {
   const [stage, setStage] = useState(1)
@@ -23,22 +23,34 @@ export default function RequestAccess() {
   const checkEmailAndCreateAccount = async () => {
     try {
       setLoading(true);
-      // Check if email exists in records
+      
+      // First check if email exists in records
       const recordsRef = collection(db, "records");
-      const q = query(recordsRef, where("email", "==", email));
-      const querySnapshot = await getDocs(q);
+      const recordsQuery = query(recordsRef, where("email", "==", email));
+      const recordsSnapshot = await getDocs(recordsQuery);
 
-      if (querySnapshot.empty) {
-        message.error("Email not found in records");
+      if (recordsSnapshot.empty) {
+        toast.error("Email not found in records");
+        setLoading(false);
+        return;
+      }
+
+      // Then check if user already exists in users collection
+      const usersRef = collection(db, "users");
+      const usersQuery = query(usersRef, where("email", "==", email));
+      const usersSnapshot = await getDocs(usersQuery);
+
+      if (!usersSnapshot.empty) {
+        toast.error("An account with this email already exists");
         setLoading(false);
         return;
       }
 
       // Get user details from the record
-      const userRecord = querySnapshot.docs[0].data();
+      const userRecord = recordsSnapshot.docs[0].data();
       setName(userRecord.name || "");
 
-      // If email exists, show the create account form
+      // If email exists in records but not in users, show the create account form
       setStage(2);
       toast.success(`Email verified`);
       
@@ -53,19 +65,28 @@ export default function RequestAccess() {
   const createAccount = async () => {
     try {
       setLoading(true);
-      // Create user account
-      await createUserWithEmailAndPassword(auth, email, password);
+      
+      
+      
+      // Add user to users collection in Firestore
+      const usersRef = collection(db, "users");
+      await addDoc(usersRef, {
+        email: email,
+        name: name,
+        created_at: new Date(),
+        role: "profile"  // Default role for new users
+      });
       
       // Sign in the user
       await signInWithEmailAndPassword(auth, email, password);
       
       window.name = email;
-      message.success("Account created successfully!");
+      toast.success("Account created successfully!");
       navigate("/profile");
     } catch (error: any) {
       setLoading(false);
       console.error(error);
-      message.error(error.message);
+      toast.error(error.message);
     }
   };
 
@@ -213,11 +234,7 @@ export default function RequestAccess() {
 
               <input
                 type="password"
-                onChange={(e) => {
-                  if (e.target.value !== password) {
-                    toast.error("Passwords do not match");
-                  }
-                }}
+                
                 placeholder="Confirm Password"
               />
 
