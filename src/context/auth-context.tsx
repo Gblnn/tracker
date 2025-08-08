@@ -12,6 +12,7 @@ interface AuthContextType {
     role?: string;
     editor?: boolean;
   } | null;
+  assignedSite?: string; // Optional field for assigned site
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

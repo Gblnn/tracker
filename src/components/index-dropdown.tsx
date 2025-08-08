@@ -106,7 +106,7 @@ export default function IndexDropDown(props:Props) {
               <Avatar  className="h-12 w-12">
                 <AvatarFallback style={{fontWeight:"600", background:"rgba(100 100 100/ 20%)"}} className="text-lg">
                   {userData?.name
-                    ? getInitials(userData.email.split("@")[0])
+                    ? getInitials(userData.name.split("@")[0])
                     : "?"}
                 </AvatarFallback>
               </Avatar>
@@ -121,7 +121,7 @@ export default function IndexDropDown(props:Props) {
                   style={{ width: "fit-content" }}
                   className="inline-flex items-center rounded-full px-2 py-0.5 mt-1 text-xs font-medium bg-primary/10 text-primary"
                 >
-                  {userData?.role || "User"}
+                  {userData?.system_role || "User"}
                 </span>
               </div>
             </div>

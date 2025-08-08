@@ -8,9 +8,10 @@ export function useCurrentUser() {
     windowName: userData?.email || "",
     // New properties
     email: userData?.email || "",
-    role: userData?.role || "",
+    role: userData?.role || "",  // job role
+    system_role: userData?.system_role || "profile", // system access role
     clearance: userData?.clearance || "none",
-    isAdmin: userData?.role === "admin",
+    isAdmin: userData?.system_role === "admin",
     isAuthenticated: !!user && !!userData,
     // Raw data
     user,

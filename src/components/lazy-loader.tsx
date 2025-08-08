@@ -20,7 +20,7 @@ export default function LazyLoader(props: Props) {
     <div style={{ display: "flex" }}>
       <div
         style={{
-          zIndex: "-1",
+          
           fontSize: props.fontSize ? props.fontSize : "",
           background: props.background
             ? props.background

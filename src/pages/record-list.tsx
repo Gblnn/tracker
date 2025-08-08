@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { LoadingOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
-import { HistoryIcon, Inbox, KeyRound, Mail } from "lucide-react";
+import { HardHat, HistoryIcon, Inbox, KeyRound, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -21,6 +21,8 @@ export default function RecordList() {
   const [verifyDialog, setVerifyDialog] = useState(false);
   const [ssuloading, setSSULoading] = useState(false);
   const [valeloading, setValeLoading] = useState(false);
+  const [subcontractLoading, setSubcontractLoading] = useState(false);
+  const [manpowerLoading, setManpowerLoading] = useState(false);
   const { userData, logoutUser: logOut } = useAuth();
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export default function RecordList() {
     }
   }, [userData, navigate, location]);
 
-  const handleLoginPrompt = async (type: "ssu" | "vale") => {
+  const handleLoginPrompt = async (type: "ssu" | "vale" | "subcontract" | "manpower") => {
     if (!userData) {
       toast.error("Authentication required");
       navigate("/");
@@ -43,35 +45,67 @@ export default function RecordList() {
     }
 
     try {
-      if (type === "ssu") {
-        setSSULoading(true);
-        if (
-          userData.clearance === "All" ||
-          userData.clearance === "Sohar Star United"
-        ) {
-          await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay for loading state
-          navigate("/records");
-        } else {
-          toast.error("No clearance to access");
-        }
-      } else {
-        setValeLoading(true);
-        if (userData.clearance === "All" || userData.clearance === "Vale") {
-          await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay for loading state
-          navigate("/vale-records");
-        } else {
-          toast.error("No clearance to access");
-        }
+      switch (type) {
+        case "ssu":
+          setSSULoading(true);
+          if (
+            userData.clearance === "All" ||
+            userData.clearance === "Sohar Star United"
+          ) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            navigate("/records");
+          } else {
+            toast.error("No clearance to access");
+          }
+          setSSULoading(false);
+          break;
+
+        case "vale":
+          setValeLoading(true);
+          if (userData.clearance === "All" || userData.clearance === "Vale") {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            navigate("/vale-records");
+          } else {
+            toast.error("No clearance to access");
+          }
+          setValeLoading(false);
+          break;
+
+        case "subcontract":
+          setSubcontractLoading(true);
+          if (
+            userData.clearance === "All" ||
+            userData.clearance === "Sohar Star United"
+          ) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            navigate("/subcontract-records");
+          } else {
+            toast.error("No clearance to access");
+          }
+          setSubcontractLoading(false);
+          break;
+
+        case "manpower":
+          setManpowerLoading(true);
+          if (
+            userData.clearance === "All" ||
+            userData.clearance === "Sohar Star United"
+          ) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            navigate("/manpower-records");
+          } else {
+            toast.error("No clearance to access");
+          }
+          setManpowerLoading(false);
+          break;
       }
     } catch (error) {
       console.error("Navigation error:", error);
       toast.error("Failed to navigate");
-    } finally {
-      if (type === "ssu") {
-        setSSULoading(false);
-      } else {
-        setValeLoading(false);
-      }
+      setSSULoading(false);
+      setValeLoading(false);
+      setSubcontractLoading(false);
+      setManpowerLoading(false);
     }
   };
 
@@ -203,6 +237,34 @@ export default function RecordList() {
 
                   <AvatarFallback>
                     <p style={{ paddingTop: "0.1rem" }}>{"V"}</p>
+                  </AvatarFallback>
+                </Avatar>
+              }
+            />
+
+            <Directive
+              loading={subcontractLoading}
+              onClick={() => handleLoginPrompt("subcontract")}
+              title="Subcontracted Workers"
+              icon={
+                <HardHat width={"1.25rem"} color="dodgerblue" />
+              }
+            />
+
+            <Directive
+              loading={manpowerLoading}
+              onClick={() => handleLoginPrompt("manpower")}
+              title="Manpower Supply"
+              icon={
+                <Avatar
+                  style={{ width: "1.25rem", height: "1.25rem", border: "" }}
+                >
+                  <AvatarImage
+                    style={{ objectFit: "cover" }}
+                    src={"/oman-logo.png"}
+                  />
+                  <AvatarFallback>
+                    <p style={{ paddingTop: "0.1rem" }}>{"MP"}</p>
                   </AvatarFallback>
                 </Avatar>
               }

@@ -34,6 +34,8 @@ import ValeRecords from "./pages/vale-records";
 import Website from "./pages/website";
 import CreateAccount from "./pages/create-account";
 import Phonebook from "./pages/phonebook";
+import Supervisor from "./pages/supervisor";
+import SiteCoordinator from "./pages/site-coordinator";
 
 
 export default function App() {
@@ -48,6 +50,7 @@ export default function App() {
         <Route path="/request-access" element={<RequestAccess />} />
         <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/inbox" element={<Inbox />} />
+        <Route path="/supervisor" element={<Supervisor />} />
         <Route path="/quick-links" element={<QuickLinks />} />
 
         {/* Protected routes */}
@@ -63,6 +66,7 @@ export default function App() {
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/users" element={<Users />} />
           <Route path="/archives" element={<Archives />} />
+          <Route path="/site-coordinator" element={<SiteCoordinator />} />
           <Route path="/access-control" element={<AccessControl />} />
           <Route path="access-requests" element={<AccessRequests />} />
           <Route path="/user" element={<UserPage />} />

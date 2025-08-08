@@ -14,9 +14,12 @@ import { LoadingOutlined } from "@ant-design/icons";
 
 interface FirestoreUserData {
   id: string;
-  role: string;
+  role: string;  // job role/designation
+  system_role: "admin" | "user" | "supervisor" | "site_coordinator" | "management" | "profile" | string;
   email: string;
   clearance: "Sohar Star United" | "Vale" | "All" | "none";
+  assignedSite?: string;
+  assignedProject?: string;
   [key: string]: any;
 }
 

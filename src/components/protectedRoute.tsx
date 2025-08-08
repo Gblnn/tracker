@@ -8,6 +8,16 @@ const CLEARANCE_ROUTES = {
   "/vale-records": ["All", "Vale"],
 };
 
+// Define system-role-restricted routes
+const ROLE_RESTRICTED_ROUTES = {
+  supervisor: ["/supervisor"], // Supervisors can only access /supervisor
+  admin: ["*"], // Admins can access all routes
+  user: ["/record-list", "/records", "/vale-records"], // Regular users
+  site_coordinator: ["/site-coordinator", "/record-list"],
+  management: ["/management", "/record-list", "/reports"],
+  profile: ["/profile", "/records"] // Basic profile access
+};
+
 export default function ProtectedRoutes() {
   const { user, userData, loading } = useAuth();
   const location = useLocation();
@@ -31,6 +41,19 @@ export default function ProtectedRoutes() {
   // First check if user is authenticated
   if (!user || !userData) {
     return <Navigate to="/" />;
+  }
+
+  // Check role-based route restrictions
+  const allowedRoutes = ROLE_RESTRICTED_ROUTES[userData.system_role as keyof typeof ROLE_RESTRICTED_ROUTES] || [];
+  const currentPath = location.pathname;
+  
+  // If the user's system_role has route restrictions and current path is not allowed
+  if (allowedRoutes.length > 0 && !allowedRoutes.includes("*")) {
+    if (!allowedRoutes.includes(currentPath)) {
+      // Redirect to their default page based on role
+      const defaultRoute = allowedRoutes[0];
+      return <Navigate to={defaultRoute} replace />;
+    }
   }
 
   // Then check clearance for protected routes

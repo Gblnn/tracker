@@ -6,6 +6,7 @@ import DropDown from "@/components/dropdown";
 import InputDialog from "@/components/input-dialog";
 import MedicalID from "@/components/medical-id";
 import Passport from "@/components/passport";
+import RoleSelect from "@/components/role-select";
 import SearchBar from "@/components/search-bar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import VehicleID from "@/components/vehicle-id";
@@ -181,7 +182,7 @@ export default function DbComponent(props: Props) {
   const [editedName, setEditedName] = useState("");
   const [editedEmail, setEditedEmail] = useState("");
   const [editedCug, setEditedCug] = useState("");
-  const [editedRole, setEditedRole] = useState("");
+  const [editedRole] = useState("");
   const [editedSite, setEditedSite] = useState("");
   const [editedProject, setEditedProject] = useState("");
   const [editedEmployeeCode, setEditedEmployeeCode] = useState("");
@@ -308,6 +309,7 @@ export default function DbComponent(props: Props) {
   const [allowance, setAllowance] = useState(0);
   const [cug, setCug] = useState("");
   const [role, setRole] = useState("");
+  const [system_role, setSystemRole] = useState("");
   const [site, setSite] = useState("");
   const [project, setProject] = useState("");
 
@@ -354,6 +356,7 @@ export default function DbComponent(props: Props) {
   const [pageSize] = useState(100);
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [designation, setDesignation] = useState("");
 
   // const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -873,6 +876,8 @@ export default function DbComponent(props: Props) {
       profile_name: fileName,
       cug: cug,
       role: role,
+      system_role: system_role || 'profile',
+      designation: designation,
       site: site,
       project: project,
       civil_number: "",
@@ -936,6 +941,7 @@ export default function DbComponent(props: Props) {
         : "",
       cug: editedCug ? editedCug : cug ? cug : "",
       role: editedRole ? editedRole : role ? role : "",
+      system_role: editedRole ? editedRole : system_role ? system_role : "profile",
       site: editedSite ? editedSite : site ? site : "",
       project: editedProject ? editedProject : project ? project : "",
       companyName: editedCompanyName
@@ -2470,10 +2476,13 @@ export default function DbComponent(props: Props) {
                             onClick={() => {
                               setRecordSummary(true);
                               setName(post.name);
+                              setSystemRole(post.system_role)
                               setId(post.id);
                               setDocID(post.id);
                               setCug(post.cug);
                               setRole(post.role)
+                              setSite(post.site);
+                              setProject(post.project);
                               setEmail(post.email)
                               setProject(post.project);
                               setCivilNumber(post.civil_number);
@@ -3599,9 +3608,9 @@ export default function DbComponent(props: Props) {
           input9placeholder="Enter CUG "
           input9OnChange={(e: any) => setCug(e.target.value)}
 
-          input10Label="Role"
-          input10placeholder="Enter Role"
-          input10OnChange={(e: any) => setRole(e.target.value)}
+          // input10Label="Designation"
+          // input10placeholder="Enter Designation"
+          // input10OnChange={(e: any) => setDesignation(e.target.value)}
 
           input11Label="Site"
           input11placeholder="Enter Site"
@@ -3610,6 +3619,24 @@ export default function DbComponent(props: Props) {
           input12Label="Project"
           input12placeholder="Enter Project"
           input12OnChange={(e: any) => setProject(e.target.value)}
+
+          extra={
+            <div style={{ display:"flex", gap: "0.5rem", width: "100%" }}>
+              <input 
+                onChange={(e: any) => setDesignation(e.target.value)} 
+                placeholder="Enter Designation" 
+                value={designation} 
+                style={{width: "100%", fontSize: ""}}/>
+              <RoleSelect 
+                value={system_role || 'profile'} 
+                onChange={(value) => {
+                  setSystemRole(value);
+                }}
+              />
+            </div>
+          }
+
+         
         />
 
         {/* EDIT RECORD DIALOG */}
@@ -3671,10 +3698,10 @@ export default function DbComponent(props: Props) {
           input9OnChange={(e: any) => setEditedCug(e.target.value)}
           input9Value={cug}
 
-          input10Label="Role"
-          input10placeholder="Enter Role"
-          input10OnChange={(e: any) => setEditedRole(e.target.value)}
-          input10Value={role}
+          // input10Label="Designation"
+          // input10placeholder="Enter Designation"
+          // input10OnChange={(e: any) => setEditedDesignation(e.target.value)}
+          // input10Value={role}
 
           input11Label="Site"
           input11placeholder="Enter Site"
@@ -3685,6 +3712,20 @@ export default function DbComponent(props: Props) {
           input12placeholder="Enter Project"
           input12OnChange={(e: any) => setEditedProject(e.target.value)}
           input12Value={project}
+
+          extra={
+            <div style={{width: "100%", display:"flex", gap:"0.5rem"}}>
+              <input onChange={(e: any) => setRole(e.target.value)} placeholder="Enter Designation" defaultValue={role}/>
+              <RoleSelect 
+                value={system_role} 
+                onChange={(value) => {
+                  setRole(value);
+                }}
+              />
+            </div>
+          }
+
+       
         />
 
         {/* DELETE RECORD DIALOG */}

@@ -48,7 +48,25 @@ export default function Login() {
       }
 
       // Navigate to the return path or index, using replace to avoid history stack
-      const returnPath = location.state?.returnPath || "/index";
+      let returnPath = location.state?.returnPath;
+      
+      if (!returnPath) {
+        // Role-based redirection
+        switch (userData.role) {
+          case "supervisor":
+            returnPath = "/supervisor";
+            break;
+          case "site_coordinator":
+            returnPath = "/site-coordinator";
+            break;
+          case "management":
+            returnPath = "/management";
+            break;
+          default:
+            returnPath = "/index";
+        }
+      }
+      
       navigate(returnPath, { replace: true });
     } catch (err: any) {
       const errorMessage = err.message;
@@ -265,9 +283,7 @@ export default function Login() {
                 Developer Key
               </Button> */}
               <p style={{ opacity: 0.5, fontSize: "0.65rem", border: "" }}>
-                If you do not have an account you can request for one. You will
-                be granted access to create an account once your request is
-                processed.
+                If you do not have an account you can create one, if your email exists on our system.
               </p>
               <Link
                 style={{
@@ -278,7 +294,7 @@ export default function Login() {
                 }}
                 to={"/request-access"}
               >
-                Request Access
+                Create Account
               </Link>
             </div>
           </div>

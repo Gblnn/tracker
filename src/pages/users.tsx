@@ -5,7 +5,7 @@ import Directive from "@/components/directive";
 import IOMenu from "@/components/editorMenu";
 import InputDialog from "@/components/input-dialog";
 import RefreshButton from "@/components/refresh-button";
-import SelectMenu from "@/components/select-menu";
+import RoleSelect from "@/components/role-select";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { db } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
@@ -58,6 +58,8 @@ export default function Users() {
   const [clearance, setClearance] = useState("");
   const [editor, setEditor] = useState("");
   const [sensitive_data, setSensitiveData] = useState("");
+  const [site, setSite] = useState("");
+  const [project, setProject] = useState("");
 
   const auth = getAuth();
 
@@ -88,10 +90,13 @@ export default function Users() {
       await addDoc(collection(db, "users"), {
         name: name,
         email: email,
-        role: "user",
+        role: "",  // job role will be set later
+        system_role: "user", // default system role
         clearance: "Sohar Star United",
         editor: "false",
         sensitive_data: "false",
+        assignedSite: "",
+        assignedProject: "",
       });
       message.success("User created");
       setLoading(false);
@@ -142,6 +147,13 @@ export default function Users() {
         clearance: clearance,
         editor: editor,
         sensitive_data: sensitive_data,
+        ...(role === "supervisor" || role === "site_coordinator" ? {
+          assignedSite: site,
+          assignedProject: project,
+        } : {
+          assignedSite: "",
+          assignedProject: "",
+        })
       };
 
       await updateDoc(doc(db, "users", docid), updatedData);
@@ -229,6 +241,8 @@ export default function Users() {
                   setDisplayEmail(user.email);
                   setRole(user.role);
                   setClearance(user.clearance);
+                  setSite(user.assignedSite || "");
+                  setProject(user.assignedProject || "");
                   setEditor(user.editor);
                   setSensitiveData(user.sensitive_data);
                 }}
@@ -274,11 +288,54 @@ export default function Users() {
               noArrow
               icon={<AtSign width={"1.24rem"} color="dodgerblue" />}
             />
-            <SelectMenu value={role.toLowerCase()} onChange={setRole} />
+            <RoleSelect 
+              value={role.toLowerCase()} 
+              onChange={(newRole) => {
+                setRole(newRole);
+                if (newRole !== 'supervisor' && newRole !== 'site_coordinator') {
+                  setSite('');
+                  setProject('');
+                }
+              }}
+            />
             <ClearanceMenu
               value={clearance ? clearance : "Undefined"}
               onChange={setClearance}
             />
+            {(role === 'supervisor' || role === 'site_coordinator') && (
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+              }}>
+                <input
+                  placeholder="Assigned Site"
+                  value={site || ""}
+                  onChange={(e) => setSite(e.target.value)}
+                  style={{
+                    borderRadius: "0.5rem",
+                    backgroundColor: "rgba(255,255,255,0.05)",
+                    border: "none",
+                    padding: "0.75rem",
+                    color: "inherit",
+                    fontSize: "0.85rem"
+                  }}
+                />
+                <input
+                  placeholder="Assigned Project"
+                  value={project || ""}
+                  onChange={(e) => setProject(e.target.value)}
+                  style={{
+                    borderRadius: "0.5rem",
+                    backgroundColor: "rgba(255,255,255,0.05)",
+                    border: "none",
+                    padding: "0.75rem",
+                    color: "inherit",
+                    fontSize: "0.85rem"
+                  }}
+                />
+              </div>
+            )}
             <IOMenu
               title="Editing"
               placeholder="Clearance"

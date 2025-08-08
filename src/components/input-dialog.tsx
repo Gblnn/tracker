@@ -178,6 +178,9 @@ export default function InputDialog(props:Props){
                         
                         :null
                     }
+                    <div>
+                        
+                    </div>
                     {props.input10placeholder && (
                                 <div style={{display:"flex", alignItems:"center", gap:"1rem", flex: 1}}>
                                     {/* {props.input10Label && (
@@ -304,9 +307,7 @@ export default function InputDialog(props:Props){
                     } */}
 
                     </div>
-                </DialogHeader>
-
-                {
+                     {
                         props.extra?
                         
                             props.extra
@@ -314,6 +315,9 @@ export default function InputDialog(props:Props){
                         :null 
                     }
 
+                </DialogHeader>
+
+               
                 <DialogDescription style={{display:"none"}}/>
 
                 <DialogFooter>

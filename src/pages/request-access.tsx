@@ -75,7 +75,8 @@ export default function RequestAccess() {
         clearance:"None",
         name: name,
         created_at: new Date(),
-        role: "profile"  // Default role for new users
+        role: "",  // job role will be set later
+        system_role: "profile"  // Default system role for new users
       });
 
       // Create Firebase auth account
