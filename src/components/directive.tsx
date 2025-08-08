@@ -175,7 +175,7 @@ export default function Directive(props: Props) {
                 style={{
                   fontWeight: 400,
                   textAlign: "left",
-                  fontSize: props.titleSize ? props.titleSize : "0.9rem",
+                  fontSize: props.titleSize ? props.titleSize : "1rem",
                   display: "flex",
                   gap: "0.65rem",
                   alignItems: "center",

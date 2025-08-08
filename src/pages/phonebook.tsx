@@ -107,7 +107,7 @@ export default function Phonebook() {
                         borderRadius: "0.5rem",
                         border: "1px solid rgba(100, 100, 100, 0.2)",
                         background: "rgba(100, 100, 100, 0.15)",
-                        fontSize: "0.85rem",
+                        fontSize: "1rem",
                         boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
                     }}
                 />
@@ -151,9 +151,9 @@ export default function Phonebook() {
                     paddingTop:0,
                     padding: "1.25rem", 
                     width:"100%",
-                    paddingBottom: "2.75rem",
+                    paddingBottom: "4rem",
                 }}>
-                    <div style={{display:"flex", justifyContent:"center", alignItems:"center", padding:"1.25rem", paddingTop:"0r"}}>
+                    <div style={{display:"flex", justifyContent:"center", alignItems:"center", padding:"1.25rem", paddingTop:"0"}}>
                         <h2>{selectedRecord?.name}</h2>
                     </div>
                     
@@ -165,9 +165,9 @@ export default function Phonebook() {
                         width: "100%"
                     }}>
 
-                        <Directive onClick={() => { location.href = "mailto:" + selectedRecord?.email; }} icon={<AtSign width={"1.25rem"} color="dodgerblue"/>} notName title={selectedRecord?.email||"No Email"} />
+                        <Directive onClick={() => { selectedRecord?.email && (location.href = "mailto:" + selectedRecord?.email); }} icon={<AtSign width={"1.25rem"} color="dodgerblue"/>} notName title={selectedRecord?.email||"No Email"} />
 
-                        <Directive onClick={() => { location.href = "tel:" + selectedRecord?.contact; }} title={selectedRecord?.contact||"No Contact"} icon={<PhoneIcon width={"1.25rem"} color="dodgerblue"/>}/>
+                        <Directive onClick={() => { selectedRecord?.contact && (location.href = "tel:" + selectedRecord?.contact); }} title={selectedRecord?.contact||"No Contact"} icon={<PhoneIcon width={"1.25rem"} color="dodgerblue"/>}/>
                         
                     </div>
                 </div>
