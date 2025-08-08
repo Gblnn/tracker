@@ -77,7 +77,7 @@ export default function Profile() {
       setLoading(true);
       const docQuery = query(
         collection(db, "records"),
-        where("email", "==", window.name)
+        where("email", "==", userData?.email)
       );
       const docSnapshot = await getDocs(docQuery);
       
@@ -152,7 +152,7 @@ export default function Profile() {
         blurBG
         icon={userData?.system_role === "profile"&&<img src="/stardox-bg.png" width={"30rem"}/>}
           noback={userData?.system_role === "profile"}
-          title={userData?.system_role === "profile" ? "StarBoard" : "User Profile"}
+          title={userData?.system_role === "profile" ? "StarBoard" : "Profile"}
           
           extra={
             <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
