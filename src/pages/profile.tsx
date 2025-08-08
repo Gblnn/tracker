@@ -13,7 +13,6 @@ import {
   AtSign,
   Building2,
   CreditCard,
-  Factory,
   HardHat,
   NotebookTabs,
   Phone,
