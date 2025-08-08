@@ -1,14 +1,14 @@
 import Back from "@/components/back";
-import { db } from "@/firebase";
-import { LoadingOutlined } from "@ant-design/icons";
 import { message } from "antd";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { motion } from "framer-motion";
-import { ChevronLeft, LoaderCircle } from "lucide-react";
 import { useState } from "react";
+import { LoadingOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { db } from "@/firebase";
+import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import { toast } from "sonner";
+import { ChevronLeft, LoaderCircle } from "lucide-react";
 
 export default function RequestAccess() {
   const [stage, setStage] = useState(1)
@@ -72,16 +72,21 @@ export default function RequestAccess() {
       const usersRef = collection(db, "users");
       await addDoc(usersRef, {
         email: email,
+        clearance:"None",
         name: name,
         created_at: new Date(),
         role: "profile"  // Default role for new users
       });
+
+      // Create Firebase auth account
+      await createUserWithEmailAndPassword(auth, email, password);
+toast.success("Account created successfully!");
       
       // Sign in the user
       await signInWithEmailAndPassword(auth, email, password);
       
       window.name = email;
-      toast.success("Account created successfully!");
+      
       navigate("/profile");
     } catch (error: any) {
       setLoading(false);
