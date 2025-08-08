@@ -22,12 +22,13 @@ export default function Back(props: Props) {
 
   return (
     <div
+    
       className="transitions"
       style={{
         display: "flex",
         alignItems: "center",
         gap: "0.75rem",
-        zIndex: 5,
+        zIndex: 10,
         justifyContent: "space-between",
         padding: props.fixed ? "1.25rem" : " ",
         position: props.fixed ? "fixed" : "inherit",

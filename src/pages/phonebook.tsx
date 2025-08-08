@@ -132,7 +132,7 @@ export default function Phonebook() {
 
             {filteredRecords.map((record) => (
                 <Directive
-                
+                subtext={record.role}
                     onClick={() => {
                         setSelectedRecord(record);
                         setDrawerOpen(true);
@@ -155,8 +155,9 @@ export default function Phonebook() {
                     width:"100%",
                     paddingBottom: "4rem",
                 }}>
-                    <div style={{display:"flex", justifyContent:"center", alignItems:"center", padding:"1.25rem", paddingTop:"0"}}>
+                    <div style={{display:"flex", justifyContent:"center", alignItems:"center", padding:"1.25rem", paddingTop:"0", flexFlow:"column", gap:""}}>
                         <h2>{selectedRecord?.name}</h2>
+                        <p style={{fontSize:"0.8rem"}}>{selectedRecord?.role}</p>
                     </div>
                     
                     <div style={{ 

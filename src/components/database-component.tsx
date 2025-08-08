@@ -67,7 +67,6 @@ import {
   Eye,
   File,
   FileDown,
-  FileWarning,
   Globe,
   GraduationCap,
   HeartPulse,
@@ -87,7 +86,7 @@ import {
   Trash,
   UploadCloud,
   UserCircle,
-  X,
+  X
 } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
@@ -2440,27 +2439,27 @@ export default function DbComponent(props: Props) {
                                 ? true
                                 : false
                             }
-                            tag={
-                              post.civil_expiry != "" ||
-                              post.license_expiry != "" ||
-                              post.medical_due_on != "" ||
-                              post.passportExpiry != "" ||
-                              post.vt_hse_induction != "" ||
-                              post.vt_car_1 != "" ||
-                              post.vt_car_2 != "" ||
-                              post.vt_car_3 != "" ||
-                              post.vt_car_4 != "" ||
-                              post.vt_car_5 != "" ||
-                              post.vt_car_6 != "" ||
-                              post.vt_car_7 != "" ||
-                              post.vt_car_8 != "" ||
-                              post.vt_car_9 != "" ||
-                              post.vt_car_10 != "" ? (
-                                ""
-                              ) : (
-                                <FileWarning width={"1rem"} />
-                              )
-                            }
+                            // tag={
+                            //   post.civil_expiry != "" ||
+                            //   post.license_expiry != "" ||
+                            //   post.medical_due_on != "" ||
+                            //   post.passportExpiry != "" ||
+                            //   post.vt_hse_induction != "" ||
+                            //   post.vt_car_1 != "" ||
+                            //   post.vt_car_2 != "" ||
+                            //   post.vt_car_3 != "" ||
+                            //   post.vt_car_4 != "" ||
+                            //   post.vt_car_5 != "" ||
+                            //   post.vt_car_6 != "" ||
+                            //   post.vt_car_7 != "" ||
+                            //   post.vt_car_8 != "" ||
+                            //   post.vt_car_9 != "" ||
+                            //   post.vt_car_10 != "" ? (
+                            //     ""
+                            //   ) : (
+                            //     <FileWarning width={"1rem"} />
+                            //   )
+                            // }
                             selected={checked.includes(post.id)}
                             selectable={selectable}
                             status
@@ -2475,6 +2474,8 @@ export default function DbComponent(props: Props) {
                               setDocID(post.id);
                               setCug(post.cug);
                               setRole(post.role)
+                              setEmail(post.email)
+                              setProject(post.project);
                               setCivilNumber(post.civil_number);
                               setCivilExpiry(post.civil_expiry);
                               setCivilDOB(post.civil_DOB);

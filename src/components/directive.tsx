@@ -83,7 +83,7 @@ export default function Directive(props: Props) {
         minWidth: props.width || 0,
         maxWidth: "100%",
         flex: props.width ? "0 0 auto" : 1,
-        border:""
+        
       }}
     >
       
@@ -92,6 +92,7 @@ export default function Directive(props: Props) {
         onClick={(e) => e.preventDefault()} // Prevent double firing
         className=""
         style={{
+          
           height: props.height ? props.height : "",
           padding: "0.75rem",
           gap: "0.5rem",
@@ -149,10 +150,11 @@ export default function Directive(props: Props) {
             props.icon
           )}
 
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0}}>
             {props.subtext && (
               <p
                 style={{
+                  
                   fontWeight: 500,
                   letterSpacing: "0.06rem",
                   textAlign: "left",
