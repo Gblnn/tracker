@@ -35,7 +35,7 @@ export default function RoleSelect({ value, onChange }: Props) {
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
           <UserCircle color="dodgerblue" width={"1.25rem"} />
           <p style={{ fontSize: "0.85rem" }}>
-            {value || "Select System Role"}
+            {value || "Select Role"}
           </p>
         </div>
         <ChevronDown width={"1rem"} />
