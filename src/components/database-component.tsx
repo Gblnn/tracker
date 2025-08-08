@@ -1,5 +1,4 @@
 import AddRecordButton from "@/components/add-record-button";
-import AddRecordDialog from "@/components/add-record-dialog";
 import Back from "@/components/back";
 import CivilID from "@/components/civil-id";
 import Directive from "@/components/directive";
@@ -95,6 +94,7 @@ import { useEffect, useState } from "react";
 import "react-lazy-load-image-component/src/effects/blur.css";
 import { useNavigate } from "react-router-dom";
 import ReactTimeAgo from "react-time-ago";
+import { toast } from "sonner";
 import useKeyboardShortcut from "use-keyboard-shortcut";
 import { exportDatabase, exportRaw, getBlank } from "./component-functions";
 import DbDropDown from "./db-dropdown";
@@ -103,7 +103,6 @@ import LazyLoader from "./lazy-loader";
 import RefreshButton from "./refresh-button";
 import SheetComponent from "./sheet-component";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select";
-import { toast } from "sonner";
 
 type Record = {
   id: string;
@@ -182,6 +181,7 @@ export default function DbComponent(props: Props) {
   const [email, setEmail] = useState("");
   const [editedName, setEditedName] = useState("");
   const [editedEmail, setEditedEmail] = useState("");
+  const [editedCug, setEditedCug] = useState("");
   const [editedEmployeeCode, setEditedEmployeeCode] = useState("");
   const [editedCompanyName, setEditedCompanyName] = useState("");
   const [editedDateofJoin, setEditedDateofJoin] = useState("");
@@ -295,7 +295,7 @@ export default function DbComponent(props: Props) {
   const [vt_car_9, setVtCar9] = useState<any>();
   const [vt_car_10, setVtCar10] = useState<any>();
 
-  const [imageUpload, setImageUpload] = useState(null);
+  const [imageUpload] = useState(null);
   const [fileName, setFileName] = useState("");
   const [profileName, setProfileName] = useState("");
 
@@ -304,6 +304,7 @@ export default function DbComponent(props: Props) {
   const [dateofJoin, setDateofJoin] = useState("");
   const [salaryBasic, setSalaryBasic] = useState(0);
   const [allowance, setAllowance] = useState(0);
+  const [cug, setCug] = useState("");
 
   const [newSalary, setNewSalary] = useState(0);
   const [newAllowance, setNewAllowance] = useState(0);
@@ -865,6 +866,7 @@ export default function DbComponent(props: Props) {
       notify: true,
       profile: imgUrl,
       profile_name: fileName,
+      cug: cug,
       civil_number: "",
       civil_expiry: "",
       civil_DOB: "",
@@ -924,6 +926,7 @@ export default function DbComponent(props: Props) {
         : employeeCode
         ? employeeCode
         : "",
+      cug: editedCug ? editedCug : cug ? cug : "",
       companyName: editedCompanyName
         ? editedCompanyName
         : companyName
@@ -3533,7 +3536,7 @@ export default function DbComponent(props: Props) {
         />
 
         {/* ADD RECORD DIALOG */}
-        <AddRecordDialog
+        <InputDialog
           open={addDialog}
           onCancel={() => {
             setAddDialog(false);
@@ -3542,67 +3545,105 @@ export default function DbComponent(props: Props) {
           updating={loading}
           disabled={loading}
           title="Add Record"
-          renumeration={props.dbCategory == "personal" ? true : false}
-          onImageChange={(e: any) => {
-            setImageUpload(e.target.files[0]);
-            setFileName(e.target.files[0].name);
-          }}
-          NameOnChange={(e: any) => {
-            setName(e.target.value);
-          }}
-          EmailOnChange={(e: any) => setEmail(e.target.value)}
-          CodeOnChange={(e: any) => setEmployeeCode(e.target.value)}
-          CompanyNameOnChange={(e: any) => setCompanyName(e.target.value)}
-          DateofJoinOnChange={(e: any) => setDateofJoin(e.target.value)}
-          SalaryBasicOnChange={(e: any) => setSalaryBasic(e.target.value)}
-          AllowanceOnChange={(e: any) => setAllowance(e.target.value)}
-          LocalContactOnChange={(e: any) => setContact(e.target.value)}
-          onOK={addRecord}
+          titleIcon={<Plus width={"1rem"} />}
+          OkButtonText="Add Record"
+          onOk={addRecord}
+          
+          input1Label="Full Name"
+          inputplaceholder="Enter Full Name"
+          inputOnChange={(e: any) => setName(e.target.value)}
+          
+          input2Label="Email"
+          input2placeholder="Enter Email"
+          input2OnChange={(e: any) => setEmail(e.target.value)}
+          
+          input3Label="Employee Code"
+          input3placeholder="Enter Employee Code"
+          input3OnChange={(e: any) => setEmployeeCode(e.target.value)}
+          
+          input4Label="Company Name"
+          input4placeholder="Enter Company Name"
+          input4OnChange={(e: any) => setCompanyName(e.target.value)}
+          
+          input5Label="Date of Join"
+          input5placeholder="Enter Date of Join"
+          input5OnChange={(e: any) => setDateofJoin(e.target.value)}
+          
+          input6Label="Basic Salary"
+          input6placeholder="Enter Basic Salary"
+          input6OnChange={(e: any) => setSalaryBasic(e.target.value)}
+          
+          input7Label="Allowance"
+          input7placeholder="Enter Allowance"
+          input7OnChange={(e: any) => setAllowance(e.target.value)}
+          
+          input8Label="Contact"
+          input8placeholder="Enter Contact Number"
+          input8OnChange={(e: any) => setContact(e.target.value)}
+          
+          input9Label="CUG"
+          input9placeholder="Enter CUG Number"
+          input9OnChange={(e: any) => setCug(e.target.value)}
         />
 
         {/* EDIT RECORD DIALOG */}
-        <AddRecordDialog
+        <InputDialog
           open={userEditPrompt}
           onCancel={() => {
             setRecordSummary(true);
             setUserEditPrompt(false);
-            setEditedName("");
           }}
-          title="Edit Record"
           updating={loading}
           disabled={loading}
-          renumeration={props.dbCategory == "personal" ? true : false}
-          onImageChange={(e: any) => {
-            setImageUpload(e.target.files[0]);
-            setFileName(e.target.files[0].name);
-          }}
-          NameOnChange={(e: any) => {
-            setEditedName(e.target.value);
-          }}
-          EmailOnChange={(e: any) => setEditedEmail(e.target.value)}
-          CodeOnChange={(e: any) => setEditedEmployeeCode(e.target.value)}
-          CompanyNameOnChange={(e: any) => setEditedCompanyName(e.target.value)}
-          DateofJoinOnChange={(e: any) => setEditedDateofJoin(e.target.value)}
-          SalaryBasicOnChange={(e: any) => setEditedSalaryBasic(e.target.value)}
-          AllowanceOnChange={(e: any) => setEditedAllowance(e.target.value)}
-          LocalContactOnChange={(e: any) => setEditedContact(e.target.value)}
-          NameLabel="Full Name : "
-          EmailLabel="Email : "
-          CodeLabel="Code : "
-          CompanyLabel="Company : "
-          DateofJoinLabel="Date of Join : "
-          SalaryBasicLabel="Initial Salary : "
-          AllowanceLabel="Allowance : "
-          LocalContactLabel="Contact : "
-          NameValue={name}
-          EmailValue={email}
-          CodeValue={employeeCode}
-          CompanyValue={companyName}
-          DateofJoinValue={dateofJoin}
-          SalaryBasicValue={initialSalary}
-          AllowanceValue={initialAllowance}
-          LocalContactValue={contact}
-          onOK={EditRecordName}
+          title="Edit Record"
+          titleIcon={<PenLine width={"1rem"} />}
+          OkButtonText="Update Record"
+          onOk={EditRecordName}
+          
+          input1Label="Full Name"
+          inputplaceholder="Enter Full Name"
+          inputOnChange={(e: any) => setEditedName(e.target.value)}
+          input1Value={name}
+          
+          input2Label="Email"
+          input2placeholder="Enter Email"
+          input2OnChange={(e: any) => setEditedEmail(e.target.value)}
+          input2Value={email}
+          
+          input3Label="Employee Code"
+          input3placeholder="Enter Employee Code"
+          input3OnChange={(e: any) => setEditedEmployeeCode(e.target.value)}
+          input3Value={employeeCode}
+          
+          input4Label="Company Name"
+          input4placeholder="Enter Company Name"
+          input4OnChange={(e: any) => setEditedCompanyName(e.target.value)}
+          input4Value={companyName}
+          
+          input5Label="Date of Join"
+          input5placeholder="Enter Date of Join"
+          input5OnChange={(e: any) => setEditedDateofJoin(e.target.value)}
+          input5Value={dateofJoin}
+          
+          input6Label="Basic Salary"
+          input6placeholder="Enter Basic Salary"
+          input6OnChange={(e: any) => setEditedSalaryBasic(e.target.value)}
+          input6Value={salaryBasic.toString()}
+          
+          input7Label="Allowance"
+          input7placeholder="Enter Allowance"
+          input7OnChange={(e: any) => setEditedAllowance(e.target.value)}
+          input7Value={allowance.toString()}
+          
+          input8Label="Contact"
+          input8placeholder="Enter Contact Number"
+          input8OnChange={(e: any) => setEditedContact(e.target.value)}
+          input8Value={contact}
+          
+          input9Label="CUG"
+          input9placeholder="Enter CUG Number"
+          input9OnChange={(e: any) => setEditedCug(e.target.value)}
+          input9Value={cug}
         />
 
         {/* DELETE RECORD DIALOG */}

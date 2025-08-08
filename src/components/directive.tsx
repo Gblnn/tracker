@@ -102,7 +102,7 @@ export default function Directive(props: Props) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          background: "rgba(100 100 100/ 0.07)",
+          background: "rgba(100 100 100/ 0.1)",
           borderRadius: "0.5rem",
           // border: "1px solid rgba(100 100 100/ 0.2)",
           transition: "all 0.2s ease",

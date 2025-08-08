@@ -23,12 +23,14 @@ interface Props{
     input6OnChange?:any
     input7OnChange?:any
     input8OnChange?:any
+    input9OnChange?:any
     input3placeholder?:string
     input4placeholder?:string
     input5placeholder?:string
     input6placeholder?:string
     input7placeholder?:string
     input8placeholder?:string
+    input9placeholder?:string
     disabled?:boolean
     OkButtonIcon?:any
     updating?:boolean
@@ -40,6 +42,7 @@ interface Props{
     input6Value?:string
     input7Value?:string
     input8Value?:string
+    input9Value?:string
     input1Label?:string
     input2Label?:string
     input3Label?:string
@@ -48,6 +51,7 @@ interface Props{
     input6Label?:string
     input7Label?:string
     input8Label?:string
+    input9Label?:string
     input1Type?:string
     extra?:any
     image?:any
@@ -197,7 +201,7 @@ export default function InputDialog(props:Props){
                         :null
                     }
 
-{
+                    {
                         props.input8placeholder?
                         <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
                             {
@@ -211,10 +215,25 @@ export default function InputDialog(props:Props){
                             <input id='input-8' defaultValue={props.input8Value} placeholder={props.input8placeholder} onChange={props.input8OnChange}/>
                         </div>
                         
-                        :null
+                        :null 
                     }
 
-                    {/* {
+                    {
+                        props.input9placeholder?
+                        <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
+                            {
+                                props.input9Label?
+                                <p style={{width:"7.5rem", opacity:0.5, fontSize:"0.8rem", textAlign:"right"}}>
+                                    {props.input9Label}
+                                </p>
+                                :null
+                            }
+                            
+                            <input id='input-9' defaultValue={props.input9Value} placeholder={props.input9placeholder} onChange={props.input9OnChange}/>
+                        </div>
+                        
+                        :null 
+                    }                    {/* {
                         props.combo1?
                         <div>
 

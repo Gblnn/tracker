@@ -4,7 +4,7 @@ import RefreshButton from "@/components/refresh-button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import { db } from "@/firebase";
 import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
-import { AtSign, Notebook, PhoneIcon, Search, User2 } from "lucide-react";
+import { AtSign, Building2, Notebook, PhoneIcon, Search, User2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface Record {
@@ -12,6 +12,7 @@ interface Record {
     name: string;
     email: string;
     contact?: string;
+    cug?: number;
     role?: string;
 }
 
@@ -60,6 +61,7 @@ export default function Phonebook() {
         <>
         <div style={{padding: "", position:"fixed"}}>
             <Back
+            subtitle={records.length}
             fixed
         extra={
             <>
@@ -166,8 +168,15 @@ export default function Phonebook() {
                     }}>
 
                         <Directive onClick={() => { selectedRecord?.email && (location.href = "mailto:" + selectedRecord?.email); }} icon={<AtSign width={"1.25rem"} color="dodgerblue"/>} notName title={selectedRecord?.email||"No Email"} />
-
-                        <Directive onClick={() => { selectedRecord?.contact && (location.href = "tel:" + selectedRecord?.contact); }} title={selectedRecord?.contact||"No Contact"} icon={<PhoneIcon width={"1.25rem"} color="dodgerblue"/>}/>
+                        <div style={{display:"flex", gap:"0.75rem"}}>
+                            <Directive onClick={() => { selectedRecord?.contact && (location.href = "tel:" + selectedRecord?.contact); }} title={selectedRecord?.contact||"No Contact"} icon={<PhoneIcon width={"1.25rem"} color="dodgerblue"/>}/>
+                            {
+                                selectedRecord?.cug &&
+                                <Directive onClick={() => { selectedRecord?.cug && (location.href = "tel:" + selectedRecord?.cug); }} title={selectedRecord?.cug||"No CUG"} icon={<Building2 width={"1.25rem"} color="dodgerblue"/>}/>
+                            }
+                            
+                        </div>
+                        
                         
                     </div>
                 </div>
