@@ -10,12 +10,12 @@ const CLEARANCE_ROUTES = {
 
 // Define system-role-restricted routes
 const ROLE_RESTRICTED_ROUTES = {
-  supervisor: ["/supervisor"], // Supervisors can only access /supervisor
+  supervisor: ["/supervisor", "/profile", "/phonebook"], // Supervisors
   admin: ["*"], // Admins can access all routes
-  user: ["/record-list", "/records", "/vale-records"], // Regular users
-  site_coordinator: ["/site-coordinator", "/record-list"],
-  management: ["/management", "/record-list", "/reports"],
-  profile: ["/profile", "/records"] // Basic profile access
+  user: ["/record-list", "/records", "/vale-records", "/profile", "/phonebook"], // Regular users
+  site_coordinator: ["/site-coordinator", "/record-list", "/profile", "/phonebook"],
+  management: ["/management", "/record-list", "/reports", "/profile", "/phonebook"],
+  profile: ["/profile", "/records", "/phonebook"] // Basic profile access
 };
 
 export default function ProtectedRoutes() {
