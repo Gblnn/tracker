@@ -1,4 +1,5 @@
 
+import DropDown from "@/components/dropdown";
 import { motion } from "framer-motion";
 import {
   Archive,
@@ -12,9 +13,7 @@ import {
   PenLine,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import "./directive.css";
-import DropDown from "@/components/dropdown";
 
 interface Props {
   title?: any;
@@ -48,6 +47,7 @@ interface Props {
   dotColor?: string;
   width?: any;
   expiring?: boolean;
+  href?: string;
 }
 
 export default function Directive(props: Props) {
@@ -70,9 +70,10 @@ export default function Directive(props: Props) {
   };
 
   return (
-    <Link
+    <a
+    href={props.href || ""}
       onClick={(e) => (props.selectable ? handleSelect(e) : props.onClick?.(e))}
-      to={props.to}
+ 
       className={props.className}
       style={{
         display: "flex",
@@ -310,6 +311,6 @@ export default function Directive(props: Props) {
           )}
         </div>
       </motion.div>
-    </Link>
+    </a>
   );
 }

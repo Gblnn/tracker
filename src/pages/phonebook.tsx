@@ -119,10 +119,12 @@ export default function Phonebook() {
             paddingTop: "",
             marginTop: "",
             padding: "1.25rem",
+            paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 2rem))", // Add safe area padding
             display: "flex",
             flexDirection: "column",
             gap: "0.75rem",
-            zIndex: ""
+            zIndex: "",
+            marginBottom: "env(safe-area-inset-bottom, 0px)" // Add safe area margin
         }}>
             <div style={{border:"", height:"7rem"}}></div>
 
@@ -145,7 +147,7 @@ export default function Phonebook() {
             <DrawerTitle></DrawerTitle>
             <DrawerDescription></DrawerDescription>
             <DrawerContent>
-                <div style={{ padding: "1.25rem", border:"", width:"100%",  }}>
+                <div style={{ padding: "1.25rem", border:"", width:"100%", marginBottom: "env(safe-area-inset-bottom, 0px)"   }}>
                     <div style={{display:"flex", justifyContent:"center", alignItems:"center", padding:"1.25rem", paddingTop:"0.75rem"}}>
                         <h1>{selectedRecord?.name}</h1>
                     </div>
@@ -154,14 +156,14 @@ export default function Phonebook() {
                     <div style={{ 
                         display: "flex", 
                         flexDirection: "column", 
-                        gap: "1rem",
+                        gap: "0.75rem",
                         marginTop: "",
                         width: "100%"
                     }}>
-                        
-                        <Directive icon={<AtSign color="dodgerblue"/>} notName title={selectedRecord?.email} />
-                        
-                        <Directive title={selectedRecord?.contact} icon={<PhoneIcon color="dodgerblue"/>}/>
+
+                        <Directive onClick={() => { location.href = "mailto:" + selectedRecord?.email; }} icon={<AtSign color="dodgerblue"/>} notName title={selectedRecord?.email} />
+
+                        <Directive onClick={() => { location.href = "tel:" + selectedRecord?.contact; }} title={selectedRecord?.contact} icon={<PhoneIcon color="dodgerblue"/>}/>
                         
                     </div>
                 </div>
