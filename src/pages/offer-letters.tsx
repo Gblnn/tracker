@@ -28,7 +28,7 @@ import {
   orderBy,
   query,
   Timestamp,
-  updateDoc,
+  updateDoc
 } from "firebase/firestore";
 import { AnimatePresence, motion } from "framer-motion";
 import html2canvas from "html2canvas";
@@ -92,6 +92,7 @@ type FormData = {
   date: string;
   refNo: string;
   candidateName: string;
+  passportNumber: string;
   position: string;
   workLocation: string;
   salary: string;
@@ -156,6 +157,7 @@ const [searchTerm, setSearchTerm] = useState("");
     date: Date(),
     refNo: "",
     candidateName: "",
+    passportNumber: "",
     position: "",
     workLocation: "",
     salary: "",
@@ -206,6 +208,7 @@ const [searchTerm, setSearchTerm] = useState("");
   const [offerLetters, setOfferLetters] = useState<any[]>([]);
   const [offerLettersLoading, setOfferLettersLoading] = useState(false);
   const [editingLetter, setEditingLetter] = useState<any>(null);
+  // const [addingToShortlist, setAddingToShortlist] = useState(false);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -228,6 +231,7 @@ const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [deleteId, setDeleteId] = useState("");
   const [joiningDate, setJoiningDate] = useState(true);
+  const [passport, setPassport] = useState(true);
 
   // Add this after other useEffect hooks
   useEffect(() => {
@@ -772,6 +776,7 @@ const [searchTerm, setSearchTerm] = useState("");
       date: ol.date,
       refNo: ol.refNo,
       candidateName: ol.candidateName,
+      passportNumber: ol.passportNumber,
       position: ol.position,
       workLocation: ol.workLocation,
       salary: ol.salary,
@@ -813,6 +818,40 @@ const [searchTerm, setSearchTerm] = useState("");
     setOfferLettersDrawerVisible(false);
   };
 
+  // const handleAddToShortlist = async () => {
+  //   if (selectedLetters.length === 0) return;
+    
+  //   setAddingToShortlist(true);
+  //   try {
+  //     const batch = writeBatch(db);
+
+  //     for (const id of selectedLetters) {
+  //       const letter = offerLetters.find(ol => ol.id === id);
+  //       if (!letter) continue;
+
+  //       batch.set(doc(collection(db, "shortlist")), {
+  //         candidateName: letter.candidateName,
+  //         position: letter.position,
+  //         salary: letter.salary,
+  //         created_at: Timestamp.now(),
+  //         created_by: auth.currentUser?.email,
+  //         source: "Offer Letter",
+  //         referenceNo: letter.refNo
+  //       });
+  //     }
+
+  //     await batch.commit();
+  //     message.success("Added to shortlist successfully");
+  //     setSelectedLetters([]); // Clear selection
+  //     setOfferLettersDrawerVisible(false); // Close drawer
+  //   } catch (error) {
+  //     console.error("Error adding to shortlist:", error);
+  //     message.error("Failed to add to shortlist");
+  //   } finally {
+  //     setAddingToShortlist(false);
+  //   }
+  // };
+
   const handleClearForm = () => {
     const currentDate = new Date().toLocaleDateString();
     // Get the next reference number
@@ -821,6 +860,7 @@ const [searchTerm, setSearchTerm] = useState("");
       date: currentDate,
       refNo: nextRef,
       candidateName: "",
+      passportNumber: "",
       position: "",
       workLocation: "",
       salary: "",
@@ -1206,6 +1246,36 @@ const [searchTerm, setSearchTerm] = useState("");
             value={formData.candidateName}
             onChange={handleInputChange}
             placeholder="Enter candidate name"
+            style={inputStyle}
+          />
+        </div>
+
+        
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.5rem",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
+            <Checkbox
+              checked={passport}
+              onClick={() => {
+                setPassport(!passport);
+                setHasChanges(true);
+              }}
+            />
+            <label>Passport Number</label>
+          </div>
+          
+          <input
+            type="text"
+            name="passportNumber"
+            value={formData.passportNumber}
+            onChange={handleInputChange}
+            placeholder="Enter passport number"
             style={inputStyle}
           />
         </div>
@@ -2058,6 +2128,18 @@ const [searchTerm, setSearchTerm] = useState("");
                 {formData.candidateName || "[Candidate Name]"}
               </td>
             </tr>
+            {
+              passport && (
+                <tr style={{ fontSize: "0.8rem",  }}>
+              <td style={tableCellStyle}>Passport Number</td>
+              <td style={tableCellStyle}>
+                {formData.passportNumber || "[Passport Number]"}
+              </td>
+            </tr>
+
+              )
+            }
+            
             <tr>
               <td style={tableCellStyle}>Job Title</td>
               <td style={tableCellStyle}>
@@ -3007,24 +3089,28 @@ const [searchTerm, setSearchTerm] = useState("");
         <Drawer
       title="Offer Letters"
       placement="right"
-      onClose={() => setOfferLettersDrawerVisible(false)}
+      onClose={() => {
+        setOfferLettersDrawerVisible(false);
+    
+      }}
       open={offerLettersDrawerVisible}
       width={window.innerWidth <= 768 ? "100%" : 500}
     >
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        style={{
-          display: "flex",
-          color: "black",
-          fontSize: "0.8rem",
-          gap: "0.5rem",
-          justifyContent: "center",
-          alignItems: "center",
-          marginBottom: "1rem",
-          height: "1rem",
-        }}
-      >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{
+            display: "flex",
+            color: "black",
+            fontSize: "0.8rem",
+            gap: "0.5rem",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: "1rem",
+            height: "1rem",
+          }}
+        >
         {
         offerLettersLoading ? (
           <>
@@ -3069,15 +3155,33 @@ const [searchTerm, setSearchTerm] = useState("");
                 background: "#fafbfc",
                 cursor: "pointer",
                 transition: "box-shadow 0.2s",
+                display: "flex",
+                gap: "1rem"
               }}
             >
+              
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "flex-start",
+                  gap: "1rem",
+                  
+                  width:"100%"
                 }}
               >
+                {/* <Checkbox 
+                  checked={selectedLetters.includes(ol.id)}
+                  onChange={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    if (target.checked) {
+                      setSelectedLetters(prev => [...prev, ol.id]);
+                    } else {
+                      setSelectedLetters(prev => prev.filter(id => id !== ol.id));
+                    }
+                  }}
+                  style={{ marginTop: "4px" }}
+                /> */}
                 <div style={{ flex: 1 }} onClick={() => handleLetterClick(ol)}>
                   <div
                     style={{
@@ -3092,6 +3196,19 @@ const [searchTerm, setSearchTerm] = useState("");
                   >
                     {ol.candidateName || "[No Name]"}
                   </div>
+                  {/* <div
+                    style={{
+                      fontWeight: 500,
+                      fontSize: 14,
+                      color: "black",
+                      textTransform: "capitalize",
+                      display: "flex",
+                      gap: "0.5rem",
+                      alignItems: "center",
+                    }}
+                  >
+                    {ol.passportNumber || "[No Passport Number]"}
+                  </div> */}
                   <div
                     style={{
                       color:"black",
@@ -3188,6 +3305,7 @@ const [searchTerm, setSearchTerm] = useState("");
           </div>
         </div>
       )}
+      </div>
     </Drawer>
         {/* {loadedLetterId && (
           <button
@@ -3275,6 +3393,19 @@ const [searchTerm, setSearchTerm] = useState("");
                   }))
                 }
                 placeholder="Enter candidate name"
+              />
+            </div>
+            <div>
+              <label>Passport Number</label>
+              <Input
+                value={editingLetter.passportNumber}
+                onChange={(e) =>
+                  setEditingLetter((prev: any) => ({
+                    ...prev,
+                    passportNumber: e.target.value,
+                  }))
+                }
+                placeholder="Enter passport number"
               />
             </div>
             <div>

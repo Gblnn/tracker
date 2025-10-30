@@ -36,6 +36,8 @@ import CreateAccount from "./pages/create-account";
 import Phonebook from "./pages/phonebook";
 import Supervisor from "./pages/supervisor";
 import SiteCoordinator from "./pages/site-coordinator";
+import Devices from "./pages/devices";
+import ValeMobilisation from "./pages/vale-mobilisation";
 
 
 export default function App() {
@@ -62,7 +64,9 @@ export default function App() {
           }
         >
           <Route path="/index" element={<Index />} />
+          
           <Route path="/record-list" element={<RecordList />} />
+          <Route path="/mobilizacao" element={<ValeMobilisation />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/users" element={<Users />} />
           <Route path="/archives" element={<Archives />} />
@@ -73,6 +77,7 @@ export default function App() {
           <Route path="/new-hire" element={<NewHire />} />
           <Route path="/offer-letters" element={<OfferLetters />} />
           <Route path="/phonebook" element={<Phonebook />} />
+          <Route path="/devices" element={<Devices />} />
           <Route path="/agreements" element={<Agreements />} />
           <Route path="/shortlist" element={<Shortlist />} />
           <Route path="/profile" element={<Profile />} />

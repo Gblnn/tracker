@@ -1,4 +1,3 @@
-
 import DropDown from "@/components/dropdown";
 import { motion } from "framer-motion";
 import {
@@ -71,28 +70,23 @@ export default function Directive(props: Props) {
 
   return (
     <a
-    href={props.href || ""}
+      href={props.href || ""}
       onClick={(e) => (props.selectable ? handleSelect(e) : props.onClick?.(e))}
- 
       className={props.className}
       style={{
         display: "flex",
         opacity: props.archived ? 0.5 : 1,
-        
         width: props.width || "auto",
         minWidth: props.width || 0,
         maxWidth: "100%",
         flex: props.width ? "0 0 auto" : 1,
-        
       }}
     >
-      
       <motion.div
         whileTap={{ scale: 0.99 }}
         onClick={(e) => e.preventDefault()} // Prevent double firing
         className=""
         style={{
-          
           height: props.height ? props.height : "",
           padding: "0.75rem",
           gap: "0.5rem",
@@ -150,11 +144,10 @@ export default function Directive(props: Props) {
             props.icon
           )}
 
-          <div style={{ flex: 1, minWidth: 0}}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             {props.subtext && (
               <p
                 style={{
-                  
                   fontWeight: 500,
                   letterSpacing: "0.06rem",
                   textAlign: "left",
@@ -209,8 +202,6 @@ export default function Directive(props: Props) {
                     )}
                   </div>
                 </div>
-
-                
               </span>
             )}
 
@@ -226,7 +217,7 @@ export default function Directive(props: Props) {
                   whiteSpace: "nowrap",
                   width: "30ch",
                   border: "",
-                  fontWeight:600
+                  fontWeight: 600,
                 }}
               >
                 {props.id_subtitle}

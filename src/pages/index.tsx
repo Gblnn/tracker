@@ -3,6 +3,7 @@ import Back from "@/components/back";
 import Directive from "@/components/directive";
 import IndexDropDown from "@/components/index-dropdown";
 import InputDialog from "@/components/input-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { auth } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
@@ -209,6 +210,22 @@ export default function Index() {
 
               <Directive onClick={()=>usenavigate("/documents")} title={"Document Generation"} icon={<FilePen width={"1.25rem"} color="mediumslateblue"/>} />
 
+              <Directive
+              onClick={() => usenavigate("/mobilizacao")}
+               title={"Mobilizacao"} icon={
+                <Avatar
+                  style={{ width: "1.25rem", height: "1.25rem", border: "" }}
+                >
+                  <AvatarImage
+                    style={{ objectFit: "cover", paddingBottom: "0.1rem" }}
+                    src={"/vale-logo.png"}
+                  />
+
+                  <AvatarFallback>
+                    <p style={{ paddingTop: "0.1rem" }}>{"V"}</p>
+                  </AvatarFallback>
+                </Avatar>
+              }/>
               {/* <Directive
                 onClick={() =>
                   access
@@ -233,6 +250,8 @@ export default function Index() {
                 title={"New Hire"}
                 icon={<UserCheck width={"1.25rem"} color="salmon" />}
               />
+
+              
 
               <Directive
                 onClick={() => usenavigate("/quick-links")}

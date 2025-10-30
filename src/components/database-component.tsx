@@ -2554,29 +2554,29 @@ export default function DbComponent(props: Props) {
                             }}
                             key={post.id}
                             title={post.name}
-                            icon={
-                              thumbnails ? (
-                                <UserCircle
-                                  color="dodgerblue"
-                                  width={"1.75rem"}
-                                  height={"1.75rem"}
-                                />
-                              ) : (
-                                <div
+                            // icon={
+                            //   thumbnails ? (
+                            //     <UserCircle
+                            //       color="dodgerblue"
+                            //       width={"1.75rem"}
+                            //       height={"1.75rem"}
+                            //     />
+                            //   ) : (
+                            //     <div
                                   
-                                >
-                                  <LazyLoader
-                                    gradient
-                                    name={post.name}
-                                    type={post.type}
-                                    profile={post.profile}
-                                    block
-                                    state={post.state}
-                                    omni={post.type == "omni"}
-                                  />
-                                </div>
-                              )
-                            }
+                            //     >
+                            //       <LazyLoader
+                            //         gradient
+                            //         name={post.name}
+                            //         type={post.type}
+                            //         profile={post.profile}
+                            //         block
+                            //         state={post.state}
+                            //         omni={post.type == "omni"}
+                            //       />
+                            //     </div>
+                            //   )
+                            // }
                           />
                           // </motion.div>
                         ))
@@ -3724,8 +3724,6 @@ export default function DbComponent(props: Props) {
               />
             </div>
           }
-
-       
         />
 
         {/* DELETE RECORD DIALOG */}
