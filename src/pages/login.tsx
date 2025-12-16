@@ -62,7 +62,7 @@ export default function Login() {
           case "management":
             returnPath = "/management";
             break;
-          default:
+          case "admin":
             returnPath = "/index";
         }
       }

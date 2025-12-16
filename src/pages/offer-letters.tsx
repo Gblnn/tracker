@@ -2822,13 +2822,13 @@ const [searchTerm, setSearchTerm] = useState("");
             // }
             // title="Doc"
             // icon={<File color="dodgerblue" />}
-            subtitle={
-              formData.position && (
-                <p style={{ textTransform: "uppercase" }}>
-                  {formData.position}
-                </p>
-              )
-            }
+            // subtitle={
+            //   formData.position && (
+            //     <p style={{ textTransform: "uppercase" }}>
+            //       {formData.position}
+            //     </p>
+            //   )
+            // }
             title={
               <p
                 style={{
@@ -2847,7 +2847,7 @@ const [searchTerm, setSearchTerm] = useState("");
                   )
                 )}
 
-                {formData.candidateName}
+                {loadedLetterId}
               </p>
             }
             extra={
