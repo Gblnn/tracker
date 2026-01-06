@@ -35,7 +35,9 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import {
   Bug,
+  Check,
   ChevronDown,
+  ChevronUp,
   Database,
   Dot,
   FilePlus2,
@@ -47,6 +49,7 @@ import {
   Menu,
   MinusCircle,
   MoreVertical,
+  Pencil,
   Plus,
   RefreshCcw,
   Save,
@@ -55,7 +58,7 @@ import {
   Trash2,
 } from "lucide-react";
 import moment from "moment";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 // Add styles at the top of the file
 const styles = {
@@ -99,6 +102,7 @@ type FieldConfig = {
   rows?: number;
   enabled: boolean;
   isCustom?: boolean;
+  section?: "table" | "paragraph";
 };
 
 type FormData = {
@@ -251,35 +255,41 @@ const [searchTerm, setSearchTerm] = useState("");
 
   // Default field configuration
   const defaultFieldConfig: FieldConfig[] = [
-    { id: "candidateName", label: "Candidate Name", type: "text", placeholder: "Enter candidate name", enabled: true },
-    { id: "passportNumber", label: "Passport Number", type: "text", placeholder: "Enter passport number", enabled: true },
-    { id: "position", label: "Job Title", type: "text", placeholder: "Enter Job Title", enabled: true },
-    { id: "workLocation", label: "Location", type: "text", placeholder: "Enter work location", enabled: true },
-    { id: "salary", label: "Basic Salary (OMR)", type: "number", placeholder: "Enter salary", enabled: true },
-    { id: "allowance", label: "Allowance (OMR)", type: "number", placeholder: "Enter Allowance", enabled: true },
-    { id: "attendance", label: "Attendance", type: "textarea", placeholder: "Enter Attendance Terms", rows: 4, enabled: true },
-    { id: "probation", label: "Probation", type: "textarea", placeholder: "Enter Probation Terms", rows: 4, enabled: true },
-    { id: "reportingDate", label: "Joining Date", type: "date", placeholder: "Enter Reporting Date", enabled: true },
-    { id: "contractPeriod", label: "Contract Period", type: "textarea", placeholder: "Enter Contract Period", rows: 4, enabled: true },
-    { id: "noticePeriod", label: "Notice Period", type: "textarea", placeholder: "Enter Notice Period", rows: 4, enabled: true },
-    { id: "accomodation", label: "Accomodation", type: "textarea", placeholder: "Enter Accomodation Terms", rows: 4, enabled: true },
-    { id: "food", label: "Food", type: "textarea", placeholder: "Enter Food Terms", rows: 4, enabled: true },
-    { id: "transport", label: "Transport", type: "textarea", placeholder: "Enter Transport Terms", rows: 4, enabled: true },
-    { id: "communication", label: "Communications", type: "textarea", placeholder: "Enter Communication Terms", rows: 4, enabled: true },
-    { id: "insurance", label: "Insurance", type: "textarea", placeholder: "Enter Insurance Terms", rows: 4, enabled: true },
-    { id: "annualLeave", label: "Annual Leave", type: "text", placeholder: "Enter Annual Leave Terms", enabled: true },
-    { id: "gratuity", label: "Gratuity", type: "text", placeholder: "Enter Gratuity", enabled: true },
-    { id: "leaveEncashment", label: "Leave Encashment", type: "text", placeholder: "Enter Leave Encashment Terms", enabled: true },
-    { id: "workingHours", label: "Working Hours", type: "text", placeholder: "Enter Working Terms", enabled: true },
-    { id: "airPassage", label: "Air Passage", type: "textarea", placeholder: "Enter Air Passage Terms", rows: 4, enabled: true },
-    { id: "visaStatus", label: "Visa Status", type: "textarea", placeholder: "Enter Visa Terms", rows: 4, enabled: true },
+    { id: "candidateName", label: "Candidate Name", type: "text", placeholder: "Enter candidate name", enabled: true, section: "table" },
+    { id: "passportNumber", label: "Passport Number", type: "text", placeholder: "Enter passport number", enabled: true, section: "table" },
+    { id: "position", label: "Job Title", type: "text", placeholder: "Enter Job Title", enabled: true, section: "table" },
+    { id: "workLocation", label: "Location", type: "text", placeholder: "Enter work location", enabled: true, section: "table" },
+    { id: "salary", label: "Basic Salary (OMR)", type: "number", placeholder: "Enter salary", enabled: true, section: "table" },
+    { id: "allowance", label: "Allowance (OMR)", type: "number", placeholder: "Enter Allowance", enabled: true, section: "table" },
+    { id: "reportingDate", label: "Joining Date", type: "date", placeholder: "Enter Reporting Date", enabled: true, section: "table" },
+    { id: "attendance", label: "Attendance", type: "textarea", placeholder: "Enter Attendance Terms", rows: 4, enabled: true, section: "paragraph" },
+    { id: "probation", label: "Probation", type: "textarea", placeholder: "Enter Probation Terms", rows: 4, enabled: true, section: "paragraph" },
+    { id: "contractPeriod", label: "Contract Period", type: "textarea", placeholder: "Enter Contract Period", rows: 4, enabled: true, section: "paragraph" },
+    { id: "noticePeriod", label: "Notice Period", type: "textarea", placeholder: "Enter Notice Period", rows: 4, enabled: true, section: "paragraph" },
+    { id: "accomodation", label: "Accomodation", type: "textarea", placeholder: "Enter Accomodation Terms", rows: 4, enabled: true, section: "paragraph" },
+    { id: "food", label: "Food", type: "textarea", placeholder: "Enter Food Terms", rows: 4, enabled: true, section: "paragraph" },
+    { id: "transport", label: "Transport", type: "textarea", placeholder: "Enter Transport Terms", rows: 4, enabled: true, section: "paragraph" },
+    { id: "communication", label: "Communications", type: "textarea", placeholder: "Enter Communication Terms", rows: 4, enabled: true, section: "paragraph" },
+    { id: "insurance", label: "Insurance", type: "textarea", placeholder: "Enter Insurance Terms", rows: 4, enabled: true, section: "paragraph" },
+    { id: "annualLeave", label: "Annual Leave", type: "text", placeholder: "Enter Annual Leave Terms", enabled: true, section: "paragraph" },
+    { id: "gratuity", label: "Gratuity", type: "text", placeholder: "Enter Gratuity", enabled: true, section: "paragraph" },
+    { id: "leaveEncashment", label: "Leave Encashment", type: "text", placeholder: "Enter Leave Encashment Terms", enabled: true, section: "paragraph" },
+    { id: "workingHours", label: "Working Hours", type: "text", placeholder: "Enter Working Terms", enabled: true, section: "paragraph" },
+    { id: "airPassage", label: "Air Passage", type: "textarea", placeholder: "Enter Air Passage Terms", rows: 4, enabled: true, section: "paragraph" },
+    { id: "visaStatus", label: "Visa Status", type: "textarea", placeholder: "Enter Visa Terms", rows: 4, enabled: true, section: "paragraph" },
   ];
 
   const [fieldConfig, setFieldConfig] = useState<FieldConfig[]>(defaultFieldConfig);
   const [fieldConfigDialogVisible, setFieldConfigDialogVisible] = useState(false);
   const [newFieldName, setNewFieldName] = useState("");
+  const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
+  const [editingFieldLabel, setEditingFieldLabel] = useState("");
   const [newFieldType, setNewFieldType] = useState<FieldType>("text");
+  const [newFieldSection, setNewFieldSection] = useState<"table" | "paragraph">("table");
   const [draggedFieldIndex, setDraggedFieldIndex] = useState<number | null>(null);
+  const [headerVisible, setHeaderVisible] = useState(true);
+  const fieldListScrollRef = useRef<HTMLDivElement>(null);
+  const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Add this after other useEffect hooks
   useEffect(() => {
@@ -589,6 +599,42 @@ const [searchTerm, setSearchTerm] = useState("");
     e.preventDefault();
     if (draggedFieldIndex === null || draggedFieldIndex === index) return;
 
+    // Auto-scroll logic
+    const container = fieldListScrollRef.current;
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      const scrollThreshold = 50; // pixels from edge to trigger scroll
+      const scrollSpeed = 10;
+      
+      // Clear any existing interval
+      if (autoScrollIntervalRef.current) {
+        clearInterval(autoScrollIntervalRef.current);
+        autoScrollIntervalRef.current = null;
+      }
+
+      // Scroll up if near top
+      if (e.clientY - rect.top < scrollThreshold && container.scrollTop > 0) {
+        autoScrollIntervalRef.current = setInterval(() => {
+          if (container.scrollTop > 0) {
+            container.scrollTop -= scrollSpeed;
+          } else {
+            if (autoScrollIntervalRef.current) clearInterval(autoScrollIntervalRef.current);
+          }
+        }, 20);
+      }
+      // Scroll down if near bottom
+      else if (rect.bottom - e.clientY < scrollThreshold && 
+               container.scrollTop < container.scrollHeight - container.clientHeight) {
+        autoScrollIntervalRef.current = setInterval(() => {
+          if (container.scrollTop < container.scrollHeight - container.clientHeight) {
+            container.scrollTop += scrollSpeed;
+          } else {
+            if (autoScrollIntervalRef.current) clearInterval(autoScrollIntervalRef.current);
+          }
+        }, 20);
+      }
+    }
+
     setFieldConfig((prev) => {
       const newConfig = [...prev];
       const draggedItem = newConfig[draggedFieldIndex];
@@ -600,6 +646,11 @@ const [searchTerm, setSearchTerm] = useState("");
   };
 
   const handleDragEnd = () => {
+    // Clear auto-scroll interval
+    if (autoScrollIntervalRef.current) {
+      clearInterval(autoScrollIntervalRef.current);
+      autoScrollIntervalRef.current = null;
+    }
     setDraggedFieldIndex(null);
     setHasChanges(true);
   };
@@ -626,6 +677,7 @@ const [searchTerm, setSearchTerm] = useState("");
       rows: newFieldType === "textarea" ? 4 : undefined,
       enabled: true,
       isCustom: true,
+      section: newFieldSection,
     };
 
     setFieldConfig((prev) => [...prev, newField]);
@@ -636,7 +688,7 @@ const [searchTerm, setSearchTerm] = useState("");
 
     setNewFieldName("");
     setNewFieldType("text");
-    setFieldConfigDialogVisible(false);
+    setNewFieldSection("table");
     message.success("Custom field added");
     setHasChanges(true);
   };
@@ -659,6 +711,34 @@ const [searchTerm, setSearchTerm] = useState("");
     if (selectedPreset) {
       setHasChanges(true);
     }
+  };
+
+  const handleStartEditFieldLabel = (fieldId: string, currentLabel: string) => {
+    setEditingFieldId(fieldId);
+    setEditingFieldLabel(currentLabel);
+  };
+
+  const handleSaveFieldLabel = () => {
+    if (!editingFieldId || !editingFieldLabel.trim()) {
+      setEditingFieldId(null);
+      setEditingFieldLabel("");
+      return;
+    }
+
+    setFieldConfig((prev) =>
+      prev.map((field) =>
+        field.id === editingFieldId
+          ? { ...field, label: editingFieldLabel.trim() }
+          : field
+      )
+    );
+    setEditingFieldId(null);
+    setEditingFieldLabel("");
+  };
+
+  const handleCancelEditFieldLabel = () => {
+    setEditingFieldId(null);
+    setEditingFieldLabel("");
   };
 
 
@@ -1116,74 +1196,112 @@ const [searchTerm, setSearchTerm] = useState("");
     <div
       style={{
         position: "fixed",
-        border: "",
-        padding: "",
         display: "flex",
         flexDirection: "column",
-        gap: "1rem",
         height: "100%",
-        overflowY: "auto",
         fontSize: "0.8rem",
         maxHeight: "72%",
+        width: "30%",
       }}
     >
+      {/* Fixed Header Section */}
       <div
         style={{
-          width: "",
-          display: "flex",
-          padding: "1.25rem",
-          border: "",
+          position: "relative",
+          background: "",
           backdropFilter: "blur(16px)",
           borderTopLeftRadius: "1rem",
-          alignItems: "center",
-          justifyContent: "space-between",
+          zIndex: 10,
+          boxShadow: "0 2px 8px rgba(0 0 0/ 10%)",
+          display:"flex",
+          alignItems:"center",
+          justifyContent:"center",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          {/* <File /> */}
-          <h2>Offer Letter </h2>
-        </div>
+        {/* Toggle Button */}
         <button
-          onClick={handleClearForm}
+          onClick={() => setHeaderVisible(!headerVisible)}
           style={{
-            background: "rgba(100 100 100/ 10%)",
-            padding: "0.15rem 0.75rem",
+            position: "absolute",
+            right: "",
+            top: headerVisible ? "auto" : "0.5rem",
+            bottom: headerVisible ? "-0.75rem" : "auto",
+            background: "",
+            color: "white",
             border: "none",
+            borderRadius: "50%",
+            width: "2rem",
+            height: "2rem",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
-            gap: "0.5rem",
-
-            fontSize: "0.75rem",
+            justifyContent: "center",
+            boxShadow: "0 2px 4px rgba(0 0 0/ 20%)",
+            zIndex: 20,
+            transition: "all 0.3s ease",
           }}
+          title={headerVisible ? "Hide header" : "Show header"}
         >
-          <FileX color="indianred" width="0.9rem" />
-          Clear Form
+          {headerVisible ? (
+            <ChevronUp width="1.25rem" />
+          ) : (
+            <ChevronDown width="1.25rem" />
+          )}
         </button>
-      </div>
 
-      <div
-        style={{
-          padding: "1.5rem",
-          display: "flex",
-          flexFlow: "column",
-          gap: "0.75rem",
-          paddingTop: "",
-        }}
-      >
-        {/* Add Presets section */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-            marginBottom: "1.5rem",
-            padding: "0.75rem",
-            background: "rgba(100 100 100/ 5%)",
-            borderRadius: "0.75rem",
-            // border: "1px solid rgba(100 100 100/ 10%)",
-          }}
-        >
+        {/* Header Content */}
+        <AnimatePresence mode="wait">
+          {headerVisible && (
+            <motion.div
+              key="header-content"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              style={{ overflow: "hidden" }}
+            >
+              <div
+                style={{
+                  padding: "1.25rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <h2>Offer Letter </h2>
+                </div>
+                <button
+                  onClick={handleClearForm}
+                  style={{
+                    background: "rgba(100 100 100/ 10%)",
+                    padding: "0.15rem 0.75rem",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  <FileX color="indianred" width="0.9rem" />
+                  Clear Form
+                </button>
+              </div>
+
+              <div style={{ padding: "0 1.5rem 1.5rem 1.5rem" }}>
+                {/* Presets section */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.75rem",
+                    marginBottom: "1.5rem",
+                    padding: "0.75rem",
+                    background: "rgba(100 100 100/ 5%)",
+                    borderRadius: "0.75rem",
+                  }}
+                >
           <div
             style={{
               display: "flex",
@@ -1444,7 +1562,6 @@ const [searchTerm, setSearchTerm] = useState("");
             padding: "0.75rem",
             background: "rgba(100 100 100/ 5%)",
             borderRadius: "0.75rem",
-            marginBottom: "1rem",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -1472,7 +1589,25 @@ const [searchTerm, setSearchTerm] = useState("");
             Configure
           </button>
         </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
+      {/* Scrollable Content Section */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "1.5rem",
+          paddingTop: headerVisible ? "1rem" : "3rem",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.75rem",
+
+        }}
+      >
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
@@ -1913,53 +2048,228 @@ const [searchTerm, setSearchTerm] = useState("");
           }}
         >
           <tbody style={{}}>
-            <tr style={{ fontSize: "0.8rem",  }}>
-              <td style={tableCellStyle}>Name</td>
-              <td style={tableCellStyle}>
-                {formData.candidateName || "[Candidate Name]"}
-              </td>
-            </tr>
-            {
-              passport && (
-                <tr style={{ fontSize: "0.8rem",  }}>
-              <td style={tableCellStyle}>Passport Number</td>
-              <td style={tableCellStyle}>
-                {formData.passportNumber || "[Passport Number]"}
-              </td>
-            </tr>
-
-              )
-            }
+            {/* Render fields dynamically based on fieldConfig order */}
+            {fieldConfig
+              .filter(f => f.enabled)
+              .map((field) => {
+                // Handle special field rendering
+                if (field.id === "candidateName") {
+                  return (
+                    <tr key={field.id} style={{ fontSize: "0.8rem" }}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        {formData.candidateName || "[Candidate Name]"}
+                      </td>
+                    </tr>
+                  );
+                }
+                if (field.id === "passportNumber" && passport) {
+                  return (
+                    <tr key={field.id} style={{ fontSize: "0.8rem" }}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        {formData.passportNumber || "[Passport Number]"}
+                      </td>
+                    </tr>
+                  );
+                }
+                if (field.id === "position") {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        {formData.position || "[Position]"}
+                      </td>
+                    </tr>
+                  );
+                }
+                if (field.id === "workLocation") {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        {formData.workLocation || "Anywhere in Oman"}
+                      </td>
+                    </tr>
+                  );
+                }
+                if (field.id === "salary") {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        OMR {formData.salary || "[Basic Salary]"}
+                      </td>
+                    </tr>
+                  );
+                }
+                if (field.id === "allowance" && formData.allowance) {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>{formData.allowance || "N/A"}</td>
+                    </tr>
+                  );
+                }
+                if (field.id === "attendance") {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>Site/ Office Attendance, including overtime</td>
+                      <td style={tableCellStyle}>{formData.attendance || "N/A"}</td>
+                    </tr>
+                  );
+                }
+                if (field.id === "probation") {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>{formData.probation || "N/A"}</td>
+                    </tr>
+                  );
+                }
+                if (field.id === "reportingDate" && joiningDate) {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        {formData.reportingDate
+                          ? `On or before ${moment(formData.reportingDate).format("DD MMMM YYYY")}`
+                          : "[joining Date]"}
+                      </td>
+                    </tr>
+                  );
+                }
+                if (field.id === "contractPeriod") {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>{formData.contractPeriod || "N/A"}</td>
+                    </tr>
+                  );
+                }
+                if (field.id === "noticePeriod") {
+                  return (
+                    <React.Fragment key={field.id}>
+                      <tr>
+                        <td style={{ padding: "8px 12px", fontSize: "0.75rem", verticalAlign: "top", border: "none" }}>
+                          {field.label}
+                        </td>
+                        <td style={tableCellStyle}>
+                          {formData.noticePeriod || "No notice period shall be accepted until the end of the project"}
+                        </td>
+                      </tr>
+                      {formData.noticePeriodSubsections.map((subsection, index) => (
+                        <tr key={`${field.id}-sub-${index}`}>
+                          <td style={{ ...tableCellStyle, borderTop: "none", borderBottom: "none", borderRight: "none", background: "transparent" }}></td>
+                          <td style={{ ...tableCellStyle, borderTop: "none" }}>{subsection}</td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  );
+                }
+                if (field.id === "accomodation" && formData.accomodation) {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>Accommodation</td>
+                      <td style={tableCellStyle}>
+                        {formData.accomodation || "Single Room Bachelors Accommodation shall be provided by the Company"}
+                      </td>
+                    </tr>
+                  );
+                }
+                if (field.id === "food" && formData.food) {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        {formData.food || "Shall be provided by the Company in Site Office and at Camp"}
+                      </td>
+                    </tr>
+                  );
+                }
+                if (field.id === "transport") {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        {formData.transport || "A Car shall be provided by the Company for official use only"}
+                      </td>
+                    </tr>
+                  );
+                }
+                if (field.id === "communication" && comm) {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        {formData.communication || "A postpaid Company SIM shall be provided for official use only"}
+                      </td>
+                    </tr>
+                  );
+                }
+                if (field.id === "insurance" && formData.insurance) {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        {formData.insurance || "WC, Medical & Group Life Insurance, under the Company account"}
+                      </td>
+                    </tr>
+                  );
+                }
+                if (field.id === "annualLeave") {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        {formData.annualLeave || "No leave shall be granted throughout the project unless there is an extreme emergency."}
+                      </td>
+                    </tr>
+                  );
+                }
+                if (field.id === "gratuity" && formData.gratuity) {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>{formData.gratuity || "N/A"}</td>
+                    </tr>
+                  );
+                }
+                if (field.id === "leaveEncashment" && formData.leaveEncashment) {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>{formData.leaveEncashment || "N/A"}</td>
+                    </tr>
+                  );
+                }
+                if (field.id === "airPassage") {
+                  return null; // Air passage is handled elsewhere
+                }
+                if (field.id === "visaStatus") {
+                  return null; // Visa status is handled elsewhere
+                }
+                if (field.id === "workingHours") {
+                  return null; // Working hours is handled elsewhere
+                }
+                // Custom fields
+                if (field.isCustom) {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        {formData.customFields?.[field.id] || "N/A"}
+                      </td>
+                    </tr>
+                  );
+                }
+                return null;
+              })}
             
-            <tr>
-              <td style={tableCellStyle}>Job Title</td>
-              <td style={tableCellStyle}>
-                {formData.position || "[Position]"}
-              </td>
-            </tr>
-
-            <tr>
-              <td style={tableCellStyle}>Place of Work</td>
-              <td style={tableCellStyle}>
-                {formData.workLocation || "Anywhere in Oman"}
-              </td>
-            </tr>
-            <tr>
-              <td style={tableCellStyle}>Basic Salary</td>
-              <td style={tableCellStyle}>
-                OMR {formData.salary || "[Basic Salary]"}
-              </td>
-            </tr>
-            {formData.allowance && (
-              <tr>
-                <td style={tableCellStyle}>Allowance</td>
-                <td style={tableCellStyle}>{formData.allowance || "N/A"}</td>
-              </tr>
-            )}
-
+            {/* Additional Allowances - shown after all other fields */}
             {formData.allowances.length > 0 &&
               formData.allowances.map((role, index) => (
-                <tr key={index}>
+                <tr key={`allowance-${index}`}>
                   <td style={tableCellStyle}>
                     {role.title || "[ALLOWANCE TYPE]"}
                   </td>
@@ -1968,6 +2278,8 @@ const [searchTerm, setSearchTerm] = useState("");
                   </td>
                 </tr>
               ))}
+            
+            {/* Gross Salary - always at the end */}
             <tr>
               <td style={tableCellStyle}>Gross Salary</td>
               <td style={tableCellStyle}>
@@ -1983,137 +2295,6 @@ const [searchTerm, setSearchTerm] = useState("");
                   " (Monthly)" || "[Gross Salary]"}
               </td>
             </tr>
-            <tr>
-              <td style={tableCellStyle}>
-                Site/ Office Attendance, including overtime
-              </td>
-              <td style={tableCellStyle}>{formData.attendance || "N/A"}</td>
-            </tr>
-            <tr>
-              <td style={tableCellStyle}>Probation Period</td>
-              <td style={tableCellStyle}>{formData.probation || "N/A"}</td>
-            </tr>
-            {joiningDate && (
-              <tr>
-                <td style={tableCellStyle}>Joining Date</td>
-                <td style={tableCellStyle}>
-                  {formData.reportingDate
-                    ? `On or before ${moment(formData.reportingDate).format(
-                        "DD MMMM YYYY"
-                      )}`
-                    : "[joining Date]"}
-                </td>
-              </tr>
-            )}
-
-            <tr>
-              <td style={tableCellStyle}>Contract Period</td>
-              <td style={tableCellStyle}>{formData.contractPeriod || "N/A"}</td>
-            </tr>
-            <tr>
-              <td
-                style={{
-                  padding: "8px 12px",
-                  fontSize: "0.75rem",
-                  verticalAlign: "top",
-                  border: "none",
-                }}
-              >
-                Notice Period
-              </td>
-              <td style={tableCellStyle}>
-                {formData.noticePeriod ||
-                  "No notice period shall be accepted until the end of the project"}
-              </td>
-            </tr>
-            {formData.noticePeriodSubsections.map((subsection, index) => (
-              <tr key={index}>
-                <td
-                  style={{
-                    ...tableCellStyle,
-                    borderTop: "none",
-                    borderBottom: "none",
-                    borderRight: "none",
-                    background: "transparent",
-                  }}
-                ></td>
-                <td style={{ ...tableCellStyle, borderTop: "none" }}>
-                  {subsection}
-                </td>
-              </tr>
-            ))}
-            {
-              formData.accomodation && 
-              <tr>
-              <td style={tableCellStyle}>Accommodation</td>
-              <td style={tableCellStyle}>
-                {formData.accomodation ||
-                  "Single Room Bachelors Accommodation shall be provided by the Company"}
-              </td>
-            </tr>
-            }
-            {
-              formData.food &&
-              <tr>
-              <td style={tableCellStyle}>Food</td>
-              <td style={tableCellStyle}>
-                {formData.food ||
-                  "Shall be provided by the Company in Site Office and at Camp"}
-              </td>
-            </tr>
-            }
-            
-            <tr>
-              <td style={tableCellStyle}>Transport</td>
-              <td style={tableCellStyle}>
-                {formData.transport ||
-                  "A Car shall be provided by the Company for official use only"}
-              </td>
-            </tr>
-            
-
-            {comm && (
-              <tr>
-                <td style={tableCellStyle}>Communications</td>
-                <td style={tableCellStyle}>
-                  {formData.communication ||
-                    "A postpaid Company SIM shall be provided for official use only"}
-                </td>
-              </tr>
-            )}
-
-            
-            {formData.insurance && (
-              <tr>
-                <td style={tableCellStyle}>Insurance</td>
-                <td style={tableCellStyle}>
-                  {formData.insurance ||
-                    "WC, Medical & Group Life Insurance, under the Company account"}
-                </td>
-              </tr>
-            )}
-
-            <tr>
-              <td style={tableCellStyle}>Annual Leave</td>
-              <td style={tableCellStyle}>
-                {formData.annualLeave ||
-                  "No leave shall be granted throughout the project unless there is an extreme emergency."}
-              </td>
-            </tr>
-            {formData.gratuity && (
-              <tr>
-                <td style={tableCellStyle}>Gratuity</td>
-                <td style={tableCellStyle}>{formData.gratuity || "N/A"}</td>
-              </tr>
-            )}
-            {formData.leaveEncashment && (
-              <tr>
-                <td style={tableCellStyle}>Leave Encashment</td>
-                <td style={tableCellStyle}>
-                  {formData.leaveEncashment || "N/A"}
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
         <img style={{ width:"7.5rem", marginLeft:"30rem", position:"absolute"}} src={"/ssu_stamp.png"}/>
@@ -3404,7 +3585,7 @@ const [searchTerm, setSearchTerm] = useState("");
       {/* Field Configuration Dialog */}
       <Modal
         title={
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "white" }}>
             <Sparkles color="mediumslateblue" width="1.2rem" />
             <span>Manage Fields</span>
           </div>
@@ -3413,18 +3594,30 @@ const [searchTerm, setSearchTerm] = useState("");
         onCancel={() => setFieldConfigDialogVisible(false)}
         footer={null}
         width={600}
+        styles={{
+          content: {
+            background: "#1a1a1a",
+            color: "white",
+          },
+          header: {
+            background: "#1a1a1a",
+            // borderBottom: "1px solid rgba(255 255 255/ 10%)",
+          },
+          body: {
+            background: "#1a1a1a",
+          },
+        }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {/* Add Custom Field Section */}
           <div
             style={{
               padding: "1rem",
-              background: "rgba(100 100 100/ 5%)",
               borderRadius: "0.5rem",
-              border: "1px solid rgba(100 100 100/ 10%)",
+              
             }}
           >
-            <h3 style={{ marginBottom: "0.75rem", fontSize: "0.9rem" }}>
+            <h3 style={{ marginBottom: "0.75rem", fontSize: "0.9rem", color: "white" }}>
               Add Custom Field
             </h3>
             <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
@@ -3437,20 +3630,62 @@ const [searchTerm, setSearchTerm] = useState("");
                   flex: 1,
                   padding: "0.5rem",
                   borderRadius: "0.5rem",
-                  border: "1px solid rgba(100 100 100/ 20%)",
+                  border: "1px solid rgba(255 255 255/ 20%)",
                   fontSize: "0.9rem",
-                  background: "none",
+                  background: "rgba(255 255 255/ 8%)",
+                  color: "white",
                 }}
               />
               <Select value={newFieldType} onValueChange={(value: FieldType) => setNewFieldType(value)}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger 
+                  className="w-[140px]"
+                  style={{
+                    background: "rgba(255 255 255/ 8%)",
+                    color: "white",
+                    border: "1px solid rgba(255 255 255/ 20%)",
+                    padding: "0.5rem",
+                  }}
+                >
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent
+                  position="popper"
+                  style={{
+                    background: "#2a2a2a",
+                    color: "white",
+                    border: "1px solid rgba(255 255 255/ 20%)",
+                    zIndex: 9999,
+                  }}
+                >
                   <SelectItem value="text">Text</SelectItem>
-                  <SelectItem value="textarea">Textarea</SelectItem>
+                  <SelectItem value="textarea">Text Area</SelectItem>
                   <SelectItem value="number">Number</SelectItem>
                   <SelectItem value="date">Date</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={newFieldSection} onValueChange={(value: "table" | "paragraph") => setNewFieldSection(value)}>
+                <SelectTrigger 
+                  className="w-[140px]"
+                  style={{
+                    background: "rgba(255 255 255/ 8%)",
+                    color: "white",
+                    border: "1px solid rgba(255 255 255/ 20%)",
+                    padding: "0.5rem",
+                  }}
+                >
+                  <SelectValue placeholder="Section" />
+                </SelectTrigger>
+                <SelectContent
+                  position="popper"
+                  style={{
+                    background: "#2a2a2a",
+                    color: "white",
+                    border: "1px solid rgba(255 255 255/ 20%)",
+                    zIndex: 9999,
+                  }}
+                >
+                  <SelectItem value="table">Table</SelectItem>
+                  <SelectItem value="paragraph">Paragraph</SelectItem>
                 </SelectContent>
               </Select>
               <button
@@ -3475,43 +3710,49 @@ const [searchTerm, setSearchTerm] = useState("");
           </div>
 
           {/* Field List */}
-          <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-            <h3 style={{ marginBottom: "0.75rem", fontSize: "0.9rem" }}>
-              Available Fields
-              <span style={{ fontSize: "0.75rem", opacity: 0.7, marginLeft: "0.5rem" }}>
-                (Drag to reorder)
-              </span>
-            </h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {fieldConfig.map((field, index) => (
-                <div
-                  key={field.id}
-                  draggable
-                  onDragStart={() => handleDragStart(index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragEnd={handleDragEnd}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "0.75rem",
-                    background: draggedFieldIndex === index
-                      ? "rgba(123 104 238/ 15%)"
-                      : field.enabled
-                      ? "rgba(100 100 100/ 5%)"
-                      : "rgba(100 100 100/ 2%)",
-                    borderRadius: "0.5rem",
-                    border: `1px solid ${
-                      draggedFieldIndex === index
-                        ? "rgba(123 104 238/ 40%)"
-                        : field.enabled
-                        ? "rgba(100 100 100/ 15%)"
-                        : "rgba(100 100 100/ 5%)"
-                    }`,
-                    opacity: field.enabled ? 1 : 0.6,
-                    cursor: "grab",
-                    transition: "all 0.2s ease",
-                  }}
+          <div ref={fieldListScrollRef} style={{ maxHeight: "500px", overflowY: "auto", scrollBehavior: "smooth" }}>
+            {/* Table Fields Section */}
+            <div style={{ marginBottom: "1.5rem" }}>
+              <h3 style={{ marginBottom: "0.75rem", fontSize: "0.9rem", color: "white", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ background: "rgba(59 130 246/ 20%)", padding: "0.25rem 0.5rem", borderRadius: "0.25rem", fontSize: "0.8rem" }}>Table Fields</span>
+                <span style={{ fontSize: "0.75rem", opacity: 0.7, color: "rgba(255 255 255/ 70%)" }}>
+                  (Check to show, uncheck to hide • Drag to reorder)
+                </span>
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {fieldConfig.filter(f => f.section === "table").map((field) => {
+                  const index = fieldConfig.indexOf(field);
+                  return (
+                    <div
+                      key={field.id}
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragEnd={handleDragEnd}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "0.75rem",
+                        background: draggedFieldIndex === index
+                          ? "rgba(123 104 238/ 35%)"
+                          : field.enabled
+                          ? "rgba(255 255 255/ 8%)"
+                          : "rgba(255 255 255/ 3%)",
+                        borderRadius: "0.5rem",
+                        border: `2px solid ${
+                          draggedFieldIndex === index
+                            ? "rgba(123 104 238/ 70%)"
+                            : field.enabled
+                            ? "rgba(255 255 255/ 15%)"
+                            : "rgba(255 255 255/ 8%)"
+                        }`,
+                        opacity: draggedFieldIndex === index ? 0.5 : field.enabled ? 1 : 0.6,
+                        cursor: "grab",
+                        transition: "all 0.15s ease",
+                        transform: draggedFieldIndex === index ? "scale(1.02)" : "scale(1)",
+                        boxShadow: draggedFieldIndex === index ? "0 4px 12px rgba(123 104 238/ 30%)" : "none",
+                      }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
                     {/* Drag Handle */}
@@ -3527,30 +3768,108 @@ const [searchTerm, setSearchTerm] = useState("");
                     </div>
                     <Checkbox
                       checked={field.enabled}
-                      onClick={() => handleToggleField(field.id)}
+                      onCheckedChange={() => handleToggleField(field.id)}
+                      title={field.enabled ? "Click to hide this field" : "Click to show this field"}
                     />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 500, fontSize: "0.9rem" }}>
-                        {field.label}
-                        {field.isCustom && (
-                          <span
-                            style={{
-                              marginLeft: "0.5rem",
-                              fontSize: "0.7rem",
-                              color: "mediumslateblue",
-                              background: "rgba(123 104 238/ 15%)",
-                              padding: "0.15rem 0.5rem",
-                              borderRadius: "0.25rem",
-                            }}
-                          >
-                            Custom
-                          </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        {editingFieldId === field.id ? (
+                          <>
+                            <input
+                              type="text"
+                              value={editingFieldLabel}
+                              onChange={(e) => setEditingFieldLabel(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSaveFieldLabel();
+                                if (e.key === "Escape") handleCancelEditFieldLabel();
+                              }}
+                              autoFocus
+                              style={{
+                                flex: 1,
+                                padding: "0.25rem 0.5rem",
+                                borderRadius: "0.25rem",
+                                border: "1px solid rgba(123 104 238/ 50%)",
+                                background: "rgba(255 255 255/ 10%)",
+                                color: "white",
+                                fontSize: "0.9rem",
+                                fontWeight: 500,
+                              }}
+                            />
+                            <button
+                              onClick={handleSaveFieldLabel}
+                              style={{
+                                background: "rgba(34 197 94/ 20%)",
+                                border: "1px solid rgba(34 197 94/ 40%)",
+                                color: "#86efac",
+                                cursor: "pointer",
+                                padding: "0.25rem",
+                                borderRadius: "0.25rem",
+                                display: "flex",
+                                alignItems: "center",
+                              }}
+                              title="Save (Enter)"
+                            >
+                              <Check width="0.9rem" />
+                            </button>
+                            <button
+                              onClick={handleCancelEditFieldLabel}
+                              style={{
+                                background: "rgba(239 68 68/ 20%)",
+                                border: "1px solid rgba(239 68 68/ 40%)",
+                                color: "#fca5a5",
+                                cursor: "pointer",
+                                padding: "0.25rem",
+                                borderRadius: "0.25rem",
+                                display: "flex",
+                                alignItems: "center",
+                              }}
+                              title="Cancel (Esc)"
+                            >
+                              <FileX width="0.9rem" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <div style={{ fontWeight: 500, fontSize: "0.9rem", color: "white" }}>
+                              {field.label}
+                              {field.isCustom && (
+                                <span
+                                  style={{
+                                    marginLeft: "0.5rem",
+                                    fontSize: "0.7rem",
+                                    color: "#b8a3ff",
+                                    background: "rgba(123 104 238/ 25%)",
+                                    padding: "0.15rem 0.5rem",
+                                    borderRadius: "0.25rem",
+                                  }}
+                                >
+                                  Custom
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => handleStartEditFieldLabel(field.id, field.label)}
+                              style={{
+                                background: "rgba(123 104 238/ 15%)",
+                                border: "1px solid rgba(123 104 238/ 30%)",
+                                color: "#b8a3ff",
+                                cursor: "pointer",
+                                padding: "0.25rem",
+                                borderRadius: "0.25rem",
+                                display: "flex",
+                                alignItems: "center",
+                              }}
+                              title="Edit field name"
+                            >
+                              <Pencil width="0.8rem" />
+                            </button>
+                          </>
                         )}
                       </div>
                       <div
                         style={{
                           fontSize: "0.75rem",
-                          opacity: 0.7,
+                          color: "rgba(255 255 255/ 60%)",
                           marginTop: "0.25rem",
                         }}
                       >
@@ -3562,9 +3881,9 @@ const [searchTerm, setSearchTerm] = useState("");
                     <button
                       onClick={() => handleRemoveCustomField(field.id)}
                       style={{
-                        background: "none",
-                        border: "none",
-                        color: "indianred",
+                        background: "rgba(205 92 92/ 15%)",
+                        border: "1px solid rgba(205 92 92/ 30%)",
+                        color: "#ff9999",
                         cursor: "pointer",
                         padding: "0.25rem 0.5rem",
                         borderRadius: "0.25rem",
@@ -3579,7 +3898,201 @@ const [searchTerm, setSearchTerm] = useState("");
                     </button>
                   )}
                 </div>
-              ))}
+              );
+            })}
+              </div>
+            </div>
+
+            {/* Paragraph Fields Section */}
+            <div>
+              <h3 style={{ marginBottom: "0.75rem", fontSize: "0.9rem", color: "white", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ background: "rgba(168 85 247/ 20%)", padding: "0.25rem 0.5rem", borderRadius: "0.25rem", fontSize: "0.8rem" }}>Paragraph Fields</span>
+                <span style={{ fontSize: "0.75rem", opacity: 0.7, color: "rgba(255 255 255/ 70%)" }}>
+                  (Check to show, uncheck to hide • Drag to reorder)
+                </span>
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {fieldConfig.filter(f => f.section === "paragraph").map((field) => {
+                  const index = fieldConfig.indexOf(field);
+                  return (
+                    <div
+                      key={field.id}
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragEnd={handleDragEnd}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "0.75rem",
+                        background: draggedFieldIndex === index
+                          ? "rgba(123 104 238/ 35%)"
+                          : field.enabled
+                          ? "rgba(255 255 255/ 8%)"
+                          : "rgba(255 255 255/ 3%)",
+                        borderRadius: "0.5rem",
+                        border: `2px solid ${
+                          draggedFieldIndex === index
+                            ? "rgba(123 104 238/ 70%)"
+                            : field.enabled
+                            ? "rgba(255 255 255/ 15%)"
+                            : "rgba(255 255 255/ 8%)"
+                        }`,
+                        opacity: draggedFieldIndex === index ? 0.5 : field.enabled ? 1 : 0.6,
+                        cursor: "grab",
+                        transition: "all 0.15s ease",
+                        transform: draggedFieldIndex === index ? "scale(1.02)" : "scale(1)",
+                        boxShadow: draggedFieldIndex === index ? "0 4px 12px rgba(123 104 238/ 30%)" : "none",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
+                        {/* Drag Handle */}
+                        <div
+                          style={{
+                            cursor: "grab",
+                            display: "flex",
+                            alignItems: "center",
+                            color: "rgba(123 104 238/ 70%)",
+                          }}
+                        >
+                          <GripVertical width="1.2rem" />
+                        </div>
+                        <Checkbox
+                          checked={field.enabled}
+                          onCheckedChange={() => handleToggleField(field.id)}
+                          title={field.enabled ? "Click to hide this field" : "Click to show this field"}
+                        />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                            {editingFieldId === field.id ? (
+                              <>
+                                <input
+                                  type="text"
+                                  value={editingFieldLabel}
+                                  onChange={(e) => setEditingFieldLabel(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleSaveFieldLabel();
+                                    if (e.key === "Escape") handleCancelEditFieldLabel();
+                                  }}
+                                  autoFocus
+                                  style={{
+                                    flex: 1,
+                                    padding: "0.25rem 0.5rem",
+                                    borderRadius: "0.25rem",
+                                    border: "1px solid rgba(123 104 238/ 50%)",
+                                    background: "rgba(255 255 255/ 10%)",
+                                    color: "white",
+                                    fontSize: "0.9rem",
+                                    fontWeight: 500,
+                                  }}
+                                />
+                                <button
+                                  onClick={handleSaveFieldLabel}
+                                  style={{
+                                    background: "rgba(34 197 94/ 20%)",
+                                    border: "1px solid rgba(34 197 94/ 40%)",
+                                    color: "#86efac",
+                                    cursor: "pointer",
+                                    padding: "0.25rem",
+                                    borderRadius: "0.25rem",
+                                    display: "flex",
+                                    alignItems: "center",
+                                  }}
+                                  title="Save (Enter)"
+                                >
+                                  <Check width="0.9rem" />
+                                </button>
+                                <button
+                                  onClick={handleCancelEditFieldLabel}
+                                  style={{
+                                    background: "rgba(239 68 68/ 20%)",
+                                    border: "1px solid rgba(239 68 68/ 40%)",
+                                    color: "#fca5a5",
+                                    cursor: "pointer",
+                                    padding: "0.25rem",
+                                    borderRadius: "0.25rem",
+                                    display: "flex",
+                                    alignItems: "center",
+                                  }}
+                                  title="Cancel (Esc)"
+                                >
+                                  <FileX width="0.9rem" />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <div style={{ fontWeight: 500, fontSize: "0.9rem", color: "white" }}>
+                                  {field.label}
+                                  {field.isCustom && (
+                                    <span
+                                      style={{
+                                        marginLeft: "0.5rem",
+                                        fontSize: "0.7rem",
+                                        color: "#b8a3ff",
+                                        background: "rgba(123 104 238/ 25%)",
+                                        padding: "0.15rem 0.5rem",
+                                        borderRadius: "0.25rem",
+                                      }}
+                                    >
+                                      Custom
+                                    </span>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => handleStartEditFieldLabel(field.id, field.label)}
+                                  style={{
+                                    background: "rgba(123 104 238/ 15%)",
+                                    border: "1px solid rgba(123 104 238/ 30%)",
+                                    color: "#b8a3ff",
+                                    cursor: "pointer",
+                                    padding: "0.25rem",
+                                    borderRadius: "0.25rem",
+                                    display: "flex",
+                                    alignItems: "center",
+                                  }}
+                                  title="Edit field name"
+                                >
+                                  <Pencil width="0.8rem" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: "0.75rem",
+                              color: "rgba(255 255 255/ 60%)",
+                              marginTop: "0.25rem",
+                            }}
+                          >
+                            Type: {field.type}
+                          </div>
+                        </div>
+                      </div>
+                      {field.isCustom && (
+                        <button
+                          onClick={() => handleRemoveCustomField(field.id)}
+                          style={{
+                            background: "rgba(205 92 92/ 15%)",
+                            border: "1px solid rgba(205 92 92/ 30%)",
+                            color: "#ff9999",
+                            cursor: "pointer",
+                            padding: "0.25rem 0.5rem",
+                            borderRadius: "0.25rem",
+                            fontSize: "0.8rem",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.25rem",
+                          }}
+                        >
+                          <Trash2 width="0.9rem" />
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
