@@ -41,6 +41,7 @@ import {
   FilePlus2,
   FileText,
   FileX,
+  GripVertical,
   Loader2,
   LoaderCircle,
   Menu,
@@ -88,6 +89,18 @@ const tableCellStyle = {
   background: "none",
 };
 
+type FieldType = "text" | "textarea" | "number" | "date";
+
+type FieldConfig = {
+  id: string;
+  label: string;
+  type: FieldType;
+  placeholder?: string;
+  rows?: number;
+  enabled: boolean;
+  isCustom?: boolean;
+};
+
 type FormData = {
   date: string;
   refNo: string;
@@ -120,6 +133,7 @@ type FormData = {
   responsibilities: string;
   roles: Array<{ title: string; description: string }>;
   allowances: Array<{ title: string; description: string }>;
+  customFields?: { [key: string]: string };
 };
 
 type Preset = {
@@ -127,6 +141,7 @@ type Preset = {
   name: string;
   data: FormData;
   created_at: any;
+  fieldConfig?: FieldConfig[];
 };
 
 export default function OfferLetters() {
@@ -185,6 +200,7 @@ const [searchTerm, setSearchTerm] = useState("");
     responsibilities: "",
     roles: [],
     allowances: [],
+    customFields: {},
   });
 
   useEffect(() => {
@@ -198,7 +214,7 @@ const [searchTerm, setSearchTerm] = useState("");
   const signatureRef = useRef<HTMLDivElement>(null);
   const lastRoleRef = useRef<HTMLDivElement>(null);
   const lastAllowanceRef = useRef<HTMLDivElement>(null);
-  const lastSubsectionRef = useRef<HTMLDivElement>(null);
+  // const lastSubsectionRef = useRef<HTMLDivElement>(null);
 
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
@@ -231,7 +247,39 @@ const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [deleteId, setDeleteId] = useState("");
   const [joiningDate, setJoiningDate] = useState(true);
-  const [passport, setPassport] = useState(true);
+  const [passport] = useState(true);
+
+  // Default field configuration
+  const defaultFieldConfig: FieldConfig[] = [
+    { id: "candidateName", label: "Candidate Name", type: "text", placeholder: "Enter candidate name", enabled: true },
+    { id: "passportNumber", label: "Passport Number", type: "text", placeholder: "Enter passport number", enabled: true },
+    { id: "position", label: "Job Title", type: "text", placeholder: "Enter Job Title", enabled: true },
+    { id: "workLocation", label: "Location", type: "text", placeholder: "Enter work location", enabled: true },
+    { id: "salary", label: "Basic Salary (OMR)", type: "number", placeholder: "Enter salary", enabled: true },
+    { id: "allowance", label: "Allowance (OMR)", type: "number", placeholder: "Enter Allowance", enabled: true },
+    { id: "attendance", label: "Attendance", type: "textarea", placeholder: "Enter Attendance Terms", rows: 4, enabled: true },
+    { id: "probation", label: "Probation", type: "textarea", placeholder: "Enter Probation Terms", rows: 4, enabled: true },
+    { id: "reportingDate", label: "Joining Date", type: "date", placeholder: "Enter Reporting Date", enabled: true },
+    { id: "contractPeriod", label: "Contract Period", type: "textarea", placeholder: "Enter Contract Period", rows: 4, enabled: true },
+    { id: "noticePeriod", label: "Notice Period", type: "textarea", placeholder: "Enter Notice Period", rows: 4, enabled: true },
+    { id: "accomodation", label: "Accomodation", type: "textarea", placeholder: "Enter Accomodation Terms", rows: 4, enabled: true },
+    { id: "food", label: "Food", type: "textarea", placeholder: "Enter Food Terms", rows: 4, enabled: true },
+    { id: "transport", label: "Transport", type: "textarea", placeholder: "Enter Transport Terms", rows: 4, enabled: true },
+    { id: "communication", label: "Communications", type: "textarea", placeholder: "Enter Communication Terms", rows: 4, enabled: true },
+    { id: "insurance", label: "Insurance", type: "textarea", placeholder: "Enter Insurance Terms", rows: 4, enabled: true },
+    { id: "annualLeave", label: "Annual Leave", type: "text", placeholder: "Enter Annual Leave Terms", enabled: true },
+    { id: "gratuity", label: "Gratuity", type: "text", placeholder: "Enter Gratuity", enabled: true },
+    { id: "leaveEncashment", label: "Leave Encashment", type: "text", placeholder: "Enter Leave Encashment Terms", enabled: true },
+    { id: "workingHours", label: "Working Hours", type: "text", placeholder: "Enter Working Terms", enabled: true },
+    { id: "airPassage", label: "Air Passage", type: "textarea", placeholder: "Enter Air Passage Terms", rows: 4, enabled: true },
+    { id: "visaStatus", label: "Visa Status", type: "textarea", placeholder: "Enter Visa Terms", rows: 4, enabled: true },
+  ];
+
+  const [fieldConfig, setFieldConfig] = useState<FieldConfig[]>(defaultFieldConfig);
+  const [fieldConfigDialogVisible, setFieldConfigDialogVisible] = useState(false);
+  const [newFieldName, setNewFieldName] = useState("");
+  const [newFieldType, setNewFieldType] = useState<FieldType>("text");
+  const [draggedFieldIndex, setDraggedFieldIndex] = useState<number | null>(null);
 
   // Add this after other useEffect hooks
   useEffect(() => {
@@ -283,6 +331,7 @@ const [searchTerm, setSearchTerm] = useState("");
       const newPreset = {
         name: presetName,
         data: presetData,
+        fieldConfig: fieldConfig,
         created_at: Timestamp.now(),
       };
 
@@ -306,6 +355,12 @@ const [searchTerm, setSearchTerm] = useState("");
         ...preset.data,
         date: formData.date, // Keep the current date
       });
+      // Load field configuration if available
+      if (preset.fieldConfig) {
+        setFieldConfig(preset.fieldConfig);
+      } else {
+        setFieldConfig(defaultFieldConfig);
+      }
       setSelectedPreset(presetId);
       setOriginalPresetData(preset.data);
       setHasChanges(false);
@@ -338,6 +393,7 @@ const [searchTerm, setSearchTerm] = useState("");
 
       await updateDoc(doc(db, "offer_letter_presets", selectedPreset), {
         data: presetData,
+        fieldConfig: fieldConfig,
       });
       message.success("Preset updated successfully");
       setHasChanges(false);
@@ -383,37 +439,37 @@ const [searchTerm, setSearchTerm] = useState("");
     }
   };
 
-  const handleAddNoticePeriodSubsection = () => {
-    setFormData((prev) => ({
-      ...prev,
-      noticePeriodSubsections: [...prev.noticePeriodSubsections, ""],
-    }));
-    // Scroll after a small delay to ensure the new input is rendered
-    setTimeout(() => {
-      lastSubsectionRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }, 100);
-  };
+  // const handleAddNoticePeriodSubsection = () => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     noticePeriodSubsections: [...prev.noticePeriodSubsections, ""],
+  //   }));
+  //   // Scroll after a small delay to ensure the new input is rendered
+  //   setTimeout(() => {
+  //     lastSubsectionRef.current?.scrollIntoView({
+  //       behavior: "smooth",
+  //       block: "center",
+  //     });
+  //   }, 100);
+  // };
 
-  const handleRemoveNoticePeriodSubsection = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      noticePeriodSubsections: prev.noticePeriodSubsections.filter(
-        (_, i) => i !== index
-      ),
-    }));
-  };
+  // const handleRemoveNoticePeriodSubsection = (index: number) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     noticePeriodSubsections: prev.noticePeriodSubsections.filter(
+  //       (_, i) => i !== index
+  //     ),
+  //   }));
+  // };
 
-  const handleNoticePeriodSubsectionChange = (index: number, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      noticePeriodSubsections: prev.noticePeriodSubsections.map(
-        (subsection, i) => (i === index ? value : subsection)
-      ),
-    }));
-  };
+  // const handleNoticePeriodSubsectionChange = (index: number, value: string) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     noticePeriodSubsections: prev.noticePeriodSubsections.map(
+  //       (subsection, i) => (i === index ? value : subsection)
+  //     ),
+  //   }));
+  // };
 
   const handleAllowanceChange = (
     index: number,
@@ -514,6 +570,97 @@ const [searchTerm, setSearchTerm] = useState("");
       return newData;
     });
   };
+
+  // Field configuration handlers
+  const handleToggleField = (fieldId: string) => {
+    setFieldConfig((prev) =>
+      prev.map((field) =>
+        field.id === fieldId ? { ...field, enabled: !field.enabled } : field
+      )
+    );
+    setHasChanges(true);
+  };
+
+  const handleDragStart = (index: number) => {
+    setDraggedFieldIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedFieldIndex === null || draggedFieldIndex === index) return;
+
+    setFieldConfig((prev) => {
+      const newConfig = [...prev];
+      const draggedItem = newConfig[draggedFieldIndex];
+      newConfig.splice(draggedFieldIndex, 1);
+      newConfig.splice(index, 0, draggedItem);
+      return newConfig;
+    });
+    setDraggedFieldIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedFieldIndex(null);
+    setHasChanges(true);
+  };
+
+  const handleAddCustomField = () => {
+    if (!newFieldName.trim()) {
+      message.error("Please enter a field name");
+      return;
+    }
+
+    const fieldId = newFieldName.toLowerCase().replace(/\s+/g, "_");
+    
+    // Check if field already exists
+    if (fieldConfig.some((f) => f.id === fieldId)) {
+      message.error("A field with this name already exists");
+      return;
+    }
+
+    const newField: FieldConfig = {
+      id: fieldId,
+      label: newFieldName,
+      type: newFieldType,
+      placeholder: `Enter ${newFieldName}`,
+      rows: newFieldType === "textarea" ? 4 : undefined,
+      enabled: true,
+      isCustom: true,
+    };
+
+    setFieldConfig((prev) => [...prev, newField]);
+    setFormData((prev) => ({
+      ...prev,
+      customFields: { ...prev.customFields, [fieldId]: "" },
+    }));
+
+    setNewFieldName("");
+    setNewFieldType("text");
+    setFieldConfigDialogVisible(false);
+    message.success("Custom field added");
+    setHasChanges(true);
+  };
+
+  const handleRemoveCustomField = (fieldId: string) => {
+    setFieldConfig((prev) => prev.filter((f) => f.id !== fieldId));
+    setFormData((prev) => {
+      const { [fieldId]: removed, ...rest } = prev.customFields || {};
+      return { ...prev, customFields: rest };
+    });
+    setHasChanges(true);
+    message.success("Custom field removed");
+  };
+
+  const handleCustomFieldChange = (fieldId: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      customFields: { ...prev.customFields, [fieldId]: value },
+    }));
+    if (selectedPreset) {
+      setHasChanges(true);
+    }
+  };
+
 
   const fetchOfferLetters = async () => {
     // Immediately show cached letters if available
@@ -888,12 +1035,81 @@ const [searchTerm, setSearchTerm] = useState("");
       responsibilities: "",
       roles: [{ title: "", description: "" }],
       allowances: [{ title: "", description: "" }],
+      customFields: {},
     });
     setSelectedPreset("");
     setOriginalPresetData(null);
     setHasChanges(false);
     setLoadedLetterId(null);
     setOriginalFormData(null);
+    setFieldConfig(defaultFieldConfig);
+  };
+
+  // Render a single field based on its configuration
+  const renderField = (field: FieldConfig) => {
+    if (!field.enabled) return null;
+
+    const value = field.isCustom 
+      ? (formData.customFields?.[field.id] || "")
+      : (formData[field.id as keyof FormData] as string || "");
+
+    const onChange = field.isCustom
+      ? (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+          handleCustomFieldChange(field.id, e.target.value)
+      : handleInputChange;
+
+    return (
+      <div
+        key={field.id}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.5rem",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <label>{field.label}</label>
+          {field.isCustom && (
+            <button
+              onClick={() => handleRemoveCustomField(field.id)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "indianred",
+                cursor: "pointer",
+                padding: "0",
+                fontSize: "0.7rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.25rem",
+              }}
+            >
+              <MinusCircle width="0.8rem" />
+              Remove
+            </button>
+          )}
+        </div>
+        {field.type === "textarea" ? (
+          <textarea
+            name={field.id}
+            value={value}
+            onChange={onChange}
+            placeholder={field.placeholder}
+            rows={field.rows || 4}
+            style={inputStyle}
+          />
+        ) : (
+          <input
+            type={field.type}
+            name={field.id}
+            value={value}
+            onChange={onChange}
+            placeholder={field.placeholder}
+            style={inputStyle}
+          />
+        )}
+      </div>
+    );
   };
 
   const renderInputForm = () => (
@@ -1219,6 +1435,44 @@ const [searchTerm, setSearchTerm] = useState("");
           </div> */}
         </div>
 
+        {/* Field Configuration Section */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "0.75rem",
+            background: "rgba(100 100 100/ 5%)",
+            borderRadius: "0.75rem",
+            marginBottom: "1rem",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Sparkles width="1rem" color="mediumslateblue" />
+            <span style={{ fontSize: "0.9rem", fontWeight: "500" }}>
+              Manage Fields
+            </span>
+          </div>
+          <button
+            onClick={() => setFieldConfigDialogVisible(true)}
+            style={{
+              background: "rgba(100 100 100/ 10%)",
+              color: "mediumslateblue",
+              border: "none",
+              padding: "0.15rem 0.75rem",
+              borderRadius: "0.5rem",
+              cursor: "pointer",
+              fontSize: "0.8rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            <Menu width={"0.8rem"} />
+            Configure
+          </button>
+        </div>
+
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
@@ -1232,109 +1486,9 @@ const [searchTerm, setSearchTerm] = useState("");
             style={inputStyle}
           />
         </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.5rem",
-          }}
-        >
-          <label>Candidate Name</label>
-          <input
-            type="text"
-            name="candidateName"
-            value={formData.candidateName}
-            onChange={handleInputChange}
-            placeholder="Enter candidate name"
-            style={inputStyle}
-          />
-        </div>
 
-        
-
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.5rem",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
-            <Checkbox
-              checked={passport}
-              onClick={() => {
-                setPassport(!passport);
-                setHasChanges(true);
-              }}
-            />
-            <label>Passport Number</label>
-          </div>
-          
-          <input
-            type="text"
-            name="passportNumber"
-            value={formData.passportNumber}
-            onChange={handleInputChange}
-            placeholder="Enter passport number"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Job Title</label>
-          <input
-            type="text"
-            name="position"
-            value={formData.position}
-            onChange={handleInputChange}
-            placeholder="Enter Job Title"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Location</label>
-          <input
-            type="text"
-            name="workLocation"
-            value={formData.workLocation}
-            onChange={handleInputChange}
-            placeholder="Enter work location"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Basic Salary (OMR)</label>
-          <input
-            type="number"
-            name="salary"
-            value={formData.salary}
-            onChange={handleInputChange}
-            placeholder="Enter salary"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Allowance (OMR)</label>
-          <input
-            type="number"
-            name="allowance"
-            value={formData.allowance}
-            onChange={handleInputChange}
-            placeholder="Enter Allowance"
-            style={inputStyle}
-          />
-        </div>
+        {/* Dynamic Fields Rendering */}
+        {fieldConfig.filter(f => f.enabled).map((field) => renderField(field))}
 
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
@@ -1460,322 +1614,6 @@ const [searchTerm, setSearchTerm] = useState("");
           </motion.button>
         </div>
 
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Attendance</label>
-          <textarea
-            rows={4}
-            name="attendance"
-            value={formData.attendance}
-            onChange={handleInputChange}
-            placeholder="Enter Attendance Terms"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Probation</label>
-          <textarea
-            rows={4}
-            name="probation"
-            value={formData.probation}
-            onChange={handleInputChange}
-            placeholder="Enter Probation Terms"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
-            <Checkbox
-              checked={joiningDate}
-              onClick={() => {
-                setJoiningDate(!joiningDate);
-                setHasChanges(true);
-              }}
-            />
-            <label>Joining Date</label>
-          </div>
-
-          <input
-            type="date"
-            name="reportingDate"
-            value={formData.reportingDate}
-            onChange={handleInputChange}
-            placeholder="Enter Reporting Date"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Contract Period</label>
-          <textarea
-            rows={4}
-            name="contractPeriod"
-            value={formData.contractPeriod}
-            onChange={handleInputChange}
-            placeholder="Enter Contract Period"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Notice Period</label>
-          <textarea
-            rows={4}
-            name="noticePeriod"
-            value={formData.noticePeriod}
-            onChange={handleInputChange}
-            placeholder="Enter Notice Period"
-            style={inputStyle}
-          />
-          <div style={{ marginTop: "0.5rem" }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "0.5rem",
-              }}
-            >
-              <label
-                style={{ fontSize: "0.7rem", fontWeight: 500, opacity: 0.8 }}
-              >
-                Sub-sections
-              </label>
-            </div>
-            <AnimatePresence mode="sync">
-              {formData.noticePeriodSubsections.map((subsection, index) => (
-                <motion.div
-                  key={index}
-                  ref={
-                    index === formData.noticePeriodSubsections.length - 1
-                      ? lastSubsectionRef
-                      : null
-                  }
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{
-                    duration: 0.15,
-                    ease: [0.4, 0, 0.2, 1],
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    border: "1px solid rgba(100 100 100/ 20%)",
-                    borderRadius: "0.75rem",
-                    padding: "0.35rem",
-                    marginBottom: "0.75rem",
-                    background: "rgba(100 100 100/ 5%)",
-                    willChange: "transform, opacity",
-                  }}
-                >
-                  <input
-                    value={subsection}
-                    onChange={(e) =>
-                      handleNoticePeriodSubsectionChange(index, e.target.value)
-                    }
-                    placeholder="Enter sub-section content"
-                    style={{
-                      fontSize: "1rem",
-                      background: "none",
-                    }}
-                  />
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleRemoveNoticePeriodSubsection(index)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "rgba(100 100 100/ 10%)",
-                      color: "indianred",
-                      border: "none",
-                      padding: "0.5rem 0.75rem",
-                      borderRadius: "0.45rem",
-                      cursor: "pointer",
-                      fontSize: "0.95rem",
-                      willChange: "transform",
-                    }}
-                  >
-                    <MinusCircle width={"1rem"} />
-                  </motion.button>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleAddNoticePeriodSubsection}
-              style={{
-                fontSize: "0.85rem",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.5rem",
-                background: "rgba(100 100 100/ 10%)",
-                color: "mediumslateblue",
-                border: "none",
-                padding: "0.5rem 1rem",
-                borderRadius: "0.5rem",
-                cursor: "pointer",
-                width: "100%",
-                marginTop: "0.5rem",
-                willChange: "transform",
-              }}
-            >
-              <Plus width={"0.8rem"} />
-              Add Sub-section
-            </motion.button>
-          </div>
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Accomodation</label>
-          <textarea
-            rows={4}
-            name="accomodation"
-            value={formData.accomodation}
-            onChange={handleInputChange}
-            placeholder="Enter Accomodation Terms"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Food</label>
-          <textarea
-            rows={4}
-            name="food"
-            value={formData.food}
-            onChange={handleInputChange}
-            placeholder="Enter Food Terms"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Transport</label>
-          <textarea
-            rows={4}
-            name="transport"
-            value={formData.transport}
-            onChange={handleInputChange}
-            placeholder="Enter Transport Terms"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
-            <Checkbox
-              checked={comm}
-              onClick={() => {
-                setComm(!comm);
-                setHasChanges(true);
-              }}
-            />
-            <label>Communications</label>
-          </div>
-
-          <textarea
-            rows={4}
-            name="communication"
-            value={formData.communication}
-            onChange={handleInputChange}
-            placeholder="Enter Communication Terms"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Insurance</label>
-          <textarea
-            rows={4}
-            name="insurance"
-            value={formData.insurance}
-            onChange={handleInputChange}
-            placeholder="Enter Insurance Terms"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Annual Leave</label>
-          <input
-            type="text"
-            name="annualLeave"
-            value={formData.annualLeave}
-            onChange={handleInputChange}
-            placeholder="Enter Annual Leave Terms"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Gratuity</label>
-          <input
-            type="text"
-            name="gratuity"
-            value={formData.gratuity}
-            onChange={handleInputChange}
-            placeholder="Enter Gratuity"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Leave Encashment</label>
-          <input
-            type="text"
-            name="leaveEncashment"
-            value={formData.leaveEncashment}
-            onChange={handleInputChange}
-            placeholder="Enter Leave Encashment Terms"
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <label>Working Hours</label>
-          <input
-            type="text"
-            name="workingHours"
-            value={formData.workingHours}
-            onChange={handleInputChange}
-            placeholder="Enter Working Terms"
-            style={inputStyle}
-          />
-        </div>
         <br />
 
         <div
@@ -1896,53 +1734,6 @@ const [searchTerm, setSearchTerm] = useState("");
             <Plus width={"0.8rem"} />
             Add Role
           </motion.button>
-        </div>
-        <br />
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
-            <Checkbox
-              checked={air_passage}
-              onClick={() => {
-                setAirPassage(!air_passage);
-                setHasChanges(true);
-              }}
-            />
-            <label>Air Passage</label>
-          </div>
-
-          <textarea
-            rows={4}
-            name="airPassage"
-            value={formData.airPassage}
-            onChange={handleInputChange}
-            placeholder="Enter Air Passage Terms"
-            style={inputStyle}
-          />
-        </div>
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <div style={{ display: "flex", justifyContent: "", gap: "0.5rem" }}>
-            <Checkbox
-              checked={visaS}
-              onClick={() => {
-                setVisaS(!visaS);
-                setHasChanges(true);
-              }}
-            />
-            <label>Visa Status</label>
-          </div>
-          <textarea
-            rows={4}
-            name="visaStatus"
-            value={formData.visaStatus}
-            onChange={handleInputChange}
-            placeholder="Enter Visa Terms"
-            style={inputStyle}
-          />
         </div>
       </div>
     </div>
@@ -3609,6 +3400,190 @@ const [searchTerm, setSearchTerm] = useState("");
         disabled={!presetName.trim()}
         updating={loading}
       />
+
+      {/* Field Configuration Dialog */}
+      <Modal
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Sparkles color="mediumslateblue" width="1.2rem" />
+            <span>Manage Fields</span>
+          </div>
+        }
+        open={fieldConfigDialogVisible}
+        onCancel={() => setFieldConfigDialogVisible(false)}
+        footer={null}
+        width={600}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          {/* Add Custom Field Section */}
+          <div
+            style={{
+              padding: "1rem",
+              background: "rgba(100 100 100/ 5%)",
+              borderRadius: "0.5rem",
+              border: "1px solid rgba(100 100 100/ 10%)",
+            }}
+          >
+            <h3 style={{ marginBottom: "0.75rem", fontSize: "0.9rem" }}>
+              Add Custom Field
+            </h3>
+            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+              <input
+                type="text"
+                value={newFieldName}
+                onChange={(e) => setNewFieldName(e.target.value)}
+                placeholder="Field name"
+                style={{
+                  flex: 1,
+                  padding: "0.5rem",
+                  borderRadius: "0.5rem",
+                  border: "1px solid rgba(100 100 100/ 20%)",
+                  fontSize: "0.9rem",
+                  background: "none",
+                }}
+              />
+              <Select value={newFieldType} onValueChange={(value: FieldType) => setNewFieldType(value)}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="text">Text</SelectItem>
+                  <SelectItem value="textarea">Textarea</SelectItem>
+                  <SelectItem value="number">Number</SelectItem>
+                  <SelectItem value="date">Date</SelectItem>
+                </SelectContent>
+              </Select>
+              <button
+                onClick={handleAddCustomField}
+                style={{
+                  background: "mediumslateblue",
+                  color: "white",
+                  border: "none",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  fontSize: "0.9rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                <Plus width="1rem" />
+                Add
+              </button>
+            </div>
+          </div>
+
+          {/* Field List */}
+          <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+            <h3 style={{ marginBottom: "0.75rem", fontSize: "0.9rem" }}>
+              Available Fields
+              <span style={{ fontSize: "0.75rem", opacity: 0.7, marginLeft: "0.5rem" }}>
+                (Drag to reorder)
+              </span>
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {fieldConfig.map((field, index) => (
+                <div
+                  key={field.id}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "0.75rem",
+                    background: draggedFieldIndex === index
+                      ? "rgba(123 104 238/ 15%)"
+                      : field.enabled
+                      ? "rgba(100 100 100/ 5%)"
+                      : "rgba(100 100 100/ 2%)",
+                    borderRadius: "0.5rem",
+                    border: `1px solid ${
+                      draggedFieldIndex === index
+                        ? "rgba(123 104 238/ 40%)"
+                        : field.enabled
+                        ? "rgba(100 100 100/ 15%)"
+                        : "rgba(100 100 100/ 5%)"
+                    }`,
+                    opacity: field.enabled ? 1 : 0.6,
+                    cursor: "grab",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
+                    {/* Drag Handle */}
+                    <div
+                      style={{
+                        cursor: "grab",
+                        display: "flex",
+                        alignItems: "center",
+                        color: "rgba(123 104 238/ 70%)",
+                      }}
+                    >
+                      <GripVertical width="1.2rem" />
+                    </div>
+                    <Checkbox
+                      checked={field.enabled}
+                      onClick={() => handleToggleField(field.id)}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 500, fontSize: "0.9rem" }}>
+                        {field.label}
+                        {field.isCustom && (
+                          <span
+                            style={{
+                              marginLeft: "0.5rem",
+                              fontSize: "0.7rem",
+                              color: "mediumslateblue",
+                              background: "rgba(123 104 238/ 15%)",
+                              padding: "0.15rem 0.5rem",
+                              borderRadius: "0.25rem",
+                            }}
+                          >
+                            Custom
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "0.75rem",
+                          opacity: 0.7,
+                          marginTop: "0.25rem",
+                        }}
+                      >
+                        Type: {field.type}
+                      </div>
+                    </div>
+                  </div>
+                  {field.isCustom && (
+                    <button
+                      onClick={() => handleRemoveCustomField(field.id)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "indianred",
+                        cursor: "pointer",
+                        padding: "0.25rem 0.5rem",
+                        borderRadius: "0.25rem",
+                        fontSize: "0.8rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.25rem",
+                      }}
+                    >
+                      <Trash2 width="0.9rem" />
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }
