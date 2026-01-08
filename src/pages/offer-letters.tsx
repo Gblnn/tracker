@@ -251,32 +251,37 @@ const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [deleteId, setDeleteId] = useState("");
   const [joiningDate, setJoiningDate] = useState(true);
-  const [passport] = useState(true);
 
   // Default field configuration
   const defaultFieldConfig: FieldConfig[] = [
+    // Table section fields - in order of appearance in the table
     { id: "candidateName", label: "Candidate Name", type: "text", placeholder: "Enter candidate name", enabled: true, section: "table" },
-    { id: "passportNumber", label: "Passport Number", type: "text", placeholder: "Enter passport number", enabled: true, section: "table" },
+    { id: "passportNumber", label: "Passport Number", type: "text", placeholder: "Enter passport number", enabled: false, section: "table" },
     { id: "position", label: "Job Title", type: "text", placeholder: "Enter Job Title", enabled: true, section: "table" },
     { id: "workLocation", label: "Location", type: "text", placeholder: "Enter work location", enabled: true, section: "table" },
     { id: "salary", label: "Basic Salary (OMR)", type: "number", placeholder: "Enter salary", enabled: true, section: "table" },
     { id: "allowance", label: "Allowance (OMR)", type: "number", placeholder: "Enter Allowance", enabled: true, section: "table" },
-    { id: "reportingDate", label: "Joining Date", type: "date", placeholder: "Enter Reporting Date", enabled: true, section: "table" },
-    { id: "attendance", label: "Attendance", type: "textarea", placeholder: "Enter Attendance Terms", rows: 4, enabled: true, section: "paragraph" },
-    { id: "probation", label: "Probation", type: "textarea", placeholder: "Enter Probation Terms", rows: 4, enabled: true, section: "paragraph" },
-    { id: "contractPeriod", label: "Contract Period", type: "textarea", placeholder: "Enter Contract Period", rows: 4, enabled: true, section: "paragraph" },
-    { id: "noticePeriod", label: "Notice Period", type: "textarea", placeholder: "Enter Notice Period", rows: 4, enabled: true, section: "paragraph" },
-    { id: "accomodation", label: "Accomodation", type: "textarea", placeholder: "Enter Accomodation Terms", rows: 4, enabled: true, section: "paragraph" },
-    { id: "food", label: "Food", type: "textarea", placeholder: "Enter Food Terms", rows: 4, enabled: true, section: "paragraph" },
-    { id: "transport", label: "Transport", type: "textarea", placeholder: "Enter Transport Terms", rows: 4, enabled: true, section: "paragraph" },
-    { id: "communication", label: "Communications", type: "textarea", placeholder: "Enter Communication Terms", rows: 4, enabled: true, section: "paragraph" },
-    { id: "insurance", label: "Insurance", type: "textarea", placeholder: "Enter Insurance Terms", rows: 4, enabled: true, section: "paragraph" },
-    { id: "annualLeave", label: "Annual Leave", type: "text", placeholder: "Enter Annual Leave Terms", enabled: true, section: "paragraph" },
-    { id: "gratuity", label: "Gratuity", type: "text", placeholder: "Enter Gratuity", enabled: true, section: "paragraph" },
-    { id: "leaveEncashment", label: "Leave Encashment", type: "text", placeholder: "Enter Leave Encashment Terms", enabled: true, section: "paragraph" },
-    { id: "workingHours", label: "Working Hours", type: "text", placeholder: "Enter Working Terms", enabled: true, section: "paragraph" },
+    { id: "grossSalary", label: "Gross Salary (OMR)", type: "number", placeholder: "Enter Gross Salary", enabled: true, section: "table" },
+    { id: "attendance", label: "Attendance", type: "textarea", placeholder: "Enter Attendance Terms", rows: 4, enabled: true, section: "table" },
+    { id: "probation", label: "Probation", type: "textarea", placeholder: "Enter Probation Terms", rows: 4, enabled: true, section: "table" },
+    { id: "reportingDate", label: "Joining Date", type: "date", placeholder: "Enter Reporting Date", enabled: false, section: "table" },
+    { id: "contractPeriod", label: "Contract Period", type: "textarea", placeholder: "Enter Contract Period", rows: 4, enabled: true, section: "table" },
+    { id: "noticePeriod", label: "Notice Period", type: "textarea", placeholder: "Enter Notice Period", rows: 4, enabled: true, section: "table" },
+    { id: "accomodation", label: "Accomodation", type: "textarea", placeholder: "Enter Accomodation Terms", rows: 4, enabled: true, section: "table" },
+    { id: "food", label: "Food", type: "textarea", placeholder: "Enter Food Terms", rows: 4, enabled: true, section: "table" },
+    { id: "transport", label: "Transport", type: "textarea", placeholder: "Enter Transport Terms", rows: 4, enabled: true, section: "table" },
+    { id: "communication", label: "Communications", type: "textarea", placeholder: "Enter Communication Terms", rows: 4, enabled: true, section: "table" },
+    { id: "insurance", label: "Insurance", type: "textarea", placeholder: "Enter Insurance Terms", rows: 4, enabled: true, section: "table" },
+    { id: "annualLeave", label: "Annual Leave", type: "text", placeholder: "Enter Annual Leave Terms", enabled: false, section: "table" },
+    { id: "gratuity", label: "Gratuity", type: "text", placeholder: "Enter Gratuity", enabled: false, section: "table" },
+    { id: "leaveEncashment", label: "Leave Encashment", type: "text", placeholder: "Enter Leave Encashment Terms", enabled: false, section: "table" },
+    // Paragraph section fields - fields that appear outside the table
     { id: "airPassage", label: "Air Passage", type: "textarea", placeholder: "Enter Air Passage Terms", rows: 4, enabled: true, section: "paragraph" },
     { id: "visaStatus", label: "Visa Status", type: "textarea", placeholder: "Enter Visa Terms", rows: 4, enabled: true, section: "paragraph" },
+    { id: "workingHours", label: "Working Hours", type: "text", placeholder: "Enter Working Terms", enabled: true, section: "paragraph" },
+    { id: "medical", label: "Medical", type: "textarea", placeholder: "Enter Medical Terms", rows: 4, enabled: true, section: "paragraph" },
+    { id: "jobSummary", label: "Job Summary", type: "textarea", placeholder: "Enter Job Summary", rows: 4, enabled: true, section: "paragraph" },
+    { id: "responsibilities", label: "Responsibilities", type: "textarea", placeholder: "Enter Responsibilities", rows: 4, enabled: true, section: "paragraph" },
   ];
 
   const [fieldConfig, setFieldConfig] = useState<FieldConfig[]>(defaultFieldConfig);
@@ -2063,7 +2068,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     </tr>
                   );
                 }
-                if (field.id === "passportNumber" && passport) {
+                if (field.id === "passportNumber") {
                   return (
                     <tr key={field.id} style={{ fontSize: "0.8rem" }}>
                       <td style={tableCellStyle}>{field.label}</td>
@@ -2103,7 +2108,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     </tr>
                   );
                 }
-                if (field.id === "allowance" && formData.allowance) {
+                if (field.id === "allowance") {
                   return (
                     <tr key={field.id}>
                       <td style={tableCellStyle}>{field.label}</td>
@@ -2127,7 +2132,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     </tr>
                   );
                 }
-                if (field.id === "reportingDate" && joiningDate) {
+                if (field.id === "reportingDate") {
                   return (
                     <tr key={field.id}>
                       <td style={tableCellStyle}>{field.label}</td>
@@ -2167,7 +2172,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     </React.Fragment>
                   );
                 }
-                if (field.id === "accomodation" && formData.accomodation) {
+                if (field.id === "accomodation") {
                   return (
                     <tr key={field.id}>
                       <td style={tableCellStyle}>Accommodation</td>
@@ -2177,7 +2182,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     </tr>
                   );
                 }
-                if (field.id === "food" && formData.food) {
+                if (field.id === "food") {
                   return (
                     <tr key={field.id}>
                       <td style={tableCellStyle}>{field.label}</td>
@@ -2197,7 +2202,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     </tr>
                   );
                 }
-                if (field.id === "communication" && comm) {
+                if (field.id === "communication") {
                   return (
                     <tr key={field.id}>
                       <td style={tableCellStyle}>{field.label}</td>
@@ -2207,7 +2212,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     </tr>
                   );
                 }
-                if (field.id === "insurance" && formData.insurance) {
+                if (field.id === "insurance") {
                   return (
                     <tr key={field.id}>
                       <td style={tableCellStyle}>{field.label}</td>
@@ -2227,7 +2232,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     </tr>
                   );
                 }
-                if (field.id === "gratuity" && formData.gratuity) {
+                if (field.id === "gratuity") {
                   return (
                     <tr key={field.id}>
                       <td style={tableCellStyle}>{field.label}</td>
@@ -2235,11 +2240,30 @@ const [searchTerm, setSearchTerm] = useState("");
                     </tr>
                   );
                 }
-                if (field.id === "leaveEncashment" && formData.leaveEncashment) {
+                if (field.id === "leaveEncashment") {
                   return (
                     <tr key={field.id}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>{formData.leaveEncashment || "N/A"}</td>
+                    </tr>
+                  );
+                }
+                if (field.id === "grossSalary") {
+                  return (
+                    <tr key={field.id}>
+                      <td style={tableCellStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        OMR{" "}
+                        {(formData.allowances?.reduce(
+                          (sum: number, a: any) => sum + Number(a.description),
+                          0
+                        ) || 0) +
+                          Number(formData.salary) +
+                          Number(
+                            formData.allowances.length > 0 ? 0 : formData.allowance
+                          ) +
+                          " (Monthly)" || "[Gross Salary]"}
+                      </td>
                     </tr>
                   );
                 }
@@ -2278,23 +2302,6 @@ const [searchTerm, setSearchTerm] = useState("");
                   </td>
                 </tr>
               ))}
-            
-            {/* Gross Salary - always at the end */}
-            <tr>
-              <td style={tableCellStyle}>Gross Salary</td>
-              <td style={tableCellStyle}>
-                OMR{" "}
-                {(formData.allowances?.reduce(
-                  (sum: number, a: any) => sum + Number(a.description),
-                  0
-                ) || 0) +
-                  Number(formData.salary) +
-                  Number(
-                    formData.allowances.length > 0 ? 0 : formData.allowance
-                  ) +
-                  " (Monthly)" || "[Gross Salary]"}
-              </td>
-            </tr>
           </tbody>
         </table>
         <img style={{ width:"7.5rem", marginLeft:"30rem", position:"absolute"}} src={"/ssu_stamp.png"}/>
