@@ -133,6 +133,10 @@ type FormData = {
   leaveEncashment: string;
   workingHours: string;
   airPassage: string;
+  sectorOfTravel: string;
+  classOfTravel: string;
+  medicalTerms: string;
+  incrementTerms: string;
   jobSummary: string;
   responsibilities: string;
   roles: Array<{ title: string; description: string }>;
@@ -173,7 +177,7 @@ const [searchTerm, setSearchTerm] = useState("");
   };
 
   const [formData, setFormData] = useState<FormData>({
-    date: Date(),
+    date: new Date().toISOString().split('T')[0],
     refNo: "",
     candidateName: "",
     passportNumber: "",
@@ -200,6 +204,10 @@ const [searchTerm, setSearchTerm] = useState("");
     leaveEncashment: "",
     workingHours: "",
     airPassage: "",
+    sectorOfTravel: "",
+    classOfTravel: "",
+    medicalTerms: "",
+    incrementTerms: "",
     jobSummary: "",
     responsibilities: "",
     roles: [],
@@ -275,13 +283,17 @@ const [searchTerm, setSearchTerm] = useState("");
     { id: "annualLeave", label: "Annual Leave", type: "text", placeholder: "Enter Annual Leave Terms", enabled: false, section: "table" },
     { id: "gratuity", label: "Gratuity", type: "text", placeholder: "Enter Gratuity", enabled: false, section: "table" },
     { id: "leaveEncashment", label: "Leave Encashment", type: "text", placeholder: "Enter Leave Encashment Terms", enabled: false, section: "table" },
-    // Paragraph section fields - fields that appear outside the table
+    // Paragraph section fields - fields that appear outside the table (in order of appearance in preview)
     { id: "airPassage", label: "Air Passage", type: "textarea", placeholder: "Enter Air Passage Terms", rows: 4, enabled: true, section: "paragraph" },
+    { id: "sectorOfTravel", label: "Sector of Travel", type: "text", placeholder: "e.g., MUSCAT - DELHI", enabled: true, section: "paragraph" },
+    { id: "classOfTravel", label: "Class of Travel", type: "text", placeholder: "e.g., Economy Class by any Airline", enabled: true, section: "paragraph" },
     { id: "visaStatus", label: "Visa Status", type: "textarea", placeholder: "Enter Visa Terms", rows: 4, enabled: true, section: "paragraph" },
+    { id: "medicalTerms", label: "Medical Terms", type: "textarea", placeholder: "Enter detailed medical terms", rows: 4, enabled: true, section: "paragraph" },
+    { id: "incrementTerms", label: "Increment Terms", type: "textarea", placeholder: "Enter increment terms", rows: 4, enabled: true, section: "paragraph" },
     { id: "workingHours", label: "Working Hours", type: "text", placeholder: "Enter Working Terms", enabled: true, section: "paragraph" },
-    { id: "medical", label: "Medical", type: "textarea", placeholder: "Enter Medical Terms", rows: 4, enabled: true, section: "paragraph" },
     { id: "jobSummary", label: "Job Summary", type: "textarea", placeholder: "Enter Job Summary", rows: 4, enabled: true, section: "paragraph" },
     { id: "responsibilities", label: "Responsibilities", type: "textarea", placeholder: "Enter Responsibilities", rows: 4, enabled: true, section: "paragraph" },
+    { id: "medical", label: "Medical", type: "textarea", placeholder: "Enter Medical Terms", rows: 4, enabled: false, section: "paragraph" },
   ];
 
   const [fieldConfig, setFieldConfig] = useState<FieldConfig[]>(defaultFieldConfig);
@@ -799,6 +811,17 @@ const [searchTerm, setSearchTerm] = useState("");
     }
   };
 
+  // Helper function to clean undefined values from data before saving to Firestore
+  const cleanDataForFirestore = (data: any) => {
+    const cleaned: any = {};
+    Object.keys(data).forEach(key => {
+      if (data[key] !== undefined) {
+        cleaned[key] = data[key];
+      }
+    });
+    return cleaned;
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -814,7 +837,7 @@ const [searchTerm, setSearchTerm] = useState("");
       // Get a fresh reference number for the new letter
       const nextRef = getNextReferenceNumber(offerLetters);
       
-      const newLetter = {
+      const newLetter = cleanDataForFirestore({
         ...formData,
         refNo: nextRef,  // Use the new reference number
         air_passage: air_passage,
@@ -823,7 +846,7 @@ const [searchTerm, setSearchTerm] = useState("");
         joiningDate: joiningDate,
         generated_at: Timestamp.now(),
         generated_by: auth.currentUser?.email || null,
-      };
+      });
 
       console.log("Attempting to save letter:", newLetter);
 
@@ -927,10 +950,10 @@ const [searchTerm, setSearchTerm] = useState("");
     if (!editingLetter?.id) return;
     setSaving(true);
     try {
-      await updateDoc(doc(db, "offer_letters", editingLetter.id), {
+      await updateDoc(doc(db, "offer_letters", editingLetter.id), cleanDataForFirestore({
         ...editingLetter,
         updated_at: Timestamp.now(),
-      });
+      }));
       message.success("Offer letter updated");
       setEditDialogVisible(false);
       fetchOfferLetters();
@@ -971,7 +994,7 @@ const [searchTerm, setSearchTerm] = useState("");
       // Create a copy of formData without the date field for the preset
       const { date, ...presetData } = formData;
 
-      await updateDoc(letterRef, {
+      await updateDoc(letterRef, cleanDataForFirestore({
         ...presetData,
         air_passage: air_passage,
         comm: comm,
@@ -979,7 +1002,7 @@ const [searchTerm, setSearchTerm] = useState("");
         joiningDate: joiningDate,
         generated_at: Timestamp.now(),
         generated_by: auth.currentUser?.email || null,
-      });
+      }));
 
       // Update the original form data to match the new state
       setOriginalFormData({
@@ -1032,6 +1055,10 @@ const [searchTerm, setSearchTerm] = useState("");
       leaveEncashment: ol.leaveEncashment,
       workingHours: ol.workingHours,
       airPassage: ol.airPassage,
+      sectorOfTravel: ol.sectorOfTravel || "",
+      classOfTravel: ol.classOfTravel || "",
+      medicalTerms: ol.medicalTerms || "",
+      incrementTerms: ol.incrementTerms || "",
       jobSummary: ol.jobSummary,
       responsibilities: ol.responsibilities,
       roles: ol.roles,
@@ -1116,6 +1143,10 @@ const [searchTerm, setSearchTerm] = useState("");
       leaveEncashment: "",
       workingHours: "",
       airPassage: "",
+      sectorOfTravel: "",
+      classOfTravel: "",
+      medicalTerms: "",
+      incrementTerms: "",
       jobSummary: "",
       responsibilities: "",
       roles: [{ title: "", description: "" }],
@@ -1628,131 +1659,137 @@ const [searchTerm, setSearchTerm] = useState("");
         </div>
 
         {/* Dynamic Fields Rendering */}
-        {fieldConfig.filter(f => f.enabled).map((field) => renderField(field))}
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "0.5rem",
-              marginBottom: "",
-              marginTop: "0.5rem",
-            }}
-          >
-            <h3 style={{ fontSize: "0.8rem" }}>Additional Allowances</h3>
-          </div>
-          <AnimatePresence mode="sync">
-            {formData.allowances.map((role, index) => (
-              <motion.div
-                key={index}
-                ref={
-                  index === formData.allowances.length - 1
-                    ? lastAllowanceRef
-                    : null
-                }
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{
-                  duration: 0.15,
-                  ease: [0.4, 0, 0.2, 1],
-                }}
-                style={{
-                  display: "flex",
-                  flexFlow: "column",
-                  border: "1px solid rgba(100 100 100/ 20%)",
-                  borderRadius: "0.5rem",
-                  padding: "0.45rem",
-                  marginBottom: "0.5rem",
-                  background: "rgba(100 100 100/ 5%)",
-                  willChange: "transform, opacity",
-                }}
+        {fieldConfig.filter(f => f.enabled).map((field) => (
+          <React.Fragment key={field.id}>
+            {renderField(field)}
+            {/* Insert Additional Allowances section right after allowance field */}
+            {field.id === "allowance" && (
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
               >
                 <div
                   style={{
                     display: "flex",
+                    justifyContent: "space-between",
                     alignItems: "center",
                     gap: "0.5rem",
-                    marginBottom: "0.5rem",
+                    marginBottom: "",
+                    marginTop: "0.5rem",
                   }}
                 >
-                  <input
-                    type="text"
-                    name={`role-title-${index}`}
-                    value={role.title}
-                    onChange={(e) =>
-                      handleAllowanceChange(index, "title", e.target.value)
-                    }
-                    placeholder="Enter Allowance type"
-                    style={{ fontSize: "0.95rem", background: "" }}
-                  />
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleRemoveAllowance(index)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "rgba(100 100 100/ 10%)",
-                      color: "indianred",
-                      border: "none",
-                      padding: "0.5rem 0.75rem",
-                      borderRadius: "0.45rem",
-                      cursor: "pointer",
-                      fontSize: "0.95rem",
-                      marginLeft: "",
-                      willChange: "transform",
-                    }}
-                  >
-                    <MinusCircle width={"1rem"} />
-                  </motion.button>
+                  <h3 style={{ fontSize: "0.8rem" }}>Additional Allowances</h3>
                 </div>
-                <input
-                  name={`role-description-${index}`}
-                  value={role.description}
-                  onChange={(e) =>
-                    handleAllowanceChange(index, "description", e.target.value)
-                  }
-                  placeholder="Enter Allowance Amount"
+                <AnimatePresence mode="sync">
+                  {formData.allowances.map((role, index) => (
+                    <motion.div
+                      key={index}
+                      ref={
+                        index === formData.allowances.length - 1
+                          ? lastAllowanceRef
+                          : null
+                      }
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{
+                        duration: 0.15,
+                        ease: [0.4, 0, 0.2, 1],
+                      }}
+                      style={{
+                        display: "flex",
+                        flexFlow: "column",
+                        border: "1px solid rgba(100 100 100/ 20%)",
+                        borderRadius: "0.5rem",
+                        padding: "0.45rem",
+                        marginBottom: "0.5rem",
+                        background: "rgba(100 100 100/ 5%)",
+                        willChange: "transform, opacity",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                          marginBottom: "0.5rem",
+                        }}
+                      >
+                        <input
+                          type="text"
+                          name={`role-title-${index}`}
+                          value={role.title}
+                          onChange={(e) =>
+                            handleAllowanceChange(index, "title", e.target.value)
+                          }
+                          placeholder="Enter Allowance type"
+                          style={{ fontSize: "0.95rem", background: "" }}
+                        />
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleRemoveAllowance(index)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "rgba(100 100 100/ 10%)",
+                            color: "indianred",
+                            border: "none",
+                            padding: "0.5rem 0.75rem",
+                            borderRadius: "0.45rem",
+                            cursor: "pointer",
+                            fontSize: "0.95rem",
+                            marginLeft: "",
+                            willChange: "transform",
+                          }}
+                        >
+                          <MinusCircle width={"1rem"} />
+                        </motion.button>
+                      </div>
+                      <input
+                        name={`role-description-${index}`}
+                        value={role.description}
+                        onChange={(e) =>
+                          handleAllowanceChange(index, "description", e.target.value)
+                        }
+                        placeholder="Enter Allowance Amount"
+                        style={{
+                          width: "100%",
+                          fontSize: "0.95rem",
+                          background: "",
+                          borderRadius: "0.5rem",
+                        }}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleAddAllowance}
                   style={{
-                    width: "100%",
-                    fontSize: "0.95rem",
-                    background: "",
+                    fontSize: "0.85rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
+                    background: "rgba(100 100 100/ 10%)",
+                    color: "mediumslateblue",
+                    border: "none",
+                    padding: "0.5rem 1rem",
                     borderRadius: "0.5rem",
+                    cursor: "pointer",
+                    width: "100%",
+                    marginTop: "0.5rem",
+                    willChange: "transform",
                   }}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleAddAllowance}
-            style={{
-              fontSize: "0.85rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-              background: "rgba(100 100 100/ 10%)",
-              color: "mediumslateblue",
-              border: "none",
-              padding: "0.5rem 1rem",
-              borderRadius: "0.5rem",
-              cursor: "pointer",
-              width: "100%",
-              marginTop: "0.5rem",
-              willChange: "transform",
-            }}
-          >
-            <Plus width={"0.8rem"} />
-            Add Allowance
-          </motion.button>
-        </div>
+                >
+                  <Plus width={"0.8rem"} />
+                  Add Allowance
+                </motion.button>
+              </div>
+            )}
+          </React.Fragment>
+        ))}
 
         <br />
 
@@ -2110,10 +2147,24 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "allowance") {
                   return (
-                    <tr key={field.id}>
-                      <td style={tableCellStyle}>{field.label}</td>
-                      <td style={tableCellStyle}>{formData.allowance || "N/A"}</td>
-                    </tr>
+                    <React.Fragment key={field.id}>
+                      <tr>
+                        <td style={tableCellStyle}>{field.label}</td>
+                        <td style={tableCellStyle}>{formData.allowance || "N/A"}</td>
+                      </tr>
+                      {/* Additional Allowances - shown right after allowance field */}
+                      {formData.allowances.length > 0 &&
+                        formData.allowances.map((role, index) => (
+                          <tr key={`allowance-${index}`}>
+                            <td style={tableCellStyle}>
+                              {role.title || "[ALLOWANCE TYPE]"}
+                            </td>
+                            <td style={tableCellStyle}>
+                              {role.description || "[ALLOWANCE AMOUNT]"}
+                            </td>
+                          </tr>
+                        ))}
+                    </React.Fragment>
                   );
                 }
                 if (field.id === "attendance") {
@@ -2259,9 +2310,7 @@ const [searchTerm, setSearchTerm] = useState("");
                           0
                         ) || 0) +
                           Number(formData.salary) +
-                          Number(
-                            formData.allowances.length > 0 ? 0 : formData.allowance
-                          ) +
+                          Number(formData.allowance || 0) +
                           " (Monthly)" || "[Gross Salary]"}
                       </td>
                     </tr>
@@ -2289,19 +2338,6 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 return null;
               })}
-            
-            {/* Additional Allowances - shown after all other fields */}
-            {formData.allowances.length > 0 &&
-              formData.allowances.map((role, index) => (
-                <tr key={`allowance-${index}`}>
-                  <td style={tableCellStyle}>
-                    {role.title || "[ALLOWANCE TYPE]"}
-                  </td>
-                  <td style={tableCellStyle}>
-                    {role.description || "[ALLOWANCE AMOUNT]"}
-                  </td>
-                </tr>
-              ))}
           </tbody>
         </table>
         <img style={{ width:"7.5rem", marginLeft:"30rem", position:"absolute"}} src={"/ssu_stamp.png"}/>
@@ -2428,11 +2464,10 @@ const [searchTerm, setSearchTerm] = useState("");
                   </p>
                   <br />
                   <p>
-                    <b>Sector of Travel : </b>MUSCAT - (Nearest Hometown
-                    International Airport )
+                    <b>Sector of Travel : </b>{formData.sectorOfTravel || "MUSCAT - (Nearest Hometown International Airport)"}
                   </p>
                   <p>
-                    <b>Class of Travel : </b>Economy Class by any Airline
+                    <b>Class of Travel : </b>{formData.classOfTravel || "Economy Class by any Airline"}
                   </p>
                 </>
               ),
@@ -2452,9 +2487,7 @@ const [searchTerm, setSearchTerm] = useState("");
               title: "Medical",
               content: (
                 <p>
-                  During the service period the company will bear all medical
-                  expenses for self - excluding dependents, dental, optical,
-                  gynecology and congenital.
+                  {formData.medicalTerms || "During the service period the company will bear all medical expenses for self - excluding dependents, dental, optical, gynecology and congenital."}
                 </p>
               ),
             },
@@ -2462,8 +2495,7 @@ const [searchTerm, setSearchTerm] = useState("");
               title: "Increment Terms",
               content: (
                 <p>
-                  Based on the performance of the individual and the company, at
-                  the discretion of management.
+                  {formData.incrementTerms || "Based on the performance of the individual and the company, at the discretion of management."}
                 </p>
               ),
             },
