@@ -12,9 +12,9 @@ const CLEARANCE_ROUTES = {
 const ROLE_RESTRICTED_ROUTES = {
   supervisor: ["/index", "/supervisor", "/profile", "/phonebook"], // Supervisors
   admin: ["*"], // Admins can access all routes
-  user: ["/index", "/record-list", "/records", "/vale-records", "/profile", "/phonebook"], // Regular users
-  site_coordinator: ["/index", "/site-coordinator", "/record-list", "/profile", "/phonebook"],
-  management: ["/index", "/management", "/record-list", "/reports", "/profile", "/phonebook"],
+  user: ["/index", "/record-list", "/records", "/vale-records", "/mobilizacao", "/offer-letters", "/profile", "/phonebook"], // Regular users
+  site_coordinator: ["/index", "/site-coordinator", "/record-list", "/mobilizacao", "/offer-letters", "/profile", "/phonebook"],
+  management: ["/index", "/management", "/record-list", "/reports", "/mobilizacao", "/offer-letters", "/profile", "/phonebook"],
   profile: ["/profile", "/records", "/phonebook"] // Basic profile access
 };
 

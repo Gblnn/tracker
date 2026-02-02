@@ -144,6 +144,7 @@ export default function Users() {
       setLoading(true);
       const updatedData = {
         role: role,
+        system_role: role, // Set system_role to match the selected role
         clearance: clearance,
         editor: editor,
         sensitive_data: sensitive_data,
