@@ -10,11 +10,11 @@ const CLEARANCE_ROUTES = {
 
 // Define system-role-restricted routes
 const ROLE_RESTRICTED_ROUTES = {
-  supervisor: ["/supervisor", "/profile", "/phonebook"], // Supervisors
+  supervisor: ["/index", "/supervisor", "/profile", "/phonebook"], // Supervisors
   admin: ["*"], // Admins can access all routes
-  user: ["/record-list", "/records", "/vale-records", "/profile", "/phonebook"], // Regular users
-  site_coordinator: ["/site-coordinator", "/record-list", "/profile", "/phonebook"],
-  management: ["/management", "/record-list", "/reports", "/profile", "/phonebook"],
+  user: ["/index", "/record-list", "/records", "/vale-records", "/profile", "/phonebook"], // Regular users
+  site_coordinator: ["/index", "/site-coordinator", "/record-list", "/profile", "/phonebook"],
+  management: ["/index", "/management", "/record-list", "/reports", "/profile", "/phonebook"],
   profile: ["/profile", "/records", "/phonebook"] // Basic profile access
 };
 
@@ -44,16 +44,20 @@ export default function ProtectedRoutes() {
   }
 
   // Check role-based route restrictions
-  const allowedRoutes = ROLE_RESTRICTED_ROUTES[userData.system_role as keyof typeof ROLE_RESTRICTED_ROUTES] || [];
+  const allowedRoutes = ROLE_RESTRICTED_ROUTES[userData.system_role as keyof typeof ROLE_RESTRICTED_ROUTES];
   const currentPath = location.pathname;
   
-  // If the user's system_role has route restrictions and current path is not allowed
-  if (allowedRoutes.length > 0 && !allowedRoutes.includes("*")) {
+  // If role is defined and has specific route restrictions (not wildcard)
+  if (allowedRoutes && allowedRoutes.length > 0 && !allowedRoutes.includes("*")) {
     if (!allowedRoutes.includes(currentPath)) {
       // Redirect to their default page based on role
       const defaultRoute = allowedRoutes[0];
       return <Navigate to={defaultRoute} replace />;
     }
+  }
+  // If role is not defined in ROLE_RESTRICTED_ROUTES, allow access to /index only
+  else if (!allowedRoutes && currentPath !== "/index") {
+    return <Navigate to="/index" replace />;
   }
 
   // Then check clearance for protected routes
