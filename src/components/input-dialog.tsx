@@ -71,7 +71,7 @@ interface Props{
 
 export default function InputDialog(props:Props){
     return(
-        <Dialog open={props.open} onOpenChange={props.onOpenChange} modal={false}>
+        <Dialog open={props.open} modal={false}>
             <DialogContent onOpenAutoFocus={(e)=>e.preventDefault()}>
                 <DialogHeader>
                     <DialogTitle className="heading" style={{userSelect:"none", width:"100%", display:"flex", flexFlow:"column"}}>
