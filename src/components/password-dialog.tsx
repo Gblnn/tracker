@@ -54,9 +54,6 @@ export default function PasswordDialog(props:Props){
             <DialogContent onOpenAutoFocus={(e)=>e.preventDefault()}>
                 <DialogHeader>
                     <DialogTitle className="heading" style={{userSelect:"none", width:"100%", display:"flex", flexFlow:"column"}}>
-
-                        
-                        
                         
                         <div className="flex" style={{border:"", textAlign:"left", display:"flex", justifyContent:"flex-start"}}>
                             {props.titleIcon}
