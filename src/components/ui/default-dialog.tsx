@@ -86,7 +86,7 @@ export default function DefaultDialog(props: Props) {
 
   return (
     <>
-      <Dialog open={props.open} onOpenChange={props.onCancel}>
+      <Dialog open={props.open} onOpenChange={props.onCancel} modal={false}>
         <DialogContent
           style={{
             border: "",

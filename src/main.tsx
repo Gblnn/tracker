@@ -13,6 +13,34 @@ import { Toaster } from "sonner";
 
 TimeAgo.addDefaultLocale(en);
 
+// Fix for Radix UI leaving root element inert/aria-hidden after dialogs close
+let cleanupTimeout: NodeJS.Timeout;
+const observer = new MutationObserver(() => {
+  clearTimeout(cleanupTimeout);
+  cleanupTimeout = setTimeout(() => {
+    const root = document.getElementById("root");
+    if (root) {
+      // Check if any Radix portals are actually open
+      const openDialogs = document.querySelectorAll('[data-state="open"]');
+      if (openDialogs.length === 0) {
+        root.removeAttribute("inert");
+        root.removeAttribute("aria-hidden");
+        root.style.pointerEvents = "";
+      }
+    }
+  }, 100); // Small delay to ensure animations complete
+});
+
+// Start observing root element for attribute changes
+const rootElement = document.getElementById("root");
+if (rootElement) {
+  observer.observe(rootElement, { 
+    attributes: true, 
+    attributeFilter: ["inert", "aria-hidden", "style"],
+    subtree: false 
+  });
+}
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <AuthProvider>

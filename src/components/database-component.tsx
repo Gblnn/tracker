@@ -71,8 +71,6 @@ import {
   Globe,
   GraduationCap,
   HeartPulse,
-  Image,
-  ImageOff,
   Inbox,
   ListStart,
   LoaderCircle,
@@ -90,7 +88,7 @@ import {
   X
 } from "lucide-react";
 import moment from "moment";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "react-lazy-load-image-component/src/effects/blur.css";
 import { useNavigate } from "react-router-dom";
 import ReactTimeAgo from "react-time-ago";
@@ -137,15 +135,44 @@ export default function DbComponent(props: Props) {
   const { windowName } = useCurrentUser();
   const [editAccess, setEditAccess] = useState(false);
   const [sensitive_data_access, setSensitiveDataAccess] = useState(false);
+
+  // Memoized function to check if record is expiring (within 2 months)
+  const isRecordExpiring = useMemo(() => {
+    return (post: any) => {
+      const expiryFields = [
+        post.civil_expiry,
+        post.license_expiry,
+        post.medical_due_on,
+        post.passportExpiry,
+        post.vt_hse_induction,
+        post.vt_car_1,
+        post.vt_car_2,
+        post.vt_car_3,
+        post.vt_car_4,
+        post.vt_car_5,
+        post.vt_car_6,
+        post.vt_car_7,
+        post.vt_car_8,
+        post.vt_car_9,
+        post.vt_car_10,
+      ];
+      
+      return expiryFields.some(date => {
+        if (!date || date === "") return false;
+        return moment(date, "DD/MM/YYYY").diff(moment(), "months") < 2;
+      });
+    };
+  }, []);
+  
   const [contractDialog, setContractDialog] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
   const [deleteKey, setDeleteKey] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [jsonData, setJsonData] = useState<any>([]);
   const [companyName, setCompanyName] = useState("");
-  const [thumbnails, setThumbnails] = useState(false);
-  const [remarksDialog, setRemarksDialog] = useState(false);
   const [remarks, setRemarks] = useState("");
+ 
+  const [remarksDialog, setRemarksDialog] = useState(false);
   const [archivePrompt, setArchivePrompt] = useState(false);
   const [state, setState] = useState("");
   const [imageDialog, setImageDialog] = useState(false);
@@ -1822,7 +1849,7 @@ export default function DbComponent(props: Props) {
         toast.warning(`Failed to import ${errorCount} records`);
       }
 
-      window.location.reload();
+      
     } catch (error) {
       console.error("Import error:", error);
       toast.error("Failed to import records");
@@ -1946,7 +1973,7 @@ export default function DbComponent(props: Props) {
       setExportLoading(true);
       await exportExpiringRecords(records);
       setExportDialog(false);
-      window.location.reload();
+      
     } catch (error) {
       console.error("Error exporting expiring records:", error);
       toast.error("Failed to export expiring records");
@@ -2276,7 +2303,11 @@ export default function DbComponent(props: Props) {
                       style={{ width: "fit-content", background: "" }}
                     >
                       {sortby === "name" ? (
+                        <>
+                        <p>Sort</p>
                         <ArrowDownAZ width={"1.25rem"} color="dodgerblue" />
+                        </>
+                        
                       ) : sortby === "created_on" ? (
                         <ListStart width={"1.25rem"} color="dodgerblue" />
                       ) : (
@@ -2299,7 +2330,7 @@ export default function DbComponent(props: Props) {
                     </SelectContent>
                   </Select>
 
-                  <button
+                  {/* <button
                     onClick={() => setThumbnails(!thumbnails)}
                     style={{
                       width: "fit-content",
@@ -2313,8 +2344,8 @@ export default function DbComponent(props: Props) {
                     ) : (
                       <Image color="dodgerblue" width={"1.5rem"} />
                     )}
-                    {/* <p style={{opacity:0.5, fontWeight:400}}>Thumbnails</p> */}
-                  </button>
+                  
+                  </button> */}
 
               
                  
@@ -2337,6 +2368,8 @@ export default function DbComponent(props: Props) {
                     overflowY: "auto",
                     height: "74svh",
                     padding: "0.25rem",
+                    willChange: "scroll-position",
+                    contain: "paint",
                   }}
                 >
                   <motion.div
@@ -2373,78 +2406,10 @@ export default function DbComponent(props: Props) {
                             id_subtitle={post.id}
                             className="record-item"
                             space
-                            // new={
-                            //   moment(post.created_on.toDate()).fromNow() ==
-                            //     "a few seconds ago" ||
-                            //   (selectable && post.type == "omni")
-                            // }
                             dotColor={selectable ? "violet" : "dodgerblue"}
                             notify={!post.notify}
                             archived={post.state == "archived" ? true : false}
-                            expiring={
-                              moment(post.civil_expiry, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2 ||
-                              moment(post.license_expiry, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2 ||
-                              moment(post.medical_due_on, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2 ||
-                              moment(post.passportExpiry, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2 ||
-                              moment(post.vt_hse_induction, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2 ||
-                              moment(post.vt_car_1, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2 ||
-                              moment(post.vt_car_2, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2 ||
-                              moment(post.vt_car_3, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2 ||
-                              moment(post.vt_car_4, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2 ||
-                              moment(post.vt_car_5, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2 ||
-                              moment(post.vt_car_6, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2 ||
-                              moment(post.vt_car_7, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2 ||
-                              moment(post.vt_car_8, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2 ||
-                              moment(post.vt_car_9, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2 ||
-                              moment(post.vt_car_10, "DD/MM/YYYY").diff(
-                                moment(),
-                                "months"
-                              ) < 2
-                                ? true
-                                : false
-                            }
+                            expiring={isRecordExpiring(post)}
                             // tag={
                             //   post.civil_expiry != "" ||
                             //   post.license_expiry != "" ||
@@ -2671,7 +2636,7 @@ export default function DbComponent(props: Props) {
           codeIcon={<File width={"1rem"} color="dodgerblue" />}
           onCancel={() => {
             setExportDialog(false);
-            window.location.reload();
+            
           }}
           open={exportDialog}
           title_extra={
@@ -2751,7 +2716,7 @@ export default function DbComponent(props: Props) {
           onCancel={() => {
             setImportDialog(false);
             setFile(null);
-            window.location.reload();
+          
             setJsonData([]);
             setDuplicateRecords([]);
             setImportMode("ignore"); // Reset to default
