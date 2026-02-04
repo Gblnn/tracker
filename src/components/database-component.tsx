@@ -178,7 +178,7 @@ export default function DbComponent(props: Props) {
   const [imageDialog, setImageDialog] = useState(false);
 
   const [contact, setContact] = useState("");
-  const [editedContact, setEditedContact] = useState("");
+  const [editedContact, setEditedContact] = useState<string | undefined>(undefined);
   const [nativePhone, setNativePhone] = useState("");
   const [nativeAddress, setNativeAddress] = useState("");
   const [editedNativePhone, setEditedNativePhone] = useState("");
@@ -206,18 +206,37 @@ export default function DbComponent(props: Props) {
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteMedicalIDdialog, setDeleteMedicalIDdialog] = useState(false);
   const [email, setEmail] = useState("");
-  const [editedName, setEditedName] = useState("");
-  const [editedEmail, setEditedEmail] = useState("");
-  const [editedCug, setEditedCug] = useState("");
+  const [editedName, setEditedName] = useState<string | undefined>(undefined);
+  const [editedEmail, setEditedEmail] = useState<string | undefined>(undefined);
+  const [editedCug, setEditedCug] = useState<string | undefined>(undefined);
   const [editedRole] = useState("");
-  const [editedSite, setEditedSite] = useState("");
-  const [editedProject, setEditedProject] = useState("");
-  const [editedEmployeeCode, setEditedEmployeeCode] = useState("");
-  const [editedCompanyName, setEditedCompanyName] = useState("");
-  const [editedDateofJoin, setEditedDateofJoin] = useState("");
-  const [editedSalarybasic, setEditedSalaryBasic] = useState(0);
-  const [editedAllowance, setEditedAllowance] = useState(0);
+  const [editedDesignation, setEditedDesignation] = useState<string | undefined>(undefined);
+  const [editedSystemRole, setEditedSystemRole] = useState<string | undefined>(undefined);
+  const [editedSite, setEditedSite] = useState<string | undefined>(undefined);
+  const [editedProject, setEditedProject] = useState<string | undefined>(undefined);
+  const [editedEmployeeCode, setEditedEmployeeCode] = useState<string | undefined>(undefined);
+  const [editedCompanyName, setEditedCompanyName] = useState<string | undefined>(undefined);
+  const [editedDateofJoin, setEditedDateofJoin] = useState<string | undefined>(undefined);
+  const [editedSalarybasic, setEditedSalaryBasic] = useState<number | undefined>(undefined);
+  const [editedAllowance, setEditedAllowance] = useState<number | undefined>(undefined);
   const [image, setImage] = useState("");
+
+  // Reset all edited states
+  const resetEditedStates = () => {
+    setEditedName(undefined);
+    setEditedEmail(undefined);
+    setEditedCug(undefined);
+    setEditedDesignation(undefined);
+    setEditedSystemRole(undefined);
+    setEditedSite(undefined);
+    setEditedProject(undefined);
+    setEditedEmployeeCode(undefined);
+    setEditedCompanyName(undefined);
+    setEditedDateofJoin(undefined);
+    setEditedSalaryBasic(undefined);
+    setEditedAllowance(undefined);
+    setEditedContact(undefined);
+  };
 
   // CIVIL ID VARIABLES
   const [civil_number, setCivilNumber] = useState<any>();
@@ -934,11 +953,23 @@ export default function DbComponent(props: Props) {
     });
     await AddHistory("addition", "Created", "", "Record");
     setAddDialog(false);
-    setName(editedName ? editedName : name);
-    setEmail(editedEmail ? editedEmail : email);
     setLoading(false);
     fetchData();
     setModifiedOn(new Date());
+    // Clear form fields after adding
+    setName("");
+    setEmail("");
+    setEmployeeCode("");
+    setCompanyName("");
+    setDateofJoin("");
+    setSalaryBasic(0);
+    setAllowance(0);
+    setContact("");
+    setCug("");
+    setDesignation("");
+    setSite("");
+    setProject("");
+    setSystemRole("");
   };
 
   // FUNCTION TO EDIT RECORD
@@ -959,41 +990,22 @@ export default function DbComponent(props: Props) {
     }
 
     await updateDoc(doc(db, "records", doc_id), {
-      name: editedName ? editedName : name ? name : "",
-      email: editedEmail ? editedEmail : editedEmail == "" ? "" : email,
-      employeeCode: editedEmployeeCode
-        ? editedEmployeeCode
-        : employeeCode
-        ? employeeCode
-        : "",
-      cug: editedCug ? editedCug : cug ? cug : "",
-      role: editedRole ? editedRole : role ? role : "",
-      system_role: editedRole ? editedRole : system_role ? system_role : "profile",
-      site: editedSite ? editedSite : site ? site : "",
-      project: editedProject ? editedProject : project ? project : "",
-      companyName: editedCompanyName
-        ? editedCompanyName
-        : companyName
-        ? companyName
-        : "",
-      dateofJoin: editedDateofJoin
-        ? editedDateofJoin
-        : dateofJoin
-        ? dateofJoin
-        : "",
-      initialSalary: editedSalarybasic
-        ? editedSalarybasic
-        : initialSalary
-        ? initialSalary
-        : "",
-      initialAllowance: editedAllowance
-        ? editedAllowance
-        : initialAllowance
-        ? initialAllowance
-        : "",
-      salaryBasic: editedSalarybasic ? editedSalarybasic : "",
-      allowance: editedAllowance ? editedAllowance : "",
-      contact: editedContact ? editedContact : contact ? contact : "",
+      name: editedName !== undefined ? editedName : name,
+      email: editedEmail !== undefined ? editedEmail : email,
+      employeeCode: editedEmployeeCode !== undefined ? editedEmployeeCode : employeeCode,
+      cug: editedCug !== undefined ? editedCug : cug,
+      role: editedDesignation !== undefined ? editedDesignation : designation,
+      designation: editedDesignation !== undefined ? editedDesignation : designation,
+      system_role: editedSystemRole !== undefined ? editedSystemRole : (system_role || "profile"),
+      site: editedSite !== undefined ? editedSite : site,
+      project: editedProject !== undefined ? editedProject : project,
+      companyName: editedCompanyName !== undefined ? editedCompanyName : companyName,
+      dateofJoin: editedDateofJoin !== undefined ? editedDateofJoin : dateofJoin,
+      initialSalary: editedSalarybasic !== undefined ? editedSalarybasic : (initialSalary || 0),
+      initialAllowance: editedAllowance !== undefined ? editedAllowance : (initialAllowance || 0),
+      salaryBasic: editedSalarybasic !== undefined ? editedSalarybasic : (salaryBasic || 0),
+      allowance: editedAllowance !== undefined ? editedAllowance : (allowance || 0),
+      contact: editedContact !== undefined ? editedContact : contact,
       modified_on: new Date(),
     });
 
@@ -1008,14 +1020,19 @@ export default function DbComponent(props: Props) {
     await AddHistory("addition", "Edited", "", "Record");
 
     setUserEditPrompt(false);
-    setName(editedName ? editedName : name);
-    setEmail(editedEmail ? editedEmail : email);
-    setEmployeeCode(editedEmployeeCode ? editedEmployeeCode : employeeCode);
-    setCompanyName(editedCompanyName ? editedCompanyName : companyName);
-    setDateofJoin(editedDateofJoin ? editedDateofJoin : dateofJoin);
-    setSalaryBasic(editedSalarybasic ? editedSalarybasic : salaryBasic);
-    setAllowance(editedAllowance ? editedAllowance : allowance);
-    setContact(editedContact ? editedContact : contact);
+    setName(editedName !== undefined ? editedName : name);
+    setEmail(editedEmail !== undefined ? editedEmail : email);
+    setEmployeeCode(editedEmployeeCode !== undefined ? editedEmployeeCode : employeeCode);
+    setCompanyName(editedCompanyName !== undefined ? editedCompanyName : companyName);
+    setDateofJoin(editedDateofJoin !== undefined ? editedDateofJoin : dateofJoin);
+    setSalaryBasic(editedSalarybasic !== undefined ? editedSalarybasic : salaryBasic);
+    setAllowance(editedAllowance !== undefined ? editedAllowance : allowance);
+    setContact(editedContact !== undefined ? editedContact : contact);
+    setDesignation(editedDesignation !== undefined ? editedDesignation : designation);
+    setSystemRole(editedSystemRole !== undefined ? editedSystemRole : system_role);
+    setSite(editedSite !== undefined ? editedSite : site);
+    setProject(editedProject !== undefined ? editedProject : project);
+    setCug(editedCug !== undefined ? editedCug : cug);
     setLoading(false);
     fetchData();
     setModifiedOn(new Date());
@@ -2325,7 +2342,7 @@ export default function DbComponent(props: Props) {
                         style={{ justifyContent: "flex-start" }}
                         value="created_on"
                       >
-                        Original
+                        Date Created
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -2446,6 +2463,7 @@ export default function DbComponent(props: Props) {
                               setDocID(post.id);
                               setCug(post.cug);
                               setRole(post.role)
+                              setDesignation(post.designation)
                               setSite(post.site);
                               setProject(post.project);
                               setEmail(post.email)
@@ -3282,6 +3300,7 @@ export default function DbComponent(props: Props) {
                     fetchAllowance();
                   }}
                   onEdit={() => {
+                    resetEditedStates();
                     setUserEditPrompt(true);setRecordSummary(false);
                   }}
                   trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
@@ -3528,7 +3547,20 @@ export default function DbComponent(props: Props) {
           open={addDialog}
           onCancel={() => {
             setAddDialog(false);
-            setEditedName("");
+            // Clear all form fields when canceling
+            setName("");
+            setEmail("");
+            setEmployeeCode("");
+            setCompanyName("");
+            setDateofJoin("");
+            setSalaryBasic(0);
+            setAllowance(0);
+            setContact("");
+            setCug("");
+            setDesignation("");
+            setSite("");
+            setProject("");
+            setSystemRole("");
           }}
           updating={loading}
           disabled={loading}
@@ -3539,38 +3571,47 @@ export default function DbComponent(props: Props) {
           
           input1Label="Full Name"
           inputplaceholder="Enter Full Name"
+          input1Value={name}
           inputOnChange={(e: any) => setName(e.target.value)}
           
           input2Label="Email"
           input2placeholder="Enter Email"
+          input2Value={email}
           input2OnChange={(e: any) => setEmail(e.target.value)}
           
           input3Label="Employee Code"
           input3placeholder="Enter Employee Code"
+          input3Value={employeeCode}
           input3OnChange={(e: any) => setEmployeeCode(e.target.value)}
           
           input4Label="Company Name"
           input4placeholder="Enter Company Name"
+          input4Value={companyName}
           input4OnChange={(e: any) => setCompanyName(e.target.value)}
           
           input5Label="Date of Join"
           input5placeholder="Enter Date of Join"
+          input5Value={dateofJoin}
           input5OnChange={(e: any) => setDateofJoin(e.target.value)}
           
           input6Label="Basic Salary"
           input6placeholder="Basic Salary"
+          input6Value={salaryBasic.toString()}
           input6OnChange={(e: any) => setSalaryBasic(e.target.value)}
           
           input7Label="Allowance"
           input7placeholder="Allowance"
+          input7Value={allowance.toString()}
           input7OnChange={(e: any) => setAllowance(e.target.value)}
           
           input8Label="Contact"
           input8placeholder="Enter Contact"
+          input8Value={contact}
           input8OnChange={(e: any) => setContact(e.target.value)}
           
           input9Label="CUG"
           input9placeholder="Enter CUG "
+          input9Value={cug}
           input9OnChange={(e: any) => setCug(e.target.value)}
 
           // input10Label="Designation"
@@ -3579,10 +3620,12 @@ export default function DbComponent(props: Props) {
 
           input11Label="Site"
           input11placeholder="Enter Site"
+          input11Value={site}
           input11OnChange={(e: any) => setSite(e.target.value)}
 
           input12Label="Project"
           input12placeholder="Enter Project"
+          input12Value={project}
           input12OnChange={(e: any) => setProject(e.target.value)}
 
           extra={
@@ -3608,6 +3651,7 @@ export default function DbComponent(props: Props) {
         <InputDialog
           open={userEditPrompt}
           onCancel={() => {
+            resetEditedStates();
             setRecordSummary(true);
             setUserEditPrompt(false);
           }}
@@ -3680,11 +3724,16 @@ export default function DbComponent(props: Props) {
 
           extra={
             <div style={{width: "100%", display:"flex", gap:"0.5rem"}}>
-              <input onChange={(e: any) => setRole(e.target.value)} placeholder="Enter Designation" defaultValue={role}/>
+              <input 
+                onChange={(e: any) => setEditedDesignation(e.target.value)} 
+                placeholder="Enter Designation" 
+                value={editedDesignation !== undefined ? editedDesignation : designation}
+                style={{width: "100%"}}
+              />
               <RoleSelect 
-                value={system_role} 
+                value={system_role || 'profile'} 
                 onChange={(value) => {
-                  setRole(value);
+                  setEditedSystemRole(value);
                 }}
               />
             </div>

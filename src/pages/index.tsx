@@ -16,6 +16,7 @@ import {
   KeyRound,
   Link,
   Mail,
+  Notebook,
   QrCode,
   UserCheck
 } from "lucide-react";
@@ -249,6 +250,13 @@ export default function Index() {
                 to={"/new-hire"}
                 title={"New Hire"}
                 icon={<UserCheck width={"1.25rem"} color="salmon" />}
+              />
+
+              <Directive
+                onClick={() => usenavigate("/phonebook")}
+                to={"/phonebook"}
+                title={"Phonebook"}
+                icon={<Notebook color="dodgerblue" width={"1.25rem"} />}
               />
 
               

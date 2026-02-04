@@ -292,13 +292,13 @@ export default function UserDashboard() {
                   icon={<NotebookTabs color="dodgerblue" width={"1.25rem"}/>}
                 />
                 <Directive onClick={() => navigate("/quick-links")} title="Quick Links" icon={<Link color="dodgerblue" width={"1.25rem"}/>} />
-                {userData?.role === "admin" && (
+                {/* {userData?.role === "admin" && (
                   <Directive 
                     onClick={() => setAddUserDialog(true)}  
                     title="Add User" 
                     icon={<UserPlus color="lightgreen" width={"1.25rem"}/>}
                   />
-                )}
+                )} */}
               </div>
             </div>
 
