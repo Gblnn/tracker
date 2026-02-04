@@ -209,7 +209,6 @@ export default function DbComponent(props: Props) {
   const [editedName, setEditedName] = useState<string | undefined>(undefined);
   const [editedEmail, setEditedEmail] = useState<string | undefined>(undefined);
   const [editedCug, setEditedCug] = useState<string | undefined>(undefined);
-  const [editedRole] = useState("");
   const [editedDesignation, setEditedDesignation] = useState<string | undefined>(undefined);
   const [editedSystemRole, setEditedSystemRole] = useState<string | undefined>(undefined);
   const [editedSite, setEditedSite] = useState<string | undefined>(undefined);
