@@ -3,7 +3,6 @@ import Back from "@/components/back";
 import Directive from "@/components/directive";
 import IndexDropDown from "@/components/index-dropdown";
 import InputDialog from "@/components/input-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { auth } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
@@ -12,7 +11,6 @@ import { motion } from "framer-motion";
 import {
   Bug,
   FileArchive,
-  FilePen,
   KeyRound,
   Link,
   Mail,
