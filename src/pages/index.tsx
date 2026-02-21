@@ -209,9 +209,9 @@ export default function Index() {
                 icon={<FileArchive color="violet" width={"1.25rem"} />}
               />
 
-              <Directive onClick={()=>usenavigate("/documents")} title={"Document Generation"} icon={<FilePen width={"1.25rem"} color="mediumslateblue"/>} />
+              {/* <Directive onClick={()=>usenavigate("/documents")} title={"Document Generation"} icon={<FilePen width={"1.25rem"} color="mediumslateblue"/>} /> */}
 
-              <Directive
+              {/* <Directive
               onClick={() => usenavigate("/mobilizacao")}
                title={"Mobilizacao"} icon={
                 <Avatar
@@ -226,7 +226,7 @@ export default function Index() {
                     <p style={{ paddingTop: "0.1rem" }}>{"V"}</p>
                   </AvatarFallback>
                 </Avatar>
-              }/>
+              }/> */}
               {/* <Directive
                 onClick={() =>
                   access

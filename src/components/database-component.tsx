@@ -2418,7 +2418,7 @@ export default function DbComponent(props: Props) {
                           //   whileInView={{ opacity: 1 }}
                           // >
                           <Directive
-                          noArrow
+                            icon={<UserCircle/>}
                             id_subtitle={post.id}
                             className="record-item"
                             space

@@ -124,8 +124,8 @@ export default function Directive(props: Props) {
             >
               <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
                 <CheckSquare2
-                  width={"1.75rem"}
-                  height={"1.75rem"}
+                  width={"1.5rem"}
+                  height={"1.5rem"}
                   className="check-square"
                   fill={
                     internalSelected ? "dodgerblue" : "rgba(100 100 100/ 50%)"
