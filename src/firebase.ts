@@ -25,50 +25,25 @@ export const app = initializeApp(firebaseConfig, {
   automaticDataCollectionEnabled: false, // Only enable data collection when needed
 });
 
-// Initialize Auth first (most critical for app startup)
+// Initialize Firestore with optimized persistence settings
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+    cacheSizeBytes: 50 * 1024 * 1024, // 50MB cache size
+  }),
+  experimentalForceLongPolling: false, // Use WebSocket when possible
+});
+
+// Initialize storage with custom settings
+export const storage = getStorage(app);
+
+// Configure storage settings after initialization
+storage.maxOperationRetryTime = 15000; // 15 seconds max retry
+
+// Initialize Auth
 export const auth = getAuth(app);
 
 // Set default persistence for Auth with error handling
 setPersistence(auth, browserLocalPersistence).catch((err) => {
   console.error("Error setting auth persistence:", err);
-});
-
-// Lazy-initialize Firestore to improve initial load time
-let _db: ReturnType<typeof initializeFirestore> | null = null;
-export const getDb = () => {
-  if (!_db) {
-    _db = initializeFirestore(app, {
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager(),
-        cacheSizeBytes: 50 * 1024 * 1024, // 50MB cache size
-      }),
-      experimentalForceLongPolling: false, // Use WebSocket when possible
-    });
-  }
-  return _db;
-};
-
-// Export db as getter for backward compatibility
-export const db = new Proxy({} as ReturnType<typeof initializeFirestore>, {
-  get(target, prop) {
-    return (getDb() as any)[prop];
-  },
-});
-
-// Lazy-initialize Storage
-let _storage: ReturnType<typeof getStorage> | null = null;
-export const getAppStorage = () => {
-  if (!_storage) {
-    _storage = getStorage(app);
-    // Configure storage settings after initialization
-    _storage.maxOperationRetryTime = 15000; // 15 seconds max retry
-  }
-  return _storage;
-};
-
-// Export storage as getter for backward compatibility
-export const storage = new Proxy({} as ReturnType<typeof getStorage>, {
-  get(target, prop) {
-    return (getAppStorage() as any)[prop];
-  },
 });
