@@ -10,7 +10,6 @@ import {
   persistentMultipleTabManager,
 } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { toast } from "sonner";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD8LWJoohdEagKAhtVybbqlmzlJYD3w9KY",
@@ -21,62 +20,91 @@ const firebaseConfig = {
   appId: "1:834882723630:web:f8efe9cbbfad7e69bd64bf",
 };
 
-// Initialize Firebase app immediately
-const startTime = performance.now();
-toast.info("🔄 Starting Firebase initialization...");
-
-export const app = initializeApp(firebaseConfig, {
-  automaticDataCollectionEnabled: false,
-});
-toast.success("✅ Firebase app initialized (" + Math.round(performance.now() - startTime) + "ms)");
-
-// PRIORITY: Initialize Auth FIRST (critical for app startup)
-const authStartTime = performance.now();
-toast.info("⚡ Initializing Auth (priority)...");
-export const auth = getAuth(app);
-
-// Set default persistence for Auth with error handling
-setPersistence(auth, browserLocalPersistence)
-  .then(() => {
-    toast.success("✅ Auth initialized (" + Math.round(performance.now() - authStartTime) + "ms)");
-  })
-  .catch((err) => {
-    console.error("Error setting auth persistence:", err);
-    toast.error("⚠️ Auth persistence error");
-  });
-
-// Initialize Firestore immediately after Auth (needed by AuthProvider)
-const dbStartTime = performance.now();
-toast.info("🔄 Initializing Firestore...");
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager(),
-    cacheSizeBytes: 50 * 1024 * 1024, // 50MB cache size
-  }),
-  experimentalForceLongPolling: false, // Use WebSocket when possible
-});
-toast.success("✅ Firestore initialized (" + Math.round(performance.now() - dbStartTime) + "ms)");
-
-// Lazy-load Storage (only when first accessed - less critical)
+// Lazy initialization - only runs when needed (during login)
+let _app: ReturnType<typeof initializeApp> | null = null;
+let _auth: ReturnType<typeof getAuth> | null = null;
+let _db: ReturnType<typeof initializeFirestore> | null = null;
 let _storage: ReturnType<typeof getStorage> | null = null;
+let _initializing = false;
 
+const initializeFirebase = () => {
+  if (_app || _initializing) return;
+  
+  _initializing = true;
+  console.log("🔄 Initializing Firebase (login triggered)...");
+  const startTime = performance.now();
+  
+  // Initialize app
+  _app = initializeApp(firebaseConfig, {
+    automaticDataCollectionEnabled: false,
+  });
+  
+  // Initialize auth
+  _auth = getAuth(_app);
+  setPersistence(_auth, browserLocalPersistence).catch((err) => {
+    console.error("Error setting auth persistence:", err);
+  });
+  
+  // Initialize Firestore
+  _db = initializeFirestore(_app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager(),
+      cacheSizeBytes: 50 * 1024 * 1024,
+    }),
+    experimentalForceLongPolling: false,
+  });
+  
+  console.log("✅ Firebase initialized in " + Math.round(performance.now() - startTime) + "ms");
+};
+
+// Export getters that initialize on demand
+export const getFirebaseApp = () => {
+  if (!_app) initializeFirebase();
+  return _app!;
+};
+
+export const getFirebaseAuth = () => {
+  if (!_auth) initializeFirebase();
+  return _auth!;
+};
+
+export const getFirebaseDb = () => {
+  if (!_db) initializeFirebase();
+  return _db!;
+};
+
+// For backward compatibility
+export const app = new Proxy({} as ReturnType<typeof initializeApp>, {
+  get(_target, prop) {
+    return (getFirebaseApp() as any)[prop];
+  }
+});
+
+export const auth = new Proxy({} as ReturnType<typeof getAuth>, {
+  get(_target, prop) {
+    return (getFirebaseAuth() as any)[prop];
+  }
+});
+
+export const db = new Proxy({} as ReturnType<typeof initializeFirestore>, {
+  get(_target, prop) {
+    return (getFirebaseDb() as any)[prop];
+  }
+});
+
+// Lazy-load Storage
 const initializeStorage = () => {
   if (_storage) return _storage;
   
-  const storageStartTime = performance.now();
-  toast.info("🔄 Initializing Storage (on-demand)...");
-  
+  const app = getFirebaseApp();
   _storage = getStorage(app);
-  _storage.maxOperationRetryTime = 15000; // 15 seconds max retry
+  _storage.maxOperationRetryTime = 15000;
   
-  toast.success("✅ Storage initialized (" + Math.round(performance.now() - storageStartTime) + "ms)");
   return _storage;
 };
 
-// Export storage with lazy initialization via getter
 export const getAppStorage = () => initializeStorage();
 
-// For backward compatibility, keep storage export
 export const storage = new Proxy({} as ReturnType<typeof getStorage>, {
   get(_target, prop) {
     const storageInstance = initializeStorage();

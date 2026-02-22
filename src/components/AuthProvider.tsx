@@ -1,17 +1,9 @@
 // AuthProvider.js
-import { auth, db } from "@/firebase";
-import {
-  User,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-} from "firebase/auth";
-import { collection, getDocs, query, where } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import PropTypes from "prop-types";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import type { User } from "firebase/auth";
 
 interface FirestoreUserData {
   id: string;
@@ -92,7 +84,7 @@ const getInitialState = () => {
         parsedUser?.email &&
         parsedAuth.email === parsedUser.email
       ) {
-        toast.success("⚡ Instant login from cache!");
+        console.log("⚡ Cache valid - instant auth loaded");
         return {
           user: parsedAuth,
           userData: parsedUser,
@@ -161,6 +153,9 @@ const AuthProvider = ({ children }: Props) => {
   const fetchUserData = async (email: string) => {
     const fetchStartTime = performance.now();
     try {
+      const { db } = await import("@/firebase");
+      const { collection, getDocs, query, where } = await import("firebase/firestore");
+      
       const RecordCollection = collection(db, "users");
       const recordQuery = query(RecordCollection, where("email", "==", email));
       const querySnapshot = await getDocs(recordQuery);
@@ -188,6 +183,9 @@ const AuthProvider = ({ children }: Props) => {
   const createUser = async (email: string, password: string) => {
     setLoading(true);
     try {
+      const { auth } = await import("@/firebase");
+      const { createUserWithEmailAndPassword } = await import("firebase/auth");
+      
       const result = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -204,6 +202,9 @@ const AuthProvider = ({ children }: Props) => {
     toast.info("🔐 Logging in...");
     setLoading(true);
     try {
+      const { auth } = await import("@/firebase");
+      const { signInWithEmailAndPassword } = await import("firebase/auth");
+      
       // Always try online login first
       const result = await signInWithEmailAndPassword(auth, email, password);
       const userData = await fetchUserData(email);
@@ -232,6 +233,9 @@ const AuthProvider = ({ children }: Props) => {
     toast.info("🚪 Logging out...");
     setLoading(true);
     try {
+      const { auth } = await import("@/firebase");
+      const { signOut } = await import("firebase/auth");
+      
       // Sign out from Firebase
       await signOut(auth);
       
@@ -259,9 +263,10 @@ const AuthProvider = ({ children }: Props) => {
   };
 
   useEffect(() => {
-    // If we have valid cached auth, use it immediately and skip Firebase entirely
+    // If we have valid cached auth, use it immediately
     if (hasValidCache.current) {
-      toast.info("📱 Offline mode - using cached credentials");
+      console.log("⚡ Using cached auth - instant access!");
+      toast.success("Auth completed");
       setCachedAuthState(true);
       
       // Hide loader immediately
@@ -271,44 +276,18 @@ const AuthProvider = ({ children }: Props) => {
         }, 50);
       }
       
-      // No Firebase listener needed - auth is purely cache-based until logout
       return;
     }
 
-    // Only set up Firebase listener if no cache (first time or logged out)
-    toast.info("🔄 Connecting to Firebase...");
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) {
-        setUser(null);
-        setUserData(null);
-        
-        if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
-          (window as any).hideInitialLoader();
-        }
-        return;
-      }
-
-      // User is logged in via Firebase
-      try {
-        if (currentUser.email) {
-          const userData = await fetchUserData(currentUser.email);
-          if (userData) {
-            setUser(currentUser);
-            setUserData(userData);
-            cacheAuthState(currentUser);
-            setCachedAuthState(false);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      } finally {
-        if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
-          (window as any).hideInitialLoader();
-        }
-      }
-    });
-
-    return () => unsubscribe();
+    // No cache - just show login page, DON'T initialize Firebase
+    console.log("No cached auth - showing login page");
+    
+    // Hide loader to show login page
+    if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
+      setTimeout(() => {
+        (window as any).hideInitialLoader();
+      }, 50);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount
 
