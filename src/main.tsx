@@ -9,9 +9,13 @@ import "./WEB/css/clash-grotesk.css";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
 import AuthProvider from "./components/AuthProvider.tsx";
-import { Toaster } from "sonner";
+import { toast, Toaster } from "sonner";
+
+const appStartTime = performance.now();
+toast.info("🚀 App starting... (" + new Date().toLocaleTimeString() + ")");
 
 TimeAgo.addDefaultLocale(en);
+toast.info("✅ TimeAgo locale loaded");
 
 // Fix for Radix UI leaving root element inert/aria-hidden after dialogs close
 let cleanupTimeout: NodeJS.Timeout;
@@ -41,13 +45,16 @@ if (rootElement) {
   });
 }
 
+toast.info("🔄 Creating React root...");
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <AuthProvider>
       <ThemeProvider defaultTheme="dark">
         <App />
-        <Toaster/>
+        <Toaster position="top-right" expand={true} richColors />
       </ThemeProvider>
     </AuthProvider>
   </BrowserRouter>
 );
+
+toast.success("✅ React mounted (" + Math.round(performance.now() - appStartTime) + "ms total)");

@@ -11,6 +11,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import PropTypes from "prop-types";
 import { createContext, useContext, useEffect, useState } from "react";
 import { LoadingOutlined } from "@ant-design/icons";
+import { toast } from "sonner";
 
 interface FirestoreUserData {
   id: string;
@@ -142,11 +143,15 @@ const AuthProvider = ({ children }: Props) => {
   };
 
   const fetchUserData = async (email: string) => {
+    const fetchStartTime = performance.now();
+    toast.info("🔄 Fetching user data for " + email);
     try {
       if (!navigator.onLine) {
+        toast.info("📱 Offline mode - using cached data");
         const cachedData = getCachedUserData();
         if (cachedData && cachedData.email === email) {
           setUserData(cachedData);
+          toast.success("✅ Loaded cached user data (" + Math.round(performance.now() - fetchStartTime) + "ms)");
           return cachedData;
         }
         throw new Error("No cached data available offline");
@@ -154,6 +159,7 @@ const AuthProvider = ({ children }: Props) => {
 
       const RecordCollection = collection(db, "users");
       const recordQuery = query(RecordCollection, where("email", "==", email));
+      toast.info("🔄 Querying Firestore...");
       const querySnapshot = await getDocs(recordQuery);
       const fetchedData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -164,6 +170,7 @@ const AuthProvider = ({ children }: Props) => {
         const userData = fetchedData[0];
         setUserData(userData);
         cacheUserData(userData);
+        toast.success("✅ User data fetched from Firestore (" + Math.round(performance.now() - fetchStartTime) + "ms)");
         return userData;
       }
 
@@ -259,8 +266,11 @@ const AuthProvider = ({ children }: Props) => {
   };
 
   useEffect(() => {
+    toast.info("🔄 Setting up auth state listener...");
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      const authCheckStart = performance.now();
       if (!currentUser) {
+        toast.info("👤 No current user - checking cache...");
         // If we have valid cached data, use it for offline mode
         const cachedAuth = localStorage.getItem(CACHED_AUTH_KEY);
         const cachedUser = cachedAuth ? JSON.parse(cachedAuth) : null;
@@ -275,6 +285,12 @@ const AuthProvider = ({ children }: Props) => {
           setCachedAuthState(true);
           setLoading(false);
           setInitialized(true);
+          toast.success("✅ Using cached auth state (" + Math.round(performance.now() - authCheckStart) + "ms)");
+          // Hide initial loader once auth is ready
+          if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
+            toast.info("🎉 Hiding initial loader...");
+            (window as any).hideInitialLoader();
+          }
           return;
         }
         // No valid cache, clear state
@@ -287,8 +303,16 @@ const AuthProvider = ({ children }: Props) => {
         setCachedAuthState(false);
         setLoading(false);
         setInitialized(true);
+        toast.info("👤 No cached auth - user logged out (" + Math.round(performance.now() - authCheckStart) + "ms)");
+        // Hide initial loader once auth is ready
+        if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
+          toast.info("🎉 Hiding initial loader...");
+          (window as any).hideInitialLoader();
+        }
         return;
       }
+      
+      toast.info("👤 Current user found: " + currentUser.email);
 
       // Only set loading if we need to fetch new data and don't have valid cache
       const cachedData = getCachedUserData();
@@ -299,6 +323,7 @@ const AuthProvider = ({ children }: Props) => {
       );
 
       if (needsFetch && !initialState.isValid) {
+        toast.info("🔄 Need to fetch fresh user data...");
         setLoading(true);
         try {
           if (currentUser.email) {
@@ -320,13 +345,26 @@ const AuthProvider = ({ children }: Props) => {
           console.error("Error in auth state change:", error);
         } finally {
           setLoading(false);
+          toast.success("✅ Auth check complete (" + Math.round(performance.now() - authCheckStart) + "ms)");
+          // Hide initial loader after auth completes
+          if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
+            toast.info("🎉 Hiding initial loader...");
+            (window as any).hideInitialLoader();
+          }
         }
       } else {
         // Use cached data immediately
+        toast.info("⚡ Using cached user data - fast path");
         setUser(currentUser);
         setUserData(cachedData);
         setCachedAuthState(false);
         setLoading(false);
+        toast.success("✅ Auth ready with cache (" + Math.round(performance.now() - authCheckStart) + "ms)");
+        // Hide initial loader when using cached data
+        if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
+          toast.info("🎉 Hiding initial loader...");
+          (window as any).hideInitialLoader();
+        }
       }
       setInitialized(true);
     });
