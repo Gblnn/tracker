@@ -1,53 +1,107 @@
+import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 import AuthGuard from "./components/AuthGuard";
 import ProtectedRoutes from "./components/protectedRoute";
 import { AuthProvider } from "./context/auth-context";
-import Index from "./pages";
-import AccessControl from "./pages/access-control";
-import AccessRequests from "./pages/access-requests";
-import AddRemarks from "./pages/add-remarks";
-import AdminPage from "./pages/admin-page";
-import Agreements from "./pages/agreements";
-import Archives from "./pages/archives";
-import History from "./pages/history";
-import Inbox from "./pages/inbox";
-import Login from "./pages/login";
-import LPO from "./pages/lpo";
-import Medicals from "./pages/medicals";
-import MovementRegister from "./pages/movement-register";
-import NewHire from "./pages/new-hire";
-import OfferLetters from "./pages/offer-letters";
-import Openings from "./pages/openings";
-import PageNotFound from "./pages/page-not-found";
-import Profile from "./pages/profile";
-import ProjectLPO from "./pages/project-lpo";
-import QRCodeGenerator from "./pages/qr-code";
-import QuickLinks from "./pages/quick-links";
-import RecordList from "./pages/record-list";
-import Records from "./pages/records";
-import RequestAccess from "./pages/request-access";
-import Shortlist from "./pages/shortlist";
-import UserPage from "./pages/user";
-import UserReset from "./pages/user-reset";
-import Users from "./pages/users";
-import ValeRecords from "./pages/vale-records";
-import Website from "./pages/website";
-import CreateAccount from "./pages/create-account";
-import Phonebook from "./pages/phonebook";
-import Supervisor from "./pages/supervisor";
-import SiteCoordinator from "./pages/site-coordinator";
-import Devices from "./pages/devices";
-import ValeMobilisation from "./pages/vale-mobilisation";
 
+// Eager load critical routes only
+import Login from "./pages/login";
+import { Loader2 } from "lucide-react";
+
+// Lazy load all other routes
+const Index = lazy(() => import("./pages"));
+const AccessControl = lazy(() => import("./pages/access-control"));
+const AccessRequests = lazy(() => import("./pages/access-requests"));
+const AddRemarks = lazy(() => import("./pages/add-remarks"));
+const AdminPage = lazy(() => import("./pages/admin-page"));
+const Agreements = lazy(() => import("./pages/agreements"));
+const Archives = lazy(() => import("./pages/archives"));
+const History = lazy(() => import("./pages/history"));
+const Inbox = lazy(() => import("./pages/inbox"));
+const LPO = lazy(() => import("./pages/lpo"));
+const Medicals = lazy(() => import("./pages/medicals"));
+const MovementRegister = lazy(() => import("./pages/movement-register"));
+const NewHire = lazy(() => import("./pages/new-hire"));
+const OfferLetters = lazy(() => import("./pages/offer-letters"));
+const Openings = lazy(() => import("./pages/openings"));
+const PageNotFound = lazy(() => import("./pages/page-not-found"));
+const Profile = lazy(() => import("./pages/profile"));
+const ProjectLPO = lazy(() => import("./pages/project-lpo"));
+const QRCodeGenerator = lazy(() => import("./pages/qr-code"));
+const QuickLinks = lazy(() => import("./pages/quick-links"));
+const RecordList = lazy(() => import("./pages/record-list"));
+const Records = lazy(() => import("./pages/records"));
+const RequestAccess = lazy(() => import("./pages/request-access"));
+const Shortlist = lazy(() => import("./pages/shortlist"));
+const UserPage = lazy(() => import("./pages/user"));
+const UserReset = lazy(() => import("./pages/user-reset"));
+const Users = lazy(() => import("./pages/users"));
+const ValeRecords = lazy(() => import("./pages/vale-records"));
+const Website = lazy(() => import("./pages/website"));
+const CreateAccount = lazy(() => import("./pages/create-account"));
+const Phonebook = lazy(() => import("./pages/phonebook"));
+const Supervisor = lazy(() => import("./pages/supervisor"));
+const SiteCoordinator = lazy(() => import("./pages/site-coordinator"));
+const Devices = lazy(() => import("./pages/devices"));
+const ValeMobilisation = lazy(() => import("./pages/vale-mobilisation"));
+
+// Loading fallback component
+function PageLoader() {
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+      backdropFilter: 'blur(4px)',
+      zIndex: 9999,
+      animation: 'fadeIn 0.2s ease-in-out'
+    }}>
+      <div style={{ 
+        textAlign: 'center', 
+        color: 'white',
+        animation: 'scaleIn 0.3s ease-out'
+      }}>
+        <Loader2 className="animate-spin" size={32} />
+      </div>
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        @keyframes scaleIn {
+          from {
+            transform: scale(0.8);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 export default function App() {
   return (
     <AuthProvider>
      
       <AuthGuard>
-        <Routes>
-          {/* Public routes */}
-        <Route path="/" element={<Login />} />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            {/* Public routes */}
+          <Route path="/" element={<Login />} />
         <Route path="/user-reset" element={<UserReset />} />
         <Route path="/request-access" element={<RequestAccess />} />
         <Route path="/create-account" element={<CreateAccount />} />
@@ -96,6 +150,7 @@ export default function App() {
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>
+        </Suspense>
       </AuthGuard>
     </AuthProvider>
   );

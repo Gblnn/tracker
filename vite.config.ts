@@ -8,16 +8,27 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("node_modules")) {
-            return id
-              .toString()
-              .split("node_modules/")[1]
-              .split("/")[0]
-              .toString();
+          // Firebase chunk
+          if (id.includes('firebase')) {
+            return 'firebase';
+          }
+          // React core libraries
+          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+            return 'react-vendor';
+          }
+          // UI libraries (framer-motion, lucide, etc)
+          if (id.includes('framer-motion') || id.includes('lucide') || id.includes('@radix-ui')) {
+            return 'ui-vendor';
+          }
+          // Other node_modules
+          if (id.includes('node_modules')) {
+            return 'vendor';
           }
         },
       },
     },
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 1000,
   },
   plugins: [
     react(),
