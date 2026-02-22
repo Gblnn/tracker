@@ -275,10 +275,6 @@ const AuthProvider = ({ children }: Props) => {
           setCachedAuthState(true);
           setLoading(false);
           setInitialized(true);
-          // Hide initial loader once auth is ready
-          if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
-            (window as any).hideInitialLoader();
-          }
           return;
         }
         // No valid cache, clear state
@@ -291,10 +287,6 @@ const AuthProvider = ({ children }: Props) => {
         setCachedAuthState(false);
         setLoading(false);
         setInitialized(true);
-        // Hide initial loader once auth is ready
-        if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
-          (window as any).hideInitialLoader();
-        }
         return;
       }
 
@@ -328,10 +320,6 @@ const AuthProvider = ({ children }: Props) => {
           console.error("Error in auth state change:", error);
         } finally {
           setLoading(false);
-          // Hide initial loader after auth completes
-          if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
-            (window as any).hideInitialLoader();
-          }
         }
       } else {
         // Use cached data immediately
@@ -339,26 +327,12 @@ const AuthProvider = ({ children }: Props) => {
         setUserData(cachedData);
         setCachedAuthState(false);
         setLoading(false);
-        // Hide initial loader when using cached data
-        if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
-          (window as any).hideInitialLoader();
-        }
       }
       setInitialized(true);
     });
 
     return () => unsubscribe();
   }, []);
-
-  // Hide initial loader when initialized
-  useEffect(() => {
-    if (initialized && typeof window !== 'undefined' && (window as any).hideInitialLoader) {
-      // Small delay to ensure UI is ready
-      setTimeout(() => {
-        (window as any).hideInitialLoader();
-      }, 100);
-    }
-  }, [initialized]);
 
   // Only show loading state if we're actually loading and not initialized
   if (loading && !initialized) {
