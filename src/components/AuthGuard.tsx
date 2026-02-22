@@ -1,33 +1,15 @@
 import { useAuth } from "./AuthProvider";
 import { Navigate, useLocation } from "react-router-dom";
-import { LoadingOutlined } from "@ant-design/icons";
-import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
-const LOADING_TIMEOUT = 5000; // 5 seconds timeout
-const PUBLIC_ROUTES = ["/user-reset", "/request-access"]; // Remove "/" from public routes
+const PUBLIC_ROUTES = ["/user-reset", "/request-access"];
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, userData, loading, cachedAuthState } = useAuth();
   const location = useLocation();
-  const [isTimedOut, setIsTimedOut] = useState(false);
 
-  // Add timeout to prevent infinite loading
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    if (loading && !isTimedOut && !cachedAuthState) {
-      timeoutId = setTimeout(() => {
-        setIsTimedOut(true);
-      }, LOADING_TIMEOUT);
-    }
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [loading, isTimedOut, cachedAuthState]);
-
-  // Show loading state only if explicitly loading, not timed out, and no cached state
-  if (loading && !isTimedOut && !cachedAuthState) {
+  // Show loading state only during active operations (login/logout)
+  if (loading) {
     return (
       <div
         style={{
@@ -35,10 +17,10 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
           justifyContent: "center",
           alignItems: "center",
           height: "100vh",
-          background: "linear-gradient(darkslateblue, midnightblue)",
+          background: "black",
         }}
       >
-        <LoadingOutlined style={{ fontSize: 24, color: "white" }} />
+        <Loader2 className="animate-spin" style={{ fontSize: 24, color: "white" }} />
       </div>
     );
   }
@@ -65,8 +47,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const returnPath = location.pathname !== "/" ? location.pathname : "/index";
     return <Navigate to="/" replace state={{ returnPath }} />;
   }
-  // If we have cachedAuthState (offline mode), treat as authenticated
-  // (userData will be set from cache)
 
   // If all checks pass, render the protected route
   return <>{children}</>;

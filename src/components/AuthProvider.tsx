@@ -76,7 +76,7 @@ const isCacheValid = () => {
 const getInitialState = () => {
   try {
     if (!isCacheValid()) {
-      toast.info("⏰ Cache expired, will refresh");
+      console.log("Cache expired, will require login");
       return { user: null, userData: null, isValid: false };
     }
 
@@ -92,7 +92,7 @@ const getInitialState = () => {
         parsedUser?.email &&
         parsedAuth.email === parsedUser.email
       ) {
-        toast.success("⚡ Loaded from cache - instant auth!");
+        toast.success("⚡ Instant login from cache!");
         return {
           user: parsedAuth,
           userData: parsedUser,
@@ -118,10 +118,8 @@ export const useAuth = () => {
 const AuthProvider = ({ children }: Props) => {
   // Get initial state from cache before first render
   const initialState = getInitialState();
-  const startedWithCache = useRef(initialState.isValid);
-
-  const [initialized, setInitialized] = useState(initialState.isValid);
-  const [loading, setLoading] = useState(!initialState.isValid); // Only show loading if no valid cache
+  const hasValidCache = useRef(initialState.isValid);
+  const [loading, setLoading] = useState(false); // Never show loading if we have cache
   const [user, setUser] = useState<User | null>(initialState.user);
   const [userData, setUserData] = useState<FirestoreUserData | null>(
     initialState.userData
@@ -133,7 +131,6 @@ const AuthProvider = ({ children }: Props) => {
     try {
       localStorage.setItem(CACHED_USER_KEY, JSON.stringify(data));
       localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-      toast.info("💾 User data cached");
     } catch (error) {
       console.error("Error caching user data:", error);
     }
@@ -151,7 +148,6 @@ const AuthProvider = ({ children }: Props) => {
         };
         localStorage.setItem(CACHED_AUTH_KEY, JSON.stringify(cachedUser));
         localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-        toast.info("💾 Auth state cached");
       } else {
         localStorage.removeItem(CACHED_AUTH_KEY);
         localStorage.removeItem(CACHED_USER_KEY);
@@ -162,34 +158,11 @@ const AuthProvider = ({ children }: Props) => {
     }
   };
 
-  const getCachedUserData = (): FirestoreUserData | null => {
-    try {
-      const cached = localStorage.getItem(CACHED_USER_KEY);
-      return cached ? JSON.parse(cached) : null;
-    } catch (error) {
-      console.error("Error reading cached user data:", error);
-      return null;
-    }
-  };
-
   const fetchUserData = async (email: string) => {
     const fetchStartTime = performance.now();
-    toast.info("🔄 Fetching user data for " + email);
     try {
-      if (!navigator.onLine) {
-        toast.info("📱 Offline mode - using cached data");
-        const cachedData = getCachedUserData();
-        if (cachedData && cachedData.email === email) {
-          setUserData(cachedData);
-          toast.success("✅ Loaded cached user data (" + Math.round(performance.now() - fetchStartTime) + "ms)");
-          return cachedData;
-        }
-        throw new Error("No cached data available offline");
-      }
-
       const RecordCollection = collection(db, "users");
       const recordQuery = query(RecordCollection, where("email", "==", email));
-      toast.info("🔄 Querying Firestore...");
       const querySnapshot = await getDocs(recordQuery);
       const fetchedData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -200,24 +173,14 @@ const AuthProvider = ({ children }: Props) => {
         const userData = fetchedData[0];
         setUserData(userData);
         cacheUserData(userData);
-        toast.success("✅ User data fetched from Firestore (" + Math.round(performance.now() - fetchStartTime) + "ms)");
+        toast.success("✅ User data loaded (" + Math.round(performance.now() - fetchStartTime) + "ms)");
         return userData;
-      }
-
-      const cachedData = getCachedUserData();
-      if (cachedData && cachedData.email === email) {
-        setUserData(cachedData);
-        return cachedData;
       }
 
       return null;
     } catch (error) {
       console.error("Error fetching user data:", error);
-      const cachedData = getCachedUserData();
-      if (cachedData && cachedData.email === email) {
-        setUserData(cachedData);
-        return cachedData;
-      }
+      toast.error("❌ Failed to fetch user data");
       throw error;
     }
   };
@@ -238,40 +201,27 @@ const AuthProvider = ({ children }: Props) => {
   };
 
   const loginUser = async (email: string, password: string) => {
+    toast.info("🔐 Logging in...");
     setLoading(true);
     try {
-      // Try online login first
-      if (navigator.onLine) {
-        const result = await signInWithEmailAndPassword(auth, email, password);
+      // Always try online login first
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const userData = await fetchUserData(email);
+      
+      if (userData) {
+        // Cache everything for offline use
+        setUser(result.user);
+        setUserData(userData);
         cacheAuthState(result.user);
-        const userData = await fetchUserData(email);
+        setCachedAuthState(false);
+        toast.success("✅ Login successful - cached for offline use!");
         return { result, userData };
       } else {
-        // Offline login with cached credentials
-        const cachedAuth = localStorage.getItem(CACHED_AUTH_KEY);
-        const cachedUser = cachedAuth ? JSON.parse(cachedAuth) : null;
-        const cachedData = getCachedUserData();
-
-        if (cachedUser?.email === email && cachedData?.email === email) {
-          setUser(cachedUser);
-          setUserData(cachedData);
-          return { result: { user: cachedUser }, userData: cachedData };
-        }
-        throw new Error(
-          "Cannot login offline without valid cached credentials"
-        );
+        throw new Error("User data not found");
       }
     } catch (error) {
-      // If online login fails, try offline login as fallback
-      const cachedAuth = localStorage.getItem(CACHED_AUTH_KEY);
-      const cachedUser = cachedAuth ? JSON.parse(cachedAuth) : null;
-      const cachedData = getCachedUserData();
-
-      if (cachedUser?.email === email && cachedData?.email === email) {
-        setUser(cachedUser);
-        setUserData(cachedData);
-        return { result: { user: cachedUser }, userData: cachedData };
-      }
+      console.error("Login error:", error);
+      toast.error("❌ Login failed");
       throw error;
     } finally {
       setLoading(false);
@@ -279,172 +229,91 @@ const AuthProvider = ({ children }: Props) => {
   };
 
   const logOut = async () => {
+    toast.info("🚪 Logging out...");
     setLoading(true);
     try {
+      // Sign out from Firebase
       await signOut(auth);
+      
+      // Clear all state
       setUser(null);
       setUserData(null);
-      // Clear all auth-related data from localStorage
-      localStorage.clear(); // This will clear all localStorage items
-      window.location.href = "/"; // Force a full page reload and redirect
+      setCachedAuthState(false);
+      
+      // Clear all cached data
+      localStorage.removeItem(CACHED_USER_KEY);
+      localStorage.removeItem(CACHED_AUTH_KEY);
+      localStorage.removeItem(CACHE_TIMESTAMP_KEY);
+      
+      toast.success("✅ Logged out successfully");
+      
+      // Force reload to login page
+      window.location.href = "/";
     } catch (error) {
       console.error("Logout error:", error);
-      throw error; // Propagate the error to be handled by the caller
+      toast.error("❌ Logout error");
+      throw error;
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // If we already have valid cached state, mark as initialized immediately
-    if (startedWithCache.current) {
-      toast.success("⚡ Using cached auth - skipping Firebase check");
-      setInitialized(true);
+    // If we have valid cached auth, use it immediately and skip Firebase entirely
+    if (hasValidCache.current) {
+      toast.info("📱 Offline mode - using cached credentials");
       setCachedAuthState(true);
       
-      // Hide loader immediately for cached auth
+      // Hide loader immediately
       if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
         setTimeout(() => {
           (window as any).hideInitialLoader();
-        }, 100);
+        }, 50);
       }
+      
+      // No Firebase listener needed - auth is purely cache-based until logout
+      return;
     }
 
-    toast.info("🔄 Setting up auth state listener (background sync)...");
+    // Only set up Firebase listener if no cache (first time or logged out)
+    toast.info("🔄 Connecting to Firebase...");
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      const authCheckStart = performance.now();
-      
-      // If already initialized with cache, do background sync only
-      if (startedWithCache.current && initialized) {
-        toast.info("🔄 Background sync with Firebase...");
-        
-        if (currentUser && currentUser.email === initialState.user?.email) {
-          // User still valid, just update cache silently
-          cacheAuthState(currentUser);
-          setUser(currentUser);
-          toast.success("✅ Background sync complete");
-        } else if (!currentUser) {
-          // User logged out on another device
-          toast.info("🔄 Session expired, logging out...");
-          setUser(null);
-          setUserData(null);
-          localStorage.clear();
-        }
-        return;
-      }
-      
       if (!currentUser) {
-        toast.info("👤 No current user - checking cache...");
-        // If we have valid cached data, use it for offline mode
-        const cachedAuth = localStorage.getItem(CACHED_AUTH_KEY);
-        const cachedUser = cachedAuth ? JSON.parse(cachedAuth) : null;
-        const cachedData = getCachedUserData();
-        if (
-          cachedUser?.email &&
-          cachedData?.email &&
-          cachedUser.email === cachedData.email &&
-          isCacheValid()
-        ) {
-          setUser(cachedUser);
-          setUserData(cachedData);
-          setCachedAuthState(true);
-          setLoading(false);
-          setInitialized(true);
-          toast.success("✅ Using cached auth state (" + Math.round(performance.now() - authCheckStart) + "ms)");
-          // Hide initial loader once auth is ready
-          if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
-            toast.info("🎉 Hiding initial loader...");
-            (window as any).hideInitialLoader();
-          }
-          return;
-        }
-        // No valid cache, clear state
-        if (user || userData) {
-          setUser(null);
-          setUserData(null);
-          localStorage.removeItem(CACHED_USER_KEY);
-          localStorage.removeItem(CACHED_AUTH_KEY);
-        }
-        setCachedAuthState(false);
-        setLoading(false);
-        setInitialized(true);
-        toast.info("👤 No cached auth - user logged out (" + Math.round(performance.now() - authCheckStart) + "ms)");
-        // Hide initial loader once auth is ready
+        setUser(null);
+        setUserData(null);
+        
         if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
-          toast.info("🎉 Hiding initial loader...");
           (window as any).hideInitialLoader();
         }
         return;
       }
-      
-      toast.info("👤 Current user found: " + currentUser.email);
 
-      // Only set loading if we need to fetch new data and don't have valid cache
-      const cachedData = getCachedUserData();
-      const needsFetch = !(
-        cachedData?.email &&
-        currentUser.email &&
-        cachedData.email === currentUser.email
-      );
-
-      if (needsFetch && !startedWithCache.current) {
-        // Don't show loading if we already have cached state
-        if (!initialized) {
-          toast.info("🔄 Need to fetch fresh user data...");
-          setLoading(true);
-        } else {
-          toast.info("🔄 Refreshing user data in background...");
-        }
-        try {
-          if (currentUser.email) {
-            const userData = await fetchUserData(currentUser.email);
-            if (!userData) {
-              await signOut(auth);
-              setUser(null);
-              setUserData(null);
-              localStorage.removeItem(CACHED_USER_KEY);
-              localStorage.removeItem(CACHED_AUTH_KEY);
-              setCachedAuthState(false);
-            } else {
-              setUser(currentUser);
-              setUserData(userData);
-              setCachedAuthState(false);
-            }
-          }
-        } catch (error) {
-          console.error("Error in auth state change:", error);
-        } finally {
-          setLoading(false);
-          toast.success("✅ Auth check complete (" + Math.round(performance.now() - authCheckStart) + "ms)");
-          // Hide initial loader after auth completes
-          if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
-            toast.info("🎉 Hiding initial loader...");
-            (window as any).hideInitialLoader();
+      // User is logged in via Firebase
+      try {
+        if (currentUser.email) {
+          const userData = await fetchUserData(currentUser.email);
+          if (userData) {
+            setUser(currentUser);
+            setUserData(userData);
+            cacheAuthState(currentUser);
+            setCachedAuthState(false);
           }
         }
-      } else {
-        // Use cached data immediately
-        toast.info("⚡ Using cached user data - fast path");
-        setUser(currentUser);
-        setUserData(cachedData);
-        setCachedAuthState(false);
-        setLoading(false);
-        toast.success("✅ Auth ready with cache (" + Math.round(performance.now() - authCheckStart) + "ms)");
-        // Hide initial loader when using cached data
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
         if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
-          toast.info("🎉 Hiding initial loader...");
           (window as any).hideInitialLoader();
         }
       }
-      setInitialized(true);
     });
 
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps intentional - initialState is computed once, initialized is managed internally
+  }, []); // Run once on mount
 
-  // Only show loading state if we're actually loading and not initialized
-  if (loading && !initialized) {
+  // Only show loading state during active operations (login/logout), never on initial load
+  if (loading) {
     return (
       <div
         style={{
@@ -453,8 +322,6 @@ const AuthProvider = ({ children }: Props) => {
           alignItems: "center",
           height: "100svh",
           background: "black",
-          
-          // background: "linear-gradient(darkslateblue, midnightblue)",
         }}
       >
         <Loader2 className="animate-spin" style={{ fontSize: 24, color: "white" }} />
