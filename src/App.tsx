@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 import AuthGuard from "./components/AuthGuard";
 import ProtectedRoutes from "./components/protectedRoute";
+import { AuthProvider } from "./context/auth-context";
 
 // Eager load critical routes only
 import Login from "./pages/login";
@@ -94,11 +95,13 @@ function PageLoader() {
 
 export default function App() {
   return (
-    <AuthGuard>
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          {/* Public routes */}
-        <Route path="/" element={<Login />} />
+    <AuthProvider>
+     
+      <AuthGuard>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            {/* Public routes */}
+          <Route path="/" element={<Login />} />
         <Route path="/user-reset" element={<UserReset />} />
         <Route path="/request-access" element={<RequestAccess />} />
         <Route path="/create-account" element={<CreateAccount />} />
@@ -149,5 +152,6 @@ export default function App() {
       </Routes>
         </Suspense>
       </AuthGuard>
+    </AuthProvider>
   );
 }
