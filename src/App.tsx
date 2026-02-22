@@ -61,6 +61,7 @@ function PageLoader() {
       zIndex: 9999,
       animation: 'fadeIn 0.2s ease-in-out'
     }}>
+      
       <div style={{ 
         textAlign: 'center', 
         color: 'white',
