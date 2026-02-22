@@ -1,11 +1,11 @@
 import Back from "@/components/back";
+import { LoadingOutlined } from "@ant-design/icons";
 import { message } from "antd";
 import { motion } from "framer-motion";
+import { ChevronLeft, LoaderCircle } from "lucide-react";
 import { useState } from "react";
-import { LoadingOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ChevronLeft, LoaderCircle } from "lucide-react";
 
 export default function RequestAccess() {
   const [stage, setStage] = useState(1)
@@ -72,6 +72,9 @@ export default function RequestAccess() {
       const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = await import("firebase/auth");
       
       const auth = getAuth();
+      
+      // Add user to users collection in Firestore
+      const usersRef = collection(db, "users");
       await addDoc(usersRef, {
         email: email,
         clearance:"None",
@@ -83,7 +86,7 @@ export default function RequestAccess() {
 
       // Create Firebase auth account
       await createUserWithEmailAndPassword(auth, email, password);
-toast.success("Account created successfully!");
+      toast.success("Account created successfully!");
       
       // Sign in the user
       await signInWithEmailAndPassword(auth, email, password);
