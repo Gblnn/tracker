@@ -1,12 +1,9 @@
 import Back from "@/components/back";
 import { message } from "antd";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { LoadingOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { db } from "@/firebase";
-import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import { toast } from "sonner";
 import { ChevronLeft, LoaderCircle } from "lucide-react";
 
@@ -16,13 +13,16 @@ export default function RequestAccess() {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   // const [showCreateForm, setShowCreateForm] = useState(false);
-  const auth = getAuth();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const checkEmailAndCreateAccount = async () => {
     try {
       setLoading(true);
+      
+      // Dynamically import Firebase modules
+      const { db } = await import("@/firebase");
+      const { collection, query, where, getDocs } = await import("firebase/firestore");
       
       // First check if email exists in records
       const recordsRef = collection(db, "records");
@@ -66,10 +66,12 @@ export default function RequestAccess() {
     try {
       setLoading(true);
       
+      // Dynamically import Firebase modules
+      const { db } = await import("@/firebase");
+      const { collection, addDoc } = await import("firebase/firestore");
+      const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = await import("firebase/auth");
       
-      
-      // Add user to users collection in Firestore
-      const usersRef = collection(db, "users");
+      const auth = getAuth();
       await addDoc(usersRef, {
         email: email,
         clearance:"None",

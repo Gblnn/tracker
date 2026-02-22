@@ -1,6 +1,5 @@
 import Back from "@/components/back";
 import { message } from "antd";
-import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { LoadingOutlined } from "@ant-design/icons";
@@ -9,12 +8,16 @@ import { KeyRound } from "lucide-react";
 
 export default function UserReset() {
   const [email, setEmail] = useState("");
-  const auth = getAuth();
   const [loading, setLoading] = useState(false);
   const usenavigate = useNavigate();
 
   const ResetPassword = async () => {
     setLoading(true);
+    
+    // Dynamically import Firebase auth
+    const { getAuth, sendPasswordResetEmail } = await import("firebase/auth");
+    const auth = getAuth();
+    
     await sendPasswordResetEmail(auth, email)
       .then(() => {
         message.success("Password recovery mail sent.");

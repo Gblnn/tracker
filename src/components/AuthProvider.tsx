@@ -1,5 +1,4 @@
 // AuthProvider.js
-import { Loader2 } from "lucide-react";
 import PropTypes from "prop-types";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -111,7 +110,7 @@ const AuthProvider = ({ children }: Props) => {
   // Get initial state from cache before first render
   const initialState = getInitialState();
   const hasValidCache = useRef(initialState.isValid);
-  const [loading, setLoading] = useState(false); // Never show loading if we have cache
+  const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(initialState.user);
   const [userData, setUserData] = useState<FirestoreUserData | null>(
     initialState.userData
@@ -263,50 +262,18 @@ const AuthProvider = ({ children }: Props) => {
   };
 
   useEffect(() => {
-    // If we have valid cached auth, use it immediately
+    // Log auth state for debugging
     if (hasValidCache.current) {
       console.log("⚡ Using cached auth - instant access!");
-      toast.success("Auth completed");
       setCachedAuthState(true);
-      
-      // Hide loader immediately
-      if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
-        setTimeout(() => {
-          (window as any).hideInitialLoader();
-        }, 50);
-      }
-      
-      return;
-    }
-
-    // No cache - just show login page, DON'T initialize Firebase
-    console.log("No cached auth - showing login page");
-    
-    // Hide loader to show login page
-    if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
-      setTimeout(() => {
-        (window as any).hideInitialLoader();
-      }, 50);
+    } else {
+      console.log("No cached auth - showing login page");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount
 
-  // Only show loading state during active operations (login/logout), never on initial load
-  if (loading) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100svh",
-          background: "black",
-        }}
-      >
-        <Loader2 className="animate-spin" style={{ fontSize: 24, color: "white" }} />
-      </div>
-    );
-  }
+  // NEVER block rendering with a loading screen on mount
+  // The loading state is only used to disable buttons during operations
 
   const authValue: {
     user: User | null;

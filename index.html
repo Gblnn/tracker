@@ -33,18 +33,29 @@
     </style>
   </head>
   <body>
-    <div class="initial-loader">
+    <div class="initial-loader" id="initial-loader">
       <img src="/stardox-bg.png" alt="Loading..." />
     </div>
     <div id="root"></div>
     <script>
-      // Hide loader once React mounts
-      const observer = new MutationObserver((mutations) => {
-        if (document.getElementById('root').children.length > 0) {
-          document.querySelector('.initial-loader').classList.add('hidden');
+      // Simple function to hide the loader
+      window.hideInitialLoader = function() {
+        const loader = document.getElementById('initial-loader');
+        if (loader) {
+          loader.classList.add('hidden');
           setTimeout(() => {
-            document.querySelector('.initial-loader').remove();
+            loader.remove();
           }, 300);
+        }
+      };
+      
+      // Fallback: Auto-hide after React mounts
+      const observer = new MutationObserver(() => {
+        const root = document.getElementById('root');
+        if (root && root.children.length > 0) {
+          setTimeout(() => {
+            window.hideInitialLoader();
+          }, 100);
           observer.disconnect();
         }
       });

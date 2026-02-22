@@ -1,29 +1,13 @@
 import { useAuth } from "./AuthProvider";
 import { Navigate, useLocation } from "react-router-dom";
-import { Loader2 } from "lucide-react";
 
 const PUBLIC_ROUTES = ["/user-reset", "/request-access"];
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, userData, loading, cachedAuthState } = useAuth();
+  const { user, userData, cachedAuthState } = useAuth();
   const location = useLocation();
 
-  // Show loading state only during active operations (login/logout)
-  if (loading) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          background: "black",
-        }}
-      >
-        <Loader2 className="animate-spin" style={{ fontSize: 24, color: "white" }} />
-      </div>
-    );
-  }
+  // NEVER show loading screen on mount - let the app render immediately
 
   // For public routes, allow access regardless of auth state
   if (PUBLIC_ROUTES.includes(location.pathname)) {
@@ -32,9 +16,35 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // Handle login page (/) access
   if (location.pathname === "/") {
-    // If authenticated, redirect to index
+    // If authenticated, redirect based on user role
     if ((user && userData) || cachedAuthState) {
-      return <Navigate to="/index" replace />;
+      // Determine redirect path based on system_role
+      let redirectPath = "/index"; // default
+      
+      if (userData?.system_role) {
+        switch (userData.system_role) {
+          case "supervisor":
+            redirectPath = "/supervisor";
+            break;
+          case "site_coordinator":
+            redirectPath = "/site-coordinator";
+            break;
+          case "management":
+            redirectPath = "/management";
+            break;
+          case "admin":
+            redirectPath = "/index";
+            break;
+          case "user":
+            redirectPath = "/record-list";
+            break;
+          default:
+            redirectPath = "/index";
+            break;
+        }
+      }
+      
+      return <Navigate to={redirectPath} replace />;
     }
     // If not authenticated, show login page
     return <>{children}</>;

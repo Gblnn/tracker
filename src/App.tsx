@@ -3,9 +3,15 @@ import { Route, Routes } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import AuthGuard from "./components/AuthGuard";
 import ProtectedRoutes from "./components/protectedRoute";
-import { AuthProvider } from "./context/auth-context";
 
-// Lazy load all pages to prevent firebase imports on initial load
+// Import critical startup pages immediately (no lazy loading)
+import Login from "./pages/login";
+import UserReset from "./pages/user-reset";
+import RequestAccess from "./pages/request-access";
+import CreateAccount from "./pages/create-account";
+import PageNotFound from "./pages/page-not-found";
+
+// Lazy load protected pages only (loaded after authentication)
 const Index = lazy(() => import("./pages"));
 const AccessControl = lazy(() => import("./pages/access-control"));
 const AccessRequests = lazy(() => import("./pages/access-requests"));
@@ -15,28 +21,23 @@ const Agreements = lazy(() => import("./pages/agreements"));
 const Archives = lazy(() => import("./pages/archives"));
 const History = lazy(() => import("./pages/history"));
 const Inbox = lazy(() => import("./pages/inbox"));
-const Login = lazy(() => import("./pages/login"));
 const LPO = lazy(() => import("./pages/lpo"));
 const Medicals = lazy(() => import("./pages/medicals"));
 const MovementRegister = lazy(() => import("./pages/movement-register"));
 const NewHire = lazy(() => import("./pages/new-hire"));
 const OfferLetters = lazy(() => import("./pages/offer-letters"));
 const Openings = lazy(() => import("./pages/openings"));
-const PageNotFound = lazy(() => import("./pages/page-not-found"));
 const Profile = lazy(() => import("./pages/profile"));
 const ProjectLPO = lazy(() => import("./pages/project-lpo"));
 const QRCodeGenerator = lazy(() => import("./pages/qr-code"));
 const QuickLinks = lazy(() => import("./pages/quick-links"));
 const RecordList = lazy(() => import("./pages/record-list"));
 const Records = lazy(() => import("./pages/records"));
-const RequestAccess = lazy(() => import("./pages/request-access"));
 const Shortlist = lazy(() => import("./pages/shortlist"));
 const UserPage = lazy(() => import("./pages/user"));
-const UserReset = lazy(() => import("./pages/user-reset"));
 const Users = lazy(() => import("./pages/users"));
 const ValeRecords = lazy(() => import("./pages/vale-records"));
 const Website = lazy(() => import("./pages/website"));
-const CreateAccount = lazy(() => import("./pages/create-account"));
 const Phonebook = lazy(() => import("./pages/phonebook"));
 const Supervisor = lazy(() => import("./pages/supervisor"));
 const SiteCoordinator = lazy(() => import("./pages/site-coordinator"));
@@ -58,9 +59,8 @@ const PageLoader = () => (
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AuthGuard>
-        <Suspense fallback={<PageLoader />}>
+    <AuthGuard>
+      <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public routes */}
         <Route path="/" element={<Login />} />
@@ -112,8 +112,7 @@ export default function App() {
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>
-        </Suspense>
-      </AuthGuard>
-    </AuthProvider>
+      </Suspense>
+    </AuthGuard>
   );
 }

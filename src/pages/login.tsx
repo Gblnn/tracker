@@ -1,13 +1,7 @@
 import { useAuth } from "@/components/AuthProvider";
 import { Checkbox } from "@/components/ui/checkbox";
-import { auth } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import { message } from "antd";
-import {
-  browserLocalPersistence,
-  browserSessionPersistence,
-  setPersistence,
-} from "firebase/auth";
 import { motion } from "framer-motion";
 import { ChevronRight, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
@@ -26,6 +20,11 @@ export default function Login() {
   const handleLoginIn = async () => {
     try {
       setLoading(true);
+      
+      // Dynamically import Firebase only when login is clicked
+      const { auth } = await import("@/firebase");
+      const { browserLocalPersistence, browserSessionPersistence, setPersistence } = await import("firebase/auth");
+      
       // Set persistence before login attempt
       await setPersistence(
         auth,
