@@ -7,26 +7,28 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        // Simplify chunking - let Vite handle most of it automatically
         manualChunks(id) {
-          // Only explicitly chunk node_modules
+          // Firebase chunk
+          if (id.includes('firebase')) {
+            return 'firebase';
+          }
+          // React core libraries
+          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+            return 'react-vendor';
+          }
+          // UI libraries (framer-motion, lucide, etc)
+          if (id.includes('framer-motion') || id.includes('lucide') || id.includes('@radix-ui')) {
+            return 'ui-vendor';
+          }
+          // Other node_modules
           if (id.includes('node_modules')) {
-            // Keep React ecosystem together
-            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
-              return 'react';
-            }
-            // Keep Firebase together
-            if (id.includes('firebase') || id.includes('@firebase')) {
-              return 'firebase';
-            }
-            // Everything else goes to vendor
             return 'vendor';
           }
         },
       },
     },
     // Increase chunk size warning limit
-    chunkSizeWarningLimit: 1500,
+    chunkSizeWarningLimit: 1000,
     // Minify and optimize for production
     minify: 'terser',
     terserOptions: {
