@@ -5,8 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="/stardox-bg.png" />
     <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#191970" />
     <title>StarBoard</title>
     <style>
+      /* Inline critical CSS for faster initial render */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
       #root:empty {
         display: none;
       }
@@ -21,34 +34,48 @@
         align-items: center;
         background: linear-gradient(darkslateblue, midnightblue);
         opacity: 1;
-        transition: opacity 0.3s;
+        transition: opacity 0.3s ease-out;
+        z-index: 9999;
       }
       .initial-loader.hidden {
         opacity: 0;
+        pointer-events: none;
       }
       .initial-loader img {
         width: 50px;
         height: 50px;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(1.05); }
       }
     </style>
   </head>
   <body>
-    <div class="initial-loader">
+    <div class="initial-loader" id="initial-loader">
       <img src="/stardox-bg.png" alt="Loading..." />
     </div>
     <div id="root"></div>
     <script>
-      // Hide loader once React mounts
-      const observer = new MutationObserver((mutations) => {
-        if (document.getElementById('root').children.length > 0) {
-          document.querySelector('.initial-loader').classList.add('hidden');
+      // Keep loader visible until app is fully initialized
+      // This prevents blank screen during auth/data loading
+      window.hideInitialLoader = function() {
+        const loader = document.getElementById('initial-loader');
+        if (loader) {
+          loader.classList.add('hidden');
           setTimeout(() => {
-            document.querySelector('.initial-loader').remove();
+            loader.remove();
           }, 300);
-          observer.disconnect();
         }
-      });
-      observer.observe(document.getElementById('root'), { childList: true });
+      };
+      
+      // Fallback: hide loader after max 10 seconds
+      setTimeout(() => {
+        if (document.getElementById('initial-loader')) {
+          window.hideInitialLoader();
+        }
+      }, 10000);
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
