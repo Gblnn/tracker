@@ -28,69 +28,97 @@ let _storage: ReturnType<typeof getStorage> | null = null;
 let _initializing = false;
 
 const initializeFirebase = () => {
-  if (_app || _initializing) return;
+  // Prevent double initialization
+  if (_app && _auth && _db) return;
+  if (_initializing) {
+    console.warn("Firebase initialization already in progress");
+    return;
+  }
   
   _initializing = true;
-  console.log("🔄 Initializing Firebase (login triggered)...");
+  console.log("🔄 Initializing Firebase...");
   const startTime = performance.now();
   
-  // Initialize app
-  _app = initializeApp(firebaseConfig, {
-    automaticDataCollectionEnabled: false,
-  });
-  
-  // Initialize auth
-  _auth = getAuth(_app);
-  setPersistence(_auth, browserLocalPersistence).catch((err) => {
-    console.error("Error setting auth persistence:", err);
-  });
-  
-  // Initialize Firestore
-  _db = initializeFirestore(_app, {
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager(),
-      cacheSizeBytes: 50 * 1024 * 1024,
-    }),
-    experimentalForceLongPolling: false,
-  });
-  
-  console.log("✅ Firebase initialized in " + Math.round(performance.now() - startTime) + "ms");
+  try {
+    // Initialize app
+    _app = initializeApp(firebaseConfig, {
+      automaticDataCollectionEnabled: false,
+    });
+    
+    // Initialize auth
+    _auth = getAuth(_app);
+    setPersistence(_auth, browserLocalPersistence).catch((err) => {
+      console.error("Error setting auth persistence:", err);
+    });
+    
+    // Initialize Firestore
+    _db = initializeFirestore(_app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+        cacheSizeBytes: 50 * 1024 * 1024,
+      }),
+      experimentalForceLongPolling: false,
+    });
+    
+    console.log("✅ Firebase initialized in " + Math.round(performance.now() - startTime) + "ms");
+  } catch (error) {
+    console.error("❌ Firebase initialization error:", error);
+    // Reset on error so retry is possible
+    _app = null;
+    _auth = null;
+    _db = null;
+    throw error;
+  } finally {
+    _initializing = false;
+  }
 };
 
 // Export getters that initialize on demand
-export const getFirebaseApp = () => {
-  if (!_app) initializeFirebase();
-  return _app!;
-};
-
-export const getFirebaseAuth = () => {
-  if (!_auth) initializeFirebase();
-  return _auth!;
-};
-
-export const getFirebaseDb = () => {
-  if (!_db) initializeFirebase();
-  return _db!;
-};
-
-// For backward compatibility
-export const app = new Proxy({} as ReturnType<typeof initializeApp>, {
-  get(_target, prop) {
-    return (getFirebaseApp() as any)[prop];
+export function getFirebaseApp() {
+  if (!_app) {
+    initializeFirebase();
   }
-});
-
-export const auth = new Proxy({} as ReturnType<typeof getAuth>, {
-  get(_target, prop) {
-    return (getFirebaseAuth() as any)[prop];
+  if (!_app) {
+    throw new Error("Firebase app failed to initialize");
   }
-});
+  return _app;
+}
 
-export const db = new Proxy({} as ReturnType<typeof initializeFirestore>, {
-  get(_target, prop) {
-    return (getFirebaseDb() as any)[prop];
+export function getFirebaseAuth() {
+  if (!_auth) {
+    initializeFirebase();
   }
-});
+  if (!_auth) {
+    throw new Error("Firebase auth failed to initialize");
+  }
+  return _auth;
+}
+
+export function getFirebaseDb() {
+  if (!_db) {
+    initializeFirebase();
+  }
+  if (!_db) {
+    throw new Error("Firebase database failed to initialize");
+  }
+  return _db;
+}
+
+// Backward compatible direct exports - initialize immediately when accessed
+// These must return actual instances, not functions
+export let app: ReturnType<typeof initializeApp>;
+export let auth: ReturnType<typeof getAuth>;
+export let db: ReturnType<typeof initializeFirestore>;
+
+// Initialize instances for direct exports
+try {
+  app = getFirebaseApp();
+  auth = getFirebaseAuth();
+  db = getFirebaseDb();
+} catch (error) {
+  console.error("Failed to initialize Firebase exports:", error);
+  // Will throw when actually used
+}
 
 // Lazy-load Storage
 const initializeStorage = () => {
