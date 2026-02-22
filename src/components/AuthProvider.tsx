@@ -8,9 +8,9 @@ import {
   signOut,
 } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import { Loader2 } from "lucide-react";
 import PropTypes from "prop-types";
-import { createContext, useContext, useEffect, useState } from "react";
-import { LoadingOutlined } from "@ant-design/icons";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface FirestoreUserData {
@@ -54,10 +54,32 @@ interface Props {
 
 const CACHED_USER_KEY = "cached_user_data";
 const CACHED_AUTH_KEY = "cached_auth_state";
+const CACHE_TIMESTAMP_KEY = "cached_timestamp";
+const CACHE_EXPIRY_DAYS = 30; // Cache valid for 30 days
+
+// Function to check if cache is still valid
+const isCacheValid = () => {
+  try {
+    const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+    if (!timestamp) return false;
+    
+    const cacheAge = Date.now() - parseInt(timestamp);
+    const maxAge = CACHE_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+    
+    return cacheAge < maxAge;
+  } catch (e) {
+    return false;
+  }
+};
 
 // Function to get initial state from cache
 const getInitialState = () => {
   try {
+    if (!isCacheValid()) {
+      toast.info("⏰ Cache expired, will refresh");
+      return { user: null, userData: null, isValid: false };
+    }
+
     const cachedAuth = localStorage.getItem(CACHED_AUTH_KEY);
     const cachedUser = localStorage.getItem(CACHED_USER_KEY);
 
@@ -70,6 +92,7 @@ const getInitialState = () => {
         parsedUser?.email &&
         parsedAuth.email === parsedUser.email
       ) {
+        toast.success("⚡ Loaded from cache - instant auth!");
         return {
           user: parsedAuth,
           userData: parsedUser,
@@ -95,6 +118,7 @@ export const useAuth = () => {
 const AuthProvider = ({ children }: Props) => {
   // Get initial state from cache before first render
   const initialState = getInitialState();
+  const startedWithCache = useRef(initialState.isValid);
 
   const [initialized, setInitialized] = useState(initialState.isValid);
   const [loading, setLoading] = useState(!initialState.isValid); // Only show loading if no valid cache
@@ -108,6 +132,8 @@ const AuthProvider = ({ children }: Props) => {
   const cacheUserData = (data: FirestoreUserData) => {
     try {
       localStorage.setItem(CACHED_USER_KEY, JSON.stringify(data));
+      localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+      toast.info("💾 User data cached");
     } catch (error) {
       console.error("Error caching user data:", error);
     }
@@ -124,8 +150,12 @@ const AuthProvider = ({ children }: Props) => {
           photoURL: user.photoURL,
         };
         localStorage.setItem(CACHED_AUTH_KEY, JSON.stringify(cachedUser));
+        localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+        toast.info("💾 Auth state cached");
       } else {
         localStorage.removeItem(CACHED_AUTH_KEY);
+        localStorage.removeItem(CACHED_USER_KEY);
+        localStorage.removeItem(CACHE_TIMESTAMP_KEY);
       }
     } catch (error) {
       console.error("Error caching auth state:", error);
@@ -266,9 +296,43 @@ const AuthProvider = ({ children }: Props) => {
   };
 
   useEffect(() => {
-    toast.info("🔄 Setting up auth state listener...");
+    // If we already have valid cached state, mark as initialized immediately
+    if (startedWithCache.current) {
+      toast.success("⚡ Using cached auth - skipping Firebase check");
+      setInitialized(true);
+      setCachedAuthState(true);
+      
+      // Hide loader immediately for cached auth
+      if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
+        setTimeout(() => {
+          (window as any).hideInitialLoader();
+        }, 100);
+      }
+    }
+
+    toast.info("🔄 Setting up auth state listener (background sync)...");
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       const authCheckStart = performance.now();
+      
+      // If already initialized with cache, do background sync only
+      if (startedWithCache.current && initialized) {
+        toast.info("🔄 Background sync with Firebase...");
+        
+        if (currentUser && currentUser.email === initialState.user?.email) {
+          // User still valid, just update cache silently
+          cacheAuthState(currentUser);
+          setUser(currentUser);
+          toast.success("✅ Background sync complete");
+        } else if (!currentUser) {
+          // User logged out on another device
+          toast.info("🔄 Session expired, logging out...");
+          setUser(null);
+          setUserData(null);
+          localStorage.clear();
+        }
+        return;
+      }
+      
       if (!currentUser) {
         toast.info("👤 No current user - checking cache...");
         // If we have valid cached data, use it for offline mode
@@ -278,7 +342,8 @@ const AuthProvider = ({ children }: Props) => {
         if (
           cachedUser?.email &&
           cachedData?.email &&
-          cachedUser.email === cachedData.email
+          cachedUser.email === cachedData.email &&
+          isCacheValid()
         ) {
           setUser(cachedUser);
           setUserData(cachedData);
@@ -322,9 +387,14 @@ const AuthProvider = ({ children }: Props) => {
         cachedData.email === currentUser.email
       );
 
-      if (needsFetch && !initialState.isValid) {
-        toast.info("🔄 Need to fetch fresh user data...");
-        setLoading(true);
+      if (needsFetch && !startedWithCache.current) {
+        // Don't show loading if we already have cached state
+        if (!initialized) {
+          toast.info("🔄 Need to fetch fresh user data...");
+          setLoading(true);
+        } else {
+          toast.info("🔄 Refreshing user data in background...");
+        }
         try {
           if (currentUser.email) {
             const userData = await fetchUserData(currentUser.email);
@@ -370,7 +440,8 @@ const AuthProvider = ({ children }: Props) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps intentional - initialState is computed once, initialized is managed internally
 
   // Only show loading state if we're actually loading and not initialized
   if (loading && !initialized) {
@@ -380,11 +451,13 @@ const AuthProvider = ({ children }: Props) => {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          height: "100vh",
-          background: "linear-gradient(darkslateblue, midnightblue)",
+          height: "100svh",
+          background: "black",
+          
+          // background: "linear-gradient(darkslateblue, midnightblue)",
         }}
       >
-        <LoadingOutlined style={{ fontSize: 24, color: "white" }} />
+        <Loader2 className="animate-spin" style={{ fontSize: 24, color: "white" }} />
       </div>
     );
   }

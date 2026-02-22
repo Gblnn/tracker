@@ -1,6 +1,5 @@
-import { LoadingOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
-import { Check, RefreshCcw } from "lucide-react";
+import { Check, Loader2, RefreshCcw } from "lucide-react";
 
 interface Props {
   onClick?: any;
@@ -22,7 +21,7 @@ export default function RefreshButton(props: Props) {
         onClick={props.onClick}
       >
         {props.fetchingData ? (
-          <LoadingOutlined style={{ color: "dodgerblue" }} />
+          <Loader2 className="animate-spin" style={{ color: "dodgerblue" }} />
         ) : props.refreshCompleted ? (
           <motion.div
             initial={{ opacity: 0 }}
