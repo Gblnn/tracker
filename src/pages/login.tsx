@@ -20,16 +20,6 @@ export default function Login() {
   const handleLoginIn = async () => {
     try {
       setLoading(true);
-      
-      // Dynamically import Firebase only when login is clicked
-      const { auth } = await import("@/firebase");
-      const { browserLocalPersistence, browserSessionPersistence, setPersistence } = await import("firebase/auth");
-      
-      // Set persistence before login attempt
-      await setPersistence(
-        auth,
-        stayLoggedIn ? browserLocalPersistence : browserSessionPersistence
-      );
 
       const { userData } = await loginUser(email, password);
 
@@ -40,9 +30,12 @@ export default function Login() {
       // Store user data in localStorage for components that still rely on it
       localStorage.setItem("userRole", userData.role);
       localStorage.setItem("userEmail", userData.email);
-
-      // Force persistence check after successful login
+      
+      // Set persistence after successful login
       if (stayLoggedIn) {
+        const { getFirebaseAuth } = await import("@/firebase");
+        const { browserLocalPersistence, setPersistence } = await import("firebase/auth");
+        const auth = getFirebaseAuth();
         await setPersistence(auth, browserLocalPersistence);
       }
 

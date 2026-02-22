@@ -21,9 +21,10 @@ export default function RequestAccess() {
       setLoading(true);
       
       // Dynamically import Firebase modules
-      const { db } = await import("@/firebase");
+      const { getFirebaseDb } = await import("@/firebase");
       const { collection, query, where, getDocs } = await import("firebase/firestore");
       
+      const db = getFirebaseDb();
       // First check if email exists in records
       const recordsRef = collection(db, "records");
       const recordsQuery = query(recordsRef, where("email", "==", email));
@@ -67,11 +68,12 @@ export default function RequestAccess() {
       setLoading(true);
       
       // Dynamically import Firebase modules
-      const { db } = await import("@/firebase");
+      const { getFirebaseDb, getFirebaseAuth } = await import("@/firebase");
       const { collection, addDoc } = await import("firebase/firestore");
-      const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = await import("firebase/auth");
+      const { createUserWithEmailAndPassword, signInWithEmailAndPassword } = await import("firebase/auth");
       
-      const auth = getAuth();
+      const auth = getFirebaseAuth();
+      const db = getFirebaseDb();
       
       // Add user to users collection in Firestore
       const usersRef = collection(db, "users");

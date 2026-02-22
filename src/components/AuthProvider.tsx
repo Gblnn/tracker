@@ -152,9 +152,10 @@ const AuthProvider = ({ children }: Props) => {
   const fetchUserData = async (email: string) => {
     const fetchStartTime = performance.now();
     try {
-      const { db } = await import("@/firebase");
+      const { getFirebaseDb } = await import("@/firebase");
       const { collection, getDocs, query, where } = await import("firebase/firestore");
       
+      const db = getFirebaseDb();
       const RecordCollection = collection(db, "users");
       const recordQuery = query(RecordCollection, where("email", "==", email));
       const querySnapshot = await getDocs(recordQuery);
@@ -182,9 +183,10 @@ const AuthProvider = ({ children }: Props) => {
   const createUser = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const { auth } = await import("@/firebase");
+      const { getFirebaseAuth } = await import("@/firebase");
       const { createUserWithEmailAndPassword } = await import("firebase/auth");
       
+      const auth = getFirebaseAuth();
       const result = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -201,8 +203,12 @@ const AuthProvider = ({ children }: Props) => {
     toast.info("🔐 Logging in...");
     setLoading(true);
     try {
-      const { auth } = await import("@/firebase");
+      // Import and ensure Firebase is initialized
+      const { getFirebaseAuth } = await import("@/firebase");
       const { signInWithEmailAndPassword } = await import("firebase/auth");
+      
+      // Get auth instance (this will trigger initialization if needed)
+      const auth = getFirebaseAuth();
       
       // Always try online login first
       const result = await signInWithEmailAndPassword(auth, email, password);
@@ -232,9 +238,10 @@ const AuthProvider = ({ children }: Props) => {
     toast.info("🚪 Logging out...");
     setLoading(true);
     try {
-      const { auth } = await import("@/firebase");
+      const { getFirebaseAuth } = await import("@/firebase");
       const { signOut } = await import("firebase/auth");
       
+      const auth = getFirebaseAuth();
       // Sign out from Firebase
       await signOut(auth);
       

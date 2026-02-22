@@ -15,8 +15,9 @@ export default function UserReset() {
     setLoading(true);
     
     // Dynamically import Firebase auth
-    const { getAuth, sendPasswordResetEmail } = await import("firebase/auth");
-    const auth = getAuth();
+    const { getFirebaseAuth } = await import("@/firebase");
+    const { sendPasswordResetEmail } = await import("firebase/auth");
+    const auth = getFirebaseAuth();
     
     await sendPasswordResetEmail(auth, email)
       .then(() => {
