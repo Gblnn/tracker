@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { Route, Routes } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import AuthGuard from "./components/AuthGuard";
@@ -61,16 +61,20 @@ const PageLoader = () => (
 
 export default function App() {
   const { addProcess, updateProcess } = useBackgroundProcess();
+  const phonebookInitialized = useRef(false);
   
-  // Initialize phonebook cache in the background on app launch
+  // Initialize phonebook cache in the background on app launch (only once)
   useEffect(() => {
-    const processId = "phonebook-cache-init";
-    addProcess(processId, "Phonebook Sync");
-    
-    refreshPhonebookCache((status, message) => {
-      updateProcess(processId, { status, message });
-    });
-  }, [addProcess, updateProcess]);
+    if (!phonebookInitialized.current) {
+      phonebookInitialized.current = true;
+      const processId = "phonebook-cache-init";
+      addProcess(processId, "Phonebook Sync");
+      
+      refreshPhonebookCache((status, message) => {
+        updateProcess(processId, { status, message });
+      });
+    }
+  }, []); // Empty dependency array ensures this only runs once
 
   return (
     <AuthGuard>

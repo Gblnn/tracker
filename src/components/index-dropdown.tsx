@@ -118,8 +118,8 @@ export default function IndexDropDown(props:Props) {
                   {userData?.email}
                 </p>
                 <span
-                  style={{ width: "fit-content" }}
-                  className="inline-flex items-center rounded-full px-2 py-0.5 mt-1 text-xs font-medium bg-primary/10 text-primary"
+                  style={{ width: "fit-content", background:"crimson" }}
+                  className="inline-flex items-center rounded-full px-2 py-0.5 mt-1 text-xs font-medium text-primary"
                 >
                   {userData?.system_role || "User"}
                 </span>

@@ -212,7 +212,7 @@ export default function Index() {
 
               {
                 admin&&
-                <Directive icon={<KeyRound color="dodgerblue" width={"1.25rem"}/>} title={"User Management"}/>
+                <Directive onClick={() => navigate("/admin")} icon={<KeyRound color="dodgerblue" width={"1.25rem"}/>} title={"User Management"}/>
               }
               
 
