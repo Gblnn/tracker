@@ -104,7 +104,7 @@ export default function IndexDropDown(props:Props) {
           >
             <div style={{paddingRight:"1.5rem"}} className="flex">
               <Avatar  className="h-12 w-12">
-                <AvatarFallback style={{fontWeight:"600", background:"rgba(100 100 100/ 20%)"}} className="text-lg">
+                <AvatarFallback style={{fontWeight:"600", background:"linear-gradient( mediumslateblue, midnightblue)"}} className="text-lg">
                   {userData?.name
                     ? getInitials(userData.name.split("@")[0])
                     : "?"}

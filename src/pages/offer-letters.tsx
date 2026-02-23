@@ -259,6 +259,8 @@ const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [deleteId, setDeleteId] = useState("");
   const [joiningDate, setJoiningDate] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showMobileForm, setShowMobileForm] = useState(false);
 
   // Default field configuration
   const defaultFieldConfig: FieldConfig[] = [
@@ -311,6 +313,20 @@ const [searchTerm, setSearchTerm] = useState("");
   // Add this after other useEffect hooks
   useEffect(() => {
     fetchPresets();
+  }, []);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+      if (window.innerWidth > 768) {
+        setShowMobileForm(false); // Reset mobile form state on desktop
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Add this new useEffect to track changes
@@ -1231,13 +1247,13 @@ const [searchTerm, setSearchTerm] = useState("");
   const renderInputForm = () => (
     <div
       style={{
-        position: "fixed",
+        position: isMobile ? "relative" : "fixed",
         display: "flex",
         flexDirection: "column",
-        height: "100%",
-        fontSize: "0.8rem",
-        maxHeight: "72%",
-        width: "30%",
+        height: isMobile ? "auto" : "100%",
+        fontSize: isMobile ? "0.9rem" : "0.8rem",
+        maxHeight: isMobile ? "none" : "72%",
+        width: isMobile ? "100%" : "30%",
       }}
     >
       {/* Fixed Header Section */}
@@ -1988,11 +2004,11 @@ const [searchTerm, setSearchTerm] = useState("");
       <div
         ref={tableRef}
         style={{
-                border: "",
+          border: "",
           width: "100%",
-          maxWidth: 800,
+          maxWidth: isMobile ? "100%" : 800,
           boxSizing: "border-box",
-          padding: "4rem",
+          padding: isMobile ? "1.5rem" : "4rem",
           backgroundColor:"white",
           background: "url(/letter-head.png)",
           backgroundSize: "contain",
@@ -2000,9 +2016,9 @@ const [searchTerm, setSearchTerm] = useState("");
           color: "black",
           borderRadius: "0.5rem",
           // boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
-          minHeight: "1100px",
+          minHeight: isMobile ? "auto" : "1100px",
           fontFamily: "Aptos",
-          fontSize: "0.8rem",
+          fontSize: isMobile ? "0.7rem" : "0.8rem",
           margin: "1 auto",
           overflowX: "auto",
         }}
@@ -2367,16 +2383,16 @@ const [searchTerm, setSearchTerm] = useState("");
               style={{
                 border: "",
                 width: "100%",
-                maxWidth: 800,
+                maxWidth: isMobile ? "100%" : 800,
                 boxSizing: "border-box",
-                padding: "4rem",
+                padding: isMobile ? "1.5rem" : "4rem",
                 background: "white",
                 color: "black",
                 borderRadius: "0.5rem",
                 boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
-                minHeight: "1100px",
+                minHeight: isMobile ? "auto" : "1100px",
                 fontFamily: "Aptos",
-                fontSize: "0.8rem",
+                fontSize: isMobile ? "0.7rem" : "0.8rem",
                 margin: "1 auto",
                 overflowX: "auto",
                 marginBottom: "4rem",
@@ -2431,23 +2447,33 @@ const [searchTerm, setSearchTerm] = useState("");
         style={{
           border: "",
           width: "100%",
-          maxWidth: 800,
+          maxWidth: isMobile ? "100%" : 800,
           boxSizing: "border-box",
-          padding: "4rem",
+          padding: isMobile ? "1.5rem" : "4rem",
           background: "white",
           color: "black",
           borderRadius: "0.5rem",
           boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
-          minHeight: "1100px",
+          minHeight: isMobile ? "auto" : "1100px",
           fontFamily: "Aptos",
-          fontSize: "0.8rem",
+          fontSize: isMobile ? "0.7rem" : "0.8rem",
           margin: "1 auto",
           overflowX: "auto",
           marginBottom: "4rem",
         }}
       >
         <br />
-        <img style={{position:"absolute", width:"7.5rem", marginLeft:"20rem", marginTop:"55rem"}} src={"/ssu_stamp.png"}/>
+        <img 
+          style={{
+            position: isMobile ? "relative" : "absolute", 
+            width: isMobile ? "5rem" : "7.5rem", 
+            marginLeft: isMobile ? "0" : "20rem", 
+            marginTop: isMobile ? "0" : "55rem",
+            display: isMobile ? "block" : "block",
+            margin: isMobile ? "2rem auto" : "",
+          }} 
+          src={"/ssu_stamp.png"}
+        />
 
         {/* Numbered main clauses */}
         {(() => {
@@ -2568,7 +2594,6 @@ const [searchTerm, setSearchTerm] = useState("");
             }
           );
           return clauses.map((clause, idx) => (
-            <>
             <div
               key={clause.title}
               style={{ marginBottom: "1rem", fontSize: "0.8rem" }}
@@ -2585,8 +2610,6 @@ const [searchTerm, setSearchTerm] = useState("");
               {clause.content}
               
             </div>
-            
-            </>
           ));
           
         })()}
@@ -2601,16 +2624,16 @@ const [searchTerm, setSearchTerm] = useState("");
         style={{
           border: "",
           width: "100%",
-          maxWidth: 800,
+          maxWidth: isMobile ? "100%" : 800,
           boxSizing: "border-box",
-          padding: "4rem",
+          padding: isMobile ? "1.5rem" : "4rem",
           background: "white",
           color: "black",
           borderRadius: "0.5rem",
           boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
-          minHeight: "1100px",
+          minHeight: isMobile ? "auto" : "1100px",
           fontFamily: "Aptos",
-          fontSize: "0.8rem",
+          fontSize: isMobile ? "0.7rem" : "0.8rem",
           margin: "1 auto",
           overflowX: "auto",
           marginBottom: "4rem",
@@ -2870,12 +2893,35 @@ const [searchTerm, setSearchTerm] = useState("");
                   height: "2.75rem",
                 }}
               >
+                {/* Mobile Menu Toggle Button */}
+                {isMobile && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowMobileForm(!showMobileForm)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: showMobileForm ? "rgba(100 100 255/ 20%)" : "rgba(100 100 100/ 10%)",
+                      padding: "0.5rem 0.75rem",
+                      border: showMobileForm ? "1px solid dodgerblue" : "none",
+                      borderRadius: "0.5rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Menu width={"1.25rem"} color={showMobileForm ? "dodgerblue" : "white"} />
+                  </motion.button>
+                )}
+
                 <button
                   onClick={handlePrintPDF}
                   style={{
                     width: "100%",
-                    fontSize: "0.9rem",
-                    padding: "0.5rem 1rem",
+                    fontSize: isMobile ? "0.8rem" : "0.9rem",
+                    padding: isMobile ? "0.5rem 0.75rem" : "0.5rem 1rem",
                     background: "indigo",
                     color: "white",
                     border: "none",
@@ -2883,11 +2929,15 @@ const [searchTerm, setSearchTerm] = useState("");
                     cursor: pdfLoading ? "not-allowed" : "pointer",
                     opacity: pdfLoading ? 0.7 : 1,
                     boxShadow: "1px 1px 10px rgba(0 0 0/ 30%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
                   }}
                   disabled={pdfLoading}
                 >
-                  <Sparkles color="white" width={"1rem"} />
-                  {pdfLoading ? "Generating..." : "Generate PDF"}
+                  <Sparkles color="white" width={isMobile ? "0.9rem" : "1rem"} />
+                  {pdfLoading ? "Generating..." : (isMobile ? "PDF" : "Generate PDF")}
                 </button>
 
                 {/* <button
@@ -3034,22 +3084,44 @@ const [searchTerm, setSearchTerm] = useState("");
             <div
               style={{
                 display: "flex",
+                flexDirection: isMobile ? "column" : "row",
                 gap: "1rem",
-                height: "calc(100vh - 8rem)",
+                height: isMobile ? "auto" : "calc(100vh - 8rem)",
                 border: "",
                 justifyContent: "center",
-                paddingTop: "5rem",
+                paddingTop: isMobile ? "1rem" : "5rem",
+                paddingBottom: isMobile ? "2rem" : "0",
               }}
             >
-              {/* Input Form - Hidden on mobile */}
-              <div className="input-form" style={styles.inputForm}>
-                {renderInputForm()}
-              </div>
+              {/* Input Form - Conditionally shown on mobile */}
+              {(!isMobile || showMobileForm) && (
+                <div 
+                  className="input-form" 
+                  style={{
+                    ...styles.inputForm,
+                    width: isMobile ? "100%" : "30%",
+                    position: isMobile ? "relative" : "fixed",
+                    maxHeight: isMobile ? "none" : "72%",
+                    padding: isMobile ? "1rem" : "0",
+                    zIndex: isMobile && showMobileForm ? 1000 : "auto",
+                  }}
+                >
+                  {renderInputForm()}
+                </div>
+              )}
 
-              {/* Preview - Full width on mobile */}
-              <div className="" style={{}}>
-                {renderPreview()}
-              </div>
+              {/* Preview - Full width on mobile when form is hidden */}
+              {(!isMobile || !showMobileForm) && (
+                <div 
+                  className="preview-section" 
+                  style={{
+                    width: isMobile ? "100%" : "auto",
+                    marginLeft: isMobile ? "0" : "calc(30% + 1rem)",
+                  }}
+                >
+                  {renderPreview()}
+                </div>
+              )}
             </div>
           )}
         </motion.div>

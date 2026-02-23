@@ -106,7 +106,7 @@ export default function Index() {
           <Back
           editMode={userData?.editor===true? true : false}
             title="StarBoard"
-            subtitle={userData?.role}
+            // subtitle={userData?.role}
             icon={<img src="/stardox-bg.png" style={{ width: "1.75rem" }} />}
             noback
             extra={
