@@ -353,8 +353,8 @@ export default function DbComponent(props: Props) {
   const [salaryBasic, setSalaryBasic] = useState(0);
   const [allowance, setAllowance] = useState(0);
   const [cug, setCug] = useState("");
-  const [role, setRole] = useState("");
-  const [system_role, setSystemRole] = useState("");
+  const [systemRole, setSystemRole] = useState("");  // system access role
+  const [designation, setDesignation] = useState("");  // job title
   const [site, setSite] = useState("");
   const [project, setProject] = useState("");
 
@@ -401,7 +401,6 @@ export default function DbComponent(props: Props) {
   const [pageSize] = useState(100);
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
-  const [designation, setDesignation] = useState("");
 
   // const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -920,9 +919,8 @@ export default function DbComponent(props: Props) {
       profile: imgUrl,
       profile_name: fileName,
       cug: cug,
-      role: role,
-      system_role: system_role || 'profile',
-      designation: designation,
+      role: systemRole || 'profile',  // system access role
+      designation: designation,  // job title
       site: site,
       project: project,
       civil_number: "",
@@ -993,9 +991,8 @@ export default function DbComponent(props: Props) {
       email: editedEmail !== undefined ? editedEmail : email,
       employeeCode: editedEmployeeCode !== undefined ? editedEmployeeCode : employeeCode,
       cug: editedCug !== undefined ? editedCug : cug,
-      role: editedDesignation !== undefined ? editedDesignation : designation,
-      designation: editedDesignation !== undefined ? editedDesignation : designation,
-      system_role: editedSystemRole !== undefined ? editedSystemRole : (system_role || "profile"),
+      role: editedSystemRole !== undefined ? editedSystemRole : (systemRole || "profile"),  // system access role
+      designation: editedDesignation !== undefined ? editedDesignation : designation,  // job title
       site: editedSite !== undefined ? editedSite : site,
       project: editedProject !== undefined ? editedProject : project,
       companyName: editedCompanyName !== undefined ? editedCompanyName : companyName,
@@ -1028,7 +1025,7 @@ export default function DbComponent(props: Props) {
     setAllowance(editedAllowance !== undefined ? editedAllowance : allowance);
     setContact(editedContact !== undefined ? editedContact : contact);
     setDesignation(editedDesignation !== undefined ? editedDesignation : designation);
-    setSystemRole(editedSystemRole !== undefined ? editedSystemRole : system_role);
+    setSystemRole(editedSystemRole !== undefined ? editedSystemRole : systemRole);
     setSite(editedSite !== undefined ? editedSite : site);
     setProject(editedProject !== undefined ? editedProject : project);
     setCug(editedCug !== undefined ? editedCug : cug);
@@ -2457,12 +2454,11 @@ export default function DbComponent(props: Props) {
                             onClick={() => {
                               setRecordSummary(true);
                               setName(post.name);
-                              setSystemRole(post.system_role)
+                              setSystemRole(post.role || 'profile');  // system access role
                               setId(post.id);
                               setDocID(post.id);
                               setCug(post.cug);
-                              setRole(post.role)
-                              setDesignation(post.designation)
+                              setDesignation(post.designation);  // job title
                               setSite(post.site);
                               setProject(post.project);
                               setEmail(post.email)
@@ -3635,7 +3631,7 @@ export default function DbComponent(props: Props) {
                 value={designation} 
                 style={{width: "100%", fontSize: ""}}/>
               <RoleSelect 
-                value={system_role || 'profile'} 
+                value={systemRole || 'profile'} 
                 onChange={(value) => {
                   setSystemRole(value);
                 }}
@@ -3730,7 +3726,7 @@ export default function DbComponent(props: Props) {
                 style={{width: "100%"}}
               />
               <RoleSelect 
-                value={system_role || 'profile'} 
+                value={systemRole || 'profile'} 
                 onChange={(value) => {
                   setEditedSystemRole(value);
                 }}

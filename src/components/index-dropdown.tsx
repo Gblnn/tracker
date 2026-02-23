@@ -121,7 +121,7 @@ export default function IndexDropDown(props:Props) {
                   style={{ width: "fit-content", background:"crimson" }}
                   className="inline-flex items-center rounded-full px-2 py-0.5 mt-1 text-xs font-medium text-primary"
                 >
-                  {userData?.system_role || "User"}
+                  {userData?.role || "User"}
                 </span>
               </div>
             </div>

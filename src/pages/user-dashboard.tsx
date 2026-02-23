@@ -2,6 +2,7 @@ import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import Directive from "@/components/directive";
 import IndexDropDown from "@/components/index-dropdown";
+import BackgroundProcessDropdown from "@/components/background-process-dropdown";
 import InputDialog from "@/components/input-dialog";
 import LazyLoader from "@/components/lazy-loader";
 import DefaultDialog from "@/components/ui/default-dialog";
@@ -14,6 +15,7 @@ import {
   Building2,
   CreditCard,
   HardHat,
+  KeyRound,
   Link,
   NotebookTabs,
   Phone,
@@ -40,7 +42,7 @@ export default function UserDashboard() {
     cug: '',
     site: '',
     project: '',
-    role: '',
+    designation: '',  // job title/position
     salaryBasic: '',
     allowance: '',
     profile: ''
@@ -99,7 +101,7 @@ export default function UserDashboard() {
           cug: docData.cug || '',
           site: docData.site || '',
           project: docData.project || '',
-          role: docData.role || '',
+          designation: docData.designation || '',  // job title/position
           salaryBasic: docData.salaryBasic || '',
           allowance: docData.allowance || '',
           profile: docData.profile || ''
@@ -151,15 +153,16 @@ export default function UserDashboard() {
     >
       <motion.div style={{padding:""}} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
         <Back
-        subtitle={userData?.system_role}
+        subtitle={userData?.role}
         fixed
         blurBG
-        icon={userData?.system_role === "profile"&&<img src="/stardox-bg.png" width={"30rem"}/>}
-          noback={userData?.system_role === "profile"}
-          title={userData?.system_role === "profile" ? "StarBoard" : "Profile"}
+        icon={userData?.role === "profile"&&<img src="/stardox-bg.png" width={"30rem"}/>}
+          noback={userData?.role === "profile"}
+          title={userData?.role === "profile" ? "StarBoard" : "Profile"}
           
           extra={
             <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+              <BackgroundProcessDropdown />
               <IndexDropDown onProfile={() => {}} onLogout={() => setLogoutPrompt(true)} />
             </div>
           }
@@ -213,7 +216,7 @@ export default function UserDashboard() {
                   height="100px" 
                   width="100px" 
                   profile={userDetails.profile}
-                  name={userDetails.name} 
+                  name={userDetails.name||userData?.email} 
                 />
                 <div style={{
                   display: "flex",
@@ -222,11 +225,14 @@ export default function UserDashboard() {
                   flex: 1,
                   fontSize:"0.8rem"
                 }}>
-                  <h2 style={{ color: "" }}>{userDetails.name}</h2>
-                  <div style={{ textTransform: "capitalize" }}>{userDetails.role}</div>
+                  <h2 style={{ color: "" }}>{userDetails.name||"N/A"}</h2>
+
+                  <div style={{ textTransform: "capitalize", display:"flex", alignItems:"center", gap:"0.5rem" }}>
+                    <KeyRound width={"1rem"} color="dodgerblue"/>
+                    {userData?.role || "No designation assigned"}</div>
                     {/* <div>{userDetails.email}</div> */}
                     
-                    <div>{userDetails.employeeCode}</div>
+                    <div>{userDetails.employeeCode||"Not Allocated"}</div>
                   
                 </div>
               </div>
@@ -240,14 +246,15 @@ export default function UserDashboard() {
                   alignItems: "center",
                   
                 }}>
-                  <Directive icon={<Building2 color="dodgerblue" width={"1.25rem"}/>} title={userDetails.project}/>
+                  <Directive icon={<Building2 color="dodgerblue" width={"1.25rem"}/>} title={userDetails.project||"Not Allocated"}/>
                   {
                     userDetails.site &&
-                    <Directive icon={<HardHat color="dodgerblue" width={"1.25rem"}/>} title={userDetails.site||"N/A"}/>
+                    <Directive icon={<HardHat color="dodgerblue" width={"1.25rem"}/>} title={userDetails.site||"Not Allocated"}/>
                   }
                   
-                  <Directive icon={<Phone color="dodgerblue" width={"1.25rem"}/>} title={userDetails.contact}/>
-                  <Directive notName icon={<AtSign color="dodgerblue" width={"1.25rem"}/>} title={userDetails.email}/>
+                  <Directive icon={<Phone color="dodgerblue" width={"1.25rem"}/>} title={userDetails.contact||"Not Allocated"}/>
+                  
+                  <Directive notName icon={<AtSign color="dodgerblue" width={"1.25rem"}/>} title={userDetails.email||"Not Allocated"}/>
                   
                 </div>
               </div>

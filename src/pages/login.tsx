@@ -43,8 +43,8 @@ export default function Login() {
       let returnPath = location.state?.returnPath;
       
       if (!returnPath) {
-        // Role-based redirection using system_role
-        switch (userData.system_role) {
+        // Role-based redirection
+        switch (userData.role) {
           case "supervisor":
             returnPath = "/supervisor";
             break;

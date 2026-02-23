@@ -44,7 +44,7 @@ export default function ProtectedRoutes() {
   }
 
   // Check role-based route restrictions
-  const allowedRoutes = ROLE_RESTRICTED_ROUTES[userData.system_role as keyof typeof ROLE_RESTRICTED_ROUTES];
+  const allowedRoutes = ROLE_RESTRICTED_ROUTES[userData.role as keyof typeof ROLE_RESTRICTED_ROUTES];
   const currentPath = location.pathname;
   
   // If role is defined and has specific route restrictions (not wildcard)

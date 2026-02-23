@@ -179,7 +179,7 @@ export default function Devices() {
             </div>
 
             {/* Floating Add Button (only for admins) */}
-            {userData?.system_role === "admin" && (
+            {userData?.role === "admin" && (
                 <div style={{
                     position: "fixed",
                     bottom: "2rem",
@@ -395,7 +395,7 @@ export default function Devices() {
                                 </div>
                             </div>
 
-                            {userData?.system_role === "admin" && (
+                            {userData?.role === "admin" && (
                                 <DrawerFooter className="flex-row gap-2 px-0">
                                     <Button
                                         variant="outline"

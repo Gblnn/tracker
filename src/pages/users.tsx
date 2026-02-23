@@ -90,8 +90,8 @@ export default function Users() {
       await addDoc(collection(db, "users"), {
         name: name,
         email: email,
-        role: "",  // job role will be set later
-        system_role: "user", // default system role
+        role: "profile",  // system access role
+        designation: "",  // job title
         clearance: "Sohar Star United",
         editor: "false",
         sensitive_data: "false",
@@ -143,8 +143,7 @@ export default function Users() {
     try {
       setLoading(true);
       const updatedData = {
-        role: role,
-        system_role: role, // Set system_role to match the selected role
+        role: role,  // system access role
         clearance: clearance,
         editor: editor,
         sensitive_data: sensitive_data,

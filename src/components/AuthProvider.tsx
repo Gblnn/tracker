@@ -6,8 +6,8 @@ import type { User } from "firebase/auth";
 
 interface FirestoreUserData {
   id: string;
-  role: string;  // job role/designation
-  system_role: "admin" | "user" | "supervisor" | "site_coordinator" | "management" | "profile" | string;
+  role: "admin" | "user" | "supervisor" | "site_coordinator" | "management" | "profile" | string;  // system access role
+  designation?: string;  // job title/position (optional)
   email: string;
   clearance: "Sohar Star United" | "Vale" | "All" | "none";
   assignedSite?: string;

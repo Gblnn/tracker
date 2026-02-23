@@ -18,11 +18,11 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   if (location.pathname === "/") {
     // If authenticated, redirect based on user role
     if ((user && userData) || cachedAuthState) {
-      // Determine redirect path based on system_role
+      // Determine redirect path based on role
       let redirectPath = "/index"; // default
       
-      if (userData?.system_role) {
-        switch (userData.system_role) {
+      if (userData?.role) {
+        switch (userData.role) {
           case "supervisor":
             redirectPath = "/supervisor";
             break;
