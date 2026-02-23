@@ -1,8 +1,10 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import AuthGuard from "./components/AuthGuard";
 import ProtectedRoutes from "./components/protectedRoute";
+import { refreshPhonebookCache } from "./utils/phonebookCache";
+import { useBackgroundProcess } from "./context/BackgroundProcessContext";
 
 // Import critical startup pages immediately (no lazy loading)
 import Login from "./pages/login";
@@ -58,6 +60,18 @@ const PageLoader = () => (
 );
 
 export default function App() {
+  const { addProcess, updateProcess } = useBackgroundProcess();
+  
+  // Initialize phonebook cache in the background on app launch
+  useEffect(() => {
+    const processId = "phonebook-cache-init";
+    addProcess(processId, "Phonebook Sync");
+    
+    refreshPhonebookCache((status, message) => {
+      updateProcess(processId, { status, message });
+    });
+  }, [addProcess, updateProcess]);
+
   return (
     <AuthGuard>
       <Suspense fallback={<PageLoader />}>

@@ -1,5 +1,6 @@
 import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
+import BackgroundProcessDropdown from "@/components/background-process-dropdown";
 import Directive from "@/components/directive";
 import IndexDropDown from "@/components/index-dropdown";
 import InputDialog from "@/components/input-dialog";
@@ -140,7 +141,7 @@ export default function Index() {
                   <LogOut width={"1rem"} color="lightcoral" />
                 </button> */}
 
-                {admin && (
+                {/* {admin && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
@@ -164,7 +165,9 @@ export default function Index() {
                   </motion.div>
                 )
                 
-                }
+                } */}
+
+                <BackgroundProcessDropdown />
 
                 {/* <button
                   style={{
@@ -206,6 +209,12 @@ export default function Index() {
                 title={"Records Master"}
                 icon={<FileArchive color="violet" width={"1.25rem"} />}
               />
+
+              {
+                admin&&
+                <Directive icon={<KeyRound color="dodgerblue" width={"1.25rem"}/>} title={"User Management"}/>
+              }
+              
 
               {/* <Directive onClick={()=>usenavigate("/documents")} title={"Document Generation"} icon={<FilePen width={"1.25rem"} color="mediumslateblue"/>} /> */}
 

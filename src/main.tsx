@@ -10,6 +10,7 @@ import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
 import AuthProvider from "./components/AuthProvider.tsx";
 import { Toaster } from "sonner";
+import { BackgroundProcessProvider } from "./context/BackgroundProcessContext.tsx";
 
 // Hide initial loader IMMEDIATELY as soon as JS starts executing
 if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
@@ -49,10 +50,12 @@ if (rootElement) {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <AuthProvider>
-      <ThemeProvider defaultTheme="dark">
-        <App />
-        <Toaster position="top-right" expand={true} richColors />
-      </ThemeProvider>
+      <BackgroundProcessProvider>
+        <ThemeProvider defaultTheme="dark">
+          <App />
+          <Toaster position="top-right" expand={true} richColors />
+        </ThemeProvider>
+      </BackgroundProcessProvider>
     </AuthProvider>
   </BrowserRouter>
 );

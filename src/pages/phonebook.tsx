@@ -2,24 +2,19 @@ import Back from "@/components/back";
 import Directive from "@/components/directive";
 import RefreshButton from "@/components/refresh-button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
-import { db } from "@/firebase";
-import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 import { AtSign, Building2, Notebook, PhoneIcon, Search, User2 } from "lucide-react";
 import { useEffect, useState } from "react";
-
-interface Record {
-    id: string;
-    name: string;
-    email: string;
-    contact?: string;
-    cug?: number;
-    role?: string;
-}
+import { 
+    PhonebookRecord, 
+    getPhonebookFromCache, 
+    getPhonebookData, 
+    isCacheStale 
+} from "@/utils/phonebookCache";
 
 export default function Phonebook() {
-    const [records, setRecords] = useState<Record[]>([]);
+    const [records, setRecords] = useState<PhonebookRecord[]>([]);
     const [loading, setLoading] = useState(false);
-    const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
+    const [selectedRecord, setSelectedRecord] = useState<PhonebookRecord | null>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -33,18 +28,7 @@ export default function Phonebook() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const recordsRef = collection(db, "records");
-            const q = query(recordsRef, orderBy("name", "asc"), where("contact", "!=", ""));
-            const querySnapshot = await getDocs(q);
-            
-            const fetchedRecords: Record[] = [];
-            querySnapshot.forEach((doc) => {
-                fetchedRecords.push({
-                    id: doc.id,
-                    ...doc.data() as Omit<Record, "id">
-                });
-            });
-            
+            const fetchedRecords = await getPhonebookData(true); // Force refresh
             setRecords(fetchedRecords);
             setLoading(false);
         } catch (error) {
@@ -54,7 +38,28 @@ export default function Phonebook() {
     }
 
     useEffect(() => {
-        fetchData();
+        // Load from cache immediately for fast initial display
+        const cachedData = getPhonebookFromCache();
+        if (cachedData) {
+            setRecords(cachedData);
+        }
+
+        // Fetch fresh data if cache is stale or doesn't exist
+        const loadData = async () => {
+            if (!cachedData || isCacheStale()) {
+                try {
+                    setLoading(true);
+                    const freshData = await getPhonebookData();
+                    setRecords(freshData);
+                } catch (error) {
+                    console.error("Error fetching records:", error);
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+
+        loadData();
     }, []);
 
     return(
