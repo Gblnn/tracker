@@ -101,9 +101,9 @@ export default function Login() {
             <img src="/stardox-bg.png" style={{ width: "4rem", border: "" }} />
 
             <div
-              style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
+              style={{ display: "flex", alignItems: "center", gap: "0.75rem",color:"white"  }}
             >
-              <p style={{ fontWeight: 400, fontSize: "2.25rem", color:"white" }}>StarBoard</p>
+              <p style={{ fontWeight: 400, fontSize: "2.25rem"}}>StarBoard</p>
               <p>v1.1</p>
             </div>
           </div>
