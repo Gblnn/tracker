@@ -6,9 +6,7 @@ import BackgroundProcessDropdown from "@/components/background-process-dropdown"
 import InputDialog from "@/components/input-dialog";
 import LazyLoader from "@/components/lazy-loader";
 import DefaultDialog from "@/components/ui/default-dialog";
-import { db } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
-import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
 import {
   AtSign,
@@ -23,6 +21,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getCachedProfile, fetchAndCacheProfile } from "@/utils/profileCache";
 
 export default function UserDashboard() {
   const [addUserDialog, setAddUserDialog] = useState(false);
@@ -72,69 +71,83 @@ export default function UserDashboard() {
   });
 
   useEffect(() => {
-
-    fetchDocumentStatus();
+    // Load cached data immediately for instant display
+    const cachedProfile = getCachedProfile();
+    const hasCachedData = !!(cachedProfile && userData?.email);
+    
+    if (hasCachedData) {
+      console.log("⚡ Loading profile from cache");
+      updateStateFromData(cachedProfile);
+    }
+    
+    // Then fetch fresh data in background (silently if we have cached data)
+    fetchDocumentStatus(hasCachedData);
   }, []);
 
-  
+  const updateStateFromData = (docData: any) => {
+    // Update user details
+    setUserDetails({
+      name: docData.name || '',
+      email: docData.email || '',
+      employeeCode: docData.employeeCode || '',
+      companyName: docData.companyName || '',
+      dateofJoin: docData.dateofJoin || '',
+      contact: docData.contact || '',
+      cug: docData.cug || '',
+      site: docData.site || '',
+      project: docData.project || '',
+      designation: docData.designation || '',
+      salaryBasic: docData.salaryBasic || '',
+      allowance: docData.allowance || '',
+      profile: docData.profile || ''
+    });
 
-  const fetchDocumentStatus = async () => {
+    // Update documents status
+    setDocuments({
+      civilId: { 
+        isValid: docData.civil_number ? true : false,
+        expiryDate: docData.civil_expiry ? (docData.civil_expiry) : null 
+      },
+      license: { 
+        isValid: docData.vehicle_number ? true : false,
+        expiryDate: docData.vehicle_expiry ? (docData.vehicle_expiry) : null 
+      },
+      passport: { 
+        isValid: docData.passportID ? true : false,
+        expiryDate: docData.passportExpiry ? (docData.passportExpiry) : null 
+      },
+      medical: { 
+        isValid: docData.medical_completed_on ? true : false,
+        expiryDate: docData.medical_due_on ? (docData.medical_due_on) : null 
+      },
+      training: { 
+        isValid: docData.vt_hse_induction ? true : false,
+        completionDate: docData.vt_hse_induction ? new Date(docData.vt_hse_induction) : null 
+      }
+    });
+  };
+
+  const fetchDocumentStatus = async (silent: boolean = false) => {
+    if (!userData?.email) return;
+    
     try {
-      setLoading(true);
-      const docQuery = query(
-        collection(db, "records"),
-        where("email", "==", userData?.email)
-      );
-      const docSnapshot = await getDocs(docQuery);
+      // Only show loading spinner if we don't have cached data
+      if (!silent) {
+        setLoading(true);
+      }
       
-      if (!docSnapshot.empty) {
-        const docData = docSnapshot.docs[0].data();
-        
-        // Update user details
-        setUserDetails({
-          name: docData.name || '',
-          email: docData.email || '',
-          employeeCode: docData.employeeCode || '',
-          companyName: docData.companyName || '',
-          dateofJoin: docData.dateofJoin || '',
-          contact: docData.contact || '',
-          cug: docData.cug || '',
-          site: docData.site || '',
-          project: docData.project || '',
-          designation: docData.designation || '',  // job title/position
-          salaryBasic: docData.salaryBasic || '',
-          allowance: docData.allowance || '',
-          profile: docData.profile || ''
-        });
-
-        // Update documents status
-        setDocuments({
-          civilId: { 
-            isValid: docData.civil_number ? true : false,
-            expiryDate: docData.civil_expiry ? (docData.civil_expiry) : null 
-          },
-          license: { 
-            isValid: docData.vehicle_number ? true : false,
-            expiryDate: docData.vehicle_expiry ? (docData.vehicle_expiry) : null 
-          },
-          passport: { 
-            isValid: docData.passportID ? true : false,
-            expiryDate: docData.passportExpiry ? (docData.passportExpiry) : null 
-          },
-          medical: { 
-            isValid: docData.medical_completed_on ? true : false,
-            expiryDate: docData.medical_due_on ? (docData.medical_due_on) : null 
-          },
-          training: { 
-            isValid: docData.vt_hse_induction ? true : false,
-            completionDate: docData.vt_hse_induction ? new Date(docData.vt_hse_induction) : null 
-          }
-        });
+      // Use the cache utility to fetch and cache
+      const profileData = await fetchAndCacheProfile(userData.email);
+      
+      if (profileData) {
+        updateStateFromData(profileData);
       }
     } catch (err) {
       console.error("Error fetching document status:", err);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 

@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { User } from "firebase/auth";
+import { fetchAndCacheProfile, clearProfileCache } from "@/utils/profileCache";
 
 interface FirestoreUserData {
   id: string;
@@ -220,6 +221,12 @@ const AuthProvider = ({ children }: Props) => {
         setUserData(userData);
         cacheAuthState(result.user);
         setCachedAuthState(false);
+        
+        // Cache profile data in background
+        fetchAndCacheProfile(email).catch(err => 
+          console.error("Failed to cache profile:", err)
+        );
+        
         toast.success("✅ Login successful - cached for offline use!");
         return { result, userData };
       } else {
@@ -254,6 +261,7 @@ const AuthProvider = ({ children }: Props) => {
       localStorage.removeItem(CACHED_USER_KEY);
       localStorage.removeItem(CACHED_AUTH_KEY);
       localStorage.removeItem(CACHE_TIMESTAMP_KEY);
+      clearProfileCache();
       
       toast.success("✅ Logged out successfully");
       
@@ -273,6 +281,13 @@ const AuthProvider = ({ children }: Props) => {
     if (hasValidCache.current) {
       console.log("⚡ Using cached auth - instant access!");
       setCachedAuthState(true);
+      
+      // Pre-fetch profile data in background if user email is available
+      if (userData?.email) {
+        fetchAndCacheProfile(userData.email).catch(err => 
+          console.error("Failed to pre-cache profile:", err)
+        );
+      }
     } else {
       console.log("No cached auth - showing login page");
     }
