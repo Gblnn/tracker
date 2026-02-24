@@ -12,6 +12,7 @@ input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   transition: background-color 5000s ease-in-out 0s;
+  -webkit-text-fill-color: inherit;
 }
 
 input,
@@ -126,6 +127,7 @@ input {
   background-color: rgba(150 150 150/ 10%);
   border-radius: 0.5rem;
   transition: 0.3s;
+  color: inherit;
 }
 
 input:focus {
@@ -162,6 +164,7 @@ textarea {
   background: rgba(100 100 100/ 10%);
   border-radius: 0.75rem;
   transition: 0.3s;
+  color: inherit;
 }
 
 body {

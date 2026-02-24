@@ -103,7 +103,7 @@ export default function Login() {
             <div
               style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
             >
-              <p style={{ fontWeight: 400, fontSize: "2.25rem" }}>StarBoard</p>
+              <p style={{ fontWeight: 400, fontSize: "2.25rem", color:"white" }}>StarBoard</p>
               <p>v1.1</p>
             </div>
           </div>
@@ -160,6 +160,7 @@ export default function Login() {
               <br />
 
               <input
+            
                 autoComplete="email"
                 id="email"
                 onChange={(e: any) => {
@@ -226,6 +227,7 @@ export default function Login() {
                 >
                   <div style={{ display: "flex", gap: "0.5rem" }}>
                     <Checkbox
+                    style={{border:"none"}}
                       checked={stayLoggedIn}
                       onCheckedChange={(checked) =>
                         setStayLoggedIn(checked === true)
@@ -254,6 +256,7 @@ export default function Login() {
                 className={loading ? "disabled" : ""}
                 style={{
                   background: "midnightblue",
+                  color: "white",
                   display: "flex",
                   gap: "0.75rem",
                 }}
