@@ -75,7 +75,7 @@ export default function Index() {
   }, [userData, navigate]);
 
   const Authenticate = () => {
-    access ? navigate("/record-list") : toast.error("Clearance required");
+    access ? navigate("/records") : toast.error("Clearance required");
   };
 
   const handleLogout = async () => {
@@ -204,7 +204,7 @@ export default function Index() {
           ) : (
             <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
               <Directive
-                to={access ? "/record-list" : ""}
+                to={access ? "/records" : ""}
                 onClick={Authenticate}
                 title={"Records Master"}
                 icon={<FileArchive color="violet" width={"1.25rem"} />}

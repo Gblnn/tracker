@@ -12,6 +12,7 @@ export interface PhonebookRecord {
     contact?: string;
     cug?: number;
     role?: string;
+    designation?: string;
 }
 
 /**

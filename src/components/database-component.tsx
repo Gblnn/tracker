@@ -14,7 +14,6 @@ import { db, storage } from "@/firebase";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import {
   exportExpiringRecords,
-  importExpiringRecords,
 } from "@/utils/excelUtils";
 import { LoadingOutlined } from "@ant-design/icons";
 import * as XLSX from "@e965/xlsx";
@@ -25,6 +24,7 @@ import {
   deleteDoc,
   doc,
   getAggregateFromServer,
+  getDoc,
   getDocs,
   limit,
   onSnapshot,
@@ -67,7 +67,9 @@ import {
   EllipsisVerticalIcon,
   Eye,
   File,
+  FileArchive,
   FileDown,
+  Filter,
   Globe,
   GraduationCap,
   HeartPulse,
@@ -195,14 +197,13 @@ export default function DbComponent(props: Props) {
   const [records, setRecords] = useState<Record[]>([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [name, setName] = useState("");
-  const [doc_id, setDocID] = useState("");
+  const [doc_id] = useState("");
   const [recordSummary, setRecordSummary] = useState(false);
   const [civil, setCivil] = useState(false);
   const [vehicle, setVehicle] = useState(false);
   const [addcivil, setAddcivil] = useState(false);
   const [modified_on, setModifiedOn] = useState<any>();
   const [loading, setLoading] = useState(false);
-  const [importLoading, setImportLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteMedicalIDdialog, setDeleteMedicalIDdialog] = useState(false);
   const [email, setEmail] = useState("");
@@ -386,8 +387,8 @@ export default function DbComponent(props: Props) {
   const [fetchingAllowance, setFetchingAllowance] = useState(false);
   let imgUrl = "";
 
-  const [initialSalary, setInitialSalary] = useState(0);
-  const [initialAllowance, setInitialAllowance] = useState(0);
+  const [initialSalary] = useState(0);
+  const [initialAllowance] = useState(0);
 
   const [importDialog, setImportDialog] = useState(false);
   const [sortby, setSortBy] = useState("name");
@@ -1755,13 +1756,12 @@ export default function DbComponent(props: Props) {
           const parsedData = JSON.parse(jsonString);
           setJsonData(parsedData);
 
-          // Check for duplicates using the existing records array
+          // Automatically categorize records by checking if ID exists
           const duplicates = parsedData.filter(
             (newRecord: any) =>
-              newRecord.employeeCode &&
+              newRecord.id && // Has ID field
               records.some(
-                (existingRecord) =>
-                  existingRecord.employeeCode === newRecord.employeeCode
+                (existingRecord) => existingRecord.id === newRecord.id
               )
           );
 
@@ -1779,66 +1779,74 @@ export default function DbComponent(props: Props) {
   // const [existingRecords, setExistingRecords] = useState<any[]>([]);
   // const [pendingImport, setPendingImport] = useState<any[]>([]);
 
-  const uploadJson = async (overwrite: boolean = false) => {
+  const uploadJson = async () => {
     setLoading(true);
 
     try {
-      // Process data first
-      const processedData = jsonData.map((e: { [key: string]: any }) => {
-        // Create a new object without the id field
-        const { id, ...recordWithoutId } = e;
-        return {
-          ...recordWithoutId,
-          type: e.type == "omni" ? "omni" : props.dbCategory,
-          created_on: new Date(),
-          modified_on: new Date(),
-          notify: true,
-          state: "active",
-          email: e.email || "",
-          dateofJoin: e.dateofJoin
-            ? moment(e.dateofJoin, "DD/MM/YYYY").format("DD/MM/YYYY")
-            : "",
-          salaryBasic: e.initialSalary || 0,
-          allowance: e.initialAllowance || 0,
-        };
-      });
+      let newCount = 0;
+      let updateCount = 0;
+      let errorCount = 0;
 
       await AddHistory(
         "import",
         "",
         "",
-        processedData.length + " records from XLSX"
+        jsonData.length + " records from XLSX"
       );
 
       const batchSize = 500;
       const batches = [];
       let currentBatch = writeBatch(db);
       let currentBatchSize = 0;
-      let successCount = 0;
-      let errorCount = 0;
 
-      for (const record of processedData) {
+      for (const record of jsonData) {
         try {
+          const { id, ...recordWithoutId } = record;
+          
+          const processedRecord = {
+            ...recordWithoutId,
+            type: record.type == "omni" ? "omni" : props.dbCategory,
+            modified_on: new Date(),
+            notify: true,
+            state: "active",
+            email: record.email || "",
+            dateofJoin: record.dateofJoin
+              ? moment(record.dateofJoin, "DD/MM/YYYY").format("DD/MM/YYYY")
+              : "",
+            salaryBasic: record.initialSalary || 0,
+            allowance: record.initialAllowance || 0,
+          };
+
           let docRef;
-          if (overwrite && record.employeeCode) {
-            // For overwrite, query existing record
-            const snapshot = await getDocs(
-              query(
-                collection(db, "records"),
-                where("employeeCode", "==", record.employeeCode)
-              )
-            );
-            docRef = snapshot.empty
-              ? doc(collection(db, "records"))
-              : doc(db, "records", snapshot.docs[0].id);
+          let isUpdate = false;
+
+          // Check if ID field exists and is valid
+          if (id && id.trim() !== "") {
+            // Try to find existing record with this ID
+            const existingDoc = await getDoc(doc(db, "records", id));
+            if (existingDoc.exists()) {
+              // Update existing record
+              docRef = doc(db, "records", id);
+              isUpdate = true;
+            } else {
+              // ID provided but doesn't exist, create new with generated ID
+              docRef = doc(collection(db, "records"));
+              processedRecord.created_on = new Date();
+            }
           } else {
-            // For ignore mode or records without employee code, always create new record
+            // No ID provided, create new record
             docRef = doc(collection(db, "records"));
+            processedRecord.created_on = new Date();
           }
 
-          currentBatch.set(docRef, record, { merge: overwrite });
+          currentBatch.set(docRef, processedRecord, { merge: isUpdate });
           currentBatchSize++;
-          successCount++;
+          
+          if (isUpdate) {
+            updateCount++;
+          } else {
+            newCount++;
+          }
 
           if (currentBatchSize === batchSize) {
             batches.push(currentBatch);
@@ -1857,7 +1865,11 @@ export default function DbComponent(props: Props) {
 
       await Promise.all(batches.map((batch) => batch.commit()));
 
-      toast.success(`Imported ${successCount} records successfully`);
+      const messages = [];
+      if (newCount > 0) messages.push(`${newCount} new`);
+      if (updateCount > 0) messages.push(`${updateCount} updated`);
+      
+      toast.success(`Imported ${messages.join(", ")} records successfully`);
       if (errorCount > 0) {
         toast.warning(`Failed to import ${errorCount} records`);
       }
@@ -1871,7 +1883,6 @@ export default function DbComponent(props: Props) {
       setImportDialog(false);
       setFile(null);
       setJsonData([]);
-      setImportMode("ignore");
       fetchData();
     }
   };
@@ -2015,10 +2026,6 @@ export default function DbComponent(props: Props) {
   //   }
   // };
 
-  const [importMode, setImportMode] = useState<"overwrite" | "ignore">(
-    "ignore"
-  );
-
   // Add state for tracking duplicate records near other state declarations
   const [duplicateRecords, setDuplicateRecords] = useState<any[]>([]);
 
@@ -2094,7 +2101,7 @@ export default function DbComponent(props: Props) {
                         onImportExpiring={() =>
                           document.getElementById("excelImport")?.click()
                         }
-                        trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
+                        trigger={<EllipsisVerticalIcon width={"1rem"} />}
                       />
                     </div>
                   )}
@@ -2304,6 +2311,9 @@ export default function DbComponent(props: Props) {
                       setSearch(e.target.value.toLowerCase());
                     }}
                   />
+                  <button style={{width:"2.5rem"}}>
+                    <Filter width={"1rem"}/>
+                  </button>
 
                   <Select
                     value={sortby}
@@ -2391,7 +2401,7 @@ export default function DbComponent(props: Props) {
                     style={{
                       display: "grid",
                       gap: "0.6rem",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(min(350px, 100%), 1fr))",
                       maxWidth: "100%",
                       paddingTop:"1rem",
                       paddingBottom:"5rem"
@@ -2415,7 +2425,7 @@ export default function DbComponent(props: Props) {
                           //   whileInView={{ opacity: 1 }}
                           // >
                           <Directive
-                            icon={<UserCircle/>}
+                            icon={<FileArchive/>}
                             id_subtitle={post.id}
                             className="record-item"
                             space
@@ -2452,83 +2462,7 @@ export default function DbComponent(props: Props) {
                               handleSelect(post.id);
                             }}
                             onClick={() => {
-                              setRecordSummary(true);
-                              setName(post.name);
-                              setSystemRole(post.role || 'profile');  // system access role
-                              setId(post.id);
-                              setDocID(post.id);
-                              setCug(post.cug);
-                              setDesignation(post.designation);  // job title
-                              setSite(post.site);
-                              setProject(post.project);
-                              setEmail(post.email)
-                              setProject(post.project);
-                              setCivilNumber(post.civil_number);
-                              setCivilExpiry(post.civil_expiry);
-                              setCivilDOB(post.civil_DOB);
-                              setCompletedOn(post.medical_completed_on);
-                              setDueOn(post.medical_due_on);
-                              setVehicleNumber(post.license_number);
-                              setVehicleExpiry(
-                                post.license_expiry ? post.license_expiry : ""
-                              );
-                              setVehicleIssue(post.license_issue);
-                              setModifiedOn(
-                                post.modified_on
-                                  ? moment(post.modified_on.toDate())
-                                  : ""
-                              );
-                              // setCreatedOn(
-                              //   moment(post.created_on.toDate()).format("LL")
-                              // );
-                              setPassportID(post.passportID);
-                              setPassportIssue(post.passportIssue);
-                              setPassportExpiry(post.passportExpiry);
-                              setEmail(post.email);
-                              setNotify(post.notify);
-
-                              setHseInduction(post.vt_hse_induction);
-
-                              setVtCar1(post.vt_car_1);
-
-                              setVtCar2(post.vt_car_2);
-
-                              setVtCar3(post.vt_car_3);
-
-                              setVtCar4(post.vt_car_4);
-
-                              setVtCar5(post.vt_car_5);
-
-                              setVtCar6(post.vt_car_6);
-
-                              setVtCar7(post.vt_car_7);
-
-                              setVtCar8(post.vt_car_8);
-
-                              setVtCar9(post.vt_car_9);
-
-                              setVtCar10(post.vt_car_10);
-
-                              setImage(post.profile);
-                              setProfileName(post.profile_name);
-                              setCivilNumber(post.civil_number);
-                              setVehicleNumber(post.license_number);
-                              setPassportID(post.passportID);
-                              setEmployeeCode(post.employeeCode);
-                              setCompanyName(post.companyName);
-                              setDateofJoin(post.dateofJoin);
-                              setSalaryBasic(post.salaryBasic);
-                              setAllowance(post.allowance);
-                              setInitialSalary(post.initialSalary);
-                              setInitialAllowance(post.initialAllowance);
-                              setRemarks(post.remarks);
-                              setState(post.state);
-                              setContact(post.contact);
-                              setNativePhone(post.nativePhone);
-                              setNativeAddress(post.nativeAddress);
-                              post.type == "omni"
-                                ? setOmni(true)
-                                : setOmni(false);
+                              usenavigate(`/record/${post.id}`, { state: { record: post } });
                             }}
                             key={post.id}
                             title={post.name}
@@ -2732,11 +2666,10 @@ export default function DbComponent(props: Props) {
           
             setJsonData([]);
             setDuplicateRecords([]);
-            setImportMode("ignore"); // Reset to default
           }}
           disabled={!jsonData.length}
           updating={loading}
-          onOk={() => uploadJson(importMode === "overwrite")}
+          onOk={() => uploadJson()}
           title_extra={
             <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
               <button
@@ -2805,70 +2738,28 @@ export default function DbComponent(props: Props) {
                     border: "",
                     display: "flex",
                     flexFlow: "column",
-                    gap: "0.75rem",
+                    gap: "0.5rem",
+                    padding: "0.75rem",
+                    background: "rgba(255, 165, 0, 0.1)",
+                    borderRadius: "0.5rem",
+                    marginBottom: "0.5rem",
                   }}
                 >
-                  <p style={{ fontSize: "0.8rem", textAlign: "center" }}>
-                    {duplicateRecords.length} duplicate record(s) found
+                  <p style={{ fontSize: "0.8rem", textAlign: "center", color: "orange" }}>
+                    {duplicateRecords.length} existing record(s) will be updated
                   </p>
-
-                  <div
-                    style={{
-                      width: "100%",
-                      display: "flex",
-                      gap: "0.5rem",
-                      height: "2.25rem",
-                    }}
-                  >
-                    <button
-                      onClick={() => setImportMode("overwrite")}
-                      style={{
-                        flex: 1,
-                        background:
-                          importMode === "overwrite"
-                            ? "rgba(30, 144, 255, 0.2)"
-                            : "",
-                        color: importMode === "overwrite" ? "dodgerblue" : "",
-                        border:
-                          importMode === "overwrite"
-                            ? "1px solid dodgerblue"
-                            : "",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      Overwrite
-                    </button>
-                    <button
-                      onClick={() => setImportMode("ignore")}
-                      style={{
-                        flex: 1,
-                        background:
-                          importMode === "ignore"
-                            ? "rgba(30, 144, 255, 0.2)"
-                            : "",
-                        color: importMode === "ignore" ? "dodgerblue" : "",
-                        border:
-                          importMode === "ignore" ? "1px solid dodgerblue" : "",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      Ignore
-                    </button>
-                  </div>
-                  <p></p>
                 </div>
               )}
 
               <p
                 style={{
-                  color: "indianred",
-                  fontSize: "0.8rem",
-                  fontWeight: 500,
+                  color: "rgba(100, 100, 100, 0.7)",
+                  fontSize: "0.75rem",
+                  fontWeight: 400,
+                  marginBottom: "0.5rem",
                 }}
               >
-                Exclude ID before upload
+                Records with existing IDs will be updated. Records without IDs will be added as new.
               </p>
 
               <div style={{ display: "flex", gap: "0.5rem", width: "100%" }}>
@@ -2913,7 +2804,7 @@ export default function DbComponent(props: Props) {
               </div>
 
               <div style={{ marginTop: "1rem" }}>
-                <Directive
+                {/* <Directive
                   icon={<RefreshCcw width={"1.25rem"} color="orange" />}
                   title={"Import as Updates"}
                   subtext={"Include ID"}
@@ -2936,7 +2827,7 @@ export default function DbComponent(props: Props) {
                         });
                     }
                   }}
-                />
+                /> */}
               </div>
             </>
           }

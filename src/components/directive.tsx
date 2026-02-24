@@ -97,7 +97,7 @@ export default function Directive(props: Props) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          background: "rgba(100 100 100/ 0.2)",
+          background: "rgba(100 100 100/ 0.1)",
           borderRadius: "0.5rem",
           // border: "1px solid rgba(100 100 100/ 0.2)",
           transition: "all 0.2s ease",
@@ -157,6 +157,7 @@ export default function Directive(props: Props) {
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
+                  zIndex: -2,
                 }}
               >
                 {props.subtext}
@@ -210,7 +211,7 @@ export default function Directive(props: Props) {
                 style={{
                   fontSize: "0.6rem",
                   textAlign: "left",
-                  color: "dodgerblue",
+                  color: "lightslategray",
                   opacity: "0.75",
                   overflow: "hidden",
                   textOverflow: "ellipsis",

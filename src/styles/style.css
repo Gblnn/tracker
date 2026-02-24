@@ -3,7 +3,7 @@
   padding: 0;
   font-family: "ClashGrotesk-Variable", system-ui, -apple-system;
   letter-spacing: 0.025rem;
-  color-scheme: dark;
+  color-scheme: light dark;
   user-select: none;
 }
 
@@ -12,7 +12,6 @@ input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   transition: background-color 5000s ease-in-out 0s;
-  -webkit-text-fill-color: #ffffff !important;
 }
 
 input,

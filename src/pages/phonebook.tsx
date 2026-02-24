@@ -1,15 +1,16 @@
 import Back from "@/components/back";
 import Directive from "@/components/directive";
 import RefreshButton from "@/components/refresh-button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
-import { AtSign, Building2, Notebook, PhoneIcon, Search, User2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { 
-    PhonebookRecord, 
-    getPhonebookFromCache, 
-    getPhonebookData, 
-    isCacheStale 
+import {
+    PhonebookRecord,
+    getPhonebookData,
+    getPhonebookFromCache,
+    isCacheStale
 } from "@/utils/phonebookCache";
+import { AtSign, Building2, Notebook, PhoneIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function Phonebook() {
     const [records, setRecords] = useState<PhonebookRecord[]>([]);
@@ -22,7 +23,7 @@ export default function Phonebook() {
         record.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         record.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
         // record.contact?.includes(searchQuery) ||
-        record.role?.toLowerCase().includes(searchQuery.toLowerCase())
+        record.designation?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const fetchData = async () => {
@@ -36,6 +37,10 @@ export default function Phonebook() {
             setLoading(false);
         }
     }
+
+    const getInitials = (name: string) => {
+    return name[0]?.toUpperCase() || "?";
+  };
 
     useEffect(() => {
         // Load from cache immediately for fast initial display
@@ -64,7 +69,7 @@ export default function Phonebook() {
 
     return(
         <>
-        <div style={{padding: "", position:"fixed"}}>
+        <div style={{padding: "", position:"fixed", zIndex: 20}}>
             <Back
             subtitle={records.length}
             fixed
@@ -77,77 +82,73 @@ export default function Phonebook() {
         </div>
         
 
-        <div style={{
-            position: "fixed",
-            top: "4rem",
-            left: 0,
-            right: 0,
-            padding: "1rem 1.25rem",
-            backdropFilter: "blur(8px)",
-            background: "none",
-            zIndex: 10,
-            marginTop: ""
-        }}>
-            <div style={{
-                position: "relative",
-                width: "100%",
-            }}>
-                <Search 
-                    width="0.9rem" 
-                    style={{
-                        position: "absolute",
-                        left: "0.75rem",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        color: "gray"
-                    }}
-                />
-                <input
-                    type="text"
-                    placeholder="Search by name, email, phone or role..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{
-                        width: "100%",
-                        padding: "0.75rem",
-                        paddingLeft: "2.25rem",
-                        borderRadius: "0.5rem",
-                        border: "1px solid rgba(100, 100, 100, 0.2)",
-                        background: "rgba(100, 100, 100, 0.15)",
-                        fontSize: "1rem",
-                        boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
-                    }}
-                />
-            </div>
-        </div>
+
 
         <div style={{ 
             border:"",
-            paddingTop: "",
-            marginTop: "",
-            padding: "1.25rem",
-            paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 2rem))", // Add safe area padding
+            paddingTop:"5.25rem",
+            paddingLeft: "1.25rem",
+            paddingRight: "1.25rem",
+            paddingBottom: "calc(6rem + env(safe-area-inset-bottom, 0px))",
             display: "flex",
             flexDirection: "column",
             gap: "0.75rem",
             zIndex: "",
-            marginBottom: "env(safe-area-inset-bottom, 0px)" // Add safe area margin
+            marginBottom: "env(safe-area-inset-bottom, 0px)"
         }}>
-            <div style={{border:"", height:"7rem"}}></div>
 
             {filteredRecords.map((record) => (
                 <Directive
-                subtext={record.role}
+                subtext={record.designation}
                     onClick={() => {
                         setSelectedRecord(record);
                         setDrawerOpen(true);
                     }}
-                    icon={<User2 width="1.25rem" color="dodgerblue"/>}
+                    icon={<Avatar  className="h-10 w-10">
+                                    <AvatarFallback style={{fontWeight:"600", background:"rgba(100 100 100/ 0.1)", fontSize:"1rem", color:""}} className="text-lg">
+                                      {record.name
+                                        ? getInitials(record.name.split("@")[0])
+                                        : "?"}
+                                    </AvatarFallback>
+                                  </Avatar>}
                     key={record.id}
                     title={record.name}
                     
                 />
             ))}
+        </div>
+
+        <div style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: "1rem 1.25rem",
+            paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 1rem))",
+            backdropFilter: "blur(16px)",
+            background: "rgba(100, 100, 100, 0.05)",
+            zIndex: 10,
+            borderTop: "1px solid rgba(100, 100, 100, 0.1)"
+        }}>
+            <div style={{
+                position: "relative",
+                width: "100%",
+            }}>
+                <input
+                    type="text"
+                    placeholder="Search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                    
+                        width: "100%",
+                        padding: "0.75rem 1rem",
+                        borderRadius: "0.5rem",
+                        background: "rgba(150, 150, 150, 0.15)",
+                        fontSize: "1rem",
+                    }}
+                />
+            </div>
         </div>
 
         <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
@@ -159,10 +160,21 @@ export default function Phonebook() {
                     padding: "1.25rem", 
                     width:"100%",
                     paddingBottom: "4rem",
+                
                 }}>
+                    <div style={{display:"flex", justifyContent:"center"}}>
+                        <Avatar  className="h-20 w-20">
+                                    <AvatarFallback style={{fontWeight:"600", background:"linear-gradient( mediumslateblue, midnightblue)", fontSize:"2rem", color:"white"}} className="text-lg">
+                                      {selectedRecord?.name
+                                        ? getInitials(selectedRecord.name.split("@")[0])
+                                        : "?"}
+                                    </AvatarFallback>
+                                  </Avatar>
+                    </div>
+                    <br/>
                     <div style={{display:"flex", justifyContent:"center", alignItems:"center", padding:"1.25rem", paddingTop:"0", flexFlow:"column", gap:""}}>
                         <h2>{selectedRecord?.name}</h2>
-                        <p style={{fontSize:"0.8rem"}}>{selectedRecord?.role}</p>
+                        <p style={{fontSize:"0.8rem"}}>{selectedRecord?.designation}</p>
                     </div>
                     
                     <div style={{ 

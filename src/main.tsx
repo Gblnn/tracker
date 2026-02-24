@@ -19,6 +19,9 @@ if (typeof window !== 'undefined' && (window as any).hideInitialLoader) {
 
 TimeAgo.addDefaultLocale(en);
 
+// Force light theme on startup by clearing cached theme
+localStorage.setItem("vite-ui-theme", "light");
+
 // Fix for Radix UI leaving root element inert/aria-hidden after dialogs close
 let cleanupTimeout: NodeJS.Timeout;
 const observer = new MutationObserver(() => {
@@ -51,9 +54,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <AuthProvider>
       <BackgroundProcessProvider>
-        <ThemeProvider defaultTheme="dark">
+        <ThemeProvider defaultTheme="light">
           <App />
-          <Toaster position="top-right" expand={true} richColors />
+          <Toaster position="bottom-right" expand={true} richColors />
         </ThemeProvider>
       </BackgroundProcessProvider>
     </AuthProvider>
