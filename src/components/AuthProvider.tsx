@@ -227,7 +227,7 @@ const AuthProvider = ({ children }: Props) => {
           console.error("Failed to cache profile:", err)
         );
         
-        toast.success("✅ Login successful - cached for offline use!");
+        // toast.success("✅ Login successful - cached for offline use!");
         return { result, userData };
       } else {
         throw new Error("User data not found");
