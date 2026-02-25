@@ -240,7 +240,7 @@ export default function FuelLog() {
             subtitle={fuelLogs.length}
             extra={
               <RefreshButton
-                onClick={() => fetchFuelLogs(false)}
+                onClick={() => fetchFuelLogs(true)}
                 refreshCompleted={refreshCompleted}
                 fetchingData={refreshing}
               />
@@ -284,12 +284,12 @@ export default function FuelLog() {
             ) : (
               fuelLogs.map((log) => (
                 <Directive 
-                  // subtext={"Vehicle - "+log.vehicle_number} 
+                  subtext={"Vehicle - "+log.vehicle_number} 
                   noArrow 
                   // id_subtitle={"ODO - "+String(log.odometer_reading)} 
                   tag={log.amount_spent.toFixed(3)} 
                   key={log.id} 
-                  icon={<Fuel/>} 
+                  icon={<Fuel color="orange"/>} 
                   title={moment(log.date).format("DD MMM YYYY")}
                   onClick={() => {
                     setSelectedLog(log);
@@ -443,7 +443,7 @@ export default function FuelLog() {
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                        <Calendar width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                        <Calendar color="orange" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
                         <label
                           htmlFor="date"
                           style={{
@@ -540,7 +540,7 @@ export default function FuelLog() {
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                        <Car width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                        <Car color="orange" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
                         <label
                           htmlFor="vehicle"
                           style={{
@@ -584,7 +584,7 @@ export default function FuelLog() {
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                        <Gauge width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                        <Gauge color="orange" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
                         <label
                           htmlFor="odometer"
                           style={{
@@ -642,7 +642,7 @@ export default function FuelLog() {
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                        <DollarSign width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                        <DollarSign color="orange" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
                         <label
                           htmlFor="amount"
                           style={{

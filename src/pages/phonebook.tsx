@@ -92,7 +92,7 @@ export default function Phonebook() {
             paddingTop:"5.25rem",
             paddingLeft: "1.25rem",
             paddingRight: "1.25rem",
-            paddingBottom: "calc(6rem + env(safe-area-inset-bottom, 0px))",
+            paddingBottom: "8rem",
             display: "flex",
             flexDirection: "column",
             gap: "0.75rem",
@@ -127,10 +127,10 @@ export default function Phonebook() {
             left: 0,
             right: 0,
             padding: "1rem 1.25rem",
-            paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 1rem))",
-            WebkitBackdropFilter: "blur(16px)",
-            backdropFilter: "blur(16px)",
-            background: "rgba(100, 100, 100, 0.05)",
+            paddingBottom: "2rem",
+            // WebkitBackdropFilter: "blur(16px)",
+            // backdropFilter: "blur(16px)",
+            background: "rgba(250, 250, 250)",
             zIndex: 10,
             borderTop: "1px solid rgba(100, 100, 100, 0.1)"
         }}>
