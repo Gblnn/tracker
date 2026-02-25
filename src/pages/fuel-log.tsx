@@ -9,7 +9,7 @@ import { fetchAndCacheFuelLogs, getCachedFuelLogs, type FuelLog as FuelLogType }
 import { getCachedProfile } from "@/utils/profileCache";
 import { addDoc, collection, getDocs, query } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, Fuel, Gauge, Loader2, Plus, Truck, User } from "lucide-react";
+import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, Fuel, Gauge, Loader2, Plus, Truck } from "lucide-react";
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
