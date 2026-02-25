@@ -9,7 +9,7 @@ import { fetchAndCacheFuelLogs, getCachedFuelLogs, type FuelLog as FuelLogType }
 import { getCachedProfile } from "@/utils/profileCache";
 import { addDoc, collection, getDocs, query } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, Fuel, Gauge, Loader2, Plus, Truck } from "lucide-react";
+import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, Fuel, Gauge, Loader2, Truck } from "lucide-react";
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -217,7 +217,7 @@ export default function FuelLog() {
           <div style={{ height: "2rem" }} />
 
           {/* Fuel Logs List */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", paddingBottom: "5rem", paddingTop:"2rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", paddingBottom: "5.5rem", paddingTop:"2rem" }}>
                       
             {loading ? 
             (
@@ -301,30 +301,44 @@ export default function FuelLog() {
           </div>
         </div>
 
-        {/* Floating Action Button */}
+        {/* Add Button - Full width on mobile, floating on desktop */}
+        {/* Add Button - Full width on mobile, floating on desktop */}
         <motion.button
-          whileTap={{ scale: 0.9 }}
+          initial={{ opacity: 0, y: isMobile ? 20 : 0 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut", delay: 0.2 }}
+          whileTap={{ scale: 0.96 }}
+          whileHover={{ scale: isMobile ? 1 : 1.05 }}
           onClick={() => setDrawerOpen(true)}
           style={{
+            transition:"none",
             position: "fixed",
-            bottom: "calc(2rem + env(safe-area-inset-bottom, 0px))",
-            right: "1.5rem",
-            width: "3.5rem",
-            height: "3.5rem",
-            borderRadius: "1rem",
+            bottom: isMobile ? "calc(1rem + env(safe-area-inset-bottom, 0px))" : "calc(2rem + env(safe-area-inset-bottom, 0px))",
+            right: isMobile ? "1rem" : "1.5rem",
+            left: isMobile ? "1rem" : "auto",
+            width: isMobile ? "calc(100% - 2rem)" : "3.5rem",
+            height: isMobile ? "auto" : "3.5rem",
+            padding: isMobile ? "1rem" : "0",
+            borderRadius: isMobile ? "0.5rem" : "50%",
             background: "black",
             color: "white",
             border: "none",
-            
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            gap: "0.5rem",
+            fontSize: isMobile ? "1rem" : "inherit",
+            fontWeight: isMobile ? "500" : "normal",
             zIndex: 50,
+            boxShadow: isMobile ? "0 4px 12px rgba(0, 0, 0, 0.15)" : "none",
+            marginBottom:"1rem"
           }}
         >
-          <Plus width="1.75rem" height="1.75rem" strokeWidth={2.5} />
+          {/* <Plus width="1.25rem" height="1.75rem" strokeWidth={2.5} /> */}
+          {isMobile && <span>Log Fuel</span>}
         </motion.button>
+        
       </motion.div>
 
       {/* Drawer for Mobile / Dialog for Desktop */}
@@ -773,7 +787,7 @@ export default function FuelLog() {
               {/* Fixed Submit Button */}
               <div style={{
                 padding: "1rem",
-                paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
+                paddingBottom: "2rem",
                 boxShadow:"1px 1px 20px rgba(0,0,0,0.5)",
                 background: "var(--background)",
                 boxSizing: "border-box"
@@ -1236,7 +1250,7 @@ export default function FuelLog() {
           <Drawer open={drawerDetailOpen} onOpenChange={setDrawerDetailOpen}>
             <DrawerTitle></DrawerTitle>
             <DrawerDescription></DrawerDescription>
-            <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "70vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+            <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "70vh", paddingBottom: "2rem" }}>
               {/* Fixed Header */}
               <div style={{
                 border:"",
@@ -1257,7 +1271,7 @@ export default function FuelLog() {
                   }}>
                     <Book color="white" width="1.25rem" />
                   </div> */}
-                  <h1 style={{ fontSize: "1.75rem", fontWeight: "600", letterSpacing: "-0.02em" }}>Log Details</h1>
+                  <h1 style={{ fontSize: "1.75rem", fontWeight: "600", letterSpacing: "-0.02em" }}>Summary</h1>
                 </div>
               </div>
 
@@ -1293,7 +1307,6 @@ export default function FuelLog() {
                       {moment(selectedLog.date).format("DD MMM YYYY")}
                     </div>
                   </motion.div>
-
                   
 
                   {/* Vehicle Number */}

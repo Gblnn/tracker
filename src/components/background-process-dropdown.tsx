@@ -55,7 +55,7 @@ export default function BackgroundProcessDropdown(props: Props) {
           width: "2.5rem",
           background: hasActiveProcesses 
             ? "rgba(30, 144, 255, 0.2)" 
-            : "rgba(100, 100, 100, 0.15)",
+            : "rgba(100, 100, 100, 0.1)",
           borderRadius: "0.375rem",
           position: "relative",
         }}
