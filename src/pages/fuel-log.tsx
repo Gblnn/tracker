@@ -1,18 +1,18 @@
-import Back from "@/components/back";
 import { useAuth } from "@/components/AuthProvider";
-import RefreshButton from "@/components/refresh-button";
-import { db } from "@/firebase";
-import { getCachedProfile } from "@/utils/profileCache";
-import { getCachedFuelLogs, fetchAndCacheFuelLogs, type FuelLog as FuelLogType } from "@/utils/fuelLogsCache";
-import { addDoc, collection, getDocs, query } from "firebase/firestore";
-import { Book, Calendar, Car, ChevronLeft, ChevronRight, DollarSign, Fuel, Gauge, Loader2, Plus, Truck, User } from "lucide-react";
-import { motion } from "framer-motion";
-import moment from "moment";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import Back from "@/components/back";
 import Directive from "@/components/directive";
+import RefreshButton from "@/components/refresh-button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
+import { db } from "@/firebase";
+import { fetchAndCacheFuelLogs, getCachedFuelLogs, type FuelLog as FuelLogType } from "@/utils/fuelLogsCache";
+import { getCachedProfile } from "@/utils/profileCache";
+import { addDoc, collection, getDocs, query } from "firebase/firestore";
+import { motion } from "framer-motion";
+import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, Fuel, Gauge, Loader2, Plus, Truck, User } from "lucide-react";
+import moment from "moment";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 export default function FuelLog() {
   const { userData } = useAuth();
@@ -33,6 +33,23 @@ export default function FuelLog() {
   const [vehicles, setVehicles] = useState<string[]>([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [viewingMonth, setViewingMonth] = useState(moment());
+  const dateSectionRef = useRef<HTMLDivElement>(null);
+  const datePickerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll guidance for date picker
+  useEffect(() => {
+    if (showDatePicker && datePickerRef.current) {
+      // Scroll to date picker when it opens
+      setTimeout(() => {
+        datePickerRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 100);
+    } else if (!showDatePicker && dateSectionRef.current) {
+      // Scroll to date section when picker closes
+      setTimeout(() => {
+        dateSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [showDatePicker]);
 
   useEffect(() => {
     // Load cached profile data immediately
@@ -132,7 +149,7 @@ export default function FuelLog() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!vehicleNumber || !odometerReading || !amountSpent) {
+    if (!vehicleNumber || !amountSpent) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -147,7 +164,7 @@ export default function FuelLog() {
 
       const fuelLogData = {
         date: date,
-        odometer_reading: parseFloat(odometerReading),
+        odometer_reading: odometerReading ? parseFloat(odometerReading) : 0,
         amount_spent: parseFloat(amountSpent),
         email: userData?.email || "",
         employee_name: userProfile.name || "",
@@ -180,8 +197,9 @@ export default function FuelLog() {
   return (
     <>
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
-        <div style={{ padding: "1.25rem", paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}>
-          <Back
+        <Back
+          fixed
+          blurBG
             title="Fuel Log"
             subtitle={fuelLogs.length}
             extra={
@@ -193,11 +211,13 @@ export default function FuelLog() {
             }
             // icon={<Fuel color="orange" width="1.75rem" />}
           />
+        <div style={{ padding: "1.25rem", paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}>
+          
 
           <div style={{ height: "2rem" }} />
 
           {/* Fuel Logs List */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", paddingBottom: "5rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", paddingBottom: "5rem", paddingTop:"2rem" }}>
                       
             {loading ? 
             (
@@ -312,8 +332,8 @@ export default function FuelLog() {
         <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
           <DrawerTitle></DrawerTitle>
           <DrawerDescription></DrawerDescription>
-          <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "90vh" }}>
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", maxHeight: "90vh", width: "100%" }}>
+          <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "75vh" }}>
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", maxHeight: "75vh", width: "100%" }}>
               {/* Fixed Header */}
               <div style={{
                 padding: "1.5rem",
@@ -356,12 +376,13 @@ export default function FuelLog() {
                   <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", width: "100%", paddingBottom: "1.5rem" }}>
                     {/* Date Input with Quick Actions */}
                     <motion.div
+                      ref={dateSectionRef}
                       whileTap={{ scale: 0.99 }}
                       style={{
                         background: "rgba(100, 100, 100, 0.05)",
                         padding: "1rem",
                         borderRadius: "1rem",
-                        border: "2px solid rgba(100, 100, 100, 0.1)",
+                        // border: "2px solid rgba(100, 100, 100, 0.1)",
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
@@ -428,7 +449,7 @@ export default function FuelLog() {
                         padding: "0.875rem 1rem",
                         borderRadius: "0.75rem",
                         background: "rgba(100, 100, 100, 0.08)",
-                        border: "1px solid rgba(100, 100, 100, 0.15)",
+                        // border: "1px solid rgba(100, 100, 100, 0.15)",
                         cursor: "pointer"
                       }}>
                         <span style={{ fontSize: "1.125rem", fontWeight: "600", flex: 1 }}>
@@ -453,6 +474,7 @@ export default function FuelLog() {
                       {/* Custom Date Picker */}
                       {showDatePicker && (
                         <motion.div
+                          ref={datePickerRef}
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
@@ -461,7 +483,7 @@ export default function FuelLog() {
                             background: "rgba(100, 100, 100, 0.05)",
                             borderRadius: "0.75rem",
                             padding: "1rem",
-                            border: "1px solid rgba(100, 100, 100, 0.15)",
+                            // border: "1px solid rgba(100, 100, 100, 0.15)",
                           }}
                         >
                           {/* Month Navigation */}
@@ -554,7 +576,7 @@ export default function FuelLog() {
                                       padding: "0.625rem 0.25rem",
                                       borderRadius: "0.5rem",
                                       background: isSelected
-                                        ? "linear-gradient(135deg, #ff8c00, #ff6b00)"
+                                        ? "orange"
                                         : isToday
                                         ? "rgba(255, 140, 0, 0.15)"
                                         : "rgba(100, 100, 100, 0.05)",
@@ -585,11 +607,11 @@ export default function FuelLog() {
                         background: "rgba(100, 100, 100, 0.05)",
                         padding: "1rem",
                         borderRadius: "1rem",
-                        border: "2px solid rgba(100, 100, 100, 0.1)",
+                        // border: "2px solid rgba(100, 100, 100, 0.1)",
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                        <Truck width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} color="dodgerblue" />
+                        <Car width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
                         <label
                           htmlFor="vehicle"
                           style={{
@@ -613,10 +635,10 @@ export default function FuelLog() {
                           width: "100%",
                           padding: "0.875rem 1rem",
                           borderRadius: "0.75rem",
-                          fontSize: "1.0625rem",
+                          fontSize: "1rem",
                           fontWeight: "500",
                           background: "rgba(100, 100, 100, 0.08)",
-                          border: "1px solid rgba(100, 100, 100, 0.15)",
+                          // border: "1px solid rgba(100, 100, 100, 0.15)",
                           transition: "all 0.2s",
                         }}
                       />
@@ -634,11 +656,11 @@ export default function FuelLog() {
                         background: "rgba(100, 100, 100, 0.05)",
                         padding: "1rem",
                         borderRadius: "1rem",
-                        border: "2px solid rgba(100, 100, 100, 0.1)",
+                        // border: "2px solid rgba(100, 100, 100, 0.1)",
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                        <Gauge width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} color="mediumslateblue" />
+                        <Gauge width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
                         <label
                           htmlFor="odometer"
                           style={{
@@ -657,8 +679,7 @@ export default function FuelLog() {
                           step="0.1"
                           value={odometerReading}
                           onChange={(e) => setOdometerReading(e.target.value)}
-                          placeholder="Enter reading"
-                          required
+                          placeholder="Enter reading (optional)"
                           style={{
                             width: "100%",
                             padding: "0.875rem 1rem",
@@ -667,7 +688,7 @@ export default function FuelLog() {
                             fontSize: "1.0625rem",
                             fontWeight: "500",
                             background: "rgba(100, 100, 100, 0.08)",
-                            border: "1px solid rgba(100, 100, 100, 0.15)",
+                            // border: "1px solid rgba(100, 100, 100, 0.15)",
                             transition: "all 0.2s",
                           }}
                         />
@@ -692,12 +713,12 @@ export default function FuelLog() {
                        
                         padding: "1rem",
                         borderRadius: "1rem",
-                    
-                        border: "1px solid rgba(100, 100, 100, 0.3)",
+                          background: "rgba(100, 100, 100, 0.05)",
+                        // border: "1px solid rgba(100, 100, 100, 0.3)",
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                        <DollarSign width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} color="orange" />
+                        <DollarSign width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
                         <label
                           htmlFor="amount"
                           style={{
@@ -726,7 +747,7 @@ export default function FuelLog() {
                             fontSize: "1.0625rem",
                             fontWeight: "500",
                             
-                            border: "1px solid rgba(100, 100, 100, 0.1)",
+                            // border: "1px solid rgba(100, 100, 100, 0.1)",
                             transition: "all 0.2s",
                             
                           }}
@@ -761,7 +782,7 @@ export default function FuelLog() {
               }}>
                 <motion.button
                   type="submit"
-                  disabled={submitting || !userProfile || !date || !vehicleNumber.trim() || !odometerReading || !amountSpent}
+                  disabled={submitting || !userProfile || !date || !vehicleNumber.trim() || !amountSpent}
                   whileTap={{ scale: 0.97 }}
                   whileHover={{ scale: 1.01 }}
                   style={{
@@ -769,13 +790,13 @@ export default function FuelLog() {
                     padding: "1rem",
                     borderRadius: "1rem",
                     marginBottom:"0.5rem",
-                    background: submitting || !userProfile || !date || !vehicleNumber.trim() || !odometerReading || !amountSpent
+                    background: submitting || !userProfile || !date || !vehicleNumber.trim() || !amountSpent
                       ? "rgba(100, 100, 100, 1)" 
                       : "black",
                     color: "white",
                     fontSize: "1.0625rem",
                     border: "none",
-                    cursor: submitting || !userProfile || !date || !vehicleNumber.trim() || !odometerReading || !amountSpent ? "not-allowed" : "pointer",
+                    cursor: submitting || !userProfile || !date || !vehicleNumber.trim() || !amountSpent ? "not-allowed" : "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -811,7 +832,7 @@ export default function FuelLog() {
               <div style={{ flex: 1, overflowY: "auto", padding: "0 1.5rem", paddingBottom: "1rem", minHeight: 0 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                 {/* Date Input with Quick Actions */}
-                <div>
+                <div ref={dateSectionRef}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
                     <Calendar width="1rem" height="1rem" style={{ opacity: 0.7 }} color="orange" />
                     <label
@@ -901,6 +922,7 @@ export default function FuelLog() {
                   {/* Custom Date Picker */}
                   {showDatePicker && (
                     <motion.div
+                      ref={datePickerRef}
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
@@ -1087,8 +1109,7 @@ export default function FuelLog() {
                       step="0.1"
                       value={odometerReading}
                       onChange={(e) => setOdometerReading(e.target.value)}
-                      placeholder="Enter reading"
-                      required
+                      placeholder="Enter reading (optional)"
                       style={{
                         width: "100%",
                         padding: "0.75rem 1rem",
@@ -1175,22 +1196,22 @@ export default function FuelLog() {
               }}>
                 <motion.button
                   type="submit"
-                  disabled={submitting || !userProfile || !date || !vehicleNumber.trim() || !odometerReading || !amountSpent}
+                  disabled={submitting || !userProfile || !date || !vehicleNumber.trim() || !amountSpent}
                   whileTap={{ scale: 0.97 }}
                   whileHover={{ scale: 1.01 }}
                   style={{
                     width: "100%",
                     padding: "1rem",
                     borderRadius: "0.75rem",
-                    background: submitting || !userProfile || !date || !vehicleNumber.trim() || !odometerReading || !amountSpent
+                    background: submitting || !userProfile || !date || !vehicleNumber.trim() || !amountSpent
                       ? "rgba(100, 100, 100, 0.2)" 
                       : "linear-gradient(135deg, #ff8c00, #ff6b00)",
                     color: "white",
                     fontSize: "1rem",
                     fontWeight: "700",
                     border: "none",
-                    cursor: submitting || !userProfile || !date || !vehicleNumber.trim() || !odometerReading || !amountSpent ? "not-allowed" : "pointer",
-                    boxShadow: submitting || !userProfile || !date || !vehicleNumber.trim() || !odometerReading || !amountSpent ? "none" : "0 4px 12px rgba(255, 140, 0, 0.25)",
+                    cursor: submitting || !userProfile || !date || !vehicleNumber.trim() || !amountSpent ? "not-allowed" : "pointer",
+                    boxShadow: submitting || !userProfile || !date || !vehicleNumber.trim() || !amountSpent ? "none" : "0 4px 12px rgba(255, 140, 0, 0.25)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -1217,27 +1238,28 @@ export default function FuelLog() {
           <Drawer open={drawerDetailOpen} onOpenChange={setDrawerDetailOpen}>
             <DrawerTitle></DrawerTitle>
             <DrawerDescription></DrawerDescription>
-            <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "85vh" }}>
+            <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "70vh" }}>
               {/* Fixed Header */}
               <div style={{
+                border:"",
                 padding: "1rem",
                 paddingBottom: "0.75rem",
                 borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
                 background: "var(--background)",
-                boxSizing: "border-box"
+              
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
-                  <div style={{
-                    background: "linear-gradient(135deg, #ff8c00, #ff6b00)",
+                <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", border:"" }}>
+                  {/* <div style={{
+                    background: "black",
                     padding: "0.625rem",
                     borderRadius: "0.625rem",
                     display: "flex",
-                    alignItems: "center",
-                    
+                   
+                    width: "2.5rem",
                   }}>
                     <Book color="white" width="1.25rem" />
-                  </div>
-                  <h2 style={{ fontSize: "1.25rem", fontWeight: "600", letterSpacing: "-0.02em" }}>Log Details</h2>
+                  </div> */}
+                  <h1 style={{ fontSize: "1.75rem", fontWeight: "600", letterSpacing: "-0.02em" }}>Log Details</h1>
                 </div>
               </div>
 
@@ -1253,7 +1275,7 @@ export default function FuelLog() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+                  style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}
                 >
                   {/* Date */}
                   <motion.div
@@ -1262,15 +1284,15 @@ export default function FuelLog() {
                       padding: "0.75rem",
                       borderRadius: "0.75rem",
                       background: "rgba(100, 100, 100, 0.05)",
-                      border: "2px solid rgba(100, 100, 100, 0.1)",
+                      // border: "2px solid rgba(100, 100, 100, 0.1)",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
                       <Calendar width="1rem" height="1rem" style={{ opacity: 0.7 }} />
                       <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Date</span>
                     </div>
-                    <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "0.5rem" }}>
-                      {moment(selectedLog.date).format("DD MMMM YYYY")}
+                    <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
+                      {moment(selectedLog.date).format("DD MMM YYYY")}
                     </div>
                   </motion.div>
 
@@ -1281,14 +1303,14 @@ export default function FuelLog() {
                       padding: "0.75rem",
                       borderRadius: "0.75rem",
                       background: "rgba(100, 100, 100, 0.05)",
-                      border: "2px solid rgba(100, 100, 100, 0.1)",
+                    
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem", border:"" }}>
                       <User width="1rem" height="1rem" style={{ opacity: 0.7 }}  />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Logged By</span>
+                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>User</span>
                     </div>
-                    <div style={{ fontSize: "1rem", fontWeight: "600", border:"", paddingLeft:"0.5rem" }}>
+                    <div style={{ fontSize: "1rem", fontWeight: "600", border:"", paddingLeft:"" }}>
                       {selectedLog.employee_name}
                     </div>
                   </motion.div>
@@ -1300,14 +1322,14 @@ export default function FuelLog() {
                       padding: "0.75rem",
                       borderRadius: "0.75rem",
                       background: "rgba(100, 100, 100, 0.05)",
-                      border: "2px solid rgba(100, 100, 100, 0.1)",
+                     
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
                       <Car width="1rem" height="1rem" style={{ opacity: 0.7 }}  />
                       <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Vehicle Number</span>
                     </div>
-                    <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "0.5rem" }}>
+                    <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
                       {selectedLog.vehicle_number}
                     </div>
                   </motion.div>
@@ -1319,14 +1341,14 @@ export default function FuelLog() {
                       padding: "0.75rem",
                       borderRadius: "0.75rem",
                       background: "rgba(100, 100, 100, 0.05)",
-                      border: "2px solid rgba(100, 100, 100, 0.1)",
+                      // border: "2px solid rgba(100, 100, 100, 0.1)",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
                       <Gauge width="1rem" height="1rem" style={{ opacity: 0.7 }}  />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Odometer Reading</span>
+                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Odometer </span>
                     </div>
-                    <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "0.5rem" }}>
+                    <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
                       {selectedLog.odometer_reading.toLocaleString()} km
                     </div>
                   </motion.div>
@@ -1335,17 +1357,18 @@ export default function FuelLog() {
                   <motion.div
                     whileTap={{ scale: 0.98 }}
                     style={{
+                      gridColumn: "1 / -1",
                       padding: "0.75rem",
                       borderRadius: "0.75rem",
                       background: "rgba(100, 100, 100, 0.05)",
-                      border: "2px solid rgba(100, 100, 100, 0.1)",
+                      // border: "2px solid rgba(100, 100, 100, 0.1)",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
                       <DollarSign width="1rem" height="1rem" style={{ opacity: 0.9 }}  />
                       <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Amount Spent</span>
                     </div>
-                    <div style={{ fontSize: "1.25rem", fontWeight: "600", paddingLeft: "0.5rem"}}>
+                    <div style={{ fontSize: "1.25rem", fontWeight: "600", paddingLeft: ""}}>
                      OMR {selectedLog.amount_spent.toFixed(3)} 
                     </div>
                   </motion.div>
@@ -1357,9 +1380,9 @@ export default function FuelLog() {
         ) : (
           <Dialog open={drawerDetailOpen} onOpenChange={setDrawerDetailOpen}>
             <DialogContent style={{ maxWidth: "500px", padding: 0 }}>
-              <DialogHeader style={{ padding: "1.25rem", paddingBottom: "0.875rem", borderBottom: "1px solid rgba(100, 100, 100, 0.1)" }}>
+              <DialogHeader style={{ padding: "1.25rem", paddingBottom: "", borderBottom: "1px solid rgba(100, 100, 100, 0.1)" }}>
                 <DialogTitle style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
-                  <div style={{
+                  {/* <div style={{
                     background: "linear-gradient(135deg, #ff8c00, #ff6b00)",
                     padding: "0.5rem",
                     borderRadius: "0.5rem",
@@ -1368,8 +1391,8 @@ export default function FuelLog() {
                     justifyContent: "center"
                   }}>
                     <Book color="white" width="1.125rem" />
-                  </div>
-                  <span style={{ fontSize: "1.125rem", fontWeight: "600" }}>Log Details</span>
+                  </div> */}
+                  <span style={{ fontSize: "1.5rem", fontWeight: "600" }}>Log Details</span>
                 </DialogTitle>
                 <DialogDescription></DialogDescription>
               </DialogHeader>
@@ -1379,7 +1402,7 @@ export default function FuelLog() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+                  style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}
                 >
                   {/* Date */}
                   <motion.div
@@ -1389,7 +1412,7 @@ export default function FuelLog() {
                       padding: "0.75rem",
                       borderRadius: "0.625rem",
                       background: "rgba(100, 100, 100, 0.05)",
-                      border: "2px solid rgba(100, 100, 100, 0.1)",
+                      // border: "2px solid rgba(100, 100, 100, 0.1)",
                       transition: "all 0.2s",
                     }}
                   >
@@ -1397,7 +1420,7 @@ export default function FuelLog() {
                       <Calendar width="0.9375rem" height="0.9375rem" style={{ opacity: 0.7 }} />
                       <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Date</span>
                     </div>
-                    <div style={{ fontSize: "0.9375rem", fontWeight: "600", paddingLeft: "1.5rem" }}>
+                    <div style={{ fontSize: "0.9375rem", fontWeight: "600", paddingLeft: "" }}>
                       {moment(selectedLog.date).format("DD MMMM YYYY")}
                     </div>
                   </motion.div>
@@ -1410,15 +1433,15 @@ export default function FuelLog() {
                       padding: "0.75rem",
                       borderRadius: "0.625rem",
                       background: "rgba(100, 100, 100, 0.05)",
-                      border: "2px solid rgba(100, 100, 100, 0.1)",
+                      // border: "2px solid rgba(100, 100, 100, 0.1)",
                       transition: "all 0.2s",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                      <User width="0.9375rem" height="0.9375rem" style={{ opacity: 0.7 }} color="mediumslateblue" />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Logged By</span>
+                      <User width="0.9375rem" height="0.9375rem" style={{ opacity: 0.7 }}  />
+                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>User</span>
                     </div>
-                    <div style={{ fontSize: "0.9375rem", fontWeight: "600", paddingLeft: "1.5rem" }}>
+                    <div style={{ fontSize: "0.9375rem", fontWeight: "600", paddingLeft: "" }}>
                       {selectedLog.employee_name}
                     </div>
                   </motion.div>
@@ -1431,15 +1454,15 @@ export default function FuelLog() {
                       padding: "0.75rem",
                       borderRadius: "0.625rem",
                       background: "rgba(100, 100, 100, 0.05)",
-                      border: "2px solid rgba(100, 100, 100, 0.1)",
+                      // border: "2px solid rgba(100, 100, 100, 0.1)",
                       transition: "all 0.2s",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                      <Truck width="0.9375rem" height="0.9375rem" style={{ opacity: 0.7 }} color="dodgerblue" />
+                      <Car width="0.9375rem" height="0.9375rem" style={{ opacity: 0.7 }} />
                       <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Vehicle Number</span>
                     </div>
-                    <div style={{ fontSize: "0.9375rem", fontWeight: "600", paddingLeft: "1.5rem" }}>
+                    <div style={{ fontSize: "0.9375rem", fontWeight: "600", paddingLeft: "" }}>
                       {selectedLog.vehicle_number}
                     </div>
                   </motion.div>
@@ -1452,15 +1475,15 @@ export default function FuelLog() {
                       padding: "0.75rem",
                       borderRadius: "0.625rem",
                       background: "rgba(100, 100, 100, 0.05)",
-                      border: "2px solid rgba(100, 100, 100, 0.1)",
+                   
                       transition: "all 0.2s",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                      <Gauge width="0.9375rem" height="0.9375rem" style={{ opacity: 0.7 }} color="mediumslateblue" />
+                      <Gauge width="0.9375rem" height="0.9375rem" style={{ opacity: 0.7 }} />
                       <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Odometer Reading</span>
                     </div>
-                    <div style={{ fontSize: "0.9375rem", fontWeight: "600", paddingLeft: "1.5rem" }}>
+                    <div style={{ fontSize: "0.9375rem", fontWeight: "600", paddingLeft: "" }}>
                       {selectedLog.odometer_reading.toLocaleString()} km
                     </div>
                   </motion.div>
@@ -1470,18 +1493,19 @@ export default function FuelLog() {
                     whileTap={{ scale: 0.98 }}
                     whileHover={{ scale: 1.01 }}
                     style={{
+                      gridColumn: "1 / -1",
                       padding: "0.75rem",
                       borderRadius: "0.625rem",
-                      background: "linear-gradient(135deg, rgba(255, 140, 0, 0.15), rgba(255, 107, 0, 0.1))",
-                      border: "2px solid rgba(255, 140, 0, 0.3)",
+                      background: "rgba(100, 100, 100, 0.05)",
+                     
                       transition: "all 0.2s",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                      <DollarSign width="0.9375rem" height="0.9375rem" style={{ opacity: 0.9 }} color="orange" />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.8, textTransform: "uppercase", letterSpacing: "0.05em", color: "orange" }}>Amount Spent</span>
+                      <DollarSign width="0.9375rem" height="0.9375rem" style={{ opacity: 0.9 }}  />
+                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Amount Spent</span>
                     </div>
-                    <div style={{ fontSize: "1.125rem", fontWeight: "700", paddingLeft: "1.5rem", color: "orange" }}>
+                    <div style={{ fontSize: "1.125rem", fontWeight: "600", paddingLeft: "",  }}>
                       {selectedLog.amount_spent.toFixed(3)} OMR
                     </div>
                   </motion.div>

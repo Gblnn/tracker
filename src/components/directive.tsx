@@ -97,7 +97,7 @@ export default function Directive(props: Props) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          background: "rgba(100 100 100/ 0.1)",
+          background: "rgba(100 100 100/ 0.05)",
           borderRadius: "0.5rem",
           // border: "1px solid rgba(100 100 100/ 0.2)",
           transition: "all 0.2s ease",
@@ -253,7 +253,7 @@ export default function Directive(props: Props) {
                     ? "lightgreen"
                     : props.status
                     ? "dodgerblue"
-                    : "goldenrod",
+                    : "",
                 fontWeight: 600,
                 display: "flex",
                 alignItems: "center",
