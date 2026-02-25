@@ -248,9 +248,9 @@ export default function FuelLog() {
             ) : (
               fuelLogs.map((log) => (
                 <Directive 
-                  subtext={"Vehicle - "+log.vehicle_number} 
+                  // subtext={"Vehicle - "+log.vehicle_number} 
                   noArrow 
-                  id_subtitle={"ODO - "+String(log.odometer_reading)} 
+                  // id_subtitle={"ODO - "+String(log.odometer_reading)} 
                   tag={log.amount_spent.toFixed(3)} 
                   key={log.id} 
                   icon={<Fuel/>} 
@@ -311,7 +311,7 @@ export default function FuelLog() {
             right: "1.5rem",
             width: "3.5rem",
             height: "3.5rem",
-            borderRadius: "50%",
+            borderRadius: "1rem",
             background: "black",
             color: "white",
             border: "none",
@@ -332,7 +332,7 @@ export default function FuelLog() {
         <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
           <DrawerTitle></DrawerTitle>
           <DrawerDescription></DrawerDescription>
-          <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "75vh" }}>
+          <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "75vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", maxHeight: "75vh", width: "100%" }}>
               {/* Fixed Header */}
               <div style={{
@@ -505,7 +505,7 @@ export default function FuelLog() {
                             >
                               <ChevronLeft width="1.25rem" height="1.25rem" />
                             </motion.button>
-                            <span style={{ fontWeight: "700", fontSize: "1rem" }}>
+                            <span style={{ fontWeight: "600", fontSize: "1rem" }}>
                               {viewingMonth.format("MMMM YYYY")}
                             </span>
                             <motion.button
@@ -773,10 +773,8 @@ export default function FuelLog() {
               {/* Fixed Submit Button */}
               <div style={{
                 padding: "1rem",
-                border:"",
+                paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
                 boxShadow:"1px 1px 20px rgba(0,0,0,0.5)",
-                // paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
-               
                 background: "var(--background)",
                 boxSizing: "border-box"
               }}>
@@ -1238,7 +1236,7 @@ export default function FuelLog() {
           <Drawer open={drawerDetailOpen} onOpenChange={setDrawerDetailOpen}>
             <DrawerTitle></DrawerTitle>
             <DrawerDescription></DrawerDescription>
-            <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "70vh" }}>
+            <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "70vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
               {/* Fixed Header */}
               <div style={{
                 border:"",
@@ -1296,24 +1294,7 @@ export default function FuelLog() {
                     </div>
                   </motion.div>
 
-                  {/* Employee Name */}
-                  <motion.div
-                    whileTap={{ scale: 0.98 }}
-                    style={{
-                      padding: "0.75rem",
-                      borderRadius: "0.75rem",
-                      background: "rgba(100, 100, 100, 0.05)",
-                    
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem", border:"" }}>
-                      <User width="1rem" height="1rem" style={{ opacity: 0.7 }}  />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>User</span>
-                    </div>
-                    <div style={{ fontSize: "1rem", fontWeight: "600", border:"", paddingLeft:"" }}>
-                      {selectedLog.employee_name}
-                    </div>
-                  </motion.div>
+                  
 
                   {/* Vehicle Number */}
                   <motion.div
@@ -1353,11 +1334,10 @@ export default function FuelLog() {
                     </div>
                   </motion.div>
 
-                  {/* Amount Spent */}
+                    {/* Amount Spent */}
                   <motion.div
                     whileTap={{ scale: 0.98 }}
                     style={{
-                      gridColumn: "1 / -1",
                       padding: "0.75rem",
                       borderRadius: "0.75rem",
                       background: "rgba(100, 100, 100, 0.05)",
@@ -1368,10 +1348,11 @@ export default function FuelLog() {
                       <DollarSign width="1rem" height="1rem" style={{ opacity: 0.9 }}  />
                       <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Amount Spent</span>
                     </div>
-                    <div style={{ fontSize: "1.25rem", fontWeight: "600", paddingLeft: ""}}>
+                    <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: ""}}>
                      OMR {selectedLog.amount_spent.toFixed(3)} 
                     </div>
                   </motion.div>
+
                 </motion.div>
                 
               </div>
@@ -1425,7 +1406,7 @@ export default function FuelLog() {
                     </div>
                   </motion.div>
 
-                  {/* Employee Name */}
+                  {/* Amount Spent */}
                   <motion.div
                     whileTap={{ scale: 0.98 }}
                     whileHover={{ scale: 1.01 }}
@@ -1438,11 +1419,11 @@ export default function FuelLog() {
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                      <User width="0.9375rem" height="0.9375rem" style={{ opacity: 0.7 }}  />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>User</span>
+                      <DollarSign width="0.9375rem" height="0.9375rem" style={{ opacity: 0.9 }}  />
+                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Amount Spent</span>
                     </div>
-                    <div style={{ fontSize: "0.9375rem", fontWeight: "600", paddingLeft: "" }}>
-                      {selectedLog.employee_name}
+                    <div style={{ fontSize: "1.125rem", fontWeight: "600", paddingLeft: "",  }}>
+                      {selectedLog.amount_spent.toFixed(3)} OMR
                     </div>
                   </motion.div>
 
@@ -1485,28 +1466,6 @@ export default function FuelLog() {
                     </div>
                     <div style={{ fontSize: "0.9375rem", fontWeight: "600", paddingLeft: "" }}>
                       {selectedLog.odometer_reading.toLocaleString()} km
-                    </div>
-                  </motion.div>
-
-                  {/* Amount Spent */}
-                  <motion.div
-                    whileTap={{ scale: 0.98 }}
-                    whileHover={{ scale: 1.01 }}
-                    style={{
-                      gridColumn: "1 / -1",
-                      padding: "0.75rem",
-                      borderRadius: "0.625rem",
-                      background: "rgba(100, 100, 100, 0.05)",
-                     
-                      transition: "all 0.2s",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                      <DollarSign width="0.9375rem" height="0.9375rem" style={{ opacity: 0.9 }}  />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Amount Spent</span>
-                    </div>
-                    <div style={{ fontSize: "1.125rem", fontWeight: "600", paddingLeft: "",  }}>
-                      {selectedLog.amount_spent.toFixed(3)} OMR
                     </div>
                   </motion.div>
                 </motion.div>
