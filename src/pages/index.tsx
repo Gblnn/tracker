@@ -11,7 +11,9 @@ import emailjs from "@emailjs/browser";
 import { motion } from "framer-motion";
 import {
   Bug,
+  Car,
   FileArchive,
+  Fuel,
   KeyRound,
   Link,
   Mail,
@@ -212,7 +214,7 @@ export default function Index() {
 
               {
                 admin&&
-                <Directive onClick={() => navigate("/admin")} icon={<KeyRound color="dodgerblue" width={"1.25rem"}/>} title={"User Management"}/>
+                <Directive onClick={() => navigate("/users")} icon={<KeyRound color="dodgerblue" width={"1.25rem"}/>} title={"User Management"}/>
               }
               
 
@@ -304,6 +306,20 @@ export default function Index() {
                 to={"/qr-code-generator"}
                 title={"QR Generator"}
                 icon={<QrCode width={"1.25rem"} />}
+              />
+
+              <Directive
+                onClick={() => usenavigate("/fuel-log")}
+                to={"/fuel-log"}
+                title={"Fuel Log"}
+                icon={<Fuel width={"1.25rem"} color="orange" />}
+              />
+
+              <Directive
+                onClick={() => usenavigate("/vehicle-master")}
+                to={"/vehicle-master"}
+                title={"Vehicle Master"}
+                icon={<Car width={"1.25rem"} color="dodgerblue" />}
               />
 
               {/* <Directive

@@ -15,6 +15,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import {
   exportExpiringRecords,
 } from "@/utils/excelUtils";
+import { getCachedRecords, fetchAndCacheRecords } from "@/utils/recordsCache";
 import { LoadingOutlined } from "@ant-design/icons";
 import * as XLSX from "@e965/xlsx";
 import { message, Tooltip } from "antd";
@@ -315,6 +316,7 @@ export default function DbComponent(props: Props) {
   const [progress, setProgress] = useState("");
 
   const [fetchingData, setfetchingData] = useState(false);
+  const [hasInitialData, setHasInitialData] = useState(false);
   const [status, setStatus] = useState("");
 
   const [renewDocDialog, setRenewDocDialog] = useState(false);
@@ -515,9 +517,11 @@ export default function DbComponent(props: Props) {
   }, []);
 
   // Combine initial essential data fetch
-  const fetchInitialData = async () => {
+  const fetchInitialData = async (silent: boolean = false) => {
     try {
-      setfetchingData(true);
+      if (!silent) {
+        setfetchingData(true);
+      }
       const RecordCollection = collection(db, "records");
 
       // Try to get data from cache first
@@ -556,6 +560,14 @@ export default function DbComponent(props: Props) {
 
       // Update records
       setRecords(fetchedData);
+      setHasInitialData(true);
+
+      // Cache the data
+      if (props.dbCategory) {
+        fetchAndCacheRecords(props.dbCategory, sortby, pageSize).catch(err =>
+          console.error("Failed to cache records:", err)
+        );
+      }
 
       // Get total count in background
       const countSnapshot = await getDocs(
@@ -582,9 +594,24 @@ export default function DbComponent(props: Props) {
     }
   };
 
-  // Initial load - only fetch essential data
+  // Initial load - check cache first, then fetch
   useEffect(() => {
-    fetchInitialData();
+    if (props.dbCategory) {
+      const cachedData = getCachedRecords(props.dbCategory);
+      if (cachedData && cachedData.sortby === sortby) {
+        console.log("⚡ Loading records from cache");
+        setRecords(cachedData.records);
+        setTotalRecords(cachedData.totalRecords);
+        setHasInitialData(true);
+        // Fetch fresh data in background silently
+        fetchInitialData(true);
+      } else {
+        // No cache, show loader and fetch
+        fetchInitialData(false);
+      }
+    } else {
+      fetchInitialData(false);
+    }
   }, []);
 
   // Handle sort changes
@@ -2206,7 +2233,7 @@ export default function DbComponent(props: Props) {
                     </motion.div>
                   </div>
                 </motion.div>
-              ) : fetchingData ? (
+              ) : fetchingData && !hasInitialData ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   whileInView={{ opacity: 1 }}

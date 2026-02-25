@@ -15,6 +15,7 @@ import {
     PenLine,
     X
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -243,7 +244,7 @@ export default function RecordDetail() {
 
   return (
     <>
-    <div style={{border:"", height:"100svh", display:"flex", flexFlow:"column"}}>
+    <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} style={{border:"", height:"100svh", display:"flex", flexFlow:"column"}}>
         <Back 
           fixed 
           blurBG 
@@ -269,7 +270,7 @@ export default function RecordDetail() {
           }
         />
         <div style={{border:"", marginTop:"5rem", height:"100%"}}>
-            <div style={{padding:"1rem"}}>
+            <div style={{padding:"1rem", display:"flex", flexFlow:"column", gap:"1rem"}}>
                 <div style={{display:"flex", background:"rgba(100 100 100/ 0.1)", padding:"1rem", borderRadius:"0.5rem", gap:"1rem", alignItems:"center"}}>
                     {/* <Avatar  className="h-20 w-20">
                         <AvatarFallback style={{fontWeight:"600", background:"linear-gradient( mediumslateblue, midnightblue)", fontSize:"2rem", color:"white"}} className="text-lg">
@@ -285,11 +286,51 @@ export default function RecordDetail() {
                         {/* <p style={{fontSize:"0.8rem"}}>{record?.email || "No email available"}</p> */}
                     </div>
                     
+                    
                 </div>
+                
+                <div style={{display:"flex", gap:"0.5rem", flexWrap:"wrap"}}>
+                    <div style={{background:"rgba(100 100 100/ 0.1)", padding:"0.5rem 1rem", display:"flex", fontSize:"0.8rem", borderRadius:"0.5rem", gap:"0.5rem", flex:"1", minWidth:"fit-content"}}>
+                        <b>Joined On</b> {record?.dateofJoin || "N/A"}
+                    </div>
+                    <div style={{background:"rgba(100 100 100/ 0.1)", padding:"0.5rem 1rem", display:"flex", fontSize:"0.8rem", borderRadius:"0.5rem", gap:"0.5rem", flex:"1", minWidth:"fit-content"}}>
+                        <b>Company</b> {record?.companyName || "N/A"}
+                    </div>
+                </div>
+
+                <div style={{display:"flex", flexWrap:"wrap", gap:"1rem"}}>
+                    <div style={{background:"rgba(100 100 100/ 0.1)", padding:"1rem", flex:"1", minWidth:"250px", borderRadius:"0.5rem", display:"flex", gap:"1rem"}}>
+                        <div style={{flex:"1"}}>
+                            <p style={{opacity:0.6, fontSize:"0.85rem"}}>Contact</p>
+                            <p style={{fontWeight:"600"}}>{record?.contact || "N/A"}</p>
+                        </div>
+                        <div style={{borderLeft:"1px solid rgba(100 100 100/ 0.2)", paddingLeft:"1rem", flex:"1"}}>
+                            <p style={{opacity:0.6, fontSize:"0.85rem"}}>CUG</p>
+                            <p style={{fontWeight:"600"}}>{record?.cug || "N/A"}</p>
+                        </div>
+                    </div>
+                    <div style={{background:"rgba(100 100 100/ 0.1)", padding:"1rem", flex:"1", minWidth:"250px", borderRadius:"0.5rem", display:"flex", flexDirection:"column", gap:"0.25rem"}}>
+                        <p style={{opacity:0.6, fontSize:"0.85rem"}}>Email</p>
+                        <p style={{fontWeight:"600", fontSize:"0.9rem"}}>{record?.email || "N/A"}</p>
+                    </div>
+                    <div style={{background:"rgba(100 100 100/ 0.1)", padding:"1rem", flex:"1", minWidth:"250px", borderRadius:"0.5rem", display:"flex", flexDirection:"column", gap:"0.25rem"}}>
+                        <p style={{opacity:0.6, fontSize:"0.85rem"}}>Designation</p>
+                        <p style={{fontWeight:"600"}}>{record?.designation || "N/A"}</p>
+                    </div>
+                    <div style={{background:"rgba(100 100 100/ 0.1)", padding:"1rem", flex:"1", minWidth:"250px", borderRadius:"0.5rem", display:"flex", flexDirection:"column", gap:"0.25rem"}}>
+                        <p style={{opacity:0.6, fontSize:"0.85rem"}}>Site</p>
+                        <p style={{fontWeight:"600"}}>{record?.site || "N/A"}</p>
+                    </div>
+                    <div style={{background:"rgba(100 100 100/ 0.1)", padding:"1rem", flex:"1", minWidth:"250px", borderRadius:"0.5rem", display:"flex", flexDirection:"column", gap:"0.25rem"}}>
+                        <p style={{opacity:0.6, fontSize:"0.85rem"}}>Project</p>
+                        <p style={{fontWeight:"600"}}>{record?.project || "N/A"}</p>
+                    </div>
+                </div>
+                
             </div>
             
         </div>
-    </div>
+    </motion.div>
     
     {/* Archive Dialog */}
     <DefaultDialog

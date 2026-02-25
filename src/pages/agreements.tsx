@@ -340,6 +340,7 @@ export default function Agreements() {
                   width: "",
                   display: "flex",
                   padding: "1.25rem",
+                  WebkitBackdropFilter: "blur(16px)",
                   backdropFilter: "blur(16px)",
                   borderTopLeftRadius: "1rem",
                   alignItems: "center",

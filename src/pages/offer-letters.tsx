@@ -1245,6 +1245,7 @@ const [searchTerm, setSearchTerm] = useState("");
         style={{
           position: "relative",
           background: "",
+          WebkitBackdropFilter: "blur(16px)",
           backdropFilter: "blur(16px)",
           borderTopLeftRadius: "1rem",
           zIndex: 10,
@@ -3327,6 +3328,7 @@ const [searchTerm, setSearchTerm] = useState("");
               fontSize: "0.9rem",
               padding: "0.5rem 1rem",
               background: "rgba(100 100 100/ 40%)",
+              WebkitBackdropFilter: "blur(16px)",
               backdropFilter: "blur(16px)",
               color: "white",
               border: "none",

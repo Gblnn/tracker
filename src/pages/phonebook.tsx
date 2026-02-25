@@ -10,6 +10,7 @@ import {
     isCacheStale
 } from "@/utils/phonebookCache";
 import { AtSign, Building2, Notebook, PhoneIcon } from "lucide-react";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 export default function Phonebook() {
@@ -69,8 +70,10 @@ export default function Phonebook() {
 
     return(
         <>
+        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
         <div style={{padding: "", position:"fixed", zIndex: 20}}>
             <Back
+            blurBG
             subtitle={records.length}
             fixed
         extra={
@@ -78,7 +81,7 @@ export default function Phonebook() {
             <RefreshButton onClick={fetchData} fetchingData={loading}/>
             </>
         }
-          blurBG icon={<Notebook color="dodgerblue"/>} title={"Phonebook"}/>
+           icon={<Notebook color="dodgerblue"/>} title={"Phonebook"}/>
         </div>
         
 
@@ -125,6 +128,7 @@ export default function Phonebook() {
             right: 0,
             padding: "1rem 1.25rem",
             paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 1rem))",
+            WebkitBackdropFilter: "blur(16px)",
             backdropFilter: "blur(16px)",
             background: "rgba(100, 100, 100, 0.05)",
             zIndex: 10,
@@ -150,6 +154,7 @@ export default function Phonebook() {
                 />
             </div>
         </div>
+        </motion.div>
 
         <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
             <DrawerTitle></DrawerTitle>

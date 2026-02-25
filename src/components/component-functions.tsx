@@ -62,6 +62,7 @@ export const getBlank = async (category: string | undefined) => {
     "contact",
     "cug",
     "dateofJoin",
+    "nationality",
     "nativeAddress",
     "nativePhone",
     "designation",
@@ -131,6 +132,7 @@ export const exportRaw = (records: any) => {
     "contact",
     "cug",
     "dateofJoin",
+    "nationality",
     "nativeAddress",
     "nativePhone",
     "initialSalary",
@@ -255,6 +257,7 @@ export const exportDatabase = (records: any, category: string | undefined) => {
     "contact",
     "cug",
     "dateofJoin",
+    "nationality",
     "nativeAddress",
     "nativePhone",
     "designation",
@@ -301,6 +304,7 @@ export const exportDatabase = (records: any, category: string | undefined) => {
     "contact",
     "cug",
     "dateofJoin",
+    "nationality",
     "nativeAddress",
     "nativePhone",
     "designation",
@@ -354,7 +358,7 @@ export const exportDatabase = (records: any, category: string | undefined) => {
 
   //   e.passportExpiry == ""
   //     ? {}
-  //     : (e.passportExpiry = String(
+  //     : (e.passportExpiry = String(E
   //         moment(e.passportExpiry).format("DD/MM/YYYY")
   //       ));
 

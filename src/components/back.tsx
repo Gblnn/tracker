@@ -34,6 +34,7 @@ export default function Back(props: Props) {
         position: props.fixed ? "fixed" : "inherit",
         width: "100%",
         background: props.blurBG ? "rgba(100 100 100/ 1%)" : "none",
+        WebkitBackdropFilter: props.blurBG ? "blur(16px)" : "",
         backdropFilter: props.blurBG ? "blur(16px)" : "",
       }}
     >
@@ -44,7 +45,7 @@ export default function Back(props: Props) {
             onClick={() => {
               usenavigate(-1);
             }}
-            style={{ backdropFilter: "blur(16px)" }}
+            style={{ WebkitBackdropFilter: "blur(16px)", backdropFilter: "blur(16px)" }}
           >
             <ChevronLeft />
           </motion.button>
