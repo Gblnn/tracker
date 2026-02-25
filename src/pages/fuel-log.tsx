@@ -1,15 +1,17 @@
 import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import Directive from "@/components/directive";
+import DropDown from "@/components/dropdown";
 import RefreshButton from "@/components/refresh-button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { db } from "@/firebase";
 import { fetchAndCacheFuelLogs, getCachedFuelLogs, type FuelLog as FuelLogType } from "@/utils/fuelLogsCache";
 import { getCachedProfile } from "@/utils/profileCache";
-import { addDoc, collection, getDocs, query } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, Fuel, Gauge, Loader2, Truck } from "lucide-react";
+import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical, Fuel, Gauge, Loader2, Plus, Truck } from "lucide-react";
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -34,22 +36,8 @@ export default function FuelLog() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [viewingMonth, setViewingMonth] = useState(moment());
   const dateSectionRef = useRef<HTMLDivElement>(null);
-  const datePickerRef = useRef<HTMLDivElement>(null);
-
-  // Scroll guidance for date picker
-  useEffect(() => {
-    if (showDatePicker && datePickerRef.current) {
-      // Scroll to date picker when it opens
-      setTimeout(() => {
-        datePickerRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }, 100);
-    } else if (!showDatePicker && dateSectionRef.current) {
-      // Scroll to date section when picker closes
-      setTimeout(() => {
-        dateSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
-    }
-  }, [showDatePicker]);
+  const [deleting, setDeleting] = useState(false);
+  const [editingLog, setEditingLog] = useState<FuelLogType | null>(null);
 
   useEffect(() => {
     // Load cached profile data immediately
@@ -162,20 +150,34 @@ export default function FuelLog() {
     try {
       setSubmitting(true);
 
-      const fuelLogData = {
-        date: date,
-        odometer_reading: odometerReading ? parseFloat(odometerReading) : 0,
-        amount_spent: parseFloat(amountSpent),
-        email: userData?.email || "",
-        employee_name: userProfile.name || "",
-        vehicle_number: vehicleNumber,
-        employee_code: userProfile.employeeCode || "",
-        created_at: new Date(),
-      };
+      if (editingLog) {
+        // Update existing log
+        const fuelLogData = {
+          date: date,
+          odometer_reading: odometerReading ? parseFloat(odometerReading) : 0,
+          amount_spent: parseFloat(amountSpent),
+          vehicle_number: vehicleNumber,
+          updated_at: new Date(),
+        };
 
-      await addDoc(collection(db, "fuel log"), fuelLogData);
+        await updateDoc(doc(db, "fuel log", editingLog.id), fuelLogData);
+        toast.success("Fuel log updated successfully!");
+      } else {
+        // Create new log
+        const fuelLogData = {
+          date: date,
+          odometer_reading: odometerReading ? parseFloat(odometerReading) : 0,
+          amount_spent: parseFloat(amountSpent),
+          email: userData?.email || "",
+          employee_name: userProfile.name || "",
+          vehicle_number: vehicleNumber,
+          employee_code: userProfile.employeeCode || "",
+          created_at: new Date(),
+        };
 
-      toast.success("Fuel log submitted successfully!");
+        await addDoc(collection(db, "fuel log"), fuelLogData);
+        toast.success("Fuel log submitted successfully!");
+      }
       
       // Reset form
       setDate(moment().format("YYYY-MM-DD"));
@@ -183,15 +185,49 @@ export default function FuelLog() {
       setOdometerReading("");
       setAmountSpent("");
       setDrawerOpen(false);
+      setEditingLog(null);
       
       // Refresh logs
       fetchFuelLogs();
     } catch (error) {
       console.error("Error submitting fuel log:", error);
-      toast.error("Failed to submit fuel log");
+      toast.error(editingLog ? "Failed to update fuel log" : "Failed to submit fuel log");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedLog || deleting) return;
+
+    try {
+      setDeleting(true);
+      await deleteDoc(doc(db, "fuel log", selectedLog.id));
+      toast.success("Fuel log deleted successfully!");
+      setDrawerDetailOpen(false);
+      setSelectedLog(null);
+      fetchFuelLogs();
+    } catch (error) {
+      console.error("Error deleting fuel log:", error);
+      toast.error("Failed to delete fuel log");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleEdit = () => {
+    if (!selectedLog) return;
+    
+    // Populate form with selected log data
+    setDate(selectedLog.date);
+    setVehicleNumber(selectedLog.vehicle_number);
+    setOdometerReading(selectedLog.odometer_reading ? String(selectedLog.odometer_reading) : "");
+    setAmountSpent(String(selectedLog.amount_spent));
+    setEditingLog(selectedLog);
+    
+    // Close detail drawer and open edit drawer
+    setDrawerDetailOpen(false);
+    setDrawerOpen(true);
   };
 
   return (
@@ -309,7 +345,14 @@ export default function FuelLog() {
           transition={{ duration: 0.3, ease: "easeOut", delay: 0.2 }}
           whileTap={{ scale: 0.96 }}
           whileHover={{ scale: isMobile ? 1 : 1.05 }}
-          onClick={() => setDrawerOpen(true)}
+          onClick={() => {
+            setEditingLog(null);
+            setDate(moment().format("YYYY-MM-DD"));
+            setVehicleNumber(userProfile?.vehicle_number || "");
+            setOdometerReading("");
+            setAmountSpent("");
+            setDrawerOpen(true);
+          }}
           style={{
             transition:"none",
             position: "fixed",
@@ -319,7 +362,7 @@ export default function FuelLog() {
             width: isMobile ? "calc(100% - 2rem)" : "3.5rem",
             height: isMobile ? "auto" : "3.5rem",
             padding: isMobile ? "1rem" : "0",
-            borderRadius: isMobile ? "0.5rem" : "50%",
+            borderRadius: isMobile ? "0.5rem" : "0.75rem",
             background: "black",
             color: "white",
             border: "none",
@@ -335,7 +378,7 @@ export default function FuelLog() {
             marginBottom:"1rem"
           }}
         >
-          {/* <Plus width="1.25rem" height="1.75rem" strokeWidth={2.5} /> */}
+          <Plus width="1.25rem" height="1.75rem" strokeWidth={2.5} />
           {isMobile && <span>Log Fuel</span>}
         </motion.button>
         
@@ -367,7 +410,7 @@ export default function FuelLog() {
                   }}>
                     <Fuel color="white" width="1.5rem" />
                   </div>
-                  <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em" }}>Log Fuel</h2>
+                  <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em" }}>{editingLog ? "Edit Fuel Log" : "Log Fuel"}</h2>
                 </div>
               </div>
 
@@ -413,7 +456,7 @@ export default function FuelLog() {
                         </label>
                       </div>
                       
-                      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                      {/* <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem" }}>
                         <motion.button
                           type="button"
                           whileTap={{ scale: 0.95 }}
@@ -454,9 +497,9 @@ export default function FuelLog() {
                         >
                           Yesterday
                         </motion.button>
-                      </div>
+                      </div> */}
                       
-                      <div onClick={() => setShowDatePicker(!showDatePicker)} style={{ 
+                      <div onClick={() => setShowDatePicker(true)} style={{ 
                         display: "flex", 
                         alignItems: "center", 
                         gap: "0.75rem",
@@ -481,137 +524,9 @@ export default function FuelLog() {
                             
                           }}
                         >
-                          {showDatePicker ? "Close" : "Change"}
+                          Change
                         </motion.div>
                       </div>
-                      
-                      {/* Custom Date Picker */}
-                      {showDatePicker && (
-                        <motion.div
-                          ref={datePickerRef}
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          style={{
-                            marginTop: "0.75rem",
-                            background: "rgba(100, 100, 100, 0.05)",
-                            borderRadius: "0.75rem",
-                            padding: "1rem",
-                            // border: "1px solid rgba(100, 100, 100, 0.15)",
-                          }}
-                        >
-                          {/* Month Navigation */}
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-                            <motion.button
-                              type="button"
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => setViewingMonth(viewingMonth.clone().subtract(1, 'month'))}
-                              style={{
-                                padding: "0.5rem",
-                                borderRadius: "0.5rem",
-                                background: "rgba(100, 100, 100, 0.1)",
-                                border: "none",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center"
-                              }}
-                            >
-                              <ChevronLeft width="1.25rem" height="1.25rem" />
-                            </motion.button>
-                            <span style={{ fontWeight: "600", fontSize: "1rem" }}>
-                              {viewingMonth.format("MMMM YYYY")}
-                            </span>
-                            <motion.button
-                              type="button"
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => setViewingMonth(viewingMonth.clone().add(1, 'month'))}
-                              disabled={viewingMonth.clone().add(1, 'month').isAfter(moment(), 'month')}
-                              style={{
-                                padding: "0.5rem",
-                                borderRadius: "0.5rem",
-                                background: viewingMonth.clone().add(1, 'month').isAfter(moment(), 'month') ? "rgba(100, 100, 100, 0.05)" : "rgba(100, 100, 100, 0.1)",
-                                border: "none",
-                                cursor: viewingMonth.clone().add(1, 'month').isAfter(moment(), 'month') ? "not-allowed" : "pointer",
-                                opacity: viewingMonth.clone().add(1, 'month').isAfter(moment(), 'month') ? 0.3 : 1,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center"
-                              }}
-                            >
-                              <ChevronRight width="1.25rem" height="1.25rem" />
-                            </motion.button>
-                          </div>
-                          
-                          {/* Weekday Headers */}
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "0.25rem", marginBottom: "0.5rem" }}>
-                            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                              <div key={i} style={{ textAlign: "center", fontSize: "0.75rem", fontWeight: "600", opacity: 0.6, padding: "0.25rem" }}>
-                                {day}
-                              </div>
-                            ))}
-                          </div>
-                          
-                          {/* Calendar Days */}
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "0.25rem" }}>
-                            {(() => {
-                              const startOfMonth = viewingMonth.clone().startOf('month');
-                              const endOfMonth = viewingMonth.clone().endOf('month');
-                              const startDay = startOfMonth.day();
-                              const daysInMonth = endOfMonth.date();
-                              const days = [];
-                              
-                              // Empty cells before month starts
-                              for (let i = 0; i < startDay; i++) {
-                                days.push(<div key={`empty-${i}`} />);
-                              }
-                              
-                              // Days of the month
-                              for (let day = 1; day <= daysInMonth; day++) {
-                                const currentDate = viewingMonth.clone().date(day);
-                                const dateString = currentDate.format("YYYY-MM-DD");
-                                const isSelected = dateString === date;
-                                const isToday = currentDate.isSame(moment(), 'day');
-                                const isFuture = currentDate.isAfter(moment(), 'day');
-                                
-                                days.push(
-                                  <motion.button
-                                    key={day}
-                                    type="button"
-                                    whileTap={{ scale: isFuture ? 1 : 0.9 }}
-                                    onClick={() => {
-                                      if (!isFuture) {
-                                        setDate(dateString);
-                                        setShowDatePicker(false);
-                                      }
-                                    }}
-                                    disabled={isFuture}
-                                    style={{
-                                      padding: "0.625rem 0.25rem",
-                                      borderRadius: "0.5rem",
-                                      background: isSelected
-                                        ? "orange"
-                                        : isToday
-                                        ? "rgba(255, 140, 0, 0.15)"
-                                        : "rgba(100, 100, 100, 0.05)",
-                                      color: isSelected ? "white" : isFuture ? "rgba(100, 100, 100, 0.3)" : "inherit",
-                                      border: isToday && !isSelected ? "1px solid rgba(255, 140, 0, 0.5)" : "1px solid transparent",
-                                      cursor: isFuture ? "not-allowed" : "pointer",
-                                      fontSize: "0.875rem",
-                                      fontWeight: isSelected || isToday ? "700" : "500",
-                                      transition: "all 0.2s"
-                                    }}
-                                  >
-                                    {day}
-                                  </motion.button>
-                                );
-                              }
-                              
-                              return days;
-                            })()}
-                          </div>
-                        </motion.div>
-                      )}
                     </motion.div>
 
                     {/* Vehicle Number Input with Dropdown */}
@@ -637,30 +552,25 @@ export default function FuelLog() {
                           Vehicle Number
                         </label>
                       </div>
-                      <input
-                        id="vehicle"
-                        type="text"
-                        list="vehicle-list"
-                        value={vehicleNumber}
-                        onChange={(e) => setVehicleNumber(e.target.value)}
-                        placeholder="Search or enter vehicle number"
-                        required
-                        style={{
+                      <Select value={vehicleNumber} onValueChange={setVehicleNumber} required>
+                        <SelectTrigger style={{
                           width: "100%",
                           padding: "0.875rem 1rem",
                           borderRadius: "0.75rem",
                           fontSize: "1rem",
                           fontWeight: "500",
                           background: "rgba(100, 100, 100, 0.08)",
-                          // border: "1px solid rgba(100, 100, 100, 0.15)",
-                          transition: "all 0.2s",
-                        }}
-                      />
-                      <datalist id="vehicle-list">
-                        {vehicles.map((vehicle, index) => (
-                          <option key={index} value={vehicle} />
-                        ))}
-                      </datalist>
+                          border: "none",
+                          height: "auto",
+                        }}>
+                          <SelectValue placeholder="Select vehicle number" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {vehicles.map((vehicle, index) => (
+                            <SelectItem style={{display:"flex", border:"",fontSize:"1rem", justifyContent:"flex-start", padding:""}} key={index} value={vehicle}>{vehicle}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </motion.div>
 
                     {/* Odometer Reading Input */}
@@ -788,7 +698,7 @@ export default function FuelLog() {
               <div style={{
                 padding: "1rem",
                 paddingBottom: "2rem",
-                boxShadow:"1px 1px 20px rgba(0,0,0,0.5)",
+                // boxShadow:"1px 1px 20px rgba(0,0,0,0.5)",
                 background: "var(--background)",
                 boxSizing: "border-box"
               }}>
@@ -821,7 +731,7 @@ export default function FuelLog() {
                       <Loader2 className="animate-spin" width="1.25rem" />
                     </>
                   ) : (
-                    <span>Add</span>
+                    <span>{editingLog ? "Update" : "Add"}</span>
                   )}
                 </motion.button>
               </div>
@@ -834,7 +744,7 @@ export default function FuelLog() {
             <DialogHeader style={{ padding: "1.5rem", paddingBottom: "1rem" }}>
               <DialogTitle style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <Fuel color="orange" width="1.5rem" />
-                <span>Log Fuel</span>
+                <span>{editingLog ? "Edit Fuel Log" : "Log Fuel"}</span>
               </DialogTitle>
               <DialogDescription></DialogDescription>
             </DialogHeader>
@@ -902,7 +812,7 @@ export default function FuelLog() {
                     </motion.button>
                   </div>
                   
-                  <div onClick={() => setShowDatePicker(!showDatePicker)} style={{ 
+                  <div onClick={() => setShowDatePicker(true)} style={{ 
                     display: "flex", 
                     alignItems: "center", 
                     gap: "0.75rem",
@@ -927,137 +837,9 @@ export default function FuelLog() {
                         border: "1px solid rgba(255, 140, 0, 0.3)",
                       }}
                     >
-                      {showDatePicker ? "Close" : "Change"}
+                      Change
                     </motion.div>
                   </div>
-                  
-                  {/* Custom Date Picker */}
-                  {showDatePicker && (
-                    <motion.div
-                      ref={datePickerRef}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      style={{
-                        marginTop: "0.75rem",
-                        background: "rgba(100, 100, 100, 0.05)",
-                        borderRadius: "0.75rem",
-                        padding: "1rem",
-                        border: "1px solid rgba(100, 100, 100, 0.15)",
-                      }}
-                    >
-                      {/* Month Navigation */}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-                        <motion.button
-                          type="button"
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => setViewingMonth(viewingMonth.clone().subtract(1, 'month'))}
-                          style={{
-                            padding: "0.5rem",
-                            borderRadius: "0.5rem",
-                            background: "rgba(100, 100, 100, 0.1)",
-                            border: "none",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center"
-                          }}
-                        >
-                          <ChevronLeft width="1.25rem" height="1.25rem" />
-                        </motion.button>
-                        <span style={{ fontWeight: "700", fontSize: "1rem" }}>
-                          {viewingMonth.format("MMMM YYYY")}
-                        </span>
-                        <motion.button
-                          type="button"
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => setViewingMonth(viewingMonth.clone().add(1, 'month'))}
-                          disabled={viewingMonth.clone().add(1, 'month').isAfter(moment(), 'month')}
-                          style={{
-                            padding: "0.5rem",
-                            borderRadius: "0.5rem",
-                            background: viewingMonth.clone().add(1, 'month').isAfter(moment(), 'month') ? "rgba(100, 100, 100, 0.05)" : "rgba(100, 100, 100, 0.1)",
-                            border: "none",
-                            cursor: viewingMonth.clone().add(1, 'month').isAfter(moment(), 'month') ? "not-allowed" : "pointer",
-                            opacity: viewingMonth.clone().add(1, 'month').isAfter(moment(), 'month') ? 0.3 : 1,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center"
-                          }}
-                        >
-                          <ChevronRight width="1.25rem" height="1.25rem" />
-                        </motion.button>
-                      </div>
-                      
-                      {/* Weekday Headers */}
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "0.25rem", marginBottom: "0.5rem" }}>
-                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                          <div key={i} style={{ textAlign: "center", fontSize: "0.75rem", fontWeight: "600", opacity: 0.6, padding: "0.25rem" }}>
-                            {day}
-                          </div>
-                        ))}
-                      </div>
-                      
-                      {/* Calendar Days */}
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "0.25rem" }}>
-                        {(() => {
-                          const startOfMonth = viewingMonth.clone().startOf('month');
-                          const endOfMonth = viewingMonth.clone().endOf('month');
-                          const startDay = startOfMonth.day();
-                          const daysInMonth = endOfMonth.date();
-                          const days = [];
-                          
-                          // Empty cells before month starts
-                          for (let i = 0; i < startDay; i++) {
-                            days.push(<div key={`empty-${i}`} />);
-                          }
-                          
-                          // Days of the month
-                          for (let day = 1; day <= daysInMonth; day++) {
-                            const currentDate = viewingMonth.clone().date(day);
-                            const dateString = currentDate.format("YYYY-MM-DD");
-                            const isSelected = dateString === date;
-                            const isToday = currentDate.isSame(moment(), 'day');
-                            const isFuture = currentDate.isAfter(moment(), 'day');
-                            
-                            days.push(
-                              <motion.button
-                                key={day}
-                                type="button"
-                                whileTap={{ scale: isFuture ? 1 : 0.9 }}
-                                onClick={() => {
-                                  if (!isFuture) {
-                                    setDate(dateString);
-                                    setShowDatePicker(false);
-                                  }
-                                }}
-                                disabled={isFuture}
-                                style={{
-                                  padding: "0.625rem 0.25rem",
-                                  borderRadius: "0.5rem",
-                                  background: isSelected
-                                    ? "linear-gradient(135deg, #ff8c00, #ff6b00)"
-                                    : isToday
-                                    ? "rgba(255, 140, 0, 0.15)"
-                                    : "rgba(100, 100, 100, 0.05)",
-                                  color: isSelected ? "white" : isFuture ? "rgba(100, 100, 100, 0.3)" : "inherit",
-                                  border: isToday && !isSelected ? "1px solid rgba(255, 140, 0, 0.5)" : "1px solid transparent",
-                                  cursor: isFuture ? "not-allowed" : "pointer",
-                                  fontSize: "0.875rem",
-                                  fontWeight: isSelected || isToday ? "700" : "500",
-                                  transition: "all 0.2s"
-                                }}
-                              >
-                                {day}
-                              </motion.button>
-                            );
-                          }
-                          
-                          return days;
-                        })()}
-                      </div>
-                    </motion.div>
-                  )}
                 </div>
 
                 {/* Vehicle Number Input with Dropdown */}
@@ -1075,28 +857,24 @@ export default function FuelLog() {
                       Vehicle Number
                     </label>
                   </div>
-                  <input
-                    id="vehicle-desktop"
-                    type="text"
-                    list="vehicle-list-desktop"
-                    value={vehicleNumber}
-                    onChange={(e) => setVehicleNumber(e.target.value)}
-                    placeholder="Search or enter vehicle number"
-                    required
-                    style={{
+                  <Select value={vehicleNumber} onValueChange={setVehicleNumber} required>
+                    <SelectTrigger style={{
                       width: "100%",
                       padding: "0.75rem 1rem",
                       borderRadius: "0.5rem",
                       fontSize: "1rem",
                       background: "rgba(100, 100, 100, 0.1)",
                       border: "1px solid rgba(100, 100, 100, 0.2)",
-                    }}
-                  />
-                  <datalist id="vehicle-list-desktop">
-                    {vehicles.map((vehicle, index) => (
-                      <option key={index} value={vehicle} />
-                    ))}
-                  </datalist>
+                      height: "auto",
+                    }}>
+                      <SelectValue placeholder="Select vehicle number" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vehicles.map((vehicle, index) => (
+                        <SelectItem key={index} value={vehicle}>{vehicle}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Odometer Reading Input */}
@@ -1235,7 +1013,7 @@ export default function FuelLog() {
                       <Loader2 className="animate-spin" width="1.125rem" />
                     </>
                   ) : (
-                    <span>Add</span>
+                    <span>{editingLog ? "Update" : "Add"}</span>
                   )}
                 </motion.button>
               </div>
@@ -1250,28 +1028,24 @@ export default function FuelLog() {
           <Drawer open={drawerDetailOpen} onOpenChange={setDrawerDetailOpen}>
             <DrawerTitle></DrawerTitle>
             <DrawerDescription></DrawerDescription>
-            <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "70vh", paddingBottom: "2rem" }}>
+            <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "70vh", paddingBottom: "4rem" }}>
               {/* Fixed Header */}
               <div style={{
                 border:"",
+                width: "100%",
                 padding: "1rem",
                 paddingBottom: "0.75rem",
                 borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
                 background: "var(--background)",
               
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", border:"" }}>
-                  {/* <div style={{
-                    background: "black",
-                    padding: "0.625rem",
-                    borderRadius: "0.625rem",
-                    display: "flex",
-                   
-                    width: "2.5rem",
-                  }}>
-                    <Book color="white" width="1.25rem" />
-                  </div> */}
-                  <h1 style={{ fontSize: "1.75rem", fontWeight: "600", letterSpacing: "-0.02em" }}>Summary</h1>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border:"", width: "100%" }}>
+                  <h1 style={{ fontSize: "1.75rem", fontWeight: "600", letterSpacing: "-0.02em", marginLeft:"0.5rem" }}>Summary</h1>
+                  <DropDown
+                    trigger={<EllipsisVertical width="1.1rem" />}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
                 </div>
               </div>
 
@@ -1300,7 +1074,7 @@ export default function FuelLog() {
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
-                      <Calendar width="1rem" height="1rem" style={{ opacity: 0.7 }} />
+                      <Calendar color="orange" width="1rem" height="1rem" style={{ opacity: 0.7 }} />
                       <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Date</span>
                     </div>
                     <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
@@ -1320,7 +1094,7 @@ export default function FuelLog() {
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
-                      <Car width="1rem" height="1rem" style={{ opacity: 0.7 }}  />
+                      <Car color="orange" width="1rem" height="1rem" style={{ opacity: 0.7 }}  />
                       <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Vehicle Number</span>
                     </div>
                     <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
@@ -1339,7 +1113,7 @@ export default function FuelLog() {
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
-                      <Gauge width="1rem" height="1rem" style={{ opacity: 0.7 }}  />
+                      <Gauge color="orange" width="1rem" height="1rem" style={{ opacity: 0.7 }}  />
                       <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Odometer </span>
                     </div>
                     <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
@@ -1358,7 +1132,7 @@ export default function FuelLog() {
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
-                      <DollarSign width="1rem" height="1rem" style={{ opacity: 0.9 }}  />
+                      <DollarSign color="orange" width="1rem" height="1rem" style={{ opacity: 0.9 }}  />
                       <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Amount Spent</span>
                     </div>
                     <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: ""}}>
@@ -1367,7 +1141,6 @@ export default function FuelLog() {
                   </motion.div>
 
                 </motion.div>
-                
               </div>
             </DrawerContent>
           </Drawer>
@@ -1375,18 +1148,13 @@ export default function FuelLog() {
           <Dialog open={drawerDetailOpen} onOpenChange={setDrawerDetailOpen}>
             <DialogContent style={{ maxWidth: "500px", padding: 0 }}>
               <DialogHeader style={{ padding: "1.25rem", paddingBottom: "", borderBottom: "1px solid rgba(100, 100, 100, 0.1)" }}>
-                <DialogTitle style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
-                  {/* <div style={{
-                    background: "linear-gradient(135deg, #ff8c00, #ff6b00)",
-                    padding: "0.5rem",
-                    borderRadius: "0.5rem",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}>
-                    <Book color="white" width="1.125rem" />
-                  </div> */}
+                <DialogTitle style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span style={{ fontSize: "1.5rem", fontWeight: "600" }}>Log Details</span>
+                  <DropDown
+                    trigger={<EllipsisVertical width="1.1rem" />}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
                 </DialogTitle>
                 <DialogDescription></DialogDescription>
               </DialogHeader>
@@ -1487,6 +1255,182 @@ export default function FuelLog() {
           </Dialog>
         )
       )}
+
+      {/* Date Picker Dialog */}
+      <Dialog open={showDatePicker} onOpenChange={setShowDatePicker}>
+        <DialogContent style={{ maxWidth: "400px", padding: "1.5rem" }}>
+          {/* <DialogHeader>
+            <DialogTitle style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Calendar width="1.25rem" height="1.25rem" color="orange" />
+              <span>Select Date</span>
+            </DialogTitle>
+            <DialogDescription></DialogDescription>
+          </DialogHeader> */}
+
+          <div style={{ marginTop: "" }}>
+            {/* Quick Actions */}
+            {/* <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setDate(moment().format("YYYY-MM-DD"));
+                  setShowDatePicker(false);
+                }}
+                style={{
+                  flex: 1,
+                  padding: "0.625rem",
+                  borderRadius: "0.5rem",
+                  background: date === moment().format("YYYY-MM-DD") 
+                    ? "orange"
+                    : "rgba(100, 100, 100, 0.1)",
+                  color: date === moment().format("YYYY-MM-DD") ? "white" : "inherit",
+                  border: "none",
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Today
+              </motion.button>
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setDate(moment().subtract(1, 'day').format("YYYY-MM-DD"));
+                  setShowDatePicker(false);
+                }}
+                style={{
+                  flex: 1,
+                  padding: "0.625rem",
+                  borderRadius: "0.5rem",
+                  background: date === moment().subtract(1, 'day').format("YYYY-MM-DD")
+                    ? "orange"
+                    : "rgba(100, 100, 100, 0.1)",
+                  color: date === moment().subtract(1, 'day').format("YYYY-MM-DD") ? "white" : "inherit",
+                  border: "none",
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Yesterday
+              </motion.button>
+            </div> */}
+
+            {/* Month Navigation */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setViewingMonth(viewingMonth.clone().subtract(1, 'month'))}
+                style={{
+                  padding: "0.5rem",
+                  borderRadius: "0.5rem",
+                  background: "rgba(100, 100, 100, 0.1)",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                <ChevronLeft width="1.25rem" height="1.25rem" />
+              </motion.button>
+              <span style={{ fontWeight: "600", fontSize: "1rem" }}>
+                {viewingMonth.format("MMMM YYYY")}
+              </span>
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setViewingMonth(viewingMonth.clone().add(1, 'month'))}
+                disabled={viewingMonth.clone().add(1, 'month').isAfter(moment(), 'month')}
+                style={{
+                  padding: "0.5rem",
+                  borderRadius: "0.5rem",
+                  background: viewingMonth.clone().add(1, 'month').isAfter(moment(), 'month') ? "rgba(100, 100, 100, 0.05)" : "rgba(100, 100, 100, 0.1)",
+                  border: "none",
+                  cursor: viewingMonth.clone().add(1, 'month').isAfter(moment(), 'month') ? "not-allowed" : "pointer",
+                  opacity: viewingMonth.clone().add(1, 'month').isAfter(moment(), 'month') ? 0.3 : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                <ChevronRight width="1.25rem" height="1.25rem" />
+              </motion.button>
+            </div>
+            
+            {/* Weekday Headers */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "0.25rem", marginBottom: "0.5rem" }}>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                <div key={i} style={{ textAlign: "center", fontSize: "0.75rem", fontWeight: "600", opacity: 0.6, padding: "0.25rem" }}>
+                  {day}
+                </div>
+              ))}
+            </div>
+            
+            {/* Calendar Days */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "0.25rem" }}>
+              {(() => {
+                const startOfMonth = viewingMonth.clone().startOf('month');
+                const endOfMonth = viewingMonth.clone().endOf('month');
+                const startDay = startOfMonth.day();
+                const daysInMonth = endOfMonth.date();
+                const days = [];
+                
+                // Empty cells before month starts
+                for (let i = 0; i < startDay; i++) {
+                  days.push(<div key={`empty-${i}`} />);
+                }
+                
+                // Days of the month
+                for (let day = 1; day <= daysInMonth; day++) {
+                  const currentDate = viewingMonth.clone().date(day);
+                  const dateString = currentDate.format("YYYY-MM-DD");
+                  const isSelected = dateString === date;
+                  const isToday = currentDate.isSame(moment(), 'day');
+                  const isFuture = currentDate.isAfter(moment(), 'day');
+                  
+                  days.push(
+                    <motion.button
+                      key={day}
+                      type="button"
+                      whileTap={{ scale: isFuture ? 1 : 0.9 }}
+                      onClick={() => {
+                        if (!isFuture) {
+                          setDate(dateString);
+                          setShowDatePicker(false);
+                        }
+                      }}
+                      disabled={isFuture}
+                      style={{
+                        padding: "0.625rem 0.25rem",
+                        borderRadius: "0.5rem",
+                        background: isSelected
+                          ? "orange"
+                          : isToday
+                          ? "rgba(255, 140, 0, 0.15)"
+                          : "rgba(100, 100, 100, 0.05)",
+                        color: isSelected ? "white" : isFuture ? "rgba(100, 100, 100, 0.3)" : "inherit",
+                        // border: isToday && !isSelected ? "1px solid rgba(255, 140, 0, 0.5)" : "1px solid transparent",
+                        cursor: isFuture ? "not-allowed" : "pointer",
+                        fontSize: "0.875rem",
+                        fontWeight: isSelected || isToday ? "700" : "500",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {day}
+                    </motion.button>
+                  );
+                }
+                
+                return days;
+              })()}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -209,12 +209,12 @@ export default function Index() {
                 to={access ? "/records" : ""}
                 onClick={Authenticate}
                 title={"Records Master"}
-                icon={<FileArchive color="violet" width={"1.25rem"} />}
+                icon={<FileArchive width={"1.25rem"} />}
               />
 
               {
                 admin&&
-                <Directive onClick={() => navigate("/users")} icon={<KeyRound color="dodgerblue" width={"1.25rem"}/>} title={"User Management"}/>
+                <Directive onClick={() => navigate("/users")} icon={<KeyRound width={"1.25rem"}/>} title={"User Management"}/>
               }
               
 
@@ -258,14 +258,14 @@ export default function Index() {
               
                 to={"/new-hire"}
                 title={"New Hire"}
-                icon={<UserCheck width={"1.25rem"} color="salmon" />}
+                icon={<UserCheck width={"1.25rem"} />}
               />
 
               <Directive
                 onClick={() => usenavigate("/phonebook")}
                 to={"/phonebook"}
                 title={"Phonebook"}
-                icon={<Notebook color="dodgerblue" width={"1.25rem"} />}
+                icon={<Notebook width={"1.25rem"} />}
               />
 
               
@@ -312,14 +312,14 @@ export default function Index() {
                 onClick={() => usenavigate("/fuel-log")}
                 to={"/fuel-log"}
                 title={"Fuel Log"}
-                icon={<Fuel width={"1.25rem"} color="orange" />}
+                icon={<Fuel width={"1.25rem"}  />}
               />
 
               <Directive
                 onClick={() => usenavigate("/vehicle-master")}
                 to={"/vehicle-master"}
                 title={"Vehicle Master"}
-                icon={<Car width={"1.25rem"} color="dodgerblue" />}
+                icon={<Car width={"1.25rem"} />}
               />
 
               {/* <Directive

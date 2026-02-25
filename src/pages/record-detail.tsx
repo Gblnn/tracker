@@ -246,6 +246,8 @@ export default function RecordDetail() {
     <>
     <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} style={{border:"", height:"100svh", display:"flex", flexFlow:"column"}}>
         <Back 
+        
+       
           fixed 
           blurBG 
         //   subtitle={record.id} 
@@ -291,7 +293,7 @@ export default function RecordDetail() {
                 
                 <div style={{display:"flex", gap:"0.5rem", flexWrap:"wrap"}}>
                     <div style={{background:"rgba(100 100 100/ 0.1)", padding:"0.5rem 1rem", display:"flex", fontSize:"0.8rem", borderRadius:"0.5rem", gap:"0.5rem", flex:"1", minWidth:"fit-content"}}>
-                        <b>Joined On</b> {record?.dateofJoin || "N/A"}
+                        <b>Joined</b> {record?.dateofJoin || "N/A"}
                     </div>
                     <div style={{background:"rgba(100 100 100/ 0.1)", padding:"0.5rem 1rem", display:"flex", fontSize:"0.8rem", borderRadius:"0.5rem", gap:"0.5rem", flex:"1", minWidth:"fit-content"}}>
                         <b>Company</b> {record?.companyName || "N/A"}

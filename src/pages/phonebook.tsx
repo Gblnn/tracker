@@ -169,7 +169,7 @@ export default function Phonebook() {
                 }}>
                     <div style={{display:"flex", justifyContent:"center"}}>
                         <Avatar  className="h-20 w-20">
-                                    <AvatarFallback style={{fontWeight:"600", background:"linear-gradient( mediumslateblue, midnightblue)", fontSize:"2rem", color:"white"}} className="text-lg">
+                                    <AvatarFallback style={{fontWeight:"600", background:"rgba(100 100 100/ 0.1)", fontSize:"2.5rem", }} className="text-lg">
                                       {selectedRecord?.name
                                         ? getInitials(selectedRecord.name.split("@")[0])
                                         : "?"}
@@ -178,7 +178,7 @@ export default function Phonebook() {
                     </div>
                     <br/>
                     <div style={{display:"flex", justifyContent:"center", alignItems:"center", padding:"1.25rem", paddingTop:"0", flexFlow:"column", gap:""}}>
-                        <h2>{selectedRecord?.name}</h2>
+                        <h2 style={{fontSize:"1.5rem"}}>{selectedRecord?.name}</h2>
                         <p style={{fontSize:"0.8rem"}}>{selectedRecord?.designation}</p>
                     </div>
                     

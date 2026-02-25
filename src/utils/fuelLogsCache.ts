@@ -86,7 +86,7 @@ export const fetchAndCacheFuelLogs = async (userEmail: string): Promise<FuelLog[
     const q = query(
       collection(db, "fuel log"),
       where("email", "==", userEmail),
-      orderBy("date", "desc")
+      orderBy("created_at", "desc")
     );
     const querySnapshot = await getDocs(q);
     const logs: FuelLog[] = [];
