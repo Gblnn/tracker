@@ -32,6 +32,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+const VIEW_MODE_KEY = "starboard_view_mode";
+
 export default function Index() {
   const usenavigate = useNavigate();
   const [requestDialog, setRequestDialog] = useState(false);
@@ -44,7 +46,10 @@ export default function Index() {
   const [loading, setLoading] = useState(false);
   const [admin, setAdmin] = useState(false);
   const [modulePermissions, setModulePermissions] = useState<Record<string, boolean>>({});
-  const [viewMode, setViewMode] = useState<'grid' | 'directive'>('directive');
+  const [viewMode, setViewMode] = useState<'grid' | 'directive'>(() => {
+    const saved = localStorage.getItem(VIEW_MODE_KEY);
+    return (saved === 'grid' || saved === 'directive') ? saved : 'directive';
+  });
   const { userData, logoutUser: logOut } = useAuth();
 
   const serviceId = "service_fixajl8";
@@ -85,6 +90,11 @@ export default function Index() {
       }
     }
   }, [userData, navigate]);
+
+  // Save viewMode preference to localStorage
+  useEffect(() => {
+    localStorage.setItem(VIEW_MODE_KEY, viewMode);
+  }, [viewMode]);
 
   // Helper function to check module access
   const hasModuleAccess = (moduleId: string) => {
@@ -463,7 +473,7 @@ export default function Index() {
                   {admin && (
                     <GridTile
                       title="Users"
-                      icon={<Users width={"2rem"} />}
+                      icon={<Users />}
                       onClick={() => navigate('/users')}
                     />
                   )}

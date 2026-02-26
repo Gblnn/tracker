@@ -527,7 +527,7 @@ export default function Users() {
 
         <br />
 
-        {users.length < 1 ? (
+        {fetchingData && users.length < 1 ? (
           <div
             style={{
               border: "",
