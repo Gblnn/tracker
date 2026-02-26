@@ -10,6 +10,7 @@ import { LoadingOutlined } from "@ant-design/icons";
 import emailjs from "@emailjs/browser";
 import { motion } from "framer-motion";
 import {
+  Book,
   Bug,
   Car,
   FileArchive,
@@ -95,17 +96,8 @@ export default function Index() {
       {/* <div style={{border:"", display:"flex", alignItems:"center", justifyContent:'center'}}>
         <ConfettiExplosion/>
         </div> */}
-      <div
-        style={{
-          border: "",
-          padding: "1.25rem",
-          // background:
-          //   "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
-          height: "100svh",
-        }}
-      >
-        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
-          <Back
+        <Back
+          fixed
           editMode={userData?.editor===true? true : false}
             title="StarBoard"
             // subtitle={userData?.role}
@@ -190,6 +182,19 @@ export default function Index() {
               </div>
             }
           />
+      <div
+        style={{
+          border: "",
+          padding: "1.25rem",
+          
+          // background:
+          //   "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
+          height: "100svh",
+        }}
+      >
+        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
+          <br/>
+          <br/>
           <br />
           {loading ? (
             <div
@@ -317,9 +322,16 @@ export default function Index() {
 
               <Directive
                 onClick={() => usenavigate("/vehicle-master")}
-                to={"/vehicle-master"}
+                to="/vehicle-master"
                 title={"Vehicle Master"}
                 icon={<Car width={"1.25rem"} />}
+              />
+
+              <Directive
+                onClick={() => usenavigate("/vehicle-log-book")}
+                to="/vehicle-log-book"
+                title={"Vehicle Log Book"}
+                icon={<Book width={"1.25rem"} />}
               />
 
               {/* <Directive

@@ -1,6 +1,6 @@
 import Back from "@/components/back";
 import { motion } from "framer-motion";
-import { Download, Link2 } from "lucide-react";
+import { Download, Link2, QrCode } from "lucide-react";
 import QRCode from "qrcode";
 import { useCallback, useRef, useState } from "react";
 
@@ -50,7 +50,13 @@ function QRCodeGenerator() {
       }}
     >
       <div style={{ padding: "1.5rem" }}>
-        <Back />
+        <Back extra={qrCodeUrl&&<button
+                    onClick={downloadQRCode}
+                    className="flex items-center space-x-2 bg-grey-700 py-2 px-4 rounded-md  focus:outline-none   transition-colors"
+                  >
+                    <Download className="h-5 w-5" />
+                    <span>Download PNG</span>
+                  </button>} />
       </div>
 
       <motion.div
@@ -73,7 +79,30 @@ function QRCodeGenerator() {
             style={{ background: "", width: "100%" }}
             className="rounded-lg p-6 space-y-6"
           >
-            <div className="space-y-2">
+            <motion.div
+              style={{ border: "" }}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              className="flex flex-col items-center space-y-4"
+            >
+              <canvas ref={canvasRef} className="hidden" />
+              {qrCodeUrl ? (
+                <>
+                  <img
+                    src={qrCodeUrl}
+                    alt="Generated QR Code"
+                    className="w-64 h-64 border-2 border-gray-200 rounded-lg"
+                  />
+                  
+                </>
+              )
+              :
+              <div className="w-64 h-64 rounded-lg" style={{background:"rgba(100 100 100/ 20%)", display:"flex", justifyContent:"center", alignItems:"center"}}>
+                <QrCode/>
+              </div>
+            }
+            </motion.div>
+            <div style={{border:""}} className="space-y-2">
               <label htmlFor="url" className="block text-sm font-medium">
                 Enter URL or Text
               </label>
@@ -86,7 +115,7 @@ function QRCodeGenerator() {
                   id="url"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md"
                   placeholder="https://example.com"
                 />
               </div>
@@ -94,35 +123,12 @@ function QRCodeGenerator() {
 
             <button
               onClick={generateQRCode}
-              className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none transition-colors"
+              className="w-full bg-black text-white py-2 px-4 rounded-md focus:outline-none transition-colors"
             >
               Generate QR Code
             </button>
 
-            <motion.div
-              style={{ border: "" }}
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              className="flex flex-col items-center space-y-4"
-            >
-              <canvas ref={canvasRef} className="hidden" />
-              {qrCodeUrl && (
-                <>
-                  <img
-                    src={qrCodeUrl}
-                    alt="Generated QR Code"
-                    className="w-64 h-64 border-2 border-gray-200 rounded-lg"
-                  />
-                  <button
-                    onClick={downloadQRCode}
-                    className="flex items-center space-x-2 bg-grey-700 text-white py-2 px-4 rounded-md  focus:outline-none   transition-colors"
-                  >
-                    <Download className="h-5 w-5" />
-                    <span>Download PNG</span>
-                  </button>
-                </>
-              )}
-            </motion.div>
+            
           </div>
         </div>
       </motion.div>

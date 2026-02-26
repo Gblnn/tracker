@@ -30,6 +30,7 @@ export interface ProfileData {
   medical_completed_on?: string;
   medical_due_on?: string;
   vt_hse_induction?: string;
+  allocated_vehicle?: string;  // vehicle number allocated from vehicle_master
 }
 
 // Check if profile cache is still valid
@@ -89,7 +90,7 @@ export const clearProfileCache = (): void => {
 };
 
 // Fetch and cache profile data from Firestore
-export const fetchAndCacheProfile = async (email: string): Promise<ProfileData | null> => {
+export const fetchAndCacheProfile = async (email: string, allocatedVehicle?: string): Promise<ProfileData | null> => {
   try {
     const docQuery = query(
       collection(db, "records"),
@@ -123,6 +124,7 @@ export const fetchAndCacheProfile = async (email: string): Promise<ProfileData |
         medical_completed_on: docData.medical_completed_on,
         medical_due_on: docData.medical_due_on,
         vt_hse_induction: docData.vt_hse_induction,
+        allocated_vehicle: allocatedVehicle,  // from users collection
       };
       
       cacheProfileData(profileData);

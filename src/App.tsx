@@ -48,6 +48,7 @@ const ValeMobilisation = lazy(() => import("./pages/vale-mobilisation"));
 const RecordDetail = lazy(() => import("./pages/record-detail"));
 const FuelLog = lazy(() => import("./pages/fuel-log"));
 const VehicleMaster = lazy(() => import("./pages/vehicle-master"));
+const VehicleLogBook = lazy(() => import("./pages/vehicle-log-book"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -124,6 +125,7 @@ export default function App() {
           <Route path="/qr-code-generator" element={<QRCodeGenerator />} />
           <Route path="/fuel-log" element={<FuelLog />} />
           <Route path="/vehicle-master" element={<VehicleMaster />} />
+          <Route path="/vehicle-log-book" element={<VehicleLogBook />} />
           <Route path="/project-lpo" element={<ProjectLPO />} />
           <Route path="/movement-register" element={<MovementRegister />} />
           <Route path="/records" element={<Records />} />

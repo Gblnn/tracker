@@ -2,24 +2,435 @@ import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import Directive from "@/components/directive";
 import DropDown from "@/components/dropdown";
+import NumberPlate from "@/components/number-plate";
 import RefreshButton from "@/components/refresh-button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { db } from "@/firebase";
 import { fetchAndCacheFuelLogs, getCachedFuelLogs, type FuelLog as FuelLogType } from "@/utils/fuelLogsCache";
 import { getCachedProfile } from "@/utils/profileCache";
-import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc } from "firebase/firestore";
+import { getCachedVehicle } from "@/utils/vehicleCache";
+import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical, Fuel, Gauge, Loader2, Plus, Truck } from "lucide-react";
+import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical, Fuel, Gauge, Loader2, Plus } from "lucide-react";
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+// Shared Fuel Log Form Component
+interface FuelLogFormContentProps {
+  date: string;
+  vehicleNumber: string | undefined;
+  isPrivateVehicle: boolean;
+  odometerReading: string;
+  setOdometerReading: (reading: string) => void;
+  amountSpent: string;
+  setAmountSpent: (amount: string) => void;
+  setShowDatePicker: (show: boolean) => void;
+  dateSectionRef: React.RefObject<HTMLDivElement>;
+  editingLog: FuelLogType | null;
+  submitting: boolean;
+  userProfile: any;
+  handleSubmit: (e: React.FormEvent) => void;
+}
+
+const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
+  date,
+  vehicleNumber,
+  isPrivateVehicle,
+  odometerReading,
+  setOdometerReading,
+  amountSpent,
+  setAmountSpent,
+  setShowDatePicker,
+  dateSectionRef,
+  editingLog,
+  submitting,
+  userProfile,
+  handleSubmit,
+}) => {
+  return (
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", maxHeight: "75vh", width: "100%" }}>
+      {/* Fixed Header */}
+      <div style={{
+        border:"",
+        display:"flex",
+        justifyContent:"space-between",
+        padding: "1.5rem",
+        paddingBottom: "1rem",
+        borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
+        background: "var(--background)",
+        boxSizing: "border-box",
+        alignItems:"center"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <div style={{
+            background: "black",
+            padding: "0.75rem",
+            borderRadius: "0.75rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <Fuel color="white" width="1.5rem" />
+          </div>
+          <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em" }}>{editingLog ? "Edit Fuel Log" : "Log Fuel"}</h2>
+        </div>
+        {vehicleNumber && <NumberPlate private={isPrivateVehicle} number={vehicleNumber} />}
+      </div>
+
+      {/* Scrollable Content */}
+      <div style={{ 
+        flex: 1,
+        padding: "1.5rem",
+        paddingTop: "1.5rem",
+        paddingBottom: "0",
+        width: "100%",
+        boxSizing: "border-box",
+        overflowY: "auto",
+        minHeight: 0
+      }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", width: "100%", paddingBottom: "1.5rem" }}>
+            {/* Date Input with Quick Actions */}
+            <motion.div
+              ref={dateSectionRef}
+              whileTap={{ scale: 0.99 }}
+              style={{
+                background: "rgba(100, 100, 100, 0.05)",
+                padding: "1rem",
+                borderRadius: "1rem",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                <Calendar color="orange" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                <label
+                  htmlFor="date"
+                  style={{
+                    fontSize: "0.875rem",
+                    fontWeight: "600",
+                    opacity: 0.9,
+                  }}
+                >
+                  Date
+                </label>
+              </div>
+              
+              <div onClick={() => setShowDatePicker(true)} style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "0.75rem",
+                padding: "0.875rem 1rem",
+                borderRadius: "0.75rem",
+                background: "rgba(100, 100, 100, 0.08)",
+                cursor: "pointer"
+              }}>
+                <span style={{ fontSize: "1.125rem", fontWeight: "600", flex: 1 }}>
+                  {moment(date).format("DD MMM YYYY")}
+                </span>
+                <motion.div
+                  whileTap={{ scale: 0.95 }}
+                  style={{
+                    padding: "0.375rem 0.75rem",
+                    borderRadius: "0.5rem",
+                    background: "rgba(100, 100, 100, 0.1)",
+                    fontSize: "0.75rem",
+                    fontWeight: "600",
+                  }}
+                >
+                  Change
+                </motion.div>
+              </div>
+            </motion.div>
+
+            {/* Odometer Reading Input */}
+            <motion.div
+              whileTap={{ scale: 0.99 }}
+              style={{
+                background: "rgba(100, 100, 100, 0.05)",
+                padding: "1rem",
+                borderRadius: "1rem",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                <Gauge color="orange" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                <label
+                  htmlFor="odometer"
+                  style={{
+                    fontSize: "0.875rem",
+                    fontWeight: "600",
+                    opacity: 0.9,
+                  }}
+                >
+                  Odometer Reading
+                </label>
+              </div>
+              <div style={{ position: "relative" }}>
+                <input
+                  id="odometer"
+                  type="number"
+                  step="0.1"
+                  value={odometerReading}
+                  onChange={(e) => setOdometerReading(e.target.value)}
+                  placeholder="Enter reading (optional)"
+                  style={{
+                    width: "100%",
+                    padding: "0.875rem 1rem",
+                    paddingRight: "3rem",
+                    borderRadius: "0.75rem",
+                    fontSize: "1.0625rem",
+                    fontWeight: "500",
+                    background: "rgba(100, 100, 100, 0.08)",
+                    transition: "all 0.2s",
+                  }}
+                />
+                <span style={{
+                  position: "absolute",
+                  right: "1rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  opacity: 0.5,
+                }}>
+                  km
+                </span>
+              </div>
+            </motion.div>
+
+            {/* Amount Spent Input */}
+            <motion.div
+              whileTap={{ scale: 0.99 }}
+              style={{
+                padding: "1rem",
+                borderRadius: "1rem",
+                background: "rgba(100, 100, 100, 0.05)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                <DollarSign color="orange" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                <label
+                  htmlFor="amount"
+                  style={{
+                    fontSize: "0.875rem",
+                    fontWeight: "600",
+                    opacity: 0.9,
+                  }}
+                >
+                  Amount Spent
+                </label>
+              </div>
+              <div style={{ position: "relative" }}>
+                <input
+                  id="amount"
+                  type="number"
+                  step="0.001"
+                  value={amountSpent}
+                  onChange={(e) => setAmountSpent(e.target.value)}
+                  placeholder="Enter amount"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "0.875rem 1rem",
+                    paddingRight: "4rem",
+                    borderRadius: "0.75rem",
+                    fontSize: "1.0625rem",
+                    fontWeight: "500",
+                    transition: "all 0.2s",
+                  }}
+                />
+                <span style={{
+                  position: "absolute",
+                  right: "1rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  opacity: 0.7,
+                }}>
+                  OMR
+                </span>
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
+      </div>
+      
+      {/* Fixed Submit Button */}
+      <div style={{
+        padding: "1rem",
+        paddingBottom: "2rem",
+        background: "var(--background)",
+        boxSizing: "border-box"
+      }}>
+        <motion.button
+          type="submit"
+          disabled={submitting || !userProfile || !date || !amountSpent || !vehicleNumber}
+          whileTap={{ scale: 0.97 }}
+          whileHover={{ scale: 1.01 }}
+          style={{
+            width: "100%",
+            padding: "1rem",
+            borderRadius: "1rem",
+            marginBottom:"0.5rem",
+            background: submitting || !userProfile || !date || !amountSpent || !vehicleNumber
+              ? "rgba(100, 100, 100, 1)" 
+              : "black",
+            color: "white",
+            fontSize: "1.0625rem",
+            border: "none",
+            cursor: submitting || !userProfile || !date || !amountSpent || !vehicleNumber ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.5rem",
+            fontWeight: "600"
+          }}
+        >
+          {submitting ? (
+            <>
+              <Loader2 className="animate-spin" width="1.25rem" />
+            </>
+          ) : (
+            <span>{editingLog ? "Update" : "Add"}</span>
+          )}
+        </motion.button>
+      </div>
+    </form>
+  );
+};
+
+// Shared Fuel Log Detail Component
+interface FuelLogDetailContentProps {
+  selectedLog: FuelLogType;
+  handleEdit: () => void;
+  handleDelete: () => void;
+}
+
+const FuelLogDetailContent: React.FC<FuelLogDetailContentProps> = ({
+  selectedLog,
+  handleEdit,
+  handleDelete,
+}) => {
+  return (
+    <>
+      {/* Fixed Header */}
+      <div style={{
+        width: "100%",
+        padding: "1rem",
+        paddingBottom: "0.75rem",
+        borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
+        background: "var(--background)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+          <h1 style={{ fontSize: "1.75rem", fontWeight: "600", letterSpacing: "-0.02em", marginLeft:"0.5rem" }}>Summary</h1>
+          <DropDown
+            trigger={<EllipsisVertical width="1.1rem" />}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        </div>
+      </div>
+
+      {/* Scrollable Content */}
+      <div style={{ 
+        padding: "1rem",
+        paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
+        width: "100%",
+        boxSizing: "border-box",
+        overflowY: "auto"
+      }}>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}
+        >
+          {/* Date */}
+          <motion.div
+            whileTap={{ scale: 0.98 }}
+            style={{
+              padding: "0.75rem",
+              borderRadius: "0.75rem",
+              background: "rgba(100, 100, 100, 0.05)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
+              <Calendar color="orange" width="1rem" height="1rem" style={{ opacity: 0.7 }} />
+              <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Date</span>
+            </div>
+            <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
+              {moment(selectedLog.date).format("DD MMM YYYY")}
+            </div>
+          </motion.div>
+          
+          {/* Vehicle Number */}
+          <motion.div
+            whileTap={{ scale: 0.98 }}
+            style={{
+              padding: "0.75rem",
+              borderRadius: "0.75rem",
+              background: "rgba(100, 100, 100, 0.05)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
+              <Car color="orange" width="1rem" height="1rem" style={{ opacity: 0.7 }}  />
+              <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Vehicle Number</span>
+            </div>
+            <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
+              {selectedLog.vehicle_number}
+            </div>
+          </motion.div>
+
+          {/* Odometer Reading */}
+          <motion.div
+            whileTap={{ scale: 0.98 }}
+            style={{
+              padding: "0.75rem",
+              borderRadius: "0.75rem",
+              background: "rgba(100, 100, 100, 0.05)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
+              <Gauge color="orange" width="1rem" height="1rem" style={{ opacity: 0.7 }}  />
+              <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Odometer </span>
+            </div>
+            <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
+              {selectedLog.odometer_reading.toLocaleString()} km
+            </div>
+          </motion.div>
+
+          {/* Amount Spent */}
+          <motion.div
+            whileTap={{ scale: 0.98 }}
+            style={{
+              padding: "0.75rem",
+              borderRadius: "0.75rem",
+              background: "rgba(100, 100, 100, 0.05)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
+              <DollarSign color="orange" width="1rem" height="1rem" style={{ opacity: 0.9 }}  />
+              <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Amount Spent</span>
+            </div>
+            <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: ""}}>
+              OMR {selectedLog.amount_spent.toFixed(3)} 
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+    </>
+  );
+};
+
 export default function FuelLog() {
   const { userData } = useAuth();
   const [date, setDate] = useState(moment().format("YYYY-MM-DD"));
-  const [vehicleNumber, setVehicleNumber] = useState("");
   const [odometerReading, setOdometerReading] = useState("");
   const [amountSpent, setAmountSpent] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -32,19 +443,24 @@ export default function FuelLog() {
   const [isMobile, setIsMobile] = useState(false);
   const [drawerDetailOpen, setDrawerDetailOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<FuelLogType | null>(null);
-  const [vehicles, setVehicles] = useState<string[]>([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [viewingMonth, setViewingMonth] = useState(moment());
   const dateSectionRef = useRef<HTMLDivElement>(null);
   const [deleting, setDeleting] = useState(false);
   const [editingLog, setEditingLog] = useState<FuelLogType | null>(null);
+  const [vehicleRegistrationType, setVehicleRegistrationType] = useState<string>("Private");
 
   useEffect(() => {
     // Load cached profile data immediately
     const cachedProfile = getCachedProfile();
     if (cachedProfile) {
       setUserProfile(cachedProfile);
-      setVehicleNumber(cachedProfile.vehicle_number || "");
+    }
+    
+    // Load cached vehicle data to get registration type
+    const cachedVehicle = getCachedVehicle();
+    if (cachedVehicle?.registration_type) {
+      setVehicleRegistrationType(cachedVehicle.registration_type);
     }
     
     // Load cached fuel logs immediately
@@ -58,9 +474,6 @@ export default function FuelLog() {
       fetchFuelLogs(true);
     }
     
-    // Fetch vehicles for dropdown
-    fetchVehicles();
-    
     // Detect mobile/desktop
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -71,43 +484,6 @@ export default function FuelLog() {
     
     return () => window.removeEventListener('resize', checkMobile);
   }, [userData?.email]);
-
-  const fetchVehicles = async () => {
-    try {
-      // Fetch from vehicle_master collection
-      const vehicleMasterQuery = query(collection(db, "vehicle_master"));
-      const vehicleMasterSnapshot = await getDocs(vehicleMasterQuery);
-      const vehicleList: string[] = [];
-      
-      vehicleMasterSnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.vehicle_number) {
-          vehicleList.push(data.vehicle_number);
-        }
-      });
-      
-      // If vehicle_master is empty, fetch unique vehicles from fuel logs
-      if (vehicleList.length === 0) {
-        const fuelLogsQuery = query(collection(db, "fuel log"));
-        const fuelLogsSnapshot = await getDocs(fuelLogsQuery);
-        const uniqueVehicles = new Set<string>();
-        
-        fuelLogsSnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.vehicle_number) {
-            uniqueVehicles.add(data.vehicle_number);
-          }
-        });
-        
-        vehicleList.push(...Array.from(uniqueVehicles));
-      }
-      
-      // Sort alphabetically
-      setVehicles(vehicleList.sort());
-    } catch (error) {
-      console.error("Error fetching vehicles:", error);
-    }
-  };
 
   const fetchFuelLogs = async (silent = false) => {
     if (!userData?.email) return;
@@ -137,6 +513,8 @@ export default function FuelLog() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const vehicleNumber = userProfile?.allocated_vehicle || userData?.allocated_vehicle;
+    
     if (!vehicleNumber || !amountSpent) {
       toast.error("Please fill in all required fields");
       return;
@@ -181,7 +559,6 @@ export default function FuelLog() {
       
       // Reset form
       setDate(moment().format("YYYY-MM-DD"));
-      setVehicleNumber(userProfile?.vehicle_number || "");
       setOdometerReading("");
       setAmountSpent("");
       setDrawerOpen(false);
@@ -220,7 +597,6 @@ export default function FuelLog() {
     
     // Populate form with selected log data
     setDate(selectedLog.date);
-    setVehicleNumber(selectedLog.vehicle_number);
     setOdometerReading(selectedLog.odometer_reading ? String(selectedLog.odometer_reading) : "");
     setAmountSpent(String(selectedLog.amount_spent));
     setEditingLog(selectedLog);
@@ -268,19 +644,17 @@ export default function FuelLog() {
                 <Loader2 className="animate-spin"/>
               </div>
             ) : fuelLogs.length === 0 ? (
-              <div style={{ 
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "center",
-                minHeight: "70vh",
-                gap: "0.5rem",
-                opacity: 0.6
-              }}>
-                <Fuel width="3rem" height="3rem"  />
-                <p>No fuel logs yet</p>
-                <p style={{ fontSize: "0.85rem" }}>Click the + button to add your first log</p>
-              </div>
+              <Empty style={{ minHeight: "70vh" }}>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <Fuel />
+                  </EmptyMedia>
+                  <EmptyTitle>No fuel logs yet</EmptyTitle>
+                  <EmptyDescription>
+                    Click the + button to add your first fuel log
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : (
               fuelLogs.map((log) => (
                 <Directive 
@@ -348,7 +722,6 @@ export default function FuelLog() {
           onClick={() => {
             setEditingLog(null);
             setDate(moment().format("YYYY-MM-DD"));
-            setVehicleNumber(userProfile?.vehicle_number || "");
             setOdometerReading("");
             setAmountSpent("");
             setDrawerOpen(true);
@@ -384,873 +757,77 @@ export default function FuelLog() {
         
       </motion.div>
 
-      {/* Drawer for Mobile / Dialog for Desktop */}
+      {/* Drawer for Mobile / Dialog for Desktop - Unified Layout */}
       {isMobile ? (
-        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen} shouldScaleBackground={false}>
           <DrawerTitle></DrawerTitle>
           <DrawerDescription></DrawerDescription>
           <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "75vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", maxHeight: "75vh", width: "100%" }}>
-              {/* Fixed Header */}
-              <div style={{
-                padding: "1.5rem",
-                paddingBottom: "1rem",
-                borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
-                background: "var(--background)",
-                boxSizing: "border-box"
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                  <div style={{
-                    background: "black",
-                    padding: "0.75rem",
-                    borderRadius: "0.75rem",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}>
-                    <Fuel color="white" width="1.5rem" />
-                  </div>
-                  <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em" }}>{editingLog ? "Edit Fuel Log" : "Log Fuel"}</h2>
-                </div>
-              </div>
-
-              {/* Scrollable Content */}
-              <div style={{ 
-                flex: 1,
-                padding: "1.5rem",
-                paddingTop: "1.5rem",
-                paddingBottom: "0",
-                width: "100%",
-                boxSizing: "border-box",
-                overflowY: "auto",
-                minHeight: 0
-              }}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", width: "100%", paddingBottom: "1.5rem" }}>
-                    {/* Date Input with Quick Actions */}
-                    <motion.div
-                      ref={dateSectionRef}
-                      whileTap={{ scale: 0.99 }}
-                      style={{
-                        background: "rgba(100, 100, 100, 0.05)",
-                        padding: "1rem",
-                        borderRadius: "1rem",
-                        // border: "2px solid rgba(100, 100, 100, 0.1)",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                        <Calendar color="orange" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
-                        <label
-                          htmlFor="date"
-                          style={{
-                            fontSize: "0.875rem",
-                            fontWeight: "600",
-                            opacity: 0.9,
-                          }}
-                        >
-                          Date
-                        </label>
-                      </div>
-                      
-                      {/* <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                        <motion.button
-                          type="button"
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setDate(moment().format("YYYY-MM-DD"))}
-                          style={{
-                            flex: 1,
-                            padding: "0.625rem",
-                            borderRadius: "0.5rem",
-                            background: date === moment().format("YYYY-MM-DD") 
-                              ? "orange"
-                              : "rgba(100, 100, 100, 0.1)",
-                            color: date === moment().format("YYYY-MM-DD") ? "white" : "inherit",
-                            border: "none",
-                            fontSize: "0.875rem",
-                            fontWeight: "600",
-                            cursor: "pointer",
-                          }}
-                        >
-                          Today
-                        </motion.button>
-                        <motion.button
-                          type="button"
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setDate(moment().subtract(1, 'day').format("YYYY-MM-DD"))}
-                          style={{
-                            flex: 1,
-                            padding: "0.625rem",
-                            borderRadius: "0.5rem",
-                            background: date === moment().subtract(1, 'day').format("YYYY-MM-DD")
-                              ? "orange"
-                              : "rgba(100, 100, 100, 0.1)",
-                            color: date === moment().subtract(1, 'day').format("YYYY-MM-DD") ? "white" : "inherit",
-                            border: "none",
-                            fontSize: "0.875rem",
-                            fontWeight: "600",
-                            cursor: "pointer",
-                          }}
-                        >
-                          Yesterday
-                        </motion.button>
-                      </div> */}
-                      
-                      <div onClick={() => setShowDatePicker(true)} style={{ 
-                        display: "flex", 
-                        alignItems: "center", 
-                        gap: "0.75rem",
-                        padding: "0.875rem 1rem",
-                        borderRadius: "0.75rem",
-                        background: "rgba(100, 100, 100, 0.08)",
-                        // border: "1px solid rgba(100, 100, 100, 0.15)",
-                        cursor: "pointer"
-                      }}>
-                        <span style={{ fontSize: "1.125rem", fontWeight: "600", flex: 1 }}>
-                          {moment(date).format("DD MMM YYYY")}
-                        </span>
-                        <motion.div
-                          whileTap={{ scale: 0.95 }}
-                          style={{
-                            padding: "0.375rem 0.75rem",
-                            borderRadius: "0.5rem",
-                            background: "rgba(100, 100, 100, 0.1)",
-                           
-                            fontSize: "0.75rem",
-                            fontWeight: "600",
-                            
-                          }}
-                        >
-                          Change
-                        </motion.div>
-                      </div>
-                    </motion.div>
-
-                    {/* Vehicle Number Input with Dropdown */}
-                    <motion.div
-                      whileTap={{ scale: 0.99 }}
-                      style={{
-                        background: "rgba(100, 100, 100, 0.05)",
-                        padding: "1rem",
-                        borderRadius: "1rem",
-                        // border: "2px solid rgba(100, 100, 100, 0.1)",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                        <Car color="orange" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
-                        <label
-                          htmlFor="vehicle"
-                          style={{
-                            fontSize: "0.875rem",
-                            fontWeight: "600",
-                            opacity: 0.9,
-                          }}
-                        >
-                          Vehicle Number
-                        </label>
-                      </div>
-                      <Select value={vehicleNumber} onValueChange={setVehicleNumber} required>
-                        <SelectTrigger style={{
-                          width: "100%",
-                          padding: "0.875rem 1rem",
-                          borderRadius: "0.75rem",
-                          fontSize: "1rem",
-                          fontWeight: "500",
-                          background: "rgba(100, 100, 100, 0.08)",
-                          border: "none",
-                          height: "auto",
-                        }}>
-                          <SelectValue placeholder="Select vehicle number" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {vehicles.map((vehicle, index) => (
-                            <SelectItem style={{display:"flex", border:"",fontSize:"1rem", justifyContent:"flex-start", padding:""}} key={index} value={vehicle}>{vehicle}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </motion.div>
-
-                    {/* Odometer Reading Input */}
-                    <motion.div
-                      whileTap={{ scale: 0.99 }}
-                      style={{
-                        background: "rgba(100, 100, 100, 0.05)",
-                        padding: "1rem",
-                        borderRadius: "1rem",
-                        // border: "2px solid rgba(100, 100, 100, 0.1)",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                        <Gauge color="orange" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
-                        <label
-                          htmlFor="odometer"
-                          style={{
-                            fontSize: "0.875rem",
-                            fontWeight: "600",
-                            opacity: 0.9,
-                          }}
-                        >
-                          Odometer Reading
-                        </label>
-                      </div>
-                      <div style={{ position: "relative" }}>
-                        <input
-                          id="odometer"
-                          type="number"
-                          step="0.1"
-                          value={odometerReading}
-                          onChange={(e) => setOdometerReading(e.target.value)}
-                          placeholder="Enter reading (optional)"
-                          style={{
-                            width: "100%",
-                            padding: "0.875rem 1rem",
-                            paddingRight: "3rem",
-                            borderRadius: "0.75rem",
-                            fontSize: "1.0625rem",
-                            fontWeight: "500",
-                            background: "rgba(100, 100, 100, 0.08)",
-                            // border: "1px solid rgba(100, 100, 100, 0.15)",
-                            transition: "all 0.2s",
-                          }}
-                        />
-                        <span style={{
-                          position: "absolute",
-                          right: "1rem",
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          fontSize: "0.875rem",
-                          fontWeight: "600",
-                          opacity: 0.5,
-                        }}>
-                          km
-                        </span>
-                      </div>
-                    </motion.div>
-
-                    {/* Amount Spent Input */}
-                    <motion.div
-                      whileTap={{ scale: 0.99 }}
-                      style={{
-                       
-                        padding: "1rem",
-                        borderRadius: "1rem",
-                          background: "rgba(100, 100, 100, 0.05)",
-                        // border: "1px solid rgba(100, 100, 100, 0.3)",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                        <DollarSign color="orange" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
-                        <label
-                          htmlFor="amount"
-                          style={{
-                            fontSize: "0.875rem",
-                            fontWeight: "600",
-                            opacity: 0.9,
-                          }}
-                        >
-                          Amount Spent
-                        </label>
-                      </div>
-                      <div style={{ position: "relative" }}>
-                        <input
-                          id="amount"
-                          type="number"
-                          step="0.001"
-                          value={amountSpent}
-                          onChange={(e) => setAmountSpent(e.target.value)}
-                          placeholder="Enter amount"
-                          required
-                          style={{
-                            width: "100%",
-                            padding: "0.875rem 1rem",
-                            paddingRight: "4rem",
-                            borderRadius: "0.75rem",
-                            fontSize: "1.0625rem",
-                            fontWeight: "500",
-                            
-                            // border: "1px solid rgba(100, 100, 100, 0.1)",
-                            transition: "all 0.2s",
-                            
-                          }}
-                        />
-                        <span style={{
-                          position: "absolute",
-                          right: "1rem",
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          fontSize: "0.875rem",
-                          fontWeight: "600",
-                          
-                          opacity: 0.7,
-                        }}>
-                          OMR
-                        </span>
-                      </div>
-                    </motion.div>
-                  </div>
-                </motion.div>
-              </div>
-              
-              {/* Fixed Submit Button */}
-              <div style={{
-                padding: "1rem",
-                paddingBottom: "2rem",
-                // boxShadow:"1px 1px 20px rgba(0,0,0,0.5)",
-                background: "var(--background)",
-                boxSizing: "border-box"
-              }}>
-                <motion.button
-                  type="submit"
-                  disabled={submitting || !userProfile || !date || !vehicleNumber.trim() || !amountSpent}
-                  whileTap={{ scale: 0.97 }}
-                  whileHover={{ scale: 1.01 }}
-                  style={{
-                    width: "100%",
-                    padding: "1rem",
-                    borderRadius: "1rem",
-                    marginBottom:"0.5rem",
-                    background: submitting || !userProfile || !date || !vehicleNumber.trim() || !amountSpent
-                      ? "rgba(100, 100, 100, 1)" 
-                      : "black",
-                    color: "white",
-                    fontSize: "1.0625rem",
-                    border: "none",
-                    cursor: submitting || !userProfile || !date || !vehicleNumber.trim() || !amountSpent ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "0.5rem",
-                    fontWeight: "600"
-                  }}
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="animate-spin" width="1.25rem" />
-                    </>
-                  ) : (
-                    <span>{editingLog ? "Update" : "Add"}</span>
-                  )}
-                </motion.button>
-              </div>
-            </form>
+            <FuelLogFormContent
+              date={date}
+              vehicleNumber={userProfile?.allocated_vehicle || userData?.allocated_vehicle}
+              odometerReading={odometerReading}
+              setOdometerReading={setOdometerReading}
+              amountSpent={amountSpent}
+              setAmountSpent={setAmountSpent}
+              setShowDatePicker={setShowDatePicker}
+              dateSectionRef={dateSectionRef}
+              editingLog={editingLog}
+              submitting={submitting}
+              userProfile={userProfile}
+              handleSubmit={handleSubmit}
+              isPrivateVehicle={vehicleRegistrationType === "Private"}
+            />
           </DrawerContent>
         </Drawer>
       ) : (
         <Dialog open={drawerOpen} onOpenChange={setDrawerOpen}>
           <DialogContent style={{ maxWidth: "500px", display: "flex", flexDirection: "column", maxHeight: "90vh", padding: 0 }}>
-            <DialogHeader style={{ padding: "1.5rem", paddingBottom: "1rem" }}>
-              <DialogTitle style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <Fuel color="orange" width="1.5rem" />
-                <span>{editingLog ? "Edit Fuel Log" : "Log Fuel"}</span>
-              </DialogTitle>
-              <DialogDescription></DialogDescription>
-            </DialogHeader>
-            
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-              {/* Scrollable Content */}
-              <div style={{ flex: 1, overflowY: "auto", padding: "0 1.5rem", paddingBottom: "1rem", minHeight: 0 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                {/* Date Input with Quick Actions */}
-                <div ref={dateSectionRef}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                    <Calendar width="1rem" height="1rem" style={{ opacity: 0.7 }} color="orange" />
-                    <label
-                      htmlFor="date-desktop"
-                      style={{
-                        fontSize: "0.875rem",
-                        fontWeight: "600",
-                        opacity: 0.9,
-                      }}
-                    >
-                      Date
-                    </label>
-                  </div>
-                  
-                  <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                    <motion.button
-                      type="button"
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setDate(moment().format("YYYY-MM-DD"))}
-                      style={{
-                        flex: 1,
-                        padding: "0.625rem",
-                        borderRadius: "0.5rem",
-                        background: date === moment().format("YYYY-MM-DD") 
-                          ? "black"
-                          : "rgba(100, 100, 100, 0.1)",
-                        color: date === moment().format("YYYY-MM-DD") ? "white" : "inherit",
-                        border: "none",
-                        fontSize: "0.875rem",
-                        fontWeight: "600",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Today
-                    </motion.button>
-                    <motion.button
-                      type="button"
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setDate(moment().subtract(1, 'day').format("YYYY-MM-DD"))}
-                      style={{
-                        flex: 1,
-                        padding: "0.625rem",
-                        borderRadius: "0.5rem",
-                        background: date === moment().subtract(1, 'day').format("YYYY-MM-DD")
-                          ? "black"
-                          : "rgba(100, 100, 100, 0.1)",
-                        color: date === moment().subtract(1, 'day').format("YYYY-MM-DD") ? "white" : "inherit",
-                        border: "none",
-                        fontSize: "0.875rem",
-                        fontWeight: "600",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Yesterday
-                    </motion.button>
-                  </div>
-                  
-                  <div onClick={() => setShowDatePicker(true)} style={{ 
-                    display: "flex", 
-                    alignItems: "center", 
-                    gap: "0.75rem",
-                    padding: "0.75rem 1rem",
-                    borderRadius: "0.5rem",
-                    background: "rgba(100, 100, 100, 0.1)",
-                    border: "1px solid rgba(100, 100, 100, 0.2)",
-                    cursor: "pointer"
-                  }}>
-                    <span style={{ fontSize: "1rem", fontWeight: "600", flex: 1 }}>
-                      {moment(date).format("DD MMM YYYY")}
-                    </span>
-                    <motion.div
-                      whileTap={{ scale: 0.95 }}
-                      style={{
-                        padding: "0.375rem 0.75rem",
-                        borderRadius: "0.375rem",
-                        background: "rgba(255, 140, 0, 0.15)",
-                        color: "orange",
-                        fontSize: "0.75rem",
-                        fontWeight: "600",
-                        border: "1px solid rgba(255, 140, 0, 0.3)",
-                      }}
-                    >
-                      Change
-                    </motion.div>
-                  </div>
-                </div>
-
-                {/* Vehicle Number Input with Dropdown */}
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                    <Truck width="1rem" height="1rem" style={{ opacity: 0.7 }} color="dodgerblue" />
-                    <label
-                      htmlFor="vehicle-desktop"
-                      style={{
-                        fontSize: "0.875rem",
-                        fontWeight: "600",
-                        opacity: 0.9,
-                      }}
-                    >
-                      Vehicle Number
-                    </label>
-                  </div>
-                  <Select value={vehicleNumber} onValueChange={setVehicleNumber} required>
-                    <SelectTrigger style={{
-                      width: "100%",
-                      padding: "0.75rem 1rem",
-                      borderRadius: "0.5rem",
-                      fontSize: "1rem",
-                      background: "rgba(100, 100, 100, 0.1)",
-                      border: "1px solid rgba(100, 100, 100, 0.2)",
-                      height: "auto",
-                    }}>
-                      <SelectValue placeholder="Select vehicle number" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {vehicles.map((vehicle, index) => (
-                        <SelectItem key={index} value={vehicle}>{vehicle}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Odometer Reading Input */}
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                    <Gauge width="1rem" height="1rem" style={{ opacity: 0.7 }} color="mediumslateblue" />
-                    <label
-                      htmlFor="odometer-desktop"
-                      style={{
-                        fontSize: "0.875rem",
-                        fontWeight: "600",
-                        opacity: 0.9,
-                      }}
-                    >
-                      Odometer Reading
-                    </label>
-                  </div>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      id="odometer-desktop"
-                      type="number"
-                      step="0.1"
-                      value={odometerReading}
-                      onChange={(e) => setOdometerReading(e.target.value)}
-                      placeholder="Enter reading (optional)"
-                      style={{
-                        width: "100%",
-                        padding: "0.75rem 1rem",
-                        paddingRight: "3rem",
-                        borderRadius: "0.5rem",
-                        fontSize: "1rem",
-                        background: "rgba(100, 100, 100, 0.1)",
-                        border: "1px solid rgba(100, 100, 100, 0.2)",
-                      }}
-                    />
-                    <span style={{
-                      position: "absolute",
-                      right: "1rem",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      fontSize: "0.875rem",
-                      fontWeight: "600",
-                      opacity: 0.5,
-                    }}>
-                      km
-                    </span>
-                  </div>
-                </div>
-
-                {/* Amount Spent Input */}
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                    <DollarSign width="1rem" height="1rem" style={{ opacity: 0.7 }} color="orange" />
-                    <label
-                      htmlFor="amount-desktop"
-                      style={{
-                        fontSize: "0.875rem",
-                        fontWeight: "600",
-                        opacity: 0.9,
-                      }}
-                    >
-                      Amount Spent
-                    </label>
-                  </div>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      id="amount-desktop"
-                      type="number"
-                      step="0.001"
-                      value={amountSpent}
-                      onChange={(e) => setAmountSpent(e.target.value)}
-                      placeholder="Enter amount"
-                      required
-                      style={{
-                        width: "100%",
-                        padding: "0.75rem 1rem",
-                        paddingRight: "4rem",
-                        borderRadius: "0.5rem",
-                        fontSize: "1rem",
-                        fontWeight: "600",
-                        background: "rgba(255, 140, 0, 0.1)",
-                        border: "1px solid rgba(255, 140, 0, 0.25)",
-                        color: "orange",
-                      }}
-                    />
-                    <span style={{
-                      position: "absolute",
-                      right: "1rem",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      fontSize: "0.875rem",
-                      fontWeight: "700",
-                      
-                      opacity: 0.7,
-                    }}>
-                      OMR
-                    </span>
-                  </div>
-                </div>
-                </div>
-              </div>
-
-              {/* Fixed Submit Button */}
-              <div style={{
-                padding: "1rem 1.5rem",
-                paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
-                borderTop: "1px solid rgba(100, 100, 100, 0.1)",
-                background: "var(--background)",
-              }}>
-                <motion.button
-                  type="submit"
-                  disabled={submitting || !userProfile || !date || !vehicleNumber.trim() || !amountSpent}
-                  whileTap={{ scale: 0.97 }}
-                  whileHover={{ scale: 1.01 }}
-                  style={{
-                    width: "100%",
-                    padding: "1rem",
-                    borderRadius: "0.75rem",
-                    background: submitting || !userProfile || !date || !vehicleNumber.trim() || !amountSpent
-                      ? "rgba(100, 100, 100, 0.2)" 
-                      : "linear-gradient(135deg, #ff8c00, #ff6b00)",
-                    color: "white",
-                    fontSize: "1rem",
-                    fontWeight: "700",
-                    border: "none",
-                    cursor: submitting || !userProfile || !date || !vehicleNumber.trim() || !amountSpent ? "not-allowed" : "pointer",
-                    boxShadow: submitting || !userProfile || !date || !vehicleNumber.trim() || !amountSpent ? "none" : "0 4px 12px rgba(255, 140, 0, 0.25)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "0.5rem",
-                  }}
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="animate-spin" width="1.125rem" />
-                    </>
-                  ) : (
-                    <span>{editingLog ? "Update" : "Add"}</span>
-                  )}
-                </motion.button>
-              </div>
-            </form>
+            <DialogTitle></DialogTitle>
+            <DialogDescription></DialogDescription>
+            <FuelLogFormContent
+              date={date}
+              vehicleNumber={userProfile?.allocated_vehicle || userData?.allocated_vehicle}
+              odometerReading={odometerReading}
+              setOdometerReading={setOdometerReading}
+              amountSpent={amountSpent}
+              setAmountSpent={setAmountSpent}
+              setShowDatePicker={setShowDatePicker}
+              dateSectionRef={dateSectionRef}
+              editingLog={editingLog}
+              submitting={submitting}
+              userProfile={userProfile}
+              handleSubmit={handleSubmit}
+              isPrivateVehicle={vehicleRegistrationType === "Private"}
+            />
           </DialogContent>
         </Dialog>
       )}
 
-      {/* Detail View - Drawer for Mobile / Dialog for Desktop */}
+      {/* Detail View - Drawer for Mobile / Dialog for Desktop - Unified Layout */}
       {selectedLog && (
         isMobile ? (
-          <Drawer open={drawerDetailOpen} onOpenChange={setDrawerDetailOpen}>
+          <Drawer open={drawerDetailOpen} onOpenChange={setDrawerDetailOpen} shouldScaleBackground={false}>
             <DrawerTitle></DrawerTitle>
             <DrawerDescription></DrawerDescription>
             <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "70vh", paddingBottom: "4rem" }}>
-              {/* Fixed Header */}
-              <div style={{
-                border:"",
-                width: "100%",
-                padding: "1rem",
-                paddingBottom: "0.75rem",
-                borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
-                background: "var(--background)",
-              
-              }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border:"", width: "100%" }}>
-                  <h1 style={{ fontSize: "1.75rem", fontWeight: "600", letterSpacing: "-0.02em", marginLeft:"0.5rem" }}>Summary</h1>
-                  <DropDown
-                    trigger={<EllipsisVertical width="1.1rem" />}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                </div>
-              </div>
-
-              {/* Scrollable Content */}
-              <div style={{ 
-                padding: "1rem",
-                paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
-                width: "100%",
-                boxSizing: "border-box",
-                overflowY: "auto"
-              }}>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}
-                >
-                  {/* Date */}
-                  <motion.div
-                    whileTap={{ scale: 0.98 }}
-                    style={{
-                      padding: "0.75rem",
-                      borderRadius: "0.75rem",
-                      background: "rgba(100, 100, 100, 0.05)",
-                      // border: "2px solid rgba(100, 100, 100, 0.1)",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
-                      <Calendar color="orange" width="1rem" height="1rem" style={{ opacity: 0.7 }} />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Date</span>
-                    </div>
-                    <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
-                      {moment(selectedLog.date).format("DD MMM YYYY")}
-                    </div>
-                  </motion.div>
-                  
-
-                  {/* Vehicle Number */}
-                  <motion.div
-                    whileTap={{ scale: 0.98 }}
-                    style={{
-                      padding: "0.75rem",
-                      borderRadius: "0.75rem",
-                      background: "rgba(100, 100, 100, 0.05)",
-                     
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
-                      <Car color="orange" width="1rem" height="1rem" style={{ opacity: 0.7 }}  />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Vehicle Number</span>
-                    </div>
-                    <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
-                      {selectedLog.vehicle_number}
-                    </div>
-                  </motion.div>
-
-                  {/* Odometer Reading */}
-                  <motion.div
-                    whileTap={{ scale: 0.98 }}
-                    style={{
-                      padding: "0.75rem",
-                      borderRadius: "0.75rem",
-                      background: "rgba(100, 100, 100, 0.05)",
-                      // border: "2px solid rgba(100, 100, 100, 0.1)",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
-                      <Gauge color="orange" width="1rem" height="1rem" style={{ opacity: 0.7 }}  />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Odometer </span>
-                    </div>
-                    <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
-                      {selectedLog.odometer_reading.toLocaleString()} km
-                    </div>
-                  </motion.div>
-
-                    {/* Amount Spent */}
-                  <motion.div
-                    whileTap={{ scale: 0.98 }}
-                    style={{
-                      padding: "0.75rem",
-                      borderRadius: "0.75rem",
-                      background: "rgba(100, 100, 100, 0.05)",
-                      // border: "2px solid rgba(100, 100, 100, 0.1)",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
-                      <DollarSign color="orange" width="1rem" height="1rem" style={{ opacity: 0.9 }}  />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Amount Spent</span>
-                    </div>
-                    <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: ""}}>
-                     OMR {selectedLog.amount_spent.toFixed(3)} 
-                    </div>
-                  </motion.div>
-
-                </motion.div>
-              </div>
+              <FuelLogDetailContent
+                selectedLog={selectedLog}
+                handleEdit={handleEdit}
+                handleDelete={handleDelete}
+              />
             </DrawerContent>
           </Drawer>
         ) : (
           <Dialog open={drawerDetailOpen} onOpenChange={setDrawerDetailOpen}>
             <DialogContent style={{ maxWidth: "500px", padding: 0 }}>
-              <DialogHeader style={{ padding: "1.25rem", paddingBottom: "", borderBottom: "1px solid rgba(100, 100, 100, 0.1)" }}>
-                <DialogTitle style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: "1.5rem", fontWeight: "600" }}>Log Details</span>
-                  <DropDown
-                    trigger={<EllipsisVertical width="1.1rem" />}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                </DialogTitle>
-                <DialogDescription></DialogDescription>
-              </DialogHeader>
-
-              <div style={{ padding: "1.25rem", paddingTop: "1rem" }}>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}
-                >
-                  {/* Date */}
-                  <motion.div
-                    whileTap={{ scale: 0.98 }}
-                    whileHover={{ scale: 1.01 }}
-                    style={{
-                      padding: "0.75rem",
-                      borderRadius: "0.625rem",
-                      background: "rgba(100, 100, 100, 0.05)",
-                      // border: "2px solid rgba(100, 100, 100, 0.1)",
-                      transition: "all 0.2s",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                      <Calendar width="0.9375rem" height="0.9375rem" style={{ opacity: 0.7 }} />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Date</span>
-                    </div>
-                    <div style={{ fontSize: "0.9375rem", fontWeight: "600", paddingLeft: "" }}>
-                      {moment(selectedLog.date).format("DD MMMM YYYY")}
-                    </div>
-                  </motion.div>
-
-                  {/* Amount Spent */}
-                  <motion.div
-                    whileTap={{ scale: 0.98 }}
-                    whileHover={{ scale: 1.01 }}
-                    style={{
-                      padding: "0.75rem",
-                      borderRadius: "0.625rem",
-                      background: "rgba(100, 100, 100, 0.05)",
-                      // border: "2px solid rgba(100, 100, 100, 0.1)",
-                      transition: "all 0.2s",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                      <DollarSign width="0.9375rem" height="0.9375rem" style={{ opacity: 0.9 }}  />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Amount Spent</span>
-                    </div>
-                    <div style={{ fontSize: "1.125rem", fontWeight: "600", paddingLeft: "",  }}>
-                      {selectedLog.amount_spent.toFixed(3)} OMR
-                    </div>
-                  </motion.div>
-
-                  {/* Vehicle Number */}
-                  <motion.div
-                    whileTap={{ scale: 0.98 }}
-                    whileHover={{ scale: 1.01 }}
-                    style={{
-                      padding: "0.75rem",
-                      borderRadius: "0.625rem",
-                      background: "rgba(100, 100, 100, 0.05)",
-                      // border: "2px solid rgba(100, 100, 100, 0.1)",
-                      transition: "all 0.2s",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                      <Car width="0.9375rem" height="0.9375rem" style={{ opacity: 0.7 }} />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Vehicle Number</span>
-                    </div>
-                    <div style={{ fontSize: "0.9375rem", fontWeight: "600", paddingLeft: "" }}>
-                      {selectedLog.vehicle_number}
-                    </div>
-                  </motion.div>
-
-                  {/* Odometer Reading */}
-                  <motion.div
-                    whileTap={{ scale: 0.98 }}
-                    whileHover={{ scale: 1.01 }}
-                    style={{
-                      padding: "0.75rem",
-                      borderRadius: "0.625rem",
-                      background: "rgba(100, 100, 100, 0.05)",
-                   
-                      transition: "all 0.2s",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                      <Gauge width="0.9375rem" height="0.9375rem" style={{ opacity: 0.7 }} />
-                      <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Odometer Reading</span>
-                    </div>
-                    <div style={{ fontSize: "0.9375rem", fontWeight: "600", paddingLeft: "" }}>
-                      {selectedLog.odometer_reading.toLocaleString()} km
-                    </div>
-                  </motion.div>
-                </motion.div>
-              </div>
+              <DialogTitle></DialogTitle>
+              <DialogDescription></DialogDescription>
+              <FuelLogDetailContent
+                selectedLog={selectedLog}
+                handleEdit={handleEdit}
+                handleDelete={handleDelete}
+              />
             </DialogContent>
           </Dialog>
         )
@@ -1259,13 +836,12 @@ export default function FuelLog() {
       {/* Date Picker Dialog */}
       <Dialog open={showDatePicker} onOpenChange={setShowDatePicker}>
         <DialogContent style={{ maxWidth: "400px", padding: "1.5rem" }}>
-          {/* <DialogHeader>
-            <DialogTitle style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <Calendar width="1.25rem" height="1.25rem" color="orange" />
-              <span>Select Date</span>
+          <DialogHeader>
+            <DialogTitle>
+              Select Date
             </DialogTitle>
             <DialogDescription></DialogDescription>
-          </DialogHeader> */}
+          </DialogHeader>
 
           <div style={{ marginTop: "" }}>
             {/* Quick Actions */}

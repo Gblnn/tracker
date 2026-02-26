@@ -1,11 +1,5 @@
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
-import { ChevronDown, UserCircle } from "lucide-react";
+import { UserCircle } from "lucide-react";
+import ChevronSelect from "./chevron-select";
 
 interface Props {
   value?: string;
@@ -23,32 +17,13 @@ const ROLE_OPTIONS = [
 // Component for selecting system roles (access control)
 export default function RoleSelect({ value, onChange }: Props) {
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "1rem",
-        }}
-        className=""
-      >
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-          <UserCircle color="dodgerblue" width={"1.25rem"} />
-          <p style={{ fontSize: "0.85rem" }}>
-            {value || "Select Role"}
-          </p>
-        </div>
-        <ChevronDown width={"1rem"} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          {ROLE_OPTIONS.map(option => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+    <ChevronSelect
+      title="Role"
+      icon={<UserCircle color="dodgerblue" width="1.125rem" height="1.125rem" />}
+      options={ROLE_OPTIONS}
+      value={value}
+      onChange={onChange}
+      placeholder="Select Role"
+    />
   );
 }

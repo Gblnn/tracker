@@ -12,6 +12,7 @@ import DefaultDialog from "@/components/ui/default-dialog";
 import VehicleID from "@/components/vehicle-id";
 import { db, storage } from "@/firebase";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useAuth } from "@/components/AuthProvider";
 import {
   exportExpiringRecords,
 } from "@/utils/excelUtils";
@@ -76,6 +77,7 @@ import {
   HeartPulse,
   Inbox,
   ListStart,
+  Loader2,
   LoaderCircle,
   MinusSquareIcon,
   PackageOpen,
@@ -136,6 +138,7 @@ interface Props {
 
 export default function DbComponent(props: Props) {
   const { windowName } = useCurrentUser();
+  const { userData } = useAuth();
   const [editAccess, setEditAccess] = useState(false);
   const [sensitive_data_access, setSensitiveDataAccess] = useState(false);
 
@@ -366,6 +369,11 @@ export default function DbComponent(props: Props) {
 
   const [allowanceDialog, setAllowanceDialog] = useState(false);
 
+  // Vehicle Allocation
+  const [allocated_vehicle, setAllocatedVehicle] = useState("");
+  const [availableVehicles, setAvailableVehicles] = useState<any>([]);
+  const [allocateVehicleDialog, setAllocateVehicleDialog] = useState(false);
+
   const [leaveLog, setLeaveLog] = useState(false);
   const [leaveList, setLeaveList] = useState<any>([]);
   const [leaveFrom, setLeaveFrom] = useState<any>("");
@@ -407,6 +415,23 @@ export default function DbComponent(props: Props) {
 
   // const [isInitialLoad, setIsInitialLoad] = useState(true);
 
+  // Set access permissions from cached user data
+  useEffect(() => {
+    if (userData) {
+      const hasEditorAccess = userData.editor === "true" || userData.editor === true;
+      const hasSensitiveAccess = userData.sensitive_data === "true" || userData.sensitive_data === true;
+      
+      setAccess(hasEditorAccess);
+      setEditAccess(hasEditorAccess);
+      setSensitiveDataAccess(hasSensitiveAccess);
+      
+      console.log("⚡ Access permissions loaded from cache:", {
+        editor: hasEditorAccess,
+        sensitiveData: hasSensitiveAccess
+      });
+    }
+  }, [userData]);
+
   // Online/Offline handling
   useEffect(() => {
     window.addEventListener("online", () => {
@@ -435,6 +460,28 @@ export default function DbComponent(props: Props) {
       );
     }
   }, [status]);
+
+  // Fetch available vehicles
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
+
+  const fetchVehicles = async () => {
+    try {
+      const vehicleCollection = collection(db, "vehicle_master");
+      const vehicleQuery = query(vehicleCollection, orderBy("vehicle_number"));
+      const querySnapshot = await getDocs(vehicleQuery);
+      const fetchedData: any = [];
+
+      querySnapshot.forEach((doc: any) => {
+        fetchedData.push({ id: doc.id, ...doc.data() });
+      });
+
+      setAvailableVehicles(fetchedData);
+    } catch (error) {
+      console.error("Error fetching vehicles:", error);
+    }
+  };
 
   // Keyboard shortcuts
   const { flushHeldKeys } = useKeyboardShortcut(["Control", "A"], () => {
@@ -524,34 +571,21 @@ export default function DbComponent(props: Props) {
       }
       const RecordCollection = collection(db, "records");
 
-      // Try to get data from cache first
-      const [recordsSnapshot, accessData] = await Promise.all([
-        getDocs(
-          query(
-            RecordCollection,
-            orderBy(sortby),
-            where("type", "in", [props.dbCategory, "omni"]),
-            limit(pageSize)
-          )
-        ),
-        getDocs(
-          query(collection(db, "users"), where("email", "==", windowName))
-        ),
-      ]);
+      // Fetch records only (access data is already cached)
+      const recordsSnapshot = await getDocs(
+        query(
+          RecordCollection,
+          orderBy(sortby),
+          where("type", "in", [props.dbCategory, "omni"]),
+          limit(pageSize)
+        )
+      );
 
       // Process records
       const fetchedData: Record[] = [];
       recordsSnapshot.forEach((doc: any) => {
         fetchedData.push({ id: doc.id, ...doc.data() });
       });
-
-      // Process access data
-      const accessInfo = accessData.docs[0]?.data();
-      if (accessInfo) {
-        setAccess(accessInfo.editor === "true");
-        setSensitiveDataAccess(accessInfo.sensitive_data === "true");
-        setEditAccess(accessInfo.editor === "true");
-      }
 
       // Set the last document for pagination
       const lastVisible = recordsSnapshot.docs[recordsSnapshot.docs.length - 1];
@@ -577,9 +611,9 @@ export default function DbComponent(props: Props) {
 
       // Show offline warning if needed
       if (!navigator.onLine) {
-        toast.warning(
-          "You are offline. Showing cached data.",
-      );
+      //   toast.warning(
+      //     "You are offline. Showing cached data.",
+      // );
       } else {
         message.destroy("offline-warning");
       }
@@ -682,10 +716,10 @@ export default function DbComponent(props: Props) {
     } catch (error: any) {
       console.error("Error fetching data:", error);
       if (!navigator.onLine) {
-        toast.warning(
-          "You are offline. Showing cached data."
+        // toast.warning(
+        //   "You are offline. Showing cached data."
         
-        );
+        // );
       } else {
         toast.error(
         `Error fetching data: ${error.message}`,
@@ -975,6 +1009,7 @@ export default function DbComponent(props: Props) {
       vt_car_10: "",
       state: "active",
       remarks: "",
+      allocated_vehicle: "",
     });
     await AddHistory("addition", "Created", "", "Record");
     setAddDialog(false);
@@ -1533,6 +1568,27 @@ export default function DbComponent(props: Props) {
     fetchData();
     setModifiedOn(new Date());
   };
+
+  // ALLOCATED VEHICLE FUNCTIONS
+  const updateAllocatedVehicle = async () => {
+    setLoading(true);
+    try {
+      await updateDoc(doc(db, "records", doc_id), {
+        allocated_vehicle: allocated_vehicle || "",
+        modified_on: Timestamp.fromDate(new Date()),
+      });
+      await AddHistory("updation", allocated_vehicle || "None", "", "Allocated Vehicle");
+      setLoading(false);
+      setAllocateVehicleDialog(false);
+      fetchData();
+      setModifiedOn(new Date());
+      message.success("Vehicle allocation updated");
+    } catch (error) {
+      toast.error(String(error));
+      setLoading(false);
+    }
+  };
+
   {
     /* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
   }
@@ -3173,7 +3229,7 @@ export default function DbComponent(props: Props) {
                       }}
                     >
                       {notifyLoading ? (
-                        <LoadingOutlined color="dodgerblue" />
+                        <Loader2 className="animte-spin" color="dodgerblue" />
                       ) : notify ? (
                         <BellRing
                           color={"dodgerblue"}
@@ -3288,6 +3344,27 @@ export default function DbComponent(props: Props) {
                       ? true
                       : false
                   }
+                />
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: "0.5rem",
+                  alignItems: "center",
+                  width: "100%",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  overflow: "hidden",
+                  border:""
+                }}
+              >
+                <Directive
+                  noArrow
+                  id_subtitle={allocated_vehicle || "No Vehicle"}
+                  onClick={() => {access && setRecordSummary(false); setAllocateVehicleDialog(true)}}
+                  icon={<Car color="violet" />}
+                  title="Allocated Vehicle"
                 />
               </div>
 
@@ -4761,6 +4838,99 @@ export default function DbComponent(props: Props) {
           updating={loading}
           disabled={loading || !EditedTrainingAddDialogInput ? true : false}
           input1Value={trainingAddDialogInputValue}
+        />
+
+        {/* ALLOCATE VEHICLE DIALOG */}
+        <DefaultDialog
+          open={allocateVehicleDialog}
+          onCancel={() => {setAllocateVehicleDialog(false); setRecordSummary(true)}}
+          title="Allocate Vehicle"
+          titleIcon={<Car color="violet" />}
+          close
+          back
+          title_extra={
+            <button
+              onClick={updateAllocatedVehicle}
+              disabled={loading}
+              style={{
+                fontSize: "0.8rem",
+                paddingLeft: "1rem",
+                paddingRight: "1rem",
+                height: "2rem",
+              }}
+            >
+              {loading ? <Loader2 className="animate-spin" width={"1rem"} /> : "Update"}
+            </button>
+          }
+          extra={
+            <div style={{
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              gap: "1rem",
+            }}>
+              <div style={{
+                background: "rgba(100, 100, 100, 0.05)",
+                padding: "1rem",
+                borderRadius: "1rem",
+              }}>
+                <label style={{
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  opacity: 0.9,
+                  marginBottom: "0.75rem",
+                  display: "block"
+                }}>
+                  Select Vehicle
+                </label>
+                <select
+                  value={allocated_vehicle || ""}
+                  onChange={(e) => setAllocatedVehicle(e.target.value)}
+                  disabled={loading}
+                  style={{
+                    width: "100%",
+                    borderRadius: "0.75rem",
+                    backgroundColor: "rgba(100, 100, 100, 0.08)",
+                    border: "none",
+                    padding: "0.875rem 1rem",
+                    color: "inherit",
+                    fontSize: "1rem",
+                    boxSizing: "border-box",
+                    cursor: "pointer"
+                  }}
+                >
+                  <option value="">No vehicle allocated</option>
+                  {availableVehicles.map((vehicle: any) => (
+                    <option key={vehicle.id} value={vehicle.vehicle_number}>
+                      {vehicle.vehicle_number} - {vehicle.make} {vehicle.model} ({vehicle.type})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {allocated_vehicle && availableVehicles.find((v: any) => v.vehicle_number === allocated_vehicle) && (
+                <div style={{
+                  background: "rgba(100, 100, 100, 0.05)",
+                  padding: "1rem",
+                  borderRadius: "1rem",
+                }}>
+                  {(() => {
+                    const vehicleInfo = availableVehicles.find((v: any) => v.vehicle_number === allocated_vehicle);
+                    return (
+                      <>
+                        <p style={{ fontSize: "0.875rem", opacity: 0.7, marginBottom: "0.5rem" }}>Vehicle Details</p>
+                        <p><strong>Make:</strong> {vehicleInfo.make}</p>
+                        <p><strong>Model:</strong> {vehicleInfo.model}</p>
+                        <p><strong>Year:</strong> {vehicleInfo.year}</p>
+                        <p><strong>Type:</strong> {vehicleInfo.type}</p>
+                        <p><strong>Status:</strong> {vehicleInfo.status}</p>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          }
         />
 
         <DefaultDialog

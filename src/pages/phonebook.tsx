@@ -156,7 +156,11 @@ export default function Phonebook() {
         </div>
         </motion.div>
 
-        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <Drawer 
+            open={drawerOpen} 
+            onOpenChange={setDrawerOpen}
+            shouldScaleBackground={false}
+        >
             <DrawerTitle></DrawerTitle>
             <DrawerDescription></DrawerDescription>
             <DrawerContent className="pb-safe">

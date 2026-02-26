@@ -1,7 +1,6 @@
-import { ChevronLeft, PenLine } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LoadingOutlined } from "@ant-design/icons";
+import { ChevronLeft, Loader2, PenLine } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   icon?: any;
@@ -135,7 +134,7 @@ export default function Back(props: Props) {
                     whileInView={{ opacity: 1 }}
                   >
                     {props.editModeLoading ? (
-                      <LoadingOutlined color="dodgerblue" />
+                      <Loader2 className="animate-spin" color="dodgerblue" />
                     ) : (
                       <PenLine
                         width={"1rem"}

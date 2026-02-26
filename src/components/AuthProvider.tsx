@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { User } from "firebase/auth";
 import { fetchAndCacheProfile, clearProfileCache } from "@/utils/profileCache";
+import { fetchAndCacheVehicle, clearVehicleCache } from "@/utils/vehicleCache";
 
 interface FirestoreUserData {
   id: string;
@@ -13,6 +14,9 @@ interface FirestoreUserData {
   clearance: "Sohar Star United" | "Vale" | "All" | "none";
   assignedSite?: string;
   assignedProject?: string;
+  editor?: string | boolean;  // editor access permission
+  sensitive_data?: string | boolean;  // sensitive data access permission
+  allocated_vehicle?: string;  // vehicle number from vehicle_master
   [key: string]: any;
 }
 
@@ -223,9 +227,16 @@ const AuthProvider = ({ children }: Props) => {
         setCachedAuthState(false);
         
         // Cache profile data in background
-        fetchAndCacheProfile(email).catch(err => 
+        fetchAndCacheProfile(email, userData.allocated_vehicle).catch(err => 
           console.error("Failed to cache profile:", err)
         );
+        
+        // Cache vehicle data in background if allocated
+        if (userData.allocated_vehicle) {
+          fetchAndCacheVehicle(userData.allocated_vehicle).catch(err =>
+            console.error("Failed to cache vehicle:", err)
+          );
+        }
         
         // toast.success("✅ Login successful - cached for offline use!");
         return { result, userData };
@@ -262,6 +273,7 @@ const AuthProvider = ({ children }: Props) => {
       localStorage.removeItem(CACHED_AUTH_KEY);
       localStorage.removeItem(CACHE_TIMESTAMP_KEY);
       clearProfileCache();
+      clearVehicleCache();
       
       toast.success("✅ Logged out successfully");
       
@@ -284,7 +296,7 @@ const AuthProvider = ({ children }: Props) => {
       
       // Pre-fetch profile data in background if user email is available
       if (userData?.email) {
-        fetchAndCacheProfile(userData.email).catch(err => 
+        fetchAndCacheProfile(userData.email, userData.allocated_vehicle).catch(err => 
           console.error("Failed to pre-cache profile:", err)
         );
       }

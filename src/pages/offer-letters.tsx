@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -3144,7 +3145,17 @@ const [searchTerm, setSearchTerm] = useState("");
       </motion.div>
 
       {offerLetters.length === 0 ? (
-        <div style={{ textAlign: "center", color: "#888" }}></div>
+        <Empty style={{ maxHeight: "70vh", paddingBottom: "4rem" }}>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <FileText />
+            </EmptyMedia>
+            <EmptyTitle>No offer letters yet</EmptyTitle>
+            <EmptyDescription>
+              Create your first offer letter to get started
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <div style={{ maxHeight: "70vh", overflowY: "auto", paddingBottom: "4rem" }}>
           {offerLetters

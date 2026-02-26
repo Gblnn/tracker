@@ -2,6 +2,7 @@ import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import Directive from "@/components/directive";
 import RefreshButton from "@/components/refresh-button";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { db } from "@/firebase";
 import { Modal } from "antd";
 import { toast } from "sonner";
@@ -202,22 +203,26 @@ export default function Index() {
                 <LoaderCircle width={"2rem"} className="animate-spin" />
               </div>
             ) : links.length === 0 ? (
-              <div
+              <Empty
                 style={{
-                  border: "",
                   position: "absolute",
                   top: 0,
                   left: 0,
                   width: "100%",
                   height: "100svh",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
                   zIndex: -1,
                 }}
               >
-                No links found.
-              </div>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <Link />
+                  </EmptyMedia>
+                  <EmptyTitle>No links found</EmptyTitle>
+                  <EmptyDescription>
+                    Click the + button to add your first quick link
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : (
               links.map((link) => (
                 <Directive

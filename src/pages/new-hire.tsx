@@ -101,7 +101,7 @@ export default function NewHire() {
             <Directive
               title={"OnBoarding"}
               icon={<PartyPopper color="goldenrod" />}
-              tag={"Maintenance"}
+            
             />
 
             {/* <Directive
