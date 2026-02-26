@@ -39,6 +39,7 @@ import {
   User,
   UserCheck,
   UserPlus,
+  Users as UsersIcon,
   Wallet
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -49,7 +50,7 @@ const CACHED_USER_KEY = "cached_user_data";
 // Module definitions
 const MODULES = [
   { id: 'records_master', name: 'Records Master', icon: FileArchive },
-  { id: 'user_management', name: 'User Management', icon: KeyRound },
+  { id: 'user_management', name: 'Users', icon: UsersIcon },
   { id: 'new_hire', name: 'New Hire', icon: UserCheck },
   { id: 'phonebook', name: 'Phonebook', icon: Notebook },
   { id: 'quick_links', name: 'Quick Links', icon: Link },
@@ -696,7 +697,7 @@ export default function Users() {
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                        <Icon width="1.25rem" color={isEnabled ? "dodgerblue" : "gray"} />
+                        <Icon width="1.25rem" style={{color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)"}} />
                         <span style={{ fontSize: "1rem", color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }}>{module.name}</span>
                       </div>
                       <div
@@ -704,7 +705,7 @@ export default function Users() {
                           width: "2.5rem",
                           height: "1.5rem",
                           borderRadius: "0.75rem",
-                          background: isEnabled ? "dodgerblue" : "rgba(100, 100, 100, 0.2)",
+                          background: isEnabled ? "black" : "rgba(100, 100, 100, 0.2)",
                           position: "relative",
                           transition: "all 0.3s"
                         }}

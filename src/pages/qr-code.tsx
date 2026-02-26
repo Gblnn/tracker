@@ -97,7 +97,7 @@ function QRCodeGenerator() {
                 </>
               )
               :
-              <div className="w-64 h-64 rounded-lg" style={{background:"rgba(100 100 100/ 20%)", display:"flex", justifyContent:"center", alignItems:"center"}}>
+              <div className="w-64 h-64 rounded-lg" style={{background:"rgba(100 100 100/ 0.1)", display:"flex", justifyContent:"center", alignItems:"center"}}>
                 <QrCode/>
               </div>
             }

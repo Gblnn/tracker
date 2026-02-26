@@ -4,7 +4,6 @@ import { LoadingOutlined } from "@ant-design/icons";
 
 // Define routes that require specific clearance
 const CLEARANCE_ROUTES = {
-  "/records": ["All", "Sohar Star United"],
   "/vale-records": ["All", "Vale"],
 };
 

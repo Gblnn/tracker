@@ -2,6 +2,7 @@ import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import BackgroundProcessDropdown from "@/components/background-process-dropdown";
 import Directive from "@/components/directive";
+import GridTile from "@/components/grid-tile";
 import IndexDropDown from "@/components/index-dropdown";
 import InputDialog from "@/components/input-dialog";
 import DefaultDialog from "@/components/ui/default-dialog";
@@ -16,11 +17,14 @@ import {
   FileArchive,
   Fuel,
   KeyRound,
+  LayoutGrid,
   Link,
+  List,
   Mail,
   Notebook,
   QrCode,
   UserCheck,
+  Users,
   Wallet
 } from "lucide-react";
 import moment from "moment";
@@ -40,6 +44,7 @@ export default function Index() {
   const [loading, setLoading] = useState(false);
   const [admin, setAdmin] = useState(false);
   const [modulePermissions, setModulePermissions] = useState<Record<string, boolean>>({});
+  const [viewMode, setViewMode] = useState<'grid' | 'directive'>('directive');
   const { userData, logoutUser: logOut } = useAuth();
 
   const serviceId = "service_fixajl8";
@@ -178,6 +183,21 @@ export default function Index() {
 
                 <BackgroundProcessDropdown />
 
+                <button
+                  onClick={() => setViewMode(viewMode === 'grid' ? 'directive' : 'grid')}
+                  style={{
+                    width: "3rem",
+                    height: "2.5rem",
+                  }}
+                  title={viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'}
+                >
+                  {viewMode === 'grid' ? (
+                    <List width={"1rem"} color="dodgerblue" />
+                  ) : (
+                    <LayoutGrid width={"1rem"} color="dodgerblue" />
+                  )}
+                </button>
+
                 {/* <button
                   style={{
                     fontSize: "0.75rem",
@@ -224,18 +244,20 @@ export default function Index() {
               <LoadingOutlined style={{ color: "dodgerblue", scale: "2" }} />
             </div>
           ) : (
-            <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
-              {hasModuleAccess('records_master') && (
-                <Directive
-                  onClick={() => authenticateModule('records_master', '/records', 'Records Master')}
-                  title={"Records Master"}
-                  icon={<FileArchive width={"1.25rem"} />}
-                />
-              )}
+            <>
+              {viewMode === 'directive' ? (
+                <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
+                  {hasModuleAccess('records_master') && (
+                    <Directive
+                      onClick={() => navigate('/records')}
+                      title={"Records Master"}
+                      icon={<FileArchive width={"1.25rem"} />}
+                    />
+                  )}
 
-              {admin && (
-                <Directive onClick={() => navigate('/users')} icon={<KeyRound width={"1.25rem"}/>} title={"User Management"}/>
-              )}
+                  {admin && (
+                    <Directive onClick={() => navigate('/users')} icon={<Users width={"1.25rem"}/>} title={"Users"}/>
+                  )}
               
 
               {/* <Directive onClick={()=>usenavigate("/documents")} title={"Document Generation"} icon={<FilePen width={"1.25rem"} color="mediumslateblue"/>} /> */}
@@ -422,7 +444,96 @@ export default function Index() {
             /> */}
 
               {/* <Directive onClick={()=>{setRequestDialog(true)}} title="Request Feature" icon={<Plus color="grey" width={"1.1rem"} height={"1.1rem"}/>}/> */}
-            </div>
+                </div>
+              ) : (
+                <div style={{ 
+                  display: "grid", 
+                  gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+                  gap: "1rem",
+                  paddingBottom: "2rem"
+                }}>
+                  {hasModuleAccess('records_master') && (
+                    <GridTile
+                      title="Records Master"
+                      icon={<FileArchive width={"2rem"}  />}
+                      onClick={() => navigate('/records')}
+                    />
+                  )}
+
+                  {admin && (
+                    <GridTile
+                      title="Users"
+                      icon={<Users width={"2rem"} />}
+                      onClick={() => navigate('/users')}
+                    />
+                  )}
+
+                  {hasModuleAccess('new_hire') && (
+                    <GridTile
+                      title="New Hire"
+                      icon={<UserCheck width={"2rem"}  />}
+                      onClick={() => authenticateModule('new_hire', '/new-hire', 'New Hire')}
+                    />
+                  )}
+
+                  {hasModuleAccess('phonebook') && (
+                    <GridTile
+                      title="Phonebook"
+                      icon={<Notebook width={"2rem"}  />}
+                      onClick={() => authenticateModule('phonebook', '/phonebook', 'Phonebook')}
+                    />
+                  )}
+
+                  {hasModuleAccess('quick_links') && (
+                    <GridTile
+                      title="Quick Links"
+                      icon={<Link width={"2rem"}  />}
+                      onClick={() => authenticateModule('quick_links', '/quick-links', 'Quick Links')}
+                    />
+                  )}
+
+                  {hasModuleAccess('qr_generator') && (
+                    <GridTile
+                      title="QR Generator"
+                      icon={<QrCode width={"2rem"}  />}
+                      onClick={() => authenticateModule('qr_generator', '/qr-code-generator', 'QR Generator')}
+                    />
+                  )}
+
+                  {hasModuleAccess('fuel_log') && (
+                    <GridTile
+                      title="Fuel Log"
+                      icon={<Fuel width={"2rem"}  />}
+                      onClick={() => authenticateModule('fuel_log', '/fuel-log', 'Fuel Log')}
+                    />
+                  )}
+
+                  {hasModuleAccess('vehicle_master') && (
+                    <GridTile
+                      title="Vehicle Master"
+                      icon={<Car width={"2rem"}  />}
+                      onClick={() => authenticateModule('vehicle_master', '/vehicle-master', 'Vehicle Master')}
+                    />
+                  )}
+
+                  {hasModuleAccess('vehicle_log_book') && (
+                    <GridTile
+                      title="Vehicle Log Book"
+                      icon={<Book width={"2rem"}  />}
+                      onClick={() => authenticateModule('vehicle_log_book', '/vehicle-log-book', 'Vehicle Log Book')}
+                    />
+                  )}
+
+                  {hasModuleAccess('petty_cash') && (
+                    <GridTile
+                      title="Petty Cash"
+                      icon={<Wallet width={"2rem"}  />}
+                      onClick={() => authenticateModule('petty_cash', '/petty-cash', 'Petty Cash')}
+                    />
+                  )}
+                </div>
+              )}
+            </>
           )}
         </motion.div>
 
