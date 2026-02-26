@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useRef } from "react";
 import { Route, Routes } from "react-router-dom";
-import { Loader2 } from "lucide-react";
 import AuthGuard from "./components/AuthGuard";
 import ProtectedRoutes from "./components/protectedRoute";
 import { refreshPhonebookCache } from "./utils/phonebookCache";
@@ -12,6 +11,7 @@ import UserReset from "./pages/user-reset";
 import RequestAccess from "./pages/request-access";
 import CreateAccount from "./pages/create-account";
 import PageNotFound from "./pages/page-not-found";
+import { Loader2 } from "lucide-react";
 
 // Lazy load protected pages only (loaded after authentication)
 const Index = lazy(() => import("./pages"));

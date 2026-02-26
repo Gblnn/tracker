@@ -1,9 +1,7 @@
 import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
-import ClearanceMenu from "@/components/clearance-menu";
 import Directive from "@/components/directive";
 import IOMenu from "@/components/editorMenu";
-import InputDialog from "@/components/input-dialog";
 import RefreshButton from "@/components/refresh-button";
 import RoleSelect from "@/components/role-select";
 import DefaultDialog from "@/components/ui/default-dialog";
@@ -24,18 +22,43 @@ import {
 } from "firebase/firestore";
 import { motion } from "framer-motion";
 import {
+  Book,
+  Car,
   Eye,
+  FileArchive,
+  Fuel,
+  KeyRound,
+  Link,
   Loader2,
   MinusCircle,
+  Notebook,
   PenLine,
+  Plus,
+  QrCode,
   ShieldPlus,
   User,
-  UserPlus
+  UserCheck,
+  UserPlus,
+  Wallet
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 // Constants for localStorage keys
 const CACHED_USER_KEY = "cached_user_data";
+
+// Module definitions
+const MODULES = [
+  { id: 'records_master', name: 'Records Master', icon: FileArchive },
+  { id: 'user_management', name: 'User Management', icon: KeyRound },
+  { id: 'new_hire', name: 'New Hire', icon: UserCheck },
+  { id: 'phonebook', name: 'Phonebook', icon: Notebook },
+  { id: 'quick_links', name: 'Quick Links', icon: Link },
+  { id: 'qr_generator', name: 'QR Generator', icon: QrCode },
+  { id: 'fuel_log', name: 'Fuel Log', icon: Fuel },
+  { id: 'vehicle_master', name: 'Vehicle Master', icon: Car },
+  { id: 'vehicle_log_book', name: 'Vehicle Log Book', icon: Book },
+  { id: 'petty_cash', name: 'Petty Cash', icon: Wallet },
+];
 
 // Shared User Details Content Component
 interface UserDetailsContentProps {
@@ -56,6 +79,8 @@ interface UserDetailsContentProps {
   loading: boolean;
   onUpdate: () => void;
   onDelete: () => void;
+  isMobile: boolean;
+  onOpenClearanceDrawer: () => void;
 }
 
 const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
@@ -64,7 +89,7 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
   role,
   setRole,
   clearance,
-  setClearance,
+  
   site,
   setSite,
   project,
@@ -76,7 +101,18 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
   loading,
   onUpdate,
   onDelete,
+  
+  onOpenClearanceDrawer,
 }) => {
+  // Parse clearance to count enabled modules
+  const getEnabledModulesCount = () => {
+    try {
+      const modules = JSON.parse(clearance || '{}');
+      return Object.values(modules).filter(v => v === true).length;
+    } catch {
+      return 0;
+    }
+  };
   return (
     <div style={{ display: "flex", flexDirection: "column", maxHeight: "75vh", width: "100%" }}>
       {/* Fixed Header */}
@@ -160,9 +196,11 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
                 }
               }}
             />
-            <ClearanceMenu
-              value={clearance ? clearance : "Undefined"}
-              onChange={setClearance}
+            <Directive
+              onClick={onOpenClearanceDrawer}
+              title="Module Clearance"
+              icon={<KeyRound width="1.25rem" color="dodgerblue" />}
+              id_subtitle={`${getEnabledModulesCount()} modules enabled`}
             />
             {(role === 'supervisor' || role === 'site_coordinator') && (
               <div style={{
@@ -283,8 +321,59 @@ export default function Users() {
   const [site, setSite] = useState("");
   const [project, setProject] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Clearance drawer states
+  const [clearanceDrawerOpen, setClearanceDrawerOpen] = useState(false);
+  const [modulePermissions, setModulePermissions] = useState<Record<string, boolean>>({});
+  const [createUserClearanceDrawerOpen, setCreateUserClearanceDrawerOpen] = useState(false);
+  const [createUserModulePermissions, setCreateUserModulePermissions] = useState<Record<string, boolean>>({});
 
   const auth = getAuth();
+
+  // Parse module permissions from clearance string
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(clearance || '{}');
+      setModulePermissions(parsed);
+    } catch {
+      setModulePermissions({});
+    }
+  }, [clearance]);
+
+  // Toggle module permission
+  const toggleModulePermission = (moduleId: string) => {
+    setModulePermissions(prev => ({
+      ...prev,
+      [moduleId]: !prev[moduleId]
+    }));
+  };
+
+  // Toggle module permission for create user
+  const toggleCreateUserModulePermission = (moduleId: string) => {
+    setCreateUserModulePermissions(prev => ({
+      ...prev,
+      [moduleId]: !prev[moduleId]
+    }));
+  };
+
+  // Save module permissions to clearance
+  const saveClearance = () => {
+    setClearance(JSON.stringify(modulePermissions));
+    setClearanceDrawerOpen(false);
+  };
+
+  // Handle add user dialog close and reset form
+  const handleAddUserDialogChange = (open: boolean) => {
+    setAddUserDialog(open);
+    if (!open) {
+      // Reset form fields when dialog closes
+      setName("");
+      setEmail("");
+      setPassword("");
+      setpassconfirm("");
+      setCreateUserModulePermissions({});
+    }
+  };
 
   // Detect mobile/desktop
   useEffect(() => {
@@ -327,7 +416,7 @@ export default function Users() {
         email: email,
         role: "profile",  // system access role
         designation: "",  // job title
-        clearance: "Sohar Star United",
+        clearance: JSON.stringify(createUserModulePermissions),
         editor: "false",
         sensitive_data: "false",
         assignedSite: "",
@@ -336,6 +425,12 @@ export default function Users() {
       message.success("User created");
       setLoading(false);
       setAddUserDialog(false);
+      setCreateUserModulePermissions({});
+      // Reset create user form fields
+      setName("");
+      setEmail("");
+      setPassword("");
+      setpassconfirm("");
       fetchUsers();
     } catch (error) {
       setLoading(false);
@@ -420,16 +515,6 @@ export default function Users() {
           title="Users"
           extra={
             <div style={{ display: "flex", gap: "0.5rem" }}>
-              <button
-                style={{
-                  fontSize: "0.8rem",
-                  paddingLeft: "1rem",
-                  paddingRight: "1rem",
-                }}
-                onClick={() => setAddUserDialog(true)}
-              >
-                <UserPlus width={"1rem"} color="dodgerblue" />
-              </button>
               <RefreshButton
                 fetchingData={fetchingData}
                 onClick={fetchUsers}
@@ -484,11 +569,11 @@ export default function Users() {
                 key={user.id}
                 icon={
                   user.role == "admin" ? (
-                    <Eye width={"1.25rem"} color="dodgerblue" />
+                    <Eye width={"1.25rem"} color="black" />
                   ) : user.role == "hr" ? (
-                    <ShieldPlus width={"1.25rem"} color="dodgerblue" />
+                    <ShieldPlus width={"1.25rem"} color="black" />
                   ) : (
-                    <User width={"1.25rem"} color="dodgerblue" />
+                    <User width={"1.25rem"} color="black" />
                   )
                 }
                 title={user.name}
@@ -532,6 +617,8 @@ export default function Users() {
               loading={loading}
               onUpdate={updateUser}
               onDelete={() => setDeleteConfirmDialog(true)}
+              isMobile={isMobile}
+              onOpenClearanceDrawer={() => setClearanceDrawerOpen(true)}
             />
           </DrawerContent>
         </Drawer>
@@ -558,6 +645,8 @@ export default function Users() {
               loading={loading}
               onUpdate={updateUser}
               onDelete={() => setDeleteConfirmDialog(true)}
+              isMobile={isMobile}
+              onOpenClearanceDrawer={() => setClearanceDrawerOpen(true)}
             />
           </DialogContent>
         </Dialog>
@@ -574,24 +663,567 @@ export default function Users() {
         disabled={loading}
       />
 
-      <InputDialog
-        titleIcon={<UserPlus color="dodgerblue" />}
-        open={addUserDialog}
-        title={"Add User"}
-        OkButtonText="Add"
-        inputplaceholder="Enter Name"
-        input2placeholder="Enter Email"
-        input3placeholder="Enter Password"
-        input4placeholder="Confirm Password"
-        onCancel={() => setAddUserDialog(false)}
-        inputOnChange={(e: any) => setName(e.target.value)}
-        input2OnChange={(e: any) => setEmail(e.target.value)}
-        input3OnChange={(e: any) => setPassword(e.target.value)}
-        input4OnChange={(e: any) => setpassconfirm(e.target.value)}
-        disabled={!name || !email || !passconfirm || password != passconfirm}
-        onOk={createUser}
-        updating={loading}
-      />
+      {/* Clearance Drawer for Editing User */}
+      {isMobile ? (
+        <Drawer open={clearanceDrawerOpen} onOpenChange={setClearanceDrawerOpen} shouldScaleBackground={false}>
+          <DrawerTitle></DrawerTitle>
+          <DrawerDescription></DrawerDescription>
+          <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "80vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+            <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", width: "100%", boxSizing: "border-box" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem", textAlign:"center", border:"", justifyContent:"center" }}>
+              
+                <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Module Clearance</h2>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "50vh", overflowY: "auto" }}>
+                {MODULES.map((module) => {
+                  const Icon = module.icon;
+                  const isEnabled = modulePermissions[module.id] || false;
+                  return (
+                    <motion.div
+                      key={module.id}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => toggleModulePermission(module.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "1rem",
+                        borderRadius: "0.75rem",
+                        background: isEnabled ? "rgba(100, 100, 100, 0.1)" : "rgba(100, 100, 100, 0.05)",
+                        // border: isEnabled ? "1px solid rgba(30, 144, 255, 0.3)" : "1px solid rgba(100, 100, 100, 0.1)",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                        <Icon width="1.25rem" color={isEnabled ? "dodgerblue" : "gray"} />
+                        <span style={{ fontSize: "1rem", color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }}>{module.name}</span>
+                      </div>
+                      <div
+                        style={{
+                          width: "2.5rem",
+                          height: "1.5rem",
+                          borderRadius: "0.75rem",
+                          background: isEnabled ? "dodgerblue" : "rgba(100, 100, 100, 0.2)",
+                          position: "relative",
+                          transition: "all 0.3s"
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "1.25rem",
+                            height: "1.25rem",
+                            borderRadius: "50%",
+                            background: "white",
+                            position: "absolute",
+                            top: "0.125rem",
+                            left: isEnabled ? "1.125rem" : "0.125rem",
+                            transition: "all 0.3s"
+                          }}
+                        />
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.01 }}
+                onClick={saveClearance}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  borderRadius: "1rem",
+                  background: "black",
+                  color: "white",
+                  fontSize: "1.0625rem",
+                  border: "none",
+                  cursor: "pointer",
+                  marginTop: "0.5rem",
+                  marginBottom: "1rem"
+                }}
+              >
+                Save
+              </motion.button>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={clearanceDrawerOpen} onOpenChange={setClearanceDrawerOpen}>
+          <DialogContent style={{ maxWidth: "500px" }}>
+            <DialogTitle></DialogTitle>
+            <DialogDescription></DialogDescription>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
+                <KeyRound width="1.5rem" color="dodgerblue" />
+                <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Module Clearance</h2>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "50vh", overflowY: "auto" }}>
+                {MODULES.map((module) => {
+                  const Icon = module.icon;
+                  const isEnabled = modulePermissions[module.id] || false;
+                  return (
+                    <motion.div
+                      key={module.id}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => toggleModulePermission(module.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "1rem",
+                        borderRadius: "0.75rem",
+                        background: isEnabled ? "rgba(30, 144, 255, 0.1)" : "rgba(100, 100, 100, 0.05)",
+                        border: isEnabled ? "1px solid rgba(30, 144, 255, 0.3)" : "1px solid rgba(100, 100, 100, 0.1)",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                        <Icon width="1.25rem" color={isEnabled ? "dodgerblue" : "gray"} />
+                        <span style={{ fontSize: "1rem", color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }}>{module.name}</span>
+                      </div>
+                      <div
+                        style={{
+                          width: "2.5rem",
+                          height: "1.5rem",
+                          borderRadius: "0.75rem",
+                          background: isEnabled ? "dodgerblue" : "rgba(100, 100, 100, 0.2)",
+                          position: "relative",
+                          transition: "all 0.3s"
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "1.25rem",
+                            height: "1.25rem",
+                            borderRadius: "50%",
+                            background: "white",
+                            position: "absolute",
+                            top: "0.125rem",
+                            left: isEnabled ? "1.125rem" : "0.125rem",
+                            transition: "all 0.3s"
+                          }}
+                        />
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.01 }}
+                onClick={saveClearance}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  borderRadius: "1rem",
+                  background: "black",
+                  color: "white",
+                  fontSize: "1.0625rem",
+                  border: "none",
+                  cursor: "pointer",
+                  marginTop: "0.5rem"
+                }}
+              >
+                Save
+              </motion.button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Create User Dialog */}
+      {isMobile ? (
+        <Drawer open={addUserDialog} onOpenChange={handleAddUserDialogChange} shouldScaleBackground={false}>
+          <DrawerTitle></DrawerTitle>
+          <DrawerDescription></DrawerDescription>
+          <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "80vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+            <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", width: "100%", boxSizing: "border-box" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem", justifyContent:"center", border:"" }}>
+               
+                <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Add User</h2>
+              </div>
+              <input
+                placeholder="Enter Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                style={{
+                  borderRadius: "0.5rem",
+                  backgroundColor: "rgba(100, 100, 100, 0.05)",
+                  border: "1px solid rgba(100, 100, 100, 0.1)",
+                  padding: "0.875rem 1rem",
+                  color: "inherit",
+                  fontSize: "1rem"
+                }}
+              />
+              <input
+                placeholder="Enter Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{
+                  borderRadius: "0.5rem",
+                  backgroundColor: "rgba(100, 100, 100, 0.05)",
+                  border: "1px solid rgba(100, 100, 100, 0.1)",
+                  padding: "0.875rem 1rem",
+                  color: "inherit",
+                  fontSize: "1rem"
+                }}
+              />
+              <input
+                placeholder="Enter Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{
+                  borderRadius: "0.5rem",
+                  backgroundColor: "rgba(100, 100, 100, 0.05)",
+                  border: "1px solid rgba(100, 100, 100, 0.1)",
+                  padding: "0.875rem 1rem",
+                  color: "inherit",
+                  fontSize: "1rem"
+                }}
+              />
+              <input
+                placeholder="Confirm Password"
+                type="password"
+                value={passconfirm}
+                onChange={(e) => setpassconfirm(e.target.value)}
+                style={{
+                  borderRadius: "0.5rem",
+                  backgroundColor: "rgba(100, 100, 100, 0.05)",
+                  border: "1px solid rgba(100, 100, 100, 0.1)",
+                  padding: "0.875rem 1rem",
+                  color: "inherit",
+                  fontSize: "1rem"
+                }}
+              />
+              <Directive
+                onClick={() => setCreateUserClearanceDrawerOpen(true)}
+                title="Module Clearance"
+                icon={<KeyRound width="1.25rem" color="dodgerblue" />}
+                id_subtitle={`${Object.values(createUserModulePermissions).filter(v => v === true).length} modules enabled`}
+              />
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.01 }}
+                onClick={createUser}
+                disabled={!name || !email || !passconfirm || password !== passconfirm || loading}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  borderRadius: "1rem",
+                  background: (!name || !email || !passconfirm || password !== passconfirm || loading) ? "rgba(100, 100, 100, 0.3)" : "black",
+                  color: "white",
+                  fontSize: "1.0625rem",
+                  border: "none",
+                  cursor: (!name || !email || !passconfirm || password !== passconfirm || loading) ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  marginTop: "0.5rem"
+                }}
+              >
+                {loading ? <Loader2 className="animate-spin" width="1.25rem" /> : <span>Add</span>}
+              </motion.button>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={addUserDialog} onOpenChange={handleAddUserDialogChange}>
+          <DialogContent style={{ maxWidth: "500px" }}>
+            <DialogTitle></DialogTitle>
+            <DialogDescription></DialogDescription>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
+                <UserPlus width="1.5rem" color="dodgerblue" />
+                <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Add User</h2>
+              </div>
+              <input
+                placeholder="Enter Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                style={{
+                  borderRadius: "0.5rem",
+                  backgroundColor: "rgba(100, 100, 100, 0.05)",
+                  border: "1px solid rgba(100, 100, 100, 0.1)",
+                  padding: "0.875rem 1rem",
+                  color: "inherit",
+                  fontSize: "1rem"
+                }}
+              />
+              <input
+                placeholder="Enter Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{
+                  borderRadius: "0.5rem",
+                  backgroundColor: "rgba(100, 100, 100, 0.05)",
+                  border: "1px solid rgba(100, 100, 100, 0.1)",
+                  padding: "0.875rem 1rem",
+                  color: "inherit",
+                  fontSize: "1rem"
+                }}
+              />
+              <input
+                placeholder="Enter Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{
+                  borderRadius: "0.5rem",
+                  backgroundColor: "rgba(100, 100, 100, 0.05)",
+                  border: "1px solid rgba(100, 100, 100, 0.1)",
+                  padding: "0.875rem 1rem",
+                  color: "inherit",
+                  fontSize: "1rem"
+                }}
+              />
+              <input
+                placeholder="Confirm Password"
+                type="password"
+                value={passconfirm}
+                onChange={(e) => setpassconfirm(e.target.value)}
+                style={{
+                  borderRadius: "0.5rem",
+                  backgroundColor: "rgba(100, 100, 100, 0.05)",
+                  border: "1px solid rgba(100, 100, 100, 0.1)",
+                  padding: "0.875rem 1rem",
+                  color: "inherit",
+                  fontSize: "1rem"
+                }}
+              />
+              <Directive
+                onClick={() => setCreateUserClearanceDrawerOpen(true)}
+                title="Module Clearance"
+                icon={<KeyRound width="1.25rem" color="dodgerblue" />}
+                id_subtitle={`${Object.values(createUserModulePermissions).filter(v => v === true).length} modules enabled`}
+              />
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.01 }}
+                onClick={createUser}
+                disabled={!name || !email || !passconfirm || password !== passconfirm || loading}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  borderRadius: "1rem",
+                  background: (!name || !email || !passconfirm || password !== passconfirm || loading) ? "rgba(100, 100, 100, 0.3)" : "black",
+                  color: "white",
+                  fontSize: "1.0625rem",
+                  border: "none",
+                  cursor: (!name || !email || !passconfirm || password !== passconfirm || loading) ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  marginTop: "0.5rem"
+                }}
+              >
+                {loading ? <Loader2 className="animate-spin" width="1.25rem" /> : <span>Add</span>}
+              </motion.button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Clearance Drawer for Create User */}
+      {isMobile ? (
+        <Drawer open={createUserClearanceDrawerOpen} onOpenChange={setCreateUserClearanceDrawerOpen} shouldScaleBackground={false}>
+          <DrawerTitle></DrawerTitle>
+          <DrawerDescription></DrawerDescription>
+          <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "75vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+            <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", width: "100%", boxSizing: "border-box" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
+                <KeyRound width="1.5rem" color="dodgerblue" />
+                <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Module Clearance</h2>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "50vh", overflowY: "auto" }}>
+                {MODULES.map((module) => {
+                  const Icon = module.icon;
+                  const isEnabled = createUserModulePermissions[module.id] || false;
+                  return (
+                    <motion.div
+                      key={module.id}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => toggleCreateUserModulePermission(module.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "1rem",
+                        borderRadius: "0.75rem",
+                        background: isEnabled ? "rgba(30, 144, 255, 0.1)" : "rgba(100, 100, 100, 0.05)",
+                        border: isEnabled ? "1px solid rgba(30, 144, 255, 0.3)" : "1px solid rgba(100, 100, 100, 0.1)",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                        <Icon width="1.25rem" color={isEnabled ? "dodgerblue" : "gray"} />
+                        <span style={{ fontSize: "1rem", color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }}>{module.name}</span>
+                      </div>
+                      <div
+                        style={{
+                          width: "2.5rem",
+                          height: "1.5rem",
+                          borderRadius: "0.75rem",
+                          background: isEnabled ? "dodgerblue" : "rgba(100, 100, 100, 0.2)",
+                          position: "relative",
+                          transition: "all 0.3s"
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "1.25rem",
+                            height: "1.25rem",
+                            borderRadius: "50%",
+                            background: "white",
+                            position: "absolute",
+                            top: "0.125rem",
+                            left: isEnabled ? "1.125rem" : "0.125rem",
+                            transition: "all 0.3s"
+                          }}
+                        />
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.01 }}
+                onClick={() => setCreateUserClearanceDrawerOpen(false)}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  borderRadius: "1rem",
+                  background: "black",
+                  color: "white",
+                  fontSize: "1.0625rem",
+                  border: "none",
+                  cursor: "pointer",
+                  marginTop: "0.5rem"
+                }}
+              >
+                Save
+              </motion.button>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={createUserClearanceDrawerOpen} onOpenChange={setCreateUserClearanceDrawerOpen}>
+          <DialogContent style={{ maxWidth: "500px" }}>
+            <DialogTitle></DialogTitle>
+            <DialogDescription></DialogDescription>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
+                <KeyRound width="1.5rem" color="dodgerblue" />
+                <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Module Clearance</h2>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "50vh", overflowY: "auto" }}>
+                {MODULES.map((module) => {
+                  const Icon = module.icon;
+                  const isEnabled = createUserModulePermissions[module.id] || false;
+                  return (
+                    <motion.div
+                      key={module.id}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => toggleCreateUserModulePermission(module.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "1rem",
+                        borderRadius: "0.75rem",
+                        background: isEnabled ? "rgba(30, 144, 255, 0.1)" : "rgba(100, 100, 100, 0.05)",
+                        border: isEnabled ? "1px solid rgba(30, 144, 255, 0.3)" : "1px solid rgba(100, 100, 100, 0.1)",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                        <Icon width="1.25rem" color={isEnabled ? "dodgerblue" : "gray"} />
+                        <span style={{ fontSize: "1rem", color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }}>{module.name}</span>
+                      </div>
+                      <div
+                        style={{
+                          width: "2.5rem",
+                          height: "1.5rem",
+                          borderRadius: "0.75rem",
+                          background: isEnabled ? "dodgerblue" : "rgba(100, 100, 100, 0.2)",
+                          position: "relative",
+                          transition: "all 0.3s"
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "1.25rem",
+                            height: "1.25rem",
+                            borderRadius: "50%",
+                            background: "white",
+                            position: "absolute",
+                            top: "0.125rem",
+                            left: isEnabled ? "1.125rem" : "0.125rem",
+                            transition: "all 0.3s"
+                          }}
+                        />
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.01 }}
+                onClick={() => setCreateUserClearanceDrawerOpen(false)}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  borderRadius: "1rem",
+                  background: "black",
+                  color: "white",
+                  fontSize: "1.0625rem",
+                  border: "none",
+                  cursor: "pointer",
+                  marginTop: "0.5rem"
+                }}
+              >
+                Save
+              </motion.button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Floating Add User Button */}
+      <motion.button
+        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: 1.05 }}
+        onClick={() => setAddUserDialog(true)}
+        style={{
+          position: "fixed",
+          bottom: "2rem",
+          right: "2rem",
+          width: "3.5rem",
+          height: "3.5rem",
+          borderRadius: "0.5rem",
+          background: "black",
+          color: "white",
+          border: "none",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+         
+          
+        }}
+      >
+        <Plus width="1.5rem" />
+      </motion.button>
     </div>
   );
 }

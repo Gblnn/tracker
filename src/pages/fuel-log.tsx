@@ -837,7 +837,8 @@ export default function FuelLog() {
       <Dialog open={showDatePicker} onOpenChange={setShowDatePicker}>
         <DialogContent style={{ maxWidth: "400px", padding: "1.5rem" }}>
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Calendar/>
               Select Date
             </DialogTitle>
             <DialogDescription></DialogDescription>

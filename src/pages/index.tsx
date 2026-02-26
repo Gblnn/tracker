@@ -20,7 +20,8 @@ import {
   Mail,
   Notebook,
   QrCode,
-  UserCheck
+  UserCheck,
+  Wallet
 } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
@@ -37,8 +38,8 @@ export default function Index() {
   const navigate = useNavigate();
   const [issue, setIssue] = useState("");
   const [loading, setLoading] = useState(false);
-  const [access, setAccess] = useState(false);
   const [admin, setAdmin] = useState(false);
+  const [modulePermissions, setModulePermissions] = useState<Record<string, boolean>>({});
   const { userData, logoutUser: logOut } = useAuth();
 
   const serviceId = "service_fixajl8";
@@ -63,12 +64,15 @@ export default function Index() {
 
   useEffect(() => {
     if (userData) {
-      const hasAccess =
-        userData.clearance === "Sohar Star United" ||
-        userData.clearance === "Vale" ||
-        userData.clearance === "All" 
+      // Parse module permissions from clearance JSON
+      try {
+        const permissions = JSON.parse(userData.clearance || '{}');
+        setModulePermissions(permissions);
+      } catch {
+        // Fallback for old clearance system
         
-      setAccess(hasAccess);
+        setModulePermissions({});
+      }
       setAdmin(userData.role === "admin");
 
       if (userData.role === "profile") {
@@ -77,8 +81,18 @@ export default function Index() {
     }
   }, [userData, navigate]);
 
-  const Authenticate = () => {
-    access ? navigate("/records") : toast.error("Clearance required");
+  // Helper function to check module access
+  const hasModuleAccess = (moduleId: string) => {
+    return modulePermissions[moduleId] === true;
+  };
+
+  // Authenticate for specific module
+  const authenticateModule = (moduleId: string, path: string, moduleName: string) => {
+    if (hasModuleAccess(moduleId)) {
+      usenavigate(path);
+    } else {
+      toast.error(`No clearance to access ${moduleName}`);
+    }
   };
 
   const handleLogout = async () => {
@@ -97,6 +111,7 @@ export default function Index() {
         <ConfettiExplosion/>
         </div> */}
         <Back
+        blurBG
           fixed
           editMode={userData?.editor===true? true : false}
             title="StarBoard"
@@ -210,17 +225,17 @@ export default function Index() {
             </div>
           ) : (
             <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
-              <Directive
-                to={access ? "/records" : ""}
-                onClick={Authenticate}
-                title={"Records Master"}
-                icon={<FileArchive width={"1.25rem"} />}
-              />
+              {hasModuleAccess('records_master') && (
+                <Directive
+                  onClick={() => authenticateModule('records_master', '/records', 'Records Master')}
+                  title={"Records Master"}
+                  icon={<FileArchive width={"1.25rem"} />}
+                />
+              )}
 
-              {
-                admin&&
-                <Directive onClick={() => navigate("/users")} icon={<KeyRound width={"1.25rem"}/>} title={"User Management"}/>
-              }
+              {admin && (
+                <Directive onClick={() => navigate('/users')} icon={<KeyRound width={"1.25rem"}/>} title={"User Management"}/>
+              )}
               
 
               {/* <Directive onClick={()=>usenavigate("/documents")} title={"Document Generation"} icon={<FilePen width={"1.25rem"} color="mediumslateblue"/>} /> */}
@@ -254,33 +269,31 @@ export default function Index() {
 
               
 
-              <Directive
-              onClick={() =>
-                  access || userData?.role === "hr"
-                    ? usenavigate("/new-hire")
-                    : toast.error("No Clearance to Access")
-                }
-              
-                to={"/new-hire"}
-                title={"New Hire"}
-                icon={<UserCheck width={"1.25rem"} />}
-              />
+              {hasModuleAccess('new_hire') && (
+                <Directive
+                  onClick={() => authenticateModule('new_hire', '/new-hire', 'New Hire')}
+                  title={"New Hire"}
+                  icon={<UserCheck width={"1.25rem"} />}
+                />
+              )}
 
-              <Directive
-                onClick={() => usenavigate("/phonebook")}
-                to={"/phonebook"}
-                title={"Phonebook"}
-                icon={<Notebook width={"1.25rem"} />}
-              />
+              {hasModuleAccess('phonebook') && (
+                <Directive
+                  onClick={() => authenticateModule('phonebook', '/phonebook', 'Phonebook')}
+                  title={"Phonebook"}
+                  icon={<Notebook width={"1.25rem"} />}
+                />
+              )}
 
               
 
-              <Directive
-                onClick={() => usenavigate("/quick-links")}
-                to={"/quick-links"}
-                title={"Quick Links"}
-                icon={<Link width={"1.25rem"} />}
-              />
+              {hasModuleAccess('quick_links') && (
+                <Directive
+                  onClick={() => authenticateModule('quick_links', '/quick-links', 'Quick Links')}
+                  title={"Quick Links"}
+                  icon={<Link width={"1.25rem"} />}
+                />
+              )}
 
               {/* <Directive
                 onClick={() => usenavigate("/agreements")}
@@ -306,33 +319,45 @@ export default function Index() {
                 icon={<PenSquare width={"1.25rem"} color="dodgerblue" />}
               /> */}
 
-              <Directive
-                onClick={() => usenavigate("/qr-code-generator")}
-                to={"/qr-code-generator"}
-                title={"QR Generator"}
-                icon={<QrCode width={"1.25rem"} />}
-              />
+              {hasModuleAccess('qr_generator') && (
+                <Directive
+                  onClick={() => authenticateModule('qr_generator', '/qr-code-generator', 'QR Generator')}
+                  title={"QR Generator"}
+                  icon={<QrCode width={"1.25rem"} />}
+                />
+              )}
 
-              <Directive
-                onClick={() => usenavigate("/fuel-log")}
-                to={"/fuel-log"}
-                title={"Fuel Log"}
-                icon={<Fuel width={"1.25rem"}  />}
-              />
+              {hasModuleAccess('fuel_log') && (
+                <Directive
+                  onClick={() => authenticateModule('fuel_log', '/fuel-log', 'Fuel Log')}
+                  title={"Fuel Log"}
+                  icon={<Fuel width={"1.25rem"}  />}
+                />
+              )}
 
-              <Directive
-                onClick={() => usenavigate("/vehicle-master")}
-                to="/vehicle-master"
-                title={"Vehicle Master"}
-                icon={<Car width={"1.25rem"} />}
-              />
+              {hasModuleAccess('vehicle_master') && (
+                <Directive
+                  onClick={() => authenticateModule('vehicle_master', '/vehicle-master', 'Vehicle Master')}
+                  title={"Vehicle Master"}
+                  icon={<Car width={"1.25rem"} />}
+                />
+              )}
 
-              <Directive
-                onClick={() => usenavigate("/vehicle-log-book")}
-                to="/vehicle-log-book"
-                title={"Vehicle Log Book"}
-                icon={<Book width={"1.25rem"} />}
-              />
+              {hasModuleAccess('vehicle_log_book') && (
+                <Directive
+                  onClick={() => authenticateModule('vehicle_log_book', '/vehicle-log-book', 'Vehicle Log Book')}
+                  title={"Vehicle Log Book"}
+                  icon={<Book width={"1.25rem"} />}
+                />
+              )}
+
+              {hasModuleAccess('petty_cash') && (
+                <Directive
+                  onClick={() => authenticateModule('petty_cash', '/petty-cash', 'Petty Cash')}
+                  title={"Petty Cash"}
+                  icon={<Wallet width={"1.25rem"} />}
+                />
+              )}
 
               {/* <Directive
                 tag="Work In Progress"

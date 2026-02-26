@@ -31,26 +31,117 @@
         width: 100%;
         height: 100vh;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
-        background: transparent;
-        opacity: 1;
-        transition: opacity 0.3s;
+        background: #ffffff;
         z-index: 99999;
       }
       .initial-loader.hidden {
-        opacity: 0;
-        pointer-events: none;
+        display: none;
+      }
+      .loader-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+      }
+      .logo-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       .initial-loader img {
-        width: 50px;
-        height: 50px;
+        width: 80px;
+        height: 80px;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.05);
+          opacity: 0.85;
+        }
+      }
+      .spinner {
+        width: 120px;
+        height: 120px;
+        border: 3px solid rgba(30, 144, 255, 0.1);
+        border-top-color: #1e90ff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        position: absolute;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      .loading-text {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+        font-size: 1.125rem;
+        color: #333;
+        font-weight: 500;
+        letter-spacing: 0.025em;
+      }
+      .progress-container {
+        width: 280px;
+        height: 4px;
+        background: rgba(30, 144, 255, 0.15);
+        border-radius: 2px;
+        overflow: hidden;
+        position: relative;
+      }
+      .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #1e90ff, #4169e1);
+        border-radius: 2px;
+        animation: progress 2s ease-in-out infinite;
+        box-shadow: 0 0 10px rgba(30, 144, 255, 0.5);
+      }
+      @keyframes progress {
+        0% {
+          width: 0%;
+          opacity: 0.6;
+        }
+        50% {
+          width: 70%;
+          opacity: 1;
+        }
+        100% {
+          width: 100%;
+          opacity: 0.6;
+        }
+      }
+      .loading-dots {
+        display: inline-block;
+        animation: dots 1.5s steps(4, end) infinite;
+      }
+      @keyframes dots {
+        0%, 20% { content: ''; }
+        40% { content: '.'; }
+        60% { content: '..'; }
+        80%, 100% { content: '...'; }
+      }
+      .loading-dots::after {
+        content: '';
+        animation: dots 1.5s steps(4, end) infinite;
       }
     </style>
   </head>
   <body>
     <div class="initial-loader" id="initial-loader">
-      <img src="/stardox-bg.png" alt="Loading..." />
+      <div class="loader-content">
+        <div class="logo-container">
+          <!-- <div class="spinner"></div> -->
+          <!-- <img width="2px" src="/stardox-bg.png" alt="StarBoard" /> -->
+        </div>
+        <div class="progress-container">
+          <div class="progress-bar"></div>
+        </div>
+      </div>
     </div>
     <div id="root"></div>
     <script>
@@ -59,9 +150,7 @@
         const loader = document.getElementById('initial-loader');
         if (loader) {
           loader.classList.add('hidden');
-          setTimeout(() => {
-            loader.remove();
-          }, 300);
+          loader.remove();
         }
       };
       
@@ -69,9 +158,7 @@
       const observer = new MutationObserver(() => {
         const root = document.getElementById('root');
         if (root && root.children.length > 0) {
-          setTimeout(() => {
-            window.hideInitialLoader();
-          }, 100);
+          window.hideInitialLoader();
           observer.disconnect();
         }
       });
