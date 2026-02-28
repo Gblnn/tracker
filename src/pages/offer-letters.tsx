@@ -38,12 +38,15 @@ import {
   Bug,
   Check,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
+  CreditCard,
   Database,
   Dot,
   FilePlus2,
   FileText,
   FileX,
+  Gift,
   GripVertical,
   Loader2,
   LoaderCircle,
@@ -54,9 +57,11 @@ import {
   Plus,
   RefreshCcw,
   Save,
+  Shield,
   Sparkles,
   TextCursor,
   Trash2,
+  User,
 } from "lucide-react";
 import moment from "moment";
 import React, { useEffect, useRef, useState } from "react";
@@ -228,6 +233,14 @@ const [searchTerm, setSearchTerm] = useState("");
   const lastRoleRef = useRef<HTMLDivElement>(null);
   const lastAllowanceRef = useRef<HTMLDivElement>(null);
   // const lastSubsectionRef = useRef<HTMLDivElement>(null);
+  
+  // Section refs for scroll-to functionality
+  const basicSectionRef = useRef<HTMLDivElement>(null);
+  const compensationSectionRef = useRef<HTMLDivElement>(null);
+  const benefitsSectionRef = useRef<HTMLDivElement>(null);
+  const termsSectionRef = useRef<HTMLDivElement>(null);
+  const rolesSectionRef = useRef<HTMLDivElement>(null);
+  const customSectionRef = useRef<HTMLDivElement>(null);
 
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
@@ -298,6 +311,22 @@ const [searchTerm, setSearchTerm] = useState("");
   ];
 
   const [fieldConfig, setFieldConfig] = useState<FieldConfig[]>(defaultFieldConfig);
+  
+  // Collapsible sections state
+  const [sectionsCollapsed, setSectionsCollapsed] = useState<{[key: string]: boolean}>({
+    basic: false,
+    compensation: false,
+    benefits: false,
+    terms: false,
+    roles: false,
+    custom: false,
+  });
+
+  // PDF generation progress
+  const [pdfProgress, setPdfProgress] = useState(0);
+  
+  // Highlighted section state
+  const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
   const [fieldConfigDialogVisible, setFieldConfigDialogVisible] = useState(false);
   const [newFieldName, setNewFieldName] = useState("");
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
@@ -880,6 +909,7 @@ const [searchTerm, setSearchTerm] = useState("");
 
   const handlePrintPDF = async () => {
     setPdfLoading(true);
+    setPdfProgress(0);
     try {
       const tableNode = tableRef.current;
       const rolesNode = rolesRef.current;
@@ -903,6 +933,7 @@ const [searchTerm, setSearchTerm] = useState("");
       };
 
       // Render table (page 1)
+      setPdfProgress(20);
       const tableCanvas = await html2canvas(tableNode, html2canvasOptions);
       const tableImgData = compressImage(tableCanvas);
       const pdf = new jsPDF({ unit: "px", format: "a4" });
@@ -910,6 +941,7 @@ const [searchTerm, setSearchTerm] = useState("");
       const tableProps = pdf.getImageProperties(tableImgData);
       const tableHeight = (tableProps.height * pageWidth) / tableProps.width;
       pdf.addImage(tableImgData, "JPEG", 0, 0, pageWidth, tableHeight, undefined, 'FAST');
+      setPdfProgress(40);
 
       // Render roles (page 2) if present
       if (rolesNode) {
@@ -920,6 +952,7 @@ const [searchTerm, setSearchTerm] = useState("");
         const rolesHeight = (rolesProps.height * pageWidth) / rolesProps.width;
         pdf.addImage(rolesImgData, "JPEG", 0, 0, pageWidth, rolesHeight, undefined, 'FAST');
       }
+      setPdfProgress(60);
 
       // Render rest (page 3)
       const restCanvas = await html2canvas(restNode, html2canvasOptions);
@@ -928,6 +961,7 @@ const [searchTerm, setSearchTerm] = useState("");
       const restProps = pdf.getImageProperties(restImgData);
       const restHeight = (restProps.height * pageWidth) / restProps.width;
       pdf.addImage(restImgData, "JPEG", 0, 0, pageWidth, restHeight, undefined, 'FAST');
+      setPdfProgress(80);
 
       // Render signatures (page 4)
       if (signatureNode) {
@@ -938,12 +972,15 @@ const [searchTerm, setSearchTerm] = useState("");
         const signatureHeight = (signatureProps.height * pageWidth) / signatureProps.width;
         pdf.addImage(signatureImgData, "JPEG", 0, 0, pageWidth, signatureHeight, undefined, 'FAST');
       }
+      setPdfProgress(90);
 
       pdf.save(`Offer_Letter_${formData.candidateName || "Candidate"}.pdf`);
+      setPdfProgress(100);
     } catch (err) {
       message.error("Failed to generate PDF");
     } finally {
       setPdfLoading(false);
+      setTimeout(() => setPdfProgress(0), 500);
     }
   };
 
@@ -1162,6 +1199,82 @@ const [searchTerm, setSearchTerm] = useState("");
     setFieldConfig(defaultFieldConfig);
   };
 
+  // Scroll to and highlight section
+  const scrollToSection = (sectionKey: string) => {
+    const sectionRefs: { [key: string]: React.RefObject<HTMLDivElement> } = {
+      basic: basicSectionRef,
+      compensation: compensationSectionRef,
+      benefits: benefitsSectionRef,
+      terms: termsSectionRef,
+      roles: rolesSectionRef,
+      custom: customSectionRef,
+    };
+
+    const sectionRef = sectionRefs[sectionKey];
+    if (sectionRef?.current) {
+      // Expand section if collapsed
+      if (sectionsCollapsed[sectionKey]) {
+        setSectionsCollapsed(prev => ({ ...prev, [sectionKey]: false }));
+      }
+      
+      // Scroll to section with offset for header
+      sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      
+      // Highlight section temporarily
+      setHighlightedSection(sectionKey);
+      setTimeout(() => setHighlightedSection(null), 2000);
+    }
+  };
+
+  // Render section header with collapse functionality
+  const renderSectionHeader = (
+    sectionKey: string,
+    title: string,
+    icon: React.ReactNode,
+    subtitle?: string
+  ) => {
+    const isCollapsed = sectionsCollapsed[sectionKey];
+    return (
+      <div
+        onClick={() => setSectionsCollapsed(prev => ({ ...prev, [sectionKey]: !prev[sectionKey] }))}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0.75rem 1rem",
+          background: "rgba(100 100 100/ 0.05)",
+          borderRadius: "0.5rem",
+          cursor: "pointer",
+          marginTop: "1rem",
+          marginBottom: "0.75rem",
+        
+          transition: "all 0.2s ease",
+        }}
+        
+        
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <div style={{ color: "mediumslateblue", display: "flex", alignItems: "center" }}>
+            {icon}
+          </div>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: "0.95rem", color: "black" }}>
+              {title}
+            </div>
+            {subtitle && (
+              <div style={{ fontSize: "0.7rem", color: "rgba(0 0 0/ 50%)", marginTop: "0.15rem" }}>
+                {subtitle}
+              </div>
+            )}
+          </div>
+        </div>
+        <div style={{ color: "mediumslateblue", display: "flex", alignItems: "center" }}>
+          {isCollapsed ? <ChevronRight width="1.2rem" /> : <ChevronDown width="1.2rem" />}
+        </div>
+      </div>
+    );
+  };
+
   // Render a single field based on its configuration
   const renderField = (field: FieldConfig) => {
     if (!field.enabled) return null;
@@ -1185,7 +1298,16 @@ const [searchTerm, setSearchTerm] = useState("");
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <label>{field.label}</label>
+          <label
+            style={{
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              color: "rgba(0 0 0/ 85%)",
+              letterSpacing: "0.01em",
+            }}
+          >
+            {field.label}
+          </label>
           {field.isCustom && (
             <button
               onClick={() => handleRemoveCustomField(field.id)}
@@ -1248,9 +1370,9 @@ const [searchTerm, setSearchTerm] = useState("");
           background: "",
           WebkitBackdropFilter: "blur(16px)",
           backdropFilter: "blur(16px)",
-          borderTopLeftRadius: "1rem",
+          borderRadius: "1rem",
           zIndex: 10,
-          boxShadow: "0 2px 8px rgba(0 0 0/ 10%)",
+          // boxShadow: "0 2px 8px rgba(0 0 0/ 10%)",
           display:"flex",
           alignItems:"center",
           justifyContent:"center",
@@ -1260,11 +1382,12 @@ const [searchTerm, setSearchTerm] = useState("");
         <button
           onClick={() => setHeaderVisible(!headerVisible)}
           style={{
+          
             position: "absolute",
             right: "",
             top: headerVisible ? "auto" : "0.5rem",
             bottom: headerVisible ? "-0.75rem" : "auto",
-            background: "",
+            background: "mediumslateblue",
             color: "white",
             border: "none",
             borderRadius: "50%",
@@ -1366,7 +1489,7 @@ const [searchTerm, setSearchTerm] = useState("");
               <button
                 onClick={() => setPresetDialogVisible(true)}
                 style={{
-                  background: "rgba(100 100 100/ 10%)",
+                  background: "rgba(100 100 100/ 0.025)",
                   color: "mediumslateblue",
                   border: "none",
                   padding: "0.15rem 0.75rem",
@@ -1611,7 +1734,7 @@ const [searchTerm, setSearchTerm] = useState("");
           <button
             onClick={() => setFieldConfigDialogVisible(true)}
             style={{
-              background: "rgba(100 100 100/ 10%)",
+              background: "rgba(100 100 100/ 0.025)",
               color: "mediumslateblue",
               border: "none",
               padding: "0.15rem 0.75rem",
@@ -1642,14 +1765,23 @@ const [searchTerm, setSearchTerm] = useState("");
           paddingTop: headerVisible ? "1rem" : "3rem",
           display: "flex",
           flexDirection: "column",
-          gap: "0.75rem",
-
+          gap: "0.5rem",
         }}
       >
+        {/* Reference Number - Always visible */}
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
         >
-          <label>Reference Number</label>
+          <label
+            style={{
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              color: "rgba(0 0 0/ 85%)",
+              letterSpacing: "0.01em",
+            }}
+          >
+            Reference Number
+          </label>
           <input
             type="text"
             name="refNo"
@@ -1660,260 +1792,320 @@ const [searchTerm, setSearchTerm] = useState("");
           />
         </div>
 
-        {/* Dynamic Fields Rendering */}
-        {fieldConfig.filter(f => f.enabled).map((field) => (
-          <React.Fragment key={field.id}>
-            {renderField(field)}
-            {/* Insert Additional Allowances section right after allowance field */}
-            {field.id === "allowance" && (
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    marginBottom: "",
-                    marginTop: "0.5rem",
-                  }}
-                >
-                  <h3 style={{ fontSize: "0.8rem" }}>Additional Allowances</h3>
-                </div>
-                <AnimatePresence mode="sync">
-                  {formData.allowances.map((role, index) => (
-                    <motion.div
-                      key={index}
-                      ref={
-                        index === formData.allowances.length - 1
-                          ? lastAllowanceRef
-                          : null
-                      }
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{
-                        duration: 0.15,
-                        ease: [0.4, 0, 0.2, 1],
-                      }}
-                      style={{
-                        display: "flex",
-                        flexFlow: "column",
-                        border: "1px solid rgba(100 100 100/ 20%)",
-                        borderRadius: "0.5rem",
-                        padding: "0.45rem",
-                        marginBottom: "0.5rem",
-                        background: "rgba(100 100 100/ 5%)",
-                        willChange: "transform, opacity",
-                      }}
-                    >
+        {/* Basic Information Section */}
+        <div 
+          ref={basicSectionRef}
+          style={{
+            borderRadius: "0.5rem",
+            padding: "0.5rem",
+            marginLeft: "-0.5rem",
+            marginRight: "-0.5rem",
+            transition: "background-color 0.3s ease",
+            background: highlightedSection === "basic" ? "rgba(100 150 255/ 15%)" : "transparent"
+          }}
+        >
+          {renderSectionHeader("basic", "Basic Information", <User width="1.1rem" />, "Candidate details")}
+          {!sectionsCollapsed.basic && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {fieldConfig
+                .filter(f => f.enabled && ["candidateName", "passportNumber", "position", "workLocation", "reportingDate"].includes(f.id))
+                .map(field => renderField(field))}
+            </div>
+          )}
+        </div>
+
+        {/* Compensation Section */}
+        <div 
+          ref={compensationSectionRef}
+          style={{
+            borderRadius: "0.5rem",
+            padding: "0.5rem",
+            marginLeft: "-0.5rem",
+            marginRight: "-0.5rem",
+            transition: "background-color 0.3s ease",
+            background: highlightedSection === "compensation" ? "rgba(100 150 255/ 15%)" : "transparent"
+          }}
+        >
+          {renderSectionHeader("compensation", "Compensation", <CreditCard width="1.1rem" />, "Salary and allowances")}
+          {!sectionsCollapsed.compensation && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {fieldConfig
+              .filter(f => f.enabled && ["salary", "allowance", "grossSalary"].includes(f.id))
+              .map(field => (
+                <React.Fragment key={field.id}>
+                  {renderField(field)}
+                  {/* Additional Allowances after allowance field */}
+                  {field.id === "allowance" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                       <div
                         style={{
                           display: "flex",
+                          justifyContent: "space-between",
                           alignItems: "center",
-                          gap: "0.5rem",
-                          marginBottom: "0.5rem",
+                          marginTop: "0.5rem",
                         }}
                       >
-                        <input
-                          type="text"
-                          name={`role-title-${index}`}
-                          value={role.title}
-                          onChange={(e) =>
-                            handleAllowanceChange(index, "title", e.target.value)
-                          }
-                          placeholder="Enter Allowance type"
-                          style={{ fontSize: "0.95rem", background: "" }}
-                        />
-                        <motion.button
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => handleRemoveAllowance(index)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background: "rgba(100 100 100/ 10%)",
-                            color: "indianred",
-                            border: "none",
-                            padding: "0.5rem 0.75rem",
-                            borderRadius: "0.45rem",
-                            cursor: "pointer",
-                            fontSize: "0.95rem",
-                            marginLeft: "",
-                            willChange: "transform",
-                          }}
-                        >
-                          <MinusCircle width={"1rem"} />
-                        </motion.button>
+                        <h4 style={{ fontSize: "0.8rem", color: "rgba(0 0 0/ 70%)" }}>
+                          Additional Allowances
+                        </h4>
                       </div>
-                      <input
-                        name={`role-description-${index}`}
-                        value={role.description}
-                        onChange={(e) =>
-                          handleAllowanceChange(index, "description", e.target.value)
-                        }
-                        placeholder="Enter Allowance Amount"
+                      <AnimatePresence mode="sync">
+                        {formData.allowances.map((allowance, index) => (
+                          <motion.div
+                            key={index}
+                            ref={index === formData.allowances.length - 1 ? lastAllowanceRef : null}
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
+                            style={{
+                              display: "flex",
+                              flexFlow: "column",
+                              border: "1px solid rgba(100 100 100/ 20%)",
+                              borderRadius: "0.5rem",
+                              padding: "0.45rem",
+                              marginBottom: "0.5rem",
+                              background: "rgba(100 100 100/ 5%)",
+                              willChange: "transform, opacity",
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                              <input
+                                type="text"
+                                value={allowance.title}
+                                onChange={(e) => handleAllowanceChange(index, "title", e.target.value)}
+                                placeholder="Enter Allowance type"
+                                style={{ fontSize: "0.95rem" }}
+                              />
+                              <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleRemoveAllowance(index)}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  background: "rgba(100 100 100/ 10%)",
+                                  color: "indianred",
+                                  border: "none",
+                                  padding: "0.5rem 0.75rem",
+                                  borderRadius: "0.45rem",
+                                  cursor: "pointer",
+                                  fontSize: "0.95rem",
+                                  willChange: "transform",
+                                }}
+                              >
+                                <MinusCircle width={"1rem"} />
+                              </motion.button>
+                            </div>
+                            <input
+                              value={allowance.description}
+                              onChange={(e) => handleAllowanceChange(index, "description", e.target.value)}
+                              placeholder="Enter Allowance Amount"
+                              style={{ width: "100%", fontSize: "0.95rem", borderRadius: "0.5rem" }}
+                            />
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleAddAllowance}
                         style={{
-                          width: "100%",
-                          fontSize: "0.95rem",
-                          background: "",
+                          fontSize: "0.85rem",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "0.5rem",
+                          background: "rgba(100 100 100/ 10%)",
+                          color: "mediumslateblue",
+                          border: "none",
+                          padding: "0.5rem 1rem",
                           borderRadius: "0.5rem",
+                          cursor: "pointer",
+                          width: "100%",
+                          marginTop: "0.5rem",
+                          willChange: "transform",
                         }}
-                      />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleAddAllowance}
+                      >
+                        <Plus width={"0.8rem"} />
+                        Add Allowance
+                      </motion.button>
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
+          </div>
+        )}
+        </div>
+
+        {/* Benefits & Perks Section */}
+        <div 
+          ref={benefitsSectionRef}
+          style={{
+            borderRadius: "0.5rem",
+            padding: "0.5rem",
+            marginLeft: "-0.5rem",
+            marginRight: "-0.5rem",
+            transition: "background-color 0.3s ease",
+            background: highlightedSection === "benefits" ? "rgba(100 150 255/ 15%)" : "transparent"
+          }}
+        >
+          {renderSectionHeader("benefits", "Benefits & Perks", <Gift width="1.1rem" />, "Accommodation, food, transport & more")}
+          {!sectionsCollapsed.benefits && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {fieldConfig
+                .filter(f => f.enabled && ["accomodation", "food", "transport", "communication", "insurance", "airPassage", "sectorOfTravel", "classOfTravel"].includes(f.id))
+                .map(field => renderField(field))}
+            </div>
+          )}
+        </div>
+
+        {/* Terms & Conditions Section */}
+        <div 
+          ref={termsSectionRef}
+          style={{
+            borderRadius: "0.5rem",
+            padding: "0.5rem",
+            marginLeft: "-0.5rem",
+            marginRight: "-0.5rem",
+            transition: "background-color 0.3s ease",
+            background: highlightedSection === "terms" ? "rgba(100 150 255/ 15%)" : "transparent"
+          }}
+        >
+          {renderSectionHeader("terms", "Terms & Conditions", <Shield width="1.1rem" />, "Contract, probation, leave & policies")}
+          {!sectionsCollapsed.terms && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {fieldConfig
+                .filter(f => f.enabled && ["attendance", "probation", "contractPeriod", "noticePeriod", "visaStatus", "medicalTerms", "incrementTerms", "workingHours", "annualLeave", "gratuity", "leaveEncashment", "jobSummary", "responsibilities", "medical"].includes(f.id))
+                .map(field => renderField(field))}
+            </div>
+          )}
+        </div>
+
+        {/* Roles & Responsibilities Section */}
+        <div 
+          ref={rolesSectionRef}
+          style={{
+            borderRadius: "0.5rem",
+            padding: "0.5rem",
+            marginLeft: "-0.5rem",
+            marginRight: "-0.5rem",
+            transition: "background-color 0.3s ease",
+            background: highlightedSection === "roles" ? "rgba(100 150 255/ 15%)" : "transparent"
+          }}
+        >
+          {renderSectionHeader("roles", "Roles & Responsibilities", <FileText width="1.1rem" />, "Detailed job duties")}
+          {!sectionsCollapsed.roles && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <AnimatePresence mode="sync">
+              {formData.roles.map((role, index) => (
+                <motion.div
+                  key={index}
+                  ref={index === formData.roles.length - 1 ? lastRoleRef : null}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
                   style={{
-                    fontSize: "0.85rem",
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "0.5rem",
-                    background: "rgba(100 100 100/ 10%)",
-                    color: "mediumslateblue",
-                    border: "none",
-                    padding: "0.5rem 1rem",
+                    flexFlow: "column",
+                    border: "1px solid rgba(100 100 100/ 20%)",
                     borderRadius: "0.5rem",
-                    cursor: "pointer",
-                    width: "100%",
-                    marginTop: "0.5rem",
-                    willChange: "transform",
+                    padding: "0.45rem",
+                    marginBottom: "0.5rem",
+                    background: "rgba(100 100 100/ 5%)",
+                    willChange: "transform, opacity",
                   }}
                 >
-                  <Plus width={"0.8rem"} />
-                  Add Allowance
-                </motion.button>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                    <input
+                      type="text"
+                      value={role.title}
+                      onChange={(e) => handleRoleChange(index, "title", e.target.value)}
+                      placeholder="Enter role title"
+                      style={{ fontSize: "0.95rem" }}
+                    />
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleRemoveRole(index)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "rgba(100 100 100/ 10%)",
+                        color: "indianred",
+                        border: "none",
+                        padding: "0.5rem 0.75rem",
+                        borderRadius: "0.45rem",
+                        cursor: "pointer",
+                        fontSize: "0.95rem",
+                        willChange: "transform",
+                      }}
+                    >
+                      <MinusCircle width={"1rem"} />
+                    </motion.button>
+                  </div>
+                  <textarea
+                    value={role.description}
+                    onChange={(e) => handleRoleChange(index, "description", e.target.value)}
+                    placeholder="Enter role description"
+                    style={{ width: "100%", fontSize: "0.95rem", borderRadius: "0.5rem" }}
+                    rows={5}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleAddRole}
+              style={{
+                fontSize: "0.85rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                background: "rgba(100 100 100/ 10%)",
+                color: "mediumslateblue",
+                border: "none",
+                padding: "0.5rem 1rem",
+                borderRadius: "0.5rem",
+                cursor: "pointer",
+                width: "100%",
+                marginTop: "0.5rem",
+                willChange: "transform",
+              }}
+            >
+              <Plus width={"0.8rem"} />
+              Add Role
+            </motion.button>
+          </div>
+        )}
+        </div>
+
+        {/* Custom Fields */}
+        {fieldConfig.filter(f => f.enabled && f.isCustom).length > 0 && (
+          <div 
+            ref={customSectionRef}
+            style={{
+              borderRadius: "0.5rem",
+              padding: "0.5rem",
+              marginLeft: "-0.5rem",
+              marginRight: "-0.5rem",
+              transition: "background-color 0.3s ease",
+              background: highlightedSection === "custom" ? "rgba(100 150 255/ 15%)" : "transparent"
+            }}
+          >
+            {renderSectionHeader("custom", "Custom Fields", <Sparkles width="1.1rem" />, "Additional fields")}
+            {!sectionsCollapsed.custom && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                {fieldConfig
+                  .filter(f => f.enabled && f.isCustom)
+                  .map(field => renderField(field))}
               </div>
             )}
-          </React.Fragment>
-        ))}
-
-        <br />
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "0.5rem",
-              marginBottom: "0.5rem",
-            }}
-          >
-            <h3 style={{ fontSize: "1rem" }}>Roles & Responsibilities</h3>
           </div>
-          <AnimatePresence mode="sync">
-            {formData.roles.map((role, index) => (
-              <motion.div
-                key={index}
-                ref={index === formData.roles.length - 1 ? lastRoleRef : null}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{
-                  duration: 0.15,
-                  ease: [0.4, 0, 0.2, 1],
-                }}
-                style={{
-                  display: "flex",
-                  flexFlow: "column",
-                  border: "1px solid rgba(100 100 100/ 20%)",
-                  borderRadius: "0.5rem",
-                  padding: "0.45rem",
-                  marginBottom: "0.5rem",
-                  background: "rgba(100 100 100/ 5%)",
-                  willChange: "transform, opacity",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    marginBottom: "0.5rem",
-                  }}
-                >
-                  <input
-                    type="text"
-                    name={`role-title-${index}`}
-                    value={role.title}
-                    onChange={(e) =>
-                      handleRoleChange(index, "title", e.target.value)
-                    }
-                    placeholder="Enter role title"
-                    style={{ fontSize: "0.95rem", background: "" }}
-                  />
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleRemoveRole(index)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "rgba(100 100 100/ 10%)",
-                      color: "indianred",
-                      border: "none",
-                      padding: "0.5rem 0.75rem",
-                      borderRadius: "0.45rem",
-                      cursor: "pointer",
-                      fontSize: "0.95rem",
-                      marginLeft: "",
-                      willChange: "transform",
-                    }}
-                  >
-                    <MinusCircle width={"1rem"} />
-                  </motion.button>
-                </div>
-                <textarea
-                  name={`role-description-${index}`}
-                  value={role.description}
-                  onChange={(e) =>
-                    handleRoleChange(index, "description", e.target.value)
-                  }
-                  placeholder="Enter role description"
-                  style={{
-                    width: "100%",
-                    fontSize: "0.95rem",
-                    background: "none",
-                    borderRadius: "0.5rem",
-                  }}
-                  rows={5}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleAddRole}
-            style={{
-              fontSize: "0.85rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-              background: "rgba(100 100 100/ 10%)",
-              color: "mediumslateblue",
-              border: "none",
-              padding: "0.5rem 1rem",
-              borderRadius: "0.5rem",
-              cursor: "pointer",
-              width: "100%",
-              marginTop: "0.5rem",
-              willChange: "transform",
-            }}
-          >
-            <Plus width={"0.8rem"} />
-            Add Role
-          </motion.button>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -2068,7 +2260,9 @@ const [searchTerm, setSearchTerm] = useState("");
             marginBottom: "1.25rem",
             textAlign: "justify",
             fontSize: "0.8rem",
+            cursor: "pointer"
           }}
+          onClick={() => scrollToSection("basic")}
         >
           We at <b>Sohar Star United LLC</b>, Sohar, Sultanate of Oman, are
           delighted to offer you the position of{" "}
@@ -2099,7 +2293,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 // Handle special field rendering
                 if (field.id === "candidateName") {
                   return (
-                    <tr key={field.id} style={{ fontSize: "0.8rem" }}>
+                    <tr key={field.id} style={{ fontSize: "0.8rem", cursor: "pointer" }} onClick={() => scrollToSection("basic")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.candidateName || "[Candidate Name]"}
@@ -2109,7 +2303,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "passportNumber") {
                   return (
-                    <tr key={field.id} style={{ fontSize: "0.8rem" }}>
+                    <tr key={field.id} style={{ fontSize: "0.8rem", cursor: "pointer" }} onClick={() => scrollToSection("basic")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.passportNumber || "[Passport Number]"}
@@ -2119,7 +2313,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "position") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("basic")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.position || "[Position]"}
@@ -2129,7 +2323,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "workLocation") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("basic")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.workLocation || "Anywhere in Oman"}
@@ -2139,7 +2333,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "salary") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("compensation")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         OMR {formData.salary || "[Basic Salary]"}
@@ -2150,14 +2344,14 @@ const [searchTerm, setSearchTerm] = useState("");
                 if (field.id === "allowance") {
                   return (
                     <React.Fragment key={field.id}>
-                      <tr>
+                      <tr style={{ cursor: "pointer" }} onClick={() => scrollToSection("compensation")}>
                         <td style={tableCellStyle}>{field.label}</td>
                         <td style={tableCellStyle}>{formData.allowance || "N/A"}</td>
                       </tr>
                       {/* Additional Allowances - shown right after allowance field */}
                       {formData.allowances.length > 0 &&
                         formData.allowances.map((role, index) => (
-                          <tr key={`allowance-${index}`}>
+                          <tr key={`allowance-${index}`} style={{ cursor: "pointer" }} onClick={() => scrollToSection("compensation")}>
                             <td style={tableCellStyle}>
                               {role.title || "[ALLOWANCE TYPE]"}
                             </td>
@@ -2171,7 +2365,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "attendance") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
                       <td style={tableCellStyle}>Site/ Office Attendance, including overtime</td>
                       <td style={tableCellStyle}>{formData.attendance || "N/A"}</td>
                     </tr>
@@ -2179,7 +2373,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "probation") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>{formData.probation || "N/A"}</td>
                     </tr>
@@ -2187,7 +2381,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "reportingDate") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("basic")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.reportingDate
@@ -2199,7 +2393,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "contractPeriod") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>{formData.contractPeriod || "N/A"}</td>
                     </tr>
@@ -2208,7 +2402,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 if (field.id === "noticePeriod") {
                   return (
                     <React.Fragment key={field.id}>
-                      <tr>
+                      <tr style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
                         <td style={{ padding: "8px 12px", fontSize: "0.75rem", verticalAlign: "top", border: "none" }}>
                           {field.label}
                         </td>
@@ -2217,7 +2411,7 @@ const [searchTerm, setSearchTerm] = useState("");
                         </td>
                       </tr>
                       {formData.noticePeriodSubsections.map((subsection, index) => (
-                        <tr key={`${field.id}-sub-${index}`}>
+                        <tr key={`${field.id}-sub-${index}`} style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
                           <td style={{ ...tableCellStyle, borderTop: "none", borderBottom: "none", borderRight: "none", background: "transparent" }}></td>
                           <td style={{ ...tableCellStyle, borderTop: "none" }}>{subsection}</td>
                         </tr>
@@ -2227,7 +2421,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "accomodation") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("benefits")}>
                       <td style={tableCellStyle}>Accommodation</td>
                       <td style={tableCellStyle}>
                         {formData.accomodation || "Single Room Bachelors Accommodation shall be provided by the Company"}
@@ -2237,7 +2431,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "food") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("benefits")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.food || "Shall be provided by the Company in Site Office and at Camp"}
@@ -2247,7 +2441,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "transport") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("benefits")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.transport || "A Car shall be provided by the Company for official use only"}
@@ -2257,7 +2451,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "communication") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("benefits")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.communication || "A postpaid Company SIM shall be provided for official use only"}
@@ -2267,7 +2461,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "insurance") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("benefits")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.insurance || "WC, Medical & Group Life Insurance, under the Company account"}
@@ -2277,7 +2471,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "annualLeave") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.annualLeave || "No leave shall be granted throughout the project unless there is an extreme emergency."}
@@ -2287,7 +2481,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "gratuity") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>{formData.gratuity || "N/A"}</td>
                     </tr>
@@ -2295,7 +2489,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "leaveEncashment") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>{formData.leaveEncashment || "N/A"}</td>
                     </tr>
@@ -2303,7 +2497,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "grossSalary") {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("compensation")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         OMR{" "}
@@ -2330,7 +2524,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 // Custom fields
                 if (field.isCustom) {
                   return (
-                    <tr key={field.id}>
+                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("custom")}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.customFields?.[field.id] || "N/A"}
@@ -2392,7 +2586,9 @@ const [searchTerm, setSearchTerm] = useState("");
                   marginBottom: "1rem",
                   fontSize: "1rem",
                   textTransform: "uppercase",
+                  cursor: "pointer"
                 }}
+                onClick={() => scrollToSection("roles")}
               >
                 Roles & Responsibilities
               </h2>
@@ -2405,7 +2601,7 @@ const [searchTerm, setSearchTerm] = useState("");
               >
                 {formData.roles.map((role, index) =>
                   role.title.trim() || role.description.trim() ? (
-                    <div key={index}>
+                    <div key={index} style={{ cursor: "pointer" }} onClick={() => scrollToSection("roles")}>
                       <h3
                         style={{
                           fontSize: "0.9rem",
@@ -2569,24 +2765,34 @@ const [searchTerm, setSearchTerm] = useState("");
               ),
             }
           );
-          return clauses.map((clause, idx) => (
-            <div
-              key={clause.title}
-              style={{ marginBottom: "1rem", fontSize: "0.8rem" }}
-            >
-              <h3
-                style={{
-                  fontWeight: "600",
-                  marginBottom: "0.5rem",
-                  fontSize: "0.9rem",
-                }}
+          return clauses.map((clause, idx) => {
+            // Map clause titles to sections
+            const getSectionForClause = (title: string) => {
+              if (title === "Air Passage") return "benefits";
+              return "terms"; // All other clauses are in terms section
+            };
+
+            return (
+              <div
+                key={clause.title}
+                style={{ marginBottom: "1rem", fontSize: "0.8rem" }}
               >
-                ({idx + 1}) {clause.title}
-              </h3>
-              {clause.content}
-              
-            </div>
-          ));
+                <h3
+                  style={{
+                    fontWeight: "600",
+                    marginBottom: "0.5rem",
+                    fontSize: "0.9rem",
+                    cursor: "pointer"
+                  }}
+                  onClick={() => scrollToSection(getSectionForClause(clause.title))}
+                >
+                  ({idx + 1}) {clause.title}
+                </h3>
+                {clause.content}
+                
+              </div>
+            );
+          });
           
         })()}
         
@@ -2634,24 +2840,26 @@ const [searchTerm, setSearchTerm] = useState("");
               fontWeight: "600",
               marginBottom: "0.5rem",
               fontSize: "0.9rem",
+              cursor: "pointer"
             }}
+            onClick={() => scrollToSection("terms")}
           >
             General Terms
           </h3>
-          <p>
+          <p style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
             In the event of your resignation within two years from your date of
             joining the Company, the costs incurred by the Company towards your
             initial mobilization like recruitment fee, processing charges for
             visa and resident card and other related expenses, and/(or) subject
             to "Employment Bond" if any, will be recovered from you.
           </p>
-          <p>
+          <p style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
             You shall communicate to the Company any change in your address as
             well as details of next of kin. All communications sent to you in
             the normal course on the address given by you shall be deemed to
             have been received at your end.
           </p>
-          <p>
+          <p style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
             You are expected to give your whole time of service to us and not
             directly or indirectly enter into any other employment or business
             without our specific consent in writing during the tenure of this
@@ -2669,7 +2877,9 @@ const [searchTerm, setSearchTerm] = useState("");
             fontWeight: "600",
             marginBottom: "0.5rem",
             fontSize: "0.9rem",
+            cursor: "pointer"
           }}
+          onClick={() => scrollToSection("terms")}
         >
           Other Terms & Conditions
         </h3>
@@ -2683,24 +2893,24 @@ const [searchTerm, setSearchTerm] = useState("");
             fontSize: "0.8rem",
           }}
         >
-          <li>
+          <li style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
             Company Assets, if any in possession are to be returned at the end
             of services, else the cost shall be deducted from the final dues.
           </li>
-          <li>
+          <li style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
             VISA expenses will be borne by the Company even in case of
             termination during contract period, but not in case the employee
             resigns during the contract period.
           </li>
-          <li>
+          <li style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
             If you damage any company assets, furniture or vehicles, the company
             will have all rights to recover its compensation from your dues.
           </li>
-          <li>
+          <li style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
             If the employee does not sign this agreement within the seven days,
             the agreement shall be deemed null and void.
           </li>
-          <li>
+          <li style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
             In case of failure to report to duty in Oman, the offer letter shall
             become null and void after seven days from the date of the signed
             agreement.
@@ -2711,7 +2921,9 @@ const [searchTerm, setSearchTerm] = useState("");
             fontWeight: "600",
             marginBottom: "0.5rem",
             fontSize: "0.9rem",
+            cursor: "pointer"
           }}
+          onClick={() => scrollToSection("terms")}
         >
           Acknowledgment:
         </h3>
@@ -2720,7 +2932,9 @@ const [searchTerm, setSearchTerm] = useState("");
             marginBottom: "2rem",
             textAlign: "justify",
             fontSize: "0.8rem",
+            cursor: "pointer"
           }}
+          onClick={() => scrollToSection("terms")}
         >
           You hereby confirm and undertake that you shall not, at any time,
           either during the continuance of your employment or after the
@@ -2840,25 +3054,45 @@ const [searchTerm, setSearchTerm] = useState("");
             //   )
             // }
             title={
-              <p
-                style={{
-                  fontSize: "1rem",
-                  display: "flex",
-                  gap: "0.5rem",
-                  alignItems: "center",
-                  textTransform: "uppercase",
-                }}
-              >
-                {saving ? (
-                  <LoaderCircle className="animate-spin" width={"1rem"} />
-                ) : (
-                  loadedLetterId && (
-                    <Database color="mediumslateblue" width={"1rem"} />
-                  )
-                )}
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <p
+                  style={{
+                    fontSize: "1rem",
+                    display: "flex",
+                    gap: "0.5rem",
+                    alignItems: "center",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {saving ? (
+                    <LoaderCircle className="animate-spin" width={"1rem"} />
+                  ) : (
+                    loadedLetterId && (
+                      <Database color="mediumslateblue" width={"1rem"} />
+                    )
+                  )}
 
-                {loadedLetterId}
-              </p>
+                  {loadedLetterId}
+                </p>
+                {hasChanges && loadedLetterId && (
+                  <div
+                    style={{
+                      fontSize: "0.7rem",
+                      color: "#f59e0b",
+                      background: "rgba(245 158 11/ 15%)",
+                      padding: "0.25rem 0.5rem",
+                      borderRadius: "0.25rem",
+                      fontWeight: 500,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.25rem",
+                    }}
+                  >
+                    <Dot color="#f59e0b" width="1rem" />
+                    Unsaved Changes
+                  </div>
+                )}
+              </div>
             }
             extra={
               <div
@@ -2875,18 +3109,44 @@ const [searchTerm, setSearchTerm] = useState("");
                     width: "100%",
                     fontSize: "0.9rem",
                     padding: "0.5rem 1rem",
-                    background: "indigo",
+                    background: pdfLoading ? "#4c1d95" : "indigo",
                     color: "white",
                     border: "none",
                     borderRadius: "0.5rem",
                     cursor: pdfLoading ? "not-allowed" : "pointer",
                     opacity: pdfLoading ? 0.7 : 1,
                     boxShadow: "1px 1px 10px rgba(0 0 0/ 30%)",
+                    position: "relative",
+                    overflow: "hidden",
                   }}
                   disabled={pdfLoading}
                 >
-                  <Sparkles color="white" width={"1rem"} />
-                  {pdfLoading ? "Generating..." : "Generate PDF"}
+                  {pdfLoading && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        height: "100%",
+                        width: `${pdfProgress}%`,
+                        background: "rgba(255 255 255/ 20%)",
+                        transition: "width 0.3s ease",
+                      }}
+                    />
+                  )}
+                  <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+                    {pdfLoading ? (
+                      <>
+                        <LoaderCircle className="animate-spin" width="1rem" />
+                        <span>Generating ({pdfProgress}%)...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles color="white" width={"1rem"} />
+                        Generate PDF
+                      </>
+                    )}
+                  </div>
                 </button>
 
                 {/* <button
@@ -3107,6 +3367,65 @@ const [searchTerm, setSearchTerm] = useState("");
       width={window.innerWidth <= 768 ? "100%" : 500}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {/* Search Bar */}
+        <div style={{ position: "sticky", top: 0, background: "white", zIndex: 10, paddingBottom: "0.5rem" }}>
+          <div style={{ position: "relative" }}>
+            <input
+              style={{
+                background: "rgba(100 100 100/0.08)",
+                color: "black",
+                width: "100%",
+                padding: "0.6rem 2.5rem 0.6rem 1rem",
+                borderRadius: "0.5rem",
+                border: "1px solid rgba(100 100 100/ 15%)",
+                fontSize: "0.9rem",
+                outline: "none",
+                transition: "all 0.2s ease",
+              }}
+              placeholder="Search by name or position..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "mediumslateblue";
+                e.currentTarget.style.background = "rgba(123 104 238/ 0.05)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "rgba(100 100 100/ 15%)";
+                e.currentTarget.style.background = "rgba(100 100 100/0.08)";
+              }}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                style={{
+                  position: "absolute",
+                  right: "0.5rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "rgba(0 0 0/ 50%)",
+                  padding: "0.25rem",
+                  display: "flex",
+                  alignItems: "center",
+                  borderRadius: "0.25rem",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(100 100 100/ 10%)";
+                  e.currentTarget.style.color = "black";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "none";
+                  e.currentTarget.style.color = "rgba(0 0 0/ 50%)";
+                }}
+              >
+                <FileX width="1rem" />
+              </button>
+            )}
+          </div>
+        </div>
+
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -3150,9 +3469,13 @@ const [searchTerm, setSearchTerm] = useState("");
             <EmptyMedia variant="icon">
               <FileText />
             </EmptyMedia>
-            <EmptyTitle>No offer letters yet</EmptyTitle>
-            <EmptyDescription>
-              Create your first offer letter to get started
+            <EmptyTitle style={{ marginTop: "1rem", fontSize: "1.1rem" }}>
+              No offer letters saved yet
+            </EmptyTitle>
+            <EmptyDescription style={{ marginTop: "0.5rem", fontSize: "0.9rem", opacity: 0.7 }}>
+              {offerLettersLoading 
+                ? "Loading saved letters..." 
+                : "Create and save your first offer letter to see it here"}
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -3296,33 +3619,6 @@ const [searchTerm, setSearchTerm] = useState("");
               </div>
             </div>
           ))}
-
-          <div
-            style={{
-              position: "fixed",
-              bottom: 0,
-              width: "100%",
-              paddingRight: "1rem",
-              display: "flex",
-              alignItems: "center",
-              paddingBottom: "1rem",
-              background: "white",
-            }}
-          >
-            <input
-              style={{
-                background: "rgba(100 100 100/0.1)",
-                color: "black",
-                width: "49ch",
-                padding: "0.3rem 0.6rem",
-                borderRadius: "4px",
-                border: "1px solid #ccc",
-              }}
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
         </div>
       )}
       </div>

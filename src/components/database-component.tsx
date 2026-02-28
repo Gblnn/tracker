@@ -76,6 +76,7 @@ import {
   HeartPulse,
   Inbox,
   Info,
+  LayoutGrid,
   ListStart,
   Loader2,
   LoaderCircle,
@@ -87,6 +88,7 @@ import {
   RefreshCcw,
   ScrollText,
   Sparkles,
+  Table2,
   Trash,
   UploadCloud,
   UserCircle,
@@ -309,6 +311,7 @@ export default function DbComponent(props: Props) {
   const [add_vehicle_id, setAddVehicleID] = useState(false);
 
   const [selectable, setSelectable] = useState(false);
+  const [viewMode, setViewMode] = useState<"directive" | "table">("directive");
   const [search, setSearch] = useState("");
 
   const [checked, setChecked] = useState<string[]>([]);
@@ -375,6 +378,20 @@ export default function DbComponent(props: Props) {
   const [leaveTill, setLeaveTill] = useState<any>("");
   const [leaves, setLeaves] = useState(0);
   const [deleteLeaveDialog, setDeleteLeaveDialog] = useState(false);
+
+  // Collect all Firestore fields for tabular view
+  const allKeys = useMemo(() => {
+    const keys = new Set<string>();
+    records.forEach((record: any) => {
+      if (!record) return;
+      Object.keys(record).forEach((key) => {
+        if (key !== "id") {
+          keys.add(key);
+        }
+      });
+    });
+    return Array.from(keys).sort();
+  }, [records]);
   const [leaveID, setLeaveID] = useState("");
 
   const [salaryList, setSalaryList] = useState<any>([]);
@@ -2416,6 +2433,17 @@ export default function DbComponent(props: Props) {
                       setSearch(e.target.value.toLowerCase());
                     }}
                   />
+                  <button 
+                    onClick={() => setViewMode(viewMode === "directive" ? "table" : "directive")}
+                    style={{width:"2.5rem"}}
+                    className={viewMode === "table" ? "blue" : ""}
+                  >
+                    {viewMode === "directive" ? (
+                      <Table2 width={"1rem"} color="dodgerblue" />
+                    ) : (
+                      <LayoutGrid width={"1rem"} color="white" />
+                    )}
+                  </button>
                   <button style={{width:"2.5rem"}}>
                     <Filter width={"1rem"}/>
                   </button>
@@ -2500,18 +2528,20 @@ export default function DbComponent(props: Props) {
                     contain: "paint",
                   }}
                 >
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    style={{
-                      display: "grid",
-                      gap: "0.6rem",
-                      gridTemplateColumns: "repeat(auto-fill, minmax(min(350px, 100%), 1fr))",
-                      maxWidth: "100%",
-                      paddingTop:"1rem",
-                      paddingBottom:"5rem"
-                    }}
-                  >
+                  {viewMode === "directive" ? (
+                    // DIRECTIVE VIEW (GRID)
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      style={{
+                        display: "grid",
+                        gap: "0.6rem",
+                        gridTemplateColumns: "repeat(auto-fill, minmax(min(350px, 100%), 1fr))",
+                        maxWidth: "100%",
+                        paddingTop:"1rem",
+                        paddingBottom:"5rem"
+                      }}
+                    >
                     {
                       // RECORD DATA MAPPING
                       records
@@ -2614,6 +2644,169 @@ export default function DbComponent(props: Props) {
                       </div>
                     )}
                   </motion.div>
+                  ) : (
+                    // TABLE VIEW
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      style={{
+                        paddingTop: "1rem",
+                        paddingBottom: "5rem",
+                        overflowX: "auto"
+                      }}
+                    >
+                      <table style={{
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        fontSize: "0.9rem"
+                      }}>
+                        <thead>
+                          <tr style={{
+                          
+                            borderBottom: "2px solid rgba(100 100 100/ 20%)",
+                            background: "rgba(100 100 100/ 5%)"
+                          }}>
+                            {selectable && (
+                              <th style={{ padding: "0.75rem", textAlign: "left", width: "40px", position: "sticky", left: 0, background: "rgba(100 100 100/ 5%)" }}>
+                                <CheckSquare2 width="1rem" color="dodgerblue" />
+                              </th>
+                            )}
+                            {allKeys.map((key) => (
+                              <th
+                                key={key}
+                                style={{ padding: "0.75rem", textAlign: "left", whiteSpace: "nowrap" }}
+                              >
+                                {key}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {records
+                            .filter((post: any) => {
+                              return search == ""
+                                ? {}
+                                : post.name &&
+                                    post.name
+                                      .toLowerCase()
+                                      .includes(search.toLowerCase());
+                            })
+                            .map((post: any) => (
+                              <tr
+                                key={post.id}
+                                style={{
+                                  borderBottom: "1px solid rgba(100 100 100/ 10%)",
+                                  cursor: "pointer",
+                                  transition: "background 0.2s",
+                                  background: checked.includes(post.id) ? "rgba(138 43 226/ 10%)" : "transparent"
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!checked.includes(post.id)) {
+                                    e.currentTarget.style.background = "rgba(100 100 100/ 5%)";
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!checked.includes(post.id)) {
+                                    e.currentTarget.style.background = "transparent";
+                                  }
+                                }}
+                                onClick={() => {
+                                  if (!selectable) {
+                                    usenavigate(`/record/${post.id}`, { state: { record: post } });
+                                  }
+                                }}
+                              >
+                                {selectable && (
+                                  <td 
+                                    style={{ padding: "0.75rem", position: "sticky", left: 0, background: "white" }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSelect(post.id);
+                                    }}
+                                  >
+                                    <div style={{
+                                      width: "1.25rem",
+                                      height: "1.25rem",
+                                      borderRadius: "0.25rem",
+                                      border: checked.includes(post.id) ? "2px solid violet" : "2px solid rgba(100 100 100/ 30%)",
+                                      background: checked.includes(post.id) ? "violet" : "transparent",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center"
+                                    }}>
+                                      {checked.includes(post.id) && <Check width="0.85rem" color="white" />}
+                                    </div>
+                                  </td>
+                                )}
+                                {allKeys.map((key) => {
+                                  const value = (post as any)[key];
+
+                                  // Special handling for created_on field
+                                  if (key === "created_on") {
+                                    if (!value) {
+                                      return (
+                                        <td key={key} style={{ padding: "0.75rem", fontSize: "0.85rem", color: "rgba(0 0 0/ 60%)" }}>
+                                          -
+                                        </td>
+                                      );
+                                    }
+
+                                    let content: React.ReactNode = "-";
+                                    try {
+                                      const dateObj = typeof value.toDate === "function" ? value.toDate() : new Date(value);
+                                      if (!isNaN(dateObj.getTime())) {
+                                        content = <ReactTimeAgo date={dateObj} locale="en-US" />;
+                                      }
+                                    } catch (e) {
+                                      content = "Invalid Date";
+                                    }
+
+                                    return (
+                                      <td key={key} style={{ padding: "0.75rem", fontSize: "0.85rem", color: "rgba(0 0 0/ 60%)" }}>
+                                        {content}
+                                      </td>
+                                    );
+                                  }
+
+                                  // Default rendering for all other fields
+                                  let displayValue: React.ReactNode;
+                                  if (value === null || value === undefined || value === "") {
+                                    displayValue = "-";
+                                  } else if (typeof value === "object") {
+                                    displayValue = JSON.stringify(value);
+                                  } else {
+                                    displayValue = String(value);
+                                  }
+
+                                  return (
+                                    <td key={key} style={{ padding: "0.75rem", fontSize: "0.85rem", textTransform: key === "type" ? "capitalize" : "none" }}>
+                                      {displayValue}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))
+                          }
+                        </tbody>
+                      </table>
+                      {hasMore && (
+                        <div
+                          id="load-more-trigger"
+                          style={{
+                            width: "100%",
+                            height: "50px",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            opacity: fetchingData ? 1 : 0,
+                            marginTop: "1rem"
+                          }}
+                        >
+                          {fetchingData && <div className="loader"></div>}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
                 </div>
               </div>
             )
