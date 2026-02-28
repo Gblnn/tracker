@@ -1,6 +1,6 @@
 import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
-import Directive from "@/components/directive";
+import BackgroundProcessDropdown from "@/components/background-process-dropdown";
 import GridTile from "@/components/grid-tile";
 import IndexDropDown from "@/components/index-dropdown";
 import InputDialog from "@/components/input-dialog";
@@ -8,7 +8,7 @@ import DefaultDialog from "@/components/ui/default-dialog";
 import { auth } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import emailjs from "@emailjs/browser";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Book,
   Bug,
@@ -17,9 +17,7 @@ import {
   FileText,
   Fuel,
   KeyRound,
-  LayoutGrid,
   Link,
-  List,
   Mail,
   Notebook,
   QrCode,
@@ -31,8 +29,9 @@ import moment from "moment";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-
-const VIEW_MODE_KEY = "starboard_view_mode";
+import { syncAllPendingFuelLogs, getPendingFuelLogsCount } from "@/utils/offlineFuelLogs";
+import { useBackgroundProcess } from "@/context/BackgroundProcessContext";
+import { fetchAndCacheFuelLogs } from "@/utils/fuelLogsCache";
 
 export default function Index() {
   const usenavigate = useNavigate();
@@ -46,11 +45,8 @@ export default function Index() {
   const [loading, setLoading] = useState(false);
   const [admin, setAdmin] = useState(false);
   const [modulePermissions, setModulePermissions] = useState<Record<string, boolean>>({});
-  const [viewMode, setViewMode] = useState<'grid' | 'directive'>(() => {
-    const saved = localStorage.getItem(VIEW_MODE_KEY);
-    return (saved === 'grid' || saved === 'directive') ? saved : 'directive';
-  });
   const { userData, logoutUser: logOut } = useAuth();
+  const { addProcess, updateProcess } = useBackgroundProcess();
 
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
@@ -91,10 +87,65 @@ export default function Index() {
     }
   }, [userData, navigate]);
 
-  // Save viewMode preference to localStorage
+  // Sync pending fuel logs on app launch
   useEffect(() => {
-    localStorage.setItem(VIEW_MODE_KEY, viewMode);
-  }, [viewMode]);
+    const syncPendingLogs = async () => {
+      if (!navigator.onLine) return;
+      
+      const count = getPendingFuelLogsCount();
+      if (count === 0) return;
+
+      const processId = `sync_fuel_logs_${Date.now()}`;
+      addProcess(processId, `Syncing ${count} fuel log${count > 1 ? 's' : ''}`);
+      updateProcess(processId, { status: "in-progress", message: "Uploading to cloud..." });
+
+      try {
+        const result = await syncAllPendingFuelLogs((current, total) => {
+          const progress = Math.round((current / total) * 100);
+          updateProcess(processId, { 
+            progress, 
+            message: `Uploaded ${current} of ${total}...` 
+          });
+        });
+
+        if (result.success > 0) {
+          updateProcess(processId, { 
+            status: "completed", 
+            message: `${result.success} fuel log${result.success > 1 ? 's' : ''} synced successfully` 
+          });
+        }
+
+        if (result.failed > 0) {
+          updateProcess(processId, { 
+            status: "error", 
+            message: `${result.failed} fuel log${result.failed > 1 ? 's' : ''} failed to sync` 
+          });
+        }
+      } catch (error) {
+        console.error("Error syncing fuel logs:", error);
+        updateProcess(processId, { status: "error", message: "Sync failed" });
+      }
+    };
+
+    syncPendingLogs();
+  }, [addProcess, updateProcess]);
+
+  // Cache fuel logs on app launch
+  useEffect(() => {
+    const cacheFuelLogs = async () => {
+      if (!navigator.onLine || !userData?.email) return;
+      
+      try {
+        console.log("🔄 Caching fuel logs on app launch...");
+        await fetchAndCacheFuelLogs(userData.email);
+        console.log("✅ Fuel logs cached successfully");
+      } catch (error) {
+        console.error("Error caching fuel logs on app launch:", error);
+      }
+    };
+
+    cacheFuelLogs();
+  }, [userData?.email]);
 
   // Helper function to check module access
   const hasModuleAccess = (moduleId: string) => {
@@ -191,36 +242,9 @@ export default function Index() {
                 
                 } */}
 
-                {/* <BackgroundProcessDropdown /> */}
-
-                <button
-                  onClick={() => setViewMode(viewMode === 'grid' ? 'directive' : 'grid')}
-                  style={{
-                    width: "3rem",
-                    height: "2.75rem",
-                  }}
-                  title={viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'}
-                >
-                  {viewMode === 'grid' ? (
-                    <List width={"1rem"}  />
-                  ) : (
-                    <LayoutGrid width={"1rem"} />
-                  )}
-                </button>
-
-                {/* <button
-                  style={{
-                    fontSize: "0.75rem",
-                    paddingLeft: "1rem",
-                    paddingRight: "1rem",
-                  }}
-                  onClick={() => setBugDialog(true)}
-                >
-                  <Bug width={"1rem"} color="lightgreen" />
-                </button> */}
+                <BackgroundProcessDropdown/>
 
                 <IndexDropDown
-                
                   onLogout={() => setLogoutPrompt(true)}
                   onProfile={() => navigate("/profile")}
                 />
@@ -254,324 +278,102 @@ export default function Index() {
               <LoadingOutlined style={{ color: "dodgerblue", scale: "2" }} />
             </div>
           ) : (
-            <AnimatePresence mode="wait">
-              {viewMode === 'directive' ? (
-                <motion.div 
-                  key="directive-view"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.1 }}
-                  style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
-                  {hasModuleAccess('records_master') && (
-                    <Directive
-                      onClick={() => navigate('/records')}
-                      title={"Records Master"}
-                      icon={<FileArchive width={"1.25rem"} />}
-                    />
-                  )}
+            <div
+              style={{ 
+                display: "grid", 
+                gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+                gap: "1rem",
+                paddingBottom: "2rem"
+              }}
+            >
+              {hasModuleAccess('records_master') && (
+                <GridTile
+                  title="Records Master"
+                  icon={<FileArchive width={"2rem"}  />}
+                  onClick={() => navigate('/records')}
+                />
+              )}
 
-                  {admin && (
-                    <Directive onClick={() => navigate('/users')} icon={<Users width={"1.25rem"}/>} title={"Users"}/>
-                  )}
-              
-
-              {/* <Directive onClick={()=>usenavigate("/documents")} title={"Document Generation"} icon={<FilePen width={"1.25rem"} color="mediumslateblue"/>} /> */}
-
-              {/* <Directive
-              onClick={() => usenavigate("/mobilizacao")}
-               title={"Mobilizacao"} icon={
-                <Avatar
-                  style={{ width: "1.25rem", height: "1.25rem", border: "" }}
-                >
-                  <AvatarImage
-                    style={{ objectFit: "cover", paddingBottom: "0.1rem" }}
-                    src={"/vale-logo.png"}
-                  />
-
-                  <AvatarFallback>
-                    <p style={{ paddingTop: "0.1rem" }}>{"V"}</p>
-                  </AvatarFallback>
-                </Avatar>
-              }/> */}
-              {/* <Directive
-                onClick={() =>
-                  access
-                    ? usenavigate("/human-resources")
-                    : toast.error("No Clearance to Access")
-                }
-                // protected={userData?.role == "hr" ? false:true}
-                title={"Human Resources"}
-                icon={<SquareUser color="royalblue" width={"1.25rem"} />}
-              /> */}
-
-              
+              {admin && (
+                <GridTile
+                  title="Users"
+                  icon={<Users />}
+                  onClick={() => navigate('/users')}
+                />
+              )}
 
               {hasModuleAccess('new_hire') && (
-                <Directive
+                <GridTile
+                  title="New Hire"
+                  icon={<UserCheck width={"2rem"}  />}
                   onClick={() => authenticateModule('new_hire', '/new-hire', 'New Hire')}
-                  title={"New Hire"}
-                  icon={<UserCheck width={"1.25rem"} />}
                 />
               )}
 
               {hasModuleAccess('phonebook') && (
-                <Directive
+                <GridTile
+                  title="Phonebook"
+                  icon={<Notebook width={"2rem"}  />}
                   onClick={() => authenticateModule('phonebook', '/phonebook', 'Phonebook')}
-                  title={"Phonebook"}
-                  icon={<Notebook width={"1.25rem"} />}
                 />
               )}
-
-              
 
               {hasModuleAccess('quick_links') && (
-                <Directive
+                <GridTile
+                  title="Links"
+                  icon={<Link width={"2rem"}  />}
                   onClick={() => authenticateModule('quick_links', '/quick-links', 'Links')}
-                  title={"Links"}
-                  icon={<Link width={"1.25rem"} />}
                 />
               )}
 
-              {/* <Directive
-                onClick={() => usenavigate("/agreements")}
-                to={"/agreements"}
-                title={"Agreements"}
-                icon={<FileText width={"1.25rem"} color="mediumslateblue" />}
-              /> */}
-
-              {/* <Directive
-                title={"Vehicles"}
-                icon={<Car color="salmon" width={"1.25rem"} />}
-              />
-
-              <Directive
-                to={"/website"}
-                title={"Website"}
-                icon={<Globe width={"1.25rem"} />}
-              /> */}
-
-              {/* <Directive
-                to={"/add-remarks"}
-                title={"Annotate"}
-                icon={<PenSquare width={"1.25rem"} color="dodgerblue" />}
-              /> */}
-
               {hasModuleAccess('qr_generator') && (
-                <Directive
+                <GridTile
+                  title="QR Generator"
+                  icon={<QrCode width={"2rem"}  />}
                   onClick={() => authenticateModule('qr_generator', '/qr-code-generator', 'QR Generator')}
-                  title={"QR Generator"}
-                  icon={<QrCode width={"1.25rem"} />}
                 />
               )}
 
               {hasModuleAccess('fuel_log') && (
-                <Directive
+                <GridTile
+                  title="Fuel Log"
+                  icon={<Fuel width={"2rem"}  />}
                   onClick={() => authenticateModule('fuel_log', '/fuel-log', 'Fuel Log')}
-                  title={"Fuel Log"}
-                  icon={<Fuel width={"1.25rem"}  />}
                 />
               )}
 
               {hasModuleAccess('vehicle_master') && (
-                <Directive
+                <GridTile
+                  title="Vehicle Master"
+                  icon={<Car width={"2rem"}  />}
                   onClick={() => authenticateModule('vehicle_master', '/vehicle-master', 'Vehicle Master')}
-                  title={"Vehicle Master"}
-                  icon={<Car width={"1.25rem"} />}
                 />
               )}
 
               {hasModuleAccess('vehicle_log_book') && (
-                <Directive
+                <GridTile
+                  title="Vehicle Log"
+                  icon={<Book width={"2rem"}  />}
                   onClick={() => authenticateModule('vehicle_log_book', '/vehicle-log-book', 'Vehicle Log')}
-                  title={"Vehicle Log"}
-                  icon={<Book width={"1.25rem"} />}
                 />
               )}
 
               {hasModuleAccess('petty_cash') && (
-                <Directive
+                <GridTile
+                  title="Petty Cash"
+                  icon={<Wallet width={"2rem"}  />}
                   onClick={() => authenticateModule('petty_cash', '/petty-cash', 'Petty Cash')}
-                  title={"Petty Cash"}
-                  icon={<Wallet width={"1.25rem"} />}
                 />
               )}
 
               {hasModuleAccess('offer_letters') && (
-                <Directive
+                <GridTile
+                  title="Offer Letters"
+                  icon={<FileText width={"2rem"}  />}
                   onClick={() => authenticateModule('offer_letters', '/offer-letters', 'Offer Letters')}
-                  title={"Offer Letters"}
-                  icon={<FileText width={"1.25rem"} />}
                 />
               )}
-
-              {/* <Directive
-                tag="Work In Progress"
-                to={"/movement-register"}
-                title={"Movement"}
-                icon={<ArrowUpDown width={"1.25rem"} color="dodgerblue" />}
-              />
-
-              <Directive
-                tag="Work In Progress"
-                status={true}
-                to={"/lpos"}
-                title={"LPOs"}
-                icon={<FileText width={"1.25rem"} color="dodgerblue" />}
-              /> */}
-
-              {/* <Directive
-              notName
-              to={""}
-              title={"Report a Bug"}
-              icon={<Bug width={"1.25rem"} color="lightgreen" />}
-              onClick={() => {
-                setBugDialog(true);
-              }}
-            /> */}
-
-              {/* <Directive
-              onClick={() => handleLoginPrompt("ssu")}
-              title="Sohar Star United"
-              icon={
-                <Avatar
-                  style={{ width: "1.25rem", height: "1.25rem", border: "" }}
-                >
-                  <AvatarImage
-                    style={{ objectFit: "cover" }}
-                    src={"/sohar_star_logo.png"}
-                  />
-                  <AvatarFallback>
-                    <p style={{ paddingTop: "0.1rem" }}>{"S"}</p>
-                  </AvatarFallback>
-                </Avatar>
-              }
-            />
-
-            <Directive
-              onClick={() => handleLoginPrompt("vale")}
-              title="Vale Team"
-              icon={
-                <Avatar
-                  style={{ width: "1.25rem", height: "1.25rem", border: "" }}
-                >
-                  <AvatarImage
-                    style={{ objectFit: "cover", paddingBottom: "0.1rem" }}
-                    src={"/vale-logo.png"}
-                  />
-
-                  <AvatarFallback>
-                    <p style={{ paddingTop: "0.1rem" }}>{"V"}</p>
-                  </AvatarFallback>
-                </Avatar>
-              }
-            /> */}
-
-              {/* <Directive onClick={()=>{setRequestDialog(true)}} title="Request Feature" icon={<Plus color="grey" width={"1.1rem"} height={"1.1rem"}/>}/> */}
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="grid-view"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.1 }}
-                  style={{ 
-                  display: "grid", 
-                  gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-                  gap: "1rem",
-                  paddingBottom: "2rem"
-                }}>
-                  {hasModuleAccess('records_master') && (
-                    <GridTile
-                      title="Records Master"
-                      icon={<FileArchive width={"2rem"}  />}
-                      onClick={() => navigate('/records')}
-                    />
-                  )}
-
-                  {admin && (
-                    <GridTile
-                      title="Users"
-                      icon={<Users />}
-                      onClick={() => navigate('/users')}
-                    />
-                  )}
-
-                  {hasModuleAccess('new_hire') && (
-                    <GridTile
-                      title="New Hire"
-                      icon={<UserCheck width={"2rem"}  />}
-                      onClick={() => authenticateModule('new_hire', '/new-hire', 'New Hire')}
-                    />
-                  )}
-
-                  {hasModuleAccess('phonebook') && (
-                    <GridTile
-                      title="Phonebook"
-                      icon={<Notebook width={"2rem"}  />}
-                      onClick={() => authenticateModule('phonebook', '/phonebook', 'Phonebook')}
-                    />
-                  )}
-
-                  {hasModuleAccess('quick_links') && (
-                    <GridTile
-                      title="Links"
-                      icon={<Link width={"2rem"}  />}
-                      onClick={() => authenticateModule('quick_links', '/quick-links', 'Links')}
-                    />
-                  )}
-
-                  {hasModuleAccess('qr_generator') && (
-                    <GridTile
-                      title="QR Generator"
-                      icon={<QrCode width={"2rem"}  />}
-                      onClick={() => authenticateModule('qr_generator', '/qr-code-generator', 'QR Generator')}
-                    />
-                  )}
-
-                  {hasModuleAccess('fuel_log') && (
-                    <GridTile
-                      title="Fuel Log"
-                      icon={<Fuel width={"2rem"}  />}
-                      onClick={() => authenticateModule('fuel_log', '/fuel-log', 'Fuel Log')}
-                    />
-                  )}
-
-                  {hasModuleAccess('vehicle_master') && (
-                    <GridTile
-                      title="Vehicle Master"
-                      icon={<Car width={"2rem"}  />}
-                      onClick={() => authenticateModule('vehicle_master', '/vehicle-master', 'Vehicle Master')}
-                    />
-                  )}
-
-                  {hasModuleAccess('vehicle_log_book') && (
-                    <GridTile
-                      title="Vehicle Log"
-                      icon={<Book width={"2rem"}  />}
-                      onClick={() => authenticateModule('vehicle_log_book', '/vehicle-log-book', 'Vehicle Log')}
-                    />
-                  )}
-
-                  {hasModuleAccess('petty_cash') && (
-                    <GridTile
-                      title="Petty Cash"
-                      icon={<Wallet width={"2rem"}  />}
-                      onClick={() => authenticateModule('petty_cash', '/petty-cash', 'Petty Cash')}
-                    />
-                  )}
-
-                  {hasModuleAccess('offer_letters') && (
-                    <GridTile
-                      title="Offer Letters"
-                      icon={<FileText width={"2rem"}  />}
-                      onClick={() => authenticateModule('offer_letters', '/offer-letters', 'Offer Letters')}
-                    />
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            </div>
           )}
         </motion.div>
 

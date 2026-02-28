@@ -14,6 +14,7 @@ export interface FuelLog {
   employee_name: string;
   vehicle_number: string;
   created_at: any;
+  isPending?: boolean;
 }
 
 export interface CachedFuelLogsData {
@@ -82,6 +83,17 @@ export const cacheFuelLogsData = (logs: FuelLog[], userEmail: string): void => {
 
 // Fetch and cache fuel logs
 export const fetchAndCacheFuelLogs = async (userEmail: string): Promise<FuelLog[]> => {
+  // If offline, return cached data
+  if (!navigator.onLine) {
+    const cached = getCachedFuelLogs(userEmail);
+    if (cached) {
+      console.log("📴 Offline: Using cached fuel logs");
+      return cached;
+    }
+    console.log("📴 Offline: No cached data available");
+    return [];
+  }
+  
   try {
     const q = query(
       collection(db, "fuel log"),
@@ -98,6 +110,12 @@ export const fetchAndCacheFuelLogs = async (userEmail: string): Promise<FuelLog[
     return logs;
   } catch (error) {
     console.error("Error fetching fuel logs:", error);
+    // Return cached data if available on error
+    const cached = getCachedFuelLogs(userEmail);
+    if (cached) {
+      console.log("⚠️ Error fetching, using cached fuel logs");
+      return cached;
+    }
     throw error;
   }
 };

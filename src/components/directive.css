@@ -1,3 +1,9 @@
 .directive-button:hover {
   background: rgba(100 100 100/ 1) !important;
 }
+
+.pending-log {
+  opacity: 0.6;
+
+  cursor: default !important;
+}

@@ -4,6 +4,7 @@ import Directive from "@/components/directive";
 import DropDown from "@/components/dropdown";
 import NumberPlate from "@/components/number-plate";
 import RefreshButton from "@/components/refresh-button";
+import DefaultDialog from "@/components/ui/default-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
@@ -11,9 +12,11 @@ import { db } from "@/firebase";
 import { fetchAndCacheFuelLogs, getCachedFuelLogs, type FuelLog as FuelLogType } from "@/utils/fuelLogsCache";
 import { getCachedProfile } from "@/utils/profileCache";
 import { getCachedVehicle } from "@/utils/vehicleCache";
+import { addPendingFuelLog, syncAllPendingFuelLogs, getPendingFuelLogsCount, getPendingFuelLogs } from "@/utils/offlineFuelLogs";
+import { useBackgroundProcess } from "@/context/BackgroundProcessContext";
 import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical, Fuel, Gauge, Loader2, Plus } from "lucide-react";
+import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical, Fuel, Gauge, Loader2, Plus, RadioTower, WifiOff } from "lucide-react";
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -450,6 +453,9 @@ export default function FuelLog() {
   const [deleting, setDeleting] = useState(false);
   const [editingLog, setEditingLog] = useState<FuelLogType | null>(null);
   const [vehicleRegistrationType, setVehicleRegistrationType] = useState<string>("Private");
+  const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const { addProcess, updateProcess } = useBackgroundProcess();
 
   useEffect(() => {
     // Load cached profile data immediately
@@ -485,18 +491,78 @@ export default function FuelLog() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
-    return () => window.removeEventListener('resize', checkMobile);
+    // Monitor online/offline status
+    const handleOnline = () => {
+      setIsOnline(true);
+      syncPendingLogs();
+    };
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Check for pending logs
+    updatePendingCount();
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, [userData?.email]);
 
   const fetchFuelLogs = async (silent = false) => {
     if (!userData?.email) return;
+    
+    // Don't fetch when offline, just use cached/pending data
+    if (!navigator.onLine) {
+      console.log("📴 Offline: Using local data only");
+      const cachedLogs = getCachedFuelLogs(userData.email) || [];
+      const pendingLogs = getPendingFuelLogs();
+      const pendingAsFuelLogs: FuelLogType[] = pendingLogs.map(log => ({
+        id: log.id,
+        date: log.data.date,
+        odometer_reading: log.data.odometer_reading,
+        amount_spent: log.data.amount_spent,
+        employee_name: log.data.employee_name,
+        vehicle_number: log.data.vehicle_number,
+        created_at: new Date(log.createdAt),
+        isPending: true,
+      }));
+      
+      const allLogs = [...pendingAsFuelLogs, ...cachedLogs].sort((a, b) => {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      });
+      
+      setFuelLogs(allLogs);
+      return;
+    }
     
     try {
       if (!silent) setLoading(true);
       else setRefreshing(true);
       
       const logs = await fetchAndCacheFuelLogs(userData.email);
-      setFuelLogs(logs);
+      
+      // Merge with pending logs
+      const pendingLogs = getPendingFuelLogs();
+      const pendingAsFuelLogs: FuelLogType[] = pendingLogs.map(log => ({
+        id: log.id,
+        date: log.data.date,
+        odometer_reading: log.data.odometer_reading,
+        amount_spent: log.data.amount_spent,
+        employee_name: log.data.employee_name,
+        vehicle_number: log.data.vehicle_number,
+        created_at: new Date(log.createdAt),
+        isPending: true,
+      }));
+      
+      // Combine and sort by date (newest first)
+      const allLogs = [...pendingAsFuelLogs, ...logs].sort((a, b) => {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      });
+      
+      setFuelLogs(allLogs);
       
       if (silent) {
         setRefreshCompleted(true);
@@ -510,6 +576,49 @@ export default function FuelLog() {
     } finally {
       if (!silent) setLoading(false);
       else setRefreshing(false);
+    }
+  };
+
+  const updatePendingCount = () => {
+    // Removed - pending count now shown in background process dropdown
+  };
+
+  const syncPendingLogs = async () => {
+    const count = getPendingFuelLogsCount();
+    if (count === 0) return;
+
+    const processId = `sync_fuel_logs_${Date.now()}`;
+    addProcess(processId, `Syncing ${count} fuel log${count > 1 ? 's' : ''}`);
+    updateProcess(processId, { status: "in-progress", message: "Uploading to cloud..." });
+
+    try {
+      const result = await syncAllPendingFuelLogs((current, total) => {
+        const progress = Math.round((current / total) * 100);
+        updateProcess(processId, { 
+          progress, 
+          message: `Uploaded ${current} of ${total}...` 
+        });
+      });
+
+      if (result.success > 0) {
+        updateProcess(processId, { 
+          status: "completed", 
+          message: `${result.success} fuel log${result.success > 1 ? 's' : ''} synced successfully` 
+        });
+        fetchFuelLogs(true); // Refresh the list
+      }
+
+      if (result.failed > 0) {
+        updateProcess(processId, { 
+          status: "error", 
+          message: `${result.failed} fuel log${result.failed > 1 ? 's' : ''} failed to sync` 
+        });
+      }
+
+      updatePendingCount();
+    } catch (error) {
+      console.error("Error syncing fuel logs:", error);
+      updateProcess(processId, { status: "error", message: "Sync failed" });
     }
   };
 
@@ -532,7 +641,12 @@ export default function FuelLog() {
       setSubmitting(true);
 
       if (editingLog) {
-        // Update existing log
+        // Update existing log (requires online connection)
+        if (!isOnline) {
+          toast.error("You need to be online to edit existing logs");
+          return;
+        }
+
         const fuelLogData = {
           date: date,
           odometer_reading: odometerReading ? parseFloat(odometerReading) : 0,
@@ -551,13 +665,43 @@ export default function FuelLog() {
           amount_spent: parseFloat(amountSpent),
           email: userData?.email || "",
           employee_name: userProfile.name || "",
-          vehicle_number: vehicleNumber,
           employee_code: userProfile.employeeCode || "",
-          created_at: new Date(),
+          vehicle_number: vehicleNumber,
+          timestamp: Date.now(),
         };
 
-        await addDoc(collection(db, "fuel log"), fuelLogData);
-        toast.success("Fuel log submitted successfully!");
+        if (isOnline) {
+          // Save directly to Firestore
+          await addDoc(collection(db, "fuel log"), {
+            ...fuelLogData,
+            created_at: new Date(),
+          });
+          toast.success("Fuel log submitted successfully!");
+          
+          // Refresh logs from Firestore
+          fetchFuelLogs();
+        } else {
+          // Save to localStorage for later sync
+          const pendingId = addPendingFuelLog(fuelLogData);
+          toast.success("Fuel log saved offline. Will sync when online.", {
+            icon: <WifiOff width="1rem" />,
+          });
+          updatePendingCount();
+          
+          // Add to local state immediately without refetching
+          const newLog: FuelLogType = {
+            id: pendingId,
+            date: date,
+            odometer_reading: odometerReading ? parseFloat(odometerReading) : 0,
+            amount_spent: parseFloat(amountSpent),
+            employee_name: userProfile.name || "",
+            vehicle_number: vehicleNumber,
+            created_at: new Date(),
+            isPending: true,
+          };
+          
+          setFuelLogs(prevLogs => [newLog, ...prevLogs]);
+        }
       }
       
       // Reset form
@@ -566,9 +710,6 @@ export default function FuelLog() {
       setAmountSpent("");
       setDrawerOpen(false);
       setEditingLog(null);
-      
-      // Refresh logs
-      fetchFuelLogs();
     } catch (error) {
       console.error("Error submitting fuel log:", error);
       toast.error(editingLog ? "Failed to update fuel log" : "Failed to submit fuel log");
@@ -577,11 +718,16 @@ export default function FuelLog() {
     }
   };
 
+  const showDeleteConfirmation = () => {
+    setDeleteConfirmDialog(true);
+  };
+
   const handleDelete = async () => {
     if (!selectedLog || deleting) return;
 
     try {
       setDeleting(true);
+      setDeleteConfirmDialog(false);
       await deleteDoc(doc(db, "fuel log", selectedLog.id));
       toast.success("Fuel log deleted successfully!");
       setDrawerDetailOpen(false);
@@ -618,11 +764,29 @@ export default function FuelLog() {
             title="Fuel Log"
             subtitle={fuelLogs.length}
             extra={
-              <RefreshButton
-                onClick={() => fetchFuelLogs(true)}
-                refreshCompleted={refreshCompleted}
-                fetchingData={refreshing}
-              />
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                {!isOnline && (
+                  <div style={{
+                    padding: "0.5rem 1rem",
+                   
+                    borderRadius: "0.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    fontSize: "0.8rem",
+                    fontWeight: "500",
+                    color: "crimson"
+                  }}>
+                    <RadioTower width={"1rem"} />
+                    Offline
+                  </div>
+                )}
+                <RefreshButton
+                  onClick={() => fetchFuelLogs(true)}
+                  refreshCompleted={refreshCompleted}
+                  fetchingData={refreshing}
+                />
+              </div>
             }
             // icon={<Fuel color="orange" width="1.75rem" />}
           />
@@ -663,15 +827,20 @@ export default function FuelLog() {
                 <Directive 
                   subtext={"Vehicle - "+log.vehicle_number} 
                   noArrow 
-                  // id_subtitle={"ODO - "+String(log.odometer_reading)} 
                   tag={log.amount_spent.toFixed(3)} 
                   key={log.id} 
-                  icon={<Fuel color="orange"/>} 
+                  icon={<Fuel color={log.isPending ? "gray" : "orange"}/>} 
                   title={moment(log.date).format("DD MMM YYYY")}
                   onClick={() => {
-                    setSelectedLog(log);
-                    setDrawerDetailOpen(true);
+                    if (!log.isPending) {
+                      setSelectedLog(log);
+                      setDrawerDetailOpen(true);
+                    }
+                    else{
+                      toast.info("Log will be updated when online")
+                    }
                   }}
+                  className={log.isPending ? "pending-log" : ""}
                 />
                 // <div
                 //   key={log.id}
@@ -817,7 +986,7 @@ export default function FuelLog() {
               <FuelLogDetailContent
                 selectedLog={selectedLog}
                 handleEdit={handleEdit}
-                handleDelete={handleDelete}
+                handleDelete={showDeleteConfirmation}
               />
             </DrawerContent>
           </Drawer>
@@ -829,7 +998,7 @@ export default function FuelLog() {
               <FuelLogDetailContent
                 selectedLog={selectedLog}
                 handleEdit={handleEdit}
-                handleDelete={handleDelete}
+                handleDelete={showDeleteConfirmation}
               />
             </DialogContent>
           </Dialog>
@@ -1011,6 +1180,18 @@ export default function FuelLog() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <DefaultDialog
+        open={deleteConfirmDialog}
+        onCancel={() => setDeleteConfirmDialog(false)}
+        title="Delete Fuel Log"
+        desc="Are you sure you want to delete this fuel log entry? This action cannot be undone."
+        OkButtonText="Delete"
+        CancelButtonText="Cancel"
+        onOk={handleDelete}
+        updating={deleting}
+        disabled={deleting}
+      />
     </>
   );
 }

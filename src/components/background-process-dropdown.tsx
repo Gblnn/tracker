@@ -1,5 +1,9 @@
+import { useBackgroundProcess } from "@/context/BackgroundProcessContext";
+import { getPendingFuelLogsCount } from "@/utils/offlineFuelLogs";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import { CheckCircle2, Cloud, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Cloud, CloudOff, Loader2, XCircle } from "lucide-react";
+import moment from "moment";
+import { useEffect, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,8 +12,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "./ui/dropdown-menu";
-import { useBackgroundProcess } from "@/context/BackgroundProcessContext";
-import moment from "moment";
 
 interface Props {
   className?: string;
@@ -17,6 +19,19 @@ interface Props {
 
 export default function BackgroundProcessDropdown(props: Props) {
   const { processes, clearCompleted } = useBackgroundProcess();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    // Update pending count on mount and when processes change
+    setPendingCount(getPendingFuelLogsCount());
+    
+    // Set up interval to check for pending logs
+    const interval = setInterval(() => {
+      setPendingCount(getPendingFuelLogsCount());
+    }, 2000);
+    
+    return () => clearInterval(interval);
+  }, [processes]);
 
   const activeProcesses = processes.filter(
     p => p.status === "pending" || p.status === "in-progress"
@@ -91,25 +106,54 @@ export default function BackgroundProcessDropdown(props: Props) {
       <DropdownMenuContent
         className="mr-5 mt-1"
         style={{
-          minWidth: "280px",
-          maxHeight: "400px",
+          width: "260px",
+          height: "320px",
           overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        <DropdownMenuLabel style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <Cloud width="1rem" color="dodgerblue" />
+        <DropdownMenuLabel style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8rem", padding: "0.5rem 0.75rem" }}>
+        
           Background Activity
         </DropdownMenuLabel>
         
         <DropdownMenuSeparator />
 
-        {processes.length === 0 ? (
+        {pendingCount > 0 && (
+          <>
+            <DropdownMenuItem
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.375rem",
+                padding: "0.5rem 0.75rem",
+                cursor: "default",
+                background: "rgba(30, 144, 255, 0.1)",
+              }}
+              onSelect={(e) => e.preventDefault()}
+            >
+              <CloudOff width="0.875rem" color="dodgerblue" />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 500, fontSize: "0.8rem" }}>
+                  {pendingCount} Pending Fuel Log{pendingCount > 1 ? "s" : ""}
+                </div>
+                <div style={{ fontSize: "0.7rem", opacity: 0.7, marginTop: "0.0625rem" }}>
+                  Will sync when online
+                </div>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+
+        {processes.length === 0 && pendingCount === 0 ? (
           <div
             style={{
-              padding: "1.5rem 1rem",
+              padding: "1rem 0.75rem",
               textAlign: "center",
               opacity: 0.6,
-              fontSize: "0.875rem",
+              fontSize: "0.8rem",
             }}
           >
             No active background activity.
@@ -125,7 +169,7 @@ export default function BackgroundProcessDropdown(props: Props) {
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "flex-start",
-                      padding: "0.75rem",
+                      padding: "0.5rem 0.75rem",
                       cursor: "default",
                     }}
                     onSelect={(e) => e.preventDefault()}
@@ -134,20 +178,20 @@ export default function BackgroundProcessDropdown(props: Props) {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "0.5rem",
+                        gap: "0.375rem",
                         width: "100%",
                       }}
                     >
                       {getStatusIcon(process.status)}
-                      <span style={{ fontWeight: 500 }}>{process.name}</span>
+                      <span style={{ fontWeight: 500, fontSize: "0.8rem" }}>{process.name}</span>
                     </div>
                     {process.message && (
                       <span
                         style={{
-                          fontSize: "0.75rem",
+                          fontSize: "0.7rem",
                           opacity: 0.7,
-                          marginTop: "0.25rem",
-                          marginLeft: "1.5rem",
+                          marginTop: "0.125rem",
+                          marginLeft: "1.25rem",
                         }}
                       >
                         {process.message}
@@ -157,11 +201,11 @@ export default function BackgroundProcessDropdown(props: Props) {
                       <div
                         style={{
                           width: "100%",
-                          height: "4px",
+                          height: "3px",
                           background: "rgba(100, 100, 100, 0.2)",
-                          borderRadius: "2px",
-                          marginTop: "0.5rem",
-                          marginLeft: "1.5rem",
+                          borderRadius: "1.5px",
+                          marginTop: "0.375rem",
+                          marginLeft: "1.25rem",
                           overflow: "hidden",
                         }}
                       >
@@ -185,21 +229,22 @@ export default function BackgroundProcessDropdown(props: Props) {
                 {activeProcesses.length > 0 && <DropdownMenuSeparator />}
                 <DropdownMenuLabel
                   style={{
-                    fontSize: "0.75rem",
+                    fontSize: "0.7rem",
                     opacity: 0.6,
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    padding: "0.375rem 0.75rem",
                   }}
                 >
                   <span>Recent</span>
                   <button
                     onClick={clearCompleted}
                     style={{
-                      fontSize: "0.7rem",
-                      padding: "0.25rem 0.5rem",
+                      fontSize: "0.65rem",
+                      padding: "0.1875rem 0.4rem",
                       background: "rgba(100, 100, 100, 0.2)",
-                      borderRadius: "0.25rem",
+                      borderRadius: "0.2rem",
                       cursor: "pointer",
                     }}
                   >
@@ -211,11 +256,12 @@ export default function BackgroundProcessDropdown(props: Props) {
                     key={process.id}
                     style={{
                       display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                      padding: "0.75rem",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "0.375rem 0.75rem",
                       opacity: 0.7,
                       cursor: "default",
+                      gap: "0.5rem",
                     }}
                     onSelect={(e) => e.preventDefault()}
                   >
@@ -223,32 +269,20 @@ export default function BackgroundProcessDropdown(props: Props) {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "0.5rem",
-                        width: "100%",
+                        gap: "0.375rem",
+                        flex: 1,
+                        minWidth: 0,
                       }}
                     >
                       {getStatusIcon(process.status)}
-                      <span style={{ fontWeight: 500 }}>{process.name}</span>
+                      <span style={{ fontWeight: 500, fontSize: "0.75rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{process.name}</span>
                     </div>
-                    {process.message && (
-                      <span
-                        style={{
-                          fontSize: "0.75rem",
-                          opacity: 0.7,
-                          marginTop: "0.25rem",
-                          marginLeft: "1.5rem",
-                        }}
-                      >
-                        {process.message}
-                      </span>
-                    )}
                     {process.endTime && (
                       <span
                         style={{
-                          fontSize: "0.7rem",
-                          opacity: 0.5,
-                          marginTop: "0.25rem",
-                          marginLeft: "1.5rem",
+                          fontSize: "0.625rem",
+                          opacity: 0.6,
+                          whiteSpace: "nowrap",
                         }}
                       >
                         {moment(process.endTime).fromNow()}
