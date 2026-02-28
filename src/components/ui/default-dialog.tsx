@@ -81,12 +81,13 @@ export default function DefaultDialog(props: Props) {
       // On dialog close, force cleanup
       root?.removeAttribute("aria-hidden");
       root?.removeAttribute("inert");
+      if (root) root.style.pointerEvents = "";
     }
   }, [props.open]);
 
   return (
     <>
-      <Dialog open={props.open} onOpenChange={props.onCancel} modal={false}>
+      <Dialog open={props.open} onOpenChange={props.onCancel}>
         <DialogContent
           style={{
             border: "",
@@ -606,7 +607,7 @@ export default function DefaultDialog(props: Props) {
                 >
                   <div
                     style={{
-                      background: "brown",
+                      background: "dodgerblue",
                       width: props.progress,
                       height: "0.25rem",
                       borderRadius: "0.5rem",

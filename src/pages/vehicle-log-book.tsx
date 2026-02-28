@@ -9,7 +9,7 @@ export default function VehicleLogBook() {
         <Back
           fixed
           blurBG
-          title="Vehicle Log Book"
+          title="Vehicle Log"
           icon={<BookOpen color="orange" width="1.75rem" />}
         />
         
@@ -29,7 +29,7 @@ export default function VehicleLogBook() {
           }}>
             <BookOpen size={48} color="orange" />
             <p style={{ fontSize: "1.125rem", fontWeight: 500 }}>
-              Vehicle Log Book
+              Vehicle Log
             </p>
             <p style={{ fontSize: "0.875rem", opacity: 0.7 }}>
               Feature coming soon

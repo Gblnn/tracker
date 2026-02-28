@@ -50,7 +50,7 @@ interface Props{
 
 export default function PasswordDialog(props:Props){
     return(
-        <Dialog open={props.open} modal={false}>
+        <Dialog open={props.open}>
             <DialogContent onOpenAutoFocus={(e)=>e.preventDefault()}>
                 <DialogHeader>
                     <DialogTitle className="heading" style={{userSelect:"none", width:"100%", display:"flex", flexFlow:"column"}}>

@@ -323,6 +323,7 @@ const FuelLogDetailContent: React.FC<FuelLogDetailContentProps> = ({
       <div style={{
         width: "100%",
         padding: "1rem",
+        paddingTop:"0rem",
         paddingBottom: "0.75rem",
         borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
         background: "var(--background)",
@@ -468,10 +469,12 @@ export default function FuelLog() {
       const cachedLogs = getCachedFuelLogs(userData.email);
       if (cachedLogs) {
         setFuelLogs(cachedLogs);
+        // Fetch fresh data in background (silent refresh)
+        fetchFuelLogs(true);
+      } else {
+        // No cached data, show loader while fetching
+        fetchFuelLogs(false);
       }
-      
-      // Fetch fresh data in background
-      fetchFuelLogs(true);
     }
     
     // Detect mobile/desktop
@@ -759,7 +762,7 @@ export default function FuelLog() {
 
       {/* Drawer for Mobile / Dialog for Desktop - Unified Layout */}
       {isMobile ? (
-        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen} shouldScaleBackground={false}>
+        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
           <DrawerTitle></DrawerTitle>
           <DrawerDescription></DrawerDescription>
           <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "75vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
@@ -807,7 +810,7 @@ export default function FuelLog() {
       {/* Detail View - Drawer for Mobile / Dialog for Desktop - Unified Layout */}
       {selectedLog && (
         isMobile ? (
-          <Drawer open={drawerDetailOpen} onOpenChange={setDrawerDetailOpen} shouldScaleBackground={false}>
+          <Drawer open={drawerDetailOpen} onOpenChange={setDrawerDetailOpen}>
             <DrawerTitle></DrawerTitle>
             <DrawerDescription></DrawerDescription>
             <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "70vh", paddingBottom: "4rem" }}>

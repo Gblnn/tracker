@@ -1,5 +1,5 @@
+import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
-import CustomDropDown from "@/components/custom-dropdown";
 import Directive from "@/components/directive";
 import InboxComponent from "@/components/inbox-component";
 import InputDialog from "@/components/input-dialog";
@@ -27,10 +27,7 @@ import {
 } from "firebase/firestore";
 import { motion } from "framer-motion";
 import {
-  ChevronDown,
-  Eye,
   FileSpreadsheet,
-  Filter,
   Info,
   LucideMails,
   Mails,
@@ -38,11 +35,10 @@ import {
   PenLine,
   Plus,
   RefreshCcw,
-  Sparkles,
+  Sparkles
 } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/components/AuthProvider";
 
 export default function Inbox() {
   const today: any = moment().toDate();
@@ -514,11 +510,10 @@ export default function Inbox() {
   // }
 
   return (
-    <motion.div style={{padding:"1rem", background:
-            "linear-gradient(rgba(209 20 58/ 15%), rgba(100 100 100/ 0%)", height:"100svh"}} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
+    <motion.div style={{padding:"1rem", height:"100svh"}} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
       <div
         style={{
-          padding: "",
+          padding: "0.5rem",
           
         }}
       >
@@ -615,7 +610,7 @@ export default function Inbox() {
                   onChange={(e: any) => setSearch(e.target.value.toLowerCase())}
                 />
 
-                <CustomDropDown
+                {/* <CustomDropDown
                   trigger={
                     <div
                       className="transitions"
@@ -662,7 +657,7 @@ export default function Inbox() {
                   onOption1={() => setFilterState("personal")}
                   onOption2={() => setFilterState("vale")}
                   onClear={() => setFilterState("")}
-                />
+                /> */}
 
                 {
                   <button onClick={exportDB} style={{ width: "3rem" }}>
@@ -785,31 +780,31 @@ export default function Inbox() {
                     <InboxComponent
                       notify={!record.notify}
                       archived={record.state == "active" ? false : true}
-                      type={
-                        record.type == "personal"
-                          ? "SSU Record"
-                          : record.type == "vale"
-                          ? "Vale Record"
-                          : "Omni"
-                      }
-                      typeIcon={
-                        record.type == "personal" ? (
-                          <img
-                            src="/sohar_star_logo.png"
-                            style={{ width: "1.25rem" }}
-                          />
-                        ) : record.type == "vale" ? (
-                          <img
-                            src="/vale-logo.png"
-                            style={{
-                              width: "1.25rem",
-                              paddingBottom: "0.45rem",
-                            }}
-                          />
-                        ) : (
-                          <Eye width={"1rem"} color="dodgerblue" />
-                        )
-                      }
+                      // type={
+                      //   record.type == "personal"
+                      //     ? "SSU Record"
+                      //     : record.type == "vale"
+                      //     ? "Vale Record"
+                      //     : "Omni"
+                      // }
+                      // typeIcon={
+                      //   record.type == "personal" ? (
+                      //     <img
+                      //       src="/sohar_star_logo.png"
+                      //       style={{ width: "1.25rem" }}
+                      //     />
+                      //   ) : record.type == "vale" ? (
+                      //     <img
+                      //       src="/vale-logo.png"
+                      //       style={{
+                      //         width: "1.25rem",
+                      //         paddingBottom: "0.45rem",
+                      //       }}
+                      //     />
+                      //   ) : (
+                      //     <Eye width={"1rem"} color="dodgerblue" />
+                      //   )
+                      // }
                       mail={record.email}
                       noArrow
                       onClick={() => {}}

@@ -240,14 +240,17 @@ export default function InboxComponent(props:Props){
                                     <AtSign width={"1.1rem"} color='dodgerblue'/>
                                     {props.mail}
                                 </button> */}
-
-                                <div style={{fontWeight:500, fontSize:"0.8rem", color:props.typeColor, borderRadius:"0.5rem", background:"rgba(100 100 100/ 20%)", width:"fit-content",paddingLeft:"0.5rem", paddingRight:"0.75rem", alignItems:"center", display:"flex", height:"2rem", gap:"0.5rem"}}>
+                                {
+                                    props.type&&
+                                    <div style={{fontWeight:500, fontSize:"0.8rem", color:props.typeColor, borderRadius:"0.5rem", background:"rgba(100 100 100/ 20%)", width:"fit-content",paddingLeft:"0.5rem", paddingRight:"0.75rem", alignItems:"center", display:"flex", height:"2rem", gap:"0.5rem"}}>
                                 {props.typeIcon}
                                     <p>
                                         {props.type}
                                     </p>
                                     
                                 </div>
+                                }
+                                
                                 
                                 {
                                     props.notify?

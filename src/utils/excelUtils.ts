@@ -5,12 +5,12 @@ import { doc, writeBatch } from "firebase/firestore";
 import moment from "moment";
 
 // Function to check if a document is expiring soon
-const isExpiring = (date: string) => {
+const isExpiring = (date: string, monthsThreshold: number = 2) => {
   if (!date) return false;
   const expiryDate = moment(date, "DD/MM/YYYY");
   const today = moment();
   const monthsDiff = expiryDate.diff(today, "months");
-  return monthsDiff <= 2; // Consider documents expiring in 2 months or less
+  return monthsDiff <= monthsThreshold;
 };
 
 // Function to export expiring records to Excel
@@ -19,21 +19,21 @@ export const exportExpiringRecords = (records: any[]) => {
     // Filter records with expiring documents
     const expiringRecords = records.filter((record) => {
       return (
-        isExpiring(record.civil_expiry) ||
-        isExpiring(record.license_expiry) ||
-        isExpiring(record.medical_due_on) ||
-        isExpiring(record.passportExpiry) ||
-        isExpiring(record.vt_hse_induction) ||
-        isExpiring(record.vt_car_1) ||
-        isExpiring(record.vt_car_2) ||
-        isExpiring(record.vt_car_3) ||
-        isExpiring(record.vt_car_4) ||
-        isExpiring(record.vt_car_5) ||
-        isExpiring(record.vt_car_6) ||
-        isExpiring(record.vt_car_7) ||
-        isExpiring(record.vt_car_8) ||
-        isExpiring(record.vt_car_9) ||
-        isExpiring(record.vt_car_10)
+        isExpiring(record.civil_expiry, 2) ||
+        isExpiring(record.license_expiry, 2) ||
+        isExpiring(record.medical_due_on, 2) ||
+        isExpiring(record.passportExpiry, 6) || // Passport expires in 6 months
+        isExpiring(record.vt_hse_induction, 2) ||
+        isExpiring(record.vt_car_1, 2) ||
+        isExpiring(record.vt_car_2, 2) ||
+        isExpiring(record.vt_car_3, 2) ||
+        isExpiring(record.vt_car_4, 2) ||
+        isExpiring(record.vt_car_5, 2) ||
+        isExpiring(record.vt_car_6, 2) ||
+        isExpiring(record.vt_car_7, 2) ||
+        isExpiring(record.vt_car_8, 2) ||
+        isExpiring(record.vt_car_9, 2) ||
+        isExpiring(record.vt_car_10, 2)
       );
     });
 

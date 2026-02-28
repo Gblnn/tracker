@@ -111,6 +111,7 @@ export default function Directive(props: Props) {
             gap: "0.75rem",
             alignItems: "center",
             flex: 1,
+            minWidth: 0,
             border: "",
           }}
         >
@@ -120,6 +121,7 @@ export default function Directive(props: Props) {
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
+                flexShrink: 0,
               }}
             >
               <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
@@ -135,16 +137,20 @@ export default function Directive(props: Props) {
               </motion.div>
             </div>
           ) : props.loading ? (
-            <LoaderCircle
-              className="animate-spin"
-              color="dodgerblue"
-              width={"1.25rem"}
-            />
+            <div style={{ flexShrink: 0 }}>
+              <LoaderCircle
+                className="animate-spin"
+                color="dodgerblue"
+                width={"1.25rem"}
+              />
+            </div>
           ) : (
-            props.icon
+            <div style={{ flexShrink: 0 }}>
+              {props.icon}
+            </div>
           )}
 
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
             {props.subtext && (
               <p
                 style={{
@@ -176,9 +182,10 @@ export default function Directive(props: Props) {
                   gap: "0.65rem",
                   alignItems: "center",
                   width: "100%",
+                  minWidth: 0,
                 }}
               >
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
                   <div
                     style={{
                       display: "flex",
@@ -186,12 +193,19 @@ export default function Directive(props: Props) {
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
-
                       gap: "0.5rem",
                       textTransform: props.notName ? "none" : "capitalize",
+                      maxWidth: "100%",
                     }}
                   >
-                    {props.title}
+                    <span style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      flex: 1,
+                    }}>
+                      {props.title}
+                    </span>
                     {props.expiring && (
                       <Circle
                         color="crimson"
@@ -227,7 +241,7 @@ export default function Directive(props: Props) {
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
           {props.selectable ? null : props.notify ? (
             props.archived ? (
               ""

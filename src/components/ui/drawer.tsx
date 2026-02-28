@@ -5,13 +5,31 @@ import { cn } from "@/lib/utils"
 
 const Drawer = ({
   shouldScaleBackground = true,
+  modal = true,
+  open,
   ...props
-}: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
-  <DrawerPrimitive.Root
-    shouldScaleBackground={shouldScaleBackground}
-    {...props}
-  />
-)
+}: React.ComponentProps<typeof DrawerPrimitive.Root>) => {
+  React.useEffect(() => {
+    const root = document.getElementById("root");
+    if (!open && root) {
+      // Force cleanup when drawer closes
+      setTimeout(() => {
+        root.removeAttribute("inert");
+        root.removeAttribute("aria-hidden");
+        root.style.pointerEvents = "";
+      }, 50);
+    }
+  }, [open]);
+
+  return (
+    <DrawerPrimitive.Root
+      shouldScaleBackground={shouldScaleBackground}
+      modal={modal}
+      open={open}
+      {...props}
+    />
+  );
+};
 Drawer.displayName = "Drawer"
 
 const DrawerTrigger = DrawerPrimitive.Trigger
@@ -23,48 +41,78 @@ const DrawerClose = DrawerPrimitive.Close
 const DrawerOverlay = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
->(({ className, style, ...props }, ref) => (
-  <DrawerPrimitive.Overlay
-    ref={ref}
-    className={cn("fixed inset-0 z-50 bg-black/80", className)}
-    style={{
-      WebkitTransform: 'translate3d(0, 0, 0)',
-      transform: 'translate3d(0, 0, 0)',
-      ...style
-    }}
-    {...props}
-  />
-))
+>(({ className, style, ...props }, ref) => {
+  React.useEffect(() => {
+    // Ensure root is not inert when overlay mounts
+    const root = document.getElementById("root");
+    if (root) {
+      root.removeAttribute("inert");
+      root.removeAttribute("aria-hidden");
+      root.style.pointerEvents = "";
+    }
+  }, []);
+
+  return (
+    <DrawerPrimitive.Overlay
+      ref={ref}
+      className={cn("fixed inset-0 z-50 bg-black/80", className)}
+      style={{
+        WebkitTransform: 'translate3d(0, 0, 0)',
+        transform: 'translate3d(0, 0, 0)',
+        ...style
+      }}
+      {...props}
+    />
+  );
+});
 DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName
 
 const DrawerContent = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>
->(({ className, children, style, ...props }, ref) => (
-  <DrawerPortal>
-    <DrawerOverlay />
-    <DrawerPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
-        className
-      )}
-      style={{
-        WebkitTransform: 'translate3d(0, 0, 0)',
-        transform: 'translate3d(0, 0, 0)',
-        WebkitBackfaceVisibility: 'hidden',
-        backfaceVisibility: 'hidden',
-        WebkitPerspective: 1000,
-        perspective: 1000,
-        ...style
-      }}
-      {...props}
-    >
-      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
-      {children}
-    </DrawerPrimitive.Content>
-  </DrawerPortal>
-))
+>(({ className, children, style, ...props }, ref) => {
+  React.useEffect(() => {
+    // Cleanup on mount and unmount
+    return () => {
+      const root = document.getElementById("root");
+      if (root) {
+        setTimeout(() => {
+          root.removeAttribute("inert");
+          root.removeAttribute("aria-hidden");
+          root.style.pointerEvents = "";
+        }, 100);
+      }
+    };
+  }, []);
+
+  return (
+    <DrawerPortal>
+      <DrawerOverlay />
+      <DrawerPrimitive.Content
+        ref={ref}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+        className={cn(
+          "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
+          className
+        )}
+        style={{
+          WebkitTransform: 'translate3d(0, 0, 0)',
+          transform: 'translate3d(0, 0, 0)',
+          WebkitBackfaceVisibility: 'hidden',
+          backfaceVisibility: 'hidden',
+          WebkitPerspective: 1000,
+          perspective: 1000,
+          ...style
+        }}
+        {...props}
+      >
+        <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
+        {children}
+      </DrawerPrimitive.Content>
+    </DrawerPortal>
+  );
+});
 DrawerContent.displayName = "DrawerContent"
 
 const DrawerHeader = ({

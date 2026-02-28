@@ -26,7 +26,6 @@ import {
   deleteDoc,
   doc,
   getAggregateFromServer,
-  getDoc,
   getDocs,
   limit,
   onSnapshot,
@@ -76,6 +75,7 @@ import {
   GraduationCap,
   HeartPulse,
   Inbox,
+  Info,
   ListStart,
   Loader2,
   LoaderCircle,
@@ -369,11 +369,6 @@ export default function DbComponent(props: Props) {
 
   const [allowanceDialog, setAllowanceDialog] = useState(false);
 
-  // Vehicle Allocation
-  const [allocated_vehicle, setAllocatedVehicle] = useState("");
-  const [availableVehicles, setAvailableVehicles] = useState<any>([]);
-  const [allocateVehicleDialog, setAllocateVehicleDialog] = useState(false);
-
   const [leaveLog, setLeaveLog] = useState(false);
   const [leaveList, setLeaveList] = useState<any>([]);
   const [leaveFrom, setLeaveFrom] = useState<any>("");
@@ -460,28 +455,6 @@ export default function DbComponent(props: Props) {
       );
     }
   }, [status]);
-
-  // Fetch available vehicles
-  useEffect(() => {
-    fetchVehicles();
-  }, []);
-
-  const fetchVehicles = async () => {
-    try {
-      const vehicleCollection = collection(db, "vehicle_master");
-      const vehicleQuery = query(vehicleCollection, orderBy("vehicle_number"));
-      const querySnapshot = await getDocs(vehicleQuery);
-      const fetchedData: any = [];
-
-      querySnapshot.forEach((doc: any) => {
-        fetchedData.push({ id: doc.id, ...doc.data() });
-      });
-
-      setAvailableVehicles(fetchedData);
-    } catch (error) {
-      console.error("Error fetching vehicles:", error);
-    }
-  };
 
   // Keyboard shortcuts
   const { flushHeldKeys } = useKeyboardShortcut(["Control", "A"], () => {
@@ -1009,7 +982,6 @@ export default function DbComponent(props: Props) {
       vt_car_10: "",
       state: "active",
       remarks: "",
-      allocated_vehicle: "",
     });
     await AddHistory("addition", "Created", "", "Record");
     setAddDialog(false);
@@ -1568,27 +1540,6 @@ export default function DbComponent(props: Props) {
     fetchData();
     setModifiedOn(new Date());
   };
-
-  // ALLOCATED VEHICLE FUNCTIONS
-  const updateAllocatedVehicle = async () => {
-    setLoading(true);
-    try {
-      await updateDoc(doc(db, "records", doc_id), {
-        allocated_vehicle: allocated_vehicle || "",
-        modified_on: Timestamp.fromDate(new Date()),
-      });
-      await AddHistory("updation", allocated_vehicle || "None", "", "Allocated Vehicle");
-      setLoading(false);
-      setAllocateVehicleDialog(false);
-      fetchData();
-      setModifiedOn(new Date());
-      message.success("Vehicle allocation updated");
-    } catch (error) {
-      toast.error(String(error));
-      setLoading(false);
-    }
-  };
-
   {
     /* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
   }
@@ -1864,12 +1815,16 @@ export default function DbComponent(props: Props) {
 
   const uploadJson = async () => {
     setLoading(true);
+    setProgress("0%");
+    setProgressItem("Preparing import...");
 
     try {
       let newCount = 0;
       let updateCount = 0;
       let errorCount = 0;
+      const totalRecords = jsonData.length;
 
+      setProgress("5%");
       await AddHistory(
         "import",
         "",
@@ -1877,14 +1832,61 @@ export default function DbComponent(props: Props) {
         jsonData.length + " records from XLSX"
       );
 
+      // OPTIMIZATION 1: Batch fetch all existing IDs upfront
+      setProgress("10%");
+      setProgressItem("Checking for existing records...");
+      const idsToCheck = jsonData
+        .map((r: any) => r.id)
+        .filter((id: string) => id && id.trim() !== "");
+      
+      const existingIds = new Set<string>();
+      if (idsToCheck.length > 0) {
+        // Fetch in chunks of 10 due to Firestore 'in' query limit
+        const chunkSize = 10;
+        const totalChunks = Math.ceil(idsToCheck.length / chunkSize);
+        
+        for (let i = 0; i < idsToCheck.length; i += chunkSize) {
+          const chunk = idsToCheck.slice(i, i + chunkSize);
+          const snapshot = await getDocs(
+            query(collection(db, "records"), where("__name__", "in", chunk))
+          );
+          snapshot.docs.forEach((doc) => existingIds.add(doc.id));
+          
+          // Show progress during ID checking (10% to 20%)
+          const chunkProgress = Math.floor(i / chunkSize) + 1;
+          const checkProgress = 10 + Math.round((chunkProgress / totalChunks) * 10);
+          setProgress(`${checkProgress}%`);
+          setProgressItem(`Checking existing records... (${chunkProgress}/${totalChunks})`);
+        }
+      }
+
+      setProgress("20%");
+      setProgressItem("Processing records...");
+      
       const batchSize = 500;
       const batches = [];
       let currentBatch = writeBatch(db);
       let currentBatchSize = 0;
+      let processedCount = 0;
+      
+      // OPTIMIZATION 2: Update progress every 10 records or 2% progress, whichever is more frequent
+      const progressUpdateInterval = Math.min(10, Math.max(1, Math.floor(totalRecords / 50)));
+      let lastUpdate = 0;
 
       for (const record of jsonData) {
         try {
           const { id, ...recordWithoutId } = record;
+          
+          processedCount++;
+          
+          // Update progress more frequently (20% to 90% range)
+          if (processedCount - lastUpdate >= progressUpdateInterval || processedCount === totalRecords) {
+            const processingProgress = (processedCount / totalRecords);
+            const progressPercent = Math.round(20 + (processingProgress * 70)); // 20% to 90%
+            setProgress(`${progressPercent}%`);
+            setProgressItem(`Processing ${processedCount} of ${totalRecords}`);
+            lastUpdate = processedCount;
+          }
           
           const processedRecord = {
             ...recordWithoutId,
@@ -1903,11 +1905,9 @@ export default function DbComponent(props: Props) {
           let docRef;
           let isUpdate = false;
 
-          // Check if ID field exists and is valid
+          // OPTIMIZATION 3: Use pre-fetched existingIds instead of individual getDoc
           if (id && id.trim() !== "") {
-            // Try to find existing record with this ID
-            const existingDoc = await getDoc(doc(db, "records", id));
-            if (existingDoc.exists()) {
+            if (existingIds.has(id)) {
               // Update existing record
               docRef = doc(db, "records", id);
               isUpdate = true;
@@ -1946,7 +1946,12 @@ export default function DbComponent(props: Props) {
         batches.push(currentBatch);
       }
 
+      setProgress("95%");
+      setProgressItem(`Committing ${batches.length} batch(es) to database...`);
       await Promise.all(batches.map((batch) => batch.commit()));
+      
+      setProgress("100%");
+      setProgressItem("Import complete!");
 
       const messages = [];
       if (newCount > 0) messages.push(`${newCount} new`);
@@ -1963,6 +1968,8 @@ export default function DbComponent(props: Props) {
       toast.error("Failed to import records");
     } finally {
       setLoading(false);
+      setProgress("");
+      setProgressItem("");
       setImportDialog(false);
       setFile(null);
       setJsonData([]);
@@ -2078,7 +2085,22 @@ export default function DbComponent(props: Props) {
   const handleExportExpiring = async () => {
     try {
       setExportLoading(true);
-      await exportExpiringRecords(records);
+      
+      // Fetch ALL records to ensure we get all expiring documents
+      const RecordCollection = collection(db, "records");
+      const recordQuery = query(
+        RecordCollection,
+        where("type", "in", [props.dbCategory, "omni"]),
+        where("state", "==", "active")
+      );
+      const querySnapshot = await getDocs(recordQuery);
+      const allRecords: any[] = [];
+      
+      querySnapshot.forEach((doc: any) => {
+        allRecords.push({ id: doc.id, ...doc.data() });
+      });
+      
+      await exportExpiringRecords(allRecords);
       setExportDialog(false);
       
     } catch (error) {
@@ -2548,7 +2570,7 @@ export default function DbComponent(props: Props) {
                               usenavigate(`/record/${post.id}`, { state: { record: post } });
                             }}
                             key={post.id}
-                            title={post.name}
+                            title={post.name.toLowerCase()}
                             // icon={
                             //   thumbnails ? (
                             //     <UserCircle
@@ -2746,7 +2768,8 @@ export default function DbComponent(props: Props) {
           onCancel={() => {
             setImportDialog(false);
             setFile(null);
-          
+            setProgress("");
+            setProgressItem("");
             setJsonData([]);
             setDuplicateRecords([]);
           }}
@@ -2796,9 +2819,9 @@ export default function DbComponent(props: Props) {
                     marginBottom: "0.5rem",
                   }}
                 >
-                  {jsonData.map((record: Record) => (
+                  {jsonData.map((record: Record, index: number) => (
                     <motion.div
-                      key={record.name}
+                      key={record.id || record.employeeCode || `record-${index}`}
                       initial={{ opacity: 0 }}
                       whileInView={{ opacity: 1 }}
                     >
@@ -2807,7 +2830,7 @@ export default function DbComponent(props: Props) {
                         noArrow
                         onClick={() => {}}
                         tag={record.employeeCode}
-                        title={record.name}
+                        title={record.name.toLowerCase()}
                         titleSize="0.75rem"
                         icon={<UserCircle width={"1.25rem"} color="salmon" />}
                       />
@@ -2836,13 +2859,16 @@ export default function DbComponent(props: Props) {
 
               <p
                 style={{
-                  color: "rgba(100, 100, 100, 0.7)",
+                  display: "flex",
+                  alignItems:"center",
+                  gap:"0.5rem",
                   fontSize: "0.75rem",
                   fontWeight: 400,
                   marginBottom: "0.5rem",
                 }}
               >
-                Records with existing IDs will be updated. Records without IDs will be added as new.
+                <Info width={"3rem"}/>
+                Records with existing document IDs will be updated. Records without IDs will be added as new.
               </p>
 
               <div style={{ display: "flex", gap: "0.5rem", width: "100%" }}>
@@ -3344,27 +3370,6 @@ export default function DbComponent(props: Props) {
                       ? true
                       : false
                   }
-                />
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: "0.5rem",
-                  alignItems: "center",
-                  width: "100%",
-                  minWidth: 0,
-                  maxWidth: "100%",
-                  overflow: "hidden",
-                  border:""
-                }}
-              >
-                <Directive
-                  noArrow
-                  id_subtitle={allocated_vehicle || "No Vehicle"}
-                  onClick={() => {access && setRecordSummary(false); setAllocateVehicleDialog(true)}}
-                  icon={<Car color="violet" />}
-                  title="Allocated Vehicle"
                 />
               </div>
 
@@ -4838,99 +4843,6 @@ export default function DbComponent(props: Props) {
           updating={loading}
           disabled={loading || !EditedTrainingAddDialogInput ? true : false}
           input1Value={trainingAddDialogInputValue}
-        />
-
-        {/* ALLOCATE VEHICLE DIALOG */}
-        <DefaultDialog
-          open={allocateVehicleDialog}
-          onCancel={() => {setAllocateVehicleDialog(false); setRecordSummary(true)}}
-          title="Allocate Vehicle"
-          titleIcon={<Car color="violet" />}
-          close
-          back
-          title_extra={
-            <button
-              onClick={updateAllocatedVehicle}
-              disabled={loading}
-              style={{
-                fontSize: "0.8rem",
-                paddingLeft: "1rem",
-                paddingRight: "1rem",
-                height: "2rem",
-              }}
-            >
-              {loading ? <Loader2 className="animate-spin" width={"1rem"} /> : "Update"}
-            </button>
-          }
-          extra={
-            <div style={{
-              width: "100%",
-              display: "flex",
-              flexDirection: "column",
-              gap: "1rem",
-            }}>
-              <div style={{
-                background: "rgba(100, 100, 100, 0.05)",
-                padding: "1rem",
-                borderRadius: "1rem",
-              }}>
-                <label style={{
-                  fontSize: "0.875rem",
-                  fontWeight: "600",
-                  opacity: 0.9,
-                  marginBottom: "0.75rem",
-                  display: "block"
-                }}>
-                  Select Vehicle
-                </label>
-                <select
-                  value={allocated_vehicle || ""}
-                  onChange={(e) => setAllocatedVehicle(e.target.value)}
-                  disabled={loading}
-                  style={{
-                    width: "100%",
-                    borderRadius: "0.75rem",
-                    backgroundColor: "rgba(100, 100, 100, 0.08)",
-                    border: "none",
-                    padding: "0.875rem 1rem",
-                    color: "inherit",
-                    fontSize: "1rem",
-                    boxSizing: "border-box",
-                    cursor: "pointer"
-                  }}
-                >
-                  <option value="">No vehicle allocated</option>
-                  {availableVehicles.map((vehicle: any) => (
-                    <option key={vehicle.id} value={vehicle.vehicle_number}>
-                      {vehicle.vehicle_number} - {vehicle.make} {vehicle.model} ({vehicle.type})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              {allocated_vehicle && availableVehicles.find((v: any) => v.vehicle_number === allocated_vehicle) && (
-                <div style={{
-                  background: "rgba(100, 100, 100, 0.05)",
-                  padding: "1rem",
-                  borderRadius: "1rem",
-                }}>
-                  {(() => {
-                    const vehicleInfo = availableVehicles.find((v: any) => v.vehicle_number === allocated_vehicle);
-                    return (
-                      <>
-                        <p style={{ fontSize: "0.875rem", opacity: 0.7, marginBottom: "0.5rem" }}>Vehicle Details</p>
-                        <p><strong>Make:</strong> {vehicleInfo.make}</p>
-                        <p><strong>Model:</strong> {vehicleInfo.model}</p>
-                        <p><strong>Year:</strong> {vehicleInfo.year}</p>
-                        <p><strong>Type:</strong> {vehicleInfo.type}</p>
-                        <p><strong>Status:</strong> {vehicleInfo.status}</p>
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
-            </div>
-          }
         />
 
         <DefaultDialog

@@ -169,10 +169,50 @@ const VehicleDetailsContent: React.FC<VehicleDetailsContentProps> = ({
           transition={{ duration: 0.3 }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%", paddingBottom: "1.5rem" }}>
-            {/* Vehicle Number Input */}
-          
-            {
-              
+
+            {/* User Allocation */}
+            <div style={{
+              background: "rgba(100, 100, 100, 0.05)",
+              padding: "1rem",
+              borderRadius: "1rem",
+            }}>
+              <label style={{
+                fontSize: "0.875rem",
+                fontWeight: "600",
+                opacity: 0.9,
+                marginBottom: "0.75rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem"
+              }}>
+                <User color="dodgerblue" width="1.125rem" />
+                User
+              </label>
+              <button
+                type="button"
+                onClick={onOpenUserDialog}
+                style={{
+                  width: "100%",
+                  borderRadius: "0.75rem",
+                  backgroundColor: "rgba(100, 100, 100, 0.08)",
+                  border: "none",
+                  padding: "0.875rem 1rem",
+                  color: allocated_user ? "inherit" : "rgba(100, 100, 100, 0.6)",
+                  fontSize: "1rem",
+                  boxSizing: "border-box",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  textAlign: "left"
+                }}
+              >
+                <span>{allocated_user ? allocated_user_name : "No user allocated"}</span>
+                <ChevronRight width="1.125rem" opacity={0.5} />
+              </button>
+            </div>
+            {/* Vehicle Number Input */}          
+            {              
               <div style={{
               background: "rgba(100, 100, 100, 0.05)",
               padding: "1rem",
@@ -362,47 +402,7 @@ const VehicleDetailsContent: React.FC<VehicleDetailsContentProps> = ({
               placeholder="Select registration type"
             />
 
-            {/* User Allocation */}
-            <div style={{
-              background: "rgba(100, 100, 100, 0.05)",
-              padding: "1rem",
-              borderRadius: "1rem",
-            }}>
-              <label style={{
-                fontSize: "0.875rem",
-                fontWeight: "600",
-                opacity: 0.9,
-                marginBottom: "0.75rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem"
-              }}>
-                <User color="dodgerblue" width="1.125rem" />
-                User
-              </label>
-              <button
-                type="button"
-                onClick={onOpenUserDialog}
-                style={{
-                  width: "100%",
-                  borderRadius: "0.75rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.08)",
-                  border: "none",
-                  padding: "0.875rem 1rem",
-                  color: allocated_user ? "inherit" : "rgba(100, 100, 100, 0.6)",
-                  fontSize: "1rem",
-                  boxSizing: "border-box",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  textAlign: "left"
-                }}
-              >
-                <span>{allocated_user ? allocated_user_name : "No user allocated"}</span>
-                <ChevronRight width="1.125rem" opacity={0.5} />
-              </button>
-            </div>
+            
           </div>
         </motion.div>
       </div>
@@ -918,7 +918,7 @@ export default function VehicleMaster() {
 
       {/* Add Vehicle Dialog - Drawer for Mobile / Dialog for Desktop */}
       {isMobile ? (
-        <Drawer open={addVehicleDialog} onOpenChange={setAddVehicleDialog} shouldScaleBackground={false}>
+        <Drawer open={addVehicleDialog} onOpenChange={setAddVehicleDialog}>
           <DrawerTitle></DrawerTitle>
           <DrawerDescription></DrawerDescription>
           <DrawerContent
@@ -992,7 +992,7 @@ export default function VehicleMaster() {
 
       {/* Edit Vehicle Dialog - Drawer for Mobile / Dialog for Desktop */}
       {isMobile ? (
-        <Drawer open={vehicleDialog} onOpenChange={setVehicleDialog} shouldScaleBackground={false}>
+        <Drawer open={vehicleDialog} onOpenChange={setVehicleDialog}>
           <DrawerTitle></DrawerTitle>
           <DrawerDescription></DrawerDescription>
           <DrawerContent
@@ -1077,7 +1077,7 @@ export default function VehicleMaster() {
       />
 
       {/* User Selection Drawer */}
-      <Drawer open={userSelectionDialog} onOpenChange={setUserSelectionDialog} shouldScaleBackground={false}>
+      <Drawer open={userSelectionDialog} onOpenChange={setUserSelectionDialog}>
         <DrawerTitle></DrawerTitle>
         <DrawerDescription></DrawerDescription>
         <DrawerContent

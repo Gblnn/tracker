@@ -1,6 +1,5 @@
 import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
-import BackgroundProcessDropdown from "@/components/background-process-dropdown";
 import Directive from "@/components/directive";
 import GridTile from "@/components/grid-tile";
 import IndexDropDown from "@/components/index-dropdown";
@@ -9,12 +8,13 @@ import DefaultDialog from "@/components/ui/default-dialog";
 import { auth } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import emailjs from "@emailjs/browser";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Book,
   Bug,
   Car,
   FileArchive,
+  FileText,
   Fuel,
   KeyRound,
   LayoutGrid,
@@ -64,7 +64,7 @@ export default function Index() {
         moment().format("ll") +
         " from " +
         auth.currentUser?.email,
-      recipient: "goblinn688@gmail.com",
+      recipient: "it@soharstar.com",
       message: issue,
     });
     setLoading(false);
@@ -191,20 +191,20 @@ export default function Index() {
                 
                 } */}
 
-                <BackgroundProcessDropdown />
+                {/* <BackgroundProcessDropdown /> */}
 
                 <button
                   onClick={() => setViewMode(viewMode === 'grid' ? 'directive' : 'grid')}
                   style={{
                     width: "3rem",
-                    height: "2.5rem",
+                    height: "2.75rem",
                   }}
                   title={viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'}
                 >
                   {viewMode === 'grid' ? (
-                    <List width={"1rem"} color="dodgerblue" />
+                    <List width={"1rem"}  />
                   ) : (
-                    <LayoutGrid width={"1rem"} color="dodgerblue" />
+                    <LayoutGrid width={"1rem"} />
                   )}
                 </button>
 
@@ -254,9 +254,15 @@ export default function Index() {
               <LoadingOutlined style={{ color: "dodgerblue", scale: "2" }} />
             </div>
           ) : (
-            <>
+            <AnimatePresence mode="wait">
               {viewMode === 'directive' ? (
-                <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
+                <motion.div 
+                  key="directive-view"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.1 }}
+                  style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
                   {hasModuleAccess('records_master') && (
                     <Directive
                       onClick={() => navigate('/records')}
@@ -321,8 +327,8 @@ export default function Index() {
 
               {hasModuleAccess('quick_links') && (
                 <Directive
-                  onClick={() => authenticateModule('quick_links', '/quick-links', 'Quick Links')}
-                  title={"Quick Links"}
+                  onClick={() => authenticateModule('quick_links', '/quick-links', 'Links')}
+                  title={"Links"}
                   icon={<Link width={"1.25rem"} />}
                 />
               )}
@@ -377,8 +383,8 @@ export default function Index() {
 
               {hasModuleAccess('vehicle_log_book') && (
                 <Directive
-                  onClick={() => authenticateModule('vehicle_log_book', '/vehicle-log-book', 'Vehicle Log Book')}
-                  title={"Vehicle Log Book"}
+                  onClick={() => authenticateModule('vehicle_log_book', '/vehicle-log-book', 'Vehicle Log')}
+                  title={"Vehicle Log"}
                   icon={<Book width={"1.25rem"} />}
                 />
               )}
@@ -388,6 +394,14 @@ export default function Index() {
                   onClick={() => authenticateModule('petty_cash', '/petty-cash', 'Petty Cash')}
                   title={"Petty Cash"}
                   icon={<Wallet width={"1.25rem"} />}
+                />
+              )}
+
+              {hasModuleAccess('offer_letters') && (
+                <Directive
+                  onClick={() => authenticateModule('offer_letters', '/offer-letters', 'Offer Letters')}
+                  title={"Offer Letters"}
+                  icon={<FileText width={"1.25rem"} />}
                 />
               )}
 
@@ -454,9 +468,15 @@ export default function Index() {
             /> */}
 
               {/* <Directive onClick={()=>{setRequestDialog(true)}} title="Request Feature" icon={<Plus color="grey" width={"1.1rem"} height={"1.1rem"}/>}/> */}
-                </div>
+                </motion.div>
               ) : (
-                <div style={{ 
+                <motion.div
+                  key="grid-view"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.1 }}
+                  style={{ 
                   display: "grid", 
                   gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
                   gap: "1rem",
@@ -496,9 +516,9 @@ export default function Index() {
 
                   {hasModuleAccess('quick_links') && (
                     <GridTile
-                      title="Quick Links"
+                      title="Links"
                       icon={<Link width={"2rem"}  />}
-                      onClick={() => authenticateModule('quick_links', '/quick-links', 'Quick Links')}
+                      onClick={() => authenticateModule('quick_links', '/quick-links', 'Links')}
                     />
                   )}
 
@@ -528,9 +548,9 @@ export default function Index() {
 
                   {hasModuleAccess('vehicle_log_book') && (
                     <GridTile
-                      title="Vehicle Log Book"
+                      title="Vehicle Log"
                       icon={<Book width={"2rem"}  />}
-                      onClick={() => authenticateModule('vehicle_log_book', '/vehicle-log-book', 'Vehicle Log Book')}
+                      onClick={() => authenticateModule('vehicle_log_book', '/vehicle-log-book', 'Vehicle Log')}
                     />
                   )}
 
@@ -541,9 +561,17 @@ export default function Index() {
                       onClick={() => authenticateModule('petty_cash', '/petty-cash', 'Petty Cash')}
                     />
                   )}
-                </div>
+
+                  {hasModuleAccess('offer_letters') && (
+                    <GridTile
+                      title="Offer Letters"
+                      icon={<FileText width={"2rem"}  />}
+                      onClick={() => authenticateModule('offer_letters', '/offer-letters', 'Offer Letters')}
+                    />
+                  )}
+                </motion.div>
               )}
-            </>
+            </AnimatePresence>
           )}
         </motion.div>
 

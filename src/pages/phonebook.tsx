@@ -84,25 +84,54 @@ export default function Phonebook() {
            icon={<Notebook color="dodgerblue"/>} title={"Phonebook"}/>
         </div>
         
+        <div style={{
+            position: "fixed",
+            top: "4.5rem",
+            left: 0,
+            right: 0,
+            padding: "0.75rem 1.25rem",
+            background: "rgba(250, 250, 250)",
+            zIndex: 15,
+            borderBottom: "1px solid rgba(100, 100, 100, 0.1)"
+        }}>
+            <div style={{
+                position: "relative",
+                width: "100%",
+            }}>
+                <input
+                    type="text"
+                    placeholder="Search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                        width: "100%",
+                        padding: "0.75rem 1rem",
+                        borderRadius: "0.5rem",
+                        background: "rgba(150, 150, 150, 0.15)",
+                        fontSize: "1rem",
+                    }}
+                />
+            </div>
+        </div>
 
 
 
         <div style={{ 
             border:"",
-            paddingTop:"5.25rem",
+            paddingTop:"10rem",
             paddingLeft: "1.25rem",
             paddingRight: "1.25rem",
-            paddingBottom: "8rem",
+            paddingBottom: "2rem",
             display: "flex",
             flexDirection: "column",
             gap: "0.75rem",
             zIndex: "",
-            marginBottom: "env(safe-area-inset-bottom, 0px)"
+            marginBottom: "3rem"
         }}>
 
             {filteredRecords.map((record) => (
                 <Directive
-                subtext={record.designation}
+                subtext={record.designation?.toLowerCase()}
                     onClick={() => {
                         setSelectedRecord(record);
                         setDrawerOpen(true);
@@ -115,51 +144,16 @@ export default function Phonebook() {
                                     </AvatarFallback>
                                   </Avatar>}
                     key={record.id}
-                    title={record.name}
+                    title={record.name.toLowerCase()}
                     
                 />
             ))}
-        </div>
-
-        <div style={{
-            position: "fixed",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            padding: "1rem 1.25rem",
-            paddingBottom: "2rem",
-            // WebkitBackdropFilter: "blur(16px)",
-            // backdropFilter: "blur(16px)",
-            background: "rgba(250, 250, 250)",
-            zIndex: 10,
-            borderTop: "1px solid rgba(100, 100, 100, 0.1)"
-        }}>
-            <div style={{
-                position: "relative",
-                width: "100%",
-            }}>
-                <input
-                    type="text"
-                    placeholder="Search"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{
-                    
-                        width: "100%",
-                        padding: "0.75rem 1rem",
-                        borderRadius: "0.5rem",
-                        background: "rgba(150, 150, 150, 0.15)",
-                        fontSize: "1rem",
-                    }}
-                />
-            </div>
         </div>
         </motion.div>
 
         <Drawer 
             open={drawerOpen} 
             onOpenChange={setDrawerOpen}
-            shouldScaleBackground={false}
         >
             <DrawerTitle></DrawerTitle>
             <DrawerDescription></DrawerDescription>
@@ -182,8 +176,8 @@ export default function Phonebook() {
                     </div>
                     <br/>
                     <div style={{display:"flex", justifyContent:"center", alignItems:"center", padding:"1.25rem", paddingTop:"0", flexFlow:"column", gap:""}}>
-                        <h2 style={{fontSize:"1.5rem"}}>{selectedRecord?.name}</h2>
-                        <p style={{fontSize:"0.8rem"}}>{selectedRecord?.designation}</p>
+                        <h2 style={{fontSize:"1.5rem", textTransform: "capitalize", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%"}}>{selectedRecord?.name.toLowerCase()}</h2>
+                        <p style={{fontSize:"0.8rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%", textTransform: "uppercase"}}>{selectedRecord?.designation?.toLowerCase()}</p>
                     </div>
                     
                     <div style={{ 
@@ -195,11 +189,11 @@ export default function Phonebook() {
                     }}>
 
                         <Directive onClick={() => { selectedRecord?.email && (location.href = "mailto:" + selectedRecord?.email); }} icon={<AtSign width={"1.25rem"} color="dodgerblue"/>} notName title={selectedRecord?.email||"No Email"} />
-                        <div style={{display:"flex", gap:"0.75rem"}}>
-                            <Directive onClick={() => { selectedRecord?.contact && (location.href = "tel:" + selectedRecord?.contact); }} title={selectedRecord?.contact||"No Contact"} icon={<PhoneIcon width={"1.25rem"} color="dodgerblue"/>}/>
+                        <div style={{display:"flex", gap:"0.75rem", width: "100%"}}>
+                            <Directive notName onClick={() => { selectedRecord?.contact && (location.href = "tel:" + selectedRecord?.contact); }} title={selectedRecord?.contact||"No Contact"} icon={<PhoneIcon width={"1.25rem"} color="dodgerblue"/>}/>
                             {
                                 selectedRecord?.cug &&
-                                <Directive onClick={() => { selectedRecord?.cug && (location.href = "tel:" + selectedRecord?.cug); }} title={selectedRecord?.cug||"No CUG"} icon={<Building2 width={"1.25rem"} color="dodgerblue"/>}/>
+                                <Directive notName onClick={() => { selectedRecord?.cug && (location.href = "tel:" + selectedRecord?.cug); }} title={selectedRecord?.cug||"No CUG"} icon={<Building2 width={"1.25rem"} color="dodgerblue"/>}/>
                             }
                             
                         </div>

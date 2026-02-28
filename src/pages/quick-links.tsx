@@ -156,7 +156,7 @@ export default function Index() {
           {
             <Back
               noback={userData ? false : true}
-              title="Quick Links"
+              title="Links"
               subtitle={links.length}
               icon={
                 <div style={{}}>

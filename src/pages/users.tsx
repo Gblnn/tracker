@@ -26,6 +26,7 @@ import {
   Car,
   Eye,
   FileArchive,
+  FileText,
   Fuel,
   KeyRound,
   Link,
@@ -53,12 +54,13 @@ const MODULES = [
   { id: 'user_management', name: 'Users', icon: UsersIcon },
   { id: 'new_hire', name: 'New Hire', icon: UserCheck },
   { id: 'phonebook', name: 'Phonebook', icon: Notebook },
-  { id: 'quick_links', name: 'Quick Links', icon: Link },
+  { id: 'quick_links', name: 'Links', icon: Link },
   { id: 'qr_generator', name: 'QR Generator', icon: QrCode },
   { id: 'fuel_log', name: 'Fuel Log', icon: Fuel },
   { id: 'vehicle_master', name: 'Vehicle Master', icon: Car },
-  { id: 'vehicle_log_book', name: 'Vehicle Log Book', icon: Book },
+  { id: 'vehicle_log_book', name: 'Vehicle Log', icon: Book },
   { id: 'petty_cash', name: 'Petty Cash', icon: Wallet },
+  { id: 'offer_letters', name: 'Offer Letters', icon: FileText },
 ];
 
 // Shared User Details Content Component
@@ -293,6 +295,99 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
           )}
         </motion.button>
       </div>
+    </div>
+  );
+};
+
+// Module Clearance Content Component
+interface ModuleClearanceContentProps {
+  modulePermissions: Record<string, boolean>;
+  onToggleModule: (moduleId: string) => void;
+  onSave: () => void;
+  showIcon?: boolean;
+}
+
+const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
+  modulePermissions,
+  onToggleModule,
+  onSave,
+  showIcon = true
+}) => {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
+        {showIcon && <KeyRound width="1.5rem" />}
+        <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Module Clearance</h2>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "50vh", overflowY: "auto" }}>
+        {MODULES.map((module) => {
+          const Icon = module.icon;
+          const isEnabled = modulePermissions[module.id] || false;
+          return (
+            <motion.div
+              key={module.id}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onToggleModule(module.id)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "1rem",
+                borderRadius: "0.75rem",
+                background: isEnabled ? "rgba(100, 100, 100, 0.1)" : "rgba(100, 100, 100, 0.05)",
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <Icon width="1.25rem" style={{ color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }} />
+                <span style={{ fontSize: "1rem", color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }}>{module.name}</span>
+              </div>
+              <div
+                style={{
+                  width: "2.5rem",
+                  height: "1.5rem",
+                  borderRadius: "0.75rem",
+                  background: isEnabled ? "black" : "rgba(100, 100, 100, 0.2)",
+                  position: "relative",
+                  transition: "all 0.3s"
+                }}
+              >
+                <div
+                  style={{
+                    width: "1.25rem",
+                    height: "1.25rem",
+                    borderRadius: "50%",
+                    background: "white",
+                    position: "absolute",
+                    top: "0.125rem",
+                    left: isEnabled ? "1.125rem" : "0.125rem",
+                    transition: "all 0.3s"
+                  }}
+                />
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        whileHover={{ scale: 1.01 }}
+        onClick={onSave}
+        style={{
+          width: "100%",
+          padding: "1rem",
+          borderRadius: "1rem",
+          background: "black",
+          color: "white",
+          fontSize: "1.0625rem",
+          border: "none",
+          cursor: "pointer",
+          marginTop: "0.5rem"
+        }}
+      >
+        Save
+      </motion.button>
     </div>
   );
 };
@@ -587,7 +682,7 @@ export default function Users() {
 
       {/* User Details - Drawer for Mobile / Dialog for Desktop - Unified Layout */}
       {isMobile ? (
-        <Drawer open={userDialog} onOpenChange={setUserDialog} shouldScaleBackground={false}>
+        <Drawer open={userDialog} onOpenChange={setUserDialog}>
           <DrawerTitle></DrawerTitle>
           <DrawerDescription></DrawerDescription>
           <DrawerContent 
@@ -666,86 +761,17 @@ export default function Users() {
 
       {/* Clearance Drawer for Editing User */}
       {isMobile ? (
-        <Drawer open={clearanceDrawerOpen} onOpenChange={setClearanceDrawerOpen} shouldScaleBackground={false}>
+        <Drawer open={clearanceDrawerOpen} onOpenChange={setClearanceDrawerOpen}>
           <DrawerTitle></DrawerTitle>
           <DrawerDescription></DrawerDescription>
           <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "80vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-            <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", width: "100%", boxSizing: "border-box" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem", textAlign:"center", border:"", justifyContent:"center" }}>
-              
-                <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Module Clearance</h2>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "50vh", overflowY: "auto" }}>
-                {MODULES.map((module) => {
-                  const Icon = module.icon;
-                  const isEnabled = modulePermissions[module.id] || false;
-                  return (
-                    <motion.div
-                      key={module.id}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => toggleModulePermission(module.id)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "1rem",
-                        borderRadius: "0.75rem",
-                        background: isEnabled ? "rgba(100, 100, 100, 0.1)" : "rgba(100, 100, 100, 0.05)",
-                        // border: isEnabled ? "1px solid rgba(30, 144, 255, 0.3)" : "1px solid rgba(100, 100, 100, 0.1)",
-                        cursor: "pointer",
-                        transition: "all 0.2s"
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                        <Icon width="1.25rem" style={{color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)"}} />
-                        <span style={{ fontSize: "1rem", color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }}>{module.name}</span>
-                      </div>
-                      <div
-                        style={{
-                          width: "2.5rem",
-                          height: "1.5rem",
-                          borderRadius: "0.75rem",
-                          background: isEnabled ? "black" : "rgba(100, 100, 100, 0.2)",
-                          position: "relative",
-                          transition: "all 0.3s"
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "1.25rem",
-                            height: "1.25rem",
-                            borderRadius: "50%",
-                            background: "white",
-                            position: "absolute",
-                            top: "0.125rem",
-                            left: isEnabled ? "1.125rem" : "0.125rem",
-                            transition: "all 0.3s"
-                          }}
-                        />
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                whileHover={{ scale: 1.01 }}
-                onClick={saveClearance}
-                style={{
-                  width: "100%",
-                  padding: "1rem",
-                  borderRadius: "1rem",
-                  background: "black",
-                  color: "white",
-                  fontSize: "1.0625rem",
-                  border: "none",
-                  cursor: "pointer",
-                  marginTop: "0.5rem",
-                  marginBottom: "1rem"
-                }}
-              >
-                Save
-              </motion.button>
+            <div style={{ padding: "1.5rem", width: "100%", boxSizing: "border-box" }}>
+              <ModuleClearanceContent
+                modulePermissions={modulePermissions}
+                onToggleModule={toggleModulePermission}
+                onSave={saveClearance}
+                showIcon={true}
+              />
             </div>
           </DrawerContent>
         </Drawer>
@@ -754,89 +780,19 @@ export default function Users() {
           <DialogContent style={{ maxWidth: "500px" }}>
             <DialogTitle></DialogTitle>
             <DialogDescription></DialogDescription>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
-                <KeyRound width="1.5rem" color="dodgerblue" />
-                <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Module Clearance</h2>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "50vh", overflowY: "auto" }}>
-                {MODULES.map((module) => {
-                  const Icon = module.icon;
-                  const isEnabled = modulePermissions[module.id] || false;
-                  return (
-                    <motion.div
-                      key={module.id}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => toggleModulePermission(module.id)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "1rem",
-                        borderRadius: "0.75rem",
-                        background: isEnabled ? "rgba(30, 144, 255, 0.1)" : "rgba(100, 100, 100, 0.05)",
-                        border: isEnabled ? "1px solid rgba(30, 144, 255, 0.3)" : "1px solid rgba(100, 100, 100, 0.1)",
-                        cursor: "pointer",
-                        transition: "all 0.2s"
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                        <Icon width="1.25rem" color={isEnabled ? "dodgerblue" : "gray"} />
-                        <span style={{ fontSize: "1rem", color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }}>{module.name}</span>
-                      </div>
-                      <div
-                        style={{
-                          width: "2.5rem",
-                          height: "1.5rem",
-                          borderRadius: "0.75rem",
-                          background: isEnabled ? "dodgerblue" : "rgba(100, 100, 100, 0.2)",
-                          position: "relative",
-                          transition: "all 0.3s"
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "1.25rem",
-                            height: "1.25rem",
-                            borderRadius: "50%",
-                            background: "white",
-                            position: "absolute",
-                            top: "0.125rem",
-                            left: isEnabled ? "1.125rem" : "0.125rem",
-                            transition: "all 0.3s"
-                          }}
-                        />
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                whileHover={{ scale: 1.01 }}
-                onClick={saveClearance}
-                style={{
-                  width: "100%",
-                  padding: "1rem",
-                  borderRadius: "1rem",
-                  background: "black",
-                  color: "white",
-                  fontSize: "1.0625rem",
-                  border: "none",
-                  cursor: "pointer",
-                  marginTop: "0.5rem"
-                }}
-              >
-                Save
-              </motion.button>
-            </div>
+            <ModuleClearanceContent
+              modulePermissions={modulePermissions}
+              onToggleModule={toggleModulePermission}
+              onSave={saveClearance}
+              showIcon={true}
+            />
           </DialogContent>
         </Dialog>
       )}
 
       {/* Create User Dialog */}
       {isMobile ? (
-        <Drawer open={addUserDialog} onOpenChange={handleAddUserDialogChange} shouldScaleBackground={false}>
+        <Drawer open={addUserDialog} onOpenChange={handleAddUserDialogChange}>
           <DrawerTitle></DrawerTitle>
           <DrawerDescription></DrawerDescription>
           <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "80vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
@@ -1033,85 +989,17 @@ export default function Users() {
 
       {/* Clearance Drawer for Create User */}
       {isMobile ? (
-        <Drawer open={createUserClearanceDrawerOpen} onOpenChange={setCreateUserClearanceDrawerOpen} shouldScaleBackground={false}>
+        <Drawer open={createUserClearanceDrawerOpen} onOpenChange={setCreateUserClearanceDrawerOpen}>
           <DrawerTitle></DrawerTitle>
           <DrawerDescription></DrawerDescription>
           <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "75vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-            <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", width: "100%", boxSizing: "border-box" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
-                <KeyRound width="1.5rem" color="dodgerblue" />
-                <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Module Clearance</h2>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "50vh", overflowY: "auto" }}>
-                {MODULES.map((module) => {
-                  const Icon = module.icon;
-                  const isEnabled = createUserModulePermissions[module.id] || false;
-                  return (
-                    <motion.div
-                      key={module.id}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => toggleCreateUserModulePermission(module.id)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "1rem",
-                        borderRadius: "0.75rem",
-                        background: isEnabled ? "rgba(30, 144, 255, 0.1)" : "rgba(100, 100, 100, 0.05)",
-                        border: isEnabled ? "1px solid rgba(30, 144, 255, 0.3)" : "1px solid rgba(100, 100, 100, 0.1)",
-                        cursor: "pointer",
-                        transition: "all 0.2s"
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                        <Icon width="1.25rem" color={isEnabled ? "dodgerblue" : "gray"} />
-                        <span style={{ fontSize: "1rem", color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }}>{module.name}</span>
-                      </div>
-                      <div
-                        style={{
-                          width: "2.5rem",
-                          height: "1.5rem",
-                          borderRadius: "0.75rem",
-                          background: isEnabled ? "dodgerblue" : "rgba(100, 100, 100, 0.2)",
-                          position: "relative",
-                          transition: "all 0.3s"
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "1.25rem",
-                            height: "1.25rem",
-                            borderRadius: "50%",
-                            background: "white",
-                            position: "absolute",
-                            top: "0.125rem",
-                            left: isEnabled ? "1.125rem" : "0.125rem",
-                            transition: "all 0.3s"
-                          }}
-                        />
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                whileHover={{ scale: 1.01 }}
-                onClick={() => setCreateUserClearanceDrawerOpen(false)}
-                style={{
-                  width: "100%",
-                  padding: "1rem",
-                  borderRadius: "1rem",
-                  background: "black",
-                  color: "white",
-                  fontSize: "1.0625rem",
-                  border: "none",
-                  cursor: "pointer",
-                  marginTop: "0.5rem"
-                }}
-              >
-                Save
-              </motion.button>
+            <div style={{ padding: "1.5rem", width: "100%", boxSizing: "border-box" }}>
+              <ModuleClearanceContent
+                modulePermissions={createUserModulePermissions}
+                onToggleModule={toggleCreateUserModulePermission}
+                onSave={() => setCreateUserClearanceDrawerOpen(false)}
+                showIcon={true}
+              />
             </div>
           </DrawerContent>
         </Drawer>
@@ -1120,82 +1008,12 @@ export default function Users() {
           <DialogContent style={{ maxWidth: "500px" }}>
             <DialogTitle></DialogTitle>
             <DialogDescription></DialogDescription>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
-                <KeyRound width="1.5rem" color="dodgerblue" />
-                <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Module Clearance</h2>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "50vh", overflowY: "auto" }}>
-                {MODULES.map((module) => {
-                  const Icon = module.icon;
-                  const isEnabled = createUserModulePermissions[module.id] || false;
-                  return (
-                    <motion.div
-                      key={module.id}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => toggleCreateUserModulePermission(module.id)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "1rem",
-                        borderRadius: "0.75rem",
-                        background: isEnabled ? "rgba(30, 144, 255, 0.1)" : "rgba(100, 100, 100, 0.05)",
-                        border: isEnabled ? "1px solid rgba(30, 144, 255, 0.3)" : "1px solid rgba(100, 100, 100, 0.1)",
-                        cursor: "pointer",
-                        transition: "all 0.2s"
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                        <Icon width="1.25rem" color={isEnabled ? "dodgerblue" : "gray"} />
-                        <span style={{ fontSize: "1rem", color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }}>{module.name}</span>
-                      </div>
-                      <div
-                        style={{
-                          width: "2.5rem",
-                          height: "1.5rem",
-                          borderRadius: "0.75rem",
-                          background: isEnabled ? "dodgerblue" : "rgba(100, 100, 100, 0.2)",
-                          position: "relative",
-                          transition: "all 0.3s"
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "1.25rem",
-                            height: "1.25rem",
-                            borderRadius: "50%",
-                            background: "white",
-                            position: "absolute",
-                            top: "0.125rem",
-                            left: isEnabled ? "1.125rem" : "0.125rem",
-                            transition: "all 0.3s"
-                          }}
-                        />
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                whileHover={{ scale: 1.01 }}
-                onClick={() => setCreateUserClearanceDrawerOpen(false)}
-                style={{
-                  width: "100%",
-                  padding: "1rem",
-                  borderRadius: "1rem",
-                  background: "black",
-                  color: "white",
-                  fontSize: "1.0625rem",
-                  border: "none",
-                  cursor: "pointer",
-                  marginTop: "0.5rem"
-                }}
-              >
-                Save
-              </motion.button>
-            </div>
+            <ModuleClearanceContent
+              modulePermissions={createUserModulePermissions}
+              onToggleModule={toggleCreateUserModulePermission}
+              onSave={() => setCreateUserClearanceDrawerOpen(false)}
+              showIcon={true}
+            />
           </DialogContent>
         </Dialog>
       )}
