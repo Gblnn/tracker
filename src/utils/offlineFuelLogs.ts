@@ -18,6 +18,46 @@ export interface PendingFuelLog {
 }
 
 const STORAGE_KEY = "pending_fuel_logs";
+const SYNC_LOCK_KEY = "fuel_logs_sync_lock";
+
+// Check if sync is currently in progress
+function isSyncInProgress(): boolean {
+  try {
+    const lock = localStorage.getItem(SYNC_LOCK_KEY);
+    if (!lock) return false;
+    
+    const lockTime = parseInt(lock);
+    const now = Date.now();
+    
+    // Consider lock stale after 5 minutes
+    if (now - lockTime > 5 * 60 * 1000) {
+      localStorage.removeItem(SYNC_LOCK_KEY);
+      return false;
+    }
+    
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Set sync lock
+function setSyncLock(): void {
+  try {
+    localStorage.setItem(SYNC_LOCK_KEY, Date.now().toString());
+  } catch (error) {
+    console.error("Error setting sync lock:", error);
+  }
+}
+
+// Clear sync lock
+function clearSyncLock(): void {
+  try {
+    localStorage.removeItem(SYNC_LOCK_KEY);
+  } catch (error) {
+    console.error("Error clearing sync lock:", error);
+  }
+}
 
 // Get all pending fuel logs from localStorage
 export function getPendingFuelLogs(): PendingFuelLog[] {
@@ -91,26 +131,40 @@ export async function syncPendingFuelLog(log: PendingFuelLog): Promise<void> {
 // Sync all pending fuel logs
 export async function syncAllPendingFuelLogs(
   onProgress?: (current: number, total: number) => void
-): Promise<{ success: number; failed: number }> {
-  const logs = getPendingFuelLogs();
-  let success = 0;
-  let failed = 0;
-  
-  for (let i = 0; i < logs.length; i++) {
-    try {
-      await syncPendingFuelLog(logs[i]);
-      success++;
-    } catch (error) {
-      console.error(`Failed to sync fuel log ${logs[i].id}:`, error);
-      failed++;
-    }
-    
-    if (onProgress) {
-      onProgress(i + 1, logs.length);
-    }
+): Promise<{ success: number; failed: number; skipped: boolean }> {
+  // Check if sync is already in progress
+  if (isSyncInProgress()) {
+    console.log("⏸️ Sync already in progress, skipping duplicate sync");
+    return { success: 0, failed: 0, skipped: true };
   }
   
-  return { success, failed };
+  // Set sync lock
+  setSyncLock();
+  
+  try {
+    const logs = getPendingFuelLogs();
+    let success = 0;
+    let failed = 0;
+    
+    for (let i = 0; i < logs.length; i++) {
+      try {
+        await syncPendingFuelLog(logs[i]);
+        success++;
+      } catch (error) {
+        console.error(`Failed to sync fuel log ${logs[i].id}:`, error);
+        failed++;
+      }
+      
+      if (onProgress) {
+        onProgress(i + 1, logs.length);
+      }
+    }
+    
+    return { success, failed, skipped: false };
+  } finally {
+    // Always clear lock when done
+    clearSyncLock();
+  }
 }
 
 // Check if there are pending logs

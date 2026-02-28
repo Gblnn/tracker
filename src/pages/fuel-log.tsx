@@ -600,6 +600,15 @@ export default function FuelLog() {
         });
       });
 
+      // If sync was skipped (already in progress), don't show notifications
+      if (result.skipped) {
+        updateProcess(processId, { 
+          status: "completed", 
+          message: "Sync already in progress" 
+        });
+        return;
+      }
+
       if (result.success > 0) {
         updateProcess(processId, { 
           status: "completed", 
@@ -727,9 +736,9 @@ export default function FuelLog() {
 
     try {
       setDeleting(true);
-      setDeleteConfirmDialog(false);
       await deleteDoc(doc(db, "fuel log", selectedLog.id));
       toast.success("Fuel log deleted successfully!");
+      setDeleteConfirmDialog(false);
       setDrawerDetailOpen(false);
       setSelectedLog(null);
       fetchFuelLogs();
@@ -738,6 +747,7 @@ export default function FuelLog() {
       toast.error("Failed to delete fuel log");
     } finally {
       setDeleting(false);
+      setDeleteConfirmDialog(false);
     }
   };
 

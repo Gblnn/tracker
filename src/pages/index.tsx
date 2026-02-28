@@ -108,6 +108,15 @@ export default function Index() {
           });
         });
 
+        // If sync was skipped (already in progress), silently complete
+        if (result.skipped) {
+          updateProcess(processId, { 
+            status: "completed", 
+            message: "Sync already running" 
+          });
+          return;
+        }
+
         if (result.success > 0) {
           updateProcess(processId, { 
             status: "completed", 
