@@ -64,7 +64,7 @@ export default function Inbox() {
   const [removeRecipientDialog, setRemoveRecipientDialog] = useState(false);
   const [selectedRecipient, setSelectedRecipient] = useState("");
   const [selectedRecipientID, setSelectedRecipientID] = useState("");
-  const [filterState, setFilterState] = useState("");
+  const [filterState] = useState("");
   const [filteredData, setFilteredData] = useState<any>([]);
   const [refreshCompleted, setRefreshCompleted] = useState(false);
   const { userData } = useAuth();
