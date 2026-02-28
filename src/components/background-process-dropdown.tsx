@@ -78,7 +78,7 @@ export default function BackgroundProcessDropdown(props: Props) {
         {hasActiveProcesses ? (
           <Loader2 className="animate-spin" width="1.25rem" color="dodgerblue" />
         ) : (
-          <Cloud width="1.25rem" color="dodgerblue" />
+          <Cloud width="1.25rem"  />
         )}
         {/* {hasActiveProcesses && (
           <span
@@ -107,7 +107,7 @@ export default function BackgroundProcessDropdown(props: Props) {
         className="mr-5 mt-1"
         style={{
           width: "260px",
-          height: "320px",
+          
           overflowY: "auto",
           display: "flex",
           flexDirection: "column",
@@ -169,7 +169,7 @@ export default function BackgroundProcessDropdown(props: Props) {
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "flex-start",
-                      padding: "0.5rem 0.75rem",
+                      padding: "0.25rem 0.75rem",
                       cursor: "default",
                     }}
                     onSelect={(e) => e.preventDefault()}
@@ -229,12 +229,12 @@ export default function BackgroundProcessDropdown(props: Props) {
                 {activeProcesses.length > 0 && <DropdownMenuSeparator />}
                 <DropdownMenuLabel
                   style={{
-                    fontSize: "0.7rem",
+                    fontSize: "0.8rem",
                     opacity: 0.6,
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    padding: "0.375rem 0.75rem",
+                    padding: "0.375rem 0.5rem",
                   }}
                 >
                   <span>Recent</span>
@@ -242,7 +242,7 @@ export default function BackgroundProcessDropdown(props: Props) {
                     onClick={clearCompleted}
                     style={{
                       fontSize: "0.65rem",
-                      padding: "0.1875rem 0.4rem",
+                      padding: "0.15rem 0.75rem",
                       background: "rgba(100, 100, 100, 0.2)",
                       borderRadius: "0.2rem",
                       cursor: "pointer",
@@ -258,7 +258,7 @@ export default function BackgroundProcessDropdown(props: Props) {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      padding: "0.375rem 0.75rem",
+                      padding: "0.4rem 0.5rem",
                       opacity: 0.7,
                       cursor: "default",
                       gap: "0.5rem",
