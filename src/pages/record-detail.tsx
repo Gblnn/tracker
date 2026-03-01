@@ -745,7 +745,7 @@ export default function RecordDetail() {
         />
         <div style={{border:"", marginTop:"5rem", height:"100%", overflow:"auto"}}>
             <div style={{padding:"1rem", display:"flex", flexFlow:"column", gap:"1rem"}}>
-                <div style={{display:"flex", background:"rgba(100 100 100/ 0.1)", padding:"1rem", borderRadius:"0.5rem", gap:"1rem", alignItems:"center"}}>
+                <div style={{display:"flex", background:"rgba(100 100 100/ 0.1)", padding:"1rem", borderRadius:"0.5rem", gap:"1rem", alignItems:"center", position:"sticky", top:0, zIndex:10, backdropFilter:"blur(20px)"}}>
                     {/* <div onClick={() => record?.image && setImageDialog(true)} style={{cursor: record?.image ? "pointer" : "default"}}>
                       <LazyLoader
                         profile={record?.image}

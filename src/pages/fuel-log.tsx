@@ -78,7 +78,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
           }}>
             <Fuel color="white" width="1.5rem" />
           </div>
-          <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em" }}>{editingLog ? "Edit Fuel Log" : "Log Fuel"}</h2>
+          <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em" }}>{editingLog ? "Edit Log" : "Log Fuel"}</h2>
         </div>
         {vehicleNumber && <NumberPlate private={isPrivateVehicle} number={vehicleNumber} />}
       </div>

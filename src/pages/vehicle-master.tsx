@@ -1,14 +1,13 @@
 import AddRecordButton from "@/components/add-record-button";
 import Back from "@/components/back";
 import ChevronSelect from "@/components/chevron-select";
+import DropDown from "@/components/dropdown";
 import NumberPlate from "@/components/number-plate";
 import RefreshButton from "@/components/refresh-button";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import DefaultDialog from "@/components/ui/default-dialog";
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Empty, EmptyContent, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { db } from "@/firebase";
 import { clearVehicleCache, getCachedVehicle } from "@/utils/vehicleCache";
@@ -28,12 +27,11 @@ import { motion } from "framer-motion";
 import {
   Car,
   ChevronRight,
+  EllipsisVertical,
   Loader2,
   MinusCircle,
-  MoreVertical,
   Plus,
   Search,
-  Trash2,
   Truck,
   User,
   Wrench,
@@ -492,7 +490,7 @@ const VehicleSummaryContent: React.FC<VehicleSummaryContentProps> = ({
   const hasFuelData = !!stats && stats.totalLogs > 0;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "75vh", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "75vh", overflow: "hidden", width: "100%" }}>
       {/* Header with actions */}
       <div
         style={{
@@ -500,9 +498,11 @@ const VehicleSummaryContent: React.FC<VehicleSummaryContentProps> = ({
           borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
           background: "var(--background)",
           flexShrink: 0,
+          width: "100%",
+          boxSizing: "border-box",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", width: "100%" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <div
               style={{
@@ -526,23 +526,11 @@ const VehicleSummaryContent: React.FC<VehicleSummaryContentProps> = ({
             </div>
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit}>
-                <Plus className="mr-2 h-4 w-4" />
-                <span>Edit</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="text-red-500">
-                <Trash2 className="mr-2 h-4 w-4" />
-                <span>Delete</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <DropDown
+            trigger={<EllipsisVertical width="1.1rem" />}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         </div>
       </div>
 
@@ -553,6 +541,8 @@ const VehicleSummaryContent: React.FC<VehicleSummaryContentProps> = ({
           padding: "1.25rem 1.5rem 1.25rem 1.5rem",
           overflowY: "auto",
           minWidth: 0,
+          width: "100%",
+          boxSizing: "border-box",
         }}
       >
         {loading ? (
@@ -1528,6 +1518,7 @@ export default function VehicleMaster() {
               paddingBottom: "env(safe-area-inset-bottom, 0px)",
               padding: 0,
               margin: 0,
+              width: "100%",
             }}
           >
             {selectedVehicle && (
@@ -1545,7 +1536,7 @@ export default function VehicleMaster() {
         <Dialog open={vehicleSummaryDialog} onOpenChange={setVehicleSummaryDialog}>
           <DialogTitle></DialogTitle>
           <DialogDescription></DialogDescription>
-          <DialogContent style={{ maxWidth: "520px", padding: 0 }}>
+          <DialogContent style={{ width: "520px", maxWidth: "520px", padding: 0 }}>
             {selectedVehicle && (
               <VehicleSummaryContent
                 vehicle={selectedVehicle}
