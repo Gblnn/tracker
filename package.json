@@ -61,7 +61,7 @@
     "react-line-graph": "^1.0.6",
     "react-router-dom": "^6.23.1",
     "react-time-ago": "^7.3.3",
-    "recharts": "^2.12.7",
+    "recharts": "^3.7.0",
     "resend": "^4.7.0",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",

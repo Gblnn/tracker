@@ -71,10 +71,6 @@ interface UserDetailsContentProps {
   setRole: (role: string) => void;
   clearance: string;
   setClearance: (clearance: string) => void;
-  site: string;
-  setSite: (site: string) => void;
-  project: string;
-  setProject: (project: string) => void;
   editor: string;
   setEditor: (editor: string) => void;
   sensitive_data: string;
@@ -93,10 +89,6 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
   setRole,
   clearance,
   
-  site,
-  setSite,
-  project,
-  setProject,
   editor,
   setEditor,
   sensitive_data,
@@ -193,10 +185,6 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
               value={role.toLowerCase()} 
               onChange={(newRole) => {
                 setRole(newRole);
-                if (newRole !== 'supervisor' && newRole !== 'site_coordinator') {
-                  setSite('');
-                  setProject('');
-                }
               }}
             />
             <Directive
@@ -205,40 +193,6 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
               icon={<KeyRound width="1.25rem" color="dodgerblue" />}
               id_subtitle={`${getEnabledModulesCount()} modules enabled`}
             />
-            {(role === 'supervisor' || role === 'site_coordinator') && (
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.5rem",
-              }}>
-                <input
-                  placeholder="Assigned Site"
-                  value={site || ""}
-                  onChange={(e) => setSite(e.target.value)}
-                  style={{
-                    borderRadius: "0.5rem",
-                    backgroundColor: "rgba(100, 100, 100, 0.05)",
-                    border: "1px solid rgba(100, 100, 100, 0.1)",
-                    padding: "0.875rem 1rem",
-                    color: "inherit",
-                    fontSize: "1rem"
-                  }}
-                />
-                <input
-                  placeholder="Assigned Project"
-                  value={project || ""}
-                  onChange={(e) => setProject(e.target.value)}
-                  style={{
-                    borderRadius: "0.5rem",
-                    backgroundColor: "rgba(100, 100, 100, 0.05)",
-                    border: "1px solid rgba(100, 100, 100, 0.1)",
-                    padding: "0.875rem 1rem",
-                    color: "inherit",
-                    fontSize: "1rem"
-                  }}
-                />
-              </div>
-            )}
             <IOMenu
               title="Editing"
               placeholder="Clearance"
@@ -414,8 +368,6 @@ export default function Users() {
   const [clearance, setClearance] = useState("");
   const [editor, setEditor] = useState("");
   const [sensitive_data, setSensitiveData] = useState("");
-  const [site, setSite] = useState("");
-  const [project, setProject] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   
   // Clearance drawer states
@@ -568,24 +520,25 @@ export default function Users() {
   const updateUser = async () => {
     try {
       setLoading(true);
-      const updatedData = {
-        role: role,  // system access role
-        clearance: clearance,
-        editor: editor,
-        sensitive_data: sensitive_data,
-        ...(role === "supervisor" || role === "site_coordinator" ? {
-          assignedSite: site,
-          assignedProject: project,
-        } : {
-          assignedSite: "",
-          assignedProject: "",
-        })
+      const updatedData: Record<string, any> = {
+        role: role || "profile",  // system access role
+        clearance: clearance || "{}",
+        editor: editor || "false",
+        sensitive_data: sensitive_data || "false",
       };
 
-      await updateDoc(doc(db, "users", docid), updatedData);
+      // Filter out any undefined values to prevent Firestore errors
+      const filteredData = Object.entries(updatedData).reduce((acc, [key, value]) => {
+        if (value !== undefined && value !== null) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as Record<string, any>);
+
+      await updateDoc(doc(db, "users", docid), filteredData);
 
       // Update local cache if the updated user is the current user
-      updateLocalCache(display_email, updatedData);
+      updateLocalCache(display_email, filteredData);
 
       setLoading(false);
       setUserDialog(false);
@@ -593,6 +546,7 @@ export default function Users() {
       fetchUsers();
     } catch (error) {
       setLoading(false);
+      console.error("Error updating user:", error);
       message.error(String(error));
     }
   };
@@ -653,14 +607,12 @@ export default function Users() {
                 onClick={() => {
                   setDocid(user.id);
                   setUserDialog(true);
-                  setDisplayName(user.name);
-                  setDisplayEmail(user.email);
-                  setRole(user.role);
-                  setClearance(user.clearance);
-                  setSite(user.assignedSite || "");
-                  setProject(user.assignedProject || "");
-                  setEditor(user.editor);
-                  setSensitiveData(user.sensitive_data);
+                  setDisplayName(user.name || "");
+                  setDisplayEmail(user.email || "");
+                  setRole(user.role || "profile");
+                  setClearance(user.clearance || "{}");
+                  setEditor(user.editor || "false");
+                  setSensitiveData(user.sensitive_data || "false");
                 }}
                 key={user.id}
                 icon={
@@ -702,10 +654,6 @@ export default function Users() {
               setRole={setRole}
               clearance={clearance}
               setClearance={setClearance}
-              site={site}
-              setSite={setSite}
-              project={project}
-              setProject={setProject}
               editor={editor}
               setEditor={setEditor}
               sensitive_data={sensitive_data}
@@ -730,10 +678,6 @@ export default function Users() {
               setRole={setRole}
               clearance={clearance}
               setClearance={setClearance}
-              site={site}
-              setSite={setSite}
-              project={project}
-              setProject={setProject}
               editor={editor}
               setEditor={setEditor}
               sensitive_data={sensitive_data}
