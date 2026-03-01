@@ -2460,7 +2460,7 @@ export default function DbComponent(props: Props) {
                     >
                       {sortby === "name" ? (
                         <>
-                        <p>Sort</p>
+                        
                         <ArrowDownAZ width={"1.25rem"} color="dodgerblue" />
                         </>
                         

@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "./ui/avatar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import DefaultDialog from "./ui/default-dialog";
 import emailjs from "@emailjs/browser";
@@ -27,9 +27,30 @@ export default function IndexDropDown(props:Props) {
   const [loading, setLoading] = useState(false);
   const [bugDialog, setBugDialog] = useState(false);
   const [issue, setIssue] = useState("");
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
+
+  useEffect(() => {
+    // Track online/offline status
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Periodically check online status (every 2 seconds)
+    const checkInterval = setInterval(() => {
+      setIsOnline(navigator.onLine);
+    }, 2000);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(checkInterval);
+    };
+  }, []);
 
   const handleBugReport = async () => {
     if (!issue.trim()) return;
@@ -85,7 +106,9 @@ export default function IndexDropDown(props:Props) {
           padding: "none",
           height: "2.5rem",
           width: "2.5rem",
-          background: "linear-gradient( mediumslateblue, midnightblue)",
+          background: isOnline 
+            ? "linear-gradient(mediumslateblue, midnightblue)"
+            : "linear-gradient(indianred, darkred)",
           color: "white",
           borderRadius: "0.375rem",
         }}
@@ -118,12 +141,20 @@ export default function IndexDropDown(props:Props) {
                 <p className="text-xs text-primary font-semibold opacity-75 truncate">
                   {userData?.email}
                 </p>
-                <span
+                {
+                  
+                }
+                {
+                  userData?.role=="admin"&&
+                  <span
                   style={{ width: "fit-content", background:"crimson", color:"white" }}
                   className="inline-flex items-center rounded-full px-2 py-0.5 mt-1 text-xs font-medium text-primary"
                 >
-                  {userData?.role || "User"}
+                  
+                  {userData?.role=="admin"?userData.role:""}
                 </span>
+                }
+                
               </div>
             </div>
           </DropdownMenuItem>

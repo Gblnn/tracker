@@ -703,6 +703,29 @@ export default function RecordDetail() {
           extra={
             <>
             <div style={{display:"flex", gap:"0.5rem"}}>
+                {record?.state === "active" && (
+                  <Tooltip title={notify ? "Notifications enabled" : "Notifications disabled"}>
+                    <button
+                
+                      onClick={handleNotify}
+                      style={{
+                        paddingLeft: "1rem",
+                        paddingRight: "1rem",
+                        
+                        fontSize: "0.8rem"
+                      }}
+                    >
+                      Notify
+                      {notifyLoading ? (
+                        <Loader2 className="animate-spin" width="0.9rem" color="dodgerblue" />
+                      ) : notify ? (
+                        <BellRing color={"dodgerblue"} width={"0.9rem"} fill="dodgerblue" />
+                      ) : (
+                        <BellOff width={"0.9rem"} color="grey" />
+                      )}
+                    </button>
+                  </Tooltip>
+                )}
                 <RefreshButton
                 onClick={refreshData}
                 refreshCompleted={refreshCompleted}
@@ -736,38 +759,12 @@ export default function RecordDetail() {
                         omni={record?.omni}
                       />
                     </div> */}
-                    <FileArchive/>
+                   
                     <div style={{display:"flex", flexFlow:"column", flex: 1, minWidth: 0}}>
+                      
                         <div style={{display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap"}}>
-                          <h2 style={{textTransform: "capitalize", margin: 0}}>{record?.name?.toLowerCase() || "Unknown"}</h2>
-                          {record?.state === "active" ? (
-                            <Tooltip title={notify ? "Notifications enabled" : "Notifications disabled"}>
-                              <button
-                                className={notify ? "blue-glass" : ""}
-                                onClick={handleNotify}
-                                style={{
-                                  paddingLeft: "0.75rem",
-                                  paddingRight: "0.75rem",
-                                  height: "2rem",
-                                  fontSize: "0.75rem"
-                                }}
-                              >
-                                {notifyLoading ? (
-                                  <Loader2 className="animate-spin" width="0.9rem" color="dodgerblue" />
-                                ) : notify ? (
-                                  <BellRing color={"dodgerblue"} width={"0.9rem"} fill="dodgerblue" />
-                                ) : (
-                                  <BellOff width={"0.9rem"} color="grey" />
-                                )}
-                              </button>
-                            </Tooltip>
-                          ) : (
-                            <Tooltip title="All notifications paused">
-                              <button style={{fontSize: "0.7rem", opacity: "0.75", height: "2rem", paddingLeft: "0.75rem", paddingRight: "0.75rem"}}>
-                                <Archive width={"0.9rem"} />
-                              </button>
-                            </Tooltip>
-                          )}
+                           <FileArchive/>
+                          <h2 style={{textTransform: "capitalize", margin: 0, textAlign:"left"}}>{record?.name?.toLowerCase() || "Unknown"}</h2>
                         </div>
                         <p style={{margin: 0, opacity: 0.7}}>{record.employeeCode}</p>
                         {record?.modified_on && moment(record.modified_on, "DD/MM/YYYY", true).isValid() && (
