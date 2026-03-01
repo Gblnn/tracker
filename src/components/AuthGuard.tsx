@@ -36,7 +36,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
             redirectPath = "/index";
             break;
           case "user":
-            redirectPath = "/record-list";
+            redirectPath = "/index";
             break;
           default:
             redirectPath = "/index";

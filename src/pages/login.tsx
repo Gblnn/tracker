@@ -58,7 +58,7 @@ export default function Login() {
             returnPath = "/index";
             break;
           case "user":
-            returnPath = "/record-list";
+            returnPath = "/index";
             break;
           default:
             returnPath = "/index";

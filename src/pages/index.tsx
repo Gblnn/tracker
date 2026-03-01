@@ -298,7 +298,7 @@ export default function Index() {
                 paddingBottom: "2rem"
               }}
             >
-              {hasModuleAccess('records_master') && (
+              {hasModuleAccess('records_master') && (!userData || userData.role !== 'user') && (
                 <GridTile
                   title="Records Master"
                   icon={<FileArchive width={"2rem"}  />}
@@ -306,7 +306,7 @@ export default function Index() {
                 />
               )}
 
-              {admin && (
+              {admin && (!userData || userData.role !== 'user') && (
                 <GridTile
                   title="Users"
                   icon={<Users />}

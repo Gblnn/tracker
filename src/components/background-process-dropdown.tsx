@@ -20,6 +20,7 @@ interface Props {
 export default function BackgroundProcessDropdown(props: Props) {
   const { processes, clearCompleted } = useBackgroundProcess();
   const [pendingCount, setPendingCount] = useState(0);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     // Update pending count on mount and when processes change
@@ -32,6 +33,20 @@ export default function BackgroundProcessDropdown(props: Props) {
     
     return () => clearInterval(interval);
   }, [processes]);
+
+  useEffect(() => {
+    // Track online/offline status
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const activeProcesses = processes.filter(
     p => p.status === "pending" || p.status === "in-progress"
@@ -70,15 +85,19 @@ export default function BackgroundProcessDropdown(props: Props) {
           width: "2.5rem",
           background: hasActiveProcesses 
             ? "rgba(30, 144, 255, 0.2)" 
-            : "rgba(100, 100, 100, 0.1)",
+            : isOnline 
+              ? "rgba(100, 100, 100, 0.1)"
+              : "rgba(100, 100, 100, 0.1)",
           borderRadius: "0.375rem",
           position: "relative",
         }}
       >
         {hasActiveProcesses ? (
           <Loader2 className="animate-spin" width="1.25rem" color="dodgerblue" />
+        ) : isOnline ? (
+          <Cloud width="1.25rem" color="rgb(34, 197, 94)" />
         ) : (
-          <Cloud width="1.25rem"  />
+          <CloudOff width="1.25rem" color="rgb(239, 68, 68)" />
         )}
         {/* {hasActiveProcesses && (
           <span

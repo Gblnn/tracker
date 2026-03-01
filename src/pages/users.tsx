@@ -819,6 +819,7 @@ export default function Users() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="off"
                 style={{
                   borderRadius: "0.5rem",
                   backgroundColor: "rgba(100, 100, 100, 0.05)",
@@ -833,6 +834,7 @@ export default function Users() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
                 style={{
                   borderRadius: "0.5rem",
                   backgroundColor: "rgba(100, 100, 100, 0.05)",
@@ -847,6 +849,7 @@ export default function Users() {
                 type="password"
                 value={passconfirm}
                 onChange={(e) => setpassconfirm(e.target.value)}
+                autoComplete="new-password"
                 style={{
                   borderRadius: "0.5rem",
                   backgroundColor: "rgba(100, 100, 100, 0.05)",
@@ -916,6 +919,7 @@ export default function Users() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="off"
                 style={{
                   borderRadius: "0.5rem",
                   backgroundColor: "rgba(100, 100, 100, 0.05)",
@@ -930,6 +934,7 @@ export default function Users() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
                 style={{
                   borderRadius: "0.5rem",
                   backgroundColor: "rgba(100, 100, 100, 0.05)",
@@ -944,6 +949,7 @@ export default function Users() {
                 type="password"
                 value={passconfirm}
                 onChange={(e) => setpassconfirm(e.target.value)}
+                autoComplete="new-password"
                 style={{
                   borderRadius: "0.5rem",
                   backgroundColor: "rgba(100, 100, 100, 0.05)",

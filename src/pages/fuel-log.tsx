@@ -775,7 +775,7 @@ export default function FuelLog() {
             subtitle={fuelLogs.length}
             extra={
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                {!isOnline && (
+                {/* {!isOnline && (
                   <div style={{
                     padding: "0.5rem 1rem",
                    
@@ -790,7 +790,7 @@ export default function FuelLog() {
                     <RadioTower width={"1rem"} />
                     Offline
                   </div>
-                )}
+                )} */}
                 <RefreshButton
                   onClick={() => fetchFuelLogs(true)}
                   refreshCompleted={refreshCompleted}

@@ -3,9 +3,12 @@ import Back from "@/components/back";
 import ChevronSelect from "@/components/chevron-select";
 import NumberPlate from "@/components/number-plate";
 import RefreshButton from "@/components/refresh-button";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import DefaultDialog from "@/components/ui/default-dialog";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Empty, EmptyContent, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { db } from "@/firebase";
 import { clearVehicleCache, getCachedVehicle } from "@/utils/vehicleCache";
@@ -27,17 +30,17 @@ import {
   ChevronRight,
   Loader2,
   MinusCircle,
+  MoreVertical,
   Plus,
   Search,
+  Trash2,
   Truck,
   User,
-  X,
-  Fuel,
-  Gauge,
-  DollarSign,
   Wrench,
+  X
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 const VEHICLE_TYPES = [
   { value: 'Truck', label: 'Truck' },
@@ -459,6 +462,16 @@ interface VehicleStats {
   minOdometer?: number;
   maxOdometer?: number;
   lastRefuelDate?: string | null;
+  monthlyData: Array<{
+    month: string;
+    fuelSpent: number;
+    avgOdometer: number;
+    logCount: number;
+  }>;
+  odometerProgression: Array<{
+    date: string;
+    odometer: number;
+  }>;
 }
 
 interface VehicleSummaryContentProps {
@@ -478,21 +491,15 @@ const VehicleSummaryContent: React.FC<VehicleSummaryContentProps> = ({
 }) => {
   const hasFuelData = !!stats && stats.totalLogs > 0;
 
-  const distanceCovered =
-    stats && stats.minOdometer !== undefined && stats.maxOdometer !== undefined
-      ? Math.max(0, stats.maxOdometer - stats.minOdometer)
-      : undefined;
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", maxHeight: "75vh", width: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "75vh", overflow: "hidden" }}>
       {/* Header with actions */}
       <div
         style={{
           padding: "1.25rem 1.5rem 1rem 1.5rem",
           borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
           background: "var(--background)",
-          boxSizing: "border-box",
-          width: "100%",
+          flexShrink: 0,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
@@ -519,46 +526,23 @@ const VehicleSummaryContent: React.FC<VehicleSummaryContentProps> = ({
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button
-              onClick={onEdit}
-              style={{
-                padding: "0.5rem 0.9rem",
-                borderRadius: "0.6rem",
-                border: "none",
-                cursor: "pointer",
-                background: "black",
-                color: "white",
-                fontSize: "0.8rem",
-                fontWeight: 500,
-                display: "flex",
-                alignItems: "center",
-                gap: "0.35rem",
-              }}
-            >
-              <Plus width="0.9rem" />
-              Edit
-            </button>
-            <button
-              onClick={onDelete}
-              style={{
-                padding: "0.5rem 0.9rem",
-                borderRadius: "0.6rem",
-                border: "none",
-                cursor: "pointer",
-                background: "rgba(220, 38, 38, 0.08)",
-                color: "crimson",
-                fontSize: "0.8rem",
-                fontWeight: 500,
-                display: "flex",
-                alignItems: "center",
-                gap: "0.35rem",
-              }}
-            >
-              <MinusCircle width="0.9rem" />
-              Delete
-            </button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEdit}>
+                <Plus className="mr-2 h-4 w-4" />
+                <span>Edit</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDelete} className="text-red-500">
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span>Delete</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -567,9 +551,8 @@ const VehicleSummaryContent: React.FC<VehicleSummaryContentProps> = ({
         style={{
           flex: 1,
           padding: "1.25rem 1.5rem 1.25rem 1.5rem",
-          width: "100%",
-          boxSizing: "border-box",
           overflowY: "auto",
+          minWidth: 0,
         }}
       >
         {loading ? (
@@ -589,135 +572,6 @@ const VehicleSummaryContent: React.FC<VehicleSummaryContentProps> = ({
           </div>
         ) : (
           <>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-                gap: "0.75rem",
-                marginBottom: "1rem",
-              }}
-            >
-              <div
-                style={{
-                  padding: "0.85rem",
-                  borderRadius: "0.9rem",
-                  background: "rgba(100, 100, 100, 0.05)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.35rem",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  <DollarSign width="0.9rem" color="orange" style={{ opacity: 0.8 }} />
-                  <span
-                    style={{
-                      fontSize: "0.7rem",
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      opacity: 0.7,
-                    }}
-                  >
-                    Total Fuel Spend
-                  </span>
-                </div>
-                <div style={{ fontSize: "1.05rem", fontWeight: 600 }}>
-                  {hasFuelData ? `OMR ${stats!.totalAmountSpent.toFixed(3)}` : "OMR 0.000"}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  padding: "0.85rem",
-                  borderRadius: "0.9rem",
-                  background: "rgba(100, 100, 100, 0.05)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.35rem",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  <Fuel width="0.9rem" color="orange" style={{ opacity: 0.8 }} />
-                  <span
-                    style={{
-                      fontSize: "0.7rem",
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      opacity: 0.7,
-                    }}
-                  >
-                    Fuel Log Entries
-                  </span>
-                </div>
-                <div style={{ fontSize: "1.05rem", fontWeight: 600 }}>
-                  {hasFuelData ? stats!.totalLogs : 0}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  padding: "0.85rem",
-                  borderRadius: "0.9rem",
-                  background: "rgba(100, 100, 100, 0.05)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.35rem",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  <Gauge width="0.9rem" color="orange" style={{ opacity: 0.8 }} />
-                  <span
-                    style={{
-                      fontSize: "0.7rem",
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      opacity: 0.7,
-                    }}
-                  >
-                    Latest Odometer
-                  </span>
-                </div>
-                <div style={{ fontSize: "1.05rem", fontWeight: 600 }}>
-                  {hasFuelData && stats!.maxOdometer !== undefined
-                    ? `${stats!.maxOdometer.toLocaleString()} km`
-                    : "—"}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  padding: "0.85rem",
-                  borderRadius: "0.9rem",
-                  background: "rgba(100, 100, 100, 0.05)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.35rem",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  <Gauge width="0.9rem" color="dodgerblue" style={{ opacity: 0.8 }} />
-                  <span
-                    style={{
-                      fontSize: "0.7rem",
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      opacity: 0.7,
-                    }}
-                  >
-                    Distance Covered
-                  </span>
-                </div>
-                <div style={{ fontSize: "1.05rem", fontWeight: 600 }}>
-                  {hasFuelData && distanceCovered !== undefined
-                    ? `${distanceCovered.toLocaleString()} km`
-                    : "—"}
-                </div>
-              </div>
-            </div>
-
             {!hasFuelData && (
               <div
                 style={{
@@ -731,6 +585,109 @@ const VehicleSummaryContent: React.FC<VehicleSummaryContentProps> = ({
               >
                 No fuel logs recorded yet for this vehicle.
               </div>
+            )}
+
+            {/* Charts */}
+            {hasFuelData && stats && (
+              <>
+                {/* Monthly Fuel Spending Chart */}
+                {stats.monthlyData.length > 0 && (
+                  <div style={{ marginBottom: "1.5rem", maxWidth: "100%" }}>
+                    <div style={{ fontSize: "0.9rem", fontWeight: 600, marginBottom: "0.75rem", opacity: 0.9 }}>
+                      Monthly Fuel Spending
+                    </div>
+                    <div
+                      style={{
+                        padding: "1rem",
+                        borderRadius: "0.9rem",
+                        background: "rgba(100, 100, 100, 0.05)",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <ChartContainer
+                        config={{
+                          fuelSpent: {
+                            label: "Fuel Spent (OMR)",
+                            color: "hsl(25, 95%, 53%)",
+                          },
+                        }}
+                        className="w-full"
+                        style={{ height: "250px", aspectRatio: "unset" }}
+                      >
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={stats.monthlyData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(100, 100, 100, 0.1)" />
+                            <XAxis
+                              dataKey="month"
+                              tick={{ fontSize: 11, fill: "currentColor" }}
+                              tickLine={false}
+                            />
+                            <YAxis
+                              tick={{ fontSize: 11, fill: "currentColor" }}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Bar dataKey="fuelSpent" fill="hsl(25, 95%, 53%)" radius={[8, 8, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </ChartContainer>
+                    </div>
+                  </div>
+                )}
+
+                {/* Odometer Progression Chart */}
+                {stats.odometerProgression.length > 0 && (
+                  <div style={{ marginBottom: "1.5rem", maxWidth: "100%" }}>
+                    <div style={{ fontSize: "0.9rem", fontWeight: 600, marginBottom: "0.75rem", opacity: 0.9 }}>
+                      Odometer Progression
+                    </div>
+                    <div
+                      style={{
+                        padding: "1rem",
+                        borderRadius: "0.9rem",
+                        background: "rgba(100, 100, 100, 0.05)",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <ChartContainer
+                        config={{
+                          odometer: {
+                            label: "Odometer (km)",
+                            color: "hsl(217, 91%, 60%)",
+                          },
+                        }}
+                        className="w-full"
+                        style={{ height: "250px", aspectRatio: "unset" }}
+                      >
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={stats.odometerProgression}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(100, 100, 100, 0.1)" />
+                            <XAxis
+                              dataKey="date"
+                              tick={{ fontSize: 11, fill: "currentColor" }}
+                              tickLine={false}
+                            />
+                            <YAxis
+                              tick={{ fontSize: 11, fill: "currentColor" }}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Line
+                              type="monotone"
+                              dataKey="odometer"
+                              stroke="hsl(217, 91%, 60%)"
+                              strokeWidth={2}
+                              dot={{ r: 4, fill: "hsl(217, 91%, 60%)" }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </ChartContainer>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {stats?.lastRefuelDate && (
@@ -903,6 +860,13 @@ export default function VehicleMaster() {
     let latestTime = 0;
     let latestDateLabel: string | null = null;
 
+    // Collect data for charts
+    const logsData: Array<{
+      date: Date;
+      amount: number;
+      odometer: number;
+    }> = [];
+
     snapshot.forEach((docSnap) => {
       const data: any = docSnap.data();
 
@@ -936,8 +900,60 @@ export default function VehicleMaster() {
         latestDateLabel = new Date(createdMs).toLocaleDateString();
       }
 
+      // Add to logs data for charting
+      if (createdMs > 0) {
+        logsData.push({
+          date: new Date(createdMs),
+          amount: !Number.isNaN(amount) ? amount : 0,
+          odometer: !Number.isNaN(odo) && odo > 0 ? odo : 0,
+        });
+      }
+
       totalLogs += 1;
     });
+
+    // Sort logs by date
+    logsData.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    // Group by month for monthly chart
+    const monthlyMap: Record<string, { fuelSpent: number; odometerSum: number; count: number }> = {};
+    logsData.forEach((log) => {
+      const monthKey = `${log.date.getFullYear()}-${String(log.date.getMonth() + 1).padStart(2, '0')}`;
+      if (!monthlyMap[monthKey]) {
+        monthlyMap[monthKey] = { fuelSpent: 0, odometerSum: 0, count: 0 };
+      }
+      monthlyMap[monthKey].fuelSpent += log.amount;
+      monthlyMap[monthKey].odometerSum += log.odometer;
+      monthlyMap[monthKey].count += 1;
+    });
+
+    const monthlyData = Object.entries(monthlyMap)
+      .map(([monthKey, data]) => {
+        const [year, month] = monthKey.split('-');
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return {
+          month: `${monthNames[parseInt(month) - 1]} ${year}`,
+          fuelSpent: parseFloat(data.fuelSpent.toFixed(3)),
+          avgOdometer: data.count > 0 ? Math.round(data.odometerSum / data.count) : 0,
+          logCount: data.count,
+        };
+      })
+      .sort((a, b) => {
+        const [aMonth, aYear] = a.month.split(' ');
+        const [bMonth, bYear] = b.month.split(' ');
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const aDate = new Date(parseInt(aYear), monthNames.indexOf(aMonth));
+        const bDate = new Date(parseInt(bYear), monthNames.indexOf(bMonth));
+        return aDate.getTime() - bDate.getTime();
+      });
+
+    // Odometer progression - keep only entries with valid odometer readings
+    const odometerProgression = logsData
+      .filter((log) => log.odometer > 0)
+      .map((log) => ({
+        date: log.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        odometer: log.odometer,
+      }));
 
     return {
       totalAmountSpent,
@@ -945,6 +961,8 @@ export default function VehicleMaster() {
       minOdometer,
       maxOdometer,
       lastRefuelDate: latestDateLabel,
+      monthlyData,
+      odometerProgression,
     };
   };
 
@@ -1506,7 +1524,6 @@ export default function VehicleMaster() {
           <DrawerContent
             className="pb-safe"
             style={{
-              width: "100%",
               maxHeight: "75vh",
               paddingBottom: "env(safe-area-inset-bottom, 0px)",
               padding: 0,
