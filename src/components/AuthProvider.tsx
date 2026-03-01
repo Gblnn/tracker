@@ -165,7 +165,7 @@ const AuthProvider = ({ children }: Props) => {
       const RecordCollection = collection(db, "users");
       const recordQuery = query(RecordCollection, where("email", "==", email));
       const querySnapshot = await getDocs(recordQuery);
-      const fetchedData = querySnapshot.docs.map((doc) => ({
+      const fetchedData = querySnapshot.docs.map((doc) => ({ 
         id: doc.id,
         ...doc.data(),
       })) as FirestoreUserData[];
@@ -183,6 +183,19 @@ const AuthProvider = ({ children }: Props) => {
       console.error("Error fetching user data:", error);
       toast.error("❌ Failed to fetch user data");
       throw error;
+    }
+  };
+
+  // Helper to force-refresh the current user's Firestore profile
+  const refreshCurrentUserData = async () => {
+    try {
+      const email = userData?.email || user?.email;
+      if (!email) return;
+      if (typeof navigator !== "undefined" && !navigator.onLine) return;
+
+      await fetchUserData(email);
+    } catch (error) {
+      console.error("Error refreshing user data:", error);
     }
   };
 
@@ -301,11 +314,33 @@ const AuthProvider = ({ children }: Props) => {
           console.error("Failed to pre-cache profile:", err)
         );
       }
+
+      // When starting from cached auth, also refresh user profile once
+      // so any role/clearance changes made while the app was closed are applied.
+      refreshCurrentUserData();
     } else {
       console.log("No cached auth - showing login page");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount
+
+  // When the tab/window comes back to the foreground, re-check the
+  // user's Firestore profile so changes made while the app was not
+  // visible get picked up quickly after return.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshCurrentUserData();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [user?.email, userData?.email]);
 
   // Listen for realtime changes to the current user's Firestore document
   // so that clearance/role/permissions update without requiring re-login.
@@ -347,7 +382,7 @@ const AuthProvider = ({ children }: Props) => {
                 const sensitiveChanged = prev.sensitive_data !== latestData.sensitive_data;
 
                 if (roleChanged || clearanceChanged || editorChanged || sensitiveChanged) {
-                  toast.info("Your access level has been updated. Please review your available options.");
+                  toast.info("Your access level has been updated.");
                 }
               }
             }
