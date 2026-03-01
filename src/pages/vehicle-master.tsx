@@ -32,6 +32,10 @@ import {
   Truck,
   User,
   X,
+  Fuel,
+  Gauge,
+  DollarSign,
+  Wrench,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -449,6 +453,341 @@ const VehicleDetailsContent: React.FC<VehicleDetailsContentProps> = ({
   );
 };
 
+interface VehicleStats {
+  totalAmountSpent: number;
+  totalLogs: number;
+  minOdometer?: number;
+  maxOdometer?: number;
+  lastRefuelDate?: string | null;
+}
+
+interface VehicleSummaryContentProps {
+  vehicle: any;
+  stats: VehicleStats | null;
+  loading: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+const VehicleSummaryContent: React.FC<VehicleSummaryContentProps> = ({
+  vehicle,
+  stats,
+  loading,
+  onEdit,
+  onDelete,
+}) => {
+  const hasFuelData = !!stats && stats.totalLogs > 0;
+
+  const distanceCovered =
+    stats && stats.minOdometer !== undefined && stats.maxOdometer !== undefined
+      ? Math.max(0, stats.maxOdometer - stats.minOdometer)
+      : undefined;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", maxHeight: "75vh", width: "100%" }}>
+      {/* Header with actions */}
+      <div
+        style={{
+          padding: "1.25rem 1.5rem 1rem 1.5rem",
+          borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
+          background: "var(--background)",
+          boxSizing: "border-box",
+          width: "100%",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <div
+              style={{
+                background: "black",
+                padding: "0.75rem",
+                borderRadius: "0.75rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Car color="white" width="1.25rem" />
+            </div>
+            <div>
+              <div style={{ fontSize: "1.25rem", fontWeight: 600, letterSpacing: "-0.02em" }}>
+                {vehicle.vehicle_number}
+              </div>
+              <div style={{ fontSize: "0.8rem", opacity: 0.7, marginTop: "0.15rem" }}>
+                {[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(" • ") || "No details"}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button
+              onClick={onEdit}
+              style={{
+                padding: "0.5rem 0.9rem",
+                borderRadius: "0.6rem",
+                border: "none",
+                cursor: "pointer",
+                background: "black",
+                color: "white",
+                fontSize: "0.8rem",
+                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+              }}
+            >
+              <Plus width="0.9rem" />
+              Edit
+            </button>
+            <button
+              onClick={onDelete}
+              style={{
+                padding: "0.5rem 0.9rem",
+                borderRadius: "0.6rem",
+                border: "none",
+                cursor: "pointer",
+                background: "rgba(220, 38, 38, 0.08)",
+                color: "crimson",
+                fontSize: "0.8rem",
+                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+              }}
+            >
+              <MinusCircle width="0.9rem" />
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div
+        style={{
+          flex: 1,
+          padding: "1.25rem 1.5rem 1.25rem 1.5rem",
+          width: "100%",
+          boxSizing: "border-box",
+          overflowY: "auto",
+        }}
+      >
+        {loading ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "40vh",
+              gap: "0.5rem",
+              fontSize: "0.9rem",
+              opacity: 0.8,
+            }}
+          >
+            <Loader2 className="animate-spin" width="1.1rem" style={{ color: "dodgerblue" }} />
+            <span>Loading vehicle summary…</span>
+          </div>
+        ) : (
+          <>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                gap: "0.75rem",
+                marginBottom: "1rem",
+              }}
+            >
+              <div
+                style={{
+                  padding: "0.85rem",
+                  borderRadius: "0.9rem",
+                  background: "rgba(100, 100, 100, 0.05)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.35rem",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <DollarSign width="0.9rem" color="orange" style={{ opacity: 0.8 }} />
+                  <span
+                    style={{
+                      fontSize: "0.7rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      opacity: 0.7,
+                    }}
+                  >
+                    Total Fuel Spend
+                  </span>
+                </div>
+                <div style={{ fontSize: "1.05rem", fontWeight: 600 }}>
+                  {hasFuelData ? `OMR ${stats!.totalAmountSpent.toFixed(3)}` : "OMR 0.000"}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding: "0.85rem",
+                  borderRadius: "0.9rem",
+                  background: "rgba(100, 100, 100, 0.05)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.35rem",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <Fuel width="0.9rem" color="orange" style={{ opacity: 0.8 }} />
+                  <span
+                    style={{
+                      fontSize: "0.7rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      opacity: 0.7,
+                    }}
+                  >
+                    Fuel Log Entries
+                  </span>
+                </div>
+                <div style={{ fontSize: "1.05rem", fontWeight: 600 }}>
+                  {hasFuelData ? stats!.totalLogs : 0}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding: "0.85rem",
+                  borderRadius: "0.9rem",
+                  background: "rgba(100, 100, 100, 0.05)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.35rem",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <Gauge width="0.9rem" color="orange" style={{ opacity: 0.8 }} />
+                  <span
+                    style={{
+                      fontSize: "0.7rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      opacity: 0.7,
+                    }}
+                  >
+                    Latest Odometer
+                  </span>
+                </div>
+                <div style={{ fontSize: "1.05rem", fontWeight: 600 }}>
+                  {hasFuelData && stats!.maxOdometer !== undefined
+                    ? `${stats!.maxOdometer.toLocaleString()} km`
+                    : "—"}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding: "0.85rem",
+                  borderRadius: "0.9rem",
+                  background: "rgba(100, 100, 100, 0.05)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.35rem",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <Gauge width="0.9rem" color="dodgerblue" style={{ opacity: 0.8 }} />
+                  <span
+                    style={{
+                      fontSize: "0.7rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      opacity: 0.7,
+                    }}
+                  >
+                    Distance Covered
+                  </span>
+                </div>
+                <div style={{ fontSize: "1.05rem", fontWeight: 600 }}>
+                  {hasFuelData && distanceCovered !== undefined
+                    ? `${distanceCovered.toLocaleString()} km`
+                    : "—"}
+                </div>
+              </div>
+            </div>
+
+            {!hasFuelData && (
+              <div
+                style={{
+                  padding: "0.9rem 1rem",
+                  borderRadius: "0.9rem",
+                  background: "rgba(100, 100, 100, 0.05)",
+                  fontSize: "0.82rem",
+                  opacity: 0.8,
+                  marginBottom: "1rem",
+                }}
+              >
+                No fuel logs recorded yet for this vehicle.
+              </div>
+            )}
+
+            {stats?.lastRefuelDate && (
+              <div
+                style={{
+                  padding: "0.9rem 1rem",
+                  borderRadius: "0.9rem",
+                  background: "rgba(100, 100, 100, 0.05)",
+                  fontSize: "0.82rem",
+                  marginBottom: "1rem",
+                }}
+              >
+                <span style={{ opacity: 0.7 }}>Last refuel:</span>{" "}
+                <span style={{ fontWeight: 500 }}>{stats.lastRefuelDate}</span>
+              </div>
+            )}
+
+            {/* Maintenance section placeholder */}
+            <div
+              style={{
+                padding: "0.95rem 1rem",
+                borderRadius: "0.95rem",
+                background: "rgba(100, 100, 100, 0.05)",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "0.75rem",
+              }}
+            >
+              <div
+                style={{
+                  background: "rgba(59, 130, 246, 0.12)",
+                  padding: "0.55rem",
+                  borderRadius: "0.75rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Wrench width="1rem" color="dodgerblue" />
+              </div>
+              <div>
+                <div style={{ fontSize: "0.9rem", fontWeight: 600, marginBottom: "0.2rem" }}>
+                  Maintenance Logs
+                </div>
+                <div style={{ fontSize: "0.8rem", opacity: 0.75 }}>
+                  No maintenance logs are linked to this vehicle yet. You can
+                  start tracking services and repairs in a future update.
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function VehicleMaster() {
   const [addVehicleDialog, setAddVehicleDialog] = useState(false);
   const [fetchingData, setFetchingData] = useState(false);
@@ -479,6 +818,12 @@ export default function VehicleMaster() {
   const [editRegistrationType, setEditRegistrationType] = useState("Private");
   const [editAllocatedUser, setEditAllocatedUser] = useState("");
   const [editDocId, setEditDocId] = useState("");
+
+  // Vehicle summary dialog & stats
+  const [vehicleSummaryDialog, setVehicleSummaryDialog] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
+  const [vehicleStats, setVehicleStats] = useState<VehicleStats | null>(null);
+  const [vehicleStatsLoading, setVehicleStatsLoading] = useState(false);
 
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -544,6 +889,109 @@ export default function VehicleMaster() {
     } finally {
       setFetchingData(false);
     }
+  };
+
+  const computeVehicleStats = async (vehicleNumber: string): Promise<VehicleStats> => {
+    const fuelCollection = collection(db, "fuel log");
+    const fuelQuery = query(fuelCollection, where("vehicle_number", "==", vehicleNumber));
+    const snapshot = await getDocs(fuelQuery);
+
+    let totalAmountSpent = 0;
+    let totalLogs = 0;
+    let minOdometer: number | undefined;
+    let maxOdometer: number | undefined;
+    let latestTime = 0;
+    let latestDateLabel: string | null = null;
+
+    snapshot.forEach((docSnap) => {
+      const data: any = docSnap.data();
+
+      const rawAmount = data.amount_spent;
+      const amount = typeof rawAmount === "number" ? rawAmount : Number(rawAmount ?? 0);
+
+      const rawOdo = data.odometer_reading;
+      const odo = typeof rawOdo === "number" ? rawOdo : Number(rawOdo ?? 0);
+
+      if (!Number.isNaN(amount)) {
+        totalAmountSpent += amount;
+      }
+
+      if (!Number.isNaN(odo) && odo > 0) {
+        if (minOdometer === undefined || odo < minOdometer) minOdometer = odo;
+        if (maxOdometer === undefined || odo > maxOdometer) maxOdometer = odo;
+      }
+
+      let createdMs = 0;
+      if (data.created_at && typeof data.created_at.toDate === "function") {
+        createdMs = data.created_at.toDate().getTime();
+      } else if (typeof data.timestamp === "number") {
+        createdMs = data.timestamp;
+      } else if (typeof data.date === "string") {
+        const parsed = new Date(data.date).getTime();
+        if (!Number.isNaN(parsed)) createdMs = parsed;
+      }
+
+      if (createdMs && createdMs > latestTime) {
+        latestTime = createdMs;
+        latestDateLabel = new Date(createdMs).toLocaleDateString();
+      }
+
+      totalLogs += 1;
+    });
+
+    return {
+      totalAmountSpent,
+      totalLogs,
+      minOdometer,
+      maxOdometer,
+      lastRefuelDate: latestDateLabel,
+    };
+  };
+
+  const openVehicleSummary = async (vehicle: any) => {
+    setSelectedVehicle(vehicle);
+    setVehicleSummaryDialog(true);
+    setVehicleStats(null);
+    setVehicleStatsLoading(true);
+    try {
+      const stats = await computeVehicleStats(vehicle.vehicle_number || "");
+      setVehicleStats(stats);
+    } catch (error) {
+      console.error("Error fetching vehicle stats:", error);
+      message.error("Failed to load vehicle summary");
+    } finally {
+      setVehicleStatsLoading(false);
+    }
+  };
+
+  const openEditVehicleFromSummary = () => {
+    if (!selectedVehicle) return;
+    const vehicle: any = selectedVehicle;
+
+    setVehicleSummaryDialog(false);
+
+    setEditDocId(vehicle.id);
+    const vehicleNum = vehicle.vehicle_number || "";
+    const numericPart = vehicleNum.match(/\d+/g)?.join("") || "";
+    const alphabeticPart = vehicleNum.match(/[A-Za-z]+/g)?.join("") || "";
+    setEditVehicleNumber(numericPart);
+    setEditVehicleChar(alphabeticPart);
+    setEditMake(vehicle.make || "");
+    setEditModel(vehicle.model || "");
+    setEditYear(vehicle.year || "");
+    setEditType(vehicle.type || "Truck");
+    setEditStatus(vehicle.status || "Active");
+    setEditRegistrationType(vehicle.registration_type || "Private");
+    setEditAllocatedUser(vehicle.allocated_user || "");
+    setVehicleDialog(true);
+  };
+
+  const openDeleteVehicleFromSummary = () => {
+    if (!selectedVehicle) return;
+    const vehicle: any = selectedVehicle;
+    setEditDocId(vehicle.id);
+    setVehicleSummaryDialog(false);
+    setDeleteConfirmDialog(true);
   };
 
   const createVehicle = async () => {
@@ -840,23 +1288,7 @@ export default function VehicleMaster() {
               <motion.div
                 key={vehicle.id}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  setEditDocId(vehicle.id);
-                  // Split vehicle number into numeric and alphabetic parts
-                  const vehicleNum = vehicle.vehicle_number || "";
-                  const numericPart = vehicleNum.match(/\d+/g)?.join('') || "";
-                  const alphabeticPart = vehicleNum.match(/[A-Za-z]+/g)?.join('') || "";
-                  setEditVehicleNumber(numericPart);
-                  setEditVehicleChar(alphabeticPart);
-                  setEditMake(vehicle.make || "");
-                  setEditModel(vehicle.model || "");
-                  setEditYear(vehicle.year || "");
-                  setEditType(vehicle.type || "Truck");
-                  setEditStatus(vehicle.status || "Active");
-                  setEditRegistrationType(vehicle.registration_type || "Private");
-                  setEditAllocatedUser(vehicle.allocated_user || "");
-                  setVehicleDialog(true);
-                }}
+                onClick={() => openVehicleSummary(vehicle)}
                 style={{
                   background: "rgba(100, 100, 100, 0.05)",
                   padding: "1rem",
@@ -1062,6 +1494,50 @@ export default function VehicleMaster() {
               onDelete={() => setDeleteConfirmDialog(true)}
               isEditMode={true}
             />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Vehicle Summary Dialog */}
+      {isMobile ? (
+        <Drawer open={vehicleSummaryDialog} onOpenChange={setVehicleSummaryDialog}>
+          <DrawerTitle></DrawerTitle>
+          <DrawerDescription></DrawerDescription>
+          <DrawerContent
+            className="pb-safe"
+            style={{
+              width: "100%",
+              maxHeight: "75vh",
+              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+              padding: 0,
+              margin: 0,
+            }}
+          >
+            {selectedVehicle && (
+              <VehicleSummaryContent
+                vehicle={selectedVehicle}
+                stats={vehicleStats}
+                loading={vehicleStatsLoading}
+                onEdit={openEditVehicleFromSummary}
+                onDelete={openDeleteVehicleFromSummary}
+              />
+            )}
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={vehicleSummaryDialog} onOpenChange={setVehicleSummaryDialog}>
+          <DialogTitle></DialogTitle>
+          <DialogDescription></DialogDescription>
+          <DialogContent style={{ maxWidth: "520px", padding: 0 }}>
+            {selectedVehicle && (
+              <VehicleSummaryContent
+                vehicle={selectedVehicle}
+                stats={vehicleStats}
+                loading={vehicleStatsLoading}
+                onEdit={openEditVehicleFromSummary}
+                onDelete={openDeleteVehicleFromSummary}
+              />
+            )}
           </DialogContent>
         </Dialog>
       )}

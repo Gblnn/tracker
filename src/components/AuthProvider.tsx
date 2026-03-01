@@ -122,6 +122,7 @@ const AuthProvider = ({ children }: Props) => {
   );
   // Track if we are using cached auth state (offline mode)
   const [cachedAuthState, setCachedAuthState] = useState(initialState.isValid);
+  const lastUserDataRef = useRef<FirestoreUserData | null>(initialState.userData);
 
   const cacheUserData = (data: FirestoreUserData) => {
     try {
@@ -305,6 +306,69 @@ const AuthProvider = ({ children }: Props) => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount
+
+  // Listen for realtime changes to the current user's Firestore document
+  // so that clearance/role/permissions update without requiring re-login.
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+
+    const setupListener = async () => {
+      try {
+        const email = userData?.email || user?.email;
+        if (!email) return;
+
+        const { getFirebaseDb } = await import("@/firebase");
+        const { collection, query, where, onSnapshot } = await import("firebase/firestore");
+
+        const db = getFirebaseDb();
+        const usersCollection = collection(db, "users");
+        const userQuery = query(usersCollection, where("email", "==", email));
+
+        unsubscribe = onSnapshot(
+          userQuery,
+          (snapshot) => {
+            if (!snapshot.empty) {
+              const doc = snapshot.docs[0];
+              const latestData = {
+                id: doc.id,
+                ...doc.data(),
+              } as FirestoreUserData;
+              const prev = lastUserDataRef.current;
+
+              setUserData(latestData);
+              cacheUserData(latestData);
+              lastUserDataRef.current = latestData;
+
+              // Notify the user if their access level/clearance changed
+              if (prev) {
+                const roleChanged = prev.role !== latestData.role;
+                const clearanceChanged = prev.clearance !== latestData.clearance;
+                const editorChanged = prev.editor !== latestData.editor;
+                const sensitiveChanged = prev.sensitive_data !== latestData.sensitive_data;
+
+                if (roleChanged || clearanceChanged || editorChanged || sensitiveChanged) {
+                  toast.info("Your access level has been updated. Please review your available options.");
+                }
+              }
+            }
+          },
+          (error) => {
+            console.error("Error listening to user data changes:", error);
+          }
+        );
+      } catch (error) {
+        console.error("Failed to set up user data listener:", error);
+      }
+    };
+
+    setupListener();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [user?.email, userData?.email]);
 
   // NEVER block rendering with a loading screen on mount
   // The loading state is only used to disable buttons during operations

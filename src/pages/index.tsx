@@ -161,6 +161,9 @@ export default function Index() {
     return modulePermissions[moduleId] === true;
   };
 
+  // Only allow fuel-log module if user has an allocated vehicle
+  const hasAllocatedVehicle = !!userData?.allocated_vehicle;
+
   // Authenticate for specific module
   const authenticateModule = (moduleId: string, path: string, moduleName: string) => {
     if (hasModuleAccess(moduleId)) {
@@ -343,7 +346,7 @@ export default function Index() {
                 />
               )}
 
-              {hasModuleAccess('fuel_log') && (
+              {hasModuleAccess('fuel_log') && hasAllocatedVehicle && (
                 <GridTile
                   title="Fuel Log"
                   icon={<Fuel width={"2rem"}  />}

@@ -650,34 +650,34 @@ export default function RecordDetail() {
     setLoading(true);
     try {
       await updateDoc(doc(db, "records", id), {
-        name: editedName !== undefined ? editedName : record.name,
-        email: editedEmail !== undefined ? editedEmail : record.email,
-        employeeCode: editedEmployeeCode !== undefined ? editedEmployeeCode : record.employeeCode,
-        cug: editedCug !== undefined ? editedCug : record.cug,
+        name: editedName !== undefined ? editedName : (record.name || ""),
+        email: editedEmail !== undefined ? editedEmail : (record.email || ""),
+        employeeCode: editedEmployeeCode !== undefined ? editedEmployeeCode : (record.employeeCode || ""),
+        cug: editedCug !== undefined ? editedCug : (record.cug || ""),
         role: editedSystemRole !== undefined ? editedSystemRole : (record.role || "profile"),
-        designation: editedDesignation !== undefined ? editedDesignation : record.designation,
-        site: editedSite !== undefined ? editedSite : record.site,
-        project: editedProject !== undefined ? editedProject : record.project,
-        companyName: editedCompanyName !== undefined ? editedCompanyName : record.companyName,
-        dateofJoin: editedDateofJoin !== undefined ? editedDateofJoin : record.dateofJoin,
-        contact: editedContact !== undefined ? editedContact : record.contact,
+        designation: editedDesignation !== undefined ? editedDesignation : (record.designation || ""),
+        site: editedSite !== undefined ? editedSite : (record.site || ""),
+        project: editedProject !== undefined ? editedProject : (record.project || ""),
+        companyName: editedCompanyName !== undefined ? editedCompanyName : (record.companyName || ""),
+        dateofJoin: editedDateofJoin !== undefined ? editedDateofJoin : (record.dateofJoin || ""),
+        contact: editedContact !== undefined ? editedContact : (record.contact || ""),
         modified_on: new Date(),
       });
 
       // Update local record state
       setRecord({
         ...record,
-        name: editedName !== undefined ? editedName : record.name,
-        email: editedEmail !== undefined ? editedEmail : record.email,
-        employeeCode: editedEmployeeCode !== undefined ? editedEmployeeCode : record.employeeCode,
-        cug: editedCug !== undefined ? editedCug : record.cug,
-        role: editedSystemRole !== undefined ? editedSystemRole : record.role,
-        designation: editedDesignation !== undefined ? editedDesignation : record.designation,
-        site: editedSite !== undefined ? editedSite : record.site,
-        project: editedProject !== undefined ? editedProject : record.project,
-        companyName: editedCompanyName !== undefined ? editedCompanyName : record.companyName,
-        dateofJoin: editedDateofJoin !== undefined ? editedDateofJoin : record.dateofJoin,
-        contact: editedContact !== undefined ? editedContact : record.contact,
+        name: editedName !== undefined ? editedName : (record.name || ""),
+        email: editedEmail !== undefined ? editedEmail : (record.email || ""),
+        employeeCode: editedEmployeeCode !== undefined ? editedEmployeeCode : (record.employeeCode || ""),
+        cug: editedCug !== undefined ? editedCug : (record.cug || ""),
+        role: editedSystemRole !== undefined ? editedSystemRole : (record.role || "profile"),
+        designation: editedDesignation !== undefined ? editedDesignation : (record.designation || ""),
+        site: editedSite !== undefined ? editedSite : (record.site || ""),
+        project: editedProject !== undefined ? editedProject : (record.project || ""),
+        companyName: editedCompanyName !== undefined ? editedCompanyName : (record.companyName || ""),
+        dateofJoin: editedDateofJoin !== undefined ? editedDateofJoin : (record.dateofJoin || ""),
+        contact: editedContact !== undefined ? editedContact : (record.contact || ""),
       });
 
       toast.success("Record updated successfully");
