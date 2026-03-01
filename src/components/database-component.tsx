@@ -9,6 +9,8 @@ import Passport from "@/components/passport";
 import RoleSelect from "@/components/role-select";
 import SearchBar from "@/components/search-bar";
 import DefaultDialog from "@/components/ui/default-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import VehicleID from "@/components/vehicle-id";
 import { db, storage } from "@/firebase";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -78,6 +80,7 @@ import {
   Info,
   LayoutGrid,
   ListStart,
+  Loader,
   Loader2,
   LoaderCircle,
   MinusSquareIcon,
@@ -137,6 +140,239 @@ interface Props {
 //   importLoading?: boolean;
 //   trigger: React.ReactNode;
 // }
+
+// Shared Record Form Content Component
+interface RecordFormContentProps {
+  name: string;
+  setName: (value: string) => void;
+  email: string;
+  setEmail: (value: string) => void;
+  employeeCode: string;
+  setEmployeeCode: (value: string) => void;
+  companyName: string;
+  setCompanyName: (value: string) => void;
+  dateofJoin: string;
+  setDateofJoin: (value: string) => void;
+  salaryBasic: number;
+  setSalaryBasic: (value: any) => void;
+  allowance: number;
+  setAllowance: (value: any) => void;
+  contact: string;
+  setContact: (value: string) => void;
+  cug: string;
+  setCug: (value: string) => void;
+  designation: string;
+  setDesignation: (value: string) => void;
+  site: string;
+  setSite: (value: string) => void;
+  project: string;
+  setProject: (value: string) => void;
+  systemRole: string;
+  setSystemRole: (value: string) => void;
+  loading: boolean;
+  onSave: () => void;
+  isEditMode?: boolean;
+}
+
+const RecordFormContent: React.FC<RecordFormContentProps> = ({
+  name,
+  setName,
+  email,
+  setEmail,
+  employeeCode,
+  setEmployeeCode,
+  companyName,
+  setCompanyName,
+  dateofJoin,
+  setDateofJoin,
+  salaryBasic,
+  setSalaryBasic,
+  allowance,
+  setAllowance,
+  contact,
+  setContact,
+  cug,
+  setCug,
+  designation,
+  setDesignation,
+  site,
+  setSite,
+  project,
+  setProject,
+  systemRole,
+  setSystemRole,
+  loading,
+  onSave,
+  isEditMode = false,
+}) => {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", maxHeight: "75vh", width: "100%" }}>
+      {/* Fixed Header */}
+      <div style={{
+        paddingTop: "0rem",
+        padding: "1.5rem",
+        paddingBottom: "1rem",
+        borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
+        background: "var(--background)",
+        boxSizing: "border-box",
+        width: "100%"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <FileArchive/>
+          <p style={{ fontSize: "1.25rem", fontWeight: 600, margin: 0 }}>
+            {isEditMode ? "Edit Record" : "Add Record"}
+          </p>
+        </div>
+      </div>
+
+      {/* Scrollable Content */}
+      <div style={{
+        flex: 1,
+        padding: "1.5rem",
+        paddingTop: "1.5rem",
+        paddingBottom: "0",
+        width: "100%",
+        boxSizing: "border-box",
+        overflowY: "auto",
+        minHeight: 0
+      }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", width: "100%", paddingBottom: "1.5rem" }}>
+          <input
+            placeholder="Enter Full Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={{ width: "100%" }}
+          />
+          
+          <input
+            placeholder="Enter Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{ width: "100%" }}
+          />
+          
+          <input
+            placeholder="Enter Employee Code"
+            value={employeeCode}
+            onChange={(e) => setEmployeeCode(e.target.value)}
+            style={{ width: "100%" }}
+          />
+          
+          <input
+            placeholder="Enter Company Name"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            style={{ width: "100%" }}
+          />
+          
+          <input
+            placeholder="Enter Date of Join"
+            value={dateofJoin}
+            onChange={(e) => setDateofJoin(e.target.value)}
+            style={{ width: "100%" }}
+          />
+          
+          <input
+            placeholder="Basic Salary"
+            value={salaryBasic.toString()}
+            onChange={(e) => setSalaryBasic(e.target.value)}
+            style={{ width: "100%" }}
+          />
+          
+          <input
+            placeholder="Allowance"
+            value={allowance.toString()}
+            onChange={(e) => setAllowance(e.target.value)}
+            style={{ width: "100%" }}
+          />
+          
+          <input
+            placeholder="Enter Contact"
+            value={contact}
+            onChange={(e) => setContact(e.target.value)}
+            style={{ width: "100%" }}
+          />
+          
+          <input
+            placeholder="Enter CUG"
+            value={cug}
+            onChange={(e) => setCug(e.target.value)}
+            style={{ width: "100%" }}
+          />
+          
+          <input
+            placeholder="Enter Site"
+            value={site}
+            onChange={(e) => setSite(e.target.value)}
+            style={{ width: "100%" }}
+          />
+          
+          <input
+            placeholder="Enter Project"
+            value={project}
+            onChange={(e) => setProject(e.target.value)}
+            style={{ width: "100%" }}
+          />
+          
+          <input
+            placeholder="Enter Designation"
+            value={designation}
+            onChange={(e) => setDesignation(e.target.value)}
+            style={{ width: "100%" }}
+          />
+          
+          <RoleSelect 
+            value={systemRole || 'profile'} 
+            onChange={(value) => setSystemRole(value)}
+          />
+        </div>
+      </div>
+
+      {/* Fixed Footer */}
+      <div style={{
+        padding: "1rem 1rem",
+        borderTop: "1px solid rgba(100, 100, 100, 0.1)",
+        background: "var(--background)",
+        display: "flex",
+        paddingBottom:"2rem",
+        gap: "0.5rem",
+        boxSizing: "border-box",
+        width: "100%"
+      }}>
+        <button
+          onClick={onSave}
+          disabled={loading}
+          style={{
+            padding: "1rem 1rem",
+            background: "black",
+            color: "white",
+            borderRadius: "0.5rem",
+            border: "none",
+            cursor: loading ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.5rem",
+            opacity: loading ? 0.5 : 1,
+            width: "100%"
+          }}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="animate-spin" width="1rem" />
+              
+            </>
+          ) : (
+            <>
+              <Plus width="1rem" />
+              {isEditMode ? "Update Record" : "Add Record"}
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default function DbComponent(props: Props) {
   const { windowName } = useCurrentUser();
@@ -420,12 +656,25 @@ export default function DbComponent(props: Props) {
   const [refreshCompleted, setRefreshCompleted] = useState(false);
   const [exportDialog, setExportDialog] = useState(false);
   const [id, setId] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
 
   const [pageSize] = useState(100);
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
 
   // const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Detect mobile/desktop
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Set access permissions from cached user data
   useEffect(() => {
@@ -2633,14 +2882,20 @@ export default function DbComponent(props: Props) {
                         id="load-more-trigger"
                         style={{
                           width: "100%",
-                          height: "50px",
+                          padding: "2rem 0",
                           display: "flex",
                           justifyContent: "center",
                           alignItems: "center",
-                          opacity: fetchingData ? 1 : 0,
+                          opacity: fetchingData ? 1 : 0.3,
+                          gridColumn: "1 / -1",
                         }}
                       >
-                        {fetchingData && <div className="loader"></div>}
+                        {fetchingData && (
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", opacity: 0.6 }}>
+                            <Loader className="animate-spin" width="1.25rem" />
+                            <span style={{ fontSize: "0.875rem" }}></span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </motion.div>
@@ -2794,15 +3049,20 @@ export default function DbComponent(props: Props) {
                           id="load-more-trigger"
                           style={{
                             width: "100%",
-                            height: "50px",
+                            padding: "2rem 0",
                             display: "flex",
                             justifyContent: "center",
                             alignItems: "center",
-                            opacity: fetchingData ? 1 : 0,
+                            opacity: fetchingData ? 1 : 0.3,
                             marginTop: "1rem"
                           }}
                         >
-                          {fetchingData && <div className="loader"></div>}
+                          {fetchingData && (
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", opacity: 0.6 }}>
+                              <Loader2 className="animate-spin" width="1.25rem" />
+                              <span style={{ fontSize: "0.875rem" }}>Loading more records...</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </motion.div>
@@ -3730,110 +3990,129 @@ export default function DbComponent(props: Props) {
           onCancel={() => setImageDialog(false)}
         />
 
-        {/* ADD RECORD DIALOG */}
-        <InputDialog
-          open={addDialog}
-          onCancel={() => {
-            setAddDialog(false);
-            // Clear all form fields when canceling
-            setName("");
-            setEmail("");
-            setEmployeeCode("");
-            setCompanyName("");
-            setDateofJoin("");
-            setSalaryBasic(0);
-            setAllowance(0);
-            setContact("");
-            setCug("");
-            setDesignation("");
-            setSite("");
-            setProject("");
-            setSystemRole("");
-          }}
-          updating={loading}
-          disabled={loading}
-          title="Add Record"
-          titleIcon={<Plus width={"1rem"} />}
-          OkButtonText="Add Record"
-          onOk={addRecord}
-          
-          input1Label="Full Name"
-          inputplaceholder="Enter Full Name"
-          input1Value={name}
-          inputOnChange={(e: any) => setName(e.target.value)}
-          
-          input2Label="Email"
-          input2placeholder="Enter Email"
-          input2Value={email}
-          input2OnChange={(e: any) => setEmail(e.target.value)}
-          
-          input3Label="Employee Code"
-          input3placeholder="Enter Employee Code"
-          input3Value={employeeCode}
-          input3OnChange={(e: any) => setEmployeeCode(e.target.value)}
-          
-          input4Label="Company Name"
-          input4placeholder="Enter Company Name"
-          input4Value={companyName}
-          input4OnChange={(e: any) => setCompanyName(e.target.value)}
-          
-          input5Label="Date of Join"
-          input5placeholder="Enter Date of Join"
-          input5Value={dateofJoin}
-          input5OnChange={(e: any) => setDateofJoin(e.target.value)}
-          
-          input6Label="Basic Salary"
-          input6placeholder="Basic Salary"
-          input6Value={salaryBasic.toString()}
-          input6OnChange={(e: any) => setSalaryBasic(e.target.value)}
-          
-          input7Label="Allowance"
-          input7placeholder="Allowance"
-          input7Value={allowance.toString()}
-          input7OnChange={(e: any) => setAllowance(e.target.value)}
-          
-          input8Label="Contact"
-          input8placeholder="Enter Contact"
-          input8Value={contact}
-          input8OnChange={(e: any) => setContact(e.target.value)}
-          
-          input9Label="CUG"
-          input9placeholder="Enter CUG "
-          input9Value={cug}
-          input9OnChange={(e: any) => setCug(e.target.value)}
-
-          // input10Label="Designation"
-          // input10placeholder="Enter Designation"
-          // input10OnChange={(e: any) => setDesignation(e.target.value)}
-
-          input11Label="Site"
-          input11placeholder="Enter Site"
-          input11Value={site}
-          input11OnChange={(e: any) => setSite(e.target.value)}
-
-          input12Label="Project"
-          input12placeholder="Enter Project"
-          input12Value={project}
-          input12OnChange={(e: any) => setProject(e.target.value)}
-
-          extra={
-            <div style={{ display:"flex", gap: "0.5rem", width: "100%" }}>
-              <input 
-                onChange={(e: any) => setDesignation(e.target.value)} 
-                placeholder="Enter Designation" 
-                value={designation} 
-                style={{width: "100%", fontSize: ""}}/>
-              <RoleSelect 
-                value={systemRole || 'profile'} 
-                onChange={(value) => {
-                  setSystemRole(value);
-                }}
+        {/* ADD RECORD DIALOG - Drawer for Mobile / Dialog for Desktop */}
+        {isMobile ? (
+          <Drawer open={addDialog} onOpenChange={(open) => {
+            if (!open) {
+              // Clear all form fields when closing
+              setName("");
+              setEmail("");
+              setEmployeeCode("");
+              setCompanyName("");
+              setDateofJoin("");
+              setSalaryBasic(0);
+              setAllowance(0);
+              setContact("");
+              setCug("");
+              setDesignation("");
+              setSite("");
+              setProject("");
+              setSystemRole("");
+            }
+            setAddDialog(open);
+          }}>
+            <DrawerTitle></DrawerTitle>
+            <DrawerDescription></DrawerDescription>
+            <DrawerContent
+              className="pb-safe"
+              style={{
+                width: "100%",
+                maxHeight: "90vh",
+                paddingBottom: "env(safe-area-inset-bottom, 0px)",
+                padding: 0,
+                margin: 0,
+              }}
+            >
+              <RecordFormContent
+                name={name}
+                setName={setName}
+                email={email}
+                setEmail={setEmail}
+                employeeCode={employeeCode}
+                setEmployeeCode={setEmployeeCode}
+                companyName={companyName}
+                setCompanyName={setCompanyName}
+                dateofJoin={dateofJoin}
+                setDateofJoin={setDateofJoin}
+                salaryBasic={salaryBasic}
+                setSalaryBasic={setSalaryBasic}
+                allowance={allowance}
+                setAllowance={setAllowance}
+                contact={contact}
+                setContact={setContact}
+                cug={cug}
+                setCug={setCug}
+                designation={designation}
+                setDesignation={setDesignation}
+                site={site}
+                setSite={setSite}
+                project={project}
+                setProject={setProject}
+                systemRole={systemRole}
+                setSystemRole={setSystemRole}
+                loading={loading}
+                onSave={addRecord}
+                isEditMode={false}
               />
-            </div>
-          }
-
-         
-        />
+            </DrawerContent>
+          </Drawer>
+        ) : (
+          <Dialog open={addDialog} onOpenChange={(open) => {
+            if (!open) {
+              // Clear all form fields when closing
+              setName("");
+              setEmail("");
+              setEmployeeCode("");
+              setCompanyName("");
+              setDateofJoin("");
+              setSalaryBasic(0);
+              setAllowance(0);
+              setContact("");
+              setCug("");
+              setDesignation("");
+              setSite("");
+              setProject("");
+              setSystemRole("");
+            }
+            setAddDialog(open);
+          }}>
+            <DialogTitle></DialogTitle>
+            <DialogDescription></DialogDescription>
+            <DialogContent style={{ maxWidth: "500px", padding: 0 }}>
+              <RecordFormContent
+                name={name}
+                setName={setName}
+                email={email}
+                setEmail={setEmail}
+                employeeCode={employeeCode}
+                setEmployeeCode={setEmployeeCode}
+                companyName={companyName}
+                setCompanyName={setCompanyName}
+                dateofJoin={dateofJoin}
+                setDateofJoin={setDateofJoin}
+                salaryBasic={salaryBasic}
+                setSalaryBasic={setSalaryBasic}
+                allowance={allowance}
+                setAllowance={setAllowance}
+                contact={contact}
+                setContact={setContact}
+                cug={cug}
+                setCug={setCug}
+                designation={designation}
+                setDesignation={setDesignation}
+                site={site}
+                setSite={setSite}
+                project={project}
+                setProject={setProject}
+                systemRole={systemRole}
+                setSystemRole={setSystemRole}
+                loading={loading}
+                onSave={addRecord}
+                isEditMode={false}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* EDIT RECORD DIALOG */}
         <InputDialog

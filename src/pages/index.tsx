@@ -5,7 +5,11 @@ import GridTile from "@/components/grid-tile";
 import IndexDropDown from "@/components/index-dropdown";
 import InputDialog from "@/components/input-dialog";
 import DefaultDialog from "@/components/ui/default-dialog";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { useBackgroundProcess } from "@/context/BackgroundProcessContext";
 import { auth } from "@/firebase";
+import { fetchAndCacheFuelLogs } from "@/utils/fuelLogsCache";
+import { getPendingFuelLogsCount, syncAllPendingFuelLogs } from "@/utils/offlineFuelLogs";
 import { LoadingOutlined } from "@ant-design/icons";
 import emailjs from "@emailjs/browser";
 import { motion } from "framer-motion";
@@ -20,6 +24,7 @@ import {
   Link,
   Mail,
   Notebook,
+  Package,
   QrCode,
   UserCheck,
   Users,
@@ -29,9 +34,6 @@ import moment from "moment";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { syncAllPendingFuelLogs, getPendingFuelLogsCount } from "@/utils/offlineFuelLogs";
-import { useBackgroundProcess } from "@/context/BackgroundProcessContext";
-import { fetchAndCacheFuelLogs } from "@/utils/fuelLogsCache";
 
 export default function Index() {
   const usenavigate = useNavigate();
@@ -164,6 +166,25 @@ export default function Index() {
   // Only allow fuel-log module if user has an allocated vehicle
   const hasAllocatedVehicle = !!userData?.allocated_vehicle;
 
+  // Check if user has any modules allocated
+  const hasAnyModules = () => {
+    const hasRecordsMaster = hasModuleAccess('records_master') && (!userData || userData.role !== 'user');
+    const hasUsers = admin && (!userData || userData.role !== 'user');
+    const hasNewHire = hasModuleAccess('new_hire');
+    const hasPhonebook = hasModuleAccess('phonebook');
+    const hasQuickLinks = hasModuleAccess('quick_links');
+    const hasQRGenerator = hasModuleAccess('qr_generator');
+    const hasFuelLog = hasModuleAccess('fuel_log') && hasAllocatedVehicle;
+    const hasVehicleMaster = hasModuleAccess('vehicle_master');
+    const hasVehicleLogBook = hasModuleAccess('vehicle_log_book');
+    const hasPettyCash = hasModuleAccess('petty_cash');
+    const hasOfferLetters = hasModuleAccess('offer_letters');
+
+    return hasRecordsMaster || hasUsers || hasNewHire || hasPhonebook || hasQuickLinks || 
+           hasQRGenerator || hasFuelLog || hasVehicleMaster || hasVehicleLogBook || 
+           hasPettyCash || hasOfferLetters;
+  };
+
   // Authenticate for specific module
   const authenticateModule = (moduleId: string, path: string, moduleName: string) => {
     if (hasModuleAccess(moduleId)) {
@@ -290,6 +311,7 @@ export default function Index() {
               <LoadingOutlined style={{ color: "dodgerblue", scale: "2" }} />
             </div>
           ) : (
+            hasAnyModules() ? (
             <div
               style={{ 
                 display: "grid", 
@@ -386,6 +408,41 @@ export default function Index() {
                 />
               )}
             </div>
+            ) : (
+              <div style={{ 
+                display: "flex", 
+                justifyContent: "center", 
+                alignItems: "center", 
+                height: "70vh" 
+              }}>
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia>
+                      <Package/>
+                    </EmptyMedia>
+                    <EmptyTitle>No Modules Allocated</EmptyTitle>
+                    <EmptyDescription>You don't have access to any modules yet. Please contact your administrator to request module access.</EmptyDescription>
+                  </EmptyHeader>
+                  {/* <EmptyContent>
+                    <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", flexWrap: "wrap" }}>
+                      <button
+                        onClick={() => navigate("/profile")}
+                        style={{
+                          padding: "0.5rem 1.5rem",
+                          background: "dodgerblue",
+                          color: "white",
+                          borderRadius: "0.5rem",
+                          border: "none",
+                          cursor: "pointer"
+                        }}
+                      >
+                        View Profile
+                      </button>
+                    </div>
+                  </EmptyContent> */}
+                </Empty>
+              </div>
+            )
           )}
         </motion.div>
 

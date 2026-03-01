@@ -1,4 +1,5 @@
 import Back from "@/components/back";
+import { useAuth } from "@/components/AuthProvider";
 import { LoadingOutlined } from "@ant-design/icons";
 import { message } from "antd";
 import { motion } from "framer-motion";
@@ -8,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 export default function RequestAccess() {
+  const { loginUser } = useAuth();
   const [stage, setStage] = useState(1)
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -70,7 +72,7 @@ export default function RequestAccess() {
       // Dynamically import Firebase modules
       const { getFirebaseDb, getFirebaseAuth } = await import("@/firebase");
       const { collection, addDoc } = await import("firebase/firestore");
-      const { createUserWithEmailAndPassword, signInWithEmailAndPassword } = await import("firebase/auth");
+      const { createUserWithEmailAndPassword } = await import("firebase/auth");
       
       const auth = getFirebaseAuth();
       const db = getFirebaseDb();
@@ -82,7 +84,7 @@ export default function RequestAccess() {
         clearance:"None",
         name: name,
         created_at: new Date(),
-        role: "profile",  // Default system role for new users
+        role: "user",  // Default system role for new users
         designation: ""  // job title will be set later
       });
 
@@ -90,12 +92,38 @@ export default function RequestAccess() {
       await createUserWithEmailAndPassword(auth, email, password);
       toast.success("Account created successfully!");
       
-      // Sign in the user
-      await signInWithEmailAndPassword(auth, email, password);
+      // Use AuthProvider's loginUser to properly authenticate and get user data
+      const { userData } = await loginUser(email, password);
+      
+      if (!userData) {
+        throw new Error("User data not found after login");
+      }
       
       window.name = email;
       
-      navigate("/profile");
+      // Store user data in localStorage
+      localStorage.setItem("userRole", userData.role);
+      localStorage.setItem("userEmail", userData.email);
+      
+      // Role-based redirection
+      let targetPath = "/index"; // default
+      switch (userData.role) {
+        case "profile":
+          targetPath = "/profile";
+          break;
+        case "admin":
+          targetPath = "/index";
+          break;
+        case "user":
+          targetPath = "/index";
+          break;
+        default:
+          targetPath = "/index";
+          break;
+      }
+      
+      navigate(targetPath, { replace: true });
+      setLoading(false);
     } catch (error: any) {
       setLoading(false);
       console.error(error);
@@ -186,6 +214,7 @@ export default function RequestAccess() {
                 background: "midnightblue",
                 height: "2.5rem",
                 fontSize: "0.9rem",
+                color: "white"
               }}
             >
               {loading ? <LoadingOutlined /> : "Request Access"}
@@ -263,6 +292,7 @@ export default function RequestAccess() {
                 background: "midnightblue",
                 height: "2.5rem",
                 fontSize: "0.9rem",
+                color: "white"
               }}
             >
               {loading ? <LoaderCircle className="animate-spin" /> : "Create Account"}

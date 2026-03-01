@@ -45,14 +45,8 @@ export default function Login() {
       if (!returnPath) {
         // Role-based redirection
         switch (userData.role) {
-          case "supervisor":
-            returnPath = "/supervisor";
-            break;
-          case "site_coordinator":
-            returnPath = "/site-coordinator";
-            break;
-          case "management":
-            returnPath = "/management";
+          case "profile":
+            returnPath = "/profile";
             break;
           case "admin":
             returnPath = "/index";

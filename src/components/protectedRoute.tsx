@@ -9,11 +9,8 @@ const CLEARANCE_ROUTES = {
 
 // Define system-role-restricted routes
 const ROLE_RESTRICTED_ROUTES = {
-  supervisor: ["/index", "/supervisor", "/profile", "/phonebook"], // Supervisors
   admin: ["*"], // Admins can access all routes
   user: ["/index", "/record-list", "/vale-records", "/profile", "/phonebook"], // Regular users (no /records master, no /users)
-  site_coordinator: ["/index", "/site-coordinator", "/record-list", "/mobilizacao", "/offer-letters", "/profile", "/phonebook"],
-  management: ["/index", "/management", "/record-list", "/reports", "/mobilizacao", "/offer-letters", "/profile", "/phonebook"],
   profile: ["/profile", "/records", "/phonebook"] // Basic profile access
 };
 

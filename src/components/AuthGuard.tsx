@@ -23,14 +23,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       
       if (userData?.role) {
         switch (userData.role) {
-          case "supervisor":
-            redirectPath = "/supervisor";
-            break;
-          case "site_coordinator":
-            redirectPath = "/site-coordinator";
-            break;
-          case "management":
-            redirectPath = "/management";
+          case "profile":
+            redirectPath = "/profile";
             break;
           case "admin":
             redirectPath = "/index";

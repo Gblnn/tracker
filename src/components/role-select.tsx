@@ -9,9 +9,7 @@ interface Props {
 const ROLE_OPTIONS = [
   { value: 'profile', label: 'Profile' },
   { value: 'admin', label: 'Admin' },
-  { value: 'supervisor', label: 'Supervisor' },
-  { value: 'site_coordinator', label: 'Site Coordinator' },
-  { value: 'management', label: 'Management' }
+  { value: 'user', label: 'User' }
 ];
 
 // Component for selecting system roles (access control)
