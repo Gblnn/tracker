@@ -156,7 +156,7 @@ const AuthProvider = ({ children }: Props) => {
   };
 
   const fetchUserData = async (email: string) => {
-    const fetchStartTime = performance.now();
+    // const fetchStartTime = performance.now();
     try {
       const { getFirebaseDb } = await import("@/firebase");
       const { collection, getDocs, query, where } = await import("firebase/firestore");
@@ -174,7 +174,7 @@ const AuthProvider = ({ children }: Props) => {
         const userData = fetchedData[0];
         setUserData(userData);
         cacheUserData(userData);
-        toast.success("✅ User data loaded (" + Math.round(performance.now() - fetchStartTime) + "ms)");
+        // toast.success("✅ User data loaded (" + Math.round(performance.now() - fetchStartTime) + "ms)");
         return userData;
       }
 

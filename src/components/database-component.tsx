@@ -641,6 +641,25 @@ export default function DbComponent(props: Props) {
     });
     return Array.from(keys).sort();
   }, [records]);
+
+  // Memoized filtered records for search performance
+  const filteredRecords = useMemo(() => {
+    if (search === "") return records;
+    
+    const lowerSearch = search.toLowerCase();
+    return records.filter((record: any) => {
+      // Search across multiple fields for better UX
+      return (
+        (record.name && record.name.toLowerCase().includes(lowerSearch)) ||
+        (record.display_name && record.display_name.toLowerCase().includes(lowerSearch)) ||
+        (record.email && record.email.toLowerCase().includes(lowerSearch)) ||
+        (record.employeeCode && String(record.employeeCode).toLowerCase().includes(lowerSearch)) ||
+        (record.designation && record.designation.toLowerCase().includes(lowerSearch)) ||
+        (record.contact && String(record.contact).includes(lowerSearch))
+      );
+    });
+  }, [records, search]);
+
   const [leaveID, setLeaveID] = useState("");
 
   const [salaryList, setSalaryList] = useState<any>([]);
@@ -1211,7 +1230,7 @@ export default function DbComponent(props: Props) {
     await uploadFile();
     await addDoc(collection(db, "records"), {
       name: name,
-      "user name": displayName,
+      display_name: displayName,
       email: email,
       employeeCode: employeeCode,
       companyName: companyName,
@@ -1298,7 +1317,7 @@ export default function DbComponent(props: Props) {
 
     await updateDoc(doc(db, "records", doc_id), {
       name: editedName !== undefined ? editedName : name,
-      "user name": editedDisplayName !== undefined ? editedDisplayName : displayName,
+      display_name: editedDisplayName !== undefined ? editedDisplayName : displayName,
       email: editedEmail !== undefined ? editedEmail : email,
       employeeCode: editedEmployeeCode !== undefined ? editedEmployeeCode : employeeCode,
       cug: editedCug !== undefined ? editedCug : cug,
@@ -2806,14 +2825,7 @@ export default function DbComponent(props: Props) {
                     >
                     {
                       // RECORD DATA MAPPING
-                      records
-                        .filter((post: any) => {
-                          if (search == "") return true;
-                          return post.name &&
-                            post.name
-                              .toLowerCase()
-                              .includes(search.toLowerCase());
-                        })
+                      filteredRecords
                         .map((post: any) => (
                           // <motion.div
                           //   key={post.id}
@@ -2949,14 +2961,7 @@ export default function DbComponent(props: Props) {
                           </tr>
                         </thead>
                         <tbody>
-                          {records
-                            .filter((post: any) => {
-                              if (search == "") return true;
-                              return post.name &&
-                                post.name
-                                  .toLowerCase()
-                                  .includes(search.toLowerCase());
-                            })
+                          {filteredRecords
                             .map((post: any) => (
                               <tr
                                 key={post.id}

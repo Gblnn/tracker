@@ -13,7 +13,7 @@ import { db } from "@/firebase";
 import { fetchAndCacheFuelLogs, getCachedFuelLogs, type FuelLog as FuelLogType } from "@/utils/fuelLogsCache";
 import { addPendingFuelLog, getPendingFuelLogs, getPendingFuelLogsCount, syncAllPendingFuelLogs } from "@/utils/offlineFuelLogs";
 import { getCachedProfile } from "@/utils/profileCache";
-import { getCachedVehicle } from "@/utils/vehicleCache";
+import { getCachedVehicle, fetchAndCacheVehicle } from "@/utils/vehicleCache";
 import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical, Fuel, Gauge, Loader2, Plus, WifiOff } from "lucide-react";
@@ -465,10 +465,22 @@ export default function FuelLog() {
     }
     
     // Load cached vehicle data to get registration type
-    const cachedVehicle = getCachedVehicle();
-    if (cachedVehicle?.registration_type) {
-      setVehicleRegistrationType(cachedVehicle.registration_type);
-    }
+    const loadVehicleData = async () => {
+      const vehicleNumber = cachedProfile?.allocated_vehicle || userData?.allocated_vehicle;
+      if (vehicleNumber) {
+        // Try to get cached vehicle first
+        const cachedVehicle = getCachedVehicle();
+        if (cachedVehicle?.registration_type) {
+          setVehicleRegistrationType(cachedVehicle.registration_type);
+        }
+        // Fetch fresh vehicle data to ensure we have latest registration type
+        const vehicleData = await fetchAndCacheVehicle(vehicleNumber);
+        if (vehicleData?.registration_type) {
+          setVehicleRegistrationType(vehicleData.registration_type);
+        }
+      }
+    };
+    loadVehicleData();
     
     // Load cached fuel logs immediately
     if (userData?.email) {

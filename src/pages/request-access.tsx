@@ -51,7 +51,8 @@ export default function RequestAccess() {
 
       // Get user details from the record
       const userRecord = recordsSnapshot.docs[0].data();
-      setName(userRecord.name || "");
+      // Use display_name if available, otherwise fall back to name
+      setName(userRecord.display_name || userRecord.name || "");
 
       // If email exists in records but not in users, show the create account form
       setStage(2);
@@ -81,8 +82,8 @@ export default function RequestAccess() {
       const usersRef = collection(db, "users");
       await addDoc(usersRef, {
         email: email,
-        clearance:"None",
-        "user name": name,
+        clearance: JSON.stringify({ phonebook: true }),
+        name: name,
         created_at: new Date(),
         role: "user",  // Default system role for new users
         designation: ""  // job title will be set later

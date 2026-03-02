@@ -11,7 +11,7 @@ export default function RefreshButton(props: Props) {
   return (
     <>
       <button
-        className="transitions blue-glass"
+        className="transitions"
         style={{
           paddingLeft: "1rem",
           paddingRight: "1rem",
@@ -21,7 +21,7 @@ export default function RefreshButton(props: Props) {
         onClick={props.onClick}
       >
         {props.fetchingData ? (
-          <Loader2 className="animate-spin" style={{ color: "dodgerblue" }} />
+          <Loader2 className="animate-spin" style={{ color: "mediumslateblue" }} />
         ) : props.refreshCompleted ? (
           <motion.div
             initial={{ opacity: 0 }}
@@ -30,7 +30,7 @@ export default function RefreshButton(props: Props) {
             style={{ border: "", display: "flex" }}
           >
             <Check
-              color="dodgerblue"
+              color="mediumslateblue"
               className="transitions"
               width={"1.25rem"}
               height={"1.25rem"}
@@ -43,7 +43,7 @@ export default function RefreshButton(props: Props) {
             exit={{ opacity: 0 }}
             style={{ border: "", display: "flex" }}
           >
-            <RefreshCcw width={"1rem"} height={"1rem"} color="dodgerblue" />
+            <RefreshCcw width={"1rem"} height={"1rem"} color="mediumslateblue" />
           </motion.div>
         )}
       </button>

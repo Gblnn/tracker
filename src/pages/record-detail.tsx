@@ -1,3 +1,4 @@
+import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import CivilID from "@/components/civil-id";
 import Directive from "@/components/directive";
@@ -165,7 +166,7 @@ const EditRecordFormContent: React.FC<EditRecordFormContentProps> = ({
             </label>
             <input
               type="text"
-              value={editedDisplayName !== undefined ? editedDisplayName : record?.["user name"] || ""}
+              value={editedDisplayName !== undefined ? editedDisplayName : (record?.display_name || record?.name || "")}
               onChange={(e) => setEditedDisplayName(e.target.value)}
               placeholder="Enter Display Name"
               style={{
@@ -430,6 +431,7 @@ export default function RecordDetail() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { userData } = useAuth();
   const [record, setRecord] = useState<any>(location.state?.record || null);
   const [loading, setLoading] = useState(!record);
   const [refreshing, setRefreshing] = useState(false);
@@ -665,7 +667,7 @@ export default function RecordDetail() {
     try {
       await updateDoc(doc(db, "records", id), {
         name: editedName !== undefined ? editedName : (record.name || ""),
-        "user name": editedDisplayName !== undefined ? editedDisplayName : (record["user name"] || ""),
+        display_name: editedDisplayName !== undefined ? editedDisplayName : (record.display_name || ""),
         email: editedEmail !== undefined ? editedEmail : (record.email || ""),
         employeeCode: editedEmployeeCode !== undefined ? editedEmployeeCode : (record.employeeCode || ""),
         cug: editedCug !== undefined ? editedCug : (record.cug || ""),
@@ -683,7 +685,7 @@ export default function RecordDetail() {
       setRecord({
         ...record,
         name: editedName !== undefined ? editedName : (record.name || ""),
-        "user name": editedDisplayName !== undefined ? editedDisplayName : (record["user name"] || ""),
+        display_name: editedDisplayName !== undefined ? editedDisplayName : (record.display_name || ""),
         email: editedEmail !== undefined ? editedEmail : (record.email || ""),
         employeeCode: editedEmployeeCode !== undefined ? editedEmployeeCode : (record.employeeCode || ""),
         cug: editedCug !== undefined ? editedCug : (record.cug || ""),
@@ -719,7 +721,7 @@ export default function RecordDetail() {
           extra={
             <>
             <div style={{display:"flex", gap:"0.5rem"}}>
-                {record?.state === "active" && (
+                {(userData?.editor === "true" || userData?.editor === true) && (
                   <Tooltip title={notify ? "Notifications enabled" : "Notifications disabled"}>
                     <button
                 
@@ -747,13 +749,15 @@ export default function RecordDetail() {
                 refreshCompleted={refreshCompleted}
                 fetchingData={refreshing}
               />
-              <DropDown
-                trigger={<EllipsisVertical width="1.1rem" />}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onExtra={handleArchive}
-                extraText={record?.state === "active" ? "Archive" : "Unarchive"}
-              />
+              {(userData?.editor === "true" || userData?.editor === true) && (
+                <DropDown
+                  trigger={<EllipsisVertical width="1.1rem" />}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onExtra={handleArchive}
+                  extraText={record?.state === "active" ? "Archive" : "Unarchive"}
+                />
+              )}
             </div>
               
             </>
@@ -795,7 +799,7 @@ export default function RecordDetail() {
                     <div style={{background:"rgba(100 100 100/ 0.1)", padding:"0.5rem 1rem", display:"flex", fontSize:"0.8rem", borderRadius:"0.5rem", gap:"0.5rem", flex:"1", minWidth:"fit-content"}}>
                         <b>Joined</b> {record?.dateofJoin || "N/A"}
                     </div>
-                    <div style={{background:"rgba(100 100 100/ 0.1)", padding:"0.5rem 1rem", display:"flex", fontSize:"0.8rem", borderRadius:"0.5rem", gap:"0.5rem", flex:"1", minWidth:"fit-content"}}>
+                    <div style={{background:"rgba(100 100 100/ 0.1)", padding:"0.5rem 1rem", display:"flex", fontSize:"0.8rem", borderRadius:"0.5rem", gap:"0.5rem", flex:"1", minWidth:"fit-content", textAlign:"left"}}>
                         <b>Company</b> {record?.companyName || "N/A"}
                     </div>
                 </div>

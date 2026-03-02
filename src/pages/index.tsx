@@ -1,6 +1,7 @@
 import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import BackgroundProcessDropdown from "@/components/background-process-dropdown";
+import BottomNav from "@/components/bottom-nav";
 import GridTile from "@/components/grid-tile";
 import IndexDropDown from "@/components/index-dropdown";
 import InputDialog from "@/components/input-dialog";
@@ -17,6 +18,7 @@ import {
   Book,
   Bug,
   Car,
+  ClipboardList,
   FileArchive,
   FileText,
   Fuel,
@@ -171,7 +173,6 @@ export default function Index() {
     const hasRecordsMaster = hasModuleAccess('records_master') && (!userData || userData.role !== 'user');
     const hasUsers = admin && (!userData || userData.role !== 'user');
     const hasNewHire = hasModuleAccess('new_hire');
-    const hasPhonebook = hasModuleAccess('phonebook');
     const hasQuickLinks = hasModuleAccess('quick_links');
     const hasQRGenerator = hasModuleAccess('qr_generator');
     const hasFuelLog = hasModuleAccess('fuel_log') && hasAllocatedVehicle;
@@ -180,7 +181,7 @@ export default function Index() {
     const hasPettyCash = hasModuleAccess('petty_cash');
     const hasOfferLetters = hasModuleAccess('offer_letters');
 
-    return hasRecordsMaster || hasUsers || hasNewHire || hasPhonebook || hasQuickLinks || 
+    return hasRecordsMaster || hasUsers || hasNewHire || hasQuickLinks || 
            hasQRGenerator || hasFuelLog || hasVehicleMaster || hasVehicleLogBook || 
            hasPettyCash || hasOfferLetters;
   };
@@ -206,6 +207,7 @@ export default function Index() {
 
   return (
     <>
+    
       {/* <div style={{border:"", display:"flex", alignItems:"center", justifyContent:'center'}}>
         <ConfettiExplosion/>
         </div> */}
@@ -294,7 +296,7 @@ export default function Index() {
           height: "100svh",
         }}
       >
-        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
+        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} style={{paddingBottom:"8rem"}}>
           <br/>
           <br/>
           <br />
@@ -341,14 +343,6 @@ export default function Index() {
                   title="New Hire"
                   icon={<UserCheck width={"2rem"}  />}
                   onClick={() => authenticateModule('new_hire', '/new-hire', 'New Hire')}
-                />
-              )}
-
-              {hasModuleAccess('phonebook') && (
-                <GridTile
-                  title="Phonebook"
-                  icon={<Notebook width={"2rem"}  />}
-                  onClick={() => authenticateModule('phonebook', '/phonebook', 'Phonebook')}
                 />
               )}
 
@@ -537,6 +531,8 @@ export default function Index() {
         />
       </div>
       {/* <ReleaseNote /> */}
+
+      <BottomNav />
     </>
   );
 }

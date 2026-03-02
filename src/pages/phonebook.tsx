@@ -1,4 +1,5 @@
 import Back from "@/components/back";
+import BottomNav from "@/components/bottom-nav";
 import Directive from "@/components/directive";
 import RefreshButton from "@/components/refresh-button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -20,12 +21,15 @@ export default function Phonebook() {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
 
-    const filteredRecords = records.filter(record => 
-        record.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        record.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        // record.contact?.includes(searchQuery) ||
-        record.designation?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredRecords = records.filter(record => {
+        const displayName = record.display_name || record.name;
+        return displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            record.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            record.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (record.contact && String(record.contact).includes(searchQuery)) ||
+            (record.cug && String(record.cug).includes(searchQuery)) ||
+            record.designation?.toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
     const fetchData = async () => {
         try {
@@ -81,7 +85,7 @@ export default function Phonebook() {
             <RefreshButton onClick={fetchData} fetchingData={loading}/>
             </>
         }
-           icon={<Notebook color="dodgerblue"/>} title={"Phonebook"}/>
+           icon={<Notebook color="mediumslateblue"/>} title={"Phonebook"}/>
         </div>
         
         <div style={{
@@ -121,15 +125,16 @@ export default function Phonebook() {
             paddingTop:"10rem",
             paddingLeft: "1.25rem",
             paddingRight: "1.25rem",
-            paddingBottom: "2rem",
+            paddingBottom: "8rem",
             display: "flex",
             flexDirection: "column",
             gap: "0.75rem",
             zIndex: "",
-            marginBottom: "3rem"
         }}>
 
-            {filteredRecords.map((record) => (
+            {filteredRecords.map((record) => {
+                const displayName = record.display_name || record.name;
+                return (
                 <Directive
                 subtext={record.designation?.toLowerCase()}
                     onClick={() => {
@@ -138,16 +143,16 @@ export default function Phonebook() {
                     }}
                     icon={<Avatar  className="h-10 w-10">
                                     <AvatarFallback style={{fontWeight:"600", background:"rgba(100 100 100/ 0.1)", fontSize:"1rem", color:""}} className="text-lg">
-                                      {record.name
-                                        ? getInitials(record.name.split("@")[0])
+                                      {displayName
+                                        ? getInitials(displayName.split("@")[0])
                                         : "?"}
                                     </AvatarFallback>
                                   </Avatar>}
                     key={record.id}
-                    title={record.name.toLowerCase()}
+                    title={displayName.toLowerCase()}
                     
                 />
-            ))}
+            );})}
         </div>
         </motion.div>
 
@@ -168,15 +173,15 @@ export default function Phonebook() {
                     <div style={{display:"flex", justifyContent:"center"}}>
                         <Avatar  className="h-20 w-20">
                                     <AvatarFallback style={{fontWeight:"600", background:"rgba(100 100 100/ 0.1)", fontSize:"2.5rem", }} className="text-lg">
-                                      {selectedRecord?.name
-                                        ? getInitials(selectedRecord.name.split("@")[0])
+                                      {selectedRecord
+                                        ? getInitials((selectedRecord.display_name || selectedRecord.name).split("@")[0])
                                         : "?"}
                                     </AvatarFallback>
                                   </Avatar>
                     </div>
                     <br/>
                     <div style={{display:"flex", justifyContent:"center", alignItems:"center", padding:"1.25rem", paddingTop:"0", flexFlow:"column", gap:""}}>
-                        <h2 style={{fontSize:"1.5rem", textTransform: "capitalize", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%"}}>{selectedRecord?.name.toLowerCase()}</h2>
+                        <h2 style={{fontSize:"1.5rem", textTransform: "capitalize", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%"}}>{(selectedRecord?.display_name || selectedRecord?.name || "").toLowerCase()}</h2>
                         <p style={{fontSize:"0.8rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%", textTransform: "capitalize"}}>{selectedRecord?.designation?.toLowerCase()}</p>
                     </div>
                     
@@ -188,12 +193,12 @@ export default function Phonebook() {
                         width: "100%"
                     }}>
 
-                        <Directive onClick={() => { selectedRecord?.email && (location.href = "mailto:" + selectedRecord?.email); }} icon={<AtSign width={"1.25rem"} color="dodgerblue"/>} notName title={selectedRecord?.email||"No Email"} />
+                        <Directive onClick={() => { selectedRecord?.email && (location.href = "mailto:" + selectedRecord?.email); }} icon={<AtSign width={"1.25rem"} color="mediumslateblue"/>} notName title={selectedRecord?.email||"No Email"} />
                         <div style={{display:"flex", gap:"0.75rem", width: "100%"}}>
-                            <Directive notName onClick={() => { selectedRecord?.contact && (location.href = "tel:" + selectedRecord?.contact); }} title={selectedRecord?.contact||"No Contact"} icon={<PhoneIcon width={"1.25rem"} color="dodgerblue"/>}/>
+                            <Directive notName onClick={() => { selectedRecord?.contact && (location.href = "tel:" + selectedRecord?.contact); }} title={selectedRecord?.contact||"No Contact"} icon={<PhoneIcon width={"1.25rem"} color="mediumslateblue"/>}/>
                             {
                                 selectedRecord?.cug &&
-                                <Directive notName onClick={() => { selectedRecord?.cug && (location.href = "tel:" + selectedRecord?.cug); }} title={selectedRecord?.cug||"No CUG"} icon={<Building2 width={"1.25rem"} color="dodgerblue"/>}/>
+                                <Directive notName onClick={() => { selectedRecord?.cug && (location.href = "tel:" + selectedRecord?.cug); }} title={selectedRecord?.cug||"No CUG"} icon={<Building2 width={"1.25rem"} color="mediumslateblue"/>}/>
                             }
                             
                         </div>
@@ -203,6 +208,7 @@ export default function Phonebook() {
                 </div>
             </DrawerContent>
         </Drawer>
+        <BottomNav />
         </>
     )
 }

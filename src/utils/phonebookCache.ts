@@ -8,6 +8,7 @@ const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 export interface PhonebookRecord {
     id: string;
     name: string;
+    display_name?: string;
     email: string;
     contact?: string;
     cug?: number;
