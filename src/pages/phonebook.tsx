@@ -177,7 +177,7 @@ export default function Phonebook() {
                     <br/>
                     <div style={{display:"flex", justifyContent:"center", alignItems:"center", padding:"1.25rem", paddingTop:"0", flexFlow:"column", gap:""}}>
                         <h2 style={{fontSize:"1.5rem", textTransform: "capitalize", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%"}}>{selectedRecord?.name.toLowerCase()}</h2>
-                        <p style={{fontSize:"0.8rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%", textTransform: "uppercase"}}>{selectedRecord?.designation?.toLowerCase()}</p>
+                        <p style={{fontSize:"0.8rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%", textTransform: "capitalize"}}>{selectedRecord?.designation?.toLowerCase()}</p>
                     </div>
                     
                     <div style={{ 

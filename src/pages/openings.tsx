@@ -173,7 +173,7 @@ export default function Openings() {
                   onClick={() => setAllApplicationsModalOpen(true)}
                 >
                   <FileText width={"0.9rem"} />
-                  Applications
+                  All
                 </button>
                 <RefreshButton
                   onClick={fetchData}

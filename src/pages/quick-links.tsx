@@ -3,8 +3,11 @@ import Back from "@/components/back";
 import Directive from "@/components/directive";
 import RefreshButton from "@/components/refresh-button";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
+import { ResponsiveModal } from "@/components/responsive-modal";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { db } from "@/firebase";
-import { Modal } from "antd";
 import { toast } from "sonner";
 
 import {
@@ -26,9 +29,10 @@ export default function Index() {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [newLink, setNewLink] = useState({ title: "", url: "" });
+  const [newLink, setNewLink] = useState({ title: "", url: "", visibility: "everyone", allowed_users: [] as string[] });
   const [editLink, setEditLink] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
   const { userData } = useAuth();
 
   const LINKS_CACHE_KEY = "quick_links_cache";
@@ -53,8 +57,20 @@ export default function Index() {
     if (!loadedFromCache) setLinks([]);
     // Always fetch in background
     fetchLinks();
+    fetchUsers();
     // eslint-disable-next-line
   }, []);
+
+  // Fetch users for access control
+  const fetchUsers = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "users"));
+      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setUsers(data);
+    } catch (err) {
+      console.error("Failed to fetch users:", err);
+    }
+  };
 
   // Fetch links from Firestore and update cache
   const fetchLinks = async () => {
@@ -82,16 +98,23 @@ export default function Index() {
       toast.error("Please enter both title and link");
       return;
     }
+    if (newLink.visibility === "select" && newLink.allowed_users.length === 0) {
+      toast.error("Please select at least one user");
+      return;
+    }
     setSaving(true);
     try {
       await addDoc(collection(db, "quick-links"), {
         title: newLink.title,
         url: newLink.url,
+        visibility: newLink.visibility,
+        allowed_users: newLink.allowed_users,
+        created_by: userData?.email || "",
         created_at: Timestamp.now(),
       });
       toast.success("Link added");
       setAddModalOpen(false);
-      setNewLink({ title: "", url: "" });
+      setNewLink({ title: "", url: "", visibility: "everyone", allowed_users: [] });
       await fetchLinks();
     } catch (err) {
       toast.error("Failed to add link");
@@ -110,11 +133,17 @@ export default function Index() {
       toast.error("Please enter both title and link");
       return;
     }
+    if (editLink.visibility === "select" && (!editLink.allowed_users || editLink.allowed_users.length === 0)) {
+      toast.error("Please select at least one user");
+      return;
+    }
     setSaving(true);
     try {
       await updateDoc(doc(db, "quick-links", editLink.id), {
         title: editLink.title,
         url: editLink.url,
+        visibility: editLink.visibility,
+        allowed_users: editLink.allowed_users || [],
       });
       toast.success("Link updated");
       setEditModalOpen(false);
@@ -140,6 +169,166 @@ export default function Index() {
       setSaving(false);
     }
   };
+
+  // Shared Add Link Content Component
+  const AddLinkContent = () => (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem", padding: "1.5rem", paddingTop: "0", width: "100%", boxSizing: "border-box" }}>
+      <div>
+        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500 }}>Title</label>
+        <input
+          value={newLink.title}
+          onChange={(e) =>
+            setNewLink((prev) => ({ ...prev, title: e.target.value }))
+          }
+          placeholder="Enter Title"
+          style={{ width: "100%" }}
+        />
+      </div>
+      <div>
+        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500 }}>URL</label>
+        <input
+          value={newLink.url}
+          onChange={(e) =>
+            setNewLink((prev) => ({ ...prev, url: e.target.value }))
+          }
+          placeholder="Enter link URL"
+          style={{ width: "100%" }}
+        />
+      </div>
+      <div>
+        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500 }}>Visibility</label>
+        <Select value={newLink.visibility} onValueChange={(value) => setNewLink((prev) => ({ ...prev, visibility: value }))}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select visibility" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="everyone">Everyone</SelectItem>
+            <SelectItem value="select">Select Users</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {newLink.visibility === "select" && (
+        <div>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500 }}>Select Users</label>
+          <div style={{ maxHeight: "200px", overflowY: "auto", border: "1px solid rgba(100, 100, 100, 0.2)", borderRadius: "0.5rem", padding: "0.5rem" }}>
+            {users.map((user) => (
+              <div key={user.id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem" }}>
+                <Checkbox
+              
+                  checked={newLink.allowed_users.includes(user.email)}
+                  onCheckedChange={(checked) => {
+                    setNewLink((prev) => ({
+                      ...prev,
+                      allowed_users: checked
+                        ? [...prev.allowed_users, user.email]
+                        : prev.allowed_users.filter((e) => e !== user.email)
+                    }));
+                  }}
+                />
+                <label style={{ fontSize: "0.875rem", cursor: "pointer" }}>{user.name || user.email}</label>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <div style={{ display: "flex", gap: "0.5rem", width: "100%", marginTop: "1rem" }}>
+        <Button variant="outline" onClick={() => setAddModalOpen(false)} disabled={saving} style={{ flex: 1 }}>
+          Cancel
+        </Button>
+        <Button onClick={handleAddLink} disabled={saving} style={{ flex: 1 }}>
+          {saving ? "Adding..." : "Add"}
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Shared Edit Link Content Component
+  const EditLinkContent = () => (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem", padding: "1.5rem", paddingTop: "0", width: "100%", boxSizing: "border-box" }}>
+      <div>
+        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500 }}>Title</label>
+        <input
+          value={editLink?.title || ""}
+          onChange={(e) =>
+            setEditLink((prev: any) => ({ ...prev, title: e.target.value }))
+          }
+          placeholder="Enter Title"
+          style={{ width: "100%" }}
+        />
+      </div>
+      <div>
+        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500 }}>URL</label>
+        <input
+          value={editLink?.url || ""}
+          onChange={(e) =>
+            setEditLink((prev: any) => ({ ...prev, url: e.target.value }))
+          }
+          placeholder="Enter link URL"
+          style={{ width: "100%" }}
+        />
+      </div>
+      <div>
+        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500 }}>Visibility</label>
+        <Select value={editLink?.visibility || "everyone"} onValueChange={(value) => setEditLink((prev: any) => ({ ...prev, visibility: value }))}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select visibility" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="everyone">Everyone</SelectItem>
+            <SelectItem value="select">Select Users</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {editLink?.visibility === "select" && (
+        <div>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500 }}>Select Users</label>
+          <div style={{ maxHeight: "200px", overflowY: "auto", border: "1px solid rgba(100, 100, 100, 0.2)", borderRadius: "0.5rem", padding: "0.5rem" }}>
+            {users.map((user) => (
+              <div key={user.id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem" }}>
+                <Checkbox
+                  checked={editLink?.allowed_users?.includes(user.email) || false}
+                  onCheckedChange={(checked) => {
+                    setEditLink((prev: any) => ({
+                      ...prev,
+                      allowed_users: checked
+                        ? [...(prev.allowed_users || []), user.email]
+                        : (prev.allowed_users || []).filter((e: string) => e !== user.email)
+                    }));
+                  }}
+                />
+                <label style={{ fontSize: "0.875rem", cursor: "pointer" }}>{user.name || user.email}</label>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <div style={{ display: "flex", gap: "0.5rem", width: "100%", marginTop: "1rem" }}>
+        <Button variant="outline" onClick={() => setEditModalOpen(false)} disabled={saving} style={{ flex: 1 }}>
+          Cancel
+        </Button>
+        <Button onClick={handleUpdateLink} disabled={saving} style={{ flex: 1 }}>
+          {saving ? "Updating..." : "Update"}
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Shared Delete Confirmation Content Component
+  const DeleteLinkContent = () => (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem", padding: "1.5rem", width: "100%", boxSizing: "border-box" }}>
+      <p style={{ fontSize: "0.875rem", opacity: 0.8 }}>
+        Are you sure you want to delete this link? This action cannot be undone.
+      </p>
+      <div style={{ display: "flex", gap: "0.5rem", width: "100%", marginTop: "1rem" }}>
+        <Button variant="outline" onClick={() => setDeleteId(null)} disabled={saving} style={{ flex: 1 }}>
+          Cancel
+        </Button>
+        <Button variant="destructive" onClick={() => deleteId && handleDeleteLink(deleteId)} disabled={saving} style={{ flex: 1 }}>
+          {saving ? "Deleting..." : "Delete"}
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -224,7 +413,19 @@ export default function Index() {
                 </EmptyHeader>
               </Empty>
             ) : (
-              links.map((link) => (
+              links
+                .filter((link) => {
+                  // Show if visibility is everyone
+                  if (link.visibility === "everyone") return true;
+                  // Show if user is admin
+                  if (userData?.role === "admin") return true;
+                  // Show if user is creator
+                  if (link.created_by === userData?.email) return true;
+                  // Show if user is in allowed_users
+                  if (link.allowed_users?.includes(userData?.email)) return true;
+                  return false;
+                })
+                .map((link) => (
                 <Directive
                   key={link.id}
                   title={link.title}
@@ -236,7 +437,7 @@ export default function Index() {
                       style={{ width: "1.25rem" }}
                     />
                   }
-                  extra={userData?.role == "admin" ? true : false}
+                  extra={link.created_by === userData?.email || userData?.role === "admin" ? true : false}
                   extraOnEdit={(e: any) => {
                     if (e) e.stopPropagation();
                     handleEditLink(link);
@@ -268,87 +469,32 @@ export default function Index() {
         </motion.div>
       </div>
 
-      <Modal
-        title="Add New Link"
+      <ResponsiveModal
         open={addModalOpen}
-        onCancel={() => setAddModalOpen(false)}
-        onOk={handleAddLink}
-        confirmLoading={saving}
-        okText="Add"
-        cancelText="Cancel"
+        onOpenChange={setAddModalOpen}
+        title="Add New Link"
+        description="Create a new quick link to access frequently used resources."
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div>
-            <label>Title</label>
-            <input
-              value={newLink.title}
-              onChange={(e) =>
-                setNewLink((prev) => ({ ...prev, title: e.target.value }))
-              }
-              placeholder="Enter Title"
-            />
-          </div>
-          <div>
-            <label>URL</label>
-            <input
-              value={newLink.url}
-              onChange={(e) =>
-                setNewLink((prev) => ({ ...prev, url: e.target.value }))
-              }
-              placeholder="Enter link URL"
-            />
-          </div>
-        </div>
-      </Modal>
+        <AddLinkContent />
+      </ResponsiveModal>
 
-      <Modal
-        title="Edit Link"
+      <ResponsiveModal
         open={editModalOpen}
-        onCancel={() => setEditModalOpen(false)}
-        onOk={handleUpdateLink}
-        confirmLoading={saving}
-        okText="Update"
-        cancelText="Cancel"
+        onOpenChange={setEditModalOpen}
+        title="Edit Link"
+        description="Update the details of your quick link."
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div>
-            <label>Title</label>
-            <input
-              value={editLink?.title || ""}
-              onChange={(e) =>
-                setEditLink((prev: any) => ({ ...prev, title: e.target.value }))
-              }
-              placeholder="Enter Title"
-            />
-          </div>
-          <div>
-            <label>URL</label>
-            <input
-              value={editLink?.url || ""}
-              onChange={(e) =>
-                setEditLink((prev: any) => ({ ...prev, url: e.target.value }))
-              }
-              placeholder="Enter link URL"
-            />
-          </div>
-        </div>
-      </Modal>
+        <EditLinkContent />
+      </ResponsiveModal>
 
-      <Modal
-        title="Delete Link"
+      <ResponsiveModal
         open={!!deleteId}
-        onCancel={() => setDeleteId(null)}
-        onOk={() => deleteId && handleDeleteLink(deleteId)}
-        confirmLoading={saving}
-        okText="Delete"
-        cancelText="Cancel"
-        okButtonProps={{ danger: true }}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="Delete Link"
+        description="Are you sure you want to delete this link? This action cannot be undone."
       >
-        <p>
-          Are you sure you want to delete this link? This action cannot be
-          undone.
-        </p>
-      </Modal>
+        <DeleteLinkContent />
+      </ResponsiveModal>
 
       {/* <ReleaseNote /> */}
     </>

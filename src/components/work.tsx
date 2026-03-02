@@ -96,6 +96,7 @@ export default function Work(props: Props) {
           flexFlow: "column",
           flex: 1,
           background: "linear-gradient(120deg, #002244, midnightblue)",
+          color:"white",
           padding: "",
           borderBottom: "1px solid rgba(255,255,255,0.1)",
         }}

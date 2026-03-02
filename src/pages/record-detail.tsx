@@ -9,8 +9,7 @@ import Passport from "@/components/passport";
 import RefreshButton from "@/components/refresh-button";
 import RoleSelect from "@/components/role-select";
 import DefaultDialog from "@/components/ui/default-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
+import { ResponsiveModal } from "@/components/responsive-modal";
 import { db, storage } from "@/firebase";
 import { Tooltip } from "antd";
 import { deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
@@ -41,6 +40,7 @@ import { toast } from "sonner";
 interface EditRecordFormContentProps {
   record: any;
   editedName: string | undefined;
+  editedDisplayName: string | undefined;
   editedEmail: string | undefined;
   editedEmployeeCode: string | undefined;
   editedCompanyName: string | undefined;
@@ -52,6 +52,7 @@ interface EditRecordFormContentProps {
   editedProject: string | undefined;
   editedSystemRole: string | undefined;
   setEditedName: (value: string) => void;
+  setEditedDisplayName: (value: string) => void;
   setEditedEmail: (value: string) => void;
   setEditedEmployeeCode: (value: string) => void;
   setEditedCompanyName: (value: string) => void;
@@ -70,6 +71,7 @@ interface EditRecordFormContentProps {
 const EditRecordFormContent: React.FC<EditRecordFormContentProps> = ({
   record,
   editedName,
+  editedDisplayName,
   editedEmail,
   editedEmployeeCode,
   editedCompanyName,
@@ -81,6 +83,7 @@ const EditRecordFormContent: React.FC<EditRecordFormContentProps> = ({
   editedProject,
   editedSystemRole,
   setEditedName,
+  setEditedDisplayName,
   setEditedEmail,
   setEditedEmployeeCode,
   setEditedCompanyName,
@@ -144,6 +147,27 @@ const EditRecordFormContent: React.FC<EditRecordFormContentProps> = ({
               value={editedName !== undefined ? editedName : record?.name || ""}
               onChange={(e) => setEditedName(e.target.value)}
               placeholder="Enter Full Name"
+              style={{
+                width: "100%",
+                padding: "0.875rem 1rem",
+                borderRadius: "0.75rem",
+                fontSize: "1rem",
+                fontWeight: "500",
+                background: "rgba(100, 100, 100, 0.08)",
+              }}
+            />
+          </div>
+
+          {/* Display Name */}
+          <div>
+            <label style={{ fontSize: "0.875rem", fontWeight: "600", opacity: 0.9, marginBottom: "0.5rem", display: "block" }}>
+              Display Name
+            </label>
+            <input
+              type="text"
+              value={editedDisplayName !== undefined ? editedDisplayName : record?.["user name"] || ""}
+              onChange={(e) => setEditedDisplayName(e.target.value)}
+              placeholder="Enter Display Name"
               style={{
                 width: "100%",
                 padding: "0.875rem 1rem",
@@ -281,16 +305,16 @@ const EditRecordFormContent: React.FC<EditRecordFormContentProps> = ({
             />
           </div>
 
-          {/* Site */}
+          {/* Location */}
           <div>
             <label style={{ fontSize: "0.875rem", fontWeight: "600", opacity: 0.9, marginBottom: "0.5rem", display: "block" }}>
-              Site
+              Location
             </label>
             <input
               type="text"
-              value={editedSite !== undefined ? editedSite : record?.site || ""}
+              value={editedSite !== undefined ? editedSite : record?.location || ""}
               onChange={(e) => setEditedSite(e.target.value)}
-              placeholder="Enter Site"
+              placeholder="Enter Location"
               style={{
                 width: "100%",
                 padding: "0.875rem 1rem",
@@ -419,6 +443,7 @@ export default function RecordDetail() {
   
   // Edited values for edit dialog
   const [editedName, setEditedName] = useState<string | undefined>();
+  const [editedDisplayName, setEditedDisplayName] = useState<string | undefined>();
   const [editedEmail, setEditedEmail] = useState<string | undefined>();
   const [editedEmployeeCode, setEditedEmployeeCode] = useState<string | undefined>();
   const [editedCompanyName, setEditedCompanyName] = useState<string | undefined>();
@@ -429,7 +454,6 @@ export default function RecordDetail() {
   const [editedSite, setEditedSite] = useState<string | undefined>();
   const [editedProject, setEditedProject] = useState<string | undefined>();
   const [editedSystemRole, setEditedSystemRole] = useState<string | undefined>();
-  const [isMobile, setIsMobile] = useState(false);
   
   // Document states
   const [civil, setCivil] = useState(false);
@@ -536,17 +560,6 @@ export default function RecordDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
   if (loading) {
     return (
       <div style={{ 
@@ -588,6 +601,7 @@ export default function RecordDetail() {
 
   const resetEditedStates = () => {
     setEditedName(undefined);
+    setEditedDisplayName(undefined);
     setEditedEmail(undefined);
     setEditedEmployeeCode(undefined);
     setEditedCompanyName(undefined);
@@ -651,12 +665,13 @@ export default function RecordDetail() {
     try {
       await updateDoc(doc(db, "records", id), {
         name: editedName !== undefined ? editedName : (record.name || ""),
+        "user name": editedDisplayName !== undefined ? editedDisplayName : (record["user name"] || ""),
         email: editedEmail !== undefined ? editedEmail : (record.email || ""),
         employeeCode: editedEmployeeCode !== undefined ? editedEmployeeCode : (record.employeeCode || ""),
         cug: editedCug !== undefined ? editedCug : (record.cug || ""),
         role: editedSystemRole !== undefined ? editedSystemRole : (record.role || "profile"),
         designation: editedDesignation !== undefined ? editedDesignation : (record.designation || ""),
-        site: editedSite !== undefined ? editedSite : (record.site || ""),
+        location: editedSite !== undefined ? editedSite : (record.location || ""),
         project: editedProject !== undefined ? editedProject : (record.project || ""),
         companyName: editedCompanyName !== undefined ? editedCompanyName : (record.companyName || ""),
         dateofJoin: editedDateofJoin !== undefined ? editedDateofJoin : (record.dateofJoin || ""),
@@ -668,12 +683,13 @@ export default function RecordDetail() {
       setRecord({
         ...record,
         name: editedName !== undefined ? editedName : (record.name || ""),
+        "user name": editedDisplayName !== undefined ? editedDisplayName : (record["user name"] || ""),
         email: editedEmail !== undefined ? editedEmail : (record.email || ""),
         employeeCode: editedEmployeeCode !== undefined ? editedEmployeeCode : (record.employeeCode || ""),
         cug: editedCug !== undefined ? editedCug : (record.cug || ""),
         role: editedSystemRole !== undefined ? editedSystemRole : (record.role || "profile"),
         designation: editedDesignation !== undefined ? editedDesignation : (record.designation || ""),
-        site: editedSite !== undefined ? editedSite : (record.site || ""),
+        location: editedSite !== undefined ? editedSite : (record.location || ""),
         project: editedProject !== undefined ? editedProject : (record.project || ""),
         companyName: editedCompanyName !== undefined ? editedCompanyName : (record.companyName || ""),
         dateofJoin: editedDateofJoin !== undefined ? editedDateofJoin : (record.dateofJoin || ""),
@@ -816,13 +832,21 @@ export default function RecordDetail() {
                         <p style={{fontWeight:"600"}}>{record?.designation || "N/A"}</p>
                     </div>
                     <div style={{background:"rgba(100 100 100/ 0.1)", padding:"1rem", flex:"1", minWidth:"250px", borderRadius:"0.5rem", display:"flex", flexDirection:"column", gap:"0.25rem"}}>
-                        <p style={{opacity:0.6, fontSize:"0.85rem"}}>Site</p>
-                        <p style={{fontWeight:"600"}}>{record?.site || "N/A"}</p>
+                        <p style={{opacity:0.6, fontSize:"0.85rem"}}>Location</p>
+                        <p style={{fontWeight:"600"}}>{record?.location || "N/A"}</p>
                     </div>
                     <div style={{background:"rgba(100 100 100/ 0.1)", padding:"1rem", flex:"1", minWidth:"250px", borderRadius:"0.5rem", display:"flex", flexDirection:"column", gap:"0.25rem"}}>
                         <p style={{opacity:0.6, fontSize:"0.85rem"}}>Project</p>
                         <p style={{fontWeight:"600"}}>{record?.project || "N/A"}</p>
                     </div>
+                    {
+                      record?.allocated_vehicle&&
+                      <div style={{background:"rgba(100 100 100/ 0.1)", padding:"1rem", flex:"1", minWidth:"250px", borderRadius:"0.5rem", display:"flex", flexDirection:"column", gap:"0.25rem"}}>
+                        <p style={{opacity:0.6, fontSize:"0.85rem"}}>Allocated Vehicle</p>
+                        <p style={{fontWeight:"600"}}>{record?.allocated_vehicle || "N/A"}</p>
+                    </div>
+                    }
+                    
                 </div>
                 
                 {/* Remarks Section */}
@@ -944,98 +968,50 @@ export default function RecordDetail() {
       }
     />
 
-    {/* Edit Dialog/Drawer - Responsive */}
-    {editPrompt && (isMobile ? (
-      <Drawer 
-        key="edit-drawer"
-        open={true} 
+    {/* Edit Dialog/Drawer - Responsive Modal */}
+    {editPrompt && (
+      <ResponsiveModal
+        open={true}
         onOpenChange={(open) => {
           if (!open) {
             resetEditedStates();
             setEditPrompt(false);
           }
         }}
+        title=""
+        description=""
       >
-        <DrawerTitle></DrawerTitle>
-        <DrawerDescription></DrawerDescription>
-        <DrawerContent 
-          className="pb-safe" 
-          style={{ width: "100%", maxHeight: "85vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-        >
-          <EditRecordFormContent
-            record={record}
-            editedName={editedName}
-            editedEmail={editedEmail}
-            editedEmployeeCode={editedEmployeeCode}
-            editedCompanyName={editedCompanyName}
-            editedDateofJoin={editedDateofJoin}
-            editedContact={editedContact}
-            editedCug={editedCug}
-            editedDesignation={editedDesignation}
-            editedSite={editedSite}
-            editedProject={editedProject}
-            editedSystemRole={editedSystemRole}
-            setEditedName={setEditedName}
-            setEditedEmail={setEditedEmail}
-            setEditedEmployeeCode={setEditedEmployeeCode}
-            setEditedCompanyName={setEditedCompanyName}
-            setEditedDateofJoin={setEditedDateofJoin}
-            setEditedContact={setEditedContact}
-            setEditedCug={setEditedCug}
-            setEditedDesignation={setEditedDesignation}
-            setEditedSite={setEditedSite}
-            setEditedProject={setEditedProject}
-            setEditedSystemRole={setEditedSystemRole}
-            loading={loading}
-            handleSubmit={editRecord}
-          />
-        </DrawerContent>
-      </Drawer>
-    ) : (
-      <Dialog 
-        open={true} 
-        onOpenChange={(open) => {
-          if (!open) {
-            resetEditedStates();
-            setEditPrompt(false);
-          }
-        }}
-      >
-        <DialogContent 
-          style={{ maxWidth: "600px", display: "flex", flexDirection: "column", maxHeight: "90vh", padding: 0 }}
-        >
-          <DialogTitle></DialogTitle>
-          <DialogDescription></DialogDescription>
-          <EditRecordFormContent
-            record={record}
-            editedName={editedName}
-            editedEmail={editedEmail}
-            editedEmployeeCode={editedEmployeeCode}
-            editedCompanyName={editedCompanyName}
-            editedDateofJoin={editedDateofJoin}
-            editedContact={editedContact}
-            editedCug={editedCug}
-            editedDesignation={editedDesignation}
-            editedSite={editedSite}
-            editedProject={editedProject}
-            editedSystemRole={editedSystemRole}
-            setEditedName={setEditedName}
-            setEditedEmail={setEditedEmail}
-            setEditedEmployeeCode={setEditedEmployeeCode}
-            setEditedCompanyName={setEditedCompanyName}
-            setEditedDateofJoin={setEditedDateofJoin}
-            setEditedContact={setEditedContact}
-            setEditedCug={setEditedCug}
-            setEditedDesignation={setEditedDesignation}
-            setEditedSite={setEditedSite}
-            setEditedProject={setEditedProject}
-            setEditedSystemRole={setEditedSystemRole}
-            loading={loading}
-            handleSubmit={editRecord}
-          />
-        </DialogContent>
-      </Dialog>
-    ))}
+        <EditRecordFormContent
+          record={record}
+          editedName={editedName}
+          editedDisplayName={editedDisplayName}
+          editedEmail={editedEmail}
+          editedEmployeeCode={editedEmployeeCode}
+          editedCompanyName={editedCompanyName}
+          editedDateofJoin={editedDateofJoin}
+          editedContact={editedContact}
+          editedCug={editedCug}
+          editedDesignation={editedDesignation}
+          editedSite={editedSite}
+          editedProject={editedProject}
+          editedSystemRole={editedSystemRole}
+          setEditedName={setEditedName}
+          setEditedDisplayName={setEditedDisplayName}
+          setEditedEmail={setEditedEmail}
+          setEditedEmployeeCode={setEditedEmployeeCode}
+          setEditedCompanyName={setEditedCompanyName}
+          setEditedDateofJoin={setEditedDateofJoin}
+          setEditedContact={setEditedContact}
+          setEditedCug={setEditedCug}
+          setEditedDesignation={setEditedDesignation}
+          setEditedSite={setEditedSite}
+          setEditedProject={setEditedProject}
+          setEditedSystemRole={setEditedSystemRole}
+          loading={loading}
+          handleSubmit={editRecord}
+        />
+      </ResponsiveModal>
+    )}
     
     {/* Remarks Dialog */}
     <InputDialog

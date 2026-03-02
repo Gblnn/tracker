@@ -82,7 +82,7 @@ export default function RequestAccess() {
       await addDoc(usersRef, {
         email: email,
         clearance:"None",
-        name: name,
+        "user name": name,
         created_at: new Date(),
         role: "user",  // Default system role for new users
         designation: ""  // job title will be set later
@@ -177,7 +177,7 @@ export default function RequestAccess() {
                 fontWeight: "600",
               }}
             >
-              Request Access
+              Create Account
             </p>
             <p style={{ fontSize: "0.8rem", opacity: 0.75 }}>
               Enter your email in the field below.

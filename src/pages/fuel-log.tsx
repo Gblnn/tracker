@@ -6,7 +6,7 @@ import NumberPlate from "@/components/number-plate";
 import RefreshButton from "@/components/refresh-button";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
+import { ResponsiveModal } from "@/components/responsive-modal";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { useBackgroundProcess } from "@/context/BackgroundProcessContext";
 import { db } from "@/firebase";
@@ -939,80 +939,44 @@ export default function FuelLog() {
         
       </motion.div>
 
-      {/* Drawer for Mobile / Dialog for Desktop - Unified Layout */}
-      {isMobile ? (
-        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-          <DrawerTitle></DrawerTitle>
-          <DrawerDescription></DrawerDescription>
-          <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "75vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-            <FuelLogFormContent
-              date={date}
-              vehicleNumber={userProfile?.allocated_vehicle || userData?.allocated_vehicle}
-              odometerReading={odometerReading}
-              setOdometerReading={setOdometerReading}
-              amountSpent={amountSpent}
-              setAmountSpent={setAmountSpent}
-              setShowDatePicker={setShowDatePicker}
-              dateSectionRef={dateSectionRef}
-              editingLog={editingLog}
-              submitting={submitting}
-              userProfile={userProfile}
-              handleSubmit={handleSubmit}
-              isPrivateVehicle={vehicleRegistrationType === "Private"}
-            />
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={drawerOpen} onOpenChange={setDrawerOpen}>
-          <DialogContent style={{ maxWidth: "500px", display: "flex", flexDirection: "column", maxHeight: "90vh", padding: 0 }}>
-            <DialogTitle></DialogTitle>
-            <DialogDescription></DialogDescription>
-            <FuelLogFormContent
-              date={date}
-              vehicleNumber={userProfile?.allocated_vehicle || userData?.allocated_vehicle}
-              odometerReading={odometerReading}
-              setOdometerReading={setOdometerReading}
-              amountSpent={amountSpent}
-              setAmountSpent={setAmountSpent}
-              setShowDatePicker={setShowDatePicker}
-              dateSectionRef={dateSectionRef}
-              editingLog={editingLog}
-              submitting={submitting}
-              userProfile={userProfile}
-              handleSubmit={handleSubmit}
-              isPrivateVehicle={vehicleRegistrationType === "Private"}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Fuel Log Form - Responsive Modal */}
+      <ResponsiveModal
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        title=""
+        description=""
+      >
+        <FuelLogFormContent
+          date={date}
+          vehicleNumber={userProfile?.allocated_vehicle || userData?.allocated_vehicle}
+          odometerReading={odometerReading}
+          setOdometerReading={setOdometerReading}
+          amountSpent={amountSpent}
+          setAmountSpent={setAmountSpent}
+          setShowDatePicker={setShowDatePicker}
+          dateSectionRef={dateSectionRef}
+          editingLog={editingLog}
+          submitting={submitting}
+          userProfile={userProfile}
+          handleSubmit={handleSubmit}
+          isPrivateVehicle={vehicleRegistrationType === "Private"}
+        />
+      </ResponsiveModal>
 
-      {/* Detail View - Drawer for Mobile / Dialog for Desktop - Unified Layout */}
+      {/* Detail View - Responsive Modal */}
       {selectedLog && (
-        isMobile ? (
-          <Drawer open={drawerDetailOpen} onOpenChange={setDrawerDetailOpen}>
-            <DrawerTitle></DrawerTitle>
-            <DrawerDescription></DrawerDescription>
-            <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "70vh", paddingBottom: "4rem" }}>
-              <FuelLogDetailContent
-                selectedLog={selectedLog}
-                handleEdit={handleEdit}
-                handleDelete={showDeleteConfirmation}
-              />
-            </DrawerContent>
-          </Drawer>
-        ) : (
-          <Dialog open={drawerDetailOpen} onOpenChange={setDrawerDetailOpen}>
-            <DialogContent style={{ maxWidth: "500px", padding: 0 }}>
-              <DialogTitle></DialogTitle>
-              <DialogDescription></DialogDescription>
-              <FuelLogDetailContent
-                selectedLog={selectedLog}
-                handleEdit={handleEdit}
-                handleDelete={showDeleteConfirmation}
-              />
-            </DialogContent>
-          </Dialog>
-        )
+        <ResponsiveModal
+          open={drawerDetailOpen}
+          onOpenChange={setDrawerDetailOpen}
+          title=""
+          description=""
+        >
+          <FuelLogDetailContent
+            selectedLog={selectedLog}
+            handleEdit={handleEdit}
+            handleDelete={showDeleteConfirmation}
+          />
+        </ResponsiveModal>
       )}
 
       {/* Date Picker Dialog */}

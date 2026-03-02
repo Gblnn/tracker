@@ -9,8 +9,7 @@ import Passport from "@/components/passport";
 import RoleSelect from "@/components/role-select";
 import SearchBar from "@/components/search-bar";
 import DefaultDialog from "@/components/ui/default-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
+import { ResponsiveModal } from "@/components/responsive-modal";
 import VehicleID from "@/components/vehicle-id";
 import { db, storage } from "@/firebase";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -145,6 +144,8 @@ interface Props {
 interface RecordFormContentProps {
   name: string;
   setName: (value: string) => void;
+  displayName: string;
+  setDisplayName: (value: string) => void;
   email: string;
   setEmail: (value: string) => void;
   employeeCode: string;
@@ -177,6 +178,8 @@ interface RecordFormContentProps {
 const RecordFormContent: React.FC<RecordFormContentProps> = ({
   name,
   setName,
+  displayName,
+  setDisplayName,
   email,
   setEmail,
   employeeCode,
@@ -241,6 +244,13 @@ const RecordFormContent: React.FC<RecordFormContentProps> = ({
             placeholder="Enter Full Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            style={{ width: "100%" }}
+          />
+          
+          <input
+            placeholder="Enter Display Name"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
             style={{ width: "100%" }}
           />
           
@@ -422,7 +432,9 @@ export default function DbComponent(props: Props) {
   const [imageDialog, setImageDialog] = useState(false);
 
   const [contact, setContact] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [editedContact, setEditedContact] = useState<string | undefined>(undefined);
+  const [editedDisplayName, setEditedDisplayName] = useState<string | undefined>(undefined);
   const [nativePhone, setNativePhone] = useState("");
   const [nativeAddress, setNativeAddress] = useState("");
   const [editedNativePhone, setEditedNativePhone] = useState("");
@@ -466,6 +478,7 @@ export default function DbComponent(props: Props) {
   // Reset all edited states
   const resetEditedStates = () => {
     setEditedName(undefined);
+    setEditedDisplayName(undefined);
     setEditedEmail(undefined);
     setEditedCug(undefined);
     setEditedDesignation(undefined);
@@ -656,25 +669,12 @@ export default function DbComponent(props: Props) {
   const [refreshCompleted, setRefreshCompleted] = useState(false);
   const [exportDialog, setExportDialog] = useState(false);
   const [id, setId] = useState("");
-  const [isMobile, setIsMobile] = useState(false);
 
   const [pageSize] = useState(100);
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
 
   // const [isInitialLoad, setIsInitialLoad] = useState(true);
-
-  // Detect mobile/desktop
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   // Set access permissions from cached user data
   useEffect(() => {
@@ -932,7 +932,14 @@ export default function DbComponent(props: Props) {
       setRefreshCompleted(true);
 
       if (loadMore) {
-        setRecords((prevRecords: Record[]) => [...prevRecords, ...fetchedData]);
+        setRecords((prevRecords: Record[]) => {
+          // Deduplicate by id when loading more records
+          const combinedRecords = [...prevRecords, ...fetchedData];
+          const uniqueRecords = combinedRecords.filter((record, index, self) =>
+            index === self.findIndex((r) => r.id === record.id)
+          );
+          return uniqueRecords;
+        });
         // If in selection mode and selectAll is true, add new records to checked array
         if (selectable && selectAll) {
           setChecked((prev: any) => [
@@ -1204,6 +1211,7 @@ export default function DbComponent(props: Props) {
     await uploadFile();
     await addDoc(collection(db, "records"), {
       name: name,
+      "user name": displayName,
       email: email,
       employeeCode: employeeCode,
       companyName: companyName,
@@ -1256,6 +1264,7 @@ export default function DbComponent(props: Props) {
     setModifiedOn(new Date());
     // Clear form fields after adding
     setName("");
+    setDisplayName("");
     setEmail("");
     setEmployeeCode("");
     setCompanyName("");
@@ -1289,6 +1298,7 @@ export default function DbComponent(props: Props) {
 
     await updateDoc(doc(db, "records", doc_id), {
       name: editedName !== undefined ? editedName : name,
+      "user name": editedDisplayName !== undefined ? editedDisplayName : displayName,
       email: editedEmail !== undefined ? editedEmail : email,
       employeeCode: editedEmployeeCode !== undefined ? editedEmployeeCode : employeeCode,
       cug: editedCug !== undefined ? editedCug : cug,
@@ -1318,6 +1328,7 @@ export default function DbComponent(props: Props) {
 
     setUserEditPrompt(false);
     setName(editedName !== undefined ? editedName : name);
+    setDisplayName(editedDisplayName !== undefined ? editedDisplayName : displayName);
     setEmail(editedEmail !== undefined ? editedEmail : email);
     setEmployeeCode(editedEmployeeCode !== undefined ? editedEmployeeCode : employeeCode);
     setCompanyName(editedCompanyName !== undefined ? editedCompanyName : companyName);
@@ -2056,7 +2067,8 @@ export default function DbComponent(props: Props) {
           const parsedData = JSON.parse(jsonString);
           setJsonData(parsedData);
 
-          // Automatically categorize records by checking if ID exists
+          // Note: This only checks against currently loaded records in memory
+          // Actual duplicate check happens during upload against all database records
           const duplicates = parsedData.filter(
             (newRecord: any) =>
               newRecord.id && // Has ID field
@@ -2120,9 +2132,10 @@ export default function DbComponent(props: Props) {
           
           // Show progress during ID checking (10% to 20%)
           const chunkProgress = Math.floor(i / chunkSize) + 1;
+          const idsChecked = Math.min(i + chunkSize, idsToCheck.length);
           const checkProgress = 10 + Math.round((chunkProgress / totalChunks) * 10);
           setProgress(`${checkProgress}%`);
-          setProgressItem(`Checking existing records... (${chunkProgress}/${totalChunks})`);
+          setProgressItem(`Checked ${idsChecked}/${idsToCheck.length} IDs - Found ${existingIds.size} existing`);
         }
       }
 
@@ -2150,7 +2163,7 @@ export default function DbComponent(props: Props) {
             const processingProgress = (processedCount / totalRecords);
             const progressPercent = Math.round(20 + (processingProgress * 70)); // 20% to 90%
             setProgress(`${progressPercent}%`);
-            setProgressItem(`Processing ${processedCount} of ${totalRecords}`);
+            setProgressItem(`Processing ${processedCount}/${totalRecords} (${newCount} new, ${updateCount} updates)`);
             lastUpdate = processedCount;
           }
           
@@ -2213,11 +2226,11 @@ export default function DbComponent(props: Props) {
       }
 
       setProgress("95%");
-      setProgressItem(`Committing ${batches.length} batch(es) to database...`);
+      setProgressItem(`Saving to database... (${newCount} new, ${updateCount} updates)`);
       await Promise.all(batches.map((batch) => batch.commit()));
       
       setProgress("100%");
-      setProgressItem("Import complete!");
+      setProgressItem(`Complete! ${newCount} new records added, ${updateCount} records updated`);
 
       const messages = [];
       if (newCount > 0) messages.push(`${newCount} new`);
@@ -2795,12 +2808,11 @@ export default function DbComponent(props: Props) {
                       // RECORD DATA MAPPING
                       records
                         .filter((post: any) => {
-                          return search == ""
-                            ? {}
-                            : post.name &&
-                                post.name
-                                  .toLowerCase()
-                                  .includes(search.toLowerCase());
+                          if (search == "") return true;
+                          return post.name &&
+                            post.name
+                              .toLowerCase()
+                              .includes(search.toLowerCase());
                         })
                         .map((post: any) => (
                           // <motion.div
@@ -2939,12 +2951,11 @@ export default function DbComponent(props: Props) {
                         <tbody>
                           {records
                             .filter((post: any) => {
-                              return search == ""
-                                ? {}
-                                : post.name &&
-                                    post.name
-                                      .toLowerCase()
-                                      .includes(search.toLowerCase());
+                              if (search == "") return true;
+                              return post.name &&
+                                post.name
+                                  .toLowerCase()
+                                  .includes(search.toLowerCase());
                             })
                             .map((post: any) => (
                               <tr
@@ -3305,7 +3316,7 @@ export default function DbComponent(props: Props) {
                   }}
                 >
                   <p style={{ fontSize: "0.8rem", textAlign: "center", color: "orange" }}>
-                    {duplicateRecords.length} existing record(s) will be updated
+                    At least {duplicateRecords.length} existing record(s) detected (based on loaded data)
                   </p>
                 </div>
               )}
@@ -3990,12 +4001,14 @@ export default function DbComponent(props: Props) {
           onCancel={() => setImageDialog(false)}
         />
 
-        {/* ADD RECORD DIALOG - Drawer for Mobile / Dialog for Desktop */}
-        {isMobile ? (
-          <Drawer open={addDialog} onOpenChange={(open) => {
+        {/* ADD RECORD DIALOG - Responsive Modal */}
+        <ResponsiveModal
+          open={addDialog}
+          onOpenChange={(open) => {
             if (!open) {
               // Clear all form fields when closing
               setName("");
+              setDisplayName("");
               setEmail("");
               setEmployeeCode("");
               setCompanyName("");
@@ -4010,109 +4023,44 @@ export default function DbComponent(props: Props) {
               setSystemRole("");
             }
             setAddDialog(open);
-          }}>
-            <DrawerTitle></DrawerTitle>
-            <DrawerDescription></DrawerDescription>
-            <DrawerContent
-              className="pb-safe"
-              style={{
-                width: "100%",
-                maxHeight: "90vh",
-                paddingBottom: "env(safe-area-inset-bottom, 0px)",
-                padding: 0,
-                margin: 0,
-              }}
-            >
-              <RecordFormContent
-                name={name}
-                setName={setName}
-                email={email}
-                setEmail={setEmail}
-                employeeCode={employeeCode}
-                setEmployeeCode={setEmployeeCode}
-                companyName={companyName}
-                setCompanyName={setCompanyName}
-                dateofJoin={dateofJoin}
-                setDateofJoin={setDateofJoin}
-                salaryBasic={salaryBasic}
-                setSalaryBasic={setSalaryBasic}
-                allowance={allowance}
-                setAllowance={setAllowance}
-                contact={contact}
-                setContact={setContact}
-                cug={cug}
-                setCug={setCug}
-                designation={designation}
-                setDesignation={setDesignation}
-                site={site}
-                setSite={setSite}
-                project={project}
-                setProject={setProject}
-                systemRole={systemRole}
-                setSystemRole={setSystemRole}
-                loading={loading}
-                onSave={addRecord}
-                isEditMode={false}
-              />
-            </DrawerContent>
-          </Drawer>
-        ) : (
-          <Dialog open={addDialog} onOpenChange={(open) => {
-            if (!open) {
-              // Clear all form fields when closing
-              setName("");
-              setEmail("");
-              setEmployeeCode("");
-              setCompanyName("");
-              setDateofJoin("");
-              setSalaryBasic(0);
-              setAllowance(0);
-              setContact("");
-              setCug("");
-              setDesignation("");
-              setSite("");
-              setProject("");
-              setSystemRole("");
-            }
-            setAddDialog(open);
-          }}>
-            <DialogTitle></DialogTitle>
-            <DialogDescription></DialogDescription>
-            <DialogContent style={{ maxWidth: "500px", padding: 0 }}>
-              <RecordFormContent
-                name={name}
-                setName={setName}
-                email={email}
-                setEmail={setEmail}
-                employeeCode={employeeCode}
-                setEmployeeCode={setEmployeeCode}
-                companyName={companyName}
-                setCompanyName={setCompanyName}
-                dateofJoin={dateofJoin}
-                setDateofJoin={setDateofJoin}
-                salaryBasic={salaryBasic}
-                setSalaryBasic={setSalaryBasic}
-                allowance={allowance}
-                setAllowance={setAllowance}
-                contact={contact}
-                setContact={setContact}
-                cug={cug}
-                setCug={setCug}
-                designation={designation}
-                setDesignation={setDesignation}
-                site={site}
-                setSite={setSite}
-                project={project}
-                setProject={setProject}
-                systemRole={systemRole}
-                setSystemRole={setSystemRole}
-                loading={loading}
-                onSave={addRecord}
-                isEditMode={false}
-              />
-            </DialogContent>
-          </Dialog>
-        )}
+          }}
+          title=""
+          description=""
+        >
+          <RecordFormContent
+            name={name}
+            setName={setName}
+            displayName={displayName}
+            setDisplayName={setDisplayName}
+            email={email}
+            setEmail={setEmail}
+            employeeCode={employeeCode}
+            setEmployeeCode={setEmployeeCode}
+            companyName={companyName}
+            setCompanyName={setCompanyName}
+            dateofJoin={dateofJoin}
+            setDateofJoin={setDateofJoin}
+            salaryBasic={salaryBasic}
+            setSalaryBasic={setSalaryBasic}
+            allowance={allowance}
+            setAllowance={setAllowance}
+            contact={contact}
+            setContact={setContact}
+            cug={cug}
+            setCug={setCug}
+            designation={designation}
+            setDesignation={setDesignation}
+            site={site}
+            setSite={setSite}
+            project={project}
+            setProject={setProject}
+            systemRole={systemRole}
+            setSystemRole={setSystemRole}
+            loading={loading}
+            onSave={addRecord}
+            isEditMode={false}
+          />
+        </ResponsiveModal>
 
         {/* EDIT RECORD DIALOG */}
         <InputDialog
@@ -4133,6 +4081,11 @@ export default function DbComponent(props: Props) {
           inputplaceholder="Enter Full Name"
           inputOnChange={(e: any) => setEditedName(e.target.value)}
           input1Value={name}
+          
+          input10Label="Display Name"
+          input10placeholder="Enter Display Name"
+          input10OnChange={(e: any) => setEditedDisplayName(e.target.value)}
+          input10Value={displayName}
           
           input2Label="Email"
           input2placeholder="Enter Email"
@@ -4173,11 +4126,6 @@ export default function DbComponent(props: Props) {
           input9placeholder="Enter CUG Number"
           input9OnChange={(e: any) => setEditedCug(e.target.value)}
           input9Value={cug}
-
-          // input10Label="Designation"
-          // input10placeholder="Enter Designation"
-          // input10OnChange={(e: any) => setEditedDesignation(e.target.value)}
-          // input10Value={role}
 
           input11Label="Site"
           input11placeholder="Enter Site"

@@ -5,8 +5,7 @@ import IOMenu from "@/components/editorMenu";
 import RefreshButton from "@/components/refresh-button";
 import RoleSelect from "@/components/role-select";
 import DefaultDialog from "@/components/ui/default-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
+import { ResponsiveModal } from "@/components/responsive-modal";
 import { db } from "@/firebase";
 import { message } from "antd";
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
@@ -39,7 +38,6 @@ import {
   ShieldPlus,
   User,
   UserCheck,
-  UserPlus,
   Users as UsersIcon,
   Wallet
 } from "lucide-react";
@@ -632,65 +630,31 @@ export default function Users() {
         )}
       </motion.div>
 
-      {/* User Details - Drawer for Mobile / Dialog for Desktop - Unified Layout */}
-      {isMobile ? (
-        <Drawer open={userDialog} onOpenChange={setUserDialog}>
-          <DrawerTitle></DrawerTitle>
-          <DrawerDescription></DrawerDescription>
-          <DrawerContent 
-            className="pb-safe" 
-            style={{ 
-              width: "100%", 
-              maxHeight: "75vh", 
-              paddingBottom: "env(safe-area-inset-bottom, 0px)",
-              padding: 0,
-              margin: 0,
-            }}
-          >
-            <UserDetailsContent
-              display_name={display_name}
-              display_email={display_email}
-              role={role}
-              setRole={setRole}
-              clearance={clearance}
-              setClearance={setClearance}
-              editor={editor}
-              setEditor={setEditor}
-              sensitive_data={sensitive_data}
-              setSensitiveData={setSensitiveData}
-              loading={loading}
-              onUpdate={updateUser}
-              onDelete={() => setDeleteConfirmDialog(true)}
-              isMobile={isMobile}
-              onOpenClearanceDrawer={() => setClearanceDrawerOpen(true)}
-            />
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={userDialog} onOpenChange={setUserDialog}>
-          <DialogContent style={{ maxWidth: "500px", display: "flex", flexDirection: "column", maxHeight: "90vh", padding: 0 }}>
-            <DialogTitle></DialogTitle>
-            <DialogDescription></DialogDescription>
-            <UserDetailsContent
-              display_name={display_name}
-              display_email={display_email}
-              role={role}
-              setRole={setRole}
-              clearance={clearance}
-              setClearance={setClearance}
-              editor={editor}
-              setEditor={setEditor}
-              sensitive_data={sensitive_data}
-              setSensitiveData={setSensitiveData}
-              loading={loading}
-              onUpdate={updateUser}
-              onDelete={() => setDeleteConfirmDialog(true)}
-              isMobile={isMobile}
-              onOpenClearanceDrawer={() => setClearanceDrawerOpen(true)}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* User Details - Responsive Modal */}
+      <ResponsiveModal
+        open={userDialog}
+        onOpenChange={setUserDialog}
+        title=""
+        description=""
+      >
+        <UserDetailsContent
+          display_name={display_name}
+          display_email={display_email}
+          role={role}
+          setRole={setRole}
+          clearance={clearance}
+          setClearance={setClearance}
+          editor={editor}
+          setEditor={setEditor}
+          sensitive_data={sensitive_data}
+          setSensitiveData={setSensitiveData}
+          loading={loading}
+          onUpdate={updateUser}
+          onDelete={() => setDeleteConfirmDialog(true)}
+          isMobile={isMobile}
+          onOpenClearanceDrawer={() => setClearanceDrawerOpen(true)}
+        />
+      </ResponsiveModal>
 
       <DefaultDialog
         destructive
@@ -703,270 +667,140 @@ export default function Users() {
         disabled={loading}
       />
 
-      {/* Clearance Drawer for Editing User */}
-      {isMobile ? (
-        <Drawer open={clearanceDrawerOpen} onOpenChange={setClearanceDrawerOpen}>
-          <DrawerTitle></DrawerTitle>
-          <DrawerDescription></DrawerDescription>
-          <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "80vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-            <div style={{ padding: "1.5rem", width: "100%", boxSizing: "border-box" }}>
-              <ModuleClearanceContent
-                modulePermissions={modulePermissions}
-                onToggleModule={toggleModulePermission}
-                onSave={saveClearance}
-                showIcon={true}
-              />
-            </div>
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={clearanceDrawerOpen} onOpenChange={setClearanceDrawerOpen}>
-          <DialogContent style={{ maxWidth: "500px" }}>
-            <DialogTitle></DialogTitle>
-            <DialogDescription></DialogDescription>
-            <ModuleClearanceContent
-              modulePermissions={modulePermissions}
-              onToggleModule={toggleModulePermission}
-              onSave={saveClearance}
-              showIcon={true}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Clearance Drawer for Editing User - Responsive Modal */}
+      <ResponsiveModal
+        open={clearanceDrawerOpen}
+        onOpenChange={setClearanceDrawerOpen}
+        title=""
+        description=""
+      >
+        <div style={{ padding: "1.5rem", width: "100%", boxSizing: "border-box" }}>
+          <ModuleClearanceContent
+            modulePermissions={modulePermissions}
+            onToggleModule={toggleModulePermission}
+            onSave={saveClearance}
+            showIcon={true}
+          />
+        </div>
+      </ResponsiveModal>
 
-      {/* Create User Dialog */}
-      {isMobile ? (
-        <Drawer open={addUserDialog} onOpenChange={handleAddUserDialogChange}>
-          <DrawerTitle></DrawerTitle>
-          <DrawerDescription></DrawerDescription>
-          <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "80vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-            <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", width: "100%", boxSizing: "border-box" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem", justifyContent:"center", border:"" }}>
-               
-                <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Add User</h2>
-              </div>
-              <input
-                placeholder="Enter Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                style={{
-                  borderRadius: "0.5rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.05)",
-                  border: "1px solid rgba(100, 100, 100, 0.1)",
-                  padding: "0.875rem 1rem",
-                  color: "inherit",
-                  fontSize: "1rem"
-                }}
-              />
-              <input
-                placeholder="Enter Email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="off"
-                style={{
-                  borderRadius: "0.5rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.05)",
-                  border: "1px solid rgba(100, 100, 100, 0.1)",
-                  padding: "0.875rem 1rem",
-                  color: "inherit",
-                  fontSize: "1rem"
-                }}
-              />
-              <input
-                placeholder="Enter Password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
-                style={{
-                  borderRadius: "0.5rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.05)",
-                  border: "1px solid rgba(100, 100, 100, 0.1)",
-                  padding: "0.875rem 1rem",
-                  color: "inherit",
-                  fontSize: "1rem"
-                }}
-              />
-              <input
-                placeholder="Confirm Password"
-                type="password"
-                value={passconfirm}
-                onChange={(e) => setpassconfirm(e.target.value)}
-                autoComplete="new-password"
-                style={{
-                  borderRadius: "0.5rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.05)",
-                  border: "1px solid rgba(100, 100, 100, 0.1)",
-                  padding: "0.875rem 1rem",
-                  color: "inherit",
-                  fontSize: "1rem"
-                }}
-              />
-              <Directive
-                onClick={() => setCreateUserClearanceDrawerOpen(true)}
-                title="Module Clearance"
-                icon={<KeyRound width="1.25rem" color="dodgerblue" />}
-                id_subtitle={`${Object.values(createUserModulePermissions).filter(v => v === true).length} modules enabled`}
-              />
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                whileHover={{ scale: 1.01 }}
-                onClick={createUser}
-                disabled={!name || !email || !passconfirm || password !== passconfirm || loading}
-                style={{
-                  width: "100%",
-                  padding: "1rem",
-                  borderRadius: "1rem",
-                  background: (!name || !email || !passconfirm || password !== passconfirm || loading) ? "rgba(100, 100, 100, 0.3)" : "black",
-                  color: "white",
-                  fontSize: "1.0625rem",
-                  border: "none",
-                  cursor: (!name || !email || !passconfirm || password !== passconfirm || loading) ? "not-allowed" : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.5rem",
-                  marginTop: "0.5rem"
-                }}
-              >
-                {loading ? <Loader2 className="animate-spin" width="1.25rem" /> : <span>Add</span>}
-              </motion.button>
-            </div>
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={addUserDialog} onOpenChange={handleAddUserDialogChange}>
-          <DialogContent style={{ maxWidth: "500px" }}>
-            <DialogTitle></DialogTitle>
-            <DialogDescription></DialogDescription>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
-                <UserPlus width="1.5rem" color="dodgerblue" />
-                <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Add User</h2>
-              </div>
-              <input
-                placeholder="Enter Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                style={{
-                  borderRadius: "0.5rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.05)",
-                  border: "1px solid rgba(100, 100, 100, 0.1)",
-                  padding: "0.875rem 1rem",
-                  color: "inherit",
-                  fontSize: "1rem"
-                }}
-              />
-              <input
-                placeholder="Enter Email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="off"
-                style={{
-                  borderRadius: "0.5rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.05)",
-                  border: "1px solid rgba(100, 100, 100, 0.1)",
-                  padding: "0.875rem 1rem",
-                  color: "inherit",
-                  fontSize: "1rem"
-                }}
-              />
-              <input
-                placeholder="Enter Password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
-                style={{
-                  borderRadius: "0.5rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.05)",
-                  border: "1px solid rgba(100, 100, 100, 0.1)",
-                  padding: "0.875rem 1rem",
-                  color: "inherit",
-                  fontSize: "1rem"
-                }}
-              />
-              <input
-                placeholder="Confirm Password"
-                type="password"
-                value={passconfirm}
-                onChange={(e) => setpassconfirm(e.target.value)}
-                autoComplete="new-password"
-                style={{
-                  borderRadius: "0.5rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.05)",
-                  border: "1px solid rgba(100, 100, 100, 0.1)",
-                  padding: "0.875rem 1rem",
-                  color: "inherit",
-                  fontSize: "1rem"
-                }}
-              />
-              <Directive
-                onClick={() => setCreateUserClearanceDrawerOpen(true)}
-                title="Module Clearance"
-                icon={<KeyRound width="1.25rem" color="dodgerblue" />}
-                id_subtitle={`${Object.values(createUserModulePermissions).filter(v => v === true).length} modules enabled`}
-              />
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                whileHover={{ scale: 1.01 }}
-                onClick={createUser}
-                disabled={!name || !email || !passconfirm || password !== passconfirm || loading}
-                style={{
-                  width: "100%",
-                  padding: "1rem",
-                  borderRadius: "1rem",
-                  background: (!name || !email || !passconfirm || password !== passconfirm || loading) ? "rgba(100, 100, 100, 0.3)" : "black",
-                  color: "white",
-                  fontSize: "1.0625rem",
-                  border: "none",
-                  cursor: (!name || !email || !passconfirm || password !== passconfirm || loading) ? "not-allowed" : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.5rem",
-                  marginTop: "0.5rem"
-                }}
-              >
-                {loading ? <Loader2 className="animate-spin" width="1.25rem" /> : <span>Add</span>}
-              </motion.button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Create User Dialog - Responsive Modal */}
+      <ResponsiveModal
+        open={addUserDialog}
+        onOpenChange={handleAddUserDialogChange}
+        title=""
+        description=""
+      >
+        <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", width: "100%", boxSizing: "border-box" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem", justifyContent:"center" }}>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Add User</h2>
+          </div>
+          <input
+            placeholder="Enter Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={{
+              borderRadius: "0.5rem",
+              backgroundColor: "rgba(100, 100, 100, 0.05)",
+              border: "1px solid rgba(100, 100, 100, 0.1)",
+              padding: "0.875rem 1rem",
+              color: "inherit",
+              fontSize: "1rem"
+            }}
+          />
+          <input
+            placeholder="Enter Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="off"
+            style={{
+              borderRadius: "0.5rem",
+              backgroundColor: "rgba(100, 100, 100, 0.05)",
+              border: "1px solid rgba(100, 100, 100, 0.1)",
+              padding: "0.875rem 1rem",
+              color: "inherit",
+              fontSize: "1rem"
+            }}
+          />
+          <input
+            placeholder="Enter Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+            style={{
+              borderRadius: "0.5rem",
+              backgroundColor: "rgba(100, 100, 100, 0.05)",
+              border: "1px solid rgba(100, 100, 100, 0.1)",
+              padding: "0.875rem 1rem",
+              color: "inherit",
+              fontSize: "1rem"
+            }}
+          />
+          <input
+            placeholder="Confirm Password"
+            type="password"
+            value={passconfirm}
+            onChange={(e) => setpassconfirm(e.target.value)}
+            autoComplete="new-password"
+            style={{
+              borderRadius: "0.5rem",
+              backgroundColor: "rgba(100, 100, 100, 0.05)",
+              border: "1px solid rgba(100, 100, 100, 0.1)",
+              padding: "0.875rem 1rem",
+              color: "inherit",
+              fontSize: "1rem"
+            }}
+          />
+          <Directive
+            onClick={() => setCreateUserClearanceDrawerOpen(true)}
+            title="Module Clearance"
+            icon={<KeyRound width="1.25rem" color="dodgerblue" />}
+            id_subtitle={`${Object.values(createUserModulePermissions).filter(v => v === true).length} modules enabled`}
+          />
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.01 }}
+            onClick={createUser}
+            disabled={!name || !email || !passconfirm || password !== passconfirm || loading}
+            style={{
+              width: "100%",
+              padding: "1rem",
+              borderRadius: "1rem",
+              background: (!name || !email || !passconfirm || password !== passconfirm || loading) ? "rgba(100, 100, 100, 0.3)" : "black",
+              color: "white",
+              fontSize: "1.0625rem",
+              border: "none",
+              cursor: (!name || !email || !passconfirm || password !== passconfirm || loading) ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem",
+              marginTop: "0.5rem"
+            }}
+          >
+            {loading ? <Loader2 className="animate-spin" width="1.25rem" /> : <span>Add</span>}
+          </motion.button>
+        </div>
+      </ResponsiveModal>
 
-      {/* Clearance Drawer for Create User */}
-      {isMobile ? (
-        <Drawer open={createUserClearanceDrawerOpen} onOpenChange={setCreateUserClearanceDrawerOpen}>
-          <DrawerTitle></DrawerTitle>
-          <DrawerDescription></DrawerDescription>
-          <DrawerContent className="pb-safe" style={{ width: "100%", maxHeight: "75vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-            <div style={{ padding: "1.5rem", width: "100%", boxSizing: "border-box" }}>
-              <ModuleClearanceContent
-                modulePermissions={createUserModulePermissions}
-                onToggleModule={toggleCreateUserModulePermission}
-                onSave={() => setCreateUserClearanceDrawerOpen(false)}
-                showIcon={true}
-              />
-            </div>
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={createUserClearanceDrawerOpen} onOpenChange={setCreateUserClearanceDrawerOpen}>
-          <DialogContent style={{ maxWidth: "500px" }}>
-            <DialogTitle></DialogTitle>
-            <DialogDescription></DialogDescription>
-            <ModuleClearanceContent
-              modulePermissions={createUserModulePermissions}
-              onToggleModule={toggleCreateUserModulePermission}
-              onSave={() => setCreateUserClearanceDrawerOpen(false)}
-              showIcon={true}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Clearance Drawer for Create User - Responsive Modal */}
+      <ResponsiveModal
+        open={createUserClearanceDrawerOpen}
+        onOpenChange={setCreateUserClearanceDrawerOpen}
+        title=""
+        description=""
+      >
+        <div style={{ padding: "1.5rem", width: "100%", boxSizing: "border-box" }}>
+          <ModuleClearanceContent
+            modulePermissions={createUserModulePermissions}
+            onToggleModule={toggleCreateUserModulePermission}
+            onSave={() => setCreateUserClearanceDrawerOpen(false)}
+            showIcon={true}
+          />
+        </div>
+      </ResponsiveModal>
 
       {/* Floating Add User Button */}
       <motion.button

@@ -6,8 +6,8 @@ import NumberPlate from "@/components/number-plate";
 import RefreshButton from "@/components/refresh-button";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import DefaultDialog from "@/components/ui/default-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
+import { ResponsiveModal } from "@/components/responsive-modal";
 import { Empty, EmptyContent, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { db } from "@/firebase";
 import { clearVehicleCache, getCachedVehicle } from "@/utils/vehicleCache";
@@ -773,23 +773,10 @@ export default function VehicleMaster() {
   const [vehicleStatsLoading, setVehicleStatsLoading] = useState(false);
 
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [userSelectionDialog, setUserSelectionDialog] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [isEditingUser, setIsEditingUser] = useState(false);
-
-  // Detect mobile/desktop
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   useEffect(() => {
     fetchVehicles();
@@ -1042,6 +1029,16 @@ export default function VehicleMaster() {
             allocated_vehicle: fullVehicleNumber,
           });
         }
+
+        // Also update in records collection
+        const recordQuery = query(collection(db, "records"), where("email", "==", newAllocatedUser));
+        const recordSnapshot = await getDocs(recordQuery);
+        if (!recordSnapshot.empty) {
+          const recordDoc = recordSnapshot.docs[0];
+          await updateDoc(doc(db, "records", recordDoc.id), {
+            allocated_vehicle: fullVehicleNumber,
+          });
+        }
       }
 
       message.success("Vehicle added successfully");
@@ -1099,6 +1096,16 @@ export default function VehicleMaster() {
             allocated_vehicle: "",
           });
         }
+
+        // Also clear in records collection
+        const prevRecordQuery = query(collection(db, "records"), where("email", "==", previousAllocatedUser));
+        const prevRecordSnapshot = await getDocs(prevRecordQuery);
+        if (!prevRecordSnapshot.empty) {
+          const prevRecordDoc = prevRecordSnapshot.docs[0];
+          await updateDoc(doc(db, "records", prevRecordDoc.id), {
+            allocated_vehicle: "",
+          });
+        }
       }
 
       // Update new user's allocation
@@ -1108,6 +1115,16 @@ export default function VehicleMaster() {
         if (!userSnapshot.empty) {
           const userDoc = userSnapshot.docs[0];
           await updateDoc(doc(db, "users", userDoc.id), {
+            allocated_vehicle: fullVehicleNumber,
+          });
+        }
+
+        // Also update in records collection
+        const recordQuery = query(collection(db, "records"), where("email", "==", editAllocatedUser));
+        const recordSnapshot = await getDocs(recordQuery);
+        if (!recordSnapshot.empty) {
+          const recordDoc = recordSnapshot.docs[0];
+          await updateDoc(doc(db, "records", recordDoc.id), {
             allocated_vehicle: fullVehicleNumber,
           });
         }
@@ -1134,6 +1151,7 @@ export default function VehicleMaster() {
       const deletedVehicleNumber = (currentVehicle?.vehicle_number || "").trim();
 
       const userDocIdsToClear = new Set<string>();
+      const recordDocIdsToClear = new Set<string>();
 
       // Clear allocation by allocated user email if vehicle had one
       if (allocatedUser) {
@@ -1141,6 +1159,13 @@ export default function VehicleMaster() {
         const userSnapshot = await getDocs(userQuery);
         userSnapshot.docs.forEach((userDoc) => {
           userDocIdsToClear.add(userDoc.id);
+        });
+
+        // Also check records collection
+        const recordQuery = query(collection(db, "records"), where("email", "==", allocatedUser));
+        const recordSnapshot = await getDocs(recordQuery);
+        recordSnapshot.docs.forEach((recordDoc) => {
+          recordDocIdsToClear.add(recordDoc.id);
         });
       }
 
@@ -1154,12 +1179,32 @@ export default function VehicleMaster() {
         allocatedVehicleSnapshot.docs.forEach((userDoc) => {
           userDocIdsToClear.add(userDoc.id);
         });
+
+        // Also check records collection
+        const allocatedVehicleRecordQuery = query(
+          collection(db, "records"),
+          where("allocated_vehicle", "==", deletedVehicleNumber)
+        );
+        const allocatedVehicleRecordSnapshot = await getDocs(allocatedVehicleRecordQuery);
+        allocatedVehicleRecordSnapshot.docs.forEach((recordDoc) => {
+          recordDocIdsToClear.add(recordDoc.id);
+        });
       }
 
       if (userDocIdsToClear.size > 0) {
         await Promise.all(
           Array.from(userDocIdsToClear).map((userDocId) =>
             updateDoc(doc(db, "users", userDocId), {
+              allocated_vehicle: "",
+            })
+          )
+        );
+      }
+
+      if (recordDocIdsToClear.size > 0) {
+        await Promise.all(
+          Array.from(recordDocIdsToClear).map((recordDocId) =>
+            updateDoc(doc(db, "records", recordDocId), {
               allocated_vehicle: "",
             })
           )
@@ -1356,199 +1401,90 @@ export default function VehicleMaster() {
         )}
       </motion.div>
 
-      {/* Add Vehicle Dialog - Drawer for Mobile / Dialog for Desktop */}
-      {isMobile ? (
-        <Drawer open={addVehicleDialog} onOpenChange={setAddVehicleDialog}>
-          <DrawerTitle></DrawerTitle>
-          <DrawerDescription></DrawerDescription>
-          <DrawerContent
-            className="pb-safe"
-            style={{
-              width: "100%",
-              maxHeight: "75vh",
-              paddingBottom: "env(safe-area-inset-bottom, 0px)",
-              padding: 0,
-              margin: 0,
-            }}
-          >
-            <VehicleDetailsContent
-              vehicle_number={newVehicleNumber}
-              setVehicleNumber={setNewVehicleNumber}
-              vehicle_char={newVehicleChar}
-              setVehicleChar={setNewVehicleChar}
-              make={newMake}
-              setMake={setNewMake}
-              model={newModel}
-              setModel={setNewModel}
-              year={newYear}
-              setYear={setNewYear}
-              type={newType}
-              setType={setNewType}
-              status={newStatus}
-              setStatus={setNewStatus}
-              registration_type={newRegistrationType}
-              setRegistrationType={setNewRegistrationType}
-              allocated_user={newAllocatedUser}
-              allocated_user_name={getUserName(newAllocatedUser)}
-              onOpenUserDialog={() => openUserDialog(false)}
-              loading={loading}
-              onSave={createVehicle}
-              isEditMode={false}
-            />
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={addVehicleDialog} onOpenChange={setAddVehicleDialog}>
-          <DialogTitle></DialogTitle>
-          <DialogDescription></DialogDescription>
-          <DialogContent style={{ maxWidth: "500px", padding: 0 }}>
-            <VehicleDetailsContent
-              vehicle_number={newVehicleNumber}
-              setVehicleNumber={setNewVehicleNumber}
-              vehicle_char={newVehicleChar}
-              setVehicleChar={setNewVehicleChar}
-              make={newMake}
-              setMake={setNewMake}
-              model={newModel}
-              setModel={setNewModel}
-              year={newYear}
-              setYear={setNewYear}
-              type={newType}
-              setType={setNewType}
-              status={newStatus}
-              setStatus={setNewStatus}
-              registration_type={newRegistrationType}
-              setRegistrationType={setNewRegistrationType}
-              allocated_user={newAllocatedUser}
-              allocated_user_name={getUserName(newAllocatedUser)}
-              onOpenUserDialog={() => openUserDialog(false)}
-              loading={loading}
-              onSave={createVehicle}
-              isEditMode={false}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Add Vehicle Dialog - Responsive Modal */}
+      <ResponsiveModal
+        open={addVehicleDialog}
+        onOpenChange={setAddVehicleDialog}
+        title=""
+        description=""
+      >
+        <VehicleDetailsContent
+          vehicle_number={newVehicleNumber}
+          setVehicleNumber={setNewVehicleNumber}
+          vehicle_char={newVehicleChar}
+          setVehicleChar={setNewVehicleChar}
+          make={newMake}
+          setMake={setNewMake}
+          model={newModel}
+          setModel={setNewModel}
+          year={newYear}
+          setYear={setNewYear}
+          type={newType}
+          setType={setNewType}
+          status={newStatus}
+          setStatus={setNewStatus}
+          registration_type={newRegistrationType}
+          setRegistrationType={setNewRegistrationType}
+          allocated_user={newAllocatedUser}
+          allocated_user_name={getUserName(newAllocatedUser)}
+          onOpenUserDialog={() => openUserDialog(false)}
+          loading={loading}
+          onSave={createVehicle}
+          isEditMode={false}
+        />
+      </ResponsiveModal>
 
-      {/* Edit Vehicle Dialog - Drawer for Mobile / Dialog for Desktop */}
-      {isMobile ? (
-        <Drawer open={vehicleDialog} onOpenChange={setVehicleDialog}>
-          <DrawerTitle></DrawerTitle>
-          <DrawerDescription></DrawerDescription>
-          <DrawerContent
-            className="pb-safe"
-            style={{
-              width: "100%",
-              maxHeight: "75vh",
-              paddingBottom: "env(safe-area-inset-bottom, 0px)",
-              padding: 0,
-              margin: 0,
-            }}
-          >
-            <VehicleDetailsContent
-              vehicle_number={editVehicleNumber}
-              setVehicleNumber={setEditVehicleNumber}
-              vehicle_char={editVehicleChar}
-              setVehicleChar={setEditVehicleChar}
-              make={editMake}
-              setMake={setEditMake}
-              model={editModel}
-              setModel={setEditModel}
-              year={editYear}
-              setYear={setEditYear}
-              type={editType}
-              setType={setEditType}
-              status={editStatus}
-              setStatus={setEditStatus}
-              registration_type={editRegistrationType}
-              setRegistrationType={setEditRegistrationType}
-              allocated_user={editAllocatedUser}
-              allocated_user_name={getUserName(editAllocatedUser)}
-              onOpenUserDialog={() => openUserDialog(true)}
-              loading={loading}
-              onSave={updateVehicle}
-              onDelete={() => setDeleteConfirmDialog(true)}
-              isEditMode={true}
-            />
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={vehicleDialog} onOpenChange={setVehicleDialog}>
-          <DialogTitle></DialogTitle>
-          <DialogDescription></DialogDescription>
-          <DialogContent style={{ maxWidth: "500px", padding: 0 }}>
-            <VehicleDetailsContent
-              vehicle_number={editVehicleNumber}
-              setVehicleNumber={setEditVehicleNumber}
-              vehicle_char={editVehicleChar}
-              setVehicleChar={setEditVehicleChar}
-              make={editMake}
-              setMake={setEditMake}
-              model={editModel}
-              setModel={setEditModel}
-              year={editYear}
-              setYear={setEditYear}
-              type={editType}
-              setType={setEditType}
-              status={editStatus}
-              setStatus={setEditStatus}
-              registration_type={editRegistrationType}
-              setRegistrationType={setEditRegistrationType}
-              allocated_user={editAllocatedUser}
-              allocated_user_name={getUserName(editAllocatedUser)}
-              onOpenUserDialog={() => openUserDialog(true)}
-              loading={loading}
-              onSave={updateVehicle}
-              onDelete={() => setDeleteConfirmDialog(true)}
-              isEditMode={true}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Edit Vehicle Dialog - Responsive Modal */}
+      <ResponsiveModal
+        open={vehicleDialog}
+        onOpenChange={setVehicleDialog}
+        title=""
+        description=""
+      >
+        <VehicleDetailsContent
+          vehicle_number={editVehicleNumber}
+          setVehicleNumber={setEditVehicleNumber}
+          vehicle_char={editVehicleChar}
+          setVehicleChar={setEditVehicleChar}
+          make={editMake}
+          setMake={setEditMake}
+          model={editModel}
+          setModel={setEditModel}
+          year={editYear}
+          setYear={setEditYear}
+          type={editType}
+          setType={setEditType}
+          status={editStatus}
+          setStatus={setEditStatus}
+          registration_type={editRegistrationType}
+          setRegistrationType={setEditRegistrationType}
+          allocated_user={editAllocatedUser}
+          allocated_user_name={getUserName(editAllocatedUser)}
+          onOpenUserDialog={() => openUserDialog(true)}
+          loading={loading}
+          onSave={updateVehicle}
+          onDelete={() => setDeleteConfirmDialog(true)}
+          isEditMode={true}
+        />
+      </ResponsiveModal>
 
-      {/* Vehicle Summary Dialog */}
-      {isMobile ? (
-        <Drawer open={vehicleSummaryDialog} onOpenChange={setVehicleSummaryDialog}>
-          <DrawerTitle></DrawerTitle>
-          <DrawerDescription></DrawerDescription>
-          <DrawerContent
-            className="pb-safe"
-            style={{
-              maxHeight: "75vh",
-              paddingBottom: "env(safe-area-inset-bottom, 0px)",
-              padding: 0,
-              margin: 0,
-              width: "100%",
-            }}
-          >
-            {selectedVehicle && (
-              <VehicleSummaryContent
-                vehicle={selectedVehicle}
-                stats={vehicleStats}
-                loading={vehicleStatsLoading}
-                onEdit={openEditVehicleFromSummary}
-                onDelete={openDeleteVehicleFromSummary}
-              />
-            )}
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={vehicleSummaryDialog} onOpenChange={setVehicleSummaryDialog}>
-          <DialogTitle></DialogTitle>
-          <DialogDescription></DialogDescription>
-          <DialogContent style={{ width: "520px", maxWidth: "520px", padding: 0 }}>
-            {selectedVehicle && (
-              <VehicleSummaryContent
-                vehicle={selectedVehicle}
-                stats={vehicleStats}
-                loading={vehicleStatsLoading}
-                onEdit={openEditVehicleFromSummary}
-                onDelete={openDeleteVehicleFromSummary}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Vehicle Summary Dialog - Responsive Modal */}
+      <ResponsiveModal
+        open={vehicleSummaryDialog}
+        onOpenChange={setVehicleSummaryDialog}
+        title=""
+        description=""
+      >
+        {selectedVehicle && (
+          <VehicleSummaryContent
+            vehicle={selectedVehicle}
+            stats={vehicleStats}
+            loading={vehicleStatsLoading}
+            onEdit={openEditVehicleFromSummary}
+            onDelete={openDeleteVehicleFromSummary}
+          />
+        )}
+      </ResponsiveModal>
 
       {/* Delete Confirmation Dialog */}
       <DefaultDialog
