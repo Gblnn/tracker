@@ -97,7 +97,7 @@ import {
   X
 } from "lucide-react";
 import moment from "moment";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "react-lazy-load-image-component/src/effects/blur.css";
 import { useNavigate } from "react-router-dom";
 import ReactTimeAgo from "react-time-ago";
@@ -445,6 +445,8 @@ export default function DbComponent(props: Props) {
   const [expectedReturn, setExpectedReturn] = useState("");
 
   const usenavigate = useNavigate();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
   // BASIC PAGE VARIABLES
   // const [pageLoad, setPageLoad] = useState(false)
   const [notify, setNotify] = useState(true);
@@ -997,6 +999,23 @@ export default function DbComponent(props: Props) {
   };
 
   // Add an intersection observer for infinite scroll
+  useEffect(() => {
+    // Restore scroll position when coming back from record detail
+    // Only restore after records have been loaded
+    if (records.length > 0) {
+      const savedScrollPosition = sessionStorage.getItem('database-scroll-position');
+      if (savedScrollPosition && scrollContainerRef.current) {
+        // Use setTimeout to ensure DOM is fully rendered
+        setTimeout(() => {
+          if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = parseInt(savedScrollPosition);
+            sessionStorage.removeItem('database-scroll-position');
+          }
+        }, 100);
+      }
+    }
+  }, [records.length]);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -2800,6 +2819,7 @@ export default function DbComponent(props: Props) {
                 <p style={{ height: "0.25rem" }} />
 
                 <div
+                  ref={scrollContainerRef}
                   className="record-list"
                   style={{
                     overflowY: "auto",
@@ -2870,6 +2890,10 @@ export default function DbComponent(props: Props) {
                               handleSelect(post.id);
                             }}
                             onClick={() => {
+                              // Save scroll position before navigating
+                              if (scrollContainerRef.current) {
+                                sessionStorage.setItem('database-scroll-position', scrollContainerRef.current.scrollTop.toString());
+                              }
                               usenavigate(`/record/${post.id}`, { state: { record: post } });
                             }}
                             key={post.id}
@@ -2983,6 +3007,10 @@ export default function DbComponent(props: Props) {
                                 }}
                                 onClick={() => {
                                   if (!selectable) {
+                                    // Save scroll position before navigating
+                                    if (scrollContainerRef.current) {
+                                      sessionStorage.setItem('database-scroll-position', scrollContainerRef.current.scrollTop.toString());
+                                    }
                                     usenavigate(`/record/${post.id}`, { state: { record: post } });
                                   }
                                 }}

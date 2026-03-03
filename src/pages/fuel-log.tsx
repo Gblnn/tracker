@@ -30,6 +30,8 @@ interface FuelLogFormContentProps {
   setOdometerReading: (reading: string) => void;
   amountSpent: string;
   setAmountSpent: (amount: string) => void;
+  litres: string;
+  setLitres: (litres: string) => void;
   setShowDatePicker: (show: boolean) => void;
   dateSectionRef: React.RefObject<HTMLDivElement>;
   editingLog: FuelLogType | null;
@@ -46,6 +48,8 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
   setOdometerReading,
   amountSpent,
   setAmountSpent,
+  litres,
+  setLitres,
   setShowDatePicker,
   dateSectionRef,
   editingLog,
@@ -260,6 +264,60 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
                 </span>
               </div>
             </motion.div>
+
+            {/* Litres Input */}
+            <motion.div
+              whileTap={{ scale: 0.99 }}
+              style={{
+                padding: "1rem",
+                borderRadius: "1rem",
+                background: "rgba(100, 100, 100, 0.05)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                <Fuel color="mediumslateblue" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                <label
+                  htmlFor="litres"
+                  style={{
+                    fontSize: "0.875rem",
+                    fontWeight: "600",
+                    opacity: 0.9,
+                  }}
+                >
+                  Litres Filled
+                </label>
+              </div>
+              <div style={{ position: "relative" }}>
+                <input
+                  id="litres"
+                  type="number"
+                  step="0.01"
+                  value={litres}
+                  onChange={(e) => setLitres(e.target.value)}
+                  placeholder="Enter litres"
+                  style={{
+                    width: "100%",
+                    padding: "0.875rem 1rem",
+                    paddingRight: "3.5rem",
+                    borderRadius: "0.75rem",
+                    fontSize: "1.0625rem",
+                    fontWeight: "500",
+                    transition: "all 0.2s",
+                  }}
+                />
+                <span style={{
+                  position: "absolute",
+                  right: "1rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  opacity: 0.7,
+                }}>
+                  L
+                </span>
+              </div>
+            </motion.div>
           </div>
         </motion.div>
       </div>
@@ -437,6 +495,7 @@ export default function FuelLog() {
   const [date, setDate] = useState(moment().format("YYYY-MM-DD"));
   const [odometerReading, setOdometerReading] = useState("");
   const [amountSpent, setAmountSpent] = useState("");
+  const [litres, setLitres] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -672,6 +731,7 @@ export default function FuelLog() {
           date: date,
           odometer_reading: odometerReading ? parseFloat(odometerReading) : 0,
           amount_spent: parseFloat(amountSpent),
+          litres: litres ? parseFloat(litres) : undefined,
           vehicle_number: vehicleNumber,
           updated_at: new Date(),
         };
@@ -684,6 +744,7 @@ export default function FuelLog() {
           date: date,
           odometer_reading: odometerReading ? parseFloat(odometerReading) : 0,
           amount_spent: parseFloat(amountSpent),
+          litres: litres ? parseFloat(litres) : undefined,
           email: userData?.email || "",
           employee_name: userProfile.name || "",
           employee_code: userProfile.employeeCode || "",
@@ -729,6 +790,7 @@ export default function FuelLog() {
       setDate(moment().format("YYYY-MM-DD"));
       setOdometerReading("");
       setAmountSpent("");
+      setLitres("");
       setDrawerOpen(false);
       setEditingLog(null);
     } catch (error) {
@@ -770,6 +832,7 @@ export default function FuelLog() {
     setDate(selectedLog.date);
     setOdometerReading(selectedLog.odometer_reading ? String(selectedLog.odometer_reading) : "");
     setAmountSpent(String(selectedLog.amount_spent));
+    setLitres(selectedLog.litres ? String(selectedLog.litres) : "");
     setEditingLog(selectedLog);
     
     // Close detail drawer and open edit drawer
@@ -965,6 +1028,8 @@ export default function FuelLog() {
           setOdometerReading={setOdometerReading}
           amountSpent={amountSpent}
           setAmountSpent={setAmountSpent}
+          litres={litres}
+          setLitres={setLitres}
           setShowDatePicker={setShowDatePicker}
           dateSectionRef={dateSectionRef}
           editingLog={editingLog}

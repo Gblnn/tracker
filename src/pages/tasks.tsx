@@ -13,10 +13,11 @@ export default function Tasks() {
             <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
                 <div style={{ padding: "", position: "fixed", zIndex: 20 }}>
                     <Back
+                    noback
                         blurBG
                         subtitle={tasks.length}
                         fixed
-                        // icon={<ClipboardList color="mediumslateblue" />}
+                        icon={<ClipboardList color="mediumslateblue" />}
                         title={"Tasks"}
                     />
                 </div>

@@ -7,6 +7,7 @@ export interface PendingFuelLog {
     date: string;
     odometer_reading: number;
     amount_spent: number;
+    litres?: number;
     vehicle_number: string;
     email: string;
     employee_name: string;

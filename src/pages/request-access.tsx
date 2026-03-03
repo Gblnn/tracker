@@ -3,7 +3,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { LoadingOutlined } from "@ant-design/icons";
 import { message } from "antd";
 import { motion } from "framer-motion";
-import { ChevronLeft, LoaderCircle } from "lucide-react";
+import { ChevronLeft, Loader2, LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -218,7 +218,7 @@ export default function RequestAccess() {
                 color: "white"
               }}
             >
-              {loading ? <LoadingOutlined /> : "Request Access"}
+              {loading ? <Loader2 className="animate-spin" /> : "Request Access"}
             </button>
           </div>
         </motion.div>

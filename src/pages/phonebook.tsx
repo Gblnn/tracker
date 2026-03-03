@@ -84,6 +84,7 @@ export default function Phonebook() {
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
         <div style={{padding: "", position:"fixed", zIndex: 20}}>
             <Back
+            noback
             blurBG
             subtitle={records.length}
             fixed

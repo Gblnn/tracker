@@ -11,6 +11,7 @@ export interface FuelLog {
   date: string;
   odometer_reading: number;
   amount_spent: number;
+  litres?: number;
   employee_name: string;
   vehicle_number: string;
   created_at: any;

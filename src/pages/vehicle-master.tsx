@@ -459,6 +459,7 @@ interface VehicleStats {
   totalLogs: number;
   minOdometer?: number;
   maxOdometer?: number;
+  averageMileage?: number;
   lastRefuelDate?: string | null;
   monthlyData: Array<{
     month: string;
@@ -695,6 +696,31 @@ const VehicleSummaryContent: React.FC<VehicleSummaryContentProps> = ({
               </div>
             )}
 
+            {/* Average Mileage */}
+            <div
+              style={{
+                padding: "0.9rem 1rem",
+                borderRadius: "0.9rem",
+                background: stats?.averageMileage 
+                  ? "linear-gradient(135deg, rgba(30, 144, 255, 0.1), rgba(138, 43, 226, 0.1))"
+                  : "rgba(100, 100, 100, 0.05)",
+                fontSize: "0.82rem",
+                marginBottom: "1rem",
+                border: stats?.averageMileage ? "1px solid rgba(138, 43, 226, 0.2)" : "none",
+              }}
+            >
+              <span style={{ opacity: 0.7 }}>Average Mileage:</span>{" "}
+              {stats?.averageMileage ? (
+                <span style={{ fontWeight: 600, color: "mediumslateblue" }}>
+                  {stats.averageMileage} km/L
+                </span>
+              ) : (
+                <span style={{ opacity: 0.6, fontStyle: "italic" }}>
+                  Add litres data to at least 2 fuel logs
+                </span>
+              )}
+            </div>
+
             {/* Maintenance section placeholder */}
             <div
               style={{
@@ -842,6 +868,7 @@ export default function VehicleMaster() {
       date: Date;
       amount: number;
       odometer: number;
+      litres?: number;
     }> = [];
 
     snapshot.forEach((docSnap) => {
@@ -852,6 +879,9 @@ export default function VehicleMaster() {
 
       const rawOdo = data.odometer_reading;
       const odo = typeof rawOdo === "number" ? rawOdo : Number(rawOdo ?? 0);
+
+      const rawLitres = data.litres;
+      const litres = typeof rawLitres === "number" ? rawLitres : (rawLitres ? Number(rawLitres) : undefined);
 
       if (!Number.isNaN(amount)) {
         totalAmountSpent += amount;
@@ -883,6 +913,7 @@ export default function VehicleMaster() {
           date: new Date(createdMs),
           amount: !Number.isNaN(amount) ? amount : 0,
           odometer: !Number.isNaN(odo) && odo > 0 ? odo : 0,
+          litres: litres && !Number.isNaN(litres) ? litres : undefined,
         });
       }
 
@@ -932,11 +963,40 @@ export default function VehicleMaster() {
         odometer: log.odometer,
       }));
 
+    // Calculate average mileage (km per litre)
+    let averageMileage: number | undefined;
+    const sortedLogsWithData = logsData
+      .filter((log) => log.odometer > 0 && log.litres && log.litres > 0)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    if (sortedLogsWithData.length >= 2) {
+      let totalKm = 0;
+      let totalLitres = 0;
+
+      for (let i = 1; i < sortedLogsWithData.length; i++) {
+        const prevLog = sortedLogsWithData[i - 1];
+        const currentLog = sortedLogsWithData[i];
+        
+        const kmDriven = currentLog.odometer - prevLog.odometer;
+        
+        // Only include if km driven is positive and reasonable (less than 10000 km between refills)
+        if (kmDriven > 0 && kmDriven < 10000 && currentLog.litres) {
+          totalKm += kmDriven;
+          totalLitres += currentLog.litres;
+        }
+      }
+
+      if (totalLitres > 0) {
+        averageMileage = parseFloat((totalKm / totalLitres).toFixed(2));
+      }
+    }
+
     return {
       totalAmountSpent,
       totalLogs,
       minOdometer,
       maxOdometer,
+      averageMileage,
       lastRefuelDate: latestDateLabel,
       monthlyData,
       odometerProgression,
