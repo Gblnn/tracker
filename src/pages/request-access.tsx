@@ -2,7 +2,7 @@ import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import { message } from "antd";
 import { motion } from "framer-motion";
-import { ChevronLeft, Loader2, LoaderCircle } from "lucide-react";
+import { ArrowUpRight, ArrowUpRightSquare, ChevronLeft, ChevronRight, Loader2, LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ export default function RequestAccess() {
   const [password, setPassword] = useState("");
   // const [showCreateForm, setShowCreateForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [targetPath, setTargetPath] = useState("/index");
   const navigate = useNavigate();
 
   const checkEmailAndCreateAccount = async () => {
@@ -106,23 +107,24 @@ export default function RequestAccess() {
       localStorage.setItem("userEmail", userData.email);
       
       // Role-based redirection
-      let targetPath = "/index"; // default
+      let path = "/index"; // default
       switch (userData.role) {
         case "profile":
-          targetPath = "/profile";
+          path = "/profile";
           break;
         case "admin":
-          targetPath = "/index";
+          path = "/index";
           break;
         case "user":
-          targetPath = "/index";
+          path = "/index";
           break;
         default:
-          targetPath = "/index";
+          path = "/index";
           break;
       }
       
-      navigate(targetPath, { replace: true });
+      setTargetPath(path);
+      setStage(3);
       setLoading(false);
     } catch (error: any) {
       setLoading(false);
@@ -152,7 +154,7 @@ export default function RequestAccess() {
             margin: "2rem",
           }}
         >
-          <Back title={name&&"Hi, "+name.split(' ')[0]}  />
+          <Back noback={stage==3} title={name&&"Hi, "+name.split(' ')[0]}  />
         </div>
 
           {
@@ -299,6 +301,67 @@ export default function RequestAccess() {
             </button>
           </div>
         </motion.div>
+          }
+
+          {
+            stage==3&&
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1.2, ease: "easeOut" }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  width: "32ch",
+                  height: "",
+                  // border: "1px solid rgba(100 100 100/ 50%)",
+                  borderRadius: "1.75rem",
+                  padding: "2rem 1.45rem",
+                  flexFlow: "column",
+                  gap: "5rem",
+                  alignItems: "center",
+                  textAlign: "center"
+                }}
+              >
+                <div style={{ display: "flex", flexFlow: "column", gap: "1rem" }}>
+                  <p
+                    style={{
+                      fontSize: "3rem",
+                      lineHeight:"3rem",
+                      fontWeight: "700",
+                      background: "linear-gradient(135deg, midnightblue, mediumslateblue)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}
+                  >
+                    Welcome Aboard!
+                  </p>
+                  <p style={{fontSize:"4rem"}}>🎉</p>
+                  
+                  <p style={{ fontSize: "0.9rem", opacity: 0.75, lineHeight: "1.5", color:"darkslateblue", fontWeight:500 }}>
+                    Your account has been created successfully. You're all set to get started.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => navigate(targetPath, { replace: true })}
+                  style={{  
+                    background: "darkslateblue",
+                    height: "2.75rem",
+                    fontSize: "0.95rem",
+                    color: "white",
+                    width: "100%",
+                    fontWeight: "600",
+                    display:"flex",
+                    alignItems:"center",
+                  }}
+                >
+                  Get Started
+                  <ChevronRight width={"1rem"}/>
+                </button>
+              </div>
+            </motion.div>
           }
         
       </div>

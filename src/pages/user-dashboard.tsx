@@ -1,11 +1,12 @@
 import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
+import BackgroundProcessDropdown from "@/components/background-process-dropdown";
 import Directive from "@/components/directive";
 import IndexDropDown from "@/components/index-dropdown";
-import BackgroundProcessDropdown from "@/components/background-process-dropdown";
 import InputDialog from "@/components/input-dialog";
 import LazyLoader from "@/components/lazy-loader";
 import DefaultDialog from "@/components/ui/default-dialog";
+import { fetchAndCacheProfile, getCachedProfile } from "@/utils/profileCache";
 import { LoadingOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import {
@@ -14,14 +15,11 @@ import {
   CreditCard,
   HardHat,
   KeyRound,
-  Link,
-  NotebookTabs,
   Phone,
   UserPlus
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCachedProfile, fetchAndCacheProfile } from "@/utils/profileCache";
 
 export default function UserDashboard() {
   const [addUserDialog, setAddUserDialog] = useState(false);
@@ -295,32 +293,7 @@ export default function UserDashboard() {
               </div> */}
             </div>
 
-            <div style={{
-              background: "rgba(100, 100, 100, 0.05)",
-              borderRadius: "1rem",
-              padding: "1.25rem",
-            }}>
-              
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                gap: "1rem"
-              }}>
-                <Directive 
-                  onClick={() => navigate("/phonebook")}  
-                  title="Phonebook" 
-                  icon={<NotebookTabs color="dodgerblue" width={"1.25rem"}/>}
-                />
-                <Directive onClick={() => navigate("/quick-links")} title="Links" icon={<Link color="dodgerblue" width={"1.25rem"}/>} />
-                {/* {userData?.role === "admin" && (
-                  <Directive 
-                    onClick={() => setAddUserDialog(true)}  
-                    title="Add User" 
-                    icon={<UserPlus color="lightgreen" width={"1.25rem"}/>}
-                  />
-                )} */}
-              </div>
-            </div>
+            
 
             {/* Document Status Section */}
             <div style={{
@@ -328,7 +301,7 @@ export default function UserDashboard() {
               borderRadius: "1rem",
               padding: "1.25rem",
             }}>
-              <h3 style={{ marginBottom: "1rem", color: "", fontSize: "1rem" }}>Documents Status</h3>
+              <h3 style={{ marginBottom: "1rem", color: "", fontSize: "1rem", fontWeight:500 }}>Personal Documents</h3>
               <div style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
