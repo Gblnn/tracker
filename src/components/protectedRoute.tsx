@@ -1,6 +1,6 @@
+import { LoadingOutlined } from "@ant-design/icons";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
-import { LoadingOutlined } from "@ant-design/icons";
 
 // Define routes that require specific clearance
 const CLEARANCE_ROUTES = {
@@ -52,7 +52,7 @@ export default function ProtectedRoutes() {
     if (allowedRoutes.includes(path)) return true;
     
     // Check if path starts with any allowed route (for dynamic routes like /record/:id)
-    return allowedRoutes.some(route => {
+    return allowedRoutes.some(() => {
       // Special handling for dynamic routes
       if (path.startsWith('/record/') && allowedRoutes.includes('/records')) {
         return true;
