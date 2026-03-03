@@ -20,7 +20,7 @@ import {
   Car,
   FileArchive,
   FileText,
-  Fuel,
+
   KeyRound,
   Link,
   Mail,
@@ -163,24 +163,20 @@ export default function Index() {
     return modulePermissions[moduleId] === true;
   };
 
-  // Only allow fuel-log module if user has an allocated vehicle
-  const hasAllocatedVehicle = !!userData?.allocated_vehicle;
-
   // Check if user has any modules allocated
   const hasAnyModules = () => {
-    const hasRecordsMaster = hasModuleAccess('records_master') && (!userData || userData.role !== 'user');
+    const hasRecordsMaster = hasModuleAccess('records_master');
     const hasUsers = admin && (!userData || userData.role !== 'user');
     const hasNewHire = hasModuleAccess('new_hire');
     const hasQuickLinks = hasModuleAccess('quick_links');
     const hasQRGenerator = hasModuleAccess('qr_generator');
-    const hasFuelLog = hasModuleAccess('fuel_log') && hasAllocatedVehicle;
     const hasVehicleMaster = hasModuleAccess('vehicle_master');
     const hasVehicleLogBook = hasModuleAccess('vehicle_log_book');
     const hasPettyCash = hasModuleAccess('petty_cash');
     const hasOfferLetters = hasModuleAccess('offer_letters');
 
     return hasRecordsMaster || hasUsers || hasNewHire || hasQuickLinks || 
-           hasQRGenerator || hasFuelLog || hasVehicleMaster || hasVehicleLogBook || 
+           hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || 
            hasPettyCash || hasOfferLetters;
   };
 
@@ -320,7 +316,7 @@ export default function Index() {
                 paddingBottom: "2rem"
               }}
             >
-              {hasModuleAccess('records_master') && (!userData || userData.role !== 'user') && (
+              {hasModuleAccess('records_master') && (
                 <GridTile
                   title="Records Master"
                   icon={<FileArchive width={"2rem"}  />}
@@ -357,14 +353,6 @@ export default function Index() {
                   title="QR Generator"
                   icon={<QrCode width={"2rem"}  />}
                   onClick={() => authenticateModule('qr_generator', '/qr-code-generator', 'QR Generator')}
-                />
-              )}
-
-              {hasModuleAccess('fuel_log') && hasAllocatedVehicle && (
-                <GridTile
-                  title="Fuel Log"
-                  icon={<Fuel width={"2rem"}  />}
-                  onClick={() => authenticateModule('fuel_log', '/fuel-log', 'Fuel Log')}
                 />
               )}
 

@@ -1,4 +1,4 @@
-import { Package, ClipboardList, Notebook } from "lucide-react";
+import { Package, ClipboardList, Notebook, Fuel } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
@@ -40,12 +40,16 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const { userData } = useAuth();
-  const [activeNav, setActiveNav] = useState<"modules" | "tasks" | "phonebook" | null>(null);
+  const [activeNav, setActiveNav] = useState<"modules" | "tasks" | "phonebook" | "fuel-log" | null>(null);
+
+  // Check if user has an allocated vehicle
+  const hasAllocatedVehicle = !!userData?.allocated_vehicle;
 
   const navItems = [
     { id: "modules" as const, icon: <Package />, label: "Modules", path: "/index" },
     { id: "tasks" as const, icon: <ClipboardList />, label: "Tasks", path: "/tasks" },
     { id: "phonebook" as const, icon: <Notebook />, label: "Phonebook", path: "/phonebook" },
+    ...(hasAllocatedVehicle ? [{ id: "fuel-log" as const, icon: <Fuel />, label: "Fuel Log", path: "/fuel-log" }] : []),
   ];
 
   // Update active nav based on current path
@@ -57,6 +61,8 @@ export default function BottomNav() {
       setActiveNav("phonebook");
     } else if (currentPath === "/tasks") {
       setActiveNav("tasks");
+    } else if (currentPath === "/fuel-log") {
+      setActiveNav("fuel-log");
     } else {
       // Don't highlight any nav item for other pages
       setActiveNav(null);
@@ -77,6 +83,8 @@ export default function BottomNav() {
       navigate(item.path);
     } else if (item.id === "phonebook") {
       toast.error("No clearance to access Phonebook");
+    } else if (item.id === "fuel-log") {
+      navigate(item.path);
     } else if (item.id === "modules") {
       navigate(item.path);
     } else if (item.id === "tasks") {

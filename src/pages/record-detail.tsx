@@ -737,7 +737,7 @@ export default function RecordDetail() {
                       {notifyLoading ? (
                         <Loader2 className="animate-spin" width="0.9rem" color="dodgerblue" />
                       ) : notify ? (
-                        <BellRing color={"dodgerblue"} width={"0.9rem"} fill="dodgerblue" />
+                        <BellRing color={"mediumslateblue"} width={"0.9rem"} fill="mediumslateblue" />
                       ) : (
                         <BellOff width={"0.9rem"} color="grey" />
                       )}

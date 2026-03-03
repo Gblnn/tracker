@@ -10,7 +10,7 @@ const CLEARANCE_ROUTES = {
 // Define system-role-restricted routes
 const ROLE_RESTRICTED_ROUTES = {
   admin: ["*"], // Admins can access all routes
-  user: ["/index", "/record-list", "/vale-records", "/profile", "/phonebook", "/qr-code-generator", "/offer-letters", "/new-hire", "/fuel-log"], // Regular users (no /records master, no /users)
+  user: ["/index", "/records", "/record-list", "/vale-records", "/profile", "/phonebook", "/qr-code-generator", "/offer-letters", "/new-hire", "/fuel-log"], // Regular users can access records master
   profile: ["/profile", "/records", "/phonebook"] // Basic profile access
 };
 
@@ -43,9 +43,27 @@ export default function ProtectedRoutes() {
   const allowedRoutes = ROLE_RESTRICTED_ROUTES[userData.role as keyof typeof ROLE_RESTRICTED_ROUTES];
   const currentPath = location.pathname;
   
+  // Helper function to check if a path matches allowed routes (including dynamic routes)
+  const isPathAllowed = (path: string, allowedRoutes: string[]): boolean => {
+    // Check for wildcard access
+    if (allowedRoutes.includes("*")) return true;
+    
+    // Check exact match
+    if (allowedRoutes.includes(path)) return true;
+    
+    // Check if path starts with any allowed route (for dynamic routes like /record/:id)
+    return allowedRoutes.some(route => {
+      // Special handling for dynamic routes
+      if (path.startsWith('/record/') && allowedRoutes.includes('/records')) {
+        return true;
+      }
+      return false;
+    });
+  };
+  
   // If role is defined and has specific route restrictions (not wildcard)
   if (allowedRoutes && allowedRoutes.length > 0 && !allowedRoutes.includes("*")) {
-    if (!allowedRoutes.includes(currentPath)) {
+    if (!isPathAllowed(currentPath, allowedRoutes)) {
       // Redirect to their default page based on role
       const defaultRoute = allowedRoutes[0];
       return <Navigate to={defaultRoute} replace />;
