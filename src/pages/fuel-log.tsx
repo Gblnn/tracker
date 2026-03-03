@@ -331,7 +331,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
       }}>
         <motion.button
           type="submit"
-          disabled={submitting || !userProfile || !date || !amountSpent || !vehicleNumber}
+          disabled={submitting || !userProfile || !date || !amountSpent || !vehicleNumber || !litres}
           whileTap={{ scale: 0.97 }}
           whileHover={{ scale: 1.01 }}
           style={{
@@ -339,13 +339,13 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
             padding: "1rem",
             borderRadius: "1rem",
             marginBottom:"0.5rem",
-            background: submitting || !userProfile || !date || !amountSpent || !vehicleNumber
+            background: submitting || !userProfile || !date || !amountSpent || !vehicleNumber || !litres
               ? "rgba(100, 100, 100, 1)" 
               : "black",
             color: "white",
             fontSize: "1.0625rem",
             border: "none",
-            cursor: submitting || !userProfile || !date || !amountSpent || !vehicleNumber ? "not-allowed" : "pointer",
+            cursor: submitting || !userProfile || !date || !amountSpent || !vehicleNumber || !litres ? "not-allowed" : "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
