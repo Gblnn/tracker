@@ -2,7 +2,7 @@ import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import { message } from "antd";
 import { motion } from "framer-motion";
-import { ArrowUpRight, ArrowUpRightSquare, ChevronLeft, ChevronRight, Loader2, LoaderCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -154,7 +154,7 @@ export default function RequestAccess() {
             margin: "2rem",
           }}
         >
-          <Back noback={stage==3} title={name&&"Hi, "+name.split(' ')[0]}  />
+          <Back noback={stage==3} title={stage!=3&&name&&"Hi, "+name.split(' ')[0]}  />
         </div>
 
           {
