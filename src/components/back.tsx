@@ -134,12 +134,12 @@ export default function Back(props: Props) {
                     whileInView={{ opacity: 1 }}
                   >
                     {props.editModeLoading ? (
-                      <Loader2 className="animate-spin" color="dodgerblue" />
+                      <Loader2 className="animate-spin" color="mediumslateblue" />
                     ) : (
                       <PenLine
                         width={"1rem"}
                         height={"1rem"}
-                        color="dodgerblue"
+                        color="mediumslateblue"
                       />
                     )}
                   </motion.div>

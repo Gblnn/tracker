@@ -23,12 +23,19 @@ export default function Phonebook() {
 
     const filteredRecords = records.filter(record => {
         const displayName = record.display_name || record.name;
-        return displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            record.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            record.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (record.contact && String(record.contact).includes(searchQuery)) ||
-            (record.cug && String(record.cug).includes(searchQuery)) ||
-            record.designation?.toLowerCase().includes(searchQuery.toLowerCase());
+        const query = searchQuery.toLowerCase();
+        const queryForNumbers = searchQuery.trim();
+        
+        return displayName.toLowerCase().includes(query) ||
+            record.name.toLowerCase().includes(query) ||
+            record.email.toLowerCase().includes(query) ||
+            (record.contact && String(record.contact).startsWith(queryForNumbers)) ||
+            (record.cug && String(record.cug).startsWith(queryForNumbers)) ||
+            record.designation?.toLowerCase().includes(query);
+    }).sort((a, b) => {
+        const cugA = a.cug || Number.MAX_SAFE_INTEGER;
+        const cugB = b.cug || Number.MAX_SAFE_INTEGER;
+        return cugA - cugB;
     });
 
     const fetchData = async () => {
@@ -149,7 +156,7 @@ export default function Phonebook() {
                                     </AvatarFallback>
                                   </Avatar>}
                     key={record.id}
-                    title={displayName.toLowerCase()}
+                    title={displayName}
                     
                 />
             );})}
@@ -182,7 +189,7 @@ export default function Phonebook() {
                     <br/>
                     <div style={{display:"flex", justifyContent:"center", alignItems:"center", padding:"1.25rem", paddingTop:"0", flexFlow:"column", gap:""}}>
                         <h2 style={{fontSize:"1.5rem", textTransform: "capitalize", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%"}}>{(selectedRecord?.display_name || selectedRecord?.name || "").toLowerCase()}</h2>
-                        <p style={{fontSize:"0.8rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%", textTransform: "capitalize"}}>{selectedRecord?.designation?.toLowerCase()}</p>
+                        <p style={{fontSize:"0.8rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%", textTransform: "uppercase"}}>{selectedRecord?.designation?.toLowerCase()}</p>
                     </div>
                     
                     <div style={{ 

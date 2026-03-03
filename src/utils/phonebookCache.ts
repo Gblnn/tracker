@@ -14,6 +14,7 @@ export interface PhonebookRecord {
     cug?: number;
     role?: string;
     designation?: string;
+    employeeCode?: string;
 }
 
 /**

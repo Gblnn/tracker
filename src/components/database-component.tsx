@@ -2560,7 +2560,7 @@ export default function DbComponent(props: Props) {
                     gap: "1rem",
                   }}
                 >
-                  <Check color="dodgerblue" />
+                  <Check color="mediumslateblue" />
                   <p style={{ fontWeight: 600 }}>{checked.length}</p>
                 </div>
               )
@@ -2703,7 +2703,7 @@ export default function DbComponent(props: Props) {
                       }}
                     >
                       <CheckSquare2
-                        color={selectable ? "white" : "dodgerblue"}
+                        color={selectable ? "white" : "mediumslateblue"}
                       />
                     </button>
                   )}
@@ -2720,13 +2720,13 @@ export default function DbComponent(props: Props) {
                     className={viewMode === "table" ? "blue" : ""}
                   >
                     {viewMode === "directive" ? (
-                      <Table2 width={"1rem"} color="dodgerblue" />
+                      <Table2 width={"1rem"} color="mediumslateblue" />
                     ) : (
                       <LayoutGrid width={"1rem"} color="white" />
                     )}
                   </button>
                   <button style={{width:"2.5rem"}}>
-                    <Filter width={"1rem"}/>
+                    <Filter color="mediumslateblue" width={"1rem"}/>
                   </button>
 
                   <Select
@@ -2742,13 +2742,13 @@ export default function DbComponent(props: Props) {
                       {sortby === "name" ? (
                         <>
                         
-                        <ArrowDownAZ width={"1.25rem"} color="dodgerblue" />
+                        <ArrowDownAZ width={"1.25rem"} color="mediumslateblue" />
                         </>
                         
                       ) : sortby === "created_on" ? (
-                        <ListStart width={"1.25rem"} color="dodgerblue" />
+                        <ListStart width={"1.25rem"} color="mediumslateblue" />
                       ) : (
-                        <ArrowDown01 width={"1.25rem"} color="dodgerblue" />
+                        <ArrowDown01 width={"1.25rem"} color="mediumslateblue" />
                       )}
                     </SelectTrigger>
                     <SelectContent>

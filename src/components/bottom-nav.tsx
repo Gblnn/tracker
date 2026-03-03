@@ -16,6 +16,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, isActive, onClick, isMobile = f
     <div
       onClick={onClick}
       style={{
+      
         flex: isMobile ? 1 : 'none',
         display: "flex",
         justifyContent: "center",
@@ -28,7 +29,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, isActive, onClick, isMobile = f
         alignItems: "center",
         padding: isMobile ? "0.75rem" : "0.5rem 2rem",
         cursor: "pointer",
-        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: "all",
       }}
     >
       {icon}
@@ -88,7 +89,7 @@ export default function BottomNav() {
     } else if (item.id === "modules") {
       navigate(item.path);
     } else if (item.id === "tasks") {
-      toast.info("Tasks module coming soon");
+      navigate(item.path);
     }
   };
 
