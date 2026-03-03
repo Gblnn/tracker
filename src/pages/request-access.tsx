@@ -1,6 +1,5 @@
-import Back from "@/components/back";
 import { useAuth } from "@/components/AuthProvider";
-import { LoadingOutlined } from "@ant-design/icons";
+import Back from "@/components/back";
 import { message } from "antd";
 import { motion } from "framer-motion";
 import { ChevronLeft, Loader2, LoaderCircle } from "lucide-react";
