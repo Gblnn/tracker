@@ -54,9 +54,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "0.4rem",
-        background: "rgba(100, 100, 100, 0.1)",
-        border: "1px solid rgba(100, 100, 100, 0.2)",
+        padding: "0.4rem 0.6rem",
+        background: "rgba(100, 100, 100, 0.05)",
+        border: "",
         borderRadius: "0.3rem",
         cursor: "pointer",
         color: "mediumslateblue",
@@ -86,9 +86,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       {/* Toolbar */}
       <div
         style={{
+          border:"",
           display: "flex",
           gap: "0.5rem",
-          padding: "0.5rem",
+          padding: "0.5rem 1rem",
           borderBottom: "1px solid rgba(100, 100, 100, 0.2)",
           background: "rgba(100, 100, 100, 0.05)",
           flexWrap: "wrap",

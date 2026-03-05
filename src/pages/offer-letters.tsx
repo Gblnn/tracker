@@ -45,6 +45,7 @@ import {
   CreditCard,
   Database,
   Dot,
+  Expand,
   FilePlus2,
   FileText,
   FileX,
@@ -67,6 +68,23 @@ import {
 } from "lucide-react";
 import moment from "moment";
 import React, { useEffect, useRef, useState } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // Add styles at the top of the file
 const styles = {
@@ -98,6 +116,12 @@ const tableCellStyle = {
   verticalAlign: "top",
   fontFamily: "",
   background: "none",
+};
+
+const leftColumnStyle = {
+  ...tableCellStyle,
+  width: "35%",
+  maxWidth: "200px",
 };
 
 type FieldType = "text" | "textarea" | "number" | "date";
@@ -158,6 +182,79 @@ type Preset = {
   data: FormData;
   created_at: any;
   fieldConfig?: FieldConfig[];
+};
+
+// Sortable table row component for drag and drop
+interface SortableTableRowProps {
+  id: string;
+  children: React.ReactNode;
+}
+
+const SortableTableRow: React.FC<SortableTableRowProps> = ({ id, children }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: "relative" as const,
+  };
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {React.Children.map(children, (child, index) => {
+        if (index === 0 && React.isValidElement(child)) {
+          // Add drag handle to the first cell
+          return React.cloneElement(child as React.ReactElement<any>, {
+            style: {
+              ...(child.props.style || {}),
+              position: "relative",
+            },
+            children: (
+              <>
+                <div
+                  {...attributes}
+                  {...listeners}
+                  style={{
+                    position: "absolute",
+                    left: "4px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    cursor: "grab",
+                    opacity: isHovered || isDragging ? 1 : 0,
+                    transition: "opacity 0.2s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "4px",
+                    color: "rgba(147, 112, 219, 0.7)",
+                  }}
+                >
+                  <GripVertical size={16} />
+                </div>
+                <div style={{ paddingLeft: isHovered || isDragging ? "24px" : "0", transition: "padding-left 0.2s ease" }}>
+                  {child.props.children}
+                </div>
+              </>
+            ),
+          });
+        }
+        return child;
+      })}
+    </tr>
+  );
 };
 
 export default function OfferLetters() {
@@ -276,6 +373,31 @@ const [searchTerm, setSearchTerm] = useState("");
   const [deleteId, setDeleteId] = useState("");
   const [joiningDate, setJoiningDate] = useState(true);
 
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end for reordering fields
+  const handleFieldDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setFieldConfig((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
   // Default field configuration
   const defaultFieldConfig: FieldConfig[] = [
     // Table section fields - in order of appearance in the table
@@ -339,6 +461,11 @@ const [searchTerm, setSearchTerm] = useState("");
   const [headerVisible, setHeaderVisible] = useState(true);
   const fieldListScrollRef = useRef<HTMLDivElement>(null);
   const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Role editor dialog state
+  const [roleEditorDialogVisible, setRoleEditorDialogVisible] = useState(false);
+  const [editingRoleIndex, setEditingRoleIndex] = useState<number | null>(null);
+  const [editingRoleContent, setEditingRoleContent] = useState("");
 
   // Add this after other useEffect hooks
   useEffect(() => {
@@ -2133,6 +2260,30 @@ const [searchTerm, setSearchTerm] = useState("");
                     />
                     <motion.button
                       whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setEditingRoleIndex(index);
+                        setEditingRoleContent(role.description);
+                        setRoleEditorDialogVisible(true);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "rgba(100 100 100/ 10%)",
+                        color: "mediumslateblue",
+                        
+                        padding: "0.5rem 0.75rem",
+                        borderRadius: "0.45rem",
+                        cursor: "pointer",
+                        fontSize: "0.95rem",
+                        willChange: "transform",
+                      }}
+                      title="Expand editor"
+                    >
+                      <Expand width={"1rem"} />
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => handleRemoveRole(index)}
                       style={{
                         display: "flex",
@@ -2287,7 +2438,7 @@ const [searchTerm, setSearchTerm] = useState("");
       <div
         ref={tableRef}
         style={{
-                border: "",
+          border: "",
           width: "100%",
           maxWidth: 800,
           boxSizing: "border-box",
@@ -2297,13 +2448,17 @@ const [searchTerm, setSearchTerm] = useState("");
           backgroundSize: "contain",
           backgroundPosition:"center",
           color: "black",
-          borderRadius: "0.5rem",
-          // boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
-          minHeight: "1100px",
+          // borderRadius: "0.5rem",
+          height: "1100px",
+          maxHeight: "1100px",
           fontFamily: "Aptos",
           fontSize: "0.8rem",
           margin: "1 auto",
-          overflowX: "auto",
+          marginBottom: "4rem",
+          position: "relative",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         {/* <div
@@ -2335,17 +2490,20 @@ const [searchTerm, setSearchTerm] = useState("");
         <br />
         <br />
         <br/>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          {
-            <p style={{ fontWeight: 600, textTransform: "uppercase" }}>
-              {formData.refNo && "REF: " + formData.refNo}
-            </p>
-          }
+        
+        {/* Scrollable content wrapper */}
+        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            {
+              <div style={{ fontWeight: 600, textTransform: "uppercase" }}>
+                REF: {formData.refNo || "[REF NO]"}
+              </div>
+            }
 
-          <p style={{ fontWeight: 600 }}>
-            {moment(new Date(formData.date)).format("DD/MM/YYYY")}
-          </p>
-        </div>
+            <p style={{ fontWeight: 600 }}>
+              {moment(new Date(formData.date)).format("DD/MM/YYYY")}
+            </p>
+          </div>
         {/* Title */}
         <h2
           style={{
@@ -2386,78 +2544,92 @@ const [searchTerm, setSearchTerm] = useState("");
             border: "1px solid",
             textTransform: "uppercase",
             background:"none",
-            
-        
+            tableLayout: "fixed",
           }}
         >
-          <tbody style={{}}>
-            {/* Render fields dynamically based on fieldConfig order */}
-            {fieldConfig
-              .filter(f => f.enabled)
-              .map((field) => {
-                // Handle special field rendering
-                if (field.id === "candidateName") {
+          <colgroup>
+            <col style={{ width: "35%" }} />
+            <col style={{ width: "65%" }} />
+          </colgroup>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleFieldDragEnd}
+          >
+            <SortableContext
+              items={fieldConfig.filter(f => f.enabled && f.section === "table").map(f => f.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <tbody style={{}}>
+                {/* Render fields dynamically based on fieldConfig order */}
+                {fieldConfig
+                  .filter(f => f.enabled && f.section === "table")
+                  .map((field) => {
+                    // Handle special field rendering
+                    if (field.id === "candidateName") {
                   return (
-                    <tr key={field.id} style={{ fontSize: "0.8rem", cursor: "pointer" }} onClick={() => scrollToSection("basic")}>
-                      <td style={tableCellStyle}>{field.label}</td>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.candidateName || "[Candidate Name]"}
                       </td>
-                    </tr>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "passportNumber") {
                   return (
-                    <tr key={field.id} style={{ fontSize: "0.8rem", cursor: "pointer" }} onClick={() => scrollToSection("basic")}>
-                      <td style={tableCellStyle}>{field.label}</td>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.passportNumber || "[Passport Number]"}
                       </td>
-                    </tr>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "position") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("basic")}>
-                      <td style={tableCellStyle}>{field.label}</td>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.position || "[Position]"}
                       </td>
-                    </tr>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "workLocation") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("basic")}>
-                      <td style={tableCellStyle}>{field.label}</td>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.workLocation || "Anywhere in Oman"}
                       </td>
-                    </tr>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "salary") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("compensation")}>
-                      <td style={tableCellStyle}>{field.label}</td>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         OMR {formData.salary || "[Basic Salary]"}
                       </td>
-                    </tr>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "allowance") {
                   return (
                     <React.Fragment key={field.id}>
-                      <tr style={{ cursor: "pointer" }} onClick={() => scrollToSection("compensation")}>
-                        <td style={tableCellStyle}>{field.label}</td>
-                        <td style={tableCellStyle}>{formData.allowance || "N/A"}</td>
-                      </tr>
+                      <SortableTableRow key="allowance-main" id={field.id}>
+                        <td style={leftColumnStyle}>{field.label}</td>
+                        <td style={tableCellStyle}>
+                          {formData.allowance || "N/A"}
+                        </td>
+                      </SortableTableRow>
                       {/* Additional Allowances - shown right after allowance field */}
                       {formData.allowances.length > 0 &&
                         formData.allowances.map((role, index) => (
-                          <tr key={`allowance-${index}`} style={{ cursor: "pointer" }} onClick={() => scrollToSection("compensation")}>
-                            <td style={tableCellStyle}>
+                          <tr key={`allowance-${index}`}>
+                            <td style={leftColumnStyle}>
                               {role.title || "[ALLOWANCE TYPE]"}
                             </td>
                             <td style={tableCellStyle}>
@@ -2470,55 +2642,63 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "attendance") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
-                      <td style={tableCellStyle}>Site/ Office Attendance, including overtime</td>
-                      <td style={tableCellStyle}>{formData.attendance || "N/A"}</td>
-                    </tr>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={{ ...leftColumnStyle, textAlign: "left" }}>Site/ Office Attendance, including overtime</td>
+                      <td style={tableCellStyle}>
+                        {formData.attendance || "N/A"}
+                      </td>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "probation") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
-                      <td style={tableCellStyle}>{field.label}</td>
-                      <td style={tableCellStyle}>{formData.probation || "N/A"}</td>
-                    </tr>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        {formData.probation || "N/A"}
+                      </td>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "reportingDate") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("basic")}>
-                      <td style={tableCellStyle}>{field.label}</td>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.reportingDate
                           ? `On or before ${moment(formData.reportingDate).format("DD MMMM YYYY")}`
                           : "[joining Date]"}
                       </td>
-                    </tr>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "contractPeriod") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
-                      <td style={tableCellStyle}>{field.label}</td>
-                      <td style={tableCellStyle}>{formData.contractPeriod || "N/A"}</td>
-                    </tr>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        {formData.contractPeriod || "N/A"}
+                      </td>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "noticePeriod") {
                   return (
                     <React.Fragment key={field.id}>
-                      <tr style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
-                        <td style={{ padding: "8px 12px", fontSize: "0.75rem", verticalAlign: "top", border: "none" }}>
+                      <SortableTableRow key="noticePeriod-main" id={field.id}>
+                        <td style={{ ...leftColumnStyle, border: "none" }}>
                           {field.label}
                         </td>
                         <td style={tableCellStyle}>
                           {formData.noticePeriod || "No notice period shall be accepted until the end of the project"}
                         </td>
-                      </tr>
+                      </SortableTableRow>
                       {formData.noticePeriodSubsections.map((subsection, index) => (
-                        <tr key={`${field.id}-sub-${index}`} style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
+                        <tr key={`${field.id}-sub-${index}`}>
                           <td style={{ ...tableCellStyle, borderTop: "none", borderBottom: "none", borderRight: "none", background: "transparent" }}></td>
-                          <td style={{ ...tableCellStyle, borderTop: "none" }}>{subsection}</td>
+                          <td style={{ ...tableCellStyle, borderTop: "none" }}>
+                            {subsection || "Enter subsection"}
+                          </td>
                         </tr>
                       ))}
                     </React.Fragment>
@@ -2526,84 +2706,88 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "accomodation") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("benefits")}>
-                      <td style={tableCellStyle}>Accommodation</td>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>Accommodation</td>
                       <td style={tableCellStyle}>
                         {formData.accomodation || "Single Room Bachelors Accommodation shall be provided by the Company"}
                       </td>
-                    </tr>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "food") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("benefits")}>
-                      <td style={tableCellStyle}>{field.label}</td>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.food || "Shall be provided by the Company in Site Office and at Camp"}
                       </td>
-                    </tr>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "transport") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("benefits")}>
-                      <td style={tableCellStyle}>{field.label}</td>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.transport || "A Car shall be provided by the Company for official use only"}
                       </td>
-                    </tr>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "communication") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("benefits")}>
-                      <td style={tableCellStyle}>{field.label}</td>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.communication || "A postpaid Company SIM shall be provided for official use only"}
                       </td>
-                    </tr>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "insurance") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("benefits")}>
-                      <td style={tableCellStyle}>{field.label}</td>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.insurance || "WC, Medical & Group Life Insurance, under the Company account"}
                       </td>
-                    </tr>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "annualLeave") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
-                      <td style={tableCellStyle}>{field.label}</td>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.annualLeave || "No leave shall be granted throughout the project unless there is an extreme emergency."}
                       </td>
-                    </tr>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "gratuity") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
+                    <SortableTableRow key={field.id} id={field.id}>
                       <td style={tableCellStyle}>{field.label}</td>
-                      <td style={tableCellStyle}>{formData.gratuity || "N/A"}</td>
-                    </tr>
+                      <td style={tableCellStyle}>
+                        {formData.gratuity || "N/A"}
+                      </td>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "leaveEncashment") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("terms")}>
-                      <td style={tableCellStyle}>{field.label}</td>
-                      <td style={tableCellStyle}>{formData.leaveEncashment || "N/A"}</td>
-                    </tr>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
+                      <td style={tableCellStyle}>
+                        {formData.leaveEncashment || "N/A"}
+                      </td>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "grossSalary") {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("compensation")}>
-                      <td style={tableCellStyle}>{field.label}</td>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         OMR{" "}
                         {(formData.allowances?.reduce(
@@ -2614,7 +2798,7 @@ const [searchTerm, setSearchTerm] = useState("");
                           Number(formData.allowance || 0) +
                           " (Monthly)" || "[Gross Salary]"}
                       </td>
-                    </tr>
+                    </SortableTableRow>
                   );
                 }
                 if (field.id === "airPassage") {
@@ -2629,19 +2813,24 @@ const [searchTerm, setSearchTerm] = useState("");
                 // Custom fields
                 if (field.isCustom) {
                   return (
-                    <tr key={field.id} style={{ cursor: "pointer" }} onClick={() => scrollToSection("custom")}>
-                      <td style={tableCellStyle}>{field.label}</td>
+                    <SortableTableRow key={field.id} id={field.id}>
+                      <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.customFields?.[field.id] || "N/A"}
                       </td>
-                    </tr>
+                    </SortableTableRow>
                   );
                 }
                 return null;
               })}
           </tbody>
+            </SortableContext>
+        </DndContext>
         </table>
-        <img style={{ width:"7.5rem", marginLeft:"30rem", position:"absolute"}} src={"/ssu_stamp.png"}/>
+        </div>
+        {/* End scrollable content wrapper */}
+        
+        <img style={{ width:"7.5rem", marginLeft:"30rem", position:"absolute", bottom: "2rem", right: "2rem" }} src={"/ssu_stamp.png"}/>
       </div>
       {/* Page break for preview */}
       <div style={{ height: 40 }} />
@@ -2652,7 +2841,7 @@ const [searchTerm, setSearchTerm] = useState("");
           (role) => role.title.trim() || role.description.trim()
         ) && (
           <>
-            <div
+            {/* <div
               style={{
                 width: "100%",
                 textAlign: "center",
@@ -2662,7 +2851,7 @@ const [searchTerm, setSearchTerm] = useState("");
               }}
             >
               --- Page 2 ---
-            </div>
+            </div> */}
             <div
               ref={rolesRef}
               style={{
@@ -2673,59 +2862,64 @@ const [searchTerm, setSearchTerm] = useState("");
                 padding: "4rem",
                 background: "white",
                 color: "black",
-                borderRadius: "0.5rem",
+                // borderRadius: "0.5rem",
                 boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
-                minHeight: "1100px",
+                height: "1100px",
+                maxHeight: "1100px",
+                overflow: "hidden",
                 fontFamily: "Aptos",
                 fontSize: "0.8rem",
                 margin: "1 auto",
-                overflowX: "auto",
                 marginBottom: "4rem",
+                display: "flex",
+                flexDirection: "column",
               }}
             >
               <br />
 
-              <h2
-                style={{
-                  fontWeight: "600",
-                  marginBottom: "1rem",
-                  fontSize: "1rem",
-                  textTransform: "uppercase",
-                  cursor: "pointer"
-                }}
-                onClick={() => scrollToSection("roles")}
-              >
-                Roles & Responsibilities
-              </h2>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1.5rem",
-                }}
-              >
-                {formData.roles.map((role, index) =>
-                  role.title.trim() || role.description.trim() ? (
-                    <div key={index} style={{ cursor: "pointer" }} onClick={() => scrollToSection("roles")}>
-                      <h3
-                        style={{
-                          fontSize: "0.9rem",
-                          fontWeight: "600",
-                          marginBottom: "0.5rem",
-                        }}
-                      >
-                        {role.title || "[ROLE TITLE]"}
-                      </h3>
-                      <div 
-                        className="role-description-content"
-                        style={{ fontSize: "0.8rem", color: "#444" }}
-                        dangerouslySetInnerHTML={{ 
-                          __html: role.description || "[ROLE DESCRIPTION]" 
-                        }}
-                      />
-                    </div>
-                  ) : null
-                )}
+              <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
+                <h2
+                  style={{
+                    fontWeight: "600",
+                    marginBottom: "1rem",
+                    fontSize: "1rem",
+                    textTransform: "uppercase",
+                    cursor: "pointer"
+                  }}
+                  onClick={() => scrollToSection("roles")}
+                >
+                  Roles & Responsibilities
+                </h2>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "1.5rem",
+                  }}
+                >
+                  {formData.roles.map((role, index) =>
+                    role.title.trim() || role.description.trim() ? (
+                      <div key={index}>
+                        <h3
+                          style={{
+                            fontSize: "0.9rem",
+                            fontWeight: "600",
+                            marginBottom: "0.5rem",
+                          }}
+                        >
+                          {role.title || "[ROLE TITLE]"}
+                        </h3>
+                        <div 
+                          className="role-description-content"
+                          style={{ fontSize: "0.8rem", color: "#444" }}
+                          dangerouslySetInnerHTML={{ 
+                            __html: role.description || "[ROLE DESCRIPTION]" 
+                          }}
+                        />
+                      </div>
+                    ) : null
+                  )}
+                </div>
               </div>
             </div>
             {/* Page break for preview */}
@@ -2743,18 +2937,23 @@ const [searchTerm, setSearchTerm] = useState("");
           padding: "4rem",
           background: "white",
           color: "black",
-          borderRadius: "0.5rem",
+          // borderRadius: "0.5rem",
           boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
-          minHeight: "1100px",
+          // height: "1100px",
+          // maxHeight: "1100px",
+          
+          display: "flex",
+          flexDirection: "column",
           fontFamily: "Aptos",
           fontSize: "0.8rem",
           margin: "1 auto",
-          overflowX: "auto",
           marginBottom: "4rem",
         }}
       >
         <br />
-        <img style={{position:"absolute", width:"7.5rem", marginLeft:"20rem", marginTop:"55rem"}} src={"/ssu_stamp.png"}/>
+
+        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
+          <img style={{position:"absolute", width:"7.5rem", bottom:"2rem", right:"2rem"}} src={"/ssu_stamp.png"}/>
 
         {/* Numbered main clauses */}
         {(() => {
@@ -2766,15 +2965,17 @@ const [searchTerm, setSearchTerm] = useState("");
               content: (
                 <>
                   <p>
-                    {formData.airPassage ||
-                      "While going on sanctioned leave, to and fro air ticket on a direct flight from Oman to the nearest international airport to your hometown, once on completion of 12 months."}
+                    {formData.airPassage || "While going on sanctioned leave, to and fro air ticket on a direct flight from Oman to the nearest international airport to your hometown, once on completion of 12 months."}
                   </p>
                   <br />
-                  <p>
-                    <b>Sector of Travel : </b>{formData.sectorOfTravel || "MUSCAT - (Nearest Hometown International Airport)"}
+                  <p style={{textAlign:"left"}}>
+                    <b>Sector of Travel : </b>
+                    {formData.sectorOfTravel || "MUSCAT - (Nearest Hometown International Airport)"}
                   </p>
-                  <p>
-                    <b>Class of Travel : </b>{formData.classOfTravel || "Economy Class by any Airline"}
+                  <br/>
+                  <p style={{textAlign:"left"}}>
+                    <b>Class of Travel : </b>
+                    {formData.classOfTravel || "Economy Class by any Airline"}
                   </p>
                 </>
               ),
@@ -2784,8 +2985,7 @@ const [searchTerm, setSearchTerm] = useState("");
               title: "Visa Status",
               content: (
                 <p>
-                  {formData.visaStatus ||
-                    "Work VISA shall be provided by the Company. Employee agrees that he shall not join any competing business until the end of the Contract Project"}
+                  {formData.visaStatus || "Work VISA shall be provided by the Company. Employee agrees that he shall not join any competing business until the end of the Contract Project"}
                 </p>
               ),
             });
@@ -2810,8 +3010,7 @@ const [searchTerm, setSearchTerm] = useState("");
               title: "Working Hours",
               content: (
                 <p>
-                  {formData.workingHours ||
-                    "As laid down by the company from time to time. Your post being a senior level executive in nature you are not eligible for any overtime; though you shall be available during 24 hours of the day on call basis."}
+                  {formData.workingHours || "As laid down by the company from time to time. Your post being a senior level executive in nature you are not eligible for any overtime; though you shall be available during 24 hours of the day on call basis."}
                 </p>
               ),
             },
@@ -2904,7 +3103,7 @@ const [searchTerm, setSearchTerm] = useState("");
           });
           
         })()}
-        
+        </div>
       </div>
 
       {/* Page break for preview */}
@@ -2920,20 +3119,25 @@ const [searchTerm, setSearchTerm] = useState("");
           padding: "4rem",
           background: "white",
           color: "black",
-          borderRadius: "0.5rem",
+          // borderRadius: "0.5rem",
           boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
-          minHeight: "1100px",
+          height: "1100px",
+          maxHeight: "1100px",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
           fontFamily: "Aptos",
           fontSize: "0.8rem",
           margin: "1 auto",
-          overflowX: "auto",
           marginBottom: "4rem",
         }}
       >
         <br />
         <br />
         <br />
-        {/* Acknowledgment */}
+
+        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
+          {/* Acknowledgment */}
 
         <div
           style={{
@@ -3078,6 +3282,7 @@ const [searchTerm, setSearchTerm] = useState("");
               Managing Director ______________________________________
             </div>
           </div>
+        </div>
         </div>
       </div>
     </ScrollArea>
@@ -3380,7 +3585,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     fetchOfferLetters();
                   }}
                 >
-                  <Database width={"1.25rem"} />
+                  <Database color="mediumslateblue" width={"1.25rem"} />
                 </motion.button>
               </div>
             }
@@ -4068,6 +4273,38 @@ const [searchTerm, setSearchTerm] = useState("");
         CancelButtonText="Cancel"
         disabled={!presetName.trim()}
         updating={loading}
+      />
+
+      {/* Role Editor Dialog */}
+      <DefaultDialog
+        open={roleEditorDialogVisible}
+        onCancel={() => {
+          setRoleEditorDialogVisible(false);
+          setEditingRoleIndex(null);
+          setEditingRoleContent("");
+        }}
+        onOk={() => {
+          if (editingRoleIndex !== null) {
+            handleRoleChange(editingRoleIndex, "description", editingRoleContent);
+          }
+          setRoleEditorDialogVisible(false);
+          setEditingRoleIndex(null);
+          setEditingRoleContent("");
+        }}
+        title={editingRoleIndex !== null ? `Edit: ${formData.roles[editingRoleIndex]?.title || "Role Description"}` : "Edit Role Description"}
+        titleIcon={<FileText color="mediumslateblue" />}
+        extra={
+          <div style={{ width: "100%", minHeight: "400px" }}>
+            <RichTextEditor
+              value={editingRoleContent}
+              onChange={(value) => setEditingRoleContent(value)}
+              placeholder="Enter role description (use toolbar for formatting)"
+              minHeight="400px"
+            />
+          </div>
+        }
+        OkButtonText="Save"
+        CancelButtonText="Cancel"
       />
 
       {/* Field Configuration Dialog */}
