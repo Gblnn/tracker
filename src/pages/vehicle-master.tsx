@@ -706,7 +706,7 @@ const VehicleSummaryContent: React.FC<VehicleSummaryContentProps> = ({
                   : "rgba(100, 100, 100, 0.05)",
                 fontSize: "0.82rem",
                 marginBottom: "1rem",
-                border: stats?.averageMileage ? "1px solid rgba(138, 43, 226, 0.2)" : "none",
+                // border: stats?.averageMileage ? "1px solid rgba(138, 43, 226, 0.2)" : "none",
               }}
             >
               <span style={{ opacity: 0.7 }}>Average Mileage:</span>{" "}

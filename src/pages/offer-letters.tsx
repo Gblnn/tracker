@@ -232,7 +232,7 @@ const [searchTerm, setSearchTerm] = useState("");
   const signatureRef = useRef<HTMLDivElement>(null);
   const lastRoleRef = useRef<HTMLDivElement>(null);
   const lastAllowanceRef = useRef<HTMLDivElement>(null);
-  // const lastSubsectionRef = useRef<HTMLDivElement>(null);
+  const lastSubsectionRef = useRef<HTMLDivElement>(null);
   
   // Section refs for scroll-to functionality
   const basicSectionRef = useRef<HTMLDivElement>(null);
@@ -496,37 +496,46 @@ const [searchTerm, setSearchTerm] = useState("");
     }
   };
 
-  // const handleAddNoticePeriodSubsection = () => {
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     noticePeriodSubsections: [...prev.noticePeriodSubsections, ""],
-  //   }));
-  //   // Scroll after a small delay to ensure the new input is rendered
-  //   setTimeout(() => {
-  //     lastSubsectionRef.current?.scrollIntoView({
-  //       behavior: "smooth",
-  //       block: "center",
-  //     });
-  //   }, 100);
-  // };
+  const handleAddNoticePeriodSubsection = () => {
+    setFormData((prev) => ({
+      ...prev,
+      noticePeriodSubsections: [...prev.noticePeriodSubsections, ""],
+    }));
+    if (selectedPreset) {
+      setHasChanges(true);
+    }
+    // Scroll after a small delay to ensure the new input is rendered
+    setTimeout(() => {
+      lastSubsectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 100);
+  };
 
-  // const handleRemoveNoticePeriodSubsection = (index: number) => {
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     noticePeriodSubsections: prev.noticePeriodSubsections.filter(
-  //       (_, i) => i !== index
-  //     ),
-  //   }));
-  // };
+  const handleRemoveNoticePeriodSubsection = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      noticePeriodSubsections: prev.noticePeriodSubsections.filter(
+        (_, i) => i !== index
+      ),
+    }));
+    if (selectedPreset) {
+      setHasChanges(true);
+    }
+  };
 
-  // const handleNoticePeriodSubsectionChange = (index: number, value: string) => {
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     noticePeriodSubsections: prev.noticePeriodSubsections.map(
-  //       (subsection, i) => (i === index ? value : subsection)
-  //     ),
-  //   }));
-  // };
+  const handleNoticePeriodSubsectionChange = (index: number, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      noticePeriodSubsections: prev.noticePeriodSubsections.map(
+        (subsection, i) => (i === index ? value : subsection)
+      ),
+    }));
+    if (selectedPreset) {
+      setHasChanges(true);
+    }
+  };
 
   const handleAllowanceChange = (
     index: number,
@@ -1977,7 +1986,102 @@ const [searchTerm, setSearchTerm] = useState("");
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               {fieldConfig
                 .filter(f => f.enabled && ["attendance", "probation", "contractPeriod", "noticePeriod", "visaStatus", "medicalTerms", "incrementTerms", "workingHours", "annualLeave", "gratuity", "leaveEncashment", "jobSummary", "responsibilities", "medical"].includes(f.id))
-                .map(field => renderField(field))}
+                .map(field => (
+                  <React.Fragment key={field.id}>
+                    {renderField(field)}
+                    {/* Notice Period Subsections after noticePeriod field */}
+                    {field.id === "noticePeriod" && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginTop: "0.5rem",
+                          }}
+                        >
+                          <h4 style={{ fontSize: "0.8rem", color: "rgba(0 0 0/ 70%)" }}>
+                            Notice Period Subsections
+                          </h4>
+                        </div>
+                        <AnimatePresence mode="sync">
+                          {formData.noticePeriodSubsections.map((subsection, index) => (
+                            <motion.div
+                              key={index}
+                              ref={index === formData.noticePeriodSubsections.length - 1 ? lastSubsectionRef : null}
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.5rem",
+                                border: "1px solid rgba(100 100 100/ 20%)",
+                                borderRadius: "0.5rem",
+                                padding: "0.45rem",
+                                marginBottom: "0.5rem",
+                                background: "rgba(100 100 100/ 5%)",
+                                willChange: "transform, opacity",
+                              }}
+                            >
+                              <textarea
+                                value={subsection}
+                                onChange={(e) => handleNoticePeriodSubsectionChange(index, e.target.value)}
+                                placeholder="Enter notice period subsection"
+                                style={{ width: "100%", fontSize: "0.95rem", borderRadius: "0.5rem" }}
+                                rows={2}
+                              />
+                              <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleRemoveNoticePeriodSubsection(index)}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  background: "rgba(100 100 100/ 10%)",
+                                  color: "indianred",
+                                  border: "none",
+                                  padding: "0.5rem 0.75rem",
+                                  borderRadius: "0.45rem",
+                                  cursor: "pointer",
+                                  fontSize: "0.95rem",
+                                  willChange: "transform",
+                                }}
+                              >
+                                <MinusCircle width={"1rem"} />
+                              </motion.button>
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={handleAddNoticePeriodSubsection}
+                          style={{
+                            fontSize: "0.85rem",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "0.5rem",
+                            background: "rgba(100 100 100/ 10%)",
+                            color: "mediumslateblue",
+                            border: "none",
+                            padding: "0.5rem 1rem",
+                            borderRadius: "0.5rem",
+                            cursor: "pointer",
+                            width: "100%",
+                            marginTop: "0.5rem",
+                            willChange: "transform",
+                          }}
+                        >
+                          <Plus width={"0.8rem"} />
+                          Add Subsection
+                        </motion.button>
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
             </div>
           )}
         </div>
