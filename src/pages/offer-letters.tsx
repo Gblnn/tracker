@@ -2717,6 +2717,7 @@ const [searchTerm, setSearchTerm] = useState("");
                         {role.title || "[ROLE TITLE]"}
                       </h3>
                       <div 
+                        className="role-description-content"
                         style={{ fontSize: "0.8rem", color: "#444" }}
                         dangerouslySetInnerHTML={{ 
                           __html: role.description || "[ROLE DESCRIPTION]" 
@@ -3793,6 +3794,40 @@ const [searchTerm, setSearchTerm] = useState("");
         }
         ::-webkit-scrollbar-thumb:hover {
           background: rgba(100 100 100/ 60%);
+        }
+        /* Styles for rich text formatted content in preview */
+        .role-description-content ul {
+          list-style-type: disc !important;
+          list-style-position: outside !important;
+          margin-left: 1.5rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
+          padding-left: 0.5rem;
+        }
+        .role-description-content ol {
+          list-style-type: decimal !important;
+          list-style-position: outside !important;
+          margin-left: 1.5rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
+          padding-left: 0.5rem;
+        }
+        .role-description-content li {
+          margin-bottom: 0.25rem;
+          line-height: 1.6;
+          display: list-item !important;
+          margin-left: 1rem;
+        }
+        .preview p {
+          margin: 0.5rem 0;
+        }
+        .preview strong,
+        .preview b {
+          font-weight: 600;
+        }
+        .preview em,
+        .preview i {
+          font-style: italic;
         }
       `}</style>
 

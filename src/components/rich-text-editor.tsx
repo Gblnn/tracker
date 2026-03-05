@@ -126,14 +126,26 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           color: #999;
           pointer-events: none;
         }
-        [contenteditable] ul,
-        [contenteditable] ol {
+        [contenteditable] ul {
+          list-style-type: disc !important;
+          list-style-position: outside !important;
           margin-left: 1.5rem;
           margin-top: 0.5rem;
           margin-bottom: 0.5rem;
+          padding-left: 0.5rem;
+        }
+        [contenteditable] ol {
+          list-style-type: decimal !important;
+          list-style-position: outside !important;
+          margin-left: 1.5rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
+          padding-left: 0.5rem;
         }
         [contenteditable] li {
           margin-bottom: 0.25rem;
+          display: list-item !important;
+          margin-left: 1rem;
         }
         [contenteditable] p {
           margin: 0.5rem 0;
