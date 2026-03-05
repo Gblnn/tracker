@@ -1,6 +1,8 @@
 import Back from "@/components/back";
 import { Checkbox } from "@/components/ui/checkbox";
 import DefaultDialog from "@/components/ui/default-dialog";
+import { ResponsiveModal } from "@/components/responsive-modal";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -2149,12 +2151,11 @@ const [searchTerm, setSearchTerm] = useState("");
                       <MinusCircle width={"1rem"} />
                     </motion.button>
                   </div>
-                  <textarea
+                  <RichTextEditor
                     value={role.description}
-                    onChange={(e) => handleRoleChange(index, "description", e.target.value)}
-                    placeholder="Enter role description"
-                    style={{ width: "100%", fontSize: "0.95rem", borderRadius: "0.5rem" }}
-                    rows={5}
+                    onChange={(value) => handleRoleChange(index, "description", value)}
+                    placeholder="Enter role description (use toolbar for formatting)"
+                    minHeight="150px"
                   />
                 </motion.div>
               ))}
@@ -2715,9 +2716,12 @@ const [searchTerm, setSearchTerm] = useState("");
                       >
                         {role.title || "[ROLE TITLE]"}
                       </h3>
-                      <p style={{ fontSize: "0.8rem", color: "#444" }}>
-                        {role.description || "[ROLE DESCRIPTION]"}
-                      </p>
+                      <div 
+                        style={{ fontSize: "0.8rem", color: "#444" }}
+                        dangerouslySetInnerHTML={{ 
+                          __html: role.description || "[ROLE DESCRIPTION]" 
+                        }}
+                      />
                     </div>
                   ) : null
                 )}
@@ -4032,80 +4036,69 @@ const [searchTerm, setSearchTerm] = useState("");
       />
 
       {/* Field Configuration Dialog */}
-      <Modal
-        title={
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "white" }}>
-            <Sparkles color="mediumslateblue" width="1.2rem" />
-            <span>Manage Fields</span>
-          </div>
-        }
+      <ResponsiveModal
         open={fieldConfigDialogVisible}
-        onCancel={() => setFieldConfigDialogVisible(false)}
-        footer={null}
-        width={600}
-        styles={{
-          content: {
-            background: "#1a1a1a",
-            color: "white",
-          },
-          header: {
-            background: "#1a1a1a",
-            // borderBottom: "1px solid rgba(255 255 255/ 10%)",
-          },
-          body: {
-            background: "#1a1a1a",
-          },
-        }}
+        onOpenChange={setFieldConfigDialogVisible}
+        title="Manage Fields"
+        description="Configure which fields to show and customize their labels"
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          {/* Add Custom Field Section */}
+        <div style={{ 
+          display: "flex", 
+          flexDirection: "column", 
+          height: "70vh",
+          maxHeight: "700px",
+          overflow: "hidden"
+        }}>
+          {/* Add Custom Field Section - Sticky */}
           <div
             style={{
-              padding: "1rem",
-              borderRadius: "0.5rem",
-              
+              padding: "1rem 1.5rem",
+              borderBottom: "1px solid rgba(100 100 100/ 15%)",
+              background: "var(--background)",
+              flexShrink: 0,
             }}
           >
-            <h3 style={{ marginBottom: "0.75rem", fontSize: "0.9rem", color: "white" }}>
-              Add Custom Field
-            </h3>
-            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+            <div style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "0.5rem", 
+              marginBottom: "0.75rem" 
+            }}>
+              <Sparkles width="1rem" style={{ color: "mediumslateblue" }} />
+              <h3 style={{ fontSize: "0.95rem", fontWeight: "600", margin: 0 }}>
+                Add Custom Field
+              </h3>
+            </div>
+            
+            <div style={{ 
+              display: "flex", 
+              flexWrap: "wrap",
+              gap: "0.5rem",
+            }}>
               <input
                 type="text"
                 value={newFieldName}
                 onChange={(e) => setNewFieldName(e.target.value)}
                 placeholder="Field name"
                 style={{
-                  flex: 1,
-                  padding: "0.5rem",
+                  flex: "1 1 200px",
+                  minWidth: "150px",
+                  padding: "0.625rem 0.75rem",
                   borderRadius: "0.5rem",
-                  border: "1px solid rgba(255 255 255/ 20%)",
-                  fontSize: "0.9rem",
-                  background: "rgba(255 255 255/ 8%)",
-                  color: "white",
+                  fontSize: "0.875rem",
                 }}
               />
               <Select value={newFieldType} onValueChange={(value: FieldType) => setNewFieldType(value)}>
                 <SelectTrigger 
-                  className="w-[140px]"
                   style={{
-                    background: "rgba(255 255 255/ 8%)",
-                    color: "white",
-                    border: "1px solid rgba(255 255 255/ 20%)",
-                    padding: "0.5rem",
+                    flex: "0 0 auto",
+                    minWidth: "110px",
+                    padding: "0.625rem 0.75rem",
                   }}
                 >
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder="Type" />
                 </SelectTrigger>
-                <SelectContent
-                  position="popper"
-                  style={{
-                    background: "#2a2a2a",
-                    color: "white",
-                    border: "1px solid rgba(255 255 255/ 20%)",
-                    zIndex: 9999,
-                  }}
-                >
+                <SelectContent position="popper">
                   <SelectItem value="text">Text</SelectItem>
                   <SelectItem value="textarea">Text Area</SelectItem>
                   <SelectItem value="number">Number</SelectItem>
@@ -4114,95 +4107,116 @@ const [searchTerm, setSearchTerm] = useState("");
               </Select>
               <Select value={newFieldSection} onValueChange={(value: "table" | "paragraph") => setNewFieldSection(value)}>
                 <SelectTrigger 
-                  className="w-[140px]"
                   style={{
-                    background: "rgba(255 255 255/ 8%)",
-                    color: "white",
-                    border: "1px solid rgba(255 255 255/ 20%)",
-                    padding: "0.5rem",
+                    flex: "0 0 auto",
+                    minWidth: "110px",
+                    padding: "0.625rem 0.75rem",
                   }}
                 >
                   <SelectValue placeholder="Section" />
                 </SelectTrigger>
-                <SelectContent
-                  position="popper"
-                  style={{
-                    background: "#2a2a2a",
-                    color: "white",
-                    border: "1px solid rgba(255 255 255/ 20%)",
-                    zIndex: 9999,
-                  }}
-                >
+                <SelectContent position="popper">
                   <SelectItem value="table">Table</SelectItem>
                   <SelectItem value="paragraph">Paragraph</SelectItem>
                 </SelectContent>
               </Select>
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={handleAddCustomField}
                 style={{
+                  flex: "0 0 auto",
                   background: "mediumslateblue",
                   color: "white",
                   border: "none",
-                  padding: "0.5rem 1rem",
+                  padding: "0.625rem 1rem",
                   borderRadius: "0.5rem",
                   cursor: "pointer",
-                  fontSize: "0.9rem",
+                  fontSize: "0.875rem",
+                  fontWeight: "500",
                   display: "flex",
                   alignItems: "center",
                   gap: "0.5rem",
                 }}
               >
                 <Plus width="1rem" />
-                Add
-              </button>
+                <span style={{ whiteSpace: "nowrap" }}>Add Field</span>
+              </motion.button>
             </div>
           </div>
 
-          {/* Field List */}
-          <div ref={fieldListScrollRef} style={{ maxHeight: "500px", overflowY: "auto", scrollBehavior: "smooth" }}>
+          {/* Scrollable Field List */}
+          <div 
+            ref={fieldListScrollRef}
+            style={{ 
+              flex: 1,
+              overflowY: "auto",
+              overflowX: "hidden",
+              padding: "1rem 1.5rem",
+            }}
+          >
             {/* Table Fields Section */}
-            <div style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ marginBottom: "0.75rem", fontSize: "0.9rem", color: "white", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span style={{ background: "rgba(59 130 246/ 20%)", padding: "0.25rem 0.5rem", borderRadius: "0.25rem", fontSize: "0.8rem" }}>Table Fields</span>
-                <span style={{ fontSize: "0.75rem", opacity: 0.7, color: "rgba(255 255 255/ 70%)" }}>
-                  (Check to show, uncheck to hide • Drag to reorder)
+            <div style={{ marginBottom: "2rem" }}>
+              <div style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "0.5rem",
+                marginBottom: "0.75rem",
+                paddingBottom: "0.5rem",
+                borderBottom: "2px solid rgba(59 130 246/ 20%)"
+              }}>
+                <Database width="1rem" style={{ color: "rgb(59 130 246)" }} />
+                <h4 style={{ 
+                  fontSize: "0.9rem", 
+                  fontWeight: "600",
+                  margin: 0,
+                  color: "rgb(59 130 246)"
+                }}>
+                  Table Fields
+                </h4>
+                <span style={{ 
+                  fontSize: "0.7rem", 
+                  opacity: 0.6,
+                  marginLeft: "auto"
+                }}>
+                  {fieldConfig.filter(f => f.section === "table" && f.enabled).length} active
                 </span>
-              </h3>
+              </div>
+              
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 {fieldConfig.filter(f => f.section === "table").map((field) => {
                   const index = fieldConfig.indexOf(field);
                   return (
-                    <div
+                    <motion.div
                       key={field.id}
                       draggable
                       onDragStart={() => handleDragStart(index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
+                      whileHover={{ scale: draggedFieldIndex !== index ? 1.01 : 1 }}
                       style={{
                         display: "flex",
-                        justifyContent: "space-between",
                         alignItems: "center",
+                        gap: "0.75rem",
                         padding: "0.75rem",
                         background: draggedFieldIndex === index
-                          ? "rgba(123 104 238/ 35%)"
+                          ? "rgba(123 104 238/ 15%)"
                           : field.enabled
-                          ? "rgba(255 255 255/ 8%)"
-                          : "rgba(255 255 255/ 3%)",
-                        borderRadius: "0.5rem",
-                        border: `2px solid ${
+                          ? "rgba(100 100 100/ 4%)"
+                          : "rgba(100 100 100/ 2%)",
+                        borderRadius: "0.625rem",
+                        border: `1px solid ${
                           draggedFieldIndex === index
-                            ? "rgba(123 104 238/ 70%)"
+                            ? "rgba(123 104 238/ 40%)"
                             : field.enabled
-                            ? "rgba(255 255 255/ 15%)"
-                            : "rgba(255 255 255/ 8%)"
+                            ? "rgba(100 100 100/ 15%)"
+                            : "rgba(100 100 100/ 8%)"
                         }`,
-                        opacity: draggedFieldIndex === index ? 0.5 : field.enabled ? 1 : 0.6,
+                        opacity: draggedFieldIndex === index ? 0.6 : field.enabled ? 1 : 0.5,
                         cursor: "grab",
-                        transition: "all 0.15s ease",
-                        transform: draggedFieldIndex === index ? "scale(1.02)" : "scale(1)",
-                        boxShadow: draggedFieldIndex === index ? "0 4px 12px rgba(123 104 238/ 30%)" : "none",
+                        transition: "all 0.2s ease",
                       }}
-                >
+                    >
                   <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
                     {/* Drag Handle */}
                     <div
@@ -4238,8 +4252,6 @@ const [searchTerm, setSearchTerm] = useState("");
                                 padding: "0.25rem 0.5rem",
                                 borderRadius: "0.25rem",
                                 border: "1px solid rgba(123 104 238/ 50%)",
-                                background: "rgba(255 255 255/ 10%)",
-                                color: "white",
                                 fontSize: "0.9rem",
                                 fontWeight: 500,
                               }}
@@ -4346,7 +4358,7 @@ const [searchTerm, setSearchTerm] = useState("");
                       Remove
                     </button>
                   )}
-                </div>
+                </motion.div>
               );
             })}
               </div>
@@ -4354,45 +4366,63 @@ const [searchTerm, setSearchTerm] = useState("");
 
             {/* Paragraph Fields Section */}
             <div>
-              <h3 style={{ marginBottom: "0.75rem", fontSize: "0.9rem", color: "white", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span style={{ background: "rgba(168 85 247/ 20%)", padding: "0.25rem 0.5rem", borderRadius: "0.25rem", fontSize: "0.8rem" }}>Paragraph Fields</span>
-                <span style={{ fontSize: "0.75rem", opacity: 0.7, color: "rgba(255 255 255/ 70%)" }}>
-                  (Check to show, uncheck to hide • Drag to reorder)
+              <div style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "0.5rem",
+                marginBottom: "0.75rem",
+                paddingBottom: "0.5rem",
+                borderBottom: "2px solid rgba(168 85 247/ 20%)"
+              }}>
+                <FileText width="1rem" style={{ color: "rgb(168 85 247)" }} />
+                <h4 style={{ 
+                  fontSize: "0.9rem", 
+                  fontWeight: "600",
+                  margin: 0,
+                  color: "rgb(168 85 247)"
+                }}>
+                  Paragraph Fields
+                </h4>
+                <span style={{ 
+                  fontSize: "0.7rem", 
+                  opacity: 0.6,
+                  marginLeft: "auto"
+                }}>
+                  {fieldConfig.filter(f => f.section === "paragraph" && f.enabled).length} active
                 </span>
-              </h3>
+              </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 {fieldConfig.filter(f => f.section === "paragraph").map((field) => {
                   const index = fieldConfig.indexOf(field);
                   return (
-                    <div
+                    <motion.div
                       key={field.id}
                       draggable
                       onDragStart={() => handleDragStart(index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
+                      whileHover={{ scale: draggedFieldIndex !== index ? 1.01 : 1 }}
                       style={{
                         display: "flex",
-                        justifyContent: "space-between",
                         alignItems: "center",
+                        gap: "0.75rem",
                         padding: "0.75rem",
                         background: draggedFieldIndex === index
-                          ? "rgba(123 104 238/ 35%)"
+                          ? "rgba(123 104 238/ 15%)"
                           : field.enabled
-                          ? "rgba(255 255 255/ 8%)"
-                          : "rgba(255 255 255/ 3%)",
-                        borderRadius: "0.5rem",
-                        border: `2px solid ${
+                          ? "rgba(100 100 100/ 4%)"
+                          : "rgba(100 100 100/ 2%)",
+                        borderRadius: "0.625rem",
+                        border: `1px solid ${
                           draggedFieldIndex === index
-                            ? "rgba(123 104 238/ 70%)"
+                            ? "rgba(123 104 238/ 40%)"
                             : field.enabled
-                            ? "rgba(255 255 255/ 15%)"
-                            : "rgba(255 255 255/ 8%)"
+                            ? "rgba(100 100 100/ 15%)"
+                            : "rgba(100 100 100/ 8%)"
                         }`,
-                        opacity: draggedFieldIndex === index ? 0.5 : field.enabled ? 1 : 0.6,
+                        opacity: draggedFieldIndex === index ? 0.6 : field.enabled ? 1 : 0.5,
                         cursor: "grab",
-                        transition: "all 0.15s ease",
-                        transform: draggedFieldIndex === index ? "scale(1.02)" : "scale(1)",
-                        boxShadow: draggedFieldIndex === index ? "0 4px 12px rgba(123 104 238/ 30%)" : "none",
+                        transition: "all 0.2s ease",
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
@@ -4471,15 +4501,15 @@ const [searchTerm, setSearchTerm] = useState("");
                               </>
                             ) : (
                               <>
-                                <div style={{ fontWeight: 500, fontSize: "0.9rem", color: "white" }}>
+                                <div style={{ fontWeight: 500, fontSize: "0.9rem" }}>
                                   {field.label}
                                   {field.isCustom && (
                                     <span
                                       style={{
                                         marginLeft: "0.5rem",
                                         fontSize: "0.7rem",
-                                        color: "#b8a3ff",
-                                        background: "rgba(123 104 238/ 25%)",
+                                        color: "#8b5cf6",
+                                        background: "rgba(123 104 238/ 15%)",
                                         padding: "0.15rem 0.5rem",
                                         borderRadius: "0.25rem",
                                       }}
@@ -4510,7 +4540,7 @@ const [searchTerm, setSearchTerm] = useState("");
                           <div
                             style={{
                               fontSize: "0.75rem",
-                              color: "rgba(255 255 255/ 60%)",
+                              opacity: 0.6,
                               marginTop: "0.25rem",
                             }}
                           >
@@ -4538,14 +4568,14 @@ const [searchTerm, setSearchTerm] = useState("");
                           Remove
                         </button>
                       )}
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
             </div>
           </div>
         </div>
-      </Modal>
+      </ResponsiveModal>
     </>
   );
 }
