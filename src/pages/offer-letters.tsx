@@ -2953,7 +2953,7 @@ const [searchTerm, setSearchTerm] = useState("");
         <br />
 
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
-          <img style={{position:"absolute", width:"7.5rem", bottom:"2rem", right:"2rem"}} src={"/ssu_stamp.png"}/>
+          <img style={{display:"none", width:"7.5rem", bottom:"2rem", right:"2rem"}} src={"/ssu_stamp.png"}/>
 
         {/* Numbered main clauses */}
         {(() => {
