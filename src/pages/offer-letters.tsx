@@ -4563,7 +4563,7 @@ const [searchTerm, setSearchTerm] = useState("");
                           </>
                         ) : (
                           <>
-                            <div style={{ fontWeight: 500, fontSize: "0.9rem", color: "white" }}>
+                            <div style={{ fontWeight: 500, fontSize: "0.9rem", color: "black" }}>
                               {field.label}
                               {field.isCustom && (
                                 <span
