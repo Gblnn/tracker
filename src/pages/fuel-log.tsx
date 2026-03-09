@@ -13,6 +13,7 @@ import { db } from "@/firebase";
 import { fetchAndCacheFuelLogs, getCachedFuelLogs, type FuelLog as FuelLogType } from "@/utils/fuelLogsCache";
 import { addPendingFuelLog, getPendingFuelLogs, getPendingFuelLogsCount, syncAllPendingFuelLogs } from "@/utils/offlineFuelLogs";
 import { getCachedProfile } from "@/utils/profileCache";
+import { ensureOcrWorker, getOcrLoadState, subscribeOcrLoadState } from "@/utils/ocrWorker";
 import { getCachedVehicle, fetchAndCacheVehicle } from "@/utils/vehicleCache";
 import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
@@ -20,7 +21,6 @@ import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical,
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import Tesseract, { PSM } from "tesseract.js";
 
 // Shared Fuel Log Form Component
 interface FuelLogFormContentProps {
@@ -118,7 +118,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
               onClick={onScanBill}
               whileTap={{ scale: 0.95 }}
               style={{
-                background: "goldenrod",
+                background: "black",
                 padding: "0.75rem 0.75rem",
                 borderRadius: "0.5rem",
                 border: "none",
@@ -532,53 +532,27 @@ interface BillScannerProps {
 const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracted }) => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [ocrReady, setOcrReady] = useState(false);
-  const [ocrLoadProgress, setOcrLoadProgress] = useState(0);
-  const [ocrLoadStatus, setOcrLoadStatus] = useState("Preparing OCR engine...");
+  const [ocrReady, setOcrReady] = useState(getOcrLoadState().ready);
+  const [ocrLoadProgress, setOcrLoadProgress] = useState(getOcrLoadState().progress);
+  const [ocrLoadStatus, setOcrLoadStatus] = useState(getOcrLoadState().status);
   const [extractedText, setExtractedText] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const workerRef = useRef<any>(null);
 
-  const initializeOcrWorker = async () => {
-    if (workerRef.current) {
-      setOcrReady(true);
-      setOcrLoadProgress(100);
-      setOcrLoadStatus("OCR engine ready");
-      return;
-    }
-
-    setOcrReady(false);
-    setOcrLoadProgress(0);
-    setOcrLoadStatus("Loading OCR engine...");
-
-    const worker = await Tesseract.createWorker("eng", 1, {
-      logger: (message) => {
-        const normalizedStatus = message.status ? message.status.replace(/\s+/g, " ").trim() : "Loading OCR engine...";
-        setOcrLoadStatus(normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1));
-
-        if (typeof message.progress === "number") {
-          const pct = Math.max(0, Math.min(100, Math.round(message.progress * 100)));
-          setOcrLoadProgress(pct);
-        }
-      },
+  useEffect(() => {
+    const unsubscribe = subscribeOcrLoadState((state) => {
+      setOcrReady(state.ready);
+      setOcrLoadProgress(state.progress);
+      setOcrLoadStatus(state.status);
     });
 
-    await worker.setParameters({
-      tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
-      preserve_interword_spaces: "0",
-    });
-
-    workerRef.current = worker;
-    setOcrReady(true);
-    setOcrLoadProgress(100);
-    setOcrLoadStatus("OCR engine ready");
-  };
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     if (open) {
-      void initializeOcrWorker();
+      void ensureOcrWorker();
       if (!capturedImage) {
         startCamera();
       }
@@ -587,15 +561,6 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
       stopCamera();
     };
   }, [open, capturedImage]);
-
-  useEffect(() => {
-    return () => {
-      if (workerRef.current) {
-        void workerRef.current.terminate();
-        workerRef.current = null;
-      }
-    };
-  }, []);
 
   const handleClose = () => {
     setCapturedImage(null);
@@ -658,11 +623,8 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
   const processImage = async (imageData: string) => {
     setProcessing(true);
     try {
-      if (!workerRef.current) {
-        await initializeOcrWorker();
-      }
-
-      const result = await workerRef.current.recognize(imageData);
+      const worker = await ensureOcrWorker();
+      const result = await worker.recognize(imageData);
 
       const text = result.data.text;
       console.log("Extracted text:", text);

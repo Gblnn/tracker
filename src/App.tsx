@@ -1,8 +1,10 @@
 import { lazy, Suspense, useEffect, useRef } from "react";
 import { Route, Routes } from "react-router-dom";
 import AuthGuard from "./components/AuthGuard";
+import { useAuth } from "./components/AuthProvider";
 import ProtectedRoutes from "./components/protectedRoute";
 import { refreshPhonebookCache } from "./utils/phonebookCache";
+import { preloadOcrWorker } from "./utils/ocrWorker";
 import { useBackgroundProcess } from "./context/BackgroundProcessContext";
 
 // Import critical startup pages immediately (no lazy loading)
@@ -66,6 +68,7 @@ const PageLoader = () => (
 
 export default function App() {
   const { addProcess, updateProcess } = useBackgroundProcess();
+  const { user, userData, cachedAuthState } = useAuth();
   const phonebookInitialized = useRef(false);
   
   // Initialize phonebook cache in the background on app launch (only once)
@@ -80,6 +83,27 @@ export default function App() {
       });
     }
   }, []); // Empty dependency array ensures this only runs once
+
+  useEffect(() => {
+    const isAuthenticated = Boolean((user && userData) || cachedAuthState);
+    if (!isAuthenticated) {
+      return;
+    }
+
+    const warmup = () => {
+      preloadOcrWorker();
+    };
+
+    if (typeof globalThis !== "undefined" && "requestIdleCallback" in globalThis) {
+      const requestIdle = globalThis.requestIdleCallback as (callback: IdleRequestCallback) => number;
+      const cancelIdle = globalThis.cancelIdleCallback as (handle: number) => void;
+      const handle = requestIdle(() => warmup());
+      return () => cancelIdle(handle);
+    }
+
+    const timer = globalThis.setTimeout(warmup, 300);
+    return () => globalThis.clearTimeout(timer);
+  }, [user, userData, cachedAuthState]);
 
   return (
     <AuthGuard>
