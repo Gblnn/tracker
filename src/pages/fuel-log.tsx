@@ -142,7 +142,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
               onClick={onScanBill}
               whileTap={{ scale: 0.95 }}
               style={{
-                background: "goldenrod",
+                background: "black",
                 padding: "0.75rem 0.75rem",
                 borderRadius: "0.5rem",
                 border: "none",
