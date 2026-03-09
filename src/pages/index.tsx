@@ -18,6 +18,7 @@ import {
   Book,
   Bug,
   Car,
+  Clock3,
   FileArchive,
   FileText,
 
@@ -173,10 +174,11 @@ export default function Index() {
     const hasVehicleLogBook = hasModuleAccess('vehicle_log_book');
     const hasPettyCash = hasModuleAccess('petty_cash');
     const hasOfferLetters = hasModuleAccess('offer_letters');
+        const hasShiftLogs = hasModuleAccess('shift_logs');
 
     return hasRecordsMaster || hasUsers || hasNewHire || hasQuickLinks || 
            hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || 
-           hasPettyCash || hasOfferLetters;
+          hasPettyCash || hasOfferLetters || hasShiftLogs;
   };
 
   // Authenticate for specific module
@@ -392,6 +394,14 @@ export default function Index() {
                   title="Offer Letters"
                   icon={<FileText width={"2rem"}  />}
                   onClick={() => authenticateModule('offer_letters', '/offer-letters', 'Offer Letters')}
+                />
+              )}
+
+              {hasModuleAccess('shift_logs') && (
+                <GridTile
+                  title="Shift Logs"
+                  icon={<Clock3 width={"2rem"} />}
+                  onClick={() => authenticateModule('shift_logs', '/shift-logs', 'Shift Logs')}
                 />
               )}
             </div>

@@ -7,7 +7,6 @@ import { signOut } from "firebase/auth";
 import { motion } from "framer-motion";
 import {
   BriefcaseBusiness,
-  FileText,
   KeyRound,
   List,
   Mail,
@@ -86,12 +85,12 @@ export default function NewHire() {
               title={"Short-list"}
               icon={<List width={"1.25rem"} />}
             />
-            <Directive
+            {/* <Directive
               onClick={() => usenavigate("/offer-letters")}
               to={"/offer-letters"}
               title={"Prepare Offer Letter"}
               icon={<FileText color="mediumslateblue" width={"1.25rem"} />}
-            />
+            /> */}
             {/* <Directive
               title={"Resources Allocation"}
               icon={<Binary color="dodgerblue" />}

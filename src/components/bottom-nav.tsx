@@ -23,7 +23,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, isActive, onClick, isMobile = f
         background: isActive 
           ? (isMobile ? "linear-gradient(90deg, mediumslateblue, midnightblue)" : "linear-gradient(90deg, mediumslateblue, midnightblue)")
           : "none",
-        color: isActive ? "white" : "inherit",
+        color: isActive ? "white" : "darkslategray",
         fontSize: "0.9rem",
         borderRadius: "0.75rem",
         alignItems: "center",

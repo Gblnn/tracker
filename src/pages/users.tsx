@@ -23,6 +23,7 @@ import { motion } from "framer-motion";
 import {
   Book,
   Car,
+  Clock3,
   Package,
   Eye,
   FileArchive,
@@ -58,6 +59,7 @@ const MODULES = [
   { id: 'fuel_log', name: 'Fuel Log', icon: Fuel },
   { id: 'asset_master', name: 'Asset Master', icon: Car },
   { id: 'projects', name: 'Projects', icon: Package },
+  { id: 'shift_logs', name: 'Shift Logs', icon: Clock3 },
   { id: 'vehicle_log_book', name: 'Vehicle Log', icon: Book },
   { id: 'petty_cash', name: 'Petty Cash', icon: Wallet },
   { id: 'offer_letters', name: 'Offer Letters', icon: FileText },

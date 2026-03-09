@@ -48,7 +48,7 @@ export function ResponsiveModal({
         <DrawerContent style={{ width: "100%" }}>
           <div style={{ padding: "1rem", border:"", textAlign:"left", width:"100%" }}>
             <DrawerTitle style={{}}>{title}</DrawerTitle>
-            {description && <DrawerDescription>{description}</DrawerDescription>}
+            {description && <DrawerDescription style={{paddingTop:"1rem"}}> {description}</DrawerDescription>}
           </div>
           <div style={{ width: "100%" }}>
             {children}
@@ -63,7 +63,7 @@ export function ResponsiveModal({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
+          {description && <DialogDescription >{description}</DialogDescription>}
         </DialogHeader>
         {children}
       </DialogContent>

@@ -300,6 +300,7 @@ export default function Projects() {
           boxShadow: "0 10px 24px rgba(0,0,0,0.22)",
           fontSize: "0.9rem",
           fontWeight: 500,
+          marginBottom: "0.5rem"
         }}
       >
         <Plus width="1rem" />
