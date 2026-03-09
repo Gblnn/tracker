@@ -25,6 +25,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: "**/*",
       workbox: {
+        // OCR engine files are large; increase the precache limit so they are available offline.
+        maximumFileSizeToCacheInBytes: 15 * 1024 * 1024,
         globPatterns: ["**/*"],
       },
     }),
