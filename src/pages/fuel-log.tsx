@@ -22,6 +22,30 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import Tesseract, { PSM } from "tesseract.js";
 
+let sharedFuelBillWorker: any | null = null;
+let sharedFuelBillWorkerPromise: Promise<any> | null = null;
+
+const getSharedFuelBillWorker = async () => {
+  if (sharedFuelBillWorker) return sharedFuelBillWorker;
+  if (sharedFuelBillWorkerPromise) return await sharedFuelBillWorkerPromise;
+
+  sharedFuelBillWorkerPromise = (async () => {
+    const worker = await Tesseract.createWorker("eng", 1);
+    await worker.setParameters({
+      tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
+      preserve_interword_spaces: "0",
+    });
+    sharedFuelBillWorker = worker;
+    return worker;
+  })();
+
+  try {
+    return await sharedFuelBillWorkerPromise;
+  } finally {
+    sharedFuelBillWorkerPromise = null;
+  }
+};
+
 // Shared Fuel Log Form Component
 interface FuelLogFormContentProps {
   date: string;
@@ -145,7 +169,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <Calendar color="orange" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                <Calendar width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
                 <label
                   htmlFor="date"
                   style={{
@@ -195,7 +219,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <Gauge color="orange" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                <Gauge width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
                 <label
                   htmlFor="odometer"
                   style={{
@@ -250,7 +274,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <DollarSign color="orange" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                <DollarSign width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
                 <label
                   htmlFor="amount"
                   style={{
@@ -305,7 +329,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <Fuel color="mediumslateblue" width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                <Fuel width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
                 <label
                   htmlFor="litres"
                   style={{
@@ -348,6 +372,8 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
                 </span>
               </div>
             </motion.div>
+
+
           </div>
         </motion.div>
       </div>
@@ -530,34 +556,13 @@ interface BillScannerProps {
 const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracted }) => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [ocrReady, setOcrReady] = useState(false);
   const [extractedText, setExtractedText] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const workerRef = useRef<any>(null);
-
-  const initializeOcrWorker = async () => {
-    if (workerRef.current) {
-      setOcrReady(true);
-      return;
-    }
-
-    setOcrReady(false);
-    const worker = await Tesseract.createWorker("eng", 1);
-
-    await worker.setParameters({
-      tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
-      preserve_interword_spaces: "0",
-    });
-
-    workerRef.current = worker;
-    setOcrReady(true);
-  };
 
   useEffect(() => {
     if (open) {
-      void initializeOcrWorker();
       if (!capturedImage) {
         startCamera();
       }
@@ -568,12 +573,19 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
   }, [open, capturedImage]);
 
   useEffect(() => {
-    return () => {
-      if (workerRef.current) {
-        void workerRef.current.terminate();
-        workerRef.current = null;
-      }
+    const warmup = () => {
+      void getSharedFuelBillWorker();
     };
+
+    if (typeof globalThis !== "undefined" && "requestIdleCallback" in globalThis) {
+      const requestIdle = globalThis.requestIdleCallback as (callback: IdleRequestCallback) => number;
+      const cancelIdle = globalThis.cancelIdleCallback as (handle: number) => void;
+      const handle = requestIdle(warmup);
+      return () => cancelIdle(handle);
+    }
+
+    const timer = globalThis.setTimeout(warmup, 250);
+    return () => globalThis.clearTimeout(timer);
   }, []);
 
   const handleClose = () => {
@@ -637,11 +649,8 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
   const processImage = async (imageData: string) => {
     setProcessing(true);
     try {
-      if (!workerRef.current) {
-        await initializeOcrWorker();
-      }
-
-      const result = await workerRef.current.recognize(imageData);
+      const worker = await getSharedFuelBillWorker();
+      const result = await worker.recognize(imageData);
 
       const text = result.data.text;
       console.log("Extracted text:", text);
@@ -985,9 +994,7 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
                     margin: 0,
                     lineHeight: 1.4
                   }}>
-                      {ocrReady
-                        ? "💡 Position bill flat • Ensure good lighting • Focus on \"Amount\" and \"Volume\" fields"
-                        : "Preparing scanner..."}
+                      Position bill flat, ensure good lighting, and focus on "Amount" and "Volume" fields.
                   </p>
                 </div>
               </>
@@ -1035,16 +1042,15 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={capturePhoto}
-                  disabled={!ocrReady}
                   style={{
-                    background: ocrReady ? "white" : "rgba(255,255,255,0.5)",
+                    background: "white",
                     color: "black",
                     border: "none",
                     padding: "1rem 2rem",
                     borderRadius: "2rem",
                     fontSize: "1rem",
                     fontWeight: "600",
-                    cursor: ocrReady ? "pointer" : "not-allowed",
+                    cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     gap: "0.5rem",
@@ -1075,16 +1081,15 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => processImage(capturedImage)}
-                    disabled={!ocrReady}
                     style={{
-                      background: ocrReady ? "dodgerblue" : "rgba(30, 144, 255, 0.5)",
+                      background: "dodgerblue",
                       color: "white",
                       border: "none",
                       padding: "0.75rem 1.5rem",
                       borderRadius: "1rem",
                       fontSize: "0.875rem",
                       fontWeight: "600",
-                      cursor: ocrReady ? "pointer" : "not-allowed"
+                      cursor: "pointer"
                     }}
                   >
                     Process Image
