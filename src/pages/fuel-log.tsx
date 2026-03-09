@@ -118,7 +118,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
               onClick={onScanBill}
               whileTap={{ scale: 0.95 }}
               style={{
-                background: "dodgerblue",
+                background: "goldenrod",
                 padding: "0.5rem 0.75rem",
                 borderRadius: "0.5rem",
                 border: "none",
@@ -645,34 +645,70 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
     console.log("Full text:", cleanedText);
     console.log("Lines:", lines);
     
+    // Log all lines containing "amount" for debugging
+    const amountLines = lines.filter(line => /amount/i.test(line));
+    if (amountLines.length > 0) {
+      console.log("📋 Lines containing 'amount':", amountLines);
+    }
+    
     // Try to find amount and volume in adjacent lines or same line
     for (let i = 0; i < lines.length; i++) {
       const currentLine = lines[i].toLowerCase().replace(/\s+/g, ' ').trim();
       const nextLine = i < lines.length - 1 ? lines[i + 1].toLowerCase().replace(/\s+/g, ' ').trim() : '';
       
       // Check for AMOUNT label (with value on same or next line)
+      // IMPORTANT: Exclude "VAT Amount", "Actual Amount" - match only standalone "Amount"
       if (!amount) {
         // Same line patterns: "Amount: 10.500", "Amount 10.500 OMR", "Amt: 10.500"
+        // Use negative lookbehind to exclude "VAT Amount", "Actual Amount", etc.
         const amountSameLinePatterns = [
-          /(?:amount|amt|total|gross|payable|pay)[:\s]*(?:omr|rial|rials?)?\s*(\d+\.?\d*)/i,
+          /(?<!vat\s)(?<!actual\s)(?<!net\s)(?<!gross\s)(?<!sub\s)(?<!\w)amount[:\s]*(?:omr|rial|rials?)?\s*(\d+\.?\d*)/i,
+          /^amount[:\s]*(?:omr|rial|rials?)?\s*(\d+\.?\d*)/i, // Amount at start of line
+          /(?:total|payable|pay)[:\s]*(?:omr|rial|rials?)?\s*(\d+\.?\d*)/i,
           /(?:omr|rial|rials?)[:\s]*(\d+\.?\d*)/i
         ];
         
         for (const pattern of amountSameLinePatterns) {
           const match = currentLine.match(pattern);
           if (match) {
-            amount = match[1];
-            console.log("✓ AMOUNT found (same line):", amount, "from:", currentLine);
-            break;
+            // Double-check: ensure we're not matching "vat amount" or "actual amount"
+            const lineHasVat = /vat\s+amount/i.test(currentLine);
+            const lineHasActual = /actual\s+amount/i.test(currentLine);
+            const lineHasNet = /net\s+amount/i.test(currentLine);
+            const lineHasGross = /gross\s+amount/i.test(currentLine);
+            
+            if (!lineHasVat && !lineHasActual && !lineHasNet && !lineHasGross) {
+              amount = match[1];
+              console.log("✓ AMOUNT found (same line):", amount, "from:", currentLine);
+              break;
+            } else {
+              if (lineHasVat) console.log("⚠️ SKIPPED VAT Amount:", currentLine);
+              if (lineHasActual) console.log("⚠️ SKIPPED Actual Amount:", currentLine);
+              if (lineHasNet) console.log("⚠️ SKIPPED Net Amount:", currentLine);
+              if (lineHasGross) console.log("⚠️ SKIPPED Gross Amount:", currentLine);
+            }
           }
         }
         
-        // Check if current line has the label and next line has the value
-        if (!amount && /(?:amount|amt|total|gross|payable)/.test(currentLine)) {
-          const numberMatch = nextLine.match(/(\d+\.?\d+)/);
-          if (numberMatch) {
-            amount = numberMatch[1];
-            console.log("✓ AMOUNT found (next line):", amount, "from label:", currentLine, "value:", nextLine);
+        // Check if current line has the label "amount" (not vat/actual amount) and next line has the value
+        if (!amount) {
+          const hasAmountLabel = /(?<!vat\s)(?<!actual\s)(?<!net\s)(?<!gross\s)(?<!\w)amount/i.test(currentLine);
+          const hasVatAmount = /vat\s+amount/i.test(currentLine);
+          const hasActualAmount = /actual\s+amount/i.test(currentLine);
+          const hasNetAmount = /net\s+amount/i.test(currentLine);
+          const hasGrossAmount = /gross\s+amount/i.test(currentLine);
+          
+          if (hasAmountLabel && !hasVatAmount && !hasActualAmount && !hasNetAmount && !hasGrossAmount) {
+            const numberMatch = nextLine.match(/(\d+\.?\d+)/);
+            if (numberMatch) {
+              amount = numberMatch[1];
+              console.log("✓ AMOUNT found (next line):", amount, "from label:", currentLine, "value:", nextLine);
+            }
+          } else if (hasVatAmount || hasActualAmount || hasNetAmount || hasGrossAmount) {
+            if (hasVatAmount) console.log("⚠️ SKIPPED VAT Amount (label on separate line):", currentLine);
+            if (hasActualAmount) console.log("⚠️ SKIPPED Actual Amount (label on separate line):", currentLine);
+            if (hasNetAmount) console.log("⚠️ SKIPPED Net Amount (label on separate line):", currentLine);
+            if (hasGrossAmount) console.log("⚠️ SKIPPED Gross Amount (label on separate line):", currentLine);
           }
         }
       }
@@ -725,19 +761,27 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
     // Fallback: If still not found, use broader patterns across entire text
     if (!amount) {
       console.log("⚠️ Attempting fallback for AMOUNT...");
-      const fallbackPatterns = [
-        /amount[:\s]*(?:omr|rial)?\s*(\d+\.?\d*)/i,
-        /total[:\s]*(?:omr|rial)?\s*(\d+\.?\d*)/i,
-        /(?:omr|rial)[:\s]*(\d+\.?\d*)/i,
-        /payable[:\s]*(\d+\.?\d*)/i
-      ];
       
-      for (const pattern of fallbackPatterns) {
-        const match = cleanedText.match(pattern);
-        if (match) {
-          amount = match[1];
-          console.log("✓ AMOUNT found (fallback):", amount);
-          break;
+      // Try to find "Amount" but exclude lines with "VAT Amount" or "Actual Amount"
+      const amountMatches = cleanedText.match(/(?<!vat\s)(?<!actual\s)(?<!net\s)(?<!gross\s)(?<!sub\s)(?<!\w)amount[:\s]*(?:omr|rial)?\s*(\d+\.?\d*)/i);
+      
+      if (amountMatches && !(/vat\s+amount/i.test(cleanedText.substring(Math.max(0, amountMatches.index! - 20), amountMatches.index!)))) {
+        amount = amountMatches[1];
+        console.log("✓ AMOUNT found (fallback - negative lookbehind):", amount);
+      } else {
+        // Try other fallback patterns
+        const fallbackPatterns = [
+          /total[:\s]*(?:omr|rial)?\s*(\d+\.?\d*)/i,
+          /payable[:\s]*(\d+\.?\d*)/i
+        ];
+        
+        for (const pattern of fallbackPatterns) {
+          const match = cleanedText.match(pattern);
+          if (match) {
+            amount = match[1];
+            console.log("✓ AMOUNT found (fallback - alternative):", amount);
+            break;
+          }
         }
       }
     }
