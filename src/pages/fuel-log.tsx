@@ -20,7 +20,7 @@ import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical,
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import Tesseract from "tesseract.js";
+import Tesseract, { PSM } from "tesseract.js";
 
 // Shared Fuel Log Form Component
 interface FuelLogFormContentProps {
@@ -119,7 +119,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
               whileTap={{ scale: 0.95 }}
               style={{
                 background: "goldenrod",
-                padding: "0.5rem 0.75rem",
+                padding: "0.75rem 0.75rem",
                 borderRadius: "0.5rem",
                 border: "none",
                 display: "flex",
@@ -127,8 +127,8 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
                 gap: "0.375rem",
                 cursor: "pointer",
                 color: "white",
-                fontSize: "0.875rem",
-                fontWeight: "600"
+                fontSize: "1rem",
+                fontWeight: "500"
               }}
             >
               <ScanLine width="1rem" />
@@ -530,19 +530,51 @@ interface BillScannerProps {
 const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracted }) => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [ocrReady, setOcrReady] = useState(false);
   const [extractedText, setExtractedText] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const workerRef = useRef<any>(null);
+
+  const initializeOcrWorker = async () => {
+    if (workerRef.current) {
+      setOcrReady(true);
+      return;
+    }
+
+    setOcrReady(false);
+    const worker = await Tesseract.createWorker("eng", 1);
+
+    await worker.setParameters({
+      tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
+      preserve_interword_spaces: "0",
+    });
+
+    workerRef.current = worker;
+    setOcrReady(true);
+  };
 
   useEffect(() => {
-    if (open && !capturedImage) {
-      startCamera();
+    if (open) {
+      void initializeOcrWorker();
+      if (!capturedImage) {
+        startCamera();
+      }
     }
     return () => {
       stopCamera();
     };
   }, [open, capturedImage]);
+
+  useEffect(() => {
+    return () => {
+      if (workerRef.current) {
+        void workerRef.current.terminate();
+        workerRef.current = null;
+      }
+    };
+  }, []);
 
   const handleClose = () => {
     setCapturedImage(null);
@@ -555,7 +587,11 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' } // Use back camera on mobile
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
       });
       streamRef.current = stream;
       if (videoRef.current) {
@@ -579,12 +615,19 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+
+      // Keep enough detail for OCR, but avoid huge images that slow recognition.
+      const maxWidth = 1600;
+      const scale = video.videoWidth > maxWidth ? maxWidth / video.videoWidth : 1;
+      const targetWidth = Math.floor(video.videoWidth * scale);
+      const targetHeight = Math.floor(video.videoHeight * scale);
+
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.drawImage(video, 0, 0);
-        const imageData = canvas.toDataURL('image/jpeg');
+        ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+        const imageData = canvas.toDataURL('image/jpeg', 0.8);
         setCapturedImage(imageData);
         stopCamera();
       }
@@ -594,13 +637,11 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
   const processImage = async (imageData: string) => {
     setProcessing(true);
     try {
-      const result = await Tesseract.recognize(imageData, 'eng', {
-        logger: (m) => {
-          if (m.status === 'recognizing text') {
-            // Optional: show progress
-          }
-        }
-      });
+      if (!workerRef.current) {
+        await initializeOcrWorker();
+      }
+
+      const result = await workerRef.current.recognize(imageData);
 
       const text = result.data.text;
       console.log("Extracted text:", text);
@@ -859,6 +900,7 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
       <DialogContent 
         style={{ 
           maxWidth: "95vw", 
+    
           width: "500px",
           padding: 0,
           overflow: "hidden"
@@ -943,7 +985,9 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
                     margin: 0,
                     lineHeight: 1.4
                   }}>
-                    💡 Position bill flat • Ensure good lighting • Focus on "Amount" and "Volume" fields
+                      {ocrReady
+                        ? "💡 Position bill flat • Ensure good lighting • Focus on \"Amount\" and \"Volume\" fields"
+                        : "Preparing scanner..."}
                   </p>
                 </div>
               </>
@@ -991,15 +1035,16 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={capturePhoto}
+                  disabled={!ocrReady}
                   style={{
-                    background: "white",
+                    background: ocrReady ? "white" : "rgba(255,255,255,0.5)",
                     color: "black",
                     border: "none",
                     padding: "1rem 2rem",
                     borderRadius: "2rem",
                     fontSize: "1rem",
                     fontWeight: "600",
-                    cursor: "pointer",
+                    cursor: ocrReady ? "pointer" : "not-allowed",
                     display: "flex",
                     alignItems: "center",
                     gap: "0.5rem",
@@ -1030,15 +1075,16 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => processImage(capturedImage)}
+                    disabled={!ocrReady}
                     style={{
-                      background: "dodgerblue",
+                      background: ocrReady ? "dodgerblue" : "rgba(30, 144, 255, 0.5)",
                       color: "white",
                       border: "none",
                       padding: "0.75rem 1.5rem",
                       borderRadius: "1rem",
                       fontSize: "0.875rem",
                       fontWeight: "600",
-                      cursor: "pointer"
+                      cursor: ocrReady ? "pointer" : "not-allowed"
                     }}
                   >
                     Process Image
