@@ -526,7 +526,7 @@ const FuelLogDetailContent: React.FC<FuelLogDetailContentProps> = ({
 interface BillScannerProps {
   open: boolean;
   onClose: () => void;
-  onDataExtracted: (data: { amount: string; litres: string; odometer?: string }) => void;
+  onDataExtracted: (data: { amount: string; litres: string; odometer?: string; billDate?: string }) => void;
 }
 
 const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracted }) => {
@@ -656,7 +656,8 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
         onDataExtracted(extractedData);
         const amountText = extractedData.amount ? `OMR ${extractedData.amount}` : 'Not found';
         const litresText = extractedData.litres ? `${extractedData.litres} L` : 'Not found';
-        toast.success(`Amount: ${amountText} • Volume: ${litresText}`);
+        const dateText = extractedData.billDate ? moment(extractedData.billDate).format("DD MMM YYYY") : 'Not found';
+        toast.success(`Amount: ${amountText} • Volume: ${litresText} • Date: ${dateText}`);
         setCapturedImage(null);
         setExtractedText("");
         onClose();
@@ -674,10 +675,33 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
     }
   };
 
-  const parseFuelBillText = (text: string): { amount: string; litres: string; odometer?: string } => {
+  const parseFuelBillText = (text: string): { amount: string; litres: string; odometer?: string; billDate?: string } => {
     let amount = '';
     let litres = '';
     let odometer = '';
+    let billDate = '';
+
+    const parseDateCandidate = (candidate: string): string => {
+      const cleanedCandidate = candidate
+        .replace(/\b(?:time|tel|vat|amount|volume|qty|litre|liter|invoice|receipt|payment|date)\b/gi, " ")
+        .replace(/[^\w\s\/.,:-]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (!cleanedCandidate) return "";
+
+      const dateFormats = [
+        "DD/MM/YYYY", "D/M/YYYY", "DD-MM-YYYY", "D-M-YYYY", "DD.MM.YYYY", "D.M.YYYY",
+        "DD/MM/YY", "D/M/YY", "DD-MM-YY", "D-M-YY", "DD.MM.YY", "D.M.YY",
+        "YYYY/MM/DD", "YYYY-MM-DD", "YYYY.MM.DD",
+        "DD MMM YYYY", "D MMM YYYY", "DD MMM YY", "D MMM YY",
+        "DD MMMM YYYY", "D MMMM YYYY", "DD MMMM YY", "D MMMM YY",
+        "MMM DD YYYY", "MMMM DD YYYY", "MMM D YYYY", "MMMM D YYYY"
+      ];
+
+      const parsed = moment(cleanedCandidate, dateFormats, true);
+      return parsed.isValid() ? parsed.format("YYYY-MM-DD") : "";
+    };
 
     // Clean the text - remove extra spaces and normalize
     const cleanedText = text.replace(/\s+/g, ' ').trim();
@@ -696,8 +720,29 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
     
     // Try to find amount and volume in adjacent lines or same line
     for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i];
+      const nextRawLine = i < lines.length - 1 ? lines[i + 1] : '';
       const currentLine = lines[i].toLowerCase().replace(/\s+/g, ' ').trim();
       const nextLine = i < lines.length - 1 ? lines[i + 1].toLowerCase().replace(/\s+/g, ' ').trim() : '';
+
+      if (!billDate) {
+        const paymentDateSameLine = rawLine.match(/payment\s*date\s*[:\-]?\s*(.+)$/i);
+        if (paymentDateSameLine?.[1]) {
+          const parsedPaymentDate = parseDateCandidate(paymentDateSameLine[1]);
+          if (parsedPaymentDate) {
+            billDate = parsedPaymentDate;
+            console.log("✓ DATE found (Payment Date same line):", billDate, "from:", rawLine);
+          }
+        }
+
+        if (!billDate && /payment\s*date/i.test(rawLine)) {
+          const parsedPaymentDate = parseDateCandidate(nextRawLine);
+          if (parsedPaymentDate) {
+            billDate = parsedPaymentDate;
+            console.log("✓ DATE found (Payment Date next line):", billDate, "from label:", rawLine, "value:", nextRawLine);
+          }
+        }
+      }
       
       // Check for AMOUNT label (with value on same or next line)
       // IMPORTANT: Exclude "VAT Amount", "Actual Amount" - match only standalone "Amount"
@@ -848,6 +893,28 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
       }
     }
 
+    if (!billDate) {
+      console.log("⚠️ Attempting fallback for DATE...");
+      const dateFallbackPatterns = [
+        /payment\s*date\s*[:\-]?\s*([0-3]?\d[\/\-.][01]?\d[\/\-.](?:\d{2}|\d{4}))/i,
+        /payment\s*date\s*[:\-]?\s*([0-3]?\d\s*[A-Za-z]{3,9}\s*\d{2,4})/i,
+        /payment\s*date\s*[:\-]?\s*([A-Za-z]{3,9}\s*[0-3]?\d,?\s*\d{2,4})/i,
+        /\b([0-3]?\d[\/\-.][01]?\d[\/\-.](?:\d{2}|\d{4}))\b/
+      ];
+
+      for (const pattern of dateFallbackPatterns) {
+        const match = text.match(pattern);
+        if (match?.[1]) {
+          const parsedDate = parseDateCandidate(match[1]);
+          if (parsedDate) {
+            billDate = parsedDate;
+            console.log("✓ DATE found (fallback):", billDate, "from:", match[1]);
+            break;
+          }
+        }
+      }
+    }
+
     // Last resort: Extract all decimal numbers and make educated guesses
     if (!amount || !litres) {
       console.log("⚠️ Last resort: Looking for decimal numbers...");
@@ -883,9 +950,10 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
     console.log("Amount:", amount || "NOT FOUND");
     console.log("Litres:", litres || "NOT FOUND");
     console.log("Odometer:", odometer || "NOT FOUND");
+    console.log("Date:", billDate || "NOT FOUND");
     console.log("========================================================");
     
-    return { amount, litres, odometer };
+    return { amount, litres, odometer, billDate };
   };
 
   const retake = () => {
@@ -1528,7 +1596,7 @@ export default function FuelLog() {
     setScannerOpen(true);
   };
 
-  const handleDataExtracted = (data: { amount: string; litres: string; odometer?: string }) => {
+  const handleDataExtracted = (data: { amount: string; litres: string; odometer?: string; billDate?: string }) => {
     if (data.amount) {
       setAmountSpent(data.amount);
     }
@@ -1537,6 +1605,9 @@ export default function FuelLog() {
     }
     if (data.odometer) {
       setOdometerReading(data.odometer);
+    }
+    if (data.billDate) {
+      setDate(data.billDate);
     }
     setScannerOpen(false);
   };
