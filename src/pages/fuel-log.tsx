@@ -533,6 +533,8 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [ocrReady, setOcrReady] = useState(false);
+  const [ocrLoadProgress, setOcrLoadProgress] = useState(0);
+  const [ocrLoadStatus, setOcrLoadStatus] = useState("Preparing OCR engine...");
   const [extractedText, setExtractedText] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -542,11 +544,26 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
   const initializeOcrWorker = async () => {
     if (workerRef.current) {
       setOcrReady(true);
+      setOcrLoadProgress(100);
+      setOcrLoadStatus("OCR engine ready");
       return;
     }
 
     setOcrReady(false);
-    const worker = await Tesseract.createWorker("eng", 1);
+    setOcrLoadProgress(0);
+    setOcrLoadStatus("Loading OCR engine...");
+
+    const worker = await Tesseract.createWorker("eng", 1, {
+      logger: (message) => {
+        const normalizedStatus = message.status ? message.status.replace(/\s+/g, " ").trim() : "Loading OCR engine...";
+        setOcrLoadStatus(normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1));
+
+        if (typeof message.progress === "number") {
+          const pct = Math.max(0, Math.min(100, Math.round(message.progress * 100)));
+          setOcrLoadProgress(pct);
+        }
+      },
+    });
 
     await worker.setParameters({
       tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
@@ -555,6 +572,8 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
 
     workerRef.current = worker;
     setOcrReady(true);
+    setOcrLoadProgress(100);
+    setOcrLoadStatus("OCR engine ready");
   };
 
   useEffect(() => {
@@ -1036,30 +1055,6 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
                     objectFit: "cover"
                   }}
                 />
-                
-                {/* Camera Guide Overlay */}
-                <div style={{
-                  position: "absolute",
-                  bottom: "1rem",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  background: "rgba(0,0,0,0.7)",
-                  padding: "0.75rem 1rem",
-                  borderRadius: "0.5rem",
-                  maxWidth: "90%"
-                }}>
-                  <p style={{ 
-                    color: "white", 
-                    fontSize: "0.75rem", 
-                    textAlign: "center",
-                    margin: 0,
-                    lineHeight: 1.4
-                  }}>
-                      {ocrReady
-                        ? "💡 Position bill flat • Ensure good lighting • Focus on \"Amount\" and \"Volume\" fields"
-                        : "Preparing scanner..."}
-                  </p>
-                </div>
               </>
             ) : (
               <img
@@ -1093,6 +1088,73 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
             )}
           </div>
 
+          {/* Camera Guidance */}
+          {!capturedImage && (
+            <div style={{
+              padding: "0.625rem 1rem",
+              background: "rgba(0,0,0,0.6)",
+              borderTop: "1px solid rgba(255,255,255,0.1)",
+              borderBottom: "1px solid rgba(255,255,255,0.1)"
+            }}>
+              <p style={{
+                color: "white",
+                fontSize: "0.75rem",
+                textAlign: "center",
+                margin: 0,
+                lineHeight: 1.4
+              }}>
+                {ocrReady
+                  ? "💡Position bill flat. Ensure good lighting."
+                  : "OCR engine is loading. You can monitor progress below."}
+              </p>
+            </div>
+          )}
+
+          {/* Persistent OCR status */}
+          <div style={{
+            padding: "0.75rem 1rem",
+            background: "rgba(0,0,0,0.75)",
+            borderTop: "1px solid rgba(255,255,255,0.12)",
+            borderBottom: "1px solid rgba(255,255,255,0.12)"
+          }}>
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "0.375rem"
+            }}>
+              <span style={{ color: "white", fontSize: "0.75rem", fontWeight: 600 }}>
+                OCR Engine
+              </span>
+              <span style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.75rem" }}>
+                {ocrLoadProgress}%
+              </span>
+            </div>
+            <div style={{
+              width: "100%",
+              height: "0.325rem",
+              background: "rgba(255,255,255,0.2)",
+              borderRadius: "999px",
+              overflow: "hidden"
+            }}>
+              <div style={{
+                width: `${ocrLoadProgress}%`,
+                height: "100%",
+                background: ocrReady ? "#22c55e" : "#f59e0b",
+                transition: "width 0.2s ease"
+              }} />
+            </div>
+            <p style={{
+              margin: "0.375rem 0 0",
+              color: "rgba(255,255,255,0.82)",
+              fontSize: "0.68rem",
+              lineHeight: 1.35,
+              textTransform: "capitalize"
+            }}>
+              {ocrLoadStatus}
+            </p>
+          </div>
+
           {/* Controls */}
           {!processing && (
             <div style={{
@@ -1107,6 +1169,7 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
                   onClick={capturePhoto}
                   disabled={!ocrReady}
                   style={{
+                    width:"100%",
                     background: ocrReady ? "white" : "rgba(255,255,255,0.5)",
                     color: "black",
                     border: "none",
