@@ -998,10 +998,11 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
       <DialogContent 
         style={{ 
           maxWidth: "95vw", 
-    
+          borderRadius: "1rem",
           width: "500px",
           padding: 0,
-          overflow: "hidden"
+          overflow: "hidden",
+          border: "none"
         }}
       >
         <div style={{ 
