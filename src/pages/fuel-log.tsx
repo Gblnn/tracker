@@ -828,6 +828,53 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
     }
 
     // Fallback: If still not found, use broader patterns across entire text
+    if (!amount || !litres) {
+      console.log("⚠️ Attempting table/cash fallback...");
+
+      const hasProductQtyHeader = lines.some(
+        (line) => /product/i.test(line) && /(?:qty|quantity)/i.test(line)
+      );
+
+      for (let i = 0; i < lines.length; i++) {
+        const rawLine = lines[i];
+        const currentLine = rawLine.toLowerCase().replace(/\s+/g, " ").trim();
+        const nextLine = i < lines.length - 1 ? lines[i + 1].toLowerCase().replace(/\s+/g, " ").trim() : "";
+
+        if (!amount && /\bcash\b/i.test(currentLine)) {
+          const cashMatch = currentLine.match(/\bcash\b[^\d]*(\d+\.?\d*)/i) || currentLine.match(/(\d+\.?\d*)[^\n]*\bcash\b/i);
+          if (cashMatch?.[1]) {
+            amount = cashMatch[1];
+            console.log("✓ AMOUNT found (cash label):", amount, "from:", currentLine);
+          }
+        }
+
+        if (!litres && (hasProductQtyHeader || /mogas\s*(?:91|95)/i.test(currentLine))) {
+          const numberStrings = currentLine.match(/\d+\.?\d*/g) || [];
+          const litreCandidate = numberStrings.find((value) => {
+            const num = parseFloat(value);
+            // Ignore octane labels and keep realistic litre values.
+            return num !== 91 && num !== 95 && num > 1 && num <= 150;
+          });
+
+          if (litreCandidate) {
+            litres = litreCandidate;
+            console.log("✓ LITRES found (product/qty row):", litres, "from:", currentLine);
+          } else if (/mogas\s*(?:91|95)/i.test(currentLine)) {
+            const nextLineMatch = nextLine.match(/(\d+\.?\d*)/);
+            if (nextLineMatch) {
+              const num = parseFloat(nextLineMatch[1]);
+              if (num !== 91 && num !== 95 && num > 1 && num <= 150) {
+                litres = nextLineMatch[1];
+                console.log("✓ LITRES found (next line after mogas row):", litres, "from:", nextLine);
+              }
+            }
+          }
+        }
+
+        if (amount && litres) break;
+      }
+    }
+
     if (!amount) {
       console.log("⚠️ Attempting fallback for AMOUNT...");
       
