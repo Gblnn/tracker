@@ -1162,7 +1162,8 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
                       borderRadius: "1rem",
                       fontSize: "0.875rem",
                       fontWeight: "600",
-                      cursor: "pointer"
+                      cursor: "pointer",
+                      flex:1
                     }}
                   >
                     Retake
