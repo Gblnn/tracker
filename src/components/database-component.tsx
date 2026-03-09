@@ -2854,7 +2854,8 @@ export default function DbComponent(props: Props) {
                           // >
                           <Directive
                             icon={<FileArchive/>}
-                            id_subtitle={post.id}
+                            noArrow
+                            // id_subtitle={post.id}
                             className="record-item"
                             space
                             dotColor={selectable ? "violet" : "dodgerblue"}

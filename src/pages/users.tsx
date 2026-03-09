@@ -23,6 +23,7 @@ import { motion } from "framer-motion";
 import {
   Book,
   Car,
+  Package,
   Eye,
   FileArchive,
   FileText,
@@ -55,7 +56,8 @@ const MODULES = [
   { id: 'quick_links', name: 'Links', icon: Link },
   { id: 'qr_generator', name: 'QR Generator', icon: QrCode },
   { id: 'fuel_log', name: 'Fuel Log', icon: Fuel },
-  { id: 'vehicle_master', name: 'Vehicle Master', icon: Car },
+  { id: 'asset_master', name: 'Asset Master', icon: Car },
+  { id: 'projects', name: 'Projects', icon: Package },
   { id: 'vehicle_log_book', name: 'Vehicle Log', icon: Book },
   { id: 'petty_cash', name: 'Petty Cash', icon: Wallet },
   { id: 'offer_letters', name: 'Offer Letters', icon: FileText },

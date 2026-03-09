@@ -36,7 +36,6 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 export default function Index() {
-  const usenavigate = useNavigate();
   const [requestDialog, setRequestDialog] = useState(false);
   const [bugDialog, setBugDialog] = useState(false);
   const [loginPrompt, setLoginPrompt] = useState(false);
@@ -170,7 +169,7 @@ export default function Index() {
     const hasNewHire = hasModuleAccess('new_hire');
     const hasQuickLinks = hasModuleAccess('quick_links');
     const hasQRGenerator = hasModuleAccess('qr_generator');
-    const hasVehicleMaster = hasModuleAccess('vehicle_master');
+    const hasVehicleMaster = hasModuleAccess('asset_master');
     const hasVehicleLogBook = hasModuleAccess('vehicle_log_book');
     const hasPettyCash = hasModuleAccess('petty_cash');
     const hasOfferLetters = hasModuleAccess('offer_letters');
@@ -183,7 +182,7 @@ export default function Index() {
   // Authenticate for specific module
   const authenticateModule = (moduleId: string, path: string, moduleName: string) => {
     if (hasModuleAccess(moduleId)) {
-      usenavigate(path);
+      navigate(path);
     } else {
       toast.error(`No clearance to access ${moduleName}`);
     }
@@ -318,8 +317,8 @@ export default function Index() {
             >
               {hasModuleAccess('records_master') && (
                 <GridTile
-                  title="Records Master"
-                  icon={<FileArchive width={"2rem"}  />}
+                  title="Records"
+                  icon={<FileArchive width={"3rem"}  />}
                   onClick={() => navigate('/records')}
                 />
               )}
@@ -356,11 +355,19 @@ export default function Index() {
                 />
               )}
 
-              {hasModuleAccess('vehicle_master') && (
+              {hasModuleAccess('projects') && (
                 <GridTile
-                  title="Vehicle Master"
+                  title="Projects"
+                  icon={<Package width={"2rem"} />}
+                  onClick={() => authenticateModule('projects', '/projects', 'Projects')}
+                />
+              )}
+
+              {hasModuleAccess('asset_master') && (
+                <GridTile
+                  title="Asset Master"
                   icon={<Car width={"2rem"}  />}
-                  onClick={() => authenticateModule('vehicle_master', '/vehicle-master', 'Vehicle Master')}
+                  onClick={() => authenticateModule('asset_master', '/asset-master', 'Asset Master')}
                 />
               )}
 

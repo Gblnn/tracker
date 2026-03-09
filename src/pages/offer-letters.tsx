@@ -3423,7 +3423,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     width: "100%",
                     fontSize: "0.9rem",
                     padding: "0.5rem 1rem",
-                    background: pdfLoading ? "#4c1d95" : "indigo",
+                    background: pdfLoading ? "mediumslateblue" : "darkslateblue",
                     color: "white",
                     border: "none",
                     borderRadius: "0.5rem",

@@ -61,7 +61,7 @@ export default function BackgroundProcessDropdown(props: Props) {
       case "in-progress":
         return <Loader2 className="animate-spin" width="1rem" color="dodgerblue" />;
       case "completed":
-        return <CheckCircle2 width="1rem" color="dodgerblue" />;
+        return <CheckCircle2 width="1rem" color="mediumslateblue" />;
       case "error":
         return <XCircle width="1rem" color="lightcoral" />;
       default:

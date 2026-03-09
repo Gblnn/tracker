@@ -16,18 +16,21 @@ export default function GridTile({ title, icon, onClick }: GridTileProps) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: "0.75rem",
+        gap: "1rem",
         padding: "1.5rem",
         background: "rgba(100 100 100/ 0.05)",
+        // background:"linear-gradient(darkslateblue, midnightblue)",
         borderRadius: "0.5rem",
         cursor: "pointer",
         transition: "all 0.2s ease",
-        aspectRatio: "1"
+        aspectRatio: "1",
+        // color:"white"
+        color:"darkslategray"
       }}
       
     >
       {icon}
-      <p style={{ fontSize: "0.85rem", fontWeight: 500, textAlign: "center", opacity: 0.85 }}>
+      <p style={{fontSize: "0.85rem", fontWeight: 500, textAlign: "center", opacity: 0.85}}>
         {title}
       </p>
     </motion.div>

@@ -32,6 +32,7 @@ const Openings = lazy(() => import("./pages/openings"));
 const Profile = lazy(() => import("./pages/profile"));
 const ProjectLPO = lazy(() => import("./pages/project-lpo"));
 const QRCodeGenerator = lazy(() => import("./pages/qr-code"));
+const Projects = lazy(() => import("./pages/projects"));
 const QuickLinks = lazy(() => import("./pages/quick-links"));
 const RecordList = lazy(() => import("./pages/record-list"));
 const Records = lazy(() => import("./pages/records"));
@@ -47,7 +48,7 @@ const Devices = lazy(() => import("./pages/devices"));
 const ValeMobilisation = lazy(() => import("./pages/vale-mobilisation"));
 const RecordDetail = lazy(() => import("./pages/record-detail"));
 const FuelLog = lazy(() => import("./pages/fuel-log"));
-const VehicleMaster = lazy(() => import("./pages/vehicle-master"));
+const AssetMaster = lazy(() => import("./pages/asset-master"));
 const VehicleLogBook = lazy(() => import("./pages/vehicle-log-book"));
 const Tasks = lazy(() => import("./pages/tasks"));
 
@@ -126,8 +127,9 @@ export default function App() {
           <Route path="/lpos" element={<LPO />} />
           <Route path="/qr-code-generator" element={<QRCodeGenerator />} />
           <Route path="/fuel-log" element={<FuelLog />} />
-          <Route path="/vehicle-master" element={<VehicleMaster />} />
+          <Route path="/asset-master" element={<AssetMaster />} />
           <Route path="/vehicle-log-book" element={<VehicleLogBook />} />
+          <Route path="/projects" element={<Projects />} />
           <Route path="/project-lpo" element={<ProjectLPO />} />
           <Route path="/movement-register" element={<MovementRegister />} />
           <Route path="/records" element={<Records />} />

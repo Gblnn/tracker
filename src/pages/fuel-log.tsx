@@ -16,10 +16,11 @@ import { getCachedProfile } from "@/utils/profileCache";
 import { getCachedVehicle, fetchAndCacheVehicle } from "@/utils/vehicleCache";
 import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical, Fuel, Gauge, Loader2, Plus, WifiOff } from "lucide-react";
+import { Calendar, Car, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical, Fuel, Gauge, Loader2, Plus, WifiOff, Camera, X, ScanLine } from "lucide-react";
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import Tesseract from "tesseract.js";
 
 // Shared Fuel Log Form Component
 interface FuelLogFormContentProps {
@@ -38,6 +39,7 @@ interface FuelLogFormContentProps {
   submitting: boolean;
   userProfile: any;
   handleSubmit: (e: React.FormEvent) => void;
+  onScanBill: () => void;
 }
 
 const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
@@ -56,6 +58,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
   submitting,
   userProfile,
   handleSubmit,
+  onScanBill,
 }) => {
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", maxHeight: "75vh", width: "100%" }}>
@@ -84,7 +87,10 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
           </div>
           <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em" }}>{editingLog ? "Edit Log" : "Log Fuel"}</h2>
         </div>
-        {vehicleNumber && <NumberPlate private={isPrivateVehicle} number={vehicleNumber} />}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          
+          {vehicleNumber && <NumberPlate private={isPrivateVehicle} number={vehicleNumber} />}
+        </div>
       </div>
 
       {/* Scrollable Content */}
@@ -105,6 +111,30 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", width: "100%", paddingBottom: "1.5rem" }}>
             {/* Date Input with Quick Actions */}
+
+            {!editingLog && (
+            <motion.button
+              type="button"
+              onClick={onScanBill}
+              whileTap={{ scale: 0.95 }}
+              style={{
+                background: "dodgerblue",
+                padding: "0.5rem 0.75rem",
+                borderRadius: "0.5rem",
+                border: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.375rem",
+                cursor: "pointer",
+                color: "white",
+                fontSize: "0.875rem",
+                fontWeight: "600"
+              }}
+            >
+              <ScanLine width="1rem" />
+              Scan Bill
+            </motion.button>
+          )}
             <motion.div
               ref={dateSectionRef}
               whileTap={{ scale: 0.99 }}
@@ -490,6 +520,330 @@ const FuelLogDetailContent: React.FC<FuelLogDetailContentProps> = ({
   );
 };
 
+// Bill Scanner Component
+interface BillScannerProps {
+  open: boolean;
+  onClose: () => void;
+  onDataExtracted: (data: { amount: string; litres: string; odometer?: string }) => void;
+}
+
+const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracted }) => {
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    if (open && !capturedImage) {
+      startCamera();
+    }
+    return () => {
+      stopCamera();
+    };
+  }, [open]);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' } // Use back camera on mobile
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error("Error accessing camera:", error);
+      toast.error("Could not access camera");
+      onClose();
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0);
+        const imageData = canvas.toDataURL('image/jpeg');
+        setCapturedImage(imageData);
+        stopCamera();
+        processImage(imageData);
+      }
+    }
+  };
+
+  const processImage = async (imageData: string) => {
+    setProcessing(true);
+    try {
+      const result = await Tesseract.recognize(imageData, 'eng', {
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            // Optional: show progress
+          }
+        }
+      });
+
+      const text = result.data.text;
+      console.log("Extracted text:", text);
+
+      // Parse the text to extract fuel bill information
+      const extractedData = parseFuelBillText(text);
+      
+      if (extractedData.amount || extractedData.litres) {
+        onDataExtracted(extractedData);
+        toast.success("Bill data extracted successfully!");
+        onClose();
+      } else {
+        toast.error("Could not extract bill information. Please try again or enter manually.");
+      }
+    } catch (error) {
+      console.error("OCR Error:", error);
+      toast.error("Failed to process image");
+    } finally {
+      setProcessing(false);
+      setCapturedImage(null);
+    }
+  };
+
+  const parseFuelBillText = (text: string): { amount: string; litres: string; odometer?: string } => {
+    let amount = '';
+    let litres = '';
+    let odometer = '';
+
+    // Common patterns for fuel bills
+    const lines = text.split('\n');
+    
+    for (const line of lines) {
+      const cleanLine = line.toLowerCase().replace(/\s+/g, ' ').trim();
+      
+      // Look for amount/total patterns
+      // Patterns like: "total: 10.500", "amount: OMR 10.500", "total omr 10.500"
+      const amountMatch = cleanLine.match(/(?:total|amount|price|paid)[:\s]*(?:omr|rial|rials)?\s*(\d+\.?\d*)/i);
+      if (amountMatch && !amount) {
+        amount = amountMatch[1];
+      }
+
+      // Look for litres patterns
+      // Patterns like: "25.5 L", "litres: 25.5", "25.5 liters"
+      const litresMatch = cleanLine.match(/(\d+\.?\d*)\s*(?:l|ltr|ltrs|litre|litres|liter|liters)/i) ||
+                          cleanLine.match(/(?:quantity|volume|litres?|liters?)[:\s]*(\d+\.?\d*)/i);
+      if (litresMatch && !litres) {
+        litres = litresMatch[1];
+      }
+
+      // Look for odometer reading if present
+      // Patterns like: "odo: 12345", "odometer: 12345 km"
+      const odometerMatch = cleanLine.match(/(?:odo|odometer|mileage)[:\s]*(\d+)/i);
+      if (odometerMatch && !odometer) {
+        odometer = odometerMatch[1];
+      }
+    }
+
+    // Additional fallback: look for number patterns
+    if (!amount) {
+      // Look for OMR followed by numbers
+      const omrMatch = text.match(/omr\s*(\d+\.?\d*)/i);
+      if (omrMatch) amount = omrMatch[1];
+    }
+
+    return { amount, litres, odometer };
+  };
+
+  const retake = () => {
+    setCapturedImage(null);
+    setProcessing(false);
+    startCamera();
+  };
+
+  if (!open) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent 
+        style={{ 
+          maxWidth: "95vw", 
+          width: "500px",
+          padding: 0,
+          overflow: "hidden"
+        }}
+      >
+        <div style={{ 
+          position: "relative", 
+          width: "100%",
+          background: "black"
+        }}>
+          {/* Header */}
+          <div style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 10,
+            padding: "1rem",
+            background: "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}>
+            <h3 style={{ color: "white", fontSize: "1.125rem", fontWeight: "600" }}>
+              {processing ? "Processing..." : capturedImage ? "Review Image" : "Scan Fuel Bill"}
+            </h3>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={onClose}
+              style={{
+                background: "rgba(255,255,255,0.2)",
+                border: "none",
+                borderRadius: "50%",
+                width: "2rem",
+                height: "2rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer"
+              }}
+            >
+              <X color="white" width="1.25rem" />
+            </motion.button>
+          </div>
+
+          {/* Camera/Image View */}
+          <div style={{ 
+            position: "relative",
+            width: "100%",
+            aspectRatio: "4/3",
+            background: "black"
+          }}>
+            {!capturedImage ? (
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover"
+                }}
+              />
+            ) : (
+              <img
+                src={capturedImage}
+                alt="Captured bill"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain"
+                }}
+              />
+            )}
+
+            {processing && (
+              <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: "rgba(0,0,0,0.7)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "1rem"
+              }}>
+                <Loader2 className="animate-spin" color="white" width="2.5rem" />
+                <p style={{ color: "white", fontSize: "1rem" }}>Extracting bill information...</p>
+              </div>
+            )}
+          </div>
+
+          {/* Controls */}
+          {!processing && (
+            <div style={{
+              padding: "1.5rem",
+              display: "flex",
+              gap: "1rem",
+              justifyContent: "center"
+            }}>
+              {!capturedImage ? (
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={capturePhoto}
+                  style={{
+                    background: "dodgerblue",
+                    color: "white",
+                    border: "none",
+                    padding: "1rem 2rem",
+                    borderRadius: "2rem",
+                    fontSize: "1rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem"
+                  }}
+                >
+                  <Camera width="1.25rem" />
+                  Capture Bill
+                </motion.button>
+              ) : (
+                <>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={retake}
+                    style={{
+                      background: "rgba(100,100,100,0.2)",
+                      color: "white",
+                      border: "1px solid rgba(255,255,255,0.3)",
+                      padding: "0.75rem 1.5rem",
+                      borderRadius: "1rem",
+                      fontSize: "0.875rem",
+                      fontWeight: "600",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Retake
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => processImage(capturedImage)}
+                    style={{
+                      background: "dodgerblue",
+                      color: "white",
+                      border: "none",
+                      padding: "0.75rem 1.5rem",
+                      borderRadius: "1rem",
+                      fontSize: "0.875rem",
+                      fontWeight: "600",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Process Image
+                  </motion.button>
+                </>
+              )}
+            </div>
+          )}
+
+          <canvas ref={canvasRef} style={{ display: "none" }} />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default function FuelLog() {
   const { userData } = useAuth();
   const [date, setDate] = useState(moment().format("YYYY-MM-DD"));
@@ -514,6 +868,7 @@ export default function FuelLog() {
   const [vehicleRegistrationType, setVehicleRegistrationType] = useState<string>("Private");
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const { addProcess, updateProcess } = useBackgroundProcess();
 
   useEffect(() => {
@@ -840,6 +1195,23 @@ export default function FuelLog() {
     setDrawerOpen(true);
   };
 
+  const handleScanBill = () => {
+    setScannerOpen(true);
+  };
+
+  const handleDataExtracted = (data: { amount: string; litres: string; odometer?: string }) => {
+    if (data.amount) {
+      setAmountSpent(data.amount);
+    }
+    if (data.litres) {
+      setLitres(data.litres);
+    }
+    if (data.odometer) {
+      setOdometerReading(data.odometer);
+    }
+    setScannerOpen(false);
+  };
+
   return (
     <>
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
@@ -1037,8 +1409,16 @@ export default function FuelLog() {
           userProfile={userProfile}
           handleSubmit={handleSubmit}
           isPrivateVehicle={vehicleRegistrationType === "Private"}
+          onScanBill={handleScanBill}
         />
       </ResponsiveModal>
+
+      {/* Bill Scanner */}
+      <BillScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onDataExtracted={handleDataExtracted}
+      />
 
       {/* Detail View - Responsive Modal */}
       {selectedLog && (
