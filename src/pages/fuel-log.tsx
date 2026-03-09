@@ -530,6 +530,7 @@ interface BillScannerProps {
 const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracted }) => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [extractedText, setExtractedText] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -541,7 +542,15 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
     return () => {
       stopCamera();
     };
-  }, [open]);
+  }, [open, capturedImage]);
+
+  const handleClose = () => {
+    setCapturedImage(null);
+    setProcessing(false);
+    setExtractedText("");
+    stopCamera();
+    onClose();
+  };
 
   const startCamera = async () => {
     try {
@@ -578,7 +587,6 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
         const imageData = canvas.toDataURL('image/jpeg');
         setCapturedImage(imageData);
         stopCamera();
-        processImage(imageData);
       }
     }
   };
@@ -596,23 +604,30 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
 
       const text = result.data.text;
       console.log("Extracted text:", text);
+      setExtractedText(text);
 
       // Parse the text to extract fuel bill information
       const extractedData = parseFuelBillText(text);
       
       if (extractedData.amount || extractedData.litres) {
         onDataExtracted(extractedData);
-        toast.success("Bill data extracted successfully!");
+        const amountText = extractedData.amount ? `OMR ${extractedData.amount}` : 'Not found';
+        const litresText = extractedData.litres ? `${extractedData.litres} L` : 'Not found';
+        toast.success(`Amount: ${amountText} • Volume: ${litresText}`);
+        setCapturedImage(null);
+        setExtractedText("");
         onClose();
       } else {
-        toast.error("Could not extract bill information. Please try again or enter manually.");
+        toast.error("No data extracted. Check the text below and adjust the bill angle/lighting, then retake.");
+        // Keep the image and text so user can see what was extracted
       }
     } catch (error) {
       console.error("OCR Error:", error);
       toast.error("Failed to process image");
+      setCapturedImage(null);
+      setExtractedText("");
     } finally {
       setProcessing(false);
-      setCapturedImage(null);
     }
   };
 
@@ -621,55 +636,182 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
     let litres = '';
     let odometer = '';
 
-    // Common patterns for fuel bills
-    const lines = text.split('\n');
+    // Clean the text - remove extra spaces and normalize
+    const cleanedText = text.replace(/\s+/g, ' ').trim();
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     
-    for (const line of lines) {
-      const cleanLine = line.toLowerCase().replace(/\s+/g, ' ').trim();
+    console.log("==================== OCR TEXT PARSING ====================");
+    console.log("Total lines:", lines.length);
+    console.log("Full text:", cleanedText);
+    console.log("Lines:", lines);
+    
+    // Try to find amount and volume in adjacent lines or same line
+    for (let i = 0; i < lines.length; i++) {
+      const currentLine = lines[i].toLowerCase().replace(/\s+/g, ' ').trim();
+      const nextLine = i < lines.length - 1 ? lines[i + 1].toLowerCase().replace(/\s+/g, ' ').trim() : '';
       
-      // Look for amount/total patterns
-      // Patterns like: "total: 10.500", "amount: OMR 10.500", "total omr 10.500"
-      const amountMatch = cleanLine.match(/(?:total|amount|price|paid)[:\s]*(?:omr|rial|rials)?\s*(\d+\.?\d*)/i);
-      if (amountMatch && !amount) {
-        amount = amountMatch[1];
+      // Check for AMOUNT label (with value on same or next line)
+      if (!amount) {
+        // Same line patterns: "Amount: 10.500", "Amount 10.500 OMR", "Amt: 10.500"
+        const amountSameLinePatterns = [
+          /(?:amount|amt|total|gross|payable|pay)[:\s]*(?:omr|rial|rials?)?\s*(\d+\.?\d*)/i,
+          /(?:omr|rial|rials?)[:\s]*(\d+\.?\d*)/i
+        ];
+        
+        for (const pattern of amountSameLinePatterns) {
+          const match = currentLine.match(pattern);
+          if (match) {
+            amount = match[1];
+            console.log("✓ AMOUNT found (same line):", amount, "from:", currentLine);
+            break;
+          }
+        }
+        
+        // Check if current line has the label and next line has the value
+        if (!amount && /(?:amount|amt|total|gross|payable)/.test(currentLine)) {
+          const numberMatch = nextLine.match(/(\d+\.?\d+)/);
+          if (numberMatch) {
+            amount = numberMatch[1];
+            console.log("✓ AMOUNT found (next line):", amount, "from label:", currentLine, "value:", nextLine);
+          }
+        }
       }
 
-      // Look for litres patterns
-      // Patterns like: "25.5 L", "litres: 25.5", "25.5 liters"
-      const litresMatch = cleanLine.match(/(\d+\.?\d*)\s*(?:l|ltr|ltrs|litre|litres|liter|liters)/i) ||
-                          cleanLine.match(/(?:quantity|volume|litres?|liters?)[:\s]*(\d+\.?\d*)/i);
-      if (litresMatch && !litres) {
-        litres = litresMatch[1];
+      // Check for VOLUME/LITRES label (with value on same or next line)
+      if (!litres) {
+        // Same line patterns: "Volume: 25.5", "Vol: 25.5 L", "Qty: 25.5"
+        const litresSameLinePatterns = [
+          /(?:volume|vol|quantity|qty|litres?|liters?)[:\s]*(\d+\.?\d*)/i,
+          /(\d+\.?\d*)\s*(?:l\b|ltr|ltrs)/i
+        ];
+        
+        for (const pattern of litresSameLinePatterns) {
+          const match = currentLine.match(pattern);
+          if (match) {
+            litres = match[1];
+            console.log("✓ VOLUME/LITRES found (same line):", litres, "from:", currentLine);
+            break;
+          }
+        }
+        
+        // Check if current line has the label and next line has the value
+        if (!litres && /(?:volume|vol|quantity|qty|litres?|liters?)/.test(currentLine)) {
+          const numberMatch = nextLine.match(/(\d+\.?\d+)/);
+          if (numberMatch) {
+            litres = numberMatch[1];
+            console.log("✓ VOLUME/LITRES found (next line):", litres, "from label:", currentLine, "value:", nextLine);
+          }
+        }
       }
 
-      // Look for odometer reading if present
-      // Patterns like: "odo: 12345", "odometer: 12345 km"
-      const odometerMatch = cleanLine.match(/(?:odo|odometer|mileage)[:\s]*(\d+)/i);
-      if (odometerMatch && !odometer) {
-        odometer = odometerMatch[1];
+      // Check for ODOMETER
+      if (!odometer) {
+        const odometerPatterns = [
+          /(?:odo|odometer|mileage|km)[:\s]*(\d{3,})/i,
+          /(\d{4,})\s*(?:km|kms)/i
+        ];
+        
+        for (const pattern of odometerPatterns) {
+          const match = currentLine.match(pattern);
+          if (match) {
+            odometer = match[1];
+            console.log("✓ ODOMETER found:", odometer, "from:", currentLine);
+            break;
+          }
+        }
       }
     }
 
-    // Additional fallback: look for number patterns
+    // Fallback: If still not found, use broader patterns across entire text
     if (!amount) {
-      // Look for OMR followed by numbers
-      const omrMatch = text.match(/omr\s*(\d+\.?\d*)/i);
-      if (omrMatch) amount = omrMatch[1];
+      console.log("⚠️ Attempting fallback for AMOUNT...");
+      const fallbackPatterns = [
+        /amount[:\s]*(?:omr|rial)?\s*(\d+\.?\d*)/i,
+        /total[:\s]*(?:omr|rial)?\s*(\d+\.?\d*)/i,
+        /(?:omr|rial)[:\s]*(\d+\.?\d*)/i,
+        /payable[:\s]*(\d+\.?\d*)/i
+      ];
+      
+      for (const pattern of fallbackPatterns) {
+        const match = cleanedText.match(pattern);
+        if (match) {
+          amount = match[1];
+          console.log("✓ AMOUNT found (fallback):", amount);
+          break;
+        }
+      }
     }
 
+    if (!litres) {
+      console.log("⚠️ Attempting fallback for LITRES...");
+      const fallbackPatterns = [
+        /volume[:\s]*(\d+\.?\d*)/i,
+        /(?:qty|quantity)[:\s]*(\d+\.?\d*)\s*(?:l\b|ltr)/i,
+        /(\d+\.?\d*)\s*(?:litres?|liters?)/i,
+        /(\d+\.?\d*)\s*l\b/i
+      ];
+      
+      for (const pattern of fallbackPatterns) {
+        const match = cleanedText.match(pattern);
+        if (match) {
+          litres = match[1];
+          console.log("✓ LITRES found (fallback):", litres);
+          break;
+        }
+      }
+    }
+
+    // Last resort: Extract all decimal numbers and make educated guesses
+    if (!amount || !litres) {
+      console.log("⚠️ Last resort: Looking for decimal numbers...");
+      const decimalNumbers = cleanedText.match(/\d+\.\d{1,3}/g);
+      if (decimalNumbers && decimalNumbers.length > 0) {
+        console.log("Found decimal numbers:", decimalNumbers);
+        
+        // Amount usually has 3 decimals in OMR (e.g., 10.500)
+        if (!amount) {
+          const threeDecimal = decimalNumbers.find(n => n.split('.')[1]?.length === 3);
+          if (threeDecimal) {
+            amount = threeDecimal;
+            console.log("✓ AMOUNT guessed (3 decimals):", amount);
+          }
+        }
+        
+        // Litres usually has 1-2 decimals and is a reasonable volume (5-100)
+        if (!litres) {
+          const reasonableLitres = decimalNumbers.find(n => {
+            const num = parseFloat(n);
+            const decimals = n.split('.')[1]?.length || 0;
+            return num >= 5 && num <= 100 && decimals <= 2 && n !== amount;
+          });
+          if (reasonableLitres) {
+            litres = reasonableLitres;
+            console.log("✓ LITRES guessed (reasonable volume):", litres);
+          }
+        }
+      }
+    }
+
+    console.log("==================== FINAL RESULT ====================");
+    console.log("Amount:", amount || "NOT FOUND");
+    console.log("Litres:", litres || "NOT FOUND");
+    console.log("Odometer:", odometer || "NOT FOUND");
+    console.log("========================================================");
+    
     return { amount, litres, odometer };
   };
 
   const retake = () => {
     setCapturedImage(null);
     setProcessing(false);
+    setExtractedText("");
     startCamera();
   };
 
   if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent 
         style={{ 
           maxWidth: "95vw", 
@@ -701,7 +843,7 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
             </h3>
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={onClose}
+              onClick={handleClose}
               style={{
                 background: "rgba(255,255,255,0.2)",
                 border: "none",
@@ -726,17 +868,41 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
             background: "black"
           }}>
             {!capturedImage ? (
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover"
-                }}
-              />
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover"
+                  }}
+                />
+                
+                {/* Camera Guide Overlay */}
+                <div style={{
+                  position: "absolute",
+                  bottom: "1rem",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  background: "rgba(0,0,0,0.7)",
+                  padding: "0.75rem 1rem",
+                  borderRadius: "0.5rem",
+                  maxWidth: "90%"
+                }}>
+                  <p style={{ 
+                    color: "white", 
+                    fontSize: "0.75rem", 
+                    textAlign: "center",
+                    margin: 0,
+                    lineHeight: 1.4
+                  }}>
+                    💡 Position bill flat • Ensure good lighting • Focus on "Amount" and "Volume" fields
+                  </p>
+                </div>
+              </>
             ) : (
               <img
                 src={capturedImage}
@@ -782,8 +948,8 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
                   whileTap={{ scale: 0.95 }}
                   onClick={capturePhoto}
                   style={{
-                    background: "dodgerblue",
-                    color: "white",
+                    background: "white",
+                    color: "black",
                     border: "none",
                     padding: "1rem 2rem",
                     borderRadius: "2rem",
@@ -792,7 +958,8 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
-                    gap: "0.5rem"
+                    gap: "0.5rem",
+                    boxShadow: "0 4px 12px rgba(30, 144, 255, 0.4)"
                   }}
                 >
                   <Camera width="1.25rem" />
@@ -834,6 +1001,76 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
                   </motion.button>
                 </>
               )}
+            </div>
+          )}
+
+          {/* Extracted Text Display (for debugging) */}
+          {extractedText && !processing && (
+            <div style={{
+              padding: "1rem 1.5rem",
+              paddingBottom: "1.5rem",
+              maxHeight: "200px",
+              overflowY: "auto",
+              background: "rgba(30,30,30,0.95)",
+              borderTop: "1px solid rgba(255,255,255,0.1)"
+            }}>
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "0.625rem"
+              }}>
+                <p style={{ 
+                  color: "white", 
+                  fontSize: "0.75rem", 
+                  fontWeight: "600", 
+                  margin: 0,
+                  opacity: 0.8
+                }}>
+                  📄 Detected Text
+                </p>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(extractedText);
+                    toast.success("Text copied to clipboard");
+                  }}
+                  style={{
+                    background: "rgba(255,255,255,0.1)",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    color: "white",
+                    padding: "0.25rem 0.625rem",
+                    borderRadius: "0.375rem",
+                    fontSize: "0.65rem",
+                    cursor: "pointer"
+                  }}
+                >
+                  Copy
+                </button>
+              </div>
+              <pre style={{ 
+                color: "rgba(255,255,255,0.85)", 
+                fontSize: "0.7rem", 
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                fontFamily: "monospace",
+                margin: 0,
+                lineHeight: 1.5,
+                background: "rgba(0,0,0,0.3)",
+                padding: "0.625rem",
+                borderRadius: "0.375rem",
+                border: "1px solid rgba(255,255,255,0.1)"
+              }}>
+                {extractedText}
+              </pre>
+              <p style={{
+                color: "rgba(255,255,255,0.6)",
+                fontSize: "0.65rem",
+                marginTop: "0.5rem",
+                marginBottom: 0,
+                fontStyle: "italic"
+              }}>
+                💡 Check console logs for detailed parsing results
+              </p>
             </div>
           )}
 
