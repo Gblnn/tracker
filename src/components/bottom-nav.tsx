@@ -1,4 +1,4 @@
-import { Package, ClipboardList, Notebook, Fuel } from "lucide-react";
+import { Package, ClipboardList, Notebook, Fuel, Users } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
@@ -9,6 +9,15 @@ interface NavItemProps {
   isActive: boolean;
   onClick: () => void;
   isMobile?: boolean;
+}
+
+type NavItemId = "modules" | "workers" | "tasks" | "phonebook" | "fuel-log";
+
+interface NavItemConfig {
+  id: NavItemId;
+  icon: React.ReactNode;
+  label: string;
+  path: string;
 }
 
 const NavItem: React.FC<NavItemProps> = ({ icon, isActive, onClick, isMobile = false }) => {
@@ -41,13 +50,19 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const { userData } = useAuth();
-  const [activeNav, setActiveNav] = useState<"modules" | "tasks" | "phonebook" | "fuel-log" | null>(null);
+  const [activeNav, setActiveNav] = useState<"modules" | "workers" | "tasks" | "phonebook" | "fuel-log" | null>(null);
+  const isSiteAdmin = userData?.role === "site_admin";
 
   // Check if user has an allocated vehicle
   const hasAllocatedVehicle = !!userData?.allocated_vehicle;
 
-  const navItems = [
-    { id: "modules" as const, icon: <Package />, label: "Modules", path: "/index" },
+  const navItems: NavItemConfig[] = [
+    {
+      id: isSiteAdmin ? "workers" : "modules",
+      icon: isSiteAdmin ? <Users /> : <Package />,
+      label: isSiteAdmin ? "Workers" : "Modules",
+      path: isSiteAdmin ? "/site-admin-workers" : "/index",
+    },
     { id: "tasks" as const, icon: <ClipboardList />, label: "Tasks", path: "/tasks" },
     { id: "phonebook" as const, icon: <Notebook />, label: "Phonebook", path: "/phonebook" },
     ...(hasAllocatedVehicle ? [{ id: "fuel-log" as const, icon: <Fuel />, label: "Fuel Log", path: "/fuel-log" }] : []),
@@ -56,8 +71,10 @@ export default function BottomNav() {
   // Update active nav based on current path
   useEffect(() => {
     const currentPath = location.pathname;
-    if (currentPath === "/index") {
+    if (currentPath === "/index" && !isSiteAdmin) {
       setActiveNav("modules");
+    } else if (currentPath === "/site-admin-workers") {
+      setActiveNav("workers");
     } else if (currentPath === "/phonebook") {
       setActiveNav("phonebook");
     } else if (currentPath === "/tasks") {
@@ -68,7 +85,7 @@ export default function BottomNav() {
       // Don't highlight any nav item for other pages
       setActiveNav(null);
     }
-  }, [location.pathname]);
+  }, [location.pathname, isSiteAdmin]);
 
   const hasModuleAccess = (moduleId: string) => {
     try {
@@ -80,13 +97,15 @@ export default function BottomNav() {
   };
 
   const handleNavClick = (item: typeof navItems[0]) => {
-    if (item.id === "phonebook" && hasModuleAccess('phonebook')) {
+    if (item.id === "phonebook" && (hasModuleAccess('phonebook') || isSiteAdmin)) {
       navigate(item.path);
     } else if (item.id === "phonebook") {
       toast.error("No clearance to access Phonebook");
     } else if (item.id === "fuel-log") {
       navigate(item.path);
     } else if (item.id === "modules") {
+      navigate(item.path);
+    } else if (item.id === "workers") {
       navigate(item.path);
     } else if (item.id === "tasks") {
       navigate(item.path);

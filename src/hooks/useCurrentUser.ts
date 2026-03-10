@@ -11,7 +11,7 @@ export function useCurrentUser() {
     role: userData?.role || "profile",  // system access role
     designation: userData?.designation || "",  // job title/position
     clearance: userData?.clearance || "none",
-    isAdmin: userData?.role === "admin",
+    isAdmin: userData?.role === "admin" || userData?.role === "site_admin",
     isAuthenticated: !!user && !!userData,
     // Raw data
     user,

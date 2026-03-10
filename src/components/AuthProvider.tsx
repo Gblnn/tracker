@@ -8,7 +8,7 @@ import { fetchAndCacheVehicle, clearVehicleCache } from "@/utils/vehicleCache";
 
 interface FirestoreUserData {
   id: string;
-  role: "admin" | "user" | "supervisor" | "site_coordinator" | "management" | "profile" | string;  // system access role
+  role: "admin" | "site_admin" | "user" | "supervisor" | "site_coordinator" | "management" | "profile" | string;  // system access role
   designation?: string;  // job title/position (optional)
   email: string;
   clearance: "Sohar Star United" | "Vale" | "All" | "none";

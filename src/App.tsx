@@ -54,6 +54,7 @@ const AssetMaster = lazy(() => import("./pages/asset-master"));
 const VehicleLogBook = lazy(() => import("./pages/vehicle-log-book"));
 const Tasks = lazy(() => import("./pages/tasks"));
 const ShiftLogs = lazy(() => import("./pages/shift-logs"));
+const SiteAdminWorkers = lazy(() => import("./pages/site-admin-workers"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -130,6 +131,7 @@ export default function App() {
           <Route path="/index" element={<Index />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/shift-logs" element={<ShiftLogs />} />
+          <Route path="/site-admin-workers" element={<SiteAdminWorkers />} />
           
           <Route path="/record-list" element={<RecordList />} />
           <Route path="/mobilizacao" element={<ValeMobilisation />} />

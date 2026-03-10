@@ -618,7 +618,7 @@ export default function Users() {
                 }}
                 key={user.id}
                 icon={
-                  user.role == "admin" ? (
+                  user.role == "admin" || user.role == "site_admin" ? (
                     <Eye width={"1.25rem"} color="black" />
                   ) : user.role == "hr" ? (
                     <ShieldPlus width={"1.25rem"} color="black" />

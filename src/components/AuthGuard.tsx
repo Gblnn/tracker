@@ -27,6 +27,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
             redirectPath = "/profile";
             break;
           case "admin":
+          case "site_admin":
             redirectPath = "/index";
             break;
           case "user":

@@ -81,7 +81,7 @@ export default function Index() {
         
         setModulePermissions({});
       }
-      setAdmin(userData.role === "admin");
+      setAdmin(userData.role === "admin" || userData.role === "site_admin");
 
       if (userData.role === "profile") {
         navigate("/profile");

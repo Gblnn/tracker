@@ -9,6 +9,7 @@ interface Props {
 const ROLE_OPTIONS = [
   { value: 'profile', label: 'Profile' },
   { value: 'admin', label: 'Admin' },
+  { value: 'site_admin', label: 'Site Admin' },
   { value: 'user', label: 'User' }
 ];
 
