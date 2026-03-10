@@ -18,6 +18,7 @@ import {
   orderBy,
   query,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { motion } from "framer-motion";
 import {
@@ -460,17 +461,26 @@ export default function Users() {
   const createUser = async () => {
     try {
       setLoading(true);
+
+      const recordsQuery = query(collection(db, "records"), where("email", "==", email.trim()));
+      const recordsSnapshot = await getDocs(recordsQuery);
+
+      if (recordsSnapshot.empty) {
+        setLoading(false);
+        message.error("Cannot create user. Record Master entry is required first.");
+        return;
+      }
+
+      const recordData = recordsSnapshot.docs[0].data() as any;
       await createUserWithEmailAndPassword(auth, email, password);
       await addDoc(collection(db, "users"), {
-        name: name,
-        email: email,
+        name: recordData.name || name,
+        email: email.trim(),
         role: "profile",  // system access role
-        designation: "",  // job title
+        designation: recordData.designation || "",  // job title
         clearance: JSON.stringify(createUserModulePermissions),
         editor: "false",
         sensitive_data: "false",
-        assignedSite: "",
-        assignedProject: "",
       });
       message.success("User created");
       setLoading(false);
@@ -522,6 +532,16 @@ export default function Users() {
   const updateUser = async () => {
     try {
       setLoading(true);
+      const recordsQuery = query(collection(db, "records"), where("email", "==", display_email.trim()));
+      const recordsSnapshot = await getDocs(recordsQuery);
+
+      if (recordsSnapshot.empty) {
+        setLoading(false);
+        message.error("Cannot update user. Record Master entry is required.");
+        return;
+      }
+
+      const recordData = recordsSnapshot.docs[0].data() as any;
       const updatedData: Record<string, any> = {
         role: role || "profile",  // system access role
         clearance: clearance || "{}",

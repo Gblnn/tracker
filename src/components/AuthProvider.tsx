@@ -162,20 +162,40 @@ const AuthProvider = ({ children }: Props) => {
       const { collection, getDocs, query, where } = await import("firebase/firestore");
       
       const db = getFirebaseDb();
-      const RecordCollection = collection(db, "users");
-      const recordQuery = query(RecordCollection, where("email", "==", email));
-      const querySnapshot = await getDocs(recordQuery);
-      const fetchedData = querySnapshot.docs.map((doc) => ({ 
+      const usersCollection = collection(db, "users");
+      const usersQuery = query(usersCollection, where("email", "==", email));
+      const usersSnapshot = await getDocs(usersQuery);
+      const fetchedData = usersSnapshot.docs.map((doc) => ({ 
         id: doc.id,
         ...doc.data(),
       })) as FirestoreUserData[];
 
       if (fetchedData.length > 0) {
-        const userData = fetchedData[0];
-        setUserData(userData);
-        cacheUserData(userData);
+        const baseUserData = fetchedData[0];
+
+        // User profile source of truth for site/project is Record Master.
+        const recordsCollection = collection(db, "records");
+        const recordsQuery = query(recordsCollection, where("email", "==", email));
+        const recordsSnapshot = await getDocs(recordsQuery);
+
+        if (recordsSnapshot.empty) {
+          toast.error("Record Master entry not found for this user.");
+          return null;
+        }
+
+        const recordData = recordsSnapshot.docs[0].data() as Record<string, any>;
+        const mergedUserData: FirestoreUserData = {
+          ...baseUserData,
+          name: recordData.name || baseUserData.name || "",
+          designation: recordData.designation || baseUserData.designation || "",
+          assignedSite: recordData.site || "",
+          assignedProject: recordData.project || "",
+        };
+
+        setUserData(mergedUserData);
+        cacheUserData(mergedUserData);
         // toast.success("✅ User data loaded (" + Math.round(performance.now() - fetchStartTime) + "ms)");
-        return userData;
+        return mergedUserData;
       }
 
       return null;
@@ -361,13 +381,12 @@ const AuthProvider = ({ children }: Props) => {
 
         unsubscribe = onSnapshot(
           userQuery,
-          (snapshot) => {
+          async (snapshot) => {
             if (!snapshot.empty) {
-              const doc = snapshot.docs[0];
-              const latestData = {
-                id: doc.id,
-                ...doc.data(),
-              } as FirestoreUserData;
+              const latestData = await fetchUserData(email);
+              if (!latestData) {
+                return;
+              }
               const prev = lastUserDataRef.current;
 
               setUserData(latestData);

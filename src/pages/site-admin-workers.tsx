@@ -1,40 +1,64 @@
 import Back from "@/components/back";
 import BottomNav from "@/components/bottom-nav";
 import Directive from "@/components/directive";
+import IndexDropDown from "@/components/index-dropdown";
 import RefreshButton from "@/components/refresh-button";
+import DefaultDialog from "@/components/ui/default-dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/firebase";
 import { collection, getDocs } from "firebase/firestore";
-import { Loader2, Users } from "lucide-react";
+import { Factory, Loader2, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function SiteAdminWorkers() {
-  const { userData } = useAuth();
+  const { userData, logoutUser: logOut } = useAuth();
+  const navigate = useNavigate();
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [logoutPrompt, setLogoutPrompt] = useState(false);
 
   const fetchWorkers = async () => {
     try {
       setLoading(true);
       const assignedSite = (userData?.assignedSite || "").toLowerCase().trim();
       const assignedProject = (userData?.assignedProject || "").toLowerCase().trim();
+      const assignedSupervisorEmail = (userData?.email || "").toLowerCase().trim();
+      const assignedSupervisorName = (userData?.name || "").toLowerCase().trim();
       const snap = await getDocs(collection(db, "records"));
 
       const allWorkers = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
 
       const filtered = allWorkers.filter((worker) => {
-        if (!assignedSite && !assignedProject) return true;
+        if (!assignedSite && !assignedProject && !assignedSupervisorEmail && !assignedSupervisorName) {
+          return false;
+        }
 
         const workerSite = String(worker.site || worker.location || "").toLowerCase().trim();
         const workerProject = String(worker.project || "").toLowerCase().trim();
+        const workerSupervisorEmail = String(
+          worker.supervisor_email || worker.supervisorEmail || worker.assignedSupervisorEmail || ""
+        )
+          .toLowerCase()
+          .trim();
+        const workerSupervisorName = String(
+          worker.supervisor_name || worker.supervisorName || worker.assignedSupervisorName || ""
+        )
+          .toLowerCase()
+          .trim();
 
         const siteMatches = assignedSite ? workerSite === assignedSite : true;
         const projectMatches = assignedProject ? workerProject === assignedProject : true;
+        const supervisorMatches =
+          workerSupervisorEmail || workerSupervisorName
+            ? (assignedSupervisorEmail && workerSupervisorEmail === assignedSupervisorEmail) ||
+              (assignedSupervisorName && workerSupervisorName === assignedSupervisorName)
+            : true;
 
-        return siteMatches && projectMatches;
+        return siteMatches && projectMatches && supervisorMatches;
       });
 
       filtered.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
@@ -71,10 +95,18 @@ export default function SiteAdminWorkers() {
             noback
             blurBG
             fixed
-            title="Site Workers"
-            subtitle={visibleWorkers.length}
-            icon={<Users color="mediumslateblue" />}
-            extra={<RefreshButton onClick={fetchWorkers} fetchingData={loading} />}
+            title={userData?.assignedProject || "Assigned Site"}
+            // subtitle={userData?.assignedProject || visibleWorkers.length}
+            icon={<Factory color="mediumslateblue" />}
+            extra={
+              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                <RefreshButton onClick={fetchWorkers} fetchingData={loading} />
+                <IndexDropDown
+                  onLogout={() => setLogoutPrompt(true)}
+                  onProfile={() => navigate("/profile")}
+                />
+              </div>
+            }
           />
         </div>
 
@@ -114,7 +146,7 @@ export default function SiteAdminWorkers() {
             display: "flex",
             flexDirection: "column",
             gap: "0.75rem",
-            minHeight: "100svh",
+            
           }}
         >
           {loading ? (
@@ -130,7 +162,7 @@ export default function SiteAdminWorkers() {
                   </EmptyMedia>
                   <EmptyTitle>No Workers Found</EmptyTitle>
                   <EmptyDescription>
-                    No workers are mapped to your assigned site and project.
+                    No workers are mapped to your assigned site or supervisor.
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>
@@ -139,16 +171,32 @@ export default function SiteAdminWorkers() {
             visibleWorkers.map((worker) => (
               <Directive
                 key={worker.id}
-                title={worker.name || "Unnamed"}
-                id_subtitle={worker.email || worker.role || "-"}
+                title={worker.name.toLowerCase() || "Unnamed"}
+                // id_subtitle={worker.email || worker.role || "-"}
                 subtext={worker.designation || worker.project || worker.site || worker.location || ""}
-                icon={<Users width={18} color="dodgerblue" />}
+                // icon={<Users width={18} color="dodgerblue" />}
                 noArrow
               />
             ))
           )}
         </div>
       </motion.div>
+
+      <DefaultDialog
+        destructive
+        title={"Confirm Logout?"}
+        OkButtonText="Logout"
+        open={logoutPrompt}
+        onCancel={() => setLogoutPrompt(false)}
+        onOk={async () => {
+          try {
+            await logOut();
+          } catch (error) {
+            console.error("Logout error:", error);
+          }
+        }}
+      />
+
       <BottomNav />
     </>
   );

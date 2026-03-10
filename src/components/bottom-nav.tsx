@@ -1,7 +1,7 @@
-import { Package, ClipboardList, Notebook, Fuel, Users } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { ClipboardList, Fuel, HardHat, Notebook, Package } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
 import { useAuth } from "./AuthProvider";
 
 interface NavItemProps {
@@ -59,7 +59,7 @@ export default function BottomNav() {
   const navItems: NavItemConfig[] = [
     {
       id: isSiteAdmin ? "workers" : "modules",
-      icon: isSiteAdmin ? <Users /> : <Package />,
+      icon: isSiteAdmin ? <HardHat /> : <Package />,
       label: isSiteAdmin ? "Workers" : "Modules",
       path: isSiteAdmin ? "/site-admin-workers" : "/index",
     },
@@ -71,8 +71,8 @@ export default function BottomNav() {
   // Update active nav based on current path
   useEffect(() => {
     const currentPath = location.pathname;
-    if (currentPath === "/index" && !isSiteAdmin) {
-      setActiveNav("modules");
+    if (currentPath === "/index") {
+      setActiveNav(isSiteAdmin ? "workers" : "modules");
     } else if (currentPath === "/site-admin-workers") {
       setActiveNav("workers");
     } else if (currentPath === "/phonebook") {
