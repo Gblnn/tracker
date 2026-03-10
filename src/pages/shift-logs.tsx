@@ -1,9 +1,7 @@
 import Back from "@/components/back";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/firebase";
-import { getCachedProfile } from "@/utils/profileCache";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { Clock3, Loader2, MapPinned } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -57,22 +55,13 @@ const getDateFromUnknown = (value: any): Date | null => {
 };
 
 export default function ShiftLogs() {
-  const { userData } = useAuth();
   const [logs, setLogs] = useState<ShiftLogItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchShiftLogs = async () => {
-    const profile = getCachedProfile();
-    const email = userData?.email || profile?.email;
-
-    if (!email) {
-      setLogs([]);
-      return;
-    }
-
     try {
       setLoading(true);
-      const snap = await getDocs(query(collection(db, "shift-logs"), where("email", "==", email)));
+      const snap = await getDocs(collection(db, "shift-logs"));
 
       const mapped = snap.docs.map((doc) => ({ ...(doc.data() as ShiftLogItem), id: doc.id }));
 
@@ -100,7 +89,7 @@ export default function ShiftLogs() {
 
   useEffect(() => {
     fetchShiftLogs();
-  }, [userData?.email]);
+  }, []);
 
   const getCoordinateText = (coordinate?: { latitude?: number; longitude?: number; accuracy?: number }) => {
     if (typeof coordinate?.latitude !== "number" || typeof coordinate?.longitude !== "number") {
