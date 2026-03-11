@@ -541,7 +541,7 @@ export default function Users() {
         return;
       }
 
-      const recordData = recordsSnapshot.docs[0].data() as any;
+      const recordDocRef = recordsSnapshot.docs[0].ref;
       const updatedData: Record<string, any> = {
         role: role || "profile",  // system access role
         clearance: clearance || "{}",
@@ -557,7 +557,9 @@ export default function Users() {
         return acc;
       }, {} as Record<string, any>);
 
+      // Update both the user doc and the corresponding record with the role
       await updateDoc(doc(db, "users", docid), filteredData);
+      await updateDoc(recordDocRef, { role: filteredData.role });
 
       // Update local cache if the updated user is the current user
       updateLocalCache(display_email, filteredData);
