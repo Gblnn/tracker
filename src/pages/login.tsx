@@ -49,8 +49,10 @@ export default function Login() {
             returnPath = "/profile";
             break;
           case "admin":
-          case "site_admin":
             returnPath = "/index";
+            break;
+          case "site_admin":
+            returnPath = "/site-admin-workers";
             break;
           case "user":
             returnPath = "/index";
