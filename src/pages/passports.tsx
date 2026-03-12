@@ -545,27 +545,118 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
     
-    // Simple edge detection using brightness variance
-    let edgeStrength = 0;
-    const sampleSize = 100; // Sample points
-    const step = Math.floor((canvas.width * canvas.height) / sampleSize);
+    // Convert to grayscale and detect edges using simple edge detection
+    const width = canvas.width;
+    const height = canvas.height;
+    const edges: number[] = [];
     
-    for (let i = 0; i < data.length; i += step * 4) {
-      if (i + 4 < data.length) {
-        const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
-        const nextBrightness = (data[i + 4] + data[i + 5] + data[i + 6]) / 3;
-        edgeStrength += Math.abs(brightness - nextBrightness);
+    // Simple Sobel-like edge detection
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const idx = (y * width + x) * 4;
+        const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+        
+        // Sample neighboring pixels
+        const grayRight = (data[idx + 4] + data[idx + 5] + data[idx + 6]) / 3;
+        const grayDown = (data[idx + width * 4] + data[idx + width * 4 + 1] + data[idx + width * 4 + 2]) / 3;
+        
+        const edgeStrength = Math.abs(gray - grayRight) + Math.abs(gray - grayDown);
+        edges.push(edgeStrength);
       }
     }
     
-    // Detect if a document is in frame based on edge strength
-    const avgEdgeStrength = edgeStrength / sampleSize;
-    const hasDocument = avgEdgeStrength > 15; // Threshold for document detection
+    // Calculate average edge strength
+    const avgEdgeStrength = edges.reduce((a, b) => a + b, 0) / edges.length;
+    const hasDocument = avgEdgeStrength > 10; // Threshold for document detection
     
     setDocumentDetected(hasDocument);
     
     // Continue detection loop
     animationFrameRef.current = requestAnimationFrame(detectDocumentEdges);
+  };
+
+  const findDocumentBounds = (imageData: string): Promise<{ x: number, y: number, width: number, height: number } | null> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = img.width;
+        tempCanvas.height = img.height;
+        const ctx = tempCanvas.getContext('2d');
+        
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, img.width, img.height);
+        const data = imageData.data;
+        
+        // Convert to grayscale
+        const grayData: number[] = [];
+        for (let i = 0; i < data.length; i += 4) {
+          const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+          grayData.push(gray);
+        }
+        
+        // Find content bounds by detecting where there's significant contrast
+        let minX = img.width, maxX = 0, minY = img.height, maxY = 0;
+        const threshold = 30; // Contrast threshold
+        
+        // Scan for edges
+        for (let y = 0; y < img.height; y++) {
+          for (let x = 0; x < img.width; x++) {
+            const idx = y * img.width + x;
+            const gray = grayData[idx];
+            
+            // Check neighbors
+            if (x > 0 && x < img.width - 1 && y > 0 && y < img.height - 1) {
+              const neighbors = [
+                grayData[idx - 1], grayData[idx + 1],
+                grayData[idx - img.width], grayData[idx + img.width]
+              ];
+              
+              const hasEdge = neighbors.some(n => Math.abs(gray - n) > threshold);
+              
+              if (hasEdge) {
+                minX = Math.min(minX, x);
+                maxX = Math.max(maxX, x);
+                minY = Math.min(minY, y);
+                maxY = Math.max(maxY, y);
+              }
+            }
+          }
+        }
+        
+        // Add padding and ensure bounds are valid
+        const padding = 20;
+        if (maxX > minX && maxY > minY) {
+          const bounds = {
+            x: Math.max(0, minX - padding),
+            y: Math.max(0, minY - padding),
+            width: Math.min(img.width, maxX - minX + padding * 2),
+            height: Math.min(img.height, maxY - minY + padding * 2)
+          };
+          
+          // Only use bounds if they represent a significant portion of the image
+          // (prevents over-cropping or using invalid detection)
+          const boundsArea = bounds.width * bounds.height;
+          const imageArea = img.width * img.height;
+          
+          if (boundsArea > imageArea * 0.2 && boundsArea < imageArea * 0.95) {
+            resolve(bounds);
+          } else {
+            resolve(null);
+          }
+        } else {
+          resolve(null);
+        }
+      };
+      
+      img.onerror = () => resolve(null);
+      img.src = imageData;
+    });
   };
 
   const capturePhoto = () => {
@@ -583,8 +674,23 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
-        const imageData = canvas.toDataURL('image/jpeg', 0.9);
-        setCapturedImage(imageData);
+        
+        // Apply some image enhancements for better OCR
+        const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
+        const data = imageData.data;
+        
+        // Increase contrast slightly
+        const contrastFactor = 1.2;
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = Math.min(255, Math.max(0, ((data[i] - 128) * contrastFactor) + 128));
+          data[i + 1] = Math.min(255, Math.max(0, ((data[i + 1] - 128) * contrastFactor) + 128));
+          data[i + 2] = Math.min(255, Math.max(0, ((data[i + 2] - 128) * contrastFactor) + 128));
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
+        
+        const capturedData = canvas.toDataURL('image/jpeg', 0.95);
+        setCapturedImage(capturedData);
         stopCamera();
       }
     }
@@ -593,8 +699,42 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
   const processImage = async (imageData: string) => {
     setProcessing(true);
     try {
+      // First, try to find and crop to document bounds
+      const bounds = await findDocumentBounds(imageData);
+      let processedImage = imageData;
+      
+      if (bounds) {
+        console.log("Document bounds detected:", bounds);
+        
+        // Crop to detected bounds
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = imageData;
+        });
+        
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = bounds.width;
+        cropCanvas.height = bounds.height;
+        const cropCtx = cropCanvas.getContext('2d');
+        
+        if (cropCtx) {
+          cropCtx.drawImage(
+            img,
+            bounds.x, bounds.y, bounds.width, bounds.height,
+            0, 0, bounds.width, bounds.height
+          );
+          
+          processedImage = cropCanvas.toDataURL('image/jpeg', 0.95);
+          console.log("Image cropped to document bounds");
+        }
+      } else {
+        console.log("No document bounds detected, using full image");
+      }
+      
       const worker = await ensureOcrWorker();
-      const result = await worker.recognize(imageData);
+      const result = await worker.recognize(processedImage);
 
       const text = result.data.text;
       console.log("Extracted passport text:", text);
