@@ -443,9 +443,12 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
   const [ocrReady, setOcrReady] = useState(getOcrLoadState().ready);
   const [ocrLoadProgress, setOcrLoadProgress] = useState(getOcrLoadState().progress);
   const [extractedText, setExtractedText] = useState<string>("");
+  const [documentDetected, setDocumentDetected] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const edgeCanvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     const unsubscribe = subscribeOcrLoadState((state) => {
@@ -465,8 +468,17 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
     }
     return () => {
       stopCamera();
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
   }, [open, capturedImage]);
+
+  useEffect(() => {
+    if (videoRef.current && !capturedImage && open) {
+      detectDocumentEdges();
+    }
+  }, [capturedImage, open]);
 
   const handleClose = () => {
     setCapturedImage(null);
@@ -501,6 +513,59 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  };
+
+  const detectDocumentEdges = () => {
+    const video = videoRef.current;
+    const canvas = edgeCanvasRef.current;
+    
+    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      animationFrameRef.current = requestAnimationFrame(detectDocumentEdges);
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      animationFrameRef.current = requestAnimationFrame(detectDocumentEdges);
+      return;
+    }
+
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Draw current video frame
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Get image data for edge detection
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    // Simple edge detection using brightness variance
+    let edgeStrength = 0;
+    const sampleSize = 100; // Sample points
+    const step = Math.floor((canvas.width * canvas.height) / sampleSize);
+    
+    for (let i = 0; i < data.length; i += step * 4) {
+      if (i + 4 < data.length) {
+        const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        const nextBrightness = (data[i + 4] + data[i + 5] + data[i + 6]) / 3;
+        edgeStrength += Math.abs(brightness - nextBrightness);
+      }
+    }
+    
+    // Detect if a document is in frame based on edge strength
+    const avgEdgeStrength = edgeStrength / sampleSize;
+    const hasDocument = avgEdgeStrength > 15; // Threshold for document detection
+    
+    setDocumentDetected(hasDocument);
+    
+    // Continue detection loop
+    animationFrameRef.current = requestAnimationFrame(detectDocumentEdges);
   };
 
   const capturePhoto = () => {
@@ -631,27 +696,63 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       const line = lines[i];
       const nextLine = i < lines.length - 1 ? lines[i + 1] : '';
       
-      // Passport number patterns
+      // Passport number patterns - Indian passport specific
       if (!data.passportNumber) {
-        const passportPatterns = [
-          /passport\s*(?:no|number|#)?[:\s]*([A-Z0-9]{6,12})/i,
-          /^([A-Z]\d{7,8})$/,
-          /^([A-Z]{1,2}\d{6,8})$/
-        ];
+        // Check if this line contains "INDIAN" and extract number next to it
+        if (/INDIAN/i.test(line)) {
+          // Look for passport number pattern next to INDIAN
+          const indianPassportMatch = line.match(/INDIAN[\s:]*([A-Z]\d{7,8})/i);
+          if (indianPassportMatch) {
+            data.passportNumber = indianPassportMatch[1].toUpperCase();
+            console.log("✓ Passport Number (Indian) from text:", data.passportNumber);
+          } else {
+            // Check next line for passport number
+            const nextLineMatch = nextLine.match(/^([A-Z]\d{7,8})$/);
+            if (nextLineMatch) {
+              data.passportNumber = nextLineMatch[1].toUpperCase();
+              console.log("✓ Passport Number (Indian, next line) from text:", data.passportNumber);
+            }
+          }
+        }
         
-        for (const pattern of passportPatterns) {
-          const match = line.match(pattern);
-          if (match) {
-            data.passportNumber = match[1].toUpperCase();
-            console.log("✓ Passport Number from text:", data.passportNumber);
-            break;
+        // General passport number patterns if not found with INDIAN label
+        if (!data.passportNumber) {
+          const passportPatterns = [
+            /passport\s*(?:no|number|#)?[:\s]*([A-Z0-9]{6,12})/i,
+            /^([A-Z]\d{7,8})$/,
+            /^([A-Z]{1,2}\d{6,8})$/
+          ];
+          
+          for (const pattern of passportPatterns) {
+            const match = line.match(pattern);
+            if (match) {
+              data.passportNumber = match[1].toUpperCase();
+              console.log("✓ Passport Number from text:", data.passportNumber);
+              break;
+            }
           }
         }
       }
       
-      // Name patterns
+      // Name patterns - prioritize "Given name" label
       if (!data.fullName) {
-        if (/(?:name|surname|given\s*name)/i.test(line)) {
+        // Check for "Given name" label specifically
+        if (/Given\s*name/i.test(line)) {
+          // Name should be on the next line or same line after colon
+          const sameLineMatch = line.match(/Given\s*name[:\s]*([A-Z\s]{3,})/i);
+          if (sameLineMatch) {
+            data.fullName = sameLineMatch[1].trim();
+            console.log("✓ Name (Given name label) from text:", data.fullName);
+          } else if (nextLine) {
+            const nextLineMatch = nextLine.match(/^([A-Z\s]{3,})$/);
+            if (nextLineMatch) {
+              data.fullName = nextLineMatch[1].trim();
+              console.log("✓ Name (Given name label, next line) from text:", data.fullName);
+            }
+          }
+        }
+        // Fallback to general name patterns
+        else if (/(?:name|surname)/i.test(line)) {
           const nameMatch = nextLine.match(/^([A-Z\s]{3,})$/);
           if (nameMatch) {
             data.fullName = nameMatch[1].trim();
@@ -660,21 +761,45 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
         }
       }
       
-      // Date of birth patterns
+      // Date of birth patterns - prioritize "Date of birth" label
       if (!data.dateOfBirth) {
-        const dobPatterns = [
-          /(?:date\s*of\s*birth|dob|birth\s*date)[:\s]*(\d{1,2}[\s\/-]\d{1,2}[\s\/-]\d{2,4})/i,
-          /(\d{1,2}[\s\/-]\d{1,2}[\s\/-]\d{4})/
-        ];
-        
-        for (const pattern of dobPatterns) {
-          const match = line.match(pattern);
-          if (match) {
-            const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD/MM/YY"], true);
+        // Check for "Date of birth" label specifically
+        if (/Date\s*of\s*birth/i.test(line)) {
+          // Date should be on same line after colon or next line
+          const sameLineMatch = line.match(/Date\s*of\s*birth[:\s]*(\d{1,2}[\s\/-]\d{1,2}[\s\/-]\d{2,4})/i);
+          if (sameLineMatch) {
+            const parsed = moment(sameLineMatch[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD/MM/YY"], true);
             if (parsed.isValid()) {
               data.dateOfBirth = parsed.format("YYYY-MM-DD");
-              console.log("✓ DOB from text:", data.dateOfBirth);
-              break;
+              console.log("✓ DOB (Date of birth label) from text:", data.dateOfBirth);
+            }
+          } else if (nextLine) {
+            const nextLineMatch = nextLine.match(/(\d{1,2}[\s\/-]\d{1,2}[\s\/-]\d{2,4})/);
+            if (nextLineMatch) {
+              const parsed = moment(nextLineMatch[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD/MM/YY"], true);
+              if (parsed.isValid()) {
+                data.dateOfBirth = parsed.format("YYYY-MM-DD");
+                console.log("✓ DOB (Date of birth label, next line) from text:", data.dateOfBirth);
+              }
+            }
+          }
+        }
+        // Fallback to general DOB patterns
+        else {
+          const dobPatterns = [
+            /(?:dob|birth\s*date)[:\s]*(\d{1,2}[\s\/-]\d{1,2}[\s\/-]\d{2,4})/i,
+            /(\d{1,2}[\s\/-]\d{1,2}[\s\/-]\d{4})/
+          ];
+          
+          for (const pattern of dobPatterns) {
+            const match = line.match(pattern);
+            if (match) {
+              const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD/MM/YY"], true);
+              if (parsed.isValid()) {
+                data.dateOfBirth = parsed.format("YYYY-MM-DD");
+                console.log("✓ DOB from text:", data.dateOfBirth);
+                break;
+              }
             }
           }
         }
@@ -800,15 +925,34 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
               <div style={{
                 position: "absolute",
                 inset: "5%",
-                border: "2px dashed rgba(255, 255, 255, 0.6)",
+                border: `2px dashed ${documentDetected ? 'rgba(0, 255, 0, 0.8)' : 'rgba(255, 255, 255, 0.6)'}`,
                 borderRadius: "1rem",
-                pointerEvents: "none"
+                pointerEvents: "none",
+                transition: "border-color 0.3s ease"
               }} />
+              {documentDetected && (
+                <div style={{
+                  position: "absolute",
+                  top: "10%",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  background: "rgba(0, 255, 0, 0.9)",
+                  color: "white",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "0.5rem",
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  pointerEvents: "none"
+                }}>
+                  Document Detected
+                </div>
+              )}
             </>
           ) : (
             <img src={capturedImage} alt="Captured" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
           )}
           <canvas ref={canvasRef} style={{ display: "none" }} />
+          <canvas ref={edgeCanvasRef} style={{ display: "none" }} />
         </div>
 
         {extractedText && (
