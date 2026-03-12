@@ -97,7 +97,7 @@ const PassportFormContent: React.FC<PassportFormContentProps> = ({
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <div style={{
-            background: "mediumslateblue",
+            background: "darkslateblue",
             padding: "0.75rem",
             borderRadius: "0.75rem",
             display: "flex",
@@ -137,7 +137,7 @@ const PassportFormContent: React.FC<PassportFormContentProps> = ({
                 onClick={onScanPassport}
                 whileTap={{ scale: 0.95 }}
                 style={{
-                  background: "mediumslateblue",
+                  background: "darkslateblue",
                   padding: "0.75rem",
                   borderRadius: "0.5rem",
                   border: "none",
@@ -404,7 +404,7 @@ const PassportFormContent: React.FC<PassportFormContentProps> = ({
             width: "100%",
             padding: "1rem",
             borderRadius: "0.75rem",
-            background: submitting ? "rgba(100, 100, 100, 0.3)" : "mediumslateblue",
+            background: submitting ? "rgba(100, 100, 100, 0.3)" : "darkslateblue",
             color: "white",
             border: "none",
             fontSize: "1rem",
@@ -991,31 +991,34 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       
       // Date of issue patterns - Indian passport specific
       if (!data.dateOfIssue) {
-        const issuePatterns = [
-          /(?:Date[\s]*of[\s]*[Il1]ssue|[Il1]ssue[\s]*date)[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i,
-          /(?:Date[\s]*of[\s]*[Il1]ssue|[Il1]ssue)[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i
-        ];
-        
-        for (const pattern of issuePatterns) {
-          const match = line.match(pattern);
-          if (match) {
-            const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY"], true);
-            if (parsed.isValid()) {
-              data.dateOfIssue = parsed.format("YYYY-MM-DD");
-              console.log("✓ Issue Date from text:", data.dateOfIssue);
-              break;
+        // Only match if explicitly has "issue" in the label (not expiry)
+        if (/(?:Date[\s]*of[\s]*[Il1]ssue|[Il1]ssue[\s]*date)/i.test(line) && !/[Ee]xp[I1l]ry/i.test(line)) {
+          const issuePatterns = [
+            /(?:Date[\s]*of[\s]*[Il1]ssue|[Il1]ssue[\s]*date)[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i,
+            /(?:Date[\s]*of[\s]*[Il1]ssue|[Il1]ssue)[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i
+          ];
+          
+          for (const pattern of issuePatterns) {
+            const match = line.match(pattern);
+            if (match) {
+              const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY"], true);
+              if (parsed.isValid()) {
+                data.dateOfIssue = parsed.format("YYYY-MM-DD");
+                console.log("✓ Issue Date from text:", data.dateOfIssue);
+                break;
+              }
             }
           }
-        }
-        
-        // Check next line if label found but no date on same line
-        if (!data.dateOfIssue && /(?:Date[\s]*of[\s]*[Il1]ssue|[Il1]ssue)/i.test(line)) {
-          const nextLineMatch = nextLine.match(/(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/);
-          if (nextLineMatch) {
-            const parsed = moment(nextLineMatch[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY"], true);
-            if (parsed.isValid()) {
-              data.dateOfIssue = parsed.format("YYYY-MM-DD");
-              console.log("✓ Issue Date (next line) from text:", data.dateOfIssue);
+          
+          // Check next line if label found but no date on same line
+          if (!data.dateOfIssue && nextLine) {
+            const nextLineMatch = nextLine.match(/(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/);
+            if (nextLineMatch) {
+              const parsed = moment(nextLineMatch[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY"], true);
+              if (parsed.isValid()) {
+                data.dateOfIssue = parsed.format("YYYY-MM-DD");
+                console.log("✓ Issue Date (next line) from text:", data.dateOfIssue);
+              }
             }
           }
         }
@@ -1023,31 +1026,42 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       
       // Date of expiry patterns - Indian passport specific
       if (!data.dateOfExpiry) {
-        const expiryPatterns = [
-          /(?:Date[\s]*of[\s]*[Ee]xp[I1l]ry|[Ee]xp[I1l]ry[\s]*date|Val[I1l]d[\s]*unt[I1l]l)[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i,
-          /(?:Date[\s]*of[\s]*[Ee]xp[I1l]ry|[Ee]xp[I1l]ry)[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i
-        ];
-        
-        for (const pattern of expiryPatterns) {
-          const match = line.match(pattern);
-          if (match) {
-            const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY"], true);
-            if (parsed.isValid()) {
-              data.dateOfExpiry = parsed.format("YYYY-MM-DD");
-              console.log("✓ Expiry Date from text:", data.dateOfExpiry);
-              break;
+        // Only match if explicitly has "expiry" or "valid" in the label (not issue)
+        if (/(?:Date[\s]*of[\s]*[Ee]xp[I1l]ry|[Ee]xp[I1l]ry|Val[I1l]d[\s]*unt[I1l]l)/i.test(line) && !/[Il1]ssue/i.test(line)) {
+          const expiryPatterns = [
+            /(?:Date[\s]*of[\s]*[Ee]xp[I1l]ry|[Ee]xp[I1l]ry[\s]*date|Val[I1l]d[\s]*unt[I1l]l)[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i,
+            /(?:Date[\s]*of[\s]*[Ee]xp[I1l]ry|[Ee]xp[I1l]ry)[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i
+          ];
+          
+          for (const pattern of expiryPatterns) {
+            const match = line.match(pattern);
+            if (match) {
+              const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY"], true);
+              if (parsed.isValid()) {
+                // Ensure expiry date is different from issue date
+                const expiryDate = parsed.format("YYYY-MM-DD");
+                if (expiryDate !== data.dateOfIssue) {
+                  data.dateOfExpiry = expiryDate;
+                  console.log("✓ Expiry Date from text:", data.dateOfExpiry);
+                  break;
+                }
+              }
             }
           }
-        }
-        
-        // Check next line if label found but no date on same line
-        if (!data.dateOfExpiry && /(?:Date[\s]*of[\s]*[Ee]xp[I1l]ry|[Ee]xp[I1l]ry)/i.test(line)) {
-          const nextLineMatch = nextLine.match(/(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/);
-          if (nextLineMatch) {
-            const parsed = moment(nextLineMatch[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY"], true);
-            if (parsed.isValid()) {
-              data.dateOfExpiry = parsed.format("YYYY-MM-DD");
-              console.log("✓ Expiry Date (next line) from text:", data.dateOfExpiry);
+          
+          // Check next line if label found but no date on same line
+          if (!data.dateOfExpiry && nextLine) {
+            const nextLineMatch = nextLine.match(/(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/);
+            if (nextLineMatch) {
+              const parsed = moment(nextLineMatch[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY"], true);
+              if (parsed.isValid()) {
+                // Ensure expiry date is different from issue date
+                const expiryDate = parsed.format("YYYY-MM-DD");
+                if (expiryDate !== data.dateOfIssue) {
+                  data.dateOfExpiry = expiryDate;
+                  console.log("✓ Expiry Date (next line) from text:", data.dateOfExpiry);
+                }
+              }
             }
           }
         }
@@ -1094,29 +1108,50 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       // Place of issue - Indian passport specific
       if (!data.placeOfIssue) {
         if (/(?:Place[\s]*of[\s]*[Il1]ssue|[Il1]ssu[I1l]ng[\s]*author[I1l]ty)/i.test(line)) {
-          // Try same line first
-          const sameLineMatch = line.match(/(?:Place[\s]*of[\s]*[Il1]ssue|[Il1]ssu[I1l]ng)[:\s]*([A-Z][A-Za-z\s,]+)/i);
+          // Try same line first - more flexible pattern
+          const sameLineMatch = line.match(/(?:Place[\s]*of[\s]*[Il1]ssue|[Il1]ssu[I1l]ng)[:\s]*([A-Za-z][A-Za-z\s,\.\-]+)/i);
           if (sameLineMatch && sameLineMatch[1].length > 2) {
             data.placeOfIssue = sameLineMatch[1].trim();
             console.log("✓ Place of Issue from text:", data.placeOfIssue);
-          } else if (nextLine && nextLine.length > 2 && /^[A-Z][A-Za-z\s,]+$/.test(nextLine)) {
-            data.placeOfIssue = nextLine.trim();
-            console.log("✓ Place of Issue (next line) from text:", data.placeOfIssue);
+          } else if (nextLine && nextLine.length > 2) {
+            // More flexible - accept any text that looks like a place name
+            const cleaned = nextLine.trim();
+            if (cleaned.length > 2 && !/^\d+$/.test(cleaned)) {
+              data.placeOfIssue = cleaned;
+              console.log("✓ Place of Issue (next line) from text:", data.placeOfIssue);
+            }
           }
         }
       }
       
       // Sex/Gender - Indian passport
       if (!data.sex) {
-        const sexMatch = line.match(/(?:sex|gender)[:\s]*(M|F|MALE|FEMALE|[Mm]ale|[Ff]emale)/i);
-        if (sexMatch) {
-          data.sex = sexMatch[1].charAt(0).toUpperCase();
-          console.log("✓ Sex from text:", data.sex);
-        } else if (nextLine && /^(M|F|MALE|FEMALE)$/i.test(nextLine)) {
-          data.sex = nextLine.charAt(0).toUpperCase();
-          console.log("✓ Sex (next line) from text:", data.sex);
+        // Check if line contains sex/gender label
+        if (/(?:sex|gender)[:\s]/i.test(line)) {
+          const sexMatch = line.match(/(?:sex|gender)[:\s]*(M|F|MALE|FEMALE|[Mm]ale|[Ff]emale)/i);
+          if (sexMatch) {
+            data.sex = sexMatch[1].charAt(0).toUpperCase();
+            console.log("✓ Sex from text:", data.sex);
+          } else if (nextLine && /^(M|F|MALE|FEMALE)$/i.test(nextLine)) {
+            data.sex = nextLine.charAt(0).toUpperCase();
+            console.log("✓ Sex (next line) from text:", data.sex);
+          }
+        }
+        // Also check if entire line is just M or F
+        else if (/^[MF]$/i.test(line.trim())) {
+          data.sex = line.trim().toUpperCase();
+          console.log("✓ Sex (standalone) from text:", data.sex);
         }
       }
+    }
+
+    // Fallback: Calculate expiry date from issue date if not found
+    if (!data.dateOfExpiry && data.dateOfIssue) {
+      const issueDate = moment(data.dateOfIssue);
+      // Indian passport validity: 10 years from date of issue, minus 1 day
+      const expiryDate = issueDate.add(10, 'years').subtract(1, 'day');
+      data.dateOfExpiry = expiryDate.format("YYYY-MM-DD");
+      console.log("✓ Expiry Date calculated from issue date:", data.dateOfExpiry);
     }
 
     console.log("Final extracted data:", data);
@@ -1624,7 +1659,7 @@ export default function Passports() {
             height: isMobile ? "auto" : "3.5rem",
             padding: isMobile ? "1rem" : "0",
             borderRadius: isMobile ? "0.5rem" : "0.75rem",
-            background: "mediumslateblue",
+            background: "darkslateblue",
             color: "white",
             border: "none",
             cursor: "pointer",
