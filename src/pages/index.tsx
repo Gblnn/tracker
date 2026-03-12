@@ -212,7 +212,7 @@ export default function Index() {
           fixed
           editMode={userData?.editor===true? true : false}
             title="StarBoard"
-            subtitle={"v1.7"}
+            subtitle={"v1.8"}
             icon={<img src="/stardox-bg.png" style={{ width: "1.75rem" }} />}
             noback
             extra={
