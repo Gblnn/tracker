@@ -59,7 +59,7 @@ export default function BackgroundProcessDropdown(props: Props) {
     switch (status) {
       case "pending":
       case "in-progress":
-        return <Loader2 className="animate-spin" width="1rem" color="dodgerblue" />;
+        return <Loader2 className="animate-spin" width="1rem" color="mediumslateblue" />;
       case "completed":
         return <CheckCircle2 width="1rem" color="mediumslateblue" />;
       case "error":
@@ -93,7 +93,7 @@ export default function BackgroundProcessDropdown(props: Props) {
         }}
       >
         {hasActiveProcesses ? (
-          <Loader2 className="animate-spin" width="1.25rem" color="dodgerblue" />
+          <Loader2 className="animate-spin" width="1.25rem" color="mediumslateblue" />
         ) : isOnline ? (
           <Cloud width="1.25rem" color="mediumslateblue" />
         ) : (
@@ -105,7 +105,7 @@ export default function BackgroundProcessDropdown(props: Props) {
               position: "absolute",
               top: "-0.25rem",
               right: "-0.25rem",
-              background: "dodgerblue",
+              background: "mediumslateblue",
               color: "white",
               borderRadius: "50%",
               width: "1.25rem",
@@ -152,7 +152,7 @@ export default function BackgroundProcessDropdown(props: Props) {
               }}
               onSelect={(e) => e.preventDefault()}
             >
-              <CloudOff width="0.875rem" color="dodgerblue" />
+              <CloudOff width="0.875rem" color="mediumslateblue" />
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 500, fontSize: "0.8rem" }}>
                   {pendingCount} Pending Fuel Log{pendingCount > 1 ? "s" : ""}
@@ -232,7 +232,7 @@ export default function BackgroundProcessDropdown(props: Props) {
                           style={{
                             width: `${process.progress}%`,
                             height: "100%",
-                            background: "dodgerblue",
+                            background: "mediumslateblue",
                             transition: "width 0.3s ease",
                           }}
                         />

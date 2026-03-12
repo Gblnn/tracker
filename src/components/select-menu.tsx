@@ -25,7 +25,7 @@ export default function SelectMenu(props: Props) {
         className=""
       >
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-          <UserCircle color="dodgerblue" width={"1.25rem"} />
+          <UserCircle color="mediumslateblue" width={"1.25rem"} />
           <p
             style={{
               fontSize: "0.65rem",

@@ -130,7 +130,7 @@ export default function Directive(props: Props) {
                   height={"1.5rem"}
                   className="check-square"
                   fill={
-                    internalSelected ? "dodgerblue" : "rgba(100 100 100/ 50%)"
+                    internalSelected ? "mediumslateblue" : "rgba(100 100 100/ 50%)"
                   }
                   stroke={internalSelected ? "white" : "none"}
                 />
@@ -140,7 +140,7 @@ export default function Directive(props: Props) {
             <div style={{ flexShrink: 0 }}>
               <LoaderCircle
                 className="animate-spin"
-                color="dodgerblue"
+                color="mediumslateblue"
                 width={"1.25rem"}
               />
             </div>
@@ -269,7 +269,7 @@ export default function Directive(props: Props) {
                     : props.tag === "Available"
                     ? "lightgreen"
                     : props.status
-                    ? "dodgerblue"
+                    ? "mediumslateblue"
                     : "",
                 fontWeight: 600,
                 display: "flex",

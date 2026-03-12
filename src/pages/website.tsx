@@ -34,18 +34,18 @@ export default function Website() {
         <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
           <Directive
             title={"Openings"}
-            icon={<Users width={"1.25rem"} color="dodgerblue" />}
+            icon={<Users width={"1.25rem"} color="mediumslateblue" />}
           />
           <Directive
             notName
-            icon={<Newspaper color="dodgerblue" width={"1.25rem"} />}
+            icon={<Newspaper color="mediumslateblue" width={"1.25rem"} />}
             title={"Latest News & Updates"}
           />
         </div>
       </motion.div>
 
       <InputDialog
-        titleIcon={<UserPlus color="dodgerblue" />}
+        titleIcon={<UserPlus color="mediumslateblue" />}
         open={addUserDialog}
         title={"Add User"}
         OkButtonText="Add"

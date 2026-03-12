@@ -46,7 +46,7 @@ export default function CivilID(props: Props) {
               style={{
                 fontSize: "0.6rem",
                 fontWeight: 600,
-                color: "dodgerblue",
+                color: "mediumslateblue",
                 border: "",
                 textAlign: "left",
               }}

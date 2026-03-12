@@ -165,7 +165,7 @@ export default function Devices() {
             <div style={{overflowY:"auto", padding:"1.25rem", paddingTop: "5rem", gap:"0.75rem", display:"flex", flexFlow:"column"}}>
                 {devices.map((device) => (
                     <Directive 
-                        icon={<Laptop2 color="dodgerblue"/>}
+                        icon={<Laptop2 color="mediumslateblue"/>}
                         key={device.id}
                         subtext={`${device.name}`} 
                         title={ device.deviceId}
@@ -191,7 +191,7 @@ export default function Devices() {
                             width: "3rem",
                             height: "3rem",
                             borderRadius: "50%",
-                            backgroundColor: "dodgerblue",
+                            backgroundColor: "mediumslateblue",
                             border: "none",
                             display: "flex",
                             alignItems: "center",
@@ -211,7 +211,7 @@ export default function Devices() {
                 <InputDialog
                     open={addDeviceDialog}
                     title="Add Device"
-                    titleIcon={<Plus color="dodgerblue" />}
+                    titleIcon={<Plus color="mediumslateblue" />}
                     onCancel={() => {
                         setAddDeviceDialog(false);
                         setNewDeviceId("");
@@ -269,7 +269,7 @@ export default function Devices() {
                 <InputDialog
                     open={editDeviceDialog}
                     title="Edit Device"
-                    titleIcon={<PenLine color="dodgerblue" />}
+                    titleIcon={<PenLine color="mediumslateblue" />}
                     onCancel={() => {
                         setEditDeviceDialog(false);
                         setSelectedDevice(null);

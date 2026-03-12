@@ -194,7 +194,7 @@ export default function Openings() {
               }}
             >
               <LoaderCircle
-                color="dodgerblue"
+                color="mediumslateblue"
                 className="animate-spin"
                 width={"3rem"}
                 height={"3rem"}
@@ -473,7 +473,7 @@ export default function Openings() {
                           style={{
                             fontSize: "0.8rem",
                             padding: "0.15rem 0.75rem",
-                            color: "dodgerblue",
+                            color: "mediumslateblue",
                           }}
                         >
                           <a

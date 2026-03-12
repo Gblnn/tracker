@@ -1,4 +1,5 @@
 import AddRecordButton from "@/components/add-record-button";
+import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import CivilID from "@/components/civil-id";
 import Directive from "@/components/directive";
@@ -6,18 +7,17 @@ import DropDown from "@/components/dropdown";
 import InputDialog from "@/components/input-dialog";
 import MedicalID from "@/components/medical-id";
 import Passport from "@/components/passport";
+import { ResponsiveModal } from "@/components/responsive-modal";
 import RoleSelect from "@/components/role-select";
 import SearchBar from "@/components/search-bar";
 import DefaultDialog from "@/components/ui/default-dialog";
-import { ResponsiveModal } from "@/components/responsive-modal";
 import VehicleID from "@/components/vehicle-id";
 import { db, storage } from "@/firebase";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useAuth } from "@/components/AuthProvider";
 import {
   exportExpiringRecords,
 } from "@/utils/excelUtils";
-import { getCachedRecords, fetchAndCacheRecords } from "@/utils/recordsCache";
+import { fetchAndCacheRecords, getCachedRecords } from "@/utils/recordsCache";
 import { LoadingOutlined } from "@ant-design/icons";
 import * as XLSX from "@e965/xlsx";
 import { message, Tooltip } from "antd";
@@ -26,69 +26,55 @@ import {
   collection,
   deleteDoc,
   doc,
-  getAggregateFromServer,
   getDocs,
   limit,
   onSnapshot,
   orderBy,
   query,
   startAfter,
-  sum,
   Timestamp,
   updateDoc,
   where,
-  writeBatch,
+  writeBatch
 } from "firebase/firestore";
 import {
   deleteObject,
-  getDownloadURL,
-  ref,
-  ref as storageRef,
-  uploadBytes,
+  ref
 } from "firebase/storage";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
-  Archive,
-  ArrowDown,
-  ArrowDown01,
   ArrowDownAZ,
-  ArrowUp,
-  BarChart3,
-  BellOff,
-  BellRing,
   Book,
   Car,
   Check,
   CheckSquare2,
-  CircleDollarSign,
+  ChevronDown,
+  ChevronUp,
   CreditCard,
   Disc,
   Download,
   DownloadCloud,
   EllipsisVerticalIcon,
-  Eye,
   File,
   FileArchive,
   FileDown,
   Filter,
+  FolderKanban,
   Globe,
   GraduationCap,
   HeartPulse,
   Inbox,
   Info,
-  LayoutGrid,
   ListStart,
   Loader,
   Loader2,
   LoaderCircle,
-  MinusSquareIcon,
   PackageOpen,
   PenLine,
   Plus,
   RadioTower,
   RefreshCcw,
-  ScrollText,
   Sparkles,
   Table2,
   Trash,
@@ -105,10 +91,9 @@ import { toast } from "sonner";
 import useKeyboardShortcut from "use-keyboard-shortcut";
 import { exportDatabase, exportRaw, getBlank } from "./component-functions";
 import DbDropDown from "./db-dropdown";
-import ImageDialog from "./image-dialog";
-import LazyLoader from "./lazy-loader";
 import RefreshButton from "./refresh-button";
 import SheetComponent from "./sheet-component";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select";
 
 type Record = {
@@ -164,6 +149,8 @@ interface RecordFormContentProps {
   setCug: (value: string) => void;
   designation: string;
   setDesignation: (value: string) => void;
+  workerType: string;
+  setWorkerType: (value: string) => void;
   site: string;
   setSite: (value: string) => void;
   project: string;
@@ -198,6 +185,8 @@ const RecordFormContent: React.FC<RecordFormContentProps> = ({
   setCug,
   designation,
   setDesignation,
+  workerType,
+  setWorkerType,
   site,
   setSite,
   project,
@@ -330,6 +319,17 @@ const RecordFormContent: React.FC<RecordFormContentProps> = ({
             onChange={(e) => setDesignation(e.target.value)}
             style={{ width: "100%" }}
           />
+          <Select value={workerType} onValueChange={(value) => setWorkerType(value)}>
+            <SelectTrigger style={{ width: "100%", justifyContent: "space-between" }}>
+              <span style={{ opacity: workerType ? 1 : 0.5 }}>
+                {workerType === "staff" ? "Staff" : workerType === "worker" ? "Worker" : "Select Employee Type"}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="staff">Staff</SelectItem>
+              <SelectItem value="worker">Worker</SelectItem>
+            </SelectContent>
+          </Select>
           
           <RoleSelect 
             value={systemRole || 'profile'} 
@@ -387,8 +387,7 @@ const RecordFormContent: React.FC<RecordFormContentProps> = ({
 export default function DbComponent(props: Props) {
   const { windowName } = useCurrentUser();
   const { userData } = useAuth();
-  const [editAccess, setEditAccess] = useState(false);
-  const [sensitive_data_access, setSensitiveDataAccess] = useState(false);
+  
 
   // Memoized function to check if record is expiring (within 2 months)
   const isRecordExpiring = useMemo(() => {
@@ -418,82 +417,50 @@ export default function DbComponent(props: Props) {
     };
   }, []);
   
-  const [contractDialog, setContractDialog] = useState(false);
+ 
   const [selectAll, setSelectAll] = useState(false);
   const [deleteKey, setDeleteKey] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [jsonData, setJsonData] = useState<any>([]);
   const [companyName, setCompanyName] = useState("");
-  const [remarks, setRemarks] = useState("");
+
  
-  const [remarksDialog, setRemarksDialog] = useState(false);
+
   const [archivePrompt, setArchivePrompt] = useState(false);
   const [state, setState] = useState("");
-  const [imageDialog, setImageDialog] = useState(false);
+ 
 
   const [contact, setContact] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [editedContact, setEditedContact] = useState<string | undefined>(undefined);
-  const [editedDisplayName, setEditedDisplayName] = useState<string | undefined>(undefined);
+  
   const [nativePhone, setNativePhone] = useState("");
   const [nativeAddress, setNativeAddress] = useState("");
   const [editedNativePhone, setEditedNativePhone] = useState("");
   const [editedNativeAddress, setEditedNativeAddress] = useState("");
-  const [leaveReview, setLeaveReview] = useState(false);
-  const [editedLeaveFrom, setEditedLeaveFrom] = useState("");
-  const [editedLeaveTill, setEditedLeaveTill] = useState("");
-  const [expectedReturn, setExpectedReturn] = useState("");
+ 
+  
+ 
 
   const usenavigate = useNavigate();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   // BASIC PAGE VARIABLES
   // const [pageLoad, setPageLoad] = useState(false)
-  const [notify, setNotify] = useState(true);
   const [records, setRecords] = useState<Record[]>([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [name, setName] = useState("");
   const [doc_id] = useState("");
-  const [recordSummary, setRecordSummary] = useState(false);
+
   const [civil, setCivil] = useState(false);
   const [vehicle, setVehicle] = useState(false);
   const [addcivil, setAddcivil] = useState(false);
-  const [modified_on, setModifiedOn] = useState<any>();
+  
   const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteMedicalIDdialog, setDeleteMedicalIDdialog] = useState(false);
   const [email, setEmail] = useState("");
-  const [editedName, setEditedName] = useState<string | undefined>(undefined);
-  const [editedEmail, setEditedEmail] = useState<string | undefined>(undefined);
-  const [editedCug, setEditedCug] = useState<string | undefined>(undefined);
-  const [editedDesignation, setEditedDesignation] = useState<string | undefined>(undefined);
-  const [editedSystemRole, setEditedSystemRole] = useState<string | undefined>(undefined);
-  const [editedSite, setEditedSite] = useState<string | undefined>(undefined);
-  const [editedProject, setEditedProject] = useState<string | undefined>(undefined);
-  const [editedEmployeeCode, setEditedEmployeeCode] = useState<string | undefined>(undefined);
-  const [editedCompanyName, setEditedCompanyName] = useState<string | undefined>(undefined);
-  const [editedDateofJoin, setEditedDateofJoin] = useState<string | undefined>(undefined);
-  const [editedSalarybasic, setEditedSalaryBasic] = useState<number | undefined>(undefined);
-  const [editedAllowance, setEditedAllowance] = useState<number | undefined>(undefined);
-  const [image, setImage] = useState("");
-
-  // Reset all edited states
-  const resetEditedStates = () => {
-    setEditedName(undefined);
-    setEditedDisplayName(undefined);
-    setEditedEmail(undefined);
-    setEditedCug(undefined);
-    setEditedDesignation(undefined);
-    setEditedSystemRole(undefined);
-    setEditedSite(undefined);
-    setEditedProject(undefined);
-    setEditedEmployeeCode(undefined);
-    setEditedCompanyName(undefined);
-    setEditedDateofJoin(undefined);
-    setEditedSalaryBasic(undefined);
-    setEditedAllowance(undefined);
-    setEditedContact(undefined);
-  };
+  
+  
 
   // CIVIL ID VARIABLES
   const [civil_number, setCivilNumber] = useState<any>();
@@ -523,8 +490,7 @@ export default function DbComponent(props: Props) {
 
   //MAIL CONFIG VARIABLES
   const [addDialog, setAddDialog] = useState(false);
-  const [userDeletePrompt, setUserDeletePrompt] = useState(false);
-  const [userEditPrompt, setUserEditPrompt] = useState(false);
+ 
   const [editcivilprompt, setEditcivilprompt] = useState(false);
   const [valeTrainingDialog, setValeTrainingDialog] = useState(false);
   const [renewMedicalIDdialog, setRenewMedicalIDdialog] = useState(false);
@@ -568,6 +534,19 @@ export default function DbComponent(props: Props) {
   const [checked, setChecked] = useState<string[]>([]);
   const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false);
 
+  // Project allocation mode
+  const [projectAllocMode, setProjectAllocMode] = useState(false);
+  const [projectDrawerExpanded, setProjectDrawerExpanded] = useState(true);
+  const [projectsList, setProjectsList] = useState<{ id: string; name: string }[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [allocatingProject, setAllocatingProject] = useState<string | null>(null);
+  const [pendingProject, setPendingProject] = useState<{ id: string; name: string } | null>(null);
+  
+  // Project personnel viewer
+  const [viewingProject, setViewingProject] = useState<{ id: string; name: string } | null>(null);
+  const [projectPersonnel, setProjectPersonnel] = useState<Record[]>([]);
+  const [loadingPersonnel, setLoadingPersonnel] = useState(false);
+
   // const [recipientsDialog, setRecipientsDialog] = useState(false)
 
   const [progress, setProgress] = useState("");
@@ -587,7 +566,7 @@ export default function DbComponent(props: Props) {
   const [trainingDialog, setTrainingDialog] = useState(false);
   const [healthDialog, setHealthDialog] = useState(false);
 
-  const [notifyLoading, setNotifyLoading] = useState(false);
+  
 
   const [trainingType, setTrainingType] = useState("");
 
@@ -605,9 +584,7 @@ export default function DbComponent(props: Props) {
 
   const [imageUpload] = useState(null);
   const [fileName, setFileName] = useState("");
-  const [profileName, setProfileName] = useState("");
 
-  const [salaryDialog, setSalaryDialog] = useState(false);
   const [employeeCode, setEmployeeCode] = useState("");
   const [dateofJoin, setDateofJoin] = useState("");
   const [salaryBasic, setSalaryBasic] = useState(0);
@@ -615,20 +592,10 @@ export default function DbComponent(props: Props) {
   const [cug, setCug] = useState("");
   const [systemRole, setSystemRole] = useState("");  // system access role
   const [designation, setDesignation] = useState("");  // job title
+  const [workerType, setWorkerType] = useState("");  // staff or worker
   const [site, setSite] = useState("");
   const [project, setProject] = useState("");
 
-  const [newSalary, setNewSalary] = useState(0);
-  const [newAllowance, setNewAllowance] = useState(0);
-
-  const [allowanceDialog, setAllowanceDialog] = useState(false);
-
-  const [leaveLog, setLeaveLog] = useState(false);
-  const [leaveList, setLeaveList] = useState<any>([]);
-  const [leaveFrom, setLeaveFrom] = useState<any>("");
-  const [leaveTill, setLeaveTill] = useState<any>("");
-  const [leaves, setLeaves] = useState(0);
-  const [deleteLeaveDialog, setDeleteLeaveDialog] = useState(false);
 
   // Collect all Firestore fields for tabular view
   const allKeys = useMemo(() => {
@@ -644,52 +611,70 @@ export default function DbComponent(props: Props) {
     return Array.from(keys).sort();
   }, [records]);
 
-  // Memoized filtered records for search performance
+  const [filterProject, setFilterProject] = useState("");
+  const [filterDesignation, setFilterDesignation] = useState("");
+  const [filterCompany, setFilterCompany] = useState("");
+
+  // Unique values for filter dropdowns
+  const uniqueProjects = useMemo(() => {
+    const set = new Set<string>();
+    records.forEach((r: any) => { if (r.project) set.add(r.project); });
+    return Array.from(set).sort();
+  }, [records]);
+
+  const uniqueDesignations = useMemo(() => {
+    const set = new Set<string>();
+    records.forEach((r: any) => { if (r.designation) set.add(r.designation); });
+    return Array.from(set).sort();
+  }, [records]);
+
+  const uniqueCompanies = useMemo(() => {
+    const set = new Set<string>();
+    records.forEach((r: any) => { if (r.companyName) set.add(r.companyName); });
+    return Array.from(set).sort();
+  }, [records]);
+
+  const activeFilterCount = [filterProject, filterDesignation, filterCompany].filter(Boolean).length;
+
+  // Memoized filtered records for search + filters
   const filteredRecords = useMemo(() => {
-    if (search === "") return records;
-    
-    const lowerSearch = search.toLowerCase();
     return records.filter((record: any) => {
-      // Search across multiple fields for better UX
-      return (
-        (record.name && record.name.toLowerCase().includes(lowerSearch)) ||
-        (record.display_name && record.display_name.toLowerCase().includes(lowerSearch)) ||
-        (record.email && record.email.toLowerCase().includes(lowerSearch)) ||
-        (record.employeeCode && String(record.employeeCode).toLowerCase().includes(lowerSearch)) ||
-        (record.designation && record.designation.toLowerCase().includes(lowerSearch)) ||
-        (record.contact && String(record.contact).includes(lowerSearch))
-      );
+      // Search filter
+      if (search !== "") {
+        const lowerSearch = search.toLowerCase();
+        const matchesSearch =
+          (record.name && record.name.toLowerCase().includes(lowerSearch)) ||
+          (record.display_name && record.display_name.toLowerCase().includes(lowerSearch)) ||
+          (record.email && record.email.toLowerCase().includes(lowerSearch)) ||
+          (record.employeeCode && String(record.employeeCode).toLowerCase().includes(lowerSearch)) ||
+          (record.designation && record.designation.toLowerCase().includes(lowerSearch)) ||
+          (record.contact && String(record.contact).includes(lowerSearch));
+        if (!matchesSearch) return false;
+      }
+
+      // Field filters
+      if (filterProject && record.project !== filterProject) return false;
+      if (filterDesignation && record.designation !== filterDesignation) return false;
+      if (filterCompany && record.companyName !== filterCompany) return false;
+
+      return true;
     });
-  }, [records, search]);
+  }, [records, search, filterProject, filterDesignation, filterCompany]);
 
-  const [leaveID, setLeaveID] = useState("");
+ 
 
-  const [salaryList, setSalaryList] = useState<any>([]);
-  const [deleteSalaryDialog, setDeleteSalaryDialog] = useState(false);
-  const [salaryID, setSalaryID] = useState("");
 
-  const [allowanceList, setAllowanceList] = useState<any>([]);
-  const [deleteAllowanceDialog, setDeleteAllowanceDialog] = useState(false);
-  const [allowanceID, setAllowanceID] = useState("");
 
-  const [recordDeleteStatus, setRecordDeleteStatus] = useState("");
+  // const [recordDeleteStatus, setRecordDeleteStatus] = useState("");
 
-  const [fetchingLeave, setFetchingLeave] = useState(false);
-  const [fetchingSalary, setFetchingSalary] = useState(false);
-  const [fetchingAllowance, setFetchingAllowance] = useState(false);
-  let imgUrl = "";
-
-  const [initialSalary] = useState(0);
-  const [initialAllowance] = useState(0);
+ 
 
   const [importDialog, setImportDialog] = useState(false);
   const [sortby, setSortBy] = useState("name");
-  const [omni, setOmni] = useState(false);
-  const [omniLoad, setOmniLoad] = useState(false);
   const [access, setAccess] = useState(false);
   const [refreshCompleted, setRefreshCompleted] = useState(false);
   const [exportDialog, setExportDialog] = useState(false);
-  const [id, setId] = useState("");
+
 
   const [pageSize] = useState(100);
   const [lastDoc, setLastDoc] = useState<any>(null);
@@ -704,8 +689,7 @@ export default function DbComponent(props: Props) {
       const hasSensitiveAccess = userData.sensitive_data === "true" || userData.sensitive_data === true;
       
       setAccess(hasEditorAccess);
-      setEditAccess(hasEditorAccess);
-      setSensitiveDataAccess(hasSensitiveAccess);
+     
       
       console.log("⚡ Access permissions loaded from cache:", {
         editor: hasEditorAccess,
@@ -780,7 +764,7 @@ export default function DbComponent(props: Props) {
       // message.info("No image attached");
       return;
     }
-    const imageRef = storageRef(storage, fileName);
+    
 
     console.log("Uploading ", fileName);
     if (fileName === "") {
@@ -789,9 +773,8 @@ export default function DbComponent(props: Props) {
     }
 
     try {
-      const snapshot = await uploadBytes(imageRef, imageUpload);
-      const url = await getDownloadURL(snapshot.ref);
-      imgUrl = url;
+    
+    
       setFileName("");
     } catch (error: any) {
       toast.error(error.message);
@@ -856,6 +839,15 @@ export default function DbComponent(props: Props) {
       setRecords(fetchedData);
       setHasInitialData(true);
 
+      // Preserve selection state in project allocation mode
+      if (!projectAllocMode) {
+        // Only reset selection state when not in project allocation mode
+        setChecked([]);
+        setSelectable(false);
+      } else {
+        console.log("Preserving selection state in project allocation mode during initial/background fetch");
+      }
+
       // Cache the data
       if (props.dbCategory) {
         fetchAndCacheRecords(props.dbCategory, sortby, pageSize).catch(err =>
@@ -915,7 +907,7 @@ export default function DbComponent(props: Props) {
 
   // Modify the existing fetchData function to not verify access again
   const fetchData = async (loadMore = false) => {
-    console.log("Record Fetch");
+    console.log("Record Fetch", { loadMore, selectableState: selectable, projectAllocMode, checkedCount: checked.length });
     try {
       setfetchingData(true);
       const RecordCollection = collection(db, "records");
@@ -963,16 +955,28 @@ export default function DbComponent(props: Props) {
         });
         // If in selection mode and selectAll is true, add new records to checked array
         if (selectable && selectAll) {
-          setChecked((prev: any) => [
-            ...prev,
-            ...fetchedData.map((record) => record.id),
-          ]);
+          setChecked((prev: any) => {
+            const existingIds = new Set(prev);
+            const newIds = fetchedData
+              .map((record) => record.id)
+              .filter((id) => !existingIds.has(id));
+            return [...prev, ...newIds];
+          });
         }
+        // Note: when loadMore is true, we preserve selectable and checked states
+        // This is important for project allocation mode and other selection scenarios
       } else {
         setRecords(fetchedData);
-        // Only reset selection state on fresh load, not during pagination
-        setChecked([]);
-        setSelectable(false);
+        // Only reset selection state on fresh load (not pagination)
+        // Preserve selection in project allocation mode entirely
+        if (projectAllocMode) {
+          // Keep both selectable and checked unchanged
+          console.log("Preserving selection state in project allocation mode");
+        } else {
+          // Not in project allocation mode - safe to reset
+          setChecked([]);
+          setSelectable(false);
+        }
       }
 
       setTimeout(() => {
@@ -1038,135 +1042,12 @@ export default function DbComponent(props: Props) {
     };
   }, [hasMore, fetchingData, lastDoc]);
 
-  const fetchSalary = async () => {
-    console.log("Salary Fetch");
-    setFetchingSalary(true);
-    const salaryQuery = query(
-      collection(db, "salary-record"),
-      orderBy("created_on", "desc"),
-      where("employeeID", "==", doc_id)
-    );
-    const snapshot = await getDocs(salaryQuery);
-    const SalaryData: any = [];
-    snapshot.forEach((doc: any) => {
-      SalaryData.push({ id: doc.id, ...doc.data() });
-      setSalaryList(SalaryData);
-    });
-    setFetchingSalary(false);
-  };
-
-  const fetchAllowance = async () => {
-    console.log("Allowance Fetch");
-    setFetchingAllowance(true);
-    const allowanceQuery = query(
-      collection(db, "allowance-record"),
-      orderBy("created_on", "desc"),
-      where("employeeID", "==", doc_id)
-    );
-    const snapshot = await getDocs(allowanceQuery);
-    const AllowanceData: any = [];
-    snapshot.forEach((doc: any) => {
-      AllowanceData.push({ id: doc.id, ...doc.data() });
-      setAllowanceList(AllowanceData);
-    });
-    setFetchingAllowance(false);
-  };
-
-  const fetchLeave = async () => {
-    console.log("Leave Fetch");
-    setLeaves(0);
-    setFetchingLeave(true);
-    const leaveQuery = query(
-      collection(db, "leave-record"),
-      where("employeeCode", "==", employeeCode),
-      orderBy("created_on", "desc")
-    );
-    const snapshot = await getDocs(leaveQuery);
-    const total_leaves = await getAggregateFromServer(leaveQuery, {
-      total_leaves: sum("days"),
-    });
-    const LeaveData: any = [];
-
-    snapshot.forEach((doc: any) => {
-      LeaveData.push({ id: doc.id, ...doc.data() });
-      setLeaveList(LeaveData);
-    });
-
-    setLeaves(total_leaves.data().total_leaves);
-    setFetchingLeave(false);
-  };
 
   {
     /*///////////////////////////////////////////////////////////////////////////////////////////////////////*/
   }
 
-  const addLeave = async () => {
-    setLoading(true);
-    await addDoc(collection(db, "leave-record"), {
-      name: name,
-      employeeID: doc_id,
-      created_on: new Date(),
-      leaveFrom: editedLeaveFrom,
-      leaveTill: editedLeaveTill ? editedLeaveTill : 0,
-      days:
-        leaveTill || editedLeaveTill
-          ? moment(editedLeaveTill, "DD/MM/YYYY").diff(
-              moment(editedLeaveFrom, "DD/MM/YYYY"),
-              "days"
-            )
-          : 0,
-      pending: editedLeaveTill ? false : true,
-      employeeCode: employeeCode ? employeeCode : "",
-    });
-    await AddHistory("addition", editedLeaveFrom, "Leave", "Leave");
-    setId(doc_id);
-    // await leaveSum();
-    fetchLeave();
-    setEditedLeaveFrom("");
-    setEditedLeaveTill("");
-    setLoading(false);
-  };
-
-  const updateLeave = async () => {
-    setLoading(true);
-    await updateDoc(doc(db, "leave-record", leaveID), {
-      leaveFrom: leaveFrom,
-      leaveTill: leaveTill,
-      expectedReturn: expectedReturn ? expectedReturn : "",
-      pending: leaveTill == "" ? true : false,
-      days:
-        leaveTill != 0 &&
-        moment(leaveTill, "DD/MM/YYYY").diff(
-          moment(leaveFrom, "DD/MM/YYYY"),
-          "days"
-        ),
-    });
-    await AddHistory(
-      "updation",
-      expectedReturn ? expectedReturn : leaveTill,
-      null,
-      expectedReturn ? "Expected Return" : "Leave Till"
-    );
-    setLeaveFrom(leaveFrom);
-    setLeaveTill(leaveTill);
-    // await leaveSum();
-    fetchLeave();
-    setLeaveReview(false);
-    setLoading(false);
-  };
-
-  const deleteLeave = async () => {
-    setLoading(true);
-    await deleteDoc(doc(db, "leave-record", leaveID));
-    setId(doc_id);
-    // await leaveSum();
-    await AddHistory("deletion", leaveFrom, null, "Leave");
-    setLoading(false);
-    fetchLeave();
-    setDeleteLeaveDialog(false);
-    leaveList.length == 1 && setLeaveList([]);
-  };
-
+ 
   const RenewID = async () => {
     setLoading(true);
     await updateDoc(doc(db, "records", doc_id), {
@@ -1179,7 +1060,7 @@ export default function DbComponent(props: Props) {
     setRenewDocDialog(false);
     fetchData();
     setNewExpiry("");
-    setModifiedOn(new Date());
+    
   };
 
   const archiveRecord = async () => {
@@ -1192,7 +1073,7 @@ export default function DbComponent(props: Props) {
       setLoading(false);
       setArchivePrompt(false);
       setState(state == "active" ? "archived" : "active");
-      setNotify(state == "active" ? false : true);
+    
     } catch (error) {
       setLoading(false);
     }
@@ -1230,21 +1111,10 @@ export default function DbComponent(props: Props) {
     exportRaw(records);
   };
 
-  const addRemark = async () => {
-    setLoading(true);
-    try {
-      await updateDoc(doc(db, "records", doc_id), { remarks: remarks });
-      setLoading(false);
-      setRemarksDialog(false);
-      fetchData();
-    } catch (error) {
-      setLoading(false);
-    }
-  };
+ 
 
   // FUNCTION TO ADD A RECORD
   const addRecord = async () => {
-    imgUrl = "";
     setLoading(true);
     await uploadFile();
     await addDoc(collection(db, "records"), {
@@ -1263,11 +1133,11 @@ export default function DbComponent(props: Props) {
       modified_on: new Date(),
       type: props.dbCategory,
       notify: true,
-      profile: imgUrl,
       profile_name: fileName,
       cug: cug,
       role: systemRole || 'profile',  // system access role
       designation: designation,  // job title
+      workerType: workerType,  // staff or worker
       site: site,
       project: project,
       civil_number: "",
@@ -1299,7 +1169,7 @@ export default function DbComponent(props: Props) {
     setAddDialog(false);
     setLoading(false);
     fetchData();
-    setModifiedOn(new Date());
+    
     // Clear form fields after adding
     setName("");
     setDisplayName("");
@@ -1315,128 +1185,7 @@ export default function DbComponent(props: Props) {
     setSite("");
     setProject("");
     setSystemRole("");
-  };
-
-  // FUNCTION TO EDIT RECORD
-  const EditRecordName = async () => {
-    console.log("fileName", fileName);
-    setLoading(true);
-    if (fileName != "") {
-      imgUrl = "";
-      if (profileName != "") {
-        console.log("Deleting ", profileName);
-        await deleteObject(ref(storage, profileName));
-      }
-
-      await uploadFile();
-      setImage(imgUrl);
-      setFileName("");
-      console.log(fileName);
-    }
-
-    await updateDoc(doc(db, "records", doc_id), {
-      name: editedName !== undefined ? editedName : name,
-      display_name: editedDisplayName !== undefined ? editedDisplayName : displayName,
-      email: editedEmail !== undefined ? editedEmail : email,
-      employeeCode: editedEmployeeCode !== undefined ? editedEmployeeCode : employeeCode,
-      cug: editedCug !== undefined ? editedCug : cug,
-      role: editedSystemRole !== undefined ? editedSystemRole : (systemRole || "profile"),  // system access role
-      designation: editedDesignation !== undefined ? editedDesignation : designation,  // job title
-      site: editedSite !== undefined ? editedSite : site,
-      project: editedProject !== undefined ? editedProject : project,
-      companyName: editedCompanyName !== undefined ? editedCompanyName : companyName,
-      dateofJoin: editedDateofJoin !== undefined ? editedDateofJoin : dateofJoin,
-      initialSalary: editedSalarybasic !== undefined ? editedSalarybasic : (initialSalary || 0),
-      initialAllowance: editedAllowance !== undefined ? editedAllowance : (initialAllowance || 0),
-      salaryBasic: editedSalarybasic !== undefined ? editedSalarybasic : (salaryBasic || 0),
-      allowance: editedAllowance !== undefined ? editedAllowance : (allowance || 0),
-      contact: editedContact !== undefined ? editedContact : contact,
-      modified_on: new Date(),
-    });
-
-    if (fileName != "") {
-      await updateDoc(doc(db, "records", doc_id), {
-        profile: imgUrl,
-        profile_name: fileName,
-      });
-      setProfileName(fileName);
-    }
-
-    await AddHistory("addition", "Edited", "", "Record");
-
-    setUserEditPrompt(false);
-    setName(editedName !== undefined ? editedName : name);
-    setDisplayName(editedDisplayName !== undefined ? editedDisplayName : displayName);
-    setEmail(editedEmail !== undefined ? editedEmail : email);
-    setEmployeeCode(editedEmployeeCode !== undefined ? editedEmployeeCode : employeeCode);
-    setCompanyName(editedCompanyName !== undefined ? editedCompanyName : companyName);
-    setDateofJoin(editedDateofJoin !== undefined ? editedDateofJoin : dateofJoin);
-    setSalaryBasic(editedSalarybasic !== undefined ? editedSalarybasic : salaryBasic);
-    setAllowance(editedAllowance !== undefined ? editedAllowance : allowance);
-    setContact(editedContact !== undefined ? editedContact : contact);
-    setDesignation(editedDesignation !== undefined ? editedDesignation : designation);
-    setSystemRole(editedSystemRole !== undefined ? editedSystemRole : systemRole);
-    setSite(editedSite !== undefined ? editedSite : site);
-    setProject(editedProject !== undefined ? editedProject : project);
-    setCug(editedCug !== undefined ? editedCug : cug);
-    setLoading(false);
-    fetchData();
-    setModifiedOn(new Date());
-  };
-
-  // FUNCTION TO DELETE RECORD
-  const deleteRecord = async () => {
-    setLoading(true);
-    setRecordDeleteStatus("Deleting Record " + doc_id + " (1/2)");
-    await deleteDoc(doc(db, "records", id));
-
-    if (profileName != null) {
-      setRecordDeleteStatus("Deleting Image " + profileName + " (2/2)");
-      try {
-        await deleteObject(ref(storage, profileName));
-      } catch (error) {
-        setLoading(false);
-      }
-    }
-
-    console.log("Deleting Day offs");
-    setRecordDeleteStatus("Deleting Day offs");
-    leaveList.forEach(async (item: any) => {
-      await deleteDoc(doc(db, "leavFe-record", item.id));
-    });
-
-    console.log("Deleting Salary Records");
-    setRecordDeleteStatus("Deleting Salary Records");
-    salaryList.forEach(async (item: any) => {
-      await deleteDoc(doc(db, "salary-record", item.id));
-    });
-
-    console.log("Deleting Allowance Records");
-    setRecordDeleteStatus("Deleting Allowance Records");
-    allowanceList.forEach(async (item: any) => {
-      await deleteDoc(doc(db, "allowance-record", item.id));
-    });
-    await AddHistory("deletion", "Deleted", "", "Record");
-
-    setRecordDeleteStatus("");
-    setCivilNumber("");
-    setCivilNumber("");
-    setCivilExpiry("");
-    setCivilDOB("");
-    setName("");
-    setEmail("");
-    setCompanyName("");
-    setDateofJoin("");
-    setSalaryBasic(0);
-    setAllowance(0);
-    setContact("");
-    setNewCivilExpiry("");
-    setNewCivilNumber("");
-    setUserDeletePrompt(false);
-    setRecordSummary(false);
-    setLoading(false);
-    fetchData();
-  };
+  }; 
 
   {
     /* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
@@ -1459,7 +1208,7 @@ export default function DbComponent(props: Props) {
       setCivilDOB(edited_civil_DOB);
       setLoading(false);
       fetchData();
-      setModifiedOn(new Date());
+     
     } catch (error) {
       console.log(error);
       setCivilNumber("");
@@ -1492,7 +1241,7 @@ export default function DbComponent(props: Props) {
     setNewCivilExpiry("");
     setNewCivilNumber("");
     fetchData();
-    setModifiedOn(new Date());
+   
   };
 
   // FUNCTION TO EDIT A CIVIL ID
@@ -1514,7 +1263,7 @@ export default function DbComponent(props: Props) {
       setEditcivilprompt(false);
       setLoading(false);
       fetchData();
-      setModifiedOn(new Date());
+     
     } catch (error) {
       console.log(error);
       setLoading(false);
@@ -1540,7 +1289,7 @@ export default function DbComponent(props: Props) {
       await AddHistory("addition", "Added", "", "Vehicle ID");
       setLoading(false);
       fetchData();
-      setModifiedOn(new Date());
+     
     } catch (error) {
       console.log(error);
       setCivilNumber("");
@@ -1569,7 +1318,7 @@ export default function DbComponent(props: Props) {
     setVehicleExpiry("");
     setVehicleIssue("");
     fetchData();
-    setModifiedOn(new Date());
+   
   };
 
   // FUNCTION TO DELETE A MEDICAL ID
@@ -1586,7 +1335,7 @@ export default function DbComponent(props: Props) {
     setCompletedOn("");
     setDueOn("");
     fetchData();
-    setModifiedOn(new Date());
+    
   };
 
   //FUNCTION TO EDIT VEHICLE ID
@@ -1621,7 +1370,7 @@ export default function DbComponent(props: Props) {
       setEditVehicleIDprompt(false);
       setLoading(false);
       fetchData();
-      setModifiedOn(new Date());
+     
     } catch (error) {
       console.log(error);
       setLoading(false);
@@ -1649,7 +1398,7 @@ export default function DbComponent(props: Props) {
       setLoading(false);
       setRenewVehicleDialog(false);
       fetchData();
-      setModifiedOn(new Date());
+      
     } catch (error) {
       toast.error(String(error));
       setLoading(false);
@@ -1668,7 +1417,7 @@ export default function DbComponent(props: Props) {
       await AddHistory("addition", "Added", "", "Medical ID");
       setLoading(false);
       fetchData();
-      setModifiedOn(new Date());
+      
     } catch (error) {
       console.log(error);
       setCompletedOn("");
@@ -1697,7 +1446,7 @@ export default function DbComponent(props: Props) {
       setLoading(false);
       setEditMedicalIDdialog(false);
       fetchData();
-      setModifiedOn(new Date());
+    
     } catch (error) {
       toast.error(String(error));
     }
@@ -1763,7 +1512,7 @@ export default function DbComponent(props: Props) {
       setLoading(false);
       setEditPassportDialog(false);
       fetchData();
-      setModifiedOn(new Date());
+     
     } catch (error) {
       toast.error(String(error));
       setLoading(false);
@@ -1789,7 +1538,7 @@ export default function DbComponent(props: Props) {
       setLoading(false);
       setRenewMedicalIDdialog(false);
       fetchData();
-      setModifiedOn(new Date());
+     
     } catch (error) {
       toast.error(String(error));
       setLoading(false);
@@ -1811,7 +1560,7 @@ export default function DbComponent(props: Props) {
       await AddHistory("addition", "Added", "", "Passport");
       setLoading(false);
       fetchData();
-      setModifiedOn(new Date());
+    
     } catch (error) {
       toast.error(String(error));
       setLoading(false);
@@ -1833,7 +1582,7 @@ export default function DbComponent(props: Props) {
     setPassportExpiry("");
     setPassportIssue("");
     fetchData();
-    setModifiedOn(new Date());
+    
   };
 
   const renewPassport = async () => {
@@ -1853,7 +1602,7 @@ export default function DbComponent(props: Props) {
     setLoading(false);
     setRenewPassportDialog(false);
     fetchData();
-    setModifiedOn(new Date());
+  
   };
   {
     /* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
@@ -1874,6 +1623,103 @@ export default function DbComponent(props: Props) {
       (record: any) => checked.includes(record.id) || record.id === id
     );
     setSelectAll(allSelected);
+  };
+
+  const fetchProjects = async () => {
+    try {
+      setProjectsLoading(true);
+      const projectSnap = await getDocs(collection(db, "projects"));
+      const fetched: { id: string; name: string }[] = [];
+      projectSnap.forEach((d) => {
+        const data = d.data();
+        if (data.name) fetched.push({ id: d.id, name: data.name });
+      });
+      fetched.sort((a, b) => a.name.localeCompare(b.name));
+      setProjectsList(fetched);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      toast.error("Failed to load projects");
+    } finally {
+      setProjectsLoading(false);
+    }
+  };
+
+  const toggleProjectAllocMode = () => {
+    if (!projectAllocMode) {
+      setSelectable(true);
+      setChecked([]);
+      setProjectAllocMode(true);
+      setProjectDrawerExpanded(true);
+      fetchProjects();
+    } else {
+      setProjectAllocMode(false);
+      setSelectable(false);
+      setChecked([]);
+    }
+  };
+
+  const allocateToProject = async (projectId: string, projectName: string) => {
+    if (checked.length < 1) {
+      toast.error("Select at least one record");
+      return;
+    }
+    try {
+      setAllocatingProject(projectId);
+      const batch = writeBatch(db);
+
+      // Update each selected record's project field
+      checked.forEach((recordId) => {
+        const recordRef = doc(db, "records", recordId);
+        batch.update(recordRef, { project: projectName });
+      });
+
+      // Update the project's assigned lists
+      const selectedRecords = records.filter((r: any) => checked.includes(r.id));
+      const selectedPeople = selectedRecords.map((r: any) => r.name || r.email || r.id).filter(Boolean);
+      const projectRef = doc(db, "projects", projectId);
+      batch.update(projectRef, {
+        assignedRecordIds: checked,
+        assignedUserIds: checked,
+        assignedPeople: selectedPeople,
+        assignedUsers: selectedPeople,
+        updatedAt: new Date(),
+      });
+
+      await batch.commit();
+      toast.success(`${checked.length} record(s) allocated to ${projectName}`);
+      setChecked([]);
+      fetchData();
+    } catch (error) {
+      console.error("Error allocating to project:", error);
+      toast.error("Failed to allocate records");
+    } finally {
+      setAllocatingProject(null);
+    }
+  };
+
+  const fetchProjectPersonnel = async (projectName: string) => {
+    setLoadingPersonnel(true);
+    try {
+      const RecordCollection = collection(db, "records");
+      const personnelQuery = query(
+        RecordCollection,
+        where("project", "==", projectName),
+        where("type", "in", [props.dbCategory, "omni"])
+      );
+      
+      const snapshot = await getDocs(personnelQuery);
+      const personnel: Record[] = [];
+      snapshot.forEach((doc: any) => {
+        personnel.push({ id: doc.id, ...doc.data() });
+      });
+      
+      setProjectPersonnel(personnel);
+    } catch (error) {
+      console.error("Error fetching project personnel:", error);
+      toast.error("Failed to load project personnel");
+    } finally {
+      setLoadingPersonnel(false);
+    }
   };
 
   const handleBulkDelete = async () => {
@@ -1914,15 +1760,7 @@ export default function DbComponent(props: Props) {
     }
   };
 
-  const handleNotify = async () => {
-    setNotifyLoading(true);
-    await updateDoc(doc(db, "records", doc_id), { notify: !notify });
-    setNotify(!notify);
-    setNotifyLoading(false);
-    notify == true
-      ? toast.info("Notifications Disabled")
-      : toast.success("Notifications Enabled");
-  };
+ 
 
   const addTraining = async (type: any) => {
     setLoading(true);
@@ -2016,7 +1854,7 @@ export default function DbComponent(props: Props) {
     }
 
     setLoading(false);
-    setModifiedOn(new Date());
+   
     setTrainingAddDialog(false);
     fetchData();
   };
@@ -2294,110 +2132,25 @@ export default function DbComponent(props: Props) {
     }
   };
 
-  const ToggleOmniscience = async () => {
-    setOmniLoad(true);
-    await updateDoc(doc(db, "records", doc_id), {
-      type: !omni ? "omni" : props.dbCategory,
-    });
-    setOmniLoad(false);
-    setOmni(!omni);
-    !omni
-      ? toast.success("Omniscience Enabled")
-      : toast.info("Omniscience Disabled");
-  };
+  
 
   // Add effect to handle sort changes
   useEffect(() => {
     fetchData();
   }, [sortby]);
 
-  // Dialog open handlers with list resets
-  const handleSalaryDialogOpen = () => {
-    setSalaryDialog(true);
-    setSalaryList([]); // Reset the list before fetching
-    fetchSalary();
-  };
 
-  const handleAllowanceDialogOpen = () => {
-    setAllowanceDialog(true);
-    setAllowanceList([]); // Reset the list before fetching
-    fetchAllowance();
-  };
 
-  const handleLeaveDialogOpen = () => {
-    setLeaveLog(true);
-    setLeaveList([]); // Reset the list before fetching
-    setId(doc_id);
-    fetchLeave();
-  };
 
-  const addNewSalary = async () => {
-    setLoading(true);
-    try {
-      await addDoc(collection(db, "salary-record"), {
-        employeeID: doc_id,
-        created_on: new Date(),
-        salary: newSalary,
-      });
-      await updateDoc(doc(db, "records", doc_id), { salaryBasic: newSalary });
+ 
 
-      await AddHistory("updation", newSalary, salaryBasic, "salary");
 
-      setSalaryBasic(newSalary);
-      fetchSalary();
-      setNewSalary(0);
-      setLoading(false);
-    } catch (error) {
-      console.log(error);
-      setLoading(false);
-    }
-  };
 
-  const addNewAllowance = async () => {
-    setLoading(true);
-    try {
-      await addDoc(collection(db, "allowance-record"), {
-        employeeID: doc_id,
-        created_on: new Date(),
-        allowance: newAllowance,
-      });
-      await updateDoc(doc(db, "records", doc_id), { allowance: newAllowance });
 
-      await AddHistory("updation", newAllowance, allowance, "allowance");
-      setAllowance(newAllowance);
-      fetchAllowance();
-      setNewAllowance(0);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-    }
-  };
 
-  const deleteSalary = async () => {
-    setLoading(true);
-    await deleteDoc(doc(db, "salary-record", salaryID));
-    setId(doc_id);
+ 
 
-    setDeleteSalaryDialog(false);
-    if (salaryList.length == 1) {
-      setSalaryList([]);
-    }
-
-    await AddHistory("deletion", salaryBasic, null, "salary");
-    setLoading(false);
-    fetchSalary();
-  };
-
-  const deleteAllowance = async () => {
-    setLoading(true);
-    await deleteDoc(doc(db, "allowance-record", allowanceID));
-    await AddHistory("deletion", allowance, null, "allowance");
-    setId(doc_id);
-    setLoading(false);
-    fetchAllowance();
-    setDeleteAllowanceDialog(false);
-    allowanceList.length == 1 && setAllowanceList([]);
-  };
+ 
 
   const handleExportExpiring = async () => {
     try {
@@ -2715,14 +2468,31 @@ export default function DbComponent(props: Props) {
                 >
                   {access && (
                     <button
-                      className={selectable ? "blue" : ""}
+                      className={selectable && !projectAllocMode ? "blue" : ""}
                       onClick={() => {
-                        setSelectable(!selectable);
-                        selectable && setChecked([]);
+                        if (projectAllocMode) {
+                          toggleProjectAllocMode();
+                        } else {
+                          setSelectable(!selectable);
+                          selectable && setChecked([]);
+                        }
                       }}
                     >
                       <CheckSquare2
-                        color={selectable ? "white" : "mediumslateblue"}
+                        color={selectable && !projectAllocMode ? "white" : "mediumslateblue"}
+                      />
+                    </button>
+                  )}
+                  {access && (
+                    <button
+                      style={projectAllocMode ? {background:"mediumslateblue"} : {}}
+                      onClick={toggleProjectAllocMode}
+                      title="Project Allocation Mode"
+                    >
+                      <FolderKanban
+                        color={projectAllocMode ? "white" : "mediumslateblue"}
+                        width="1.25rem"
+                        height="1.25rem"
                       />
                     </button>
                   )}
@@ -2735,56 +2505,149 @@ export default function DbComponent(props: Props) {
                   />
                   <button 
                     onClick={() => setViewMode(viewMode === "directive" ? "table" : "directive")}
-                    style={{width:"2.5rem"}}
-                    className={viewMode === "table" ? "blue" : ""}
+                    style={{width:"2.5rem", background:viewMode === "table" ? "mediumslateblue" : "rgba(100 100 100/ 20%)"}}
+                    className={viewMode === "table" ? "" : ""}
                   >
                     {viewMode === "directive" ? (
                       <Table2 width={"1rem"} color="mediumslateblue" />
                     ) : (
-                      <LayoutGrid width={"1rem"} color="white" />
+                      <Table2 width={"1rem"} color="white" />
                     )}
                   </button>
-                  <button style={{width:"2.5rem"}}>
-                    <Filter color="mediumslateblue" width={"1rem"}/>
-                  </button>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button style={{ width: "2.5rem", position: "relative" }}>
+                        <Filter color="mediumslateblue" width={"1rem"} />
+                        {activeFilterCount > 0 && (
+                          <span
+                            style={{
+                              position: "absolute",
+                              top: "0.2rem",
+                              right: "0.2rem",
+                              background: "mediumslateblue",
+                              color: "white",
+                              fontSize: "0.6rem",
+                              fontWeight: 700,
+                              width: "0.95rem",
+                              height: "0.95rem",
+                              borderRadius: "999px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            {activeFilterCount}
+                          </span>
+                        )}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" style={{ width: "260px", padding: 0 }}>
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        {/* Sort Section */}
+                        <div style={{ padding: "0.75rem 1rem 0.5rem" }}>
+                          <p style={{ fontSize: "0.7rem", fontWeight: 600, opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.5rem" }}>Sort by</p>
+                          <div style={{ display: "flex", gap: "0.375rem" }}>
+                            {[
+                              { value: "name", label: "Name", icon: <ArrowDownAZ width="0.875rem" /> },
+                              { value: "created_on", label: "Date", icon: <ListStart width="0.875rem" /> },
+                            ].map((opt) => (
+                              <button
+                                key={opt.value}
+                                onClick={() => {
+                                  setSortBy(opt.value);
+                                  setLastDoc(null);
+                                }}
+                                style={{
+                                  flex: 1,
+                                  padding: "0.5rem",
+                                  borderRadius: "0.5rem",
+                                  fontSize: "0.8rem",
+                                  fontWeight: 500,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: "0.35rem",
+                                  background: sortby === opt.value ? "rgba(30,144,255,0.12)" : "rgba(100,100,100,0.06)",
+                                  color: sortby === opt.value ? "mediumslateblue" : "inherit",
+                                  cursor: "pointer",
+                                  border: sortby === opt.value ? "1px solid rgba(30,144,255,0.25)" : "1px solid transparent",
+                                }}
+                              >
+                                {opt.icon}
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
 
-                  <Select
-                    value={sortby}
-                    onValueChange={(value) => {
-                      setSortBy(value);
-                      setLastDoc(null); // Reset pagination when sort changes
-                    }}
-                  >
-                    <SelectTrigger
-                      style={{ width: "fit-content", background: "" }}
-                    >
-                      {sortby === "name" ? (
-                        <>
-                        
-                        <ArrowDownAZ width={"1.25rem"} color="mediumslateblue" />
-                        </>
-                        
-                      ) : sortby === "created_on" ? (
-                        <ListStart width={"1.25rem"} color="mediumslateblue" />
-                      ) : (
-                        <ArrowDown01 width={"1.25rem"} color="mediumslateblue" />
-                      )}
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        style={{ justifyContent: "flex-start" }}
-                        value="name"
-                      >
-                        Name
-                      </SelectItem>
-                      <SelectItem
-                        style={{ justifyContent: "flex-start" }}
-                        value="created_on"
-                      >
-                        Date Created
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                        <div style={{ height: "1px", background: "rgba(100,100,100,0.1)", margin: "0.25rem 1rem" }} />
+
+                        {/* Filter Section */}
+                        <div style={{ padding: "0.5rem 1rem 0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <p style={{ fontSize: "0.7rem", fontWeight: 600, opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.05em" }}>Filter</p>
+                            {activeFilterCount > 0 && (
+                              <button
+                                onClick={() => {
+                                  setFilterProject("");
+                                  setFilterDesignation("");
+                                  setFilterCompany("");
+                                }}
+                                style={{ fontSize: "0.7rem", color: "mediumslateblue", background: "none", border: "none", cursor: "pointer", padding: "0.15rem 0.35rem", borderRadius: "0.25rem" }}
+                              >
+                                Clear all
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Project filter */}
+                          <Select value={filterProject} onValueChange={(v) => setFilterProject(v === "__all__" ? "" : v)}>
+                            <SelectTrigger style={{ width: "100%", fontSize: "0.8rem", justifyContent: "space-between" }}>
+                              <span style={{ opacity: filterProject ? 1 : 0.5 }}>
+                                {filterProject || "Project"}
+                              </span>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__all__" style={{ justifyContent: "flex-start" }}>All Projects</SelectItem>
+                              {uniqueProjects.map((p) => (
+                                <SelectItem key={p} value={p} style={{ justifyContent: "flex-start" }}>{p}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          {/* Designation filter */}
+                          <Select value={filterDesignation} onValueChange={(v) => setFilterDesignation(v === "__all__" ? "" : v)}>
+                            <SelectTrigger style={{ width: "100%", fontSize: "0.8rem", justifyContent: "space-between" }}>
+                              <span style={{ opacity: filterDesignation ? 1 : 0.5 }}>
+                                {filterDesignation || "Designation"}
+                              </span>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__all__" style={{ justifyContent: "flex-start" }}>All Designations</SelectItem>
+                              {uniqueDesignations.map((d) => (
+                                <SelectItem key={d} value={d} style={{ justifyContent: "flex-start" }}>{d}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          {/* Company filter */}
+                          <Select value={filterCompany} onValueChange={(v) => setFilterCompany(v === "__all__" ? "" : v)}>
+                            <SelectTrigger style={{ width: "100%", fontSize: "0.8rem", justifyContent: "space-between" }}>
+                              <span style={{ opacity: filterCompany ? 1 : 0.5 }}>
+                                {filterCompany || "Company"}
+                              </span>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__all__" style={{ justifyContent: "flex-start" }}>All Companies</SelectItem>
+                              {uniqueCompanies.map((c) => (
+                                <SelectItem key={c} value={c} style={{ justifyContent: "flex-start" }}>{c}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
 
                   {/* <button
                     onClick={() => setThumbnails(!thumbnails)}
@@ -2798,7 +2661,7 @@ export default function DbComponent(props: Props) {
                     {thumbnails ? (
                       <ImageOff style={{ opacity: 0.5 }} width={"1.5rem"} />
                     ) : (
-                      <Image color="dodgerblue" width={"1.5rem"} />
+                      <Image color="mediumslateblue" width={"1.5rem"} />
                     )}
                   
                   </button> */}
@@ -2812,7 +2675,7 @@ export default function DbComponent(props: Props) {
                         </button> */}
 
                   {/* <button>
-                            <ArrowDownAZ color="dodgerblue"/>
+                            <ArrowDownAZ color="mediumslateblue"/>
                         </button> */}
                 </div>
 
@@ -2858,7 +2721,7 @@ export default function DbComponent(props: Props) {
                             // id_subtitle={post.id}
                             className="record-item"
                             space
-                            dotColor={selectable ? "violet" : "dodgerblue"}
+                            dotColor={selectable ? "violet" : "mediumslateblue"}
                             notify={!post.notify}
                             archived={post.state == "archived" ? true : false}
                             expiring={isRecordExpiring(post)}
@@ -2902,7 +2765,7 @@ export default function DbComponent(props: Props) {
                             // icon={
                             //   thumbnails ? (
                             //     <UserCircle
-                            //       color="dodgerblue"
+                            //       color="mediumslateblue"
                             //       width={"1.75rem"}
                             //       height={"1.75rem"}
                             //     />
@@ -2972,7 +2835,7 @@ export default function DbComponent(props: Props) {
                           }}>
                             {selectable && (
                               <th style={{ padding: "0.75rem", textAlign: "left", width: "40px", position: "sticky", left: 0, background: "rgba(100 100 100/ 5%)" }}>
-                                <CheckSquare2 width="1rem" color="dodgerblue" />
+                                <CheckSquare2 width="1rem" color="mediumslateblue" />
                               </th>
                             )}
                             {allKeys.map((key) => (
@@ -3150,7 +3013,7 @@ export default function DbComponent(props: Props) {
 
         {/* ADD RECORD BUTTON */}
 
-        {access && (
+        {access && !projectAllocMode && (
           <AddRecordButton
             onClickSwap={selectable}
             onClick={() => {
@@ -3171,11 +3034,362 @@ export default function DbComponent(props: Props) {
               selectable ? (
                 <Trash color={checked.length < 1 ? "#5a5a5a" : "crimson"} />
               ) : (
-                <Plus color="dodgerblue" />
+                <Plus color="mediumslateblue" />
               )
             }
           />
         )}
+
+        {/* PROJECT ALLOCATION DRAWER */}
+        {projectAllocMode && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            style={{
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 50,
+              background: "white",
+              borderTop: "1px solid rgba(100, 100, 100, 0.15)",
+              boxShadow: "0 -4px 24px rgba(0, 0, 0, 0.12)",
+              borderRadius: "1.25rem 1.25rem 0 0",
+              display: "flex",
+              flexDirection: "column",
+              maxHeight: projectDrawerExpanded ? "40vh" : "3.5rem",
+              transition: "max-height 0.3s ease",
+            }}
+          >
+            {/* Drawer Header */}
+            <div
+              onClick={() => setProjectDrawerExpanded(!projectDrawerExpanded)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0.875rem 1.25rem",
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+             
+                <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>
+                  Allocate to Project
+                </span>
+                {checked.length > 0 && (
+                  <span
+                    style={{
+                      background: "mediumslateblue",
+                      color: "white",
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      padding: "0.15rem 0.55rem",
+                      borderRadius: "999px",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    {checked.length} selected
+                  </span>
+                )}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleProjectAllocMode();
+                  }}
+                  style={{
+                    background: "rgba(100,100,100,0.08)",
+                    border: "none",
+                    borderRadius: "0.5rem",
+                    padding: "0.375rem",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <X width="1rem" height="1rem" />
+                </button>
+                {projectDrawerExpanded ? (
+                  <ChevronDown width="1.125rem" height="1.125rem" style={{ opacity: 0.5 }} />
+                ) : (
+                  <ChevronUp width="1.125rem" height="1.125rem" style={{ opacity: 0.5 }} />
+                )}
+              </div>
+            </div>
+
+            {/* Drawer Content */}
+            {projectDrawerExpanded && (
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: "auto",
+                  padding: "0 1.25rem 1.25rem",
+                  minHeight: 0,
+                }}
+              >
+                {projectsLoading ? (
+                  <div style={{ display: "flex", justifyContent: "center", padding: "1.5rem" }}>
+                    <Loader2 className="animate-spin" width="1.25rem" />
+                  </div>
+                ) : projectsList.length === 0 ? (
+                  <p style={{ textAlign: "center", opacity: 0.5, fontSize: "0.875rem", padding: "1rem" }}>
+                    No projects found
+                  </p>
+                ) : (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+                      gap: "0.625rem",
+                    }}
+                  >
+                    {projectsList.map((project) => (
+                      <div
+                        key={project.id}
+                        style={{
+                          position: "relative",
+                          display: "flex",
+                          borderRadius: "0.75rem",
+                          background:
+                            allocatingProject === project.id
+                              ? "rgba(123, 104, 238, 0.15)"
+                              : checked.length < 1
+                              ? "rgba(100, 100, 100, 0.04)"
+                              : "rgba(100, 100, 100, 0.06)",
+                        }}
+                      >
+                        <motion.button
+                          whileTap={{ scale: 0.96 }}
+                          onClick={() => {
+                            if (checked.length < 1) {
+                              toast.error("Select at least one record");
+                              return;
+                            }
+                            setPendingProject(project);
+                          }}
+                          disabled={checked.length < 1 || allocatingProject !== null}
+                          style={{
+                            flex: 1,
+                            padding: "0.75rem 0.75rem 0.75rem 1rem",
+                            borderRadius: "0.75rem 0 0 0.75rem",
+                            background: "transparent",
+                            border: "none",
+                            cursor: checked.length < 1 ? "not-allowed" : "pointer",
+                            textAlign: "left",
+                            display: "flex",
+                            justifyContent: "flex-start",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                            opacity: checked.length < 1 ? 0.5 : 1,
+                            transition: "all 0.15s ease",
+                          }}
+                        >
+                          {allocatingProject === project.id ? (
+                            <Loader2 className="animate-spin" width="1rem" height="1rem" />
+                          ) : (
+                            <FolderKanban width="1rem" height="1rem" color="mediumslateblue" />
+                          )}
+                          <span
+                            style={{
+                              fontSize: "0.85rem",
+                              fontWeight: 500,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {project.name}
+                          </span>
+                        </motion.button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewingProject(project);
+                            fetchProjectPersonnel(project.name);
+                          }}
+                          style={{
+                            padding: "0.75rem",
+                            borderRadius: "0 0.75rem 0.75rem 0",
+                            background: "transparent",
+                            border: "none",
+                            borderLeft: "1px solid rgba(100, 100, 100, 0.1)",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            transition: "background 0.15s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = "rgba(100, 100, 100, 0.08)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "transparent";
+                          }}
+                        >
+                          <Info width="1rem" height="1rem" color="mediumslateblue" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* PROJECT ALLOCATION CONFIRMATION */}
+        <ResponsiveModal
+          open={!!pendingProject}
+          onOpenChange={(open) => { if (!open) setPendingProject(null); }}
+          title="Confirm Allocation"
+          description={`Allocate ${checked.length} record(s) to ${pendingProject?.name || ""}?`}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem", padding: "1.5rem", paddingTop: "0.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", padding: "0.875rem 1rem", borderRadius: "0.75rem", background: "rgba(30, 144, 255, 0.08)" }}>
+              <FolderKanban width="1.125rem" height="1.125rem" color="mediumslateblue" />
+              <span style={{ fontWeight: 600, fontSize: "1rem" }}>{pendingProject?.name}</span>
+            </div>
+            <p style={{ fontSize: "0.875rem", opacity: 0.6 }}>
+              {checked.length} record(s) will have their project updated.
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
+                onClick={() => setPendingProject(null)}
+                style={{
+                  flex: 1,
+                  padding: "0.875rem",
+                  borderRadius: "0.75rem",
+                  fontSize: "0.95rem",
+                  fontWeight: 500,
+                  background: "rgba(100,100,100,0.08)",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (pendingProject) {
+                    setPendingProject(null);
+                    await allocateToProject(pendingProject.id, pendingProject.name);
+                  }
+                }}
+                disabled={allocatingProject !== null}
+                style={{
+                  flex: 1,
+                  padding: "0.875rem",
+                  borderRadius: "0.75rem",
+                  fontSize: "0.95rem",
+                  fontWeight: 500,
+                  background: "black",
+                  color: "white",
+                  cursor: allocatingProject ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                {allocatingProject ? (
+                  <Loader2 className="animate-spin" width="1.125rem" />
+                ) : (
+                  "Confirm"
+                )}
+              </button>
+            </div>
+          </div>
+        </ResponsiveModal>
+
+        {/* PROJECT PERSONNEL VIEWER */}
+        <ResponsiveModal
+          open={!!viewingProject}
+          onOpenChange={(open) => { 
+            if (!open) {
+              setViewingProject(null);
+              setProjectPersonnel([]);
+            }
+          }}
+          title={viewingProject?.name || "Project Personnel"}
+          description={`People allocated to this project`}
+        >
+          <div style={{ padding: "1.5rem", paddingTop: "0.5rem", maxHeight: "60vh", overflowY: "auto" }}>
+            {loadingPersonnel ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: "2rem" }}>
+                <Loader2 className="animate-spin" width="1.5rem" />
+              </div>
+            ) : projectPersonnel.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "2rem", opacity: 0.5 }}>
+                <PackageOpen width="2.5rem" height="2.5rem" style={{ margin: "0 auto 0.5rem" }} />
+                <p style={{ fontSize: "0.875rem" }}>No personnel allocated to this project</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <div style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "0.5rem", 
+                  padding: "0.5rem 0.75rem",
+                  marginBottom: "0.5rem",
+                  background: "rgba(123, 104, 238, 0.08)",
+                  borderRadius: "0.5rem"
+                }}>
+                  <UserCircle width="1rem" height="1rem" color="mediumslateblue" />
+                  <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>
+                    {projectPersonnel.length} {projectPersonnel.length === 1 ? "person" : "people"}
+                  </span>
+                </div>
+                {projectPersonnel.map((person) => (
+                  <div
+                    key={person.id}
+                    onClick={() => {
+                      usenavigate(`/record-detail/${person.id}`);
+                      setViewingProject(null);
+                      setProjectPersonnel([]);
+                    }}
+                    style={{
+                      padding: "0.875rem 1rem",
+                      borderRadius: "0.75rem",
+                      background: "rgba(100, 100, 100, 0.04)",
+                      border: "1px solid rgba(100, 100, 100, 0.08)",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(100, 100, 100, 0.08)";
+                      e.currentTarget.style.borderColor = "rgba(100, 100, 100, 0.15)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(100, 100, 100, 0.04)";
+                      e.currentTarget.style.borderColor = "rgba(100, 100, 100, 0.08)";
+                    }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                      <span style={{ fontSize: "0.95rem", fontWeight: 600 }}>
+                        {(person as any).name || "Unnamed"}
+                      </span>
+                      {(person as any).designation && (
+                        <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>
+                          {(person as any).designation}
+                        </span>
+                      )}
+                      {(person as any).civilId && (
+                        <span style={{ fontSize: "0.75rem", opacity: 0.5, fontFamily: "monospace" }}>
+                          {(person as any).civilId}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </ResponsiveModal>
 
         {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
@@ -3183,7 +3397,7 @@ export default function DbComponent(props: Props) {
 
         <DefaultDialog
           close
-          codeIcon={<File width={"1rem"} color="dodgerblue" />}
+          codeIcon={<File width={"1rem"} color="mediumslateblue" />}
           onCancel={() => {
             setExportDialog(false);
             
@@ -3197,7 +3411,7 @@ export default function DbComponent(props: Props) {
               {loading ? (
                 <LoaderCircle className="animate-spin" width={"1rem"} />
               ) : (
-                <DownloadCloud color="dodgerblue" width={"1rem"} />
+                <DownloadCloud color="mediumslateblue" width={"1rem"} />
               )}
               Raw Data
             </button>
@@ -3215,7 +3429,7 @@ export default function DbComponent(props: Props) {
             >
               <Directive
                 loading={loading}
-                icon={<File width={"1.25rem"} color="dodgerblue" />}
+                icon={<File width={"1.25rem"} color="mediumslateblue" />}
                 title={"Export Records"}
                 status
                 onClick={exportDB}
@@ -3443,19 +3657,6 @@ export default function DbComponent(props: Props) {
         <SheetComponent title={name} />
         {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
-        <InputDialog
-          title="Add Remark"
-          inputplaceholder="Enter remarks"
-          OkButtonText="Update"
-          OkButtonIcon={<RefreshCcw width={"1rem"} />}
-          open={remarksDialog}
-          onCancel={() => {setRemarksDialog(false);setRecordSummary(true)}}
-          inputOnChange={(e: any) => setRemarks(e.target.value)}
-          onOk={addRemark}
-          updating={loading}
-          disabled={loading}
-          input1Value={remarks}
-        />
 
         <DefaultDialog
           titleIcon={<Download />}
@@ -3468,572 +3669,11 @@ export default function DbComponent(props: Props) {
           disabled={loading}
         />
 
-        <DefaultDialog
-          close
-          titleIcon={<ScrollText color="dodgerblue" />}
-          title={"Contract"}
-          open={contractDialog}
-          onCancel={() => {setContractDialog(false);setRecordSummary(true)}}
-          extra={
-            <div
-              style={{
-                display: "flex",
-                flexFlow: "column",
-                width: "100%",
-                border: "",
-              }}
-            >
-              {/* <div
-                style={{
-                  border: "",
-                  height: "28ch",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    background: "rgba(100 100 100/ 10%)",
-                    border: "2px solid rgba(100 100 100/ 40%)",
-                    height: "22ch",
-                    width: "16ch",
-                    borderRadius: "0.5rem",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  <p style={{ fontSize: "0.75rem", opacity: 0.5 }}>
-                    No Preview
-                  </p>
-                </div>
-              </div> */}
-              {/* <p
-                style={{
-                  textAlign: "center",
-                  padding: "0.25rem",
-                  fontSize: "0.8rem",
-                  background:
-                    "linear-gradient(90deg, rgba(100 100 100/ 0%), rgba(100 100 100/ 20%), rgba(100 100 100/ 0%))",
-                }}
-              >
-                Expiring Soon
-              </p> */}
-              <br />
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "0.5rem",
-                }}
-              >
-                <input placeholder="Contract Expiry Date" />
-                <button
-                  className="primary"
-                  style={{
-                    paddingLeft: "1rem",
-                    paddingRight: "1rem",
-                    fontSize: "0.8rem",
-                  }}
-                >
-                  <RefreshCcw color="dodgerblue" width={"1rem"} />
-                  Update
-                </button>
-              </div>
-            </div>
-          }
-        />
+       
 
-        {/* DISPLAY RECORD DIALOG */}
-        <DefaultDialog
-          code={employeeCode}
-          // creation_date={created_on}
-          email={email}
-          codeTooltip="Employee Code"
-          tags
-          onTitleClick={() =>
-            props.dbCategory == "personal"
-              ? access && ToggleOmniscience()
-              : toast.info("Omniscience retrace on parent record")
-          }
-          contact={contact}
-          renumeration={
-            props.dbCategory == "personal" && sensitive_data_access == true
-              ? true
-              : false
-          }
-          remarksOnClick={() => {access && setRemarksDialog(true);setRecordSummary(false)}}
-          remarksValue={remarks}
-          tag1Text={companyName}
-          tag1OnClick={() => {setContractDialog(true);setRecordSummary(false)}}
-          tag2Text={dateofJoin}
-          tag3Text={
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                fontSize: "0.75rem",
-              }}
-            >
-              {salaryBasic}
-              <div
-                style={{
-                  border: "",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  textAlign: "center",
-                }}
-              >
-                {Math.abs((salaryBasic - initialSalary) / initialSalary) >
-                  0 && (
-                  <p style={{ opacity: 0.5 }}>
-                    {Math.abs((salaryBasic - initialSalary) / initialSalary) +
-                      "%"}
-                  </p>
-                )}
+        
 
-                {/* <p>
-                  {Math.sign((salaryBasic - initialSalary) / initialSalary) ==
-                  -1 ? (
-                    <ArrowDown
-                      strokeWidth={"3px"}
-                      width={"0.9rem"}
-                      color="lightcoral"
-                    />
-                  ) : (salaryBasic - initialSalary) / initialSalary == 0 ? (
-                    ""
-                  ) : (
-                    <ArrowUp
-                      strokeWidth={"3px"}
-                      width={"0.9rem"}
-                      color="lightgreen"
-                    />
-                  )}
-                </p> */}
-              </div>
-            </div>
-          }
-          tag4Text={
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                fontSize: "0.75rem",
-              }}
-            >
-              {allowance}
-              <div
-                style={{
-                  border: "",
-                  display: "flex",
-
-                  justifyContent: "center",
-                  alignItems: "center",
-                  textAlign: "center",
-                }}
-              >
-                {Math.abs((allowance - initialAllowance) / initialAllowance) >
-                  0 && (
-                  <p style={{ opacity: 0.5 }}>
-                    {Math.abs(
-                      (allowance - initialAllowance) / initialAllowance
-                    ) + "%"}
-                  </p>
-                )}
-
-                {/* <p>
-                  {Math.sign(
-                    (allowance - initialAllowance) / initialAllowance
-                  ) == -1 ? (
-                    <ArrowDown
-                      strokeWidth={"3px"}
-                      width={"0.9rem"}
-                      color="lightcoral"
-                    />
-                  ) : (allowance - initialAllowance) / initialAllowance == 0 ? (
-                    ""
-                  ) : (
-                    <ArrowUp
-                      strokeWidth={"3px"}
-                      width={"0.9rem"}
-                      color="lightgreen"
-                    />
-                  )}
-                </p> */}
-              </div>
-            </div>
-          }
-          tag3OnClick={()=>{handleSalaryDialogOpen();setRecordSummary(false)}}
-          tag4OnClick={handleAllowanceDialogOpen}
-          onBottomTagClick={handleLeaveDialogOpen}
-          // bottomTagValue={leaves}
-          bottomValueLoading={fetchingLeave}
-          titleIcon={
-            <div onClick={() => (image ? setImageDialog(true) : {})}>
-              <LazyLoader
-                profile={image}
-                gradient
-                block
-                width="4rem"
-                height="4rem"
-                name={name}
-                loading={omniLoad}
-                state={state}
-                omni={omni}
-              />
-            </div>
-
-            // <Avatar
-            //   style={{
-            //     width: "3.55rem",
-            //     height: "3.5rem",
-            //     objectFit: "cover",
-            //     display: "flex",
-            //     justifyContent: "center",
-            //     alignItems: "center",
-            //     cursor: "pointer",
-            //     border:
-            //       state == "archived"
-            //         ? "2px solid goldenrod"
-            //         : omni
-            //         ? "2px solid violet"
-            //         : "",
-            //   }}
-            // >
-            //   <AvatarImage
-            //     onClick={() => setImageDialog(true)}
-            //     style={{ objectFit: "cover" }}
-            //     src={image}
-            //   />
-            //   <AvatarFallback>
-            //     {omniLoad ? (
-            //       <LoadingOutlined />
-            //     ) : (
-            //       <p style={{ paddingTop: "0.1rem" }}>{Array.from(name)[0]}</p>
-            //     )}
-            //   </AvatarFallback>
-            // </Avatar>
-          }
-          title={name}
-          open={recordSummary}
-          onCancel={() => {
-            setRecordSummary(false);
-            setEmail("");
-          }}
-          bigDate={() =>
-            toast.info(
-              "Last Modified : " + String(moment(modified_on).format("LLL"))
-            )
-          }
-          created_on={
-            <ReactTimeAgo
-              date={moment(modified_on, "DD/MM/YYYY").toDate()}
-              timeStyle={"twitter"}
-              locale="en-us"
-            />
-          }
-          title_extra={
-            <div
-              style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
-            >
-              {state == "active"
-                ? access && (
-                    <button
-                      className={notify ? "blue-glass" : ""}
-                      onClick={handleNotify}
-                      style={{
-                        paddingLeft: "1rem",
-                        paddingRight: "1rem",
-                        height: "2.5rem",
-                      }}
-                    >
-                      {notifyLoading ? (
-                        <Loader2 className="animte-spin" color="dodgerblue" />
-                      ) : notify ? (
-                        <BellRing
-                          color={"dodgerblue"}
-                          width={"1rem"}
-                          fill="dodgerblue"
-                        />
-                      ) : (
-                        <BellOff width={"1rem"} color="grey" />
-                      )}
-                    </button>
-                  )
-                : access && (
-                    <Tooltip title="All notifications paused">
-                      <button
-                        style={{
-                          fontSize: "0.8rem",
-                          width: "2.75rem",
-                          opacity: "0.75",
-                          border: "",
-                          height: "2.5rem",
-                          color: "",
-                        }}
-                      >
-                        <Archive width={"1.1rem"} />
-                      </button>
-                    </Tooltip>
-                  )}
-
-              {access && (
-                <DropDown
-                  onExtra={() => setArchivePrompt(true)}
-                  extraText={state == "active" ? "Archive" : "Unarchive"}
-                  onDelete={() => {
-                    setUserDeletePrompt(true);
-                    fetchLeave();
-                    fetchSalary();
-                    fetchAllowance();
-                  }}
-                  onEdit={() => {
-                    resetEditedStates();
-                    setUserEditPrompt(true);setRecordSummary(false);
-                  }}
-                  trigger={<EllipsisVerticalIcon width={"1.1rem"} />}
-                />
-              )}
-              {!access && (
-                <button
-                  style={{
-                    height: "2rem",
-                    fontSize: "0.8rem",
-                    opacity: "0.75",
-                  }}
-                >
-                  <Eye width={"1rem"} color="dodgerblue" />
-                  Preview
-                </button>
-              )}
-            </div>
-          }
-          close
-          extra={
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.5rem",
-                minWidth: 0,
-                width:"",
-                overflow: "hidden",
-                border:""
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  gap: "0.5rem",
-                  alignItems: "center",
-                  width: "100%",
-                  minWidth: 0,
-                  maxWidth: "100%",
-                  overflow: "hidden",
-                  border:""
-                }}
-              >
-                <Directive
-                  noArrow
-                  id_subtitle={civil_expiry ? civil_expiry : "No Data"}
-                  onClick={() => {access && setRecordSummary(false); setCivil(true)}}
-                  icon={<CreditCard color="dodgerblue" />}
-                  title="Civil ID"
-                  expiring={
-                    moment(civil_expiry, "DD/MM/YYYY").diff(
-                      moment(today),
-                      "months"
-                    ) <= 2
-                      ? true
-                      : false
-                  }
-                />
-
-                <Directive
-                  noArrow
-                  id_subtitle={passportExpiry ? passportExpiry : "No Data"}
-                  onClick={() => {access && setRecordSummary(false); setPassportDialog(true)}}
-                  icon={<Book color="goldenrod" />}
-                  title="Passport"
-                  expiring={
-                    moment(passportExpiry, "DD/MM/YYYY").diff(
-                      moment(today),
-                      "months"
-                    ) <= 6
-                      ? true
-                      : false
-                  }
-                />
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: "0.5rem",
-                  alignItems: "center",
-                  width: "100%",
-                  minWidth: 0,
-                  maxWidth: "100%",
-                  flex: 1
-                }}
-              >
-                {props.dbCategory == "vale" ||
-                  (omni && (
-                    <Directive
-                      noArrow
-                      id_subtitle={medical_due_on ? medical_due_on : "No Data"}
-                      onClick={() => {access && setRecordSummary(false); setHealthDialog(true)}}
-                      icon={<HeartPulse color="tomato" />}
-                      title="Medical"
-                      expiring={
-                        moment(medical_due_on, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2
-                          ? true
-                          : false
-                      }
-                    />
-                  ))}
-
-                {!props.noTraining ||
-                  (omni && (
-                    <Directive
-                      noArrow
-                      id_subtitle={
-                        moment(vt_hse_induction, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_1, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_2, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_3, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_4, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_5, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_6, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_7, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_8, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_9, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_10, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2
-                          ? "Expiring"
-                          : "No Alerts"
-                      }
-                      onClick={() => {
-                        setValeTrainingDialog(true);setRecordSummary(false)
-                      }}
-                      icon={<GraduationCap color="lightgreen" />}
-                      title="Training"
-                      expiring={
-                        moment(vt_hse_induction, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_1, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_2, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_3, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_4, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_5, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_6, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_7, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_8, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_9, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2 ||
-                        moment(vt_car_10, "DD/MM/YYYY").diff(
-                          moment(today),
-                          "months"
-                        ) <= 2
-                          ? true
-                          : false
-                      }
-                    />
-                  ))}
-              </div>
-
-              {/* <Directive
-                id_subtitle={vehicle_expiry}
-                // tag={vehicle_expiry}
-                onClick={() => access && setVehicle(true)}
-                icon={<Car color="violet" />}
-                title="License"
-                status={
-                  moment(vehicle_expiry, "DD/MM/YYYY").diff(
-                    moment(today),
-                    "months"
-                  ) <= 2
-                    ? false
-                    : true
-                }
-              /> */}
-            </div>
-          }
-        />
-
-        <ImageDialog
-          open={imageDialog}
-          src={image}
-          onCancel={() => setImageDialog(false)}
-        />
+       
 
         {/* ADD RECORD DIALOG - Responsive Modal */}
         <ResponsiveModal
@@ -4052,6 +3692,7 @@ export default function DbComponent(props: Props) {
               setContact("");
               setCug("");
               setDesignation("");
+              setWorkerType("");
               setSite("");
               setProject("");
               setSystemRole("");
@@ -4084,6 +3725,8 @@ export default function DbComponent(props: Props) {
             setCug={setCug}
             designation={designation}
             setDesignation={setDesignation}
+            workerType={workerType}
+            setWorkerType={setWorkerType}
             site={site}
             setSite={setSite}
             project={project}
@@ -4096,121 +3739,9 @@ export default function DbComponent(props: Props) {
           />
         </ResponsiveModal>
 
-        {/* EDIT RECORD DIALOG */}
-        <InputDialog
-          open={userEditPrompt}
-          onCancel={() => {
-            resetEditedStates();
-            setRecordSummary(true);
-            setUserEditPrompt(false);
-          }}
-          updating={loading}
-          disabled={loading}
-          title="Edit Record"
-          titleIcon={<PenLine width={"1rem"} />}
-          OkButtonText="Update Record"
-          onOk={EditRecordName}
-          
-          input1Label="Full Name"
-          inputplaceholder="Enter Full Name"
-          inputOnChange={(e: any) => setEditedName(e.target.value)}
-          input1Value={name}
-          
-          input10Label="Display Name"
-          input10placeholder="Enter Display Name"
-          input10OnChange={(e: any) => setEditedDisplayName(e.target.value)}
-          input10Value={displayName}
-          
-          input2Label="Email"
-          input2placeholder="Enter Email"
-          input2OnChange={(e: any) => setEditedEmail(e.target.value)}
-          input2Value={email}
-          
-          input3Label="Employee Code"
-          input3placeholder="Enter Employee Code"
-          input3OnChange={(e: any) => setEditedEmployeeCode(e.target.value)}
-          input3Value={employeeCode}
-          
-          input4Label="Company Name"
-          input4placeholder="Enter Company Name"
-          input4OnChange={(e: any) => setEditedCompanyName(e.target.value)}
-          input4Value={companyName}
-          
-          input5Label="Date of Join"
-          input5placeholder="Enter Date of Join"
-          input5OnChange={(e: any) => setEditedDateofJoin(e.target.value)}
-          input5Value={dateofJoin}
-          
-          input6Label="Basic Salary"
-          input6placeholder="Enter Basic Salary"
-          input6OnChange={(e: any) => setEditedSalaryBasic(e.target.value)}
-          input6Value={salaryBasic.toString()}
-          
-          input7Label="Allowance"
-          input7placeholder="Enter Allowance"
-          input7OnChange={(e: any) => setEditedAllowance(e.target.value)}
-          input7Value={allowance.toString()}
-          
-          input8Label="Contact"
-          input8placeholder="Enter Contact Number"
-          input8OnChange={(e: any) => setEditedContact(e.target.value)}
-          input8Value={contact}
-          
-          input9Label="CUG"
-          input9placeholder="Enter CUG Number"
-          input9OnChange={(e: any) => setEditedCug(e.target.value)}
-          input9Value={cug}
+       
 
-          input11Label="Site"
-          input11placeholder="Enter Site"
-          input11OnChange={(e: any) => setEditedSite(e.target.value)}
-          input11Value={site}
-
-          input12Label="Project"
-          input12placeholder="Enter Project"
-          input12OnChange={(e: any) => setEditedProject(e.target.value)}
-          input12Value={project}
-
-          extra={
-            <div style={{width: "100%", display:"flex", gap:"0.5rem"}}>
-              <input 
-                onChange={(e: any) => setEditedDesignation(e.target.value)} 
-                placeholder="Enter Designation" 
-                value={editedDesignation !== undefined ? editedDesignation : designation}
-                style={{width: "100%"}}
-              />
-              <RoleSelect 
-                value={systemRole || 'profile'} 
-                onChange={(value) => {
-                  setEditedSystemRole(value);
-                }}
-              />
-            </div>
-          }
-        />
-
-        {/* DELETE RECORD DIALOG */}
-        <DefaultDialog
-          open={userDeletePrompt}
-          titleIcon={<X />}
-          destructive
-          title="Delete Record?"
-          desc={id}
-          OkButtonText="Delete"
-          onCancel={() => setUserDeletePrompt(false)}
-          onOk={deleteRecord}
-          updating={loading}
-          disabled={loading}
-          extra={
-            recordDeleteStatus ? (
-              <div style={{ width: "100%" }}>
-                <p style={{ fontSize: "0.7rem", opacity: 0.5 }}>
-                  {recordDeleteStatus}
-                </p>
-              </div>
-            ) : null
-          }
-        />
+        
 
         {/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
@@ -4218,10 +3749,10 @@ export default function DbComponent(props: Props) {
         <DefaultDialog
           back
           close
-          titleIcon={<CreditCard color="dodgerblue" />}
+          titleIcon={<CreditCard color="mediumslateblue" />}
           title="Civil ID"
           open={civil}
-          onCancel={() => {setCivil(false); setRecordSummary(true)}}
+          onCancel={() => {setCivil(false)}}
           OkButtonText="Add"
           title_extra={
             civil_expiry ? (
@@ -4646,7 +4177,7 @@ export default function DbComponent(props: Props) {
           titleIcon={<HeartPulse color="tomato" />}
           title="Medical ID"
           open={healthDialog}
-          onCancel={() => {setHealthDialog(false); setRecordSummary(true)}}
+          onCancel={() => {setHealthDialog(false)}}
           back
           title_extra={
             medical_due_on ? (
@@ -4824,12 +4355,12 @@ export default function DbComponent(props: Props) {
             />
           }
           title={"Vale Training"}
-        onCancel={() => {setValeTrainingDialog(false);setRecordSummary(true)}}
+        onCancel={() => {setValeTrainingDialog(false)}}
           close
           back
           title_extra={
             <>
-              {/* <button style={{fontSize:"0.8rem"}}><Plus color="dodgerblue"/></button> */}
+              {/* <button style={{fontSize:"0.8rem"}}><Plus color="mediumslateblue"/></button> */}
             </>
           }
           extra={
@@ -4848,7 +4379,7 @@ export default function DbComponent(props: Props) {
             >
               <Directive
                 tag={vt_hse_induction}
-                icon={<Disc color="dodgerblue" />}
+                icon={<Disc color="mediumslateblue" />}
                 title="HSE Induction"
                 onClick={() => {
                   access&&
@@ -4869,7 +4400,7 @@ export default function DbComponent(props: Props) {
 
               <Directive
                 tag={vt_car_1}
-                icon={<Disc color="dodgerblue" />}
+                icon={<Disc color="mediumslateblue" />}
                 title="CAR - 1"
                 onClick={() => {
                   access&&
@@ -4891,7 +4422,7 @@ export default function DbComponent(props: Props) {
 
               <Directive
                 tag={vt_car_2}
-                icon={<Disc color="dodgerblue" />}
+                icon={<Disc color="mediumslateblue" />}
                 title="CAR - 2"
                 onClick={() => {
                   access&&
@@ -4913,7 +4444,7 @@ export default function DbComponent(props: Props) {
 
               <Directive
                 tag={vt_car_3}
-                icon={<Disc color="dodgerblue" />}
+                icon={<Disc color="mediumslateblue" />}
                 title="CAR - 3"
                 onClick={() => {
                   access&&
@@ -4935,7 +4466,7 @@ export default function DbComponent(props: Props) {
 
               <Directive
                 tag={vt_car_4}
-                icon={<Disc color="dodgerblue" />}
+                icon={<Disc color="mediumslateblue" />}
                 title="CAR - 4"
                 onClick={() => {
                   access&&
@@ -4957,7 +4488,7 @@ export default function DbComponent(props: Props) {
 
               <Directive
                 tag={vt_car_5}
-                icon={<Disc color="dodgerblue" />}
+                icon={<Disc color="mediumslateblue" />}
                 title="CAR - 5"
                 onClick={() => {
                   access&&
@@ -4979,7 +4510,7 @@ export default function DbComponent(props: Props) {
 
               <Directive
                 tag={vt_car_6}
-                icon={<Disc color="dodgerblue" />}
+                icon={<Disc color="mediumslateblue" />}
                 title="CAR - 6"
                 onClick={() => {
                   access&&
@@ -5001,7 +4532,7 @@ export default function DbComponent(props: Props) {
 
               <Directive
                 tag={vt_car_7}
-                icon={<Disc color="dodgerblue" />}
+                icon={<Disc color="mediumslateblue" />}
                 title="CAR - 7"
                 onClick={() => {
                   access&&
@@ -5023,7 +4554,7 @@ export default function DbComponent(props: Props) {
 
               <Directive
                 tag={vt_car_8}
-                icon={<Disc color="dodgerblue" />}
+                icon={<Disc color="mediumslateblue" />}
                 title="CAR - 8"
                 onClick={() => {
                   access&&
@@ -5045,7 +4576,7 @@ export default function DbComponent(props: Props) {
 
               <Directive
                 tag={vt_car_9}
-                icon={<Disc color="dodgerblue" />}
+                icon={<Disc color="mediumslateblue" />}
                 title="CAR - 9"
                 onClick={() => {
                   access&&
@@ -5067,7 +4598,7 @@ export default function DbComponent(props: Props) {
 
               <Directive
                 tag={vt_car_10}
-                icon={<Disc color="dodgerblue" />}
+                icon={<Disc color="mediumslateblue" />}
                 title="CAR - 10"
                 onClick={() => {
                   access&&
@@ -5095,7 +4626,7 @@ export default function DbComponent(props: Props) {
           titleIcon={<Book color="goldenrod" />}
           title="Passport"
           open={passportDialog}
-          onCancel={() => {setPassportDialog(false);setRecordSummary(true)}}
+          onCancel={() => {setPassportDialog(false)}}
           back
           title_extra={
             passportExpiry ? (
@@ -5299,885 +4830,19 @@ export default function DbComponent(props: Props) {
           input1Value={trainingAddDialogInputValue}
         />
 
-        <DefaultDialog
-          created_on={initialSalary}
-          code={employeeCode}
-          close
-          title={"Initial Salary"}
-          titleIcon={<CircleDollarSign />}
-          open={salaryDialog}
-          onCancel={() => {setSalaryDialog(false);setRecordSummary(true)}}
-          title_extra={
-            <button
-              onClick={fetchSalary}
-              style={{ width: "3rem", height: "2.5rem" }}
-            >
-              {fetchingSalary ? (
-                <LoadingOutlined color="dodgerblue" />
-              ) : (
-                <RefreshCcw width={"1rem"} color="dodgerblue" />
-              )}
-            </button>
-          }
-          extra={
-            <>
-              <div
-                style={{
-                  display: "flex",
-                  border: "",
-                  width: "100%",
-                  borderRadius: "0.5rem",
-                  padding: "0.5rem",
-                  background: "",
-                  flexFlow: "column",
-                }}
-              >
-                <div
-                  style={{
-                    border: "",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      border: "",
-                      display: "flex",
-                      flexFlow: "column",
-                      alignItems: "center",
-                    }}
-                  >
-                    <p
-                      style={{
-                        display: "flex",
-                        gap: "0.5rem",
-                        fontWeight: "500",
-                        background:
-                          "linear-gradient(90deg, rgba(0 0 0/ 0%), rgba(100 100 100/ 20%), rgba(0 0 0/ 0%)) ",
-                        padding: "0.25rem",
-                      }}
-                    >
-                      {name}
-                    </p>
-                    <br />
-                    <p
-                      style={{
-                        fontSize: "0.8rem",
-                        opacity: 0.5,
-                        justifyContent: "",
-                        display: "flex",
-                      }}
-                    >
-                      Current Earnings
-                    </p>
-                    <div
-                      style={{
-                        display: "flex",
-                        border: "",
-                        gap: "0.5rem",
-                        justifyContent: "center",
-                        fontWeight: 600,
-                        fontSize: "1.5rem",
-                        alignItems: "center",
-                      }}
-                    >
-                      <p style={{ fontWeight: 400, fontSize: "1rem" }}>OMR</p>
-                      <p>{salaryBasic}</p>
-                    </div>
-                    <div
-                      style={{
-                        border: "",
-                        display: "flex",
-                        justifyContent: "center",
-                        textAlign: "center",
-                      }}
-                    >
-                      <p style={{ opacity: 0.5 }}>
-                        {(salaryBasic - initialSalary) / initialSalary + "%"}
-                      </p>
-                      {Math.sign(
-                        (salaryBasic - initialSalary) / initialSalary
-                      ) == -1 ? (
-                        <ArrowDown
-                          strokeWidth={"3px"}
-                          width={"0.9rem"}
-                          color="lightcoral"
-                        />
-                      ) : (salaryBasic - initialSalary) / initialSalary == 0 ? (
-                        ""
-                      ) : (
-                        <ArrowUp
-                          strokeWidth={"3px"}
-                          width={"0.9rem"}
-                          color="lightgreen"
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
 
-                {/* <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem"}}>
-                    <LineCharter lineColor="lightgreen"/>
-                    </div> */}
-              </div>
+      
 
-              {salaryList.length == 0 ? (
-                <div
-                  style={{
-                    width: "100%",
-                    border: "3px dashed rgba(100 100 100/ 50%)",
-                    height: "2.5rem",
-                    borderRadius: "0.5rem",
-                    marginBottom: "1rem",
-                  }}
-                ></div>
-              ) : (
-                <div
-                  className="recipients"
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    flexFlow: "column",
-                    gap: "0.35rem",
-                    maxHeight: "11.25rem",
-                    overflowY: "auto",
-                    paddingRight: "0.5rem",
-                    minHeight: "2.25rem",
-                    marginBottom: "1rem",
-                  }}
-                >
-                  {salaryList.map((e: any) => (
-                    <motion.div
-                      key={e.id}
-                      initial={{ opacity: 0 }}
-                      whileInView={{ opacity: 1 }}
-                    >
-                      <Directive
-                        status={true}
-                        tag={moment(e.created_on.toDate()).format("LL")}
-                        title={"OMR " + e.salary}
-                        titleSize="0.75rem"
-                        key={e.id}
-                        icon={
-                          <MinusSquareIcon
-                            onClick={() => {
-                              setDeleteSalaryDialog(true);
-                              setSalaryID(e.id);
-                            }}
-                            className="animate-pulse"
-                            color="lightgreen"
-                            width={"1.1rem"}
-                          />
-                        }
-                        noArrow
-                      />
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-              {editAccess && (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "0.5rem",
-                    width: "100%",
-                    zIndex: "",
-                  }}
-                >
-                  <input
-                    type="search"
-                    id="input-1"
-                    value={newSalary == 0 ? "" : newSalary}
-                    onChange={(e: any) => setNewSalary(e.target.value)}
-                    placeholder="New Salary"
-                    style={{ flex: 1.5 }}
-                  />
-                  <button
-                    onClick={addNewSalary}
-                    style={{ fontSize: "0.8rem", flex: 0.15 }}
-                  >
-                    {loading ? (
-                      <LoadingOutlined />
-                    ) : (
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "0.5rem",
-                          alignItems: "center",
-                        }}
-                      >
-                        <Plus width={"1.25rem"} color="lightgreen" />
-                      </div>
-                    )}
-                  </button>
-                </div>
-              )}
-            </>
-          }
-        />
+        
 
-        {/* LEAVE LOG DIALOG */}
-        <DefaultDialog
-          codeTooltip="Employee Name"
-          code={employeeCode}
-          close
-          open={leaveLog}
-          titleIcon={<BarChart3 />}
-          onCancel={() => setLeaveLog(false)}
-          title={"Leave Log"}
-          title_extra={
-            <button
-              onClick={fetchLeave}
-              style={{ width: "3rem", height: "2.5rem" }}
-            >
-              {fetchingLeave ? (
-                <LoadingOutlined style={{ color: "dodgerblue" }} />
-              ) : (
-                <RefreshCcw color="dodgerblue" width={"1rem"} />
-              )}
-            </button>
-          }
-          extra={
-            <>
-              <div
-                style={{
-                  display: "flex",
-                  border: "",
-                  width: "100%",
-                  borderRadius: "0.5rem",
-                  padding: "0.5rem",
-                  background: "",
-                  flexFlow: "column",
-                }}
-              >
-                <p
-                  style={{
-                    border: "",
-                    display: "flex",
-                    gap: "0.5rem",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    background:
-                      "linear-gradient(90deg, rgba(0 0 0/ 0%), rgba(100 100 100/ 20%), rgba(0 0 0/ 0%)) ",
-                    padding: "0.25rem",
-                    marginBottom: "1rem",
-                  }}
-                >
-                  {name}
-                </p>
-
-                <div
-                  style={{
-                    border: "1px solid rgba(100 100 100/ 70%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    paddingLeft: "0.85rem",
-                    paddingRight: "1.25rem",
-                    paddingBottom: "0.65rem",
-                    paddingTop: "0.65rem",
-                    borderRadius: "0.75rem",
-                  }}
-                >
-                  <div style={{ border: "" }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "0.45rem",
-                        alignItems: "center",
-                        border: "",
-                      }}
-                    >
-                      <p
-                        style={{
-                          fontSize: "0.8rem",
-                          opacity: 0.5,
-                          justifyContent: "",
-                          display: "flex",
-                          gap: "0.75rem",
-                        }}
-                      >
-                        Block Period
-                      </p>
-
-                      <p
-                        style={{
-                          fontSize: "0.75rem",
-                          background: "rgba(100 100 100/ 20%)",
-                          borderRadius: "0.5rem",
-                          paddingLeft: "0.35rem",
-                          paddingRight: "0.35rem",
-                          fontWeight: 600,
-                          color: "dodgerblue",
-                        }}
-                      >
-                        18 months
-                      </p>
-                    </div>
-                    <p style={{ height: "0.5rem" }}></p>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        border: "",
-                        gap: "0.5rem",
-                        justifyContent: "center",
-                        fontWeight: 600,
-                      }}
-                    >
-                      <p style={{ textAlign: "left", border: "" }}>
-                        {dateofJoin}
-                      </p>
-                      -
-                      <p>
-                        {(function calculateBlockPeriodEnd() {
-                          const blockPeriodStart = moment(
-                            dateofJoin,
-                            "DD/MM/YYYY"
-                          );
-                          const originalBlockPeriodEnd = moment(
-                            dateofJoin,
-                            "DD/MM/YYYY"
-                          ).add(1.5, "years");
-                          let totalExtensionDays = 0;
-
-                          leaveList.forEach((leave: any) => {
-                            const leaveStartDate = moment(
-                              leave.leaveFrom,
-                              "DD/MM/YYYY"
-                            );
-                            if (
-                              leaveStartDate.isBetween(
-                                blockPeriodStart,
-                                originalBlockPeriodEnd,
-                                "day",
-                                "[]"
-                              )
-                            ) {
-                              totalExtensionDays += leave.days || 0;
-                            }
-                          });
-
-                          return String(
-                            originalBlockPeriodEnd
-                              .add(totalExtensionDays, "days")
-                              .format("DD/MM/YYYY")
-                          );
-                        })()}
-                      </p>
-                    </div>
-                    <p style={{ height: "0.45rem" }}></p>
-                    <p
-                      style={{
-                        fontSize: "0.7rem",
-                        opacity: 0.5,
-                        border: "",
-                        display: "flex",
-                      }}
-                    >
-                      {`extended by ${(function calculateExtensionDays() {
-                        const blockPeriodStart = moment(
-                          dateofJoin,
-                          "DD/MM/YYYY"
-                        );
-                        const originalBlockPeriodEnd = moment(
-                          dateofJoin,
-                          "DD/MM/YYYY"
-                        ).add(1.5, "years");
-                        let totalExtensionDays = 0;
-
-                        leaveList.forEach((leave: any) => {
-                          const leaveStartDate = moment(
-                            leave.leaveFrom,
-                            "DD/MM/YYYY"
-                          );
-                          if (
-                            leaveStartDate.isBetween(
-                              blockPeriodStart,
-                              originalBlockPeriodEnd,
-                              "day",
-                              "[]"
-                            )
-                          ) {
-                            totalExtensionDays += leave.days || 0;
-                          }
-                        });
-
-                        return totalExtensionDays;
-                      })()} days`}
-                    </p>
-                  </div>
-
-                  <div
-                    style={{
-                      height: "100%",
-                      borderLeft: "1px solid rgba(100 100 100/ 75%)",
-                      paddingLeft: "1rem",
-                      display: "flex",
-                      flexFlow: "column",
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <p style={{ fontSize: "0.8rem", opacity: 0.5 }}>Total</p>
-                    <p
-                      style={{
-                        fontWeight: 600,
-                        border: "",
-                        textAlign: "right",
-                        fontSize: "1.5rem",
-                        lineHeight: "1.5rem",
-                      }}
-                    >
-                      {leaves}
-                    </p>
-                  </div>
-                </div>
-
-                {/* <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem"}}>
-                    <LineCharter/>
-                    
-                    </div> */}
-              </div>
-
-              {leaveList.length == 0 ? (
-                <div
-                  style={{
-                    width: "100%",
-                    border: "3px dashed rgba(100 100 100/ 50%)",
-                    height: "2.5rem",
-                    borderRadius: "0.5rem",
-                    marginBottom: "1rem",
-                  }}
-                ></div>
-              ) : (
-                <div
-                  className="recipients"
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    flexFlow: "column",
-                    gap: "0.35rem",
-                    maxHeight: "12.25rem",
-                    overflowY: "auto",
-                    paddingRight: "",
-                    minHeight: "2.25rem",
-                    marginBottom: "1rem",
-                    padding: "0.5rem",
-                    paddingTop: "0",
-                  }}
-                >
-                  {leaveList.map((e: any) => (
-                    <motion.div
-                      key={e.id}
-                      initial={{ opacity: 0 }}
-                      whileInView={{ opacity: 1 }}
-                    >
-                      <Directive
-                        editableTag={access}
-                        notName
-                        tagOnClick={() => {
-                          if (access) {
-                            setLeaveReview(true);
-                            setLeaveFrom(e.leaveFrom);
-                            e.pending == false
-                              ? setLeaveTill(e.leaveTill)
-                              : setLeaveTill(""),
-                              setLeaveID(e.id);
-                            setExpectedReturn(e.expectedReturn);
-                          }
-                        }}
-                        status={true}
-                        tag={e.pending ? "Pending" : e.days + " Days"}
-                        title={e.leaveFrom + " - " + e.leaveTill}
-                        titleSize="0.75rem"
-                        key={e.id}
-                        icon={
-                          access && (
-                            <MinusSquareIcon
-                              onClick={() => {
-                                setDeleteLeaveDialog(true);
-                                setLeaveFrom(e.leaveFrom);
-                                setLeaveID(e.id);
-                              }}
-                              className="animate-pulse"
-                              color="dodgerblue"
-                              width={"1.1rem"}
-                            />
-                          )
-                        }
-                        noArrow
-                      />
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-              {access && (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "0.25rem",
-                    width: "100%",
-                    zIndex: "",
-                    border: "1px solid rgba(100 100 100/ 75%)",
-                    padding: "0.35rem",
-                    borderRadius: "0.75rem",
-                  }}
-                >
-                  <input
-                    type=""
-                    id="input-1"
-                    value={editedLeaveFrom}
-                    onChange={(e: any) => setEditedLeaveFrom(e.target.value)}
-                    placeholder="From"
-                    style={{ flex: 1.5 }}
-                  />
-
-                  <input
-                    type=""
-                    id="input-2"
-                    value={editedLeaveTill}
-                    onChange={(e: any) => setEditedLeaveTill(e.target.value)}
-                    placeholder="Till"
-                    style={{ flex: 1.5 }}
-                  />
-                  <button
-                    onClick={addLeave}
-                    style={{ fontSize: "0.8rem", flex: 0.45 }}
-                  >
-                    {loading ? (
-                      <LoadingOutlined />
-                    ) : (
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "0.5rem",
-                          alignItems: "center",
-                        }}
-                      >
-                        <Plus width={"1.25rem"} color="#8884d8" />
-                      </div>
-                    )}
-                  </button>
-                </div>
-              )}
-            </>
-          }
-        />
-
-        <InputDialog
-          title={"Leave Review"}
-          open={leaveReview}
-          onCancel={() => setLeaveReview(false)}
-          inputplaceholder={"Leave From"}
-          input1Value={leaveFrom}
-          input2Value={leaveTill}
-          input3Value={expectedReturn}
-          input1Label="Leave From"
-          input2Label="Leave Till"
-          input3Label="Expected Return"
-          inputOnChange={(e: any) => setLeaveFrom(e.target.value)}
-          input2placeholder="Leave Till"
-          input3placeholder={leaveTill ? "" : "Expected Return"}
-          input2OnChange={(e: any) => setLeaveTill(e.target.value)}
-          input3OnChange={(e: any) => setExpectedReturn(e.target.value)}
-          OkButtonText="Update"
-          OkButtonIcon={<RefreshCcw width={"1rem"} />}
-          updating={loading}
-          disabled={loading}
-          onOk={updateLeave}
-        />
-
-        <DefaultDialog
-          destructive
-          open={deleteLeaveDialog}
-          title={"Delete Leave?"}
-          OkButtonText="Delete"
-          updating={loading}
-          disabled={loading}
-          onCancel={() => setDeleteLeaveDialog(false)}
-          onOk={deleteLeave}
-          extra={
-            <p
-              style={{
-                fontSize: "0.75rem",
-                textAlign: "left",
-                width: "100%",
-                marginLeft: "1rem",
-                opacity: 0.5,
-              }}
-            ></p>
-          }
-        />
+     
       </div>
 
-      <DefaultDialog
-        destructive
-        open={deleteSalaryDialog}
-        onCancel={() => setDeleteSalaryDialog(false)}
-        title={"Delete Salary?"}
-        updating={loading}
-        disabled={loading}
-        onOk={deleteSalary}
-        OkButtonText="Delete"
-        extra={
-          <p
-            style={{
-              width: "100%",
-              textAlign: "left",
-              paddingLeft: "1rem",
-              fontSize: "0.75rem",
-              opacity: 0.5,
-            }}
-          >
-            {salaryID}
-          </p>
-        }
-      />
+      
 
-      <DefaultDialog
-        destructive
-        open={deleteAllowanceDialog}
-        onCancel={() => setDeleteAllowanceDialog(false)}
-        title={"Delete Allowance?"}
-        updating={loading}
-        disabled={loading}
-        onOk={deleteAllowance}
-        OkButtonText="Delete"
-        extra={
-          <p
-            style={{
-              width: "100%",
-              textAlign: "left",
-              paddingLeft: "1rem",
-              fontSize: "0.75rem",
-              opacity: 0.5,
-            }}
-          >
-            {salaryID}
-          </p>
-        }
-      />
+      
 
-      <DefaultDialog
-        created_on={initialAllowance}
-        code={employeeCode}
-        close
-        title={"Initial Allowance"}
-        open={allowanceDialog}
-        onCancel={() => setAllowanceDialog(false)}
-        title_extra={
-          <button
-            onClick={fetchAllowance}
-            style={{ width: "3rem", height: "2.5rem" }}
-          >
-            {fetchingAllowance ? (
-              <LoadingOutlined color="dodgerblue" />
-            ) : (
-              <RefreshCcw width={"1rem"} color="dodgerblue" />
-            )}
-          </button>
-        }
-        extra={
-          <>
-            <div
-              style={{
-                display: "flex",
-                border: "",
-                width: "100%",
-                borderRadius: "0.5rem",
-                padding: "0.5rem",
-                background: "",
-                flexFlow: "column",
-              }}
-            >
-              <div
-                style={{
-                  border: "",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <div
-                  style={{
-                    border: "",
-                    display: "flex",
-                    flexFlow: "column",
-                    alignItems: "center",
-                  }}
-                >
-                  <p
-                    style={{
-                      display: "flex",
-                      gap: "0.5rem",
-                      fontWeight: "500",
-                      background:
-                        "linear-gradient(90deg, rgba(0 0 0/ 0%), rgba(100 100 100/ 20%), rgba(0 0 0/ 0%)) ",
-                      padding: "0.25rem",
-                    }}
-                  >
-                    {name}
-                  </p>
-                  <br />
-                  <p
-                    style={{
-                      fontSize: "0.8rem",
-                      opacity: 0.5,
-                      justifyContent: "",
-                      display: "flex",
-                    }}
-                  >
-                    Current Allowance
-                  </p>
-                  <div
-                    style={{
-                      display: "flex",
-                      border: "",
-                      gap: "0.5rem",
-                      justifyContent: "center",
-                      fontWeight: 600,
-                      fontSize: "1.5rem",
-                      alignItems: "center",
-                    }}
-                  >
-                    <p style={{ fontWeight: 400, fontSize: "1rem" }}>OMR</p>
-                    {allowance}
-                  </div>
-                  <div
-                    style={{
-                      border: "",
-                      display: "flex",
-                      justifyContent: "center",
-                      textAlign: "center",
-                    }}
-                  >
-                    <p style={{ opacity: 0.5 }}>
-                      {(allowance - initialAllowance) / initialAllowance + "%"}
-                    </p>
-                    {Math.sign(
-                      (allowance - initialAllowance) / initialAllowance
-                    ) == -1 ? (
-                      <ArrowDown
-                        strokeWidth={"3px"}
-                        width={"1rem"}
-                        color="lightcoral"
-                      />
-                    ) : (allowance - initialAllowance) / initialAllowance ==
-                      0 ? (
-                      ""
-                    ) : (
-                      <ArrowUp
-                        strokeWidth={"3px"}
-                        width={"1rem"}
-                        color="lightgreen"
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* <div style={{border:"", height:"3rem", paddingTop:"", marginTop:"1.5rem"}}>
-                    <LineCharter lineColor="salmon"/>
-                    </div> */}
-            </div>
-
-            {allowanceList.length == 0 ? (
-              <div
-                style={{
-                  width: "100%",
-                  border: "3px dashed rgba(100 100 100/ 50%)",
-                  height: "2.5rem",
-                  borderRadius: "0.5rem",
-                  marginBottom: "1rem",
-                }}
-              ></div>
-            ) : (
-              <div
-                className="recipients"
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  flexFlow: "column",
-                  gap: "0.35rem",
-                  maxHeight: "11.25rem",
-                  overflowY: "auto",
-                  paddingRight: "0.5rem",
-                  minHeight: "2.25rem",
-                  marginBottom: "1rem",
-                }}
-              >
-                {allowanceList.map((e: any) => (
-                  <motion.div
-                    key={e.id}
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                  >
-                    <Directive
-                      status={true}
-                      tag={moment(e.created_on.toDate()).format("LL")}
-                      title={"OMR " + e.allowance}
-                      titleSize="0.75rem"
-                      key={e.id}
-                      icon={
-                        <MinusSquareIcon
-                          onClick={() => {
-                            setDeleteAllowanceDialog(true);
-                            setAllowanceID(e.id);
-                          }}
-                          className="animate-pulse"
-                          color="salmon"
-                          width={"1.1rem"}
-                        />
-                      }
-                      noArrow
-                    />
-                  </motion.div>
-                ))}
-              </div>
-            )}
-            {access && (
-              <div
-                style={{
-                  display: "flex",
-                  gap: "0.5rem",
-                  width: "100%",
-                  zIndex: "",
-                }}
-              >
-                <input
-                  type="search"
-                  id="input-1"
-                  value={newAllowance == 0 ? "" : newAllowance}
-                  onChange={(e: any) => setNewAllowance(e.target.value)}
-                  placeholder="New Allowance"
-                  style={{ flex: 1.5 }}
-                />
-
-                <button
-                  onClick={addNewAllowance}
-                  style={{ fontSize: "0.8rem", flex: 0.15 }}
-                >
-                  {loading ? (
-                    <LoadingOutlined />
-                  ) : (
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "0.5rem",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Plus width={"1.25rem"} color="salmon" />
-                    </div>
-                  )}
-                </button>
-              </div>
-            )}
-          </>
-        }
-      />
+     
       {/* Add hidden file input for Excel import */}
       {/* <input
         type="file"
@@ -6245,7 +4910,7 @@ export default function DbComponent(props: Props) {
                       importMode === "overwrite"
                         ? "rgba(30, 144, 255, 0.2)"
                         : "",
-                    color: importMode === "overwrite" ? "dodgerblue" : "",
+                    color: importMode === "overwrite" ? "mediumslateblue" : "",
                   }}
                 >
                   Overwrite
@@ -6255,7 +4920,7 @@ export default function DbComponent(props: Props) {
                   style={{
                     background:
                       importMode === "ignore" ? "rgba(30, 144, 255, 0.2)" : "",
-                    color: importMode === "ignore" ? "dodgerblue" : "",
+                    color: importMode === "ignore" ? "mediumslateblue" : "",
                   }}
                 >
                   Ignore

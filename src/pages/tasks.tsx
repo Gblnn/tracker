@@ -446,7 +446,7 @@ export default function Tasks() {
                                         display:"flex",
                                         alignItems:"center",
                                         justifyContent:"center",
-                                        gap: "0.25rem",
+                                    
                                         border: "none",
                                         margin: 0,
                                         cursor: endingShift ? "not-allowed" : "pointer",
@@ -460,7 +460,7 @@ export default function Tasks() {
                                 
                                     }}
                                 >
-                                    <Clock size={15} style={{border:"", width:"1.5rem"}}/>
+                                    <Clock size={15} style={{border:"", width:"1rem"}}/>
                                     <p style={{width:"4rem", border:"", fontSize:"0.9rem"}}>
                                         {elapsedLabel}
                                     </p>

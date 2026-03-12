@@ -1221,7 +1221,7 @@ const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracte
                     onClick={() => processImage(capturedImage)}
                     disabled={!ocrReady}
                     style={{
-                      background: ocrReady ? "dodgerblue" : "rgba(30, 144, 255, 0.5)",
+                      background: ocrReady ? "mediumslateblue" : "rgba(30, 144, 255, 0.5)",
                       color: "white",
                       border: "none",
                       padding: "0.75rem 1.5rem",

@@ -65,7 +65,7 @@ export default function DbDropDown(props: Props) {
               onClick={props.onAccess}
               style={{ width: "100%" }}
             >
-              <KeyRound className="mr-2 " color="dodgerblue" />
+              <KeyRound className="mr-2 " color="mediumslateblue" />
               <span style={{ width: "100%" }}>Access Control</span>
             </DropdownMenuItem> */}
 
@@ -86,7 +86,7 @@ export default function DbDropDown(props: Props) {
               onClick={() => window.location.reload()}
               style={{ width: "100%" }}
             >
-              <RefreshCcw className="mr-2 " color="dodgerblue" />
+              <RefreshCcw className="mr-2 " color="mediumslateblue" />
               <span style={{ width: "100%" }}>Force Reload</span>
             </DropdownMenuItem>
           </DropdownMenuGroup>

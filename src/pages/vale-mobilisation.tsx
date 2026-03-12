@@ -384,7 +384,7 @@ export default function ValeMobilisation() {
                                         </Badge> */}
                                     </TableCell>
                                     <TableCell>
-                                        <button style={{color:"dodgerblue"}} className="text-sm">
+                                        <button style={{color:"mediumslateblue"}} className="text-sm">
                                             View Details
                                         </button>
                                     </TableCell>

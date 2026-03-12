@@ -11,7 +11,7 @@ export default function SiteCoordinator(){
     return(
         <>
         <div>
-            <Back icon={<Factory color="dodgerblue"/>} subtitle={userData?.assignedSite} noback fixed title={userData?.assignedProject} extra={<div style={{ display: "flex", gap: "0.75rem", alignItems:"center" }} >
+            <Back icon={<Factory color="mediumslateblue"/>} subtitle={userData?.assignedSite} noback fixed title={userData?.assignedProject} extra={<div style={{ display: "flex", gap: "0.75rem", alignItems:"center" }} >
                 {/* <button style={{ paddingLeft: "1rem", paddingRight: "1rem" }}>
                                         v2.0
                                       </button> */}

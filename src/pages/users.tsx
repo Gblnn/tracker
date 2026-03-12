@@ -23,6 +23,7 @@ import {
 import { motion } from "framer-motion";
 import {
   Book,
+  BookMarked,
   Car,
   Clock3,
   Package,
@@ -58,6 +59,7 @@ const MODULES = [
   { id: 'quick_links', name: 'Links', icon: Link },
   { id: 'qr_generator', name: 'QR Generator', icon: QrCode },
   { id: 'fuel_log', name: 'Fuel Log', icon: Fuel },
+  { id: 'passports', name: 'Passports', icon: BookMarked },
   { id: 'asset_master', name: 'Asset Master', icon: Car },
   { id: 'projects', name: 'Projects', icon: Package },
   { id: 'shift_logs', name: 'Shift Logs', icon: Clock3 },
@@ -182,7 +184,7 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
               notName
               title={display_email}
               noArrow
-              icon={<AtSign width={"1.24rem"} color="dodgerblue" />}
+              icon={<AtSign width={"1.24rem"} color="mediumslateblue" />}
             /> */}
             <RoleSelect 
               value={role.toLowerCase()} 
@@ -193,13 +195,13 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
             <Directive
               onClick={onOpenClearanceDrawer}
               title="Module Clearance"
-              icon={<KeyRound width="1.25rem" color="dodgerblue" />}
+              icon={<KeyRound width="1.25rem" color="mediumslateblue" />}
               id_subtitle={`${getEnabledModulesCount()} modules enabled`}
             />
             <IOMenu
               title="Editing"
               placeholder="Clearance"
-              icon={<PenLine color="dodgerblue" width={"1.25rem"} />}
+              icon={<PenLine color="mediumslateblue" width={"1.25rem"} />}
               value={editor == "true" ? "true" : "false"}
               onChange={setEditor}
             />
@@ -208,7 +210,7 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
               placeholder="Sensitive Data"
               value={sensitive_data == "true" ? "true" : "false"}
               onChange={setSensitiveData}
-              icon={<Eye color="dodgerblue" width={"1.25rem"} />}
+              icon={<Eye color="mediumslateblue" width={"1.25rem"} />}
             />
           </div>
         </motion.div>
@@ -611,7 +613,7 @@ export default function Users() {
               
             }}
           >
-            <Loader2 className="animate-spin" style={{ color: "dodgerblue", scale: "2" }} />
+            <Loader2 className="animate-spin" style={{ color: "mediumslateblue", scale: "2" }} />
           </div>
         ) : (
           <div
@@ -782,7 +784,7 @@ export default function Users() {
           <Directive
             onClick={() => setCreateUserClearanceDrawerOpen(true)}
             title="Module Clearance"
-            icon={<KeyRound width="1.25rem" color="dodgerblue" />}
+            icon={<KeyRound width="1.25rem" color="mediumslateblue" />}
             id_subtitle={`${Object.values(createUserModulePermissions).filter(v => v === true).length} modules enabled`}
           />
           <motion.button

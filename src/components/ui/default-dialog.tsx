@@ -177,7 +177,7 @@ export default function DefaultDialog(props: Props) {
                                 {props.codeIcon ? (
                                   props.codeIcon
                                 ) : (
-                                  <Hash color="dodgerblue" width={"0.8rem"} />
+                                  <Hash color="mediumslateblue" width={"0.8rem"} />
                                 )}
 
                                 <p style={{ fontSize: "0.9rem" }}>
@@ -213,7 +213,7 @@ export default function DefaultDialog(props: Props) {
                     display: "flex",
                     fontWeight: "600",
                     fontSize: "0.8rem",
-                    color: "dodgerblue",
+                    color: "mediumslateblue",
                   }}
                 >
                   <p
@@ -265,7 +265,7 @@ export default function DefaultDialog(props: Props) {
                           fontWeight: 400,
                         }}
                       ></p> */}
-                      {/* <p style={{ fontSize: "0.8rem", color: "dodgerblue" }}>
+                      {/* <p style={{ fontSize: "0.8rem", color: "mediumslateblue" }}>
                         {props.creation_date}
                       </p> */}
                       <a
@@ -282,7 +282,7 @@ export default function DefaultDialog(props: Props) {
                           paddingRight: "0.75rem",
                         }}
                       >
-                        <AtSign color="dodgerblue" width={"0.8rem"} />
+                        <AtSign color="mediumslateblue" width={"0.8rem"} />
                         <p style={{ fontSize: "0.8rem", fontWeight: "500" }}>
                           {props.email ? props.email : "Email Address"}
                         </p>
@@ -305,7 +305,7 @@ export default function DefaultDialog(props: Props) {
                           paddingRight: "0.75rem",
                         }}
                       >
-                        <Phone width={"0.8rem"} color="dodgerblue" />
+                        <Phone width={"0.8rem"} color="mediumslateblue" />
                         <p style={{ fontSize: "1rem" }}>{props.contact}</p>
                       </a>
                     )}
@@ -365,7 +365,7 @@ export default function DefaultDialog(props: Props) {
                         strokeWidth={"3px"}
                       />
                     ) : (
-                      <ScrollText width={"1rem"} color="dodgerblue" />
+                      <ScrollText width={"1rem"} color="mediumslateblue" />
                     )}
 
                     {props.tag1Text ? (
@@ -467,7 +467,7 @@ export default function DefaultDialog(props: Props) {
                   }}
                 >
                   <Directive
-                    icon={<LineChart width={"1.25rem"} color="dodgerblue" />}
+                    icon={<LineChart width={"1.25rem"} color="mediumslateblue" />}
                     titleSize="0.8rem"
                     height="2.25rem"
                     title="Day off(s)"
@@ -594,7 +594,7 @@ export default function DefaultDialog(props: Props) {
                 >
                   <div
                     style={{
-                      background: "dodgerblue",
+                      background: "mediumslateblue",
                       width: props.progress,
                       height: "0.25rem",
                       borderRadius: "0.5rem",
@@ -623,7 +623,7 @@ export default function DefaultDialog(props: Props) {
                 >
                   {props.back ? (
                     <>
-                      <ChevronLeft color="dodgerblue" width={"1rem"} />
+                      <ChevronLeft color="mediumslateblue" width={"1rem"} />
                       <p>Back</p>
                     </>
                   ) : (

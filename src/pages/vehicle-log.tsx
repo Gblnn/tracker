@@ -18,7 +18,7 @@
 //         <div style={{margin:"1.5rem"}}>
 //             <motion.div initial={{opacity:0}} whileInView={{opacity:1}}>
 //                 <Back icon={<Wrench color="salmon"/>} title="Maintenance Log" noback extra={
-//                     <><button><User color="dodgerblue"/></button></>
+//                     <><button><User color="mediumslateblue"/></button></>
 //                     }/>
 //                 <br/>
 
@@ -31,14 +31,14 @@
 //                 </div>
 //             </motion.div>
 
-//             <AddRecordButton title="Add Log" icon={<Plus width={"1rem"} color="dodgerblue"/>} onClick={()=>setAddLogDialog(true)}/>
+//             <AddRecordButton title="Add Log" icon={<Plus width={"1rem"} color="mediumslateblue"/>} onClick={()=>setAddLogDialog(true)}/>
 
 //             <DefaultDialog titleIcon={<Car/>} title={"Add Log"} open={addLogDialog} onCancel={()=>setAddLogDialog(false)} close
 //             extra={
 //                 <div style={{border:"", width:"100%", display:"flex", flexFlow:"column", gap:"0.5rem"}}>
 //                     <Directive onClick={()=>setFuelExpenseDialog(true)} icon={<Fuel color="goldenrod"/>} title="Fuel Expense" />
 //                     <Directive icon={<CarFront color="violet"/>} title="Oil Change"/>
-//                     <Directive icon={<Wrench color="dodgerblue"/>} title="Repair"/>
+//                     <Directive icon={<Wrench color="mediumslateblue"/>} title="Repair"/>
 //                 </div>
 //             }
 //             />

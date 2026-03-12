@@ -344,7 +344,7 @@ export default function Profile() {
       />
 
       <InputDialog
-        titleIcon={<UserPlus color="dodgerblue" />}
+        titleIcon={<UserPlus color="mediumslateblue" />}
         open={addUserDialog}
         title={"Add User"}
         OkButtonText="Add"

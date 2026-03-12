@@ -33,7 +33,7 @@ export default function SearchBox(props: Props) {
                       }}
                     >
                       <CheckSquare2
-                        color={selectable ? "white" : "dodgerblue"}
+                        color={selectable ? "white" : "mediumslateblue"}
                       />
                     </button>
                   )} */}
@@ -43,11 +43,11 @@ export default function SearchBox(props: Props) {
         <Select defaultValue="name" onValueChange={setSortBy}>
           <SelectTrigger style={{ width: "fit-content", background: "" }}>
             {sortby == "name" ? (
-              <ArrowDownAZ width={"1.25rem"} color="dodgerblue" />
+              <ArrowDownAZ width={"1.25rem"} color="mediumslateblue" />
             ) : sortby == "created_on" ? (
-              <ListStart width={"1.25rem"} color="dodgerblue" />
+              <ListStart width={"1.25rem"} color="mediumslateblue" />
             ) : (
-              <ArrowDown01 width={"1.25rem"} color="dodgerblue" />
+              <ArrowDown01 width={"1.25rem"} color="mediumslateblue" />
             )}
           </SelectTrigger>
           <SelectContent>

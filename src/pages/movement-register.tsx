@@ -149,7 +149,7 @@ export default function MovementRegister() {
     >
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
         <Back
-          icon={<ArrowUpDown color="dodgerblue" />}
+          icon={<ArrowUpDown color="mediumslateblue" />}
           title="Movement"
           extra={
             <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -161,7 +161,7 @@ export default function MovementRegister() {
                 }}
                 onClick={() => setAddUserDialog(true)}
               >
-                <UserPlus width={"1rem"} color="dodgerblue" />
+                <UserPlus width={"1rem"} color="mediumslateblue" />
               </button> */}
 
               <RefreshButton
@@ -186,9 +186,9 @@ export default function MovementRegister() {
             }}
           >
             {fetchingData ? (
-              //   <LoadingOutlined style={{ color: "dodgerblue", scale: "2" }} />
+              //   <LoadingOutlined style={{ color: "mediumslateblue", scale: "2" }} />
               <LoaderCircle
-                color="dodgerblue"
+                color="mediumslateblue"
                 className="animate-spin"
                 style={{ width: "3rem", height: "3rem" }}
               />
@@ -236,9 +236,9 @@ export default function MovementRegister() {
                 key={user.id}
                 icon={
                   user.role == "admin" ? (
-                    <Eye width={"1.25rem"} color="dodgerblue" />
+                    <Eye width={"1.25rem"} color="mediumslateblue" />
                   ) : (
-                    <User width={"1.25rem"} color="dodgerblue" />
+                    <User width={"1.25rem"} color="mediumslateblue" />
                   )
                 }
                 title={user.name}
@@ -250,7 +250,7 @@ export default function MovementRegister() {
       </motion.div>
 
       <InputDialog
-        titleIcon={<UserPlus color="dodgerblue" />}
+        titleIcon={<UserPlus color="mediumslateblue" />}
         title="Add Movement"
         open={AddRecordDialog}
         onCancel={() => setAddRecordDialog(false)}
@@ -259,8 +259,8 @@ export default function MovementRegister() {
 
       <DefaultDialog
         title={display_name}
-        titleIcon={<User color="dodgerblue" />}
-        codeIcon={<AtSign color="dodgerblue" width={"1rem"} />}
+        titleIcon={<User color="mediumslateblue" />}
+        codeIcon={<AtSign color="mediumslateblue" width={"1rem"} />}
         open={userDialog}
         OkButtonText="Update"
         onCancel={() => setUserDialog(false)}
@@ -279,7 +279,7 @@ export default function MovementRegister() {
               notName
               title={display_email}
               noArrow
-              icon={<AtSign width={"1.24rem"} color="dodgerblue" />}
+              icon={<AtSign width={"1.24rem"} color="mediumslateblue" />}
             />
             <SelectMenu value={role.toLowerCase()} onChange={setRole} />
             <ClearanceMenu
@@ -288,7 +288,7 @@ export default function MovementRegister() {
             />
             <IOMenu
               placeholder="Clearance"
-              icon={<PenLine color="dodgerblue" width={"1.25rem"} />}
+              icon={<PenLine color="mediumslateblue" width={"1.25rem"} />}
               value={editor == "true" ? "true" : "false"}
               onChange={setEditor}
             />
@@ -296,7 +296,7 @@ export default function MovementRegister() {
               placeholder="Sensitive Data"
               value={sensitive_data == "true" ? "true" : "false"}
               onChange={setSensitiveData}
-              icon={<Eye color="dodgerblue" width={"1.25rem"} />}
+              icon={<Eye color="mediumslateblue" width={"1.25rem"} />}
             />
           </div>
         }
@@ -319,7 +319,7 @@ export default function MovementRegister() {
       />
 
       <AddRecordButton
-        icon={<Plus color="dodgerblue" />}
+        icon={<Plus color="mediumslateblue" />}
         onClick={() => setAddRecordDialog(true)}
       />
 
@@ -335,7 +335,7 @@ export default function MovementRegister() {
       />
 
       <InputDialog
-        titleIcon={<UserPlus color="dodgerblue" />}
+        titleIcon={<UserPlus color="mediumslateblue" />}
         open={addUserDialog}
         title={"Add User"}
         OkButtonText="Add"

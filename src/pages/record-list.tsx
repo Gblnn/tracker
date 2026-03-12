@@ -160,7 +160,7 @@ export default function RecordList() {
                   onClick={handleHistoryClick}
                 >
                   {/* <p style={{ fontSize: "0.8rem" }}></p> */}
-                  <HistoryIcon width={"1.1rem"} color="dodgerblue" />
+                  <HistoryIcon width={"1.1rem"} color="mediumslateblue" />
                 </button>
 
                 <button
@@ -217,14 +217,14 @@ export default function RecordList() {
             />
             
 
-            <Directive title={"Devices"} icon={<Laptop2 color="dodgerblue" width={"1.25rem"}/>} onClick={() => usenavigate("/devices")}/>
+            <Directive title={"Devices"} icon={<Laptop2 color="mediumslateblue" width={"1.25rem"}/>} onClick={() => usenavigate("/devices")}/>
 
             {/* <Directive
               loading={subcontractLoading}
               onClick={() => handleLoginPrompt("subcontract")}
               title="Subcontracted Workers"
               icon={
-                <HardHat width={"1.25rem"} color="dodgerblue" />
+                <HardHat width={"1.25rem"} color="mediumslateblue" />
               }
             />
 
@@ -284,7 +284,7 @@ export default function RecordList() {
           title={"Protected Route"}
           input1Type="password"
           desc="Enter key to continue"
-          titleIcon={<KeyRound color="dodgerblue" />}
+          titleIcon={<KeyRound color="mediumslateblue" />}
           open={loginPrompt}
           onCancel={() => setLoginPrompt(false)}
           OkButtonText="Continue"

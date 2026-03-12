@@ -19,7 +19,7 @@ export default function RecordPage() {
                   display: "flex",
                 }}
               >
-                <Layers color="dodgerblue" width={"1.1rem"} />
+                <Layers color="mediumslateblue" width={"1.1rem"} />
                 Category
               </button>
               <RefreshButton />

@@ -17,7 +17,7 @@ export default function ClearanceMenu(props: Props) {
   return (
     <ChevronSelect
       title="Clearance"
-      icon={<KeyRound color="dodgerblue" width="1.125rem" height="1.125rem" />}
+      icon={<KeyRound color="mediumslateblue" width="1.125rem" height="1.125rem" />}
       options={CLEARANCE_OPTIONS}
       value={props.value}
       onChange={props.onChange}

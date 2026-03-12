@@ -104,11 +104,11 @@ export default function LPODef() {
 
         <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
           {/* <Directive
-            icon={<Hash width={"1.25rem"} color="dodgerblue" />}
+            icon={<Hash width={"1.25rem"} color="mediumslateblue" />}
             title={"CD 180"}
           />
           <Directive
-            icon={<Hash width={"1.25rem"} color="dodgerblue" />}
+            icon={<Hash width={"1.25rem"} color="mediumslateblue" />}
             title={"CD 175"}
           />
            */}
@@ -125,14 +125,14 @@ export default function LPODef() {
               <Directive
                 key={data.id}
                 title={"CD " + data.project_code}
-                icon={<Hash width={"1.25rem"} color="dodgerblue" />}
+                icon={<Hash width={"1.25rem"} color="mediumslateblue" />}
               />
             ))}
         </div>
 
         <AddRecordButton
           onClick={() => setCreateProjectDialog(true)}
-          icon={<Plus color="dodgerblue" />}
+          icon={<Plus color="mediumslateblue" />}
         />
       </motion.div>
 

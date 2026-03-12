@@ -69,7 +69,7 @@ export default function InboxComponent(props:Props){
 
                     {
                         props.icon?
-                        <div style={{border:"", color:props.priority=="low"?"dodgerblue":"goldenrod", display:"flex", alignItems:"flex-start",flex:1}}>
+                        <div style={{border:"", color:props.priority=="low"?"mediumslateblue":"goldenrod", display:"flex", alignItems:"flex-start",flex:1}}>
                     {props.icon}
                     </div>
                     :null
@@ -96,7 +96,7 @@ export default function InboxComponent(props:Props){
                         {
                             props.civil_desc?
                 
-                            <InboxComponentDesc icon={<CreditCard width={"0.75rem"} color="dodgerblue"/>} desc={props.civil_desc} overdue={props.civil_overdue}/>
+                            <InboxComponentDesc icon={<CreditCard width={"0.75rem"} color="mediumslateblue"/>} desc={props.civil_desc} overdue={props.civil_overdue}/>
                         
                             :null
                         }
@@ -134,7 +134,7 @@ export default function InboxComponent(props:Props){
 {   
                             props.vt_hse_induction_desc?
                 
-                                <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue"/>} desc={props.vt_hse_induction_desc} overdue={props.vt_hse_induction_overdue}/>
+                                <InboxComponentDesc icon={<Disc width={"0.75rem"} color="mediumslateblue"/>} desc={props.vt_hse_induction_desc} overdue={props.vt_hse_induction_overdue}/>
                             
                             :null
 
@@ -143,7 +143,7 @@ export default function InboxComponent(props:Props){
                         {   
                             props.vt_car_1_desc?
                 
-                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue"/>} desc={props.vt_car_1_desc} overdue={props.vt_car_1_overdue}/>
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="mediumslateblue"/>} desc={props.vt_car_1_desc} overdue={props.vt_car_1_overdue}/>
                             
                             :null
 
@@ -152,7 +152,7 @@ export default function InboxComponent(props:Props){
                         {   
                             props.vt_car_2_desc?
                 
-                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_2_desc} overdue={props.vt_car_2_overdue}/>
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="mediumslateblue" style={{border:''}}/>} desc={props.vt_car_2_desc} overdue={props.vt_car_2_overdue}/>
                             
                             :null
 
@@ -160,7 +160,7 @@ export default function InboxComponent(props:Props){
                         {   
                             props.vt_car_3_desc?
                 
-                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_3_desc} overdue={props.vt_car_3_overdue}/>
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="mediumslateblue" style={{border:''}}/>} desc={props.vt_car_3_desc} overdue={props.vt_car_3_overdue}/>
                             
                             :null
 
@@ -168,7 +168,7 @@ export default function InboxComponent(props:Props){
                         {   
                             props.vt_car_4_desc?
                 
-                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_4_desc} overdue={props.vt_car_4_overdue}/>
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="mediumslateblue" style={{border:''}}/>} desc={props.vt_car_4_desc} overdue={props.vt_car_4_overdue}/>
                             
                             :null
 
@@ -176,7 +176,7 @@ export default function InboxComponent(props:Props){
                         {   
                             props.vt_car_5_desc?
                 
-                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_5_desc} overdue={props.vt_car_5_overdue}/>
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="mediumslateblue" style={{border:''}}/>} desc={props.vt_car_5_desc} overdue={props.vt_car_5_overdue}/>
                             
                             :null
 
@@ -184,7 +184,7 @@ export default function InboxComponent(props:Props){
                         {   
                             props.vt_car_6_desc?
                 
-                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_6_desc} overdue={props.vt_car_6_overdue}/>
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="mediumslateblue" style={{border:''}}/>} desc={props.vt_car_6_desc} overdue={props.vt_car_6_overdue}/>
                             
                             :null
 
@@ -192,7 +192,7 @@ export default function InboxComponent(props:Props){
                         {   
                             props.vt_car_7_desc?
                 
-                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_7_desc} overdue={props.vt_car_7_overdue}/>
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="mediumslateblue" style={{border:''}}/>} desc={props.vt_car_7_desc} overdue={props.vt_car_7_overdue}/>
                             
                             :null
 
@@ -200,7 +200,7 @@ export default function InboxComponent(props:Props){
                         {   
                             props.vt_car_8_desc?
                 
-                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_8_desc} overdue={props.vt_car_8_overdue}/>
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="mediumslateblue" style={{border:''}}/>} desc={props.vt_car_8_desc} overdue={props.vt_car_8_overdue}/>
                             
                             :null
 
@@ -208,7 +208,7 @@ export default function InboxComponent(props:Props){
                         {   
                             props.vt_car_9_desc?
                 
-                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_9_desc} overdue={props.vt_car_9_overdue}/>
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="mediumslateblue" style={{border:''}}/>} desc={props.vt_car_9_desc} overdue={props.vt_car_9_overdue}/>
                             
                             :null
 
@@ -216,7 +216,7 @@ export default function InboxComponent(props:Props){
                         {   
                             props.vt_car_10_desc?
                 
-                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="dodgerblue" style={{border:''}}/>} desc={props.vt_car_10_desc} overdue={props.vt_car_10_overdue}/>
+                            <InboxComponentDesc icon={<Disc width={"0.75rem"} color="mediumslateblue" style={{border:''}}/>} desc={props.vt_car_10_desc} overdue={props.vt_car_10_overdue}/>
                             
                             :null
 
@@ -237,7 +237,7 @@ export default function InboxComponent(props:Props){
                             
 
                                 {/* <button onClick={props.onReminderClick} style={{display:"flex", height:"2rem", fontSize:"0.8rem", border:'', paddingRight:"0.75rem", paddingLeft:"0.5rem"}}>
-                                    <AtSign width={"1.1rem"} color='dodgerblue'/>
+                                    <AtSign width={"1.1rem"} color='mediumslateblue'/>
                                     {props.mail}
                                 </button> */}
                                 {

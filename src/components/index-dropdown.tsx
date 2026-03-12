@@ -166,7 +166,7 @@ export default function IndexDropDown(props:Props) {
             className="cursor-pointer"
             style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}
           >
-            <RefreshCcw color="dodgerblue" className="mr-2 h-4 w-4 text-primary" />
+            <RefreshCcw color="mediumslateblue" className="mr-2 h-4 w-4 text-primary" />
             <span>Force Reload</span>
           </DropdownMenuItem>
 

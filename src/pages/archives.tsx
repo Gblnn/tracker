@@ -387,11 +387,11 @@ export default function Archives() {
               >
                 {pageLoad ? (
                   <LoadingOutlined
-                    style={{ color: "dodgerblue" }}
+                    style={{ color: "mediumslateblue" }}
                     width={"1.5rem"}
                   />
                 ) : (
-                  <RefreshCcw width="1.1rem" color="dodgerblue" />
+                  <RefreshCcw width="1.1rem" color="mediumslateblue" />
                 )}
               </button>
             </div>
@@ -579,7 +579,7 @@ export default function Archives() {
             setMailTitle("");
             setMailContent("");
           }}
-          titleIcon={<Mails color="dodgerblue" />}
+          titleIcon={<Mails color="mediumslateblue" />}
           title="Notify via Mail"
           updating={loading}
           onOk={sendMail}
@@ -589,7 +589,7 @@ export default function Archives() {
               onClick={() => setMailPreview(true)}
               style={{ fontSize: "0.8rem", height: "2rem" }}
             >
-              <PenLine width={"1rem"} color="dodgerblue" />
+              <PenLine width={"1rem"} color="mediumslateblue" />
               Compose
             </button>
           }
@@ -610,7 +610,7 @@ export default function Archives() {
                   onChange={(e) => setEmail(e.target.value)}
                 />
                 {/* <button style={{width:"8rem"}}>
-                        <MailCheck width={"1rem"} color="dodgerblue"/>
+                        <MailCheck width={"1rem"} color="mediumslateblue"/>
                         Send </button> */}
               </div>
             </div>
@@ -671,20 +671,20 @@ export default function Archives() {
 
         <DefaultDialog
           code={recipientList.length}
-          codeIcon={<User width={"0.8rem"} color="dodgerblue" />}
+          codeIcon={<User width={"0.8rem"} color="mediumslateblue" />}
           title_extra={
             <button
               onClick={fetchRecipients}
               style={{ width: "3rem", height: "2.5rem" }}
             >
               {updating ? (
-                <LoadingOutlined style={{ color: "dodgerblue" }} />
+                <LoadingOutlined style={{ color: "mediumslateblue" }} />
               ) : (
-                <RefreshCcw color="dodgerblue" width={"1rem"} />
+                <RefreshCcw color="mediumslateblue" width={"1rem"} />
               )}
             </button>
           }
-          titleIcon={<LucideMails color="dodgerblue" />}
+          titleIcon={<LucideMails color="mediumslateblue" />}
           title="Recipients"
           open={recipientsDialog}
           onCancel={() => setRecipientsDialog(false)}
@@ -730,7 +730,7 @@ export default function Archives() {
                               setSelectedRecipientID(recipient.id);
                             }}
                             className="animate-pulse"
-                            color="dodgerblue"
+                            color="mediumslateblue"
                             width={"1.1rem"}
                           />
                         }
@@ -761,9 +761,9 @@ export default function Archives() {
                   }}
                 >
                   {loading ? (
-                    <LoadingOutlined color="dodgerblue" />
+                    <LoadingOutlined color="mediumslateblue" />
                   ) : (
-                    <Plus color="dodgerblue" />
+                    <Plus color="mediumslateblue" />
                   )}
                 </button>
               </div>

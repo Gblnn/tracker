@@ -455,7 +455,7 @@ const AssetDetailsContent: React.FC<AssetDetailsContentProps> = ({
             {/* Condition */}
             <ChevronSelect
               title="Condition"
-              icon={<Package color="dodgerblue" width="1.125rem" />}
+              icon={<Package color="mediumslateblue" width="1.125rem" />}
               options={conditionOptions.map(opt => ({ value: opt, label: opt }))}
               value={assetCondition}
               onChange={setAssetCondition}
@@ -511,7 +511,7 @@ const AssetDetailsContent: React.FC<AssetDetailsContentProps> = ({
                 alignItems: "center",
                 gap: "0.5rem"
               }}>
-                <Package color="dodgerblue" width="1.125rem" />
+                <Package color="mediumslateblue" width="1.125rem" />
                 Assigned To
               </label>
               <button
@@ -971,7 +971,7 @@ export default function AssetMaster() {
                         justifyContent: "center",
                         height: "75svh",
                     }}>
-                        <Loader2 className="animate-spin" style={{ color: "dodgerblue", scale: "2" }} />
+                        <Loader2 className="animate-spin" style={{ color: "mediumslateblue", scale: "2" }} />
                     </div>
                 ) : assets.length === 0 ? (
                     <Empty style={{ height: "75svh" }}>

@@ -77,7 +77,7 @@ export default function History() {
               //       {fetchingData ? (
               //         <LoadingOutlined />
               //       ) : (
-              //         <RefreshCcw color="dodgerblue" width={"1rem"} />
+              //         <RefreshCcw color="mediumslateblue" width={"1rem"} />
               //       )}
               //     </button>
               //   </div>
@@ -167,7 +167,7 @@ export default function History() {
                             borderRadius: "1rem",
                             alignItems: "center",
                             height: "1.25rem",
-                            color: "dodgerblue",
+                            color: "mediumslateblue",
                           }}
                         >
                           {e.newValue}

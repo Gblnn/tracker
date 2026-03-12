@@ -51,7 +51,7 @@ export default function NewHire() {
                     opacity: "0.75",
                   }}
                 >
-                  <RefreshCcw width={"1rem"} color="dodgerblue" />
+                  <RefreshCcw width={"1rem"} color="mediumslateblue" />
                   <p style={{ opacity: 0.5, letterSpacing: "0.15rem" }}>
                     v1.18
                   </p>
@@ -93,7 +93,7 @@ export default function NewHire() {
             /> */}
             {/* <Directive
               title={"Resources Allocation"}
-              icon={<Binary color="dodgerblue" />}
+              icon={<Binary color="mediumslateblue" />}
               tag={"Maintenance"}
             /> */}
 
@@ -105,7 +105,7 @@ export default function NewHire() {
 
             {/* <Directive
               title={"New Hire"}
-              icon={<UserPlus width={"1.25rem"} color="dodgerblue" />}
+              icon={<UserPlus width={"1.25rem"} color="mediumslateblue" />}
             /> */}
 
             {/* <Directive
@@ -174,7 +174,7 @@ export default function NewHire() {
           title={"Protected Route"}
           input1Type="password"
           desc="Enter key to continue"
-          titleIcon={<KeyRound color="dodgerblue" />}
+          titleIcon={<KeyRound color="mediumslateblue" />}
           open={loginPrompt}
           onCancel={() => setLoginPrompt(false)}
           OkButtonText="Continue"

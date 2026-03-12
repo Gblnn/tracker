@@ -15,7 +15,8 @@ import { LoadingOutlined } from "@ant-design/icons";
 import emailjs from "@emailjs/browser";
 import { motion } from "framer-motion";
 import {
-  Book,
+  BookMarked,
+  BookMarkedIcon,
   Bug,
   Car,
   Clock3,
@@ -227,7 +228,7 @@ export default function Index() {
                     opacity: "0.75",
                   }}
                 >
-                  <RefreshCcw width={"1rem"} color="dodgerblue" />
+                  <RefreshCcw width={"1rem"} color="mediumslateblue" />
                   <p style={{ opacity: 0.5, letterSpacing: "0.15rem" }}>
                     v1.18
                   </p>
@@ -262,9 +263,9 @@ export default function Index() {
                       }}
                     >
                       {loading ? (
-                        <LoadingOutlined color="dodgerblue" />
+                        <LoadingOutlined color="mediumslateblue" />
                       ) : (
-                        <KeyRound color="dodgerblue" width={"1rem"} />
+                        <KeyRound color="mediumslateblue" width={"1rem"} />
                       )}
                     </button>
                   </motion.div>
@@ -305,7 +306,7 @@ export default function Index() {
                 height: "75svh",
               }}
             >
-              <LoadingOutlined style={{ color: "dodgerblue", scale: "2" }} />
+              <LoadingOutlined style={{ color: "mediumslateblue", scale: "2" }} />
             </div>
           ) : (
             hasAnyModules() ? (
@@ -376,8 +377,16 @@ export default function Index() {
               {hasModuleAccess('vehicle_log_book') && (
                 <GridTile
                   title="Vehicle Log"
-                  icon={<Book width={"2rem"}  />}
+                  icon={<BookMarkedIcon width={"2rem"}  />}
                   onClick={() => authenticateModule('vehicle_log_book', '/vehicle-log-book', 'Vehicle Log')}
+                />
+              )}
+
+              {hasModuleAccess('passports') && (
+                <GridTile
+                  title="Passports"
+                  icon={<BookMarked width={"2rem"}  />}
+                  onClick={() => authenticateModule('passports', '/passports', 'Passports')}
                 />
               )}
 
@@ -426,7 +435,7 @@ export default function Index() {
                         onClick={() => navigate("/profile")}
                         style={{
                           padding: "0.5rem 1.5rem",
-                          background: "dodgerblue",
+                          background: "mediumslateblue",
                           color: "white",
                           borderRadius: "0.5rem",
                           border: "none",
@@ -498,7 +507,7 @@ export default function Index() {
           title={"Protected Route"}
           input1Type="password"
           desc="Enter key to continue"
-          titleIcon={<KeyRound color="dodgerblue" />}
+          titleIcon={<KeyRound color="mediumslateblue" />}
           open={loginPrompt}
           onCancel={() => setLoginPrompt(false)}
           OkButtonText="Continue"

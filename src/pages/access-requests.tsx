@@ -33,14 +33,14 @@ export default function AccessRequests() {
         <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
           {/* <Directive
             title="Users"
-            icon={<Users width={"1.1rem"} color="dodgerblue" />}
+            icon={<Users width={"1.1rem"} color="mediumslateblue" />}
             onClick={() => setAddUserDialog(true)}
             to={"/users"}
           />
 
           <Directive
             title="Access Requests"
-            icon={<GitPullRequestArrow width={"1.1rem"} color="dodgerblue" />}
+            icon={<GitPullRequestArrow width={"1.1rem"} color="mediumslateblue" />}
             onClick={() => setAddUserDialog(true)}
             to={"/access-requests"}
           /> */}
@@ -48,7 +48,7 @@ export default function AccessRequests() {
       </motion.div>
 
       <InputDialog
-        titleIcon={<UserPlus color="dodgerblue" />}
+        titleIcon={<UserPlus color="mediumslateblue" />}
         open={addUserDialog}
         title={"Add User"}
         OkButtonText="Add"

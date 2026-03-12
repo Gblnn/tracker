@@ -29,23 +29,23 @@ export default function AccessControl(){
 
                 <div style={{display:"flex", flexFlow:"column", gap:"0.5rem"}}>
 
-                    <Directive onClick={()=>{setManageUsersDialog(true)}} icon={<User width={"1rem"} color="dodgerblue"/>} title="Manage Users"/>
-                    <Directive onClick={()=>{setConfirmDialog(true)}} icon={<KeyRound width={"1rem"} color="dodgerblue"/>} title="Route Protection"/>
+                    <Directive onClick={()=>{setManageUsersDialog(true)}} icon={<User width={"1rem"} color="mediumslateblue"/>} title="Manage Users"/>
+                    <Directive onClick={()=>{setConfirmDialog(true)}} icon={<KeyRound width={"1rem"} color="mediumslateblue"/>} title="Route Protection"/>
 
                 </div>
             </motion.div>
 
-            <DefaultDialog close title={"Manage Users"} titleIcon={<Users color="dodgerblue"/>} open={manageUsersDialog} onCancel={()=>setManageUsersDialog(false)} OkButtonText="Continue"  onOk={()=>usenavigate("/records")}
+            <DefaultDialog close title={"Manage Users"} titleIcon={<Users color="mediumslateblue"/>} open={manageUsersDialog} onCancel={()=>setManageUsersDialog(false)} OkButtonText="Continue"  onOk={()=>usenavigate("/records")}
             extra={
                 <div style={{display:"flex", width:"100%"}}>
-                    <Directive onClick={()=>setCreateUserDialog(true)} title="Add a new user" icon={<Plus color="dodgerblue" width={"1rem"}/>}/>
+                    <Directive onClick={()=>setCreateUserDialog(true)} title="Add a new user" icon={<Plus color="mediumslateblue" width={"1rem"}/>}/>
                 </div>
             }
             />
 
-            <InputDialog open={confirmDialog} onCancel={()=>setConfirmDialog(false)} title="Verification" titleIcon={<KeyRound color="dodgerblue"/>} inputplaceholder="Enter Password" OkButtonText="Continue"/>
+            <InputDialog open={confirmDialog} onCancel={()=>setConfirmDialog(false)} title="Verification" titleIcon={<KeyRound color="mediumslateblue"/>} inputplaceholder="Enter Password" OkButtonText="Continue"/>
 
-            <InputDialog title="Create New User" titleIcon={<UserPlus color="dodgerblue"/>} open={createUserDialog} onCancel={()=>setCreateUserDialog(false)} OkButtonText="Continue" inputplaceholder="Enter Email" input2placeholder="Enter Password" input3placeholder="Confirm Password"/>
+            <InputDialog title="Create New User" titleIcon={<UserPlus color="mediumslateblue"/>} open={createUserDialog} onCancel={()=>setCreateUserDialog(false)} OkButtonText="Continue" inputplaceholder="Enter Email" input2placeholder="Enter Password" input3placeholder="Confirm Password"/>
             
         </div>
         </>

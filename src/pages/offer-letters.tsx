@@ -3359,7 +3359,7 @@ const [searchTerm, setSearchTerm] = useState("");
             //   )
             // }
             // title="Doc"
-            // icon={<File color="dodgerblue" />}
+            // icon={<File color="mediumslateblue" />}
             // subtitle={
             //   formData.position && (
             //     <p style={{ textTransform: "uppercase" }}>
@@ -3601,7 +3601,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 height: "75svh",
               }}
             >
-              <LoadingOutlined style={{ color: "dodgerblue", scale: "2" }} />
+              <LoadingOutlined style={{ color: "mediumslateblue", scale: "2" }} />
             </div>
           ) : (
             <div

@@ -554,11 +554,11 @@ export default function Inbox() {
               >
                 {pageLoad ? (
                   <LoadingOutlined
-                    style={{ color: "dodgerblue" }}
+                    style={{ color: "mediumslateblue" }}
                     width={"1.5rem"}
                   />
                 ) : (
-                  <RefreshCcw width="1.1rem" color="dodgerblue" />
+                  <RefreshCcw width="1.1rem" color="mediumslateblue" />
                 )}
               </button>
             </div>
@@ -802,7 +802,7 @@ export default function Inbox() {
                       //       }}
                       //     />
                       //   ) : (
-                      //     <Eye width={"1rem"} color="dodgerblue" />
+                      //     <Eye width={"1rem"} color="mediumslateblue" />
                       //   )
                       // }
                       mail={record.email}
@@ -957,7 +957,7 @@ export default function Inbox() {
             setMailTitle("");
             setMailContent("");
           }}
-          titleIcon={<Mails color="dodgerblue" />}
+          titleIcon={<Mails color="mediumslateblue" />}
           title="Notify via Mail"
           updating={loading}
           onOk={sendMail}
@@ -967,7 +967,7 @@ export default function Inbox() {
               onClick={() => setMailPreview(true)}
               style={{ fontSize: "0.8rem", height: "2rem" }}
             >
-              <PenLine width={"1rem"} color="dodgerblue" />
+              <PenLine width={"1rem"} color="mediumslateblue" />
               Compose
             </button>
           }
@@ -988,7 +988,7 @@ export default function Inbox() {
                   onChange={(e) => setEmail(e.target.value)}
                 />
                 {/* <button style={{width:"8rem"}}>
-                        <MailCheck width={"1rem"} color="dodgerblue"/>
+                        <MailCheck width={"1rem"} color="mediumslateblue"/>
                         Send </button> */}
               </div>
             </div>
@@ -1059,13 +1059,13 @@ export default function Inbox() {
             //   style={{ width: "3rem", height: "2.5rem" }}
             // >
             //   {updating ? (
-            //     <LoadingOutlined style={{ color: "dodgerblue" }} />
+            //     <LoadingOutlined style={{ color: "mediumslateblue" }} />
             //   ) : (
-            //     <RefreshCcw color="dodgerblue" width={"1rem"} />
+            //     <RefreshCcw color="mediumslateblue" width={"1rem"} />
             //   )}
             // </button>
           }
-          titleIcon={<LucideMails color="dodgerblue" />}
+          titleIcon={<LucideMails color="mediumslateblue" />}
           title="Recipients"
           open={recipientsDialog}
           onCancel={() => setRecipientsDialog(false)}
@@ -1113,7 +1113,7 @@ export default function Inbox() {
                                 setSelectedRecipientID(recipient.id);
                               }}
                               className="animate-pulse"
-                              color="dodgerblue"
+                              color="mediumslateblue"
                               width={"1.1rem"}
                             />
                           )
@@ -1155,9 +1155,9 @@ export default function Inbox() {
                     }}
                   >
                     {loading ? (
-                      <LoadingOutlined color="dodgerblue" />
+                      <LoadingOutlined color="mediumslateblue" />
                     ) : (
-                      <Plus color="dodgerblue" />
+                      <Plus color="mediumslateblue" />
                     )}
                   </button>
                 </div>

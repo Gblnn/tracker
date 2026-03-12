@@ -52,7 +52,7 @@ export default function UserPage() {
               <CreditCard
                 width={"1.1rem"}
                 height={"1.1rem"}
-                color="dodgerblue"
+                color="mediumslateblue"
               />
             }
             title="Civil ID"

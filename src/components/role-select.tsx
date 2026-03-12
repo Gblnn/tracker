@@ -18,7 +18,7 @@ export default function RoleSelect({ value, onChange }: Props) {
   return (
     <ChevronSelect
       title="Role"
-      icon={<UserCircle color="dodgerblue" width="1.125rem" height="1.125rem" />}
+      icon={<UserCircle color="mediumslateblue" width="1.125rem" height="1.125rem" />}
       options={ROLE_OPTIONS}
       value={value}
       onChange={onChange}

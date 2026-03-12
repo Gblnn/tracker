@@ -186,7 +186,7 @@ export default function Shortlist() {
               }}
             >
               <LoaderCircle
-                color="dodgerblue"
+                color="mediumslateblue"
                 className="animate-spin"
                 width={"3rem"}
                 height={"3rem"}

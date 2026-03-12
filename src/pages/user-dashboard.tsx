@@ -192,7 +192,7 @@ export default function UserDashboard() {
               height: "75svh",
             }}
           >
-            <LoadingOutlined style={{ color: "dodgerblue", scale: "3" }} />
+            <LoadingOutlined style={{ color: "mediumslateblue", scale: "3" }} />
           </div>
         ) : (
           <motion.div 
@@ -239,7 +239,7 @@ export default function UserDashboard() {
                   <h2 style={{ color: "" }}>{userDetails.name||"N/A"}</h2>
 
                   <div style={{ textTransform: "capitalize", display:"flex", alignItems:"center", gap:"0.5rem" }}>
-                    <KeyRound width={"1rem"} color="dodgerblue"/>
+                    <KeyRound width={"1rem"} color="mediumslateblue"/>
                     {userData?.role || "No designation assigned"}</div>
                     {/* <div>{userDetails.email}</div> */}
                     
@@ -257,15 +257,15 @@ export default function UserDashboard() {
                   alignItems: "center",
                   
                 }}>
-                  <Directive icon={<Building2 color="dodgerblue" width={"1.25rem"}/>} title={userDetails.project||"Not Allocated"}/>
+                  <Directive icon={<Building2 color="mediumslateblue" width={"1.25rem"}/>} title={userDetails.project||"Not Allocated"}/>
                   {
                     userDetails.site &&
-                    <Directive icon={<HardHat color="dodgerblue" width={"1.25rem"}/>} title={userDetails.site||"Not Allocated"}/>
+                    <Directive icon={<HardHat color="mediumslateblue" width={"1.25rem"}/>} title={userDetails.site||"Not Allocated"}/>
                   }
                   
-                  <Directive icon={<Phone color="dodgerblue" width={"1.25rem"}/>} title={userDetails.contact||"Not Allocated"}/>
+                  <Directive icon={<Phone color="mediumslateblue" width={"1.25rem"}/>} title={userDetails.contact||"Not Allocated"}/>
                   
-                  <Directive notName icon={<AtSign color="dodgerblue" width={"1.25rem"}/>} title={userDetails.email||"Not Allocated"}/>
+                  <Directive notName icon={<AtSign color="mediumslateblue" width={"1.25rem"}/>} title={userDetails.email||"Not Allocated"}/>
                   
                 </div>
               </div>
@@ -278,7 +278,7 @@ export default function UserDashboard() {
                 opacity: 0.8
               }}>
                 <div>
-                  <div style={{ marginBottom: "0.5rem", color: "dodgerblue" }}>Company Details</div>
+                  <div style={{ marginBottom: "0.5rem", color: "mediumslateblue" }}>Company Details</div>
                   <div>Company: {userDetails.companyName}</div>
                   <div>Join Date: {userDetails.dateofJoin}</div>
                   {userDetails.site && <div>Site: {userDetails.site}</div>}
@@ -286,7 +286,7 @@ export default function UserDashboard() {
                 </div>
                 
                 <div>
-                  <div style={{ marginBottom: "0.5rem", color: "dodgerblue" }}>Contact Details</div>
+                  <div style={{ marginBottom: "0.5rem", color: "mediumslateblue" }}>Contact Details</div>
                   <div>Phone: {userDetails.contact}</div>
                   {userDetails.cug && <div>CUG: {userDetails.cug}</div>}
                 </div>
@@ -312,7 +312,7 @@ export default function UserDashboard() {
                   title="Civil ID"
                   
               
-                  icon={<CreditCard color="dodgerblue" width={"1.25rem"} />}
+                  icon={<CreditCard color="mediumslateblue" width={"1.25rem"} />}
                   
                  
                   
@@ -361,7 +361,7 @@ export default function UserDashboard() {
             >
               <SquareDirective
                 title="Civil ID"
-                icon={<CreditCard color="dodgerblue" width={"2rem"} />}
+                icon={<CreditCard color="mediumslateblue" width={"2rem"} />}
               />
               <SquareDirective
                 title="License"
@@ -392,7 +392,7 @@ export default function UserDashboard() {
       />
 
       <InputDialog
-        titleIcon={<UserPlus color="dodgerblue" />}
+        titleIcon={<UserPlus color="mediumslateblue" />}
         open={addUserDialog}
         title={"Add User"}
         OkButtonText="Add"

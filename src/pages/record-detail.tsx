@@ -7,10 +7,12 @@ import ImageDialog from "@/components/image-dialog";
 import InputDialog from "@/components/input-dialog";
 import MedicalID from "@/components/medical-id";
 import Passport from "@/components/passport";
+import ProjectSelect from "@/components/project-select";
 import RefreshButton from "@/components/refresh-button";
 import RoleSelect from "@/components/role-select";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { ResponsiveModal } from "@/components/responsive-modal";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { db, storage } from "@/firebase";
 import { Tooltip } from "antd";
 import { deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
@@ -49,6 +51,7 @@ interface EditRecordFormContentProps {
   editedContact: string | undefined;
   editedCug: string | undefined;
   editedDesignation: string | undefined;
+  editedWorkerType: string | undefined;
   editedSite: string | undefined;
   editedProject: string | undefined;
   editedSystemRole: string | undefined;
@@ -61,6 +64,7 @@ interface EditRecordFormContentProps {
   setEditedContact: (value: string) => void;
   setEditedCug: (value: string) => void;
   setEditedDesignation: (value: string) => void;
+  setEditedWorkerType: (value: string) => void;
   setEditedSite: (value: string) => void;
   setEditedProject: (value: string) => void;
   setEditedSystemRole: (value: string) => void;
@@ -80,6 +84,7 @@ const EditRecordFormContent: React.FC<EditRecordFormContentProps> = ({
   editedContact,
   editedCug,
   editedDesignation,
+  editedWorkerType,
   editedSite,
   editedProject,
   editedSystemRole,
@@ -92,6 +97,7 @@ const EditRecordFormContent: React.FC<EditRecordFormContentProps> = ({
   setEditedContact,
   setEditedCug,
   setEditedDesignation,
+  setEditedWorkerType,
   setEditedSite,
   setEditedProject,
   setEditedSystemRole,
@@ -329,22 +335,9 @@ const EditRecordFormContent: React.FC<EditRecordFormContentProps> = ({
 
           {/* Project */}
           <div>
-            <label style={{ fontSize: "0.875rem", fontWeight: "600", opacity: 0.9, marginBottom: "0.5rem", display: "block" }}>
-              Project
-            </label>
-            <input
-              type="text"
+            <ProjectSelect
               value={editedProject !== undefined ? editedProject : record?.project || ""}
-              onChange={(e) => setEditedProject(e.target.value)}
-              placeholder="Enter Project"
-              style={{
-                width: "100%",
-                padding: "0.875rem 1rem",
-                borderRadius: "0.75rem",
-                fontSize: "1rem",
-                fontWeight: "500",
-                background: "rgba(100, 100, 100, 0.08)",
-              }}
+              onChange={(value) => setEditedProject(value)}
             />
           </div>
 
@@ -367,6 +360,38 @@ const EditRecordFormContent: React.FC<EditRecordFormContentProps> = ({
                 background: "rgba(100, 100, 100, 0.08)",
               }}
             />
+          </div>
+
+          {/* Employee Type */}
+          <div>
+            <label style={{ fontSize: "0.875rem", fontWeight: "600", opacity: 0.9, marginBottom: "0.5rem", display: "block" }}>
+              Employee Type
+            </label>
+            <Select 
+              value={editedWorkerType !== undefined ? editedWorkerType : record?.workerType || ""}
+              onValueChange={(value) => setEditedWorkerType(value)}
+            >
+              <SelectTrigger style={{
+                width: "100%",
+                padding: "0.875rem 1rem",
+                borderRadius: "0.75rem",
+                fontSize: "1rem",
+                fontWeight: "500",
+                background: "rgba(100, 100, 100, 0.08)",
+                border: "1px solid rgba(100, 100, 100, 0.1)",
+                justifyContent: "space-between",
+              }}>
+                <span style={{ opacity: (editedWorkerType !== undefined ? editedWorkerType : record?.workerType) ? 1 : 0.5 }}>
+                  {(editedWorkerType !== undefined ? editedWorkerType : record?.workerType) === "staff" ? "Staff" : 
+                   (editedWorkerType !== undefined ? editedWorkerType : record?.workerType) === "worker" ? "Worker" : 
+                   "Select Employee Type"}
+                </span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="staff">Staff</SelectItem>
+                <SelectItem value="worker">Worker</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* System Role */}
@@ -453,6 +478,7 @@ export default function RecordDetail() {
   const [editedContact, setEditedContact] = useState<string | undefined>();
   const [editedCug, setEditedCug] = useState<string | undefined>();
   const [editedDesignation, setEditedDesignation] = useState<string | undefined>();
+  const [editedWorkerType, setEditedWorkerType] = useState<string | undefined>();
   const [editedSite, setEditedSite] = useState<string | undefined>();
   const [editedProject, setEditedProject] = useState<string | undefined>();
   const [editedSystemRole, setEditedSystemRole] = useState<string | undefined>();
@@ -611,6 +637,7 @@ export default function RecordDetail() {
     setEditedContact(undefined);
     setEditedCug(undefined);
     setEditedDesignation(undefined);
+    setEditedWorkerType(undefined);
     setEditedSite(undefined);
     setEditedProject(undefined);
     setEditedSystemRole(undefined);
@@ -673,6 +700,7 @@ export default function RecordDetail() {
         cug: editedCug !== undefined ? editedCug : (record.cug || ""),
         role: editedSystemRole !== undefined ? editedSystemRole : (record.role || "profile"),
         designation: editedDesignation !== undefined ? editedDesignation : (record.designation || ""),
+        workerType: editedWorkerType !== undefined ? editedWorkerType : (record.workerType || ""),
         location: editedSite !== undefined ? editedSite : (record.location || ""),
         project: editedProject !== undefined ? editedProject : (record.project || ""),
         companyName: editedCompanyName !== undefined ? editedCompanyName : (record.companyName || ""),
@@ -691,6 +719,7 @@ export default function RecordDetail() {
         cug: editedCug !== undefined ? editedCug : (record.cug || ""),
         role: editedSystemRole !== undefined ? editedSystemRole : (record.role || "profile"),
         designation: editedDesignation !== undefined ? editedDesignation : (record.designation || ""),
+        workerType: editedWorkerType !== undefined ? editedWorkerType : (record.workerType || ""),
         location: editedSite !== undefined ? editedSite : (record.location || ""),
         project: editedProject !== undefined ? editedProject : (record.project || ""),
         companyName: editedCompanyName !== undefined ? editedCompanyName : (record.companyName || ""),
@@ -735,7 +764,7 @@ export default function RecordDetail() {
                     >
                       Notify
                       {notifyLoading ? (
-                        <Loader2 className="animate-spin" width="0.9rem" color="dodgerblue" />
+                        <Loader2 className="animate-spin" width="0.9rem" color="mediumslateblue" />
                       ) : notify ? (
                         <BellRing color={"mediumslateblue"} width={"0.9rem"} fill="mediumslateblue" />
                       ) : (
@@ -868,7 +897,7 @@ export default function RecordDetail() {
                       noArrow
                       id_subtitle={record?.civil_expiry ? record.civil_expiry : "No Data"}
                       onClick={() => setCivil(true)}
-                      icon={<CreditCard color="dodgerblue" />}
+                      icon={<CreditCard color="mediumslateblue" />}
                       title="Civil ID"
                       expiring={
                         record?.civil_expiry && moment(record.civil_expiry, "DD/MM/YYYY").diff(moment(today), "months") <= 2
@@ -996,6 +1025,7 @@ export default function RecordDetail() {
           editedContact={editedContact}
           editedCug={editedCug}
           editedDesignation={editedDesignation}
+          editedWorkerType={editedWorkerType}
           editedSite={editedSite}
           editedProject={editedProject}
           editedSystemRole={editedSystemRole}
@@ -1007,6 +1037,7 @@ export default function RecordDetail() {
           setEditedDateofJoin={setEditedDateofJoin}
           setEditedContact={setEditedContact}
           setEditedCug={setEditedCug}
+          setEditedWorkerType={setEditedWorkerType}
           setEditedDesignation={setEditedDesignation}
           setEditedSite={setEditedSite}
           setEditedProject={setEditedProject}
@@ -1042,7 +1073,7 @@ export default function RecordDetail() {
     {/* Civil ID Dialog */}
     <DefaultDialog
       close
-      titleIcon={<CreditCard color="dodgerblue" />}
+      titleIcon={<CreditCard color="mediumslateblue" />}
       title="Civil ID"
       open={civil}
       onCancel={() => setCivil(false)}
@@ -1135,7 +1166,7 @@ export default function RecordDetail() {
           
     //       {record.email && (
     //         <Directive 
-    //           icon={<Mail width="1.25rem" color="dodgerblue" />}
+    //           icon={<Mail width="1.25rem" color="mediumslateblue" />}
     //           title={record.email}
     //           notName
     //           onClick={() => window.location.href = `mailto:${record.email}`}
@@ -1144,7 +1175,7 @@ export default function RecordDetail() {
           
     //       {record.contact && (
     //         <Directive 
-    //           icon={<Phone width="1.25rem" color="dodgerblue" />}
+    //           icon={<Phone width="1.25rem" color="mediumslateblue" />}
     //           title={record.contact}
     //           onClick={() => window.location.href = `tel:${record.contact}`}
     //         />
@@ -1152,7 +1183,7 @@ export default function RecordDetail() {
           
     //       {record.cug && (
     //         <Directive 
-    //           icon={<Building2 width="1.25rem" color="dodgerblue" />}
+    //           icon={<Building2 width="1.25rem" color="mediumslateblue" />}
     //           title={`CUG: ${record.cug}`}
     //           onClick={() => window.location.href = `tel:${record.cug}`}
     //         />
@@ -1160,7 +1191,7 @@ export default function RecordDetail() {
           
     //       {record.designation && (
     //         <Directive 
-    //           icon={<Briefcase width="1.25rem" color="dodgerblue" />}
+    //           icon={<Briefcase width="1.25rem" color="mediumslateblue" />}
     //           title={record.designation}
     //           subtext="Designation"
     //         />
@@ -1168,7 +1199,7 @@ export default function RecordDetail() {
           
     //       {record.site && (
     //         <Directive 
-    //           icon={<MapPin width="1.25rem" color="dodgerblue" />}
+    //           icon={<MapPin width="1.25rem" color="mediumslateblue" />}
     //           title={record.site}
     //           subtext="Site"
     //         />
@@ -1176,7 +1207,7 @@ export default function RecordDetail() {
           
     //       {record.project && (
     //         <Directive 
-    //           icon={<Building2 width="1.25rem" color="dodgerblue" />}
+    //           icon={<Building2 width="1.25rem" color="mediumslateblue" />}
     //           title={record.project}
     //           subtext="Project"
     //         />
@@ -1194,7 +1225,7 @@ export default function RecordDetail() {
     //       <div style={{ display: "flex", gap: "0.75rem" }}>
     //         <Directive 
     //           noArrow
-    //           icon={<CreditCard width="1.25rem" color="dodgerblue" />}
+    //           icon={<CreditCard width="1.25rem" color="mediumslateblue" />}
     //           title="Civil ID"
     //           id_subtitle={record.civil_expiry || "No Data"}
     //           expiring={isExpiring(record.civil_expiry, 2)}

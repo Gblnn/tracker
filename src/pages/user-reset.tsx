@@ -79,7 +79,7 @@ export default function UserReset() {
                 gap: "0.5rem",
               }}
             >
-              <KeyRound color="dodgerblue" />
+              <KeyRound color="mediumslateblue" />
               Reset Password
             </p>
             <p style={{ fontSize: "0.8rem", opacity: 0.75 }}>

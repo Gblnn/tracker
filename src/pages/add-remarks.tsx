@@ -28,7 +28,7 @@ export default function AddRemarks() {
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
         <Back
           title="Annotate"
-          icon={<PenSquare color="dodgerblue" />}
+          icon={<PenSquare color="mediumslateblue" />}
           extra={
             <div style={{ display: "flex", gap: "0.5rem" }}>
               <button
@@ -38,7 +38,7 @@ export default function AddRemarks() {
                   fontSize: "0.8rem",
                 }}
               >
-                <Download width={"1rem"} color="dodgerblue" />
+                <Download width={"1rem"} color="mediumslateblue" />
                 Export
               </button>
             </div>
@@ -76,7 +76,7 @@ export default function AddRemarks() {
                       alignItems: "center",
                     }}
                   >
-                    <PenLine color="dodgerblue" width={"0.8rem"} />
+                    <PenLine color="mediumslateblue" width={"0.8rem"} />
                     Add
                   </button>
                 </TableCell>
@@ -102,7 +102,7 @@ export default function AddRemarks() {
                       alignItems: "center",
                     }}
                   >
-                    <PenLine color="dodgerblue" width={"0.8rem"} />
+                    <PenLine color="mediumslateblue" width={"0.8rem"} />
                     Add
                   </button>
                 </TableCell>
@@ -121,10 +121,10 @@ export default function AddRemarks() {
         </div>
       </motion.div>
 
-      <AddRecordButton icon={<Upload color="dodgerblue" />} />
+      <AddRecordButton icon={<Upload color="mediumslateblue" />} />
 
       <InputDialog
-        titleIcon={<UserPlus color="dodgerblue" />}
+        titleIcon={<UserPlus color="mediumslateblue" />}
         open={addUserDialog}
         title={"Add User"}
         OkButtonText="Add"

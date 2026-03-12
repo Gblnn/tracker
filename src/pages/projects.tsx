@@ -3,7 +3,7 @@ import RefreshButton from "@/components/refresh-button";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { db } from "@/firebase";
-import { addDoc, collection, doc, getDocs, writeBatch } from "firebase/firestore";
+import { addDoc, collection, getDocs } from "firebase/firestore";
 import { Loader2, Package, Plus, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -38,11 +38,9 @@ export default function Projects() {
   const [newProjectDescription, setNewProjectDescription] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const [allocateOpen, setAllocateOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
-  const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
-  const [allocateSearch, setAllocateSearch] = useState("");
-  const [savingAllocation, setSavingAllocation] = useState(false);
+  const [viewingProject, setViewingProject] = useState<ProjectItem | null>(null);
+  const [projectPersonnel, setProjectPersonnel] = useState<RecordItem[]>([]);
+  const [loadingPersonnel, setLoadingPersonnel] = useState(false);
 
   const fetchData = async (isManualRefresh = false) => {
     try {
@@ -122,90 +120,26 @@ export default function Projects() {
     }
   };
 
-  const openAllocateModal = (project: ProjectItem) => {
-    setSelectedProject(project);
-    setSelectedRecordIds(project.assignedRecordIds || project.assignedUserIds || []);
-    setAllocateSearch("");
-    setAllocateOpen(true);
-  };
-
-  const toggleRecordSelection = (recordId: string) => {
-    setSelectedRecordIds((prev) =>
-      prev.includes(recordId) ? prev.filter((id) => id !== recordId) : [...prev, recordId]
-    );
-  };
-
-  const saveAllocation = async () => {
-    if (!selectedProject) return;
-
-    try {
-      setSavingAllocation(true);
-
-      const selectedRecords = records.filter((r) => selectedRecordIds.includes(r.id));
-      const selectedPeople = selectedRecords.map((r) => r.name || r.email || r.id).filter(Boolean);
-
-      const batch = writeBatch(db);
-      const projectRef = doc(db, "projects", selectedProject.id);
-
-      batch.update(projectRef, {
-        assignedRecordIds: selectedRecordIds,
-        assignedUserIds: selectedRecordIds,
-        assignedPeople: selectedPeople,
-        assignedUsers: selectedPeople,
-        updatedAt: new Date(),
-      });
-
-      records.forEach((record) => {
-        const isSelected = selectedRecordIds.includes(record.id);
-        const currentlyAssignedToThisProject = record.project === selectedProject.name;
-
-        if (isSelected || currentlyAssignedToThisProject) {
-          const recordRef = doc(db, "records", record.id);
-          batch.update(recordRef, {
-            project: isSelected ? selectedProject.name : "",
-          });
-        }
-      });
-
-      await batch.commit();
-
-      toast.success("Project allocation updated");
-      setAllocateOpen(false);
-      setSelectedProject(null);
-      setSelectedRecordIds([]);
-      fetchData();
-    } catch (error) {
-      console.error("Error saving allocation:", error);
-      toast.error("Failed to update allocation");
-    } finally {
-      setSavingAllocation(false);
-    }
+  const viewProjectPersonnel = (project: ProjectItem) => {
+    setViewingProject(project);
+    setLoadingPersonnel(true);
+    
+    const personnel = records.filter(r => r.project === project.name);
+    setProjectPersonnel(personnel);
+    setLoadingPersonnel(false);
   };
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  const filteredRecords = records.filter((record) => {
-    const q = allocateSearch.trim().toLowerCase();
-    if (!q) return true;
-
-    const name = (record.name || "").toLowerCase();
-    const email = (record.email || "").toLowerCase();
-    const designation = (record.designation || "").toLowerCase();
-    const project = (record.project || "").toLowerCase();
-
-    return (
-      name.includes(q) ||
-      email.includes(q) ||
-      designation.includes(q) ||
-      project.includes(q)
-    );
-  });
-
   return (
-    <div style={{ padding: "1.25rem", height: "100svh" }}>
-      <Back
+   
+      
+       <div style={{ padding: "", height: "100svh" }}>
+<Back
+      blurBG
+      fixed
         title="Project Master"
         subtitle={projects.length}
         extra={
@@ -219,21 +153,33 @@ export default function Projects() {
         }
       />
 
-      <div style={{ marginTop: "1rem" }}>
+
+      <div style={{padding:"1rem" }}>
         {loading ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: "2rem" }}>
+          <div style={{ display: "flex", justifyContent: "center", alignItems:"center", padding: "2rem", border:"", height:"80svh" }}>
             <Loader2 className="animate-spin" style={{ }} />
           </div>
         ) : projects.length > 0 ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "1rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "1rem", paddingTop:"4rem" }}>
             {projects.map((p) => (
               <div
                 key={p.id}
+                onClick={() => viewProjectPersonnel(p)}
                 style={{
                   padding: "1rem",
                   borderRadius: "0.75rem",
                   background: "rgba(100,100,100,0.04)",
                   border: "1px solid rgba(100,100,100,0.1)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(100,100,100,0.08)";
+                  e.currentTarget.style.borderColor = "rgba(100,100,100,0.2)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(100,100,100,0.04)";
+                  e.currentTarget.style.borderColor = "rgba(100,100,100,0.1)";
                 }}
               >
                 
@@ -242,29 +188,12 @@ export default function Projects() {
                   {p.description || "No description"}
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8rem", opacity: 0.8 }}>
                     <Users width="0.9rem" />
                     {p.assignedRecordIds?.length || p.assignedUserIds?.length || 0} allocated
                   </div>
                 </div>
-
-                <button
-                  onClick={() => openAllocateModal(p)}
-                  style={{
-                    width: "100%",
-                    border: "1px solid rgba(100,100,100,0.2)",
-                    background: "rgba(100,100,100,0.08)",
-                    color: "inherit",
-                    padding: "0.55rem",
-                    borderRadius: "0.55rem",
-                    fontSize: "0.82rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  Allocate People
-                </button>
               </div>
             ))}
           </div>
@@ -358,112 +287,72 @@ export default function Projects() {
         </div>
       </ResponsiveModal>
 
-      <ResponsiveModal open={allocateOpen} onOpenChange={setAllocateOpen} title="" description="">
-        <div style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-          <h2 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>
-            Allocate People
-          </h2>
-          <p style={{ margin: 0, opacity: 0.75, fontSize: "0.85rem" }}>
-            {selectedProject ? `Project: ${selectedProject.name}` : "Select records for this project"}
-          </p>
-
-          <input
-            value={allocateSearch}
-            onChange={(e) => setAllocateSearch(e.target.value)}
-            placeholder="Search by name, email, designation, or project"
-            style={{
-              borderRadius: "0.55rem",
-              border: "1px solid rgba(100,100,100,0.2)",
-              padding: "0.7rem 0.8rem",
-              background: "rgba(100,100,100,0.05)",
-              fontSize: "0.9rem",
-            }}
-          />
-
-          <div
-            style={{
-              maxHeight: "45vh",
-              overflowY: "auto",
-              border: "1px solid rgba(100,100,100,0.18)",
-              borderRadius: "0.6rem",
-            }}
-          >
-            {filteredRecords.length === 0 ? (
-              <div style={{ padding: "0.9rem", fontSize: "0.85rem", opacity: 0.75 }}>
-                {records.length === 0 ? "No records found." : "No matching records."}
+      <ResponsiveModal 
+        open={!!viewingProject} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setViewingProject(null);
+            setProjectPersonnel([]);
+          }
+        }} 
+        title={viewingProject?.name || "Project Personnel"}
+        description="People allocated to this project"
+      >
+        <div style={{ padding: "1.5rem", paddingTop: "0.5rem", maxHeight: "60vh", overflowY: "auto" }}>
+          {loadingPersonnel ? (
+            <div style={{ display: "flex", justifyContent: "center", padding: "2rem" }}>
+              <Loader2 className="animate-spin" width="1.5rem" />
+            </div>
+          ) : projectPersonnel.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "2rem", opacity: 0.5 }}>
+              <Package width="2.5rem" height="2.5rem" style={{ margin: "0 auto 0.5rem" }} />
+              <p style={{ fontSize: "0.875rem" }}>No personnel allocated to this project</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "0.5rem", 
+                padding: "0.5rem 0.75rem",
+                marginBottom: "0.5rem",
+                background: "rgba(123, 104, 238, 0.08)",
+                borderRadius: "0.5rem"
+              }}>
+                <Users width="1rem" height="1rem" color="mediumslateblue" />
+                <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>
+                  {projectPersonnel.length} {projectPersonnel.length === 1 ? "person" : "people"}
+                </span>
               </div>
-            ) : (
-              filteredRecords.map((record) => {
-                const checked = selectedRecordIds.includes(record.id);
-                return (
-                  <label
-                    key={record.id}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1.1rem minmax(0, 1fr) auto",
-                      alignItems: "center",
-                      columnGap: "0.65rem",
-                      padding: "0.75rem 0.85rem",
-                      borderBottom: "1px solid rgba(100,100,100,0.1)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleRecordSelection(record.id)}
-                      style={{
-                    
-                        margin: 0,
-                        width: "1rem",
-                        height: "1rem",
-                        justifySelf: "center",
-                      }}
-                    />
-                    <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                      <span style={{ fontSize: "0.9rem", fontWeight: 500, lineHeight: 1.25, textAlign:"left", textTransform:"capitalize" }}>{record.name?.toLowerCase() || "Unnamed Record"}</span>
-                      <span style={{ fontSize: "0.78rem", opacity: 0.75, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", textTransform:"capitalize" }}>{record.email || record.designation?.toLowerCase() || "No email"}</span>
-                    </div>
-                    <span
-                      style={{
-                        justifySelf: "end",
-                        fontSize: "0.72rem",
-                        fontWeight: 600,
-                        padding: "0.2rem 0.45rem",
-                        borderRadius: "999px",
-                        background: record.project ? "rgba(30,144,255,0.14)" : "rgba(120,120,120,0.14)",
-                        color: record.project ? "dodgerblue" : "rgba(120,120,120,0.9)",
-                        maxWidth: "9rem",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                      title={record.project || "Unassigned"}
-                    >
-                      {record.project || "Unassigned"}
+              {projectPersonnel.map((person) => (
+                <div
+                  key={person.id}
+                  style={{
+                    padding: "0.875rem 1rem",
+                    borderRadius: "0.75rem",
+                    background: "rgba(100, 100, 100, 0.04)",
+                    border: "1px solid rgba(100, 100, 100, 0.08)",
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                    <span style={{ fontSize: "0.95rem", fontWeight: 600, textTransform: "capitalize" }}>
+                      {person.name?.toLowerCase() || "Unnamed"}
                     </span>
-                  </label>
-                );
-              })
-            )}
-          </div>
-
-          <button
-            onClick={saveAllocation}
-            disabled={savingAllocation || !selectedProject}
-            style={{
-              border: "none",
-              background: "black",
-              color: "white",
-              padding: "0.8rem",
-              borderRadius: "0.6rem",
-              fontWeight: 700,
-              cursor: savingAllocation ? "not-allowed" : "pointer",
-              opacity: savingAllocation ? 0.65 : 1,
-            }}
-          >
-            {savingAllocation ? "Saving..." : "Save Allocation"}
-          </button>
+                    {person.designation && (
+                      <span style={{ fontSize: "0.8rem", opacity: 0.6, textTransform: "capitalize" }}>
+                        {person.designation.toLowerCase()}
+                      </span>
+                    )}
+                    {person.email && (
+                      <span style={{ fontSize: "0.75rem", opacity: 0.5 }}>
+                        {person.email}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </ResponsiveModal>
     </div>
