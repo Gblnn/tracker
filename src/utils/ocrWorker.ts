@@ -97,7 +97,7 @@ const createWorkerWithOptions = async (label: string, options: WorkerInitOptions
 
   await worker.setParameters({
     tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
-    preserve_interword_spaces: "0",
+    preserve_interword_spaces: "1",
   });
 
   return worker;
