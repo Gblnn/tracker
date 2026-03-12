@@ -615,33 +615,10 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       canvas.height = targetHeight;
       const ctx = canvas.getContext('2d');
       if (ctx) {
+        // Just capture the raw image - we'll process it later
         ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
         
-        // Enhanced image preprocessing for passport OCR
-        const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
-        const data = imageData.data;
-        
-        // Convert to grayscale, increase contrast, and sharpen
-        for (let i = 0; i < data.length; i += 4) {
-          // Grayscale conversion
-          const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-          
-          // High contrast adjustment for better text clarity
-          const contrastFactor = 1.5;
-          const contrasted = ((gray - 128) * contrastFactor) + 128;
-          
-          // Brightness adjustment
-          const brightnessFactor = 1.1;
-          const final = Math.min(255, Math.max(0, contrasted * brightnessFactor));
-          
-          data[i] = final;
-          data[i + 1] = final;
-          data[i + 2] = final;
-        }
-        
-        ctx.putImageData(imageData, 0, 0);
-        
-        const capturedData = canvas.toDataURL('image/jpeg', 0.98);
+        const capturedData = canvas.toDataURL('image/png', 1.0);
         setCapturedImage(capturedData);
         stopCamera();
       }
@@ -666,29 +643,47 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
           img.src = imageData;
         });
         
+        // Upscale for better OCR (scale up by 2x)
+        const targetWidth = bounds.width * 2;
+        const targetHeight = bounds.height * 2;
+        
         const cropCanvas = document.createElement('canvas');
-        cropCanvas.width = bounds.width;
-        cropCanvas.height = bounds.height;
+        cropCanvas.width = targetWidth;
+        cropCanvas.height = targetHeight;
         const cropCtx = cropCanvas.getContext('2d');
         
         if (cropCtx) {
-          // Draw the cropped region
+          // Enable image smoothing for better upscaling
+          cropCtx.imageSmoothingEnabled = true;
+          cropCtx.imageSmoothingQuality = 'high';
+          
+          // Draw the cropped and upscaled region
           cropCtx.drawImage(
             img,
             bounds.x, bounds.y, bounds.width, bounds.height,
-            0, 0, bounds.width, bounds.height
+            0, 0, targetWidth, targetHeight
           );
           
-          // Apply additional enhancement to cropped image
-          const imgData = cropCtx.getImageData(0, 0, bounds.width, bounds.height);
+          // Apply optimized preprocessing for OCR
+          const imgData = cropCtx.getImageData(0, 0, targetWidth, targetHeight);
           const data = imgData.data;
           
-          // Sharpen the text
-          const factor = 1.3;
+          // Convert to grayscale with adaptive contrast
           for (let i = 0; i < data.length; i += 4) {
-            const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
-            const enhanced = ((brightness - 128) * factor) + 128;
-            const final = Math.min(255, Math.max(0, enhanced));
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            
+            // Standard grayscale conversion
+            const gray = r * 0.299 + g * 0.587 + b * 0.114;
+            
+            // Moderate contrast boost
+            const contrast = 1.3;
+            const adjusted = ((gray - 128) * contrast) + 128;
+            
+            // Slight brightness increase
+            const final = Math.min(255, Math.max(0, adjusted * 1.05));
+            
             data[i] = final;
             data[i + 1] = final;
             data[i + 2] = final;
@@ -696,8 +691,8 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
           
           cropCtx.putImageData(imgData, 0, 0);
           
-          processedImage = cropCanvas.toDataURL('image/jpeg', 0.98);
-          console.log("✓ Image cropped and enhanced. New dimensions:", bounds.width, "x", bounds.height);
+          processedImage = cropCanvas.toDataURL('image/png', 1.0);
+          console.log("✓ Image cropped and enhanced. Upscaled to:", targetWidth, "x", targetHeight);
           
           // Update the displayed captured image to show the cropped version
           setCapturedImage(processedImage);
@@ -708,13 +703,11 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       
       const worker = await ensureOcrWorker();
       console.log("Starting OCR recognition...");
-      const result = await worker.recognize(processedImage, {
-        lang: 'eng',
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,/-:()<>',
-      });
+      const result = await worker.recognize(processedImage);
 
       const text = result.data.text;
       console.log("Extracted passport text:", text);
+      console.log("Confidence:", result.data.confidence);
       setExtractedText(text);
 
       const extractedData = parsePassportText(text);
