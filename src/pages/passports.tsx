@@ -602,14 +602,18 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
 
       const extractedData = parsePassportText(text);
       
-      if (extractedData.passportNumber || extractedData.fullName) {
+      // Accept any extracted data (not just passportNumber or fullName)
+      const hasAnyData = Object.keys(extractedData).length > 0;
+      
+      if (hasAnyData) {
         onDataExtracted(extractedData);
-        toast.success("Passport data extracted successfully!");
+        toast.success("Passport data extracted! Please review and fill in missing fields.");
         setCapturedImage(null);
         setExtractedText("");
         onClose();
       } else {
-        toast.error("Could not extract passport data. Please check the image and try again.");
+        // Don't close - let user see the extracted text and try again
+        toast.error("Could not extract passport data. You can see the text below or retake the photo.");
       }
     } catch (error) {
       console.error("OCR Error:", error);
@@ -698,18 +702,21 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       
       // Passport number patterns - Indian passport specific
       if (!data.passportNumber) {
-        // Check if this line contains "INDIAN" and extract number next to it
-        if (/INDIAN/i.test(line)) {
-          // Look for passport number pattern next to INDIAN
-          const indianPassportMatch = line.match(/INDIAN[\s:]*([A-Z]\d{7,8})/i);
+        // Check if this line contains "INDIAN" or variations
+        if (/IND[I1]AN?/i.test(line)) {
+          // Look for passport number pattern - more flexible
+          const indianPassportMatch = line.match(/IND[I1]AN?[\s:]*([A-Z0-9][0-9O]{7,8})/i);
           if (indianPassportMatch) {
-            data.passportNumber = indianPassportMatch[1].toUpperCase();
+            // Replace common OCR errors (O->0)
+            const cleaned = indianPassportMatch[1].toUpperCase().replace(/O/g, '0');
+            data.passportNumber = cleaned;
             console.log("✓ Passport Number (Indian) from text:", data.passportNumber);
-          } else {
-            // Check next line for passport number
-            const nextLineMatch = nextLine.match(/^([A-Z]\d{7,8})$/);
+          } else if (nextLine) {
+            // Check next line for passport number - more flexible
+            const nextLineMatch = nextLine.match(/^([A-Z][0-9O]{7,8})/);
             if (nextLineMatch) {
-              data.passportNumber = nextLineMatch[1].toUpperCase();
+              const cleaned = nextLineMatch[1].toUpperCase().replace(/O/g, '0');
+              data.passportNumber = cleaned;
               console.log("✓ Passport Number (Indian, next line) from text:", data.passportNumber);
             }
           }
@@ -718,15 +725,17 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
         // General passport number patterns if not found with INDIAN label
         if (!data.passportNumber) {
           const passportPatterns = [
-            /passport\s*(?:no|number|#)?[:\s]*([A-Z0-9]{6,12})/i,
-            /^([A-Z]\d{7,8})$/,
-            /^([A-Z]{1,2}\d{6,8})$/
+            /passport[\s]*(?:no|number|num|#)?[:\s]*([A-Z][0-9O]{6,9})/i,
+            /^([A-Z][0-9O]{7,8})$/,
+            /^([A-Z]{1,2}[0-9O]{6,8})$/,
+            /\b([A-Z][0-9]{7,8})\b/  // Word boundary match
           ];
           
           for (const pattern of passportPatterns) {
             const match = line.match(pattern);
             if (match) {
-              data.passportNumber = match[1].toUpperCase();
+              const cleaned = match[1].toUpperCase().replace(/O/g, '0');
+              data.passportNumber = cleaned;
               console.log("✓ Passport Number from text:", data.passportNumber);
               break;
             }
@@ -736,24 +745,38 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       
       // Name patterns - prioritize "Given name" label
       if (!data.fullName) {
-        // Check for "Given name" label specifically
-        if (/Given\s*name/i.test(line)) {
+        // Check for "Given name" label specifically - handle variations
+        if (/G[I1]ven[\s]*name/i.test(line)) {
           // Name should be on the next line or same line after colon
-          const sameLineMatch = line.match(/Given\s*name[:\s]*([A-Z\s]{3,})/i);
+          const sameLineMatch = line.match(/G[I1]ven[\s]*name[:\s]*([A-Z][A-Z\s]{2,})/i);
           if (sameLineMatch) {
             data.fullName = sameLineMatch[1].trim();
             console.log("✓ Name (Given name label) from text:", data.fullName);
           } else if (nextLine) {
-            const nextLineMatch = nextLine.match(/^([A-Z\s]{3,})$/);
+            const nextLineMatch = nextLine.match(/^([A-Z][A-Z\s]{2,})$/);
             if (nextLineMatch) {
               data.fullName = nextLineMatch[1].trim();
               console.log("✓ Name (Given name label, next line) from text:", data.fullName);
             }
           }
         }
+        // Check for just "Name" label
+        else if (/^name[:\s]/i.test(line)) {
+          const sameLineMatch = line.match(/name[:\s]*([A-Z][A-Z\s]{2,})/i);
+          if (sameLineMatch) {
+            data.fullName = sameLineMatch[1].trim();
+            console.log("✓ Name (Name label) from text:", data.fullName);
+          } else if (nextLine) {
+            const nextLineMatch = nextLine.match(/^([A-Z][A-Z\s]{2,})$/);
+            if (nextLineMatch) {
+              data.fullName = nextLineMatch[1].trim();
+              console.log("✓ Name (Name label, next line) from text:", data.fullName);
+            }
+          }
+        }
         // Fallback to general name patterns
-        else if (/(?:name|surname)/i.test(line)) {
-          const nameMatch = nextLine.match(/^([A-Z\s]{3,})$/);
+        else if (/(?:surname)/i.test(line)) {
+          const nameMatch = nextLine.match(/^([A-Z][A-Z\s]{2,})$/);
           if (nameMatch) {
             data.fullName = nameMatch[1].trim();
             console.log("✓ Name from text:", data.fullName);
@@ -763,20 +786,20 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       
       // Date of birth patterns - prioritize "Date of birth" label
       if (!data.dateOfBirth) {
-        // Check for "Date of birth" label specifically
-        if (/Date\s*of\s*birth/i.test(line)) {
+        // Check for "Date of birth" label specifically - handle variations
+        if (/Date[\s]*of[\s]*b[I1]rth/i.test(line) || /D[O0]B/i.test(line)) {
           // Date should be on same line after colon or next line
-          const sameLineMatch = line.match(/Date\s*of\s*birth[:\s]*(\d{1,2}[\s\/-]\d{1,2}[\s\/-]\d{2,4})/i);
+          const sameLineMatch = line.match(/(?:Date[\s]*of[\s]*b[I1]rth|D[O0]B)[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i);
           if (sameLineMatch) {
-            const parsed = moment(sameLineMatch[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD/MM/YY"], true);
+            const parsed = moment(sameLineMatch[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY", "DD/MM/YY"], true);
             if (parsed.isValid()) {
               data.dateOfBirth = parsed.format("YYYY-MM-DD");
               console.log("✓ DOB (Date of birth label) from text:", data.dateOfBirth);
             }
           } else if (nextLine) {
-            const nextLineMatch = nextLine.match(/(\d{1,2}[\s\/-]\d{1,2}[\s\/-]\d{2,4})/);
+            const nextLineMatch = nextLine.match(/(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/);
             if (nextLineMatch) {
-              const parsed = moment(nextLineMatch[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD/MM/YY"], true);
+              const parsed = moment(nextLineMatch[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY", "DD/MM/YY"], true);
               if (parsed.isValid()) {
                 data.dateOfBirth = parsed.format("YYYY-MM-DD");
                 console.log("✓ DOB (Date of birth label, next line) from text:", data.dateOfBirth);
@@ -784,17 +807,16 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
             }
           }
         }
-        // Fallback to general DOB patterns
-        else {
+        // Fallback to general DOB patterns - any date in proper format
+        else if (!data.dateOfBirth) {
           const dobPatterns = [
-            /(?:dob|birth\s*date)[:\s]*(\d{1,2}[\s\/-]\d{1,2}[\s\/-]\d{2,4})/i,
-            /(\d{1,2}[\s\/-]\d{1,2}[\s\/-]\d{4})/
+            /b[I1]rth[\s]*date[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i,
           ];
           
           for (const pattern of dobPatterns) {
             const match = line.match(pattern);
             if (match) {
-              const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD/MM/YY"], true);
+              const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY", "DD/MM/YY"], true);
               if (parsed.isValid()) {
                 data.dateOfBirth = parsed.format("YYYY-MM-DD");
                 console.log("✓ DOB from text:", data.dateOfBirth);
