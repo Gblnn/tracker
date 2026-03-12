@@ -742,7 +742,21 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
     console.log("Full text:", text);
     
     const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    console.log("Total lines:", lines.length);
     console.log("Lines:", lines);
+
+    // Create a map for easier context lookup
+    const lineMap = new Map<number, string>();
+    lines.forEach((line, idx) => lineMap.set(idx, line));
+
+    // Helper function to get next non-empty line
+    const getNextLine = (currentIdx: number): string => {
+      for (let i = currentIdx + 1; i < lines.length; i++) {
+        const next = lines[i];
+        if (next && next.length > 0) return next;
+      }
+      return '';
+    };
 
     // Parse MRZ (Machine Readable Zone) - typically last 2 lines
     const mrzPattern = /^([A-Z0-9<]{44})$/;
@@ -808,296 +822,214 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
     // Fallback: Try to extract from text fields
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      const nextLine = i < lines.length - 1 ? lines[i + 1] : '';
+      const nextLine = getNextLine(i);
+      const nextNextLine = i + 2 < lines.length ? getNextLine(i + 1) : '';
       
-      // Passport number patterns - Indian passport specific
+      // === PASSPORT NUMBER - INDIAN PASSPORT SPECIFIC ===
       if (!data.passportNumber) {
-        // Check if this line contains "INDIAN" or variations
-        if (/IND[I1]AN?/i.test(line)) {
-          // Look for passport number pattern - more flexible
-          const indianPassportMatch = line.match(/IND[I1]AN?[\s:]*([A-Z0-9][0-9O]{7,8})/i);
-          if (indianPassportMatch) {
-            // Replace common OCR errors (O->0)
-            const cleaned = indianPassportMatch[1].toUpperCase().replace(/O/g, '0');
-            data.passportNumber = cleaned;
-            console.log("✓ Passport Number (Indian) from text:", data.passportNumber);
-          } else if (nextLine) {
-            // Check next line for passport number - more flexible
-            const nextLineMatch = nextLine.match(/^([A-Z][0-9O]{7,8})/);
-            if (nextLineMatch) {
-              const cleaned = nextLineMatch[1].toUpperCase().replace(/O/g, '0');
-              data.passportNumber = cleaned;
-              console.log("✓ Passport Number (Indian, next line) from text:", data.passportNumber);
+        // Look for "Type / Code / No" or "Passport No." sections
+        if (/(?:Type|Code|No\.?|INDIAN)/i.test(line)) {
+          // Check current line and next 2 lines for passport number pattern
+          const checkLines = [line, nextLine, nextNextLine];
+          for (const checkLine of checkLines) {
+            // Indian passport: 1 letter + 7-8 digits
+            const match = checkLine.match(/\b([A-Z][0-9]{7,8})\b/);
+            if (match) {
+              data.passportNumber = match[1];
+              console.log("✓ Passport Number (Indian format):", data.passportNumber);
+              break;
             }
           }
         }
         
-        // General passport number patterns if not found with INDIAN label
-        if (!data.passportNumber) {
-          const passportPatterns = [
-            /passport[\s]*(?:no|number|num|#)?[:\s]*([A-Z][0-9O]{6,9})/i,
-            /^([A-Z][0-9O]{7,8})$/,
-            /^([A-Z]{1,2}[0-9O]{6,8})$/,
-            /\b([A-Z][0-9]{7,8})\b/  // Word boundary match
-          ];
-          
-          for (const pattern of passportPatterns) {
-            const match = line.match(pattern);
-            if (match) {
-              const cleaned = match[1].toUpperCase().replace(/O/g, '0');
-              data.passportNumber = cleaned;
-              console.log("✓ Passport Number from text:", data.passportNumber);
-              break;
-            }
-          }
-        }
-      }
-      
-      // Name patterns - Indian passports have Surname and Given name separately
-      let surname = '';
-      let givenName = '';
-      
-      // Extract Surname
-      if (/Surname/i.test(line)) {
-        const sameLineMatch = line.match(/Surname[:\s]*([A-Z][A-Z\s]{1,})/i);
-        if (sameLineMatch) {
-          surname = sameLineMatch[1].trim();
-          console.log("✓ Surname from text:", surname);
-        } else if (nextLine && /^[A-Z][A-Z\s]*$/.test(nextLine)) {
-          surname = nextLine.trim();
-          console.log("✓ Surname (next line) from text:", surname);
-        }
-      }
-      
-      // Extract Given name
-      if (/G[I1L]ven[\s]*[Nn]ame/i.test(line)) {
-        const sameLineMatch = line.match(/G[I1L]ven[\s]*[Nn]ame[:\s]*([A-Z][A-Z\s]{2,})/i);
-        if (sameLineMatch) {
-          givenName = sameLineMatch[1].trim();
-          console.log("✓ Given name from text:", givenName);
-        } else if (nextLine && /^[A-Z][A-Z\s]+$/.test(nextLine) && nextLine.length > 2) {
-          givenName = nextLine.trim();
-          console.log("✓ Given name (next line) from text:", givenName);
-        }
-      }
-      
-      // Combine surname and given name if both found
-      if (!data.fullName && (surname || givenName)) {
-        data.fullName = `${givenName} ${surname}`.trim();
-        if (data.fullName) {
-          console.log("✓ Full Name combined:", data.fullName);
-        }
-      }
-      
-      // Fallback patterns if name still not found
-      if (!data.fullName) {
-        if (/^[Nn]ame[:\s]/i.test(line)) {
-          const sameLineMatch = line.match(/[Nn]ame[:\s]*([A-Z][A-Z\s]{2,})/i);
-          if (sameLineMatch) {
-            data.fullName = sameLineMatch[1].trim();
-            console.log("✓ Name (Name label) from text:", data.fullName);
-          } else if (nextLine && /^[A-Z][A-Z\s]+$/.test(nextLine)) {
-            data.fullName = nextLine.trim();
-            console.log("✓ Name (Name label, next line) from text:", data.fullName);
-          }
-        }
-      }
-      
-      // Date of birth patterns - prioritize "Date of birth" label
-      if (!data.dateOfBirth) {
-        // Check for "Date of birth" label specifically - handle variations
-        if (/Date[\s]*of[\s]*b[I1]rth/i.test(line) || /D[O0]B/i.test(line)) {
-          // Date should be on same line after colon or next line
-          const sameLineMatch = line.match(/(?:Date[\s]*of[\s]*b[I1]rth|D[O0]B)[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i);
-          if (sameLineMatch) {
-            const parsed = moment(sameLineMatch[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY", "DD/MM/YY"], true);
-            if (parsed.isValid()) {
-              data.dateOfBirth = parsed.format("YYYY-MM-DD");
-              console.log("✓ DOB (Date of birth label) from text:", data.dateOfBirth);
-            }
+        // Specific check for "INDIAN" followed by passport number
+        if (!data.passportNumber && /IND[I1]AN?/i.test(line)) {
+          // Check same line and next two lines
+          const indianMatch = line.match(/IND[I1]AN?[s:]*([A-Z][0-9]{7,8})/i);
+          if (indianMatch) {
+            data.passportNumber = indianMatch[1].toUpperCase();
+            console.log("✓ Passport Number (next to INDIAN):", data.passportNumber);
           } else if (nextLine) {
-            const nextLineMatch = nextLine.match(/(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/);
-            if (nextLineMatch) {
-              const parsed = moment(nextLineMatch[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY", "DD/MM/YY"], true);
-              if (parsed.isValid()) {
-                data.dateOfBirth = parsed.format("YYYY-MM-DD");
-                console.log("✓ DOB (Date of birth label, next line) from text:", data.dateOfBirth);
-              }
+            const nextMatch = nextLine.match(/\b([A-Z][0-9]{7,8})\b/);
+            if (nextMatch) {
+              data.passportNumber = nextMatch[1];
+              console.log("✓ Passport Number (line after INDIAN):", data.passportNumber);
             }
           }
         }
-        // Fallback to general DOB patterns - any date in proper format
-        else if (!data.dateOfBirth) {
-          const dobPatterns = [
-            /b[I1]rth[\s]*date[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i,
-          ];
-          
-          for (const pattern of dobPatterns) {
-            const match = line.match(pattern);
+      }
+      
+      // === NAME - INDIAN PASSPORT (Surname + Given Name) ===
+      let tempSurname = '';
+      let tempGivenName = '';
+      
+      // Look for "Surname" label
+      if (/Surname[\/s]/i.test(line)) {
+        // Check same line first
+        const surnameMatch = line.match(/Surname[\/s:]*([A-Z][A-Z\s]+)/i);
+        if (surnameMatch && surnameMatch[1].length > 1) {
+          tempSurname = surnameMatch[1].trim().split(/\s+/).slice(0, 3).join(' '); // Limit words
+          console.log("✓ Surname (same line):", tempSurname);
+        } else if (nextLine && /^[A-Z][A-Z\s]+$/.test(nextLine) && nextLine.length > 1) {
+          tempSurname = nextLine.trim().split(/\s+/).slice(0, 3).join(' ');
+          console.log("✓ Surname (next line):", tempSurname);
+        }
+      
+        // If we found surname, store it
+        if (tempSurname && !data.fullName) {
+          data.fullName = tempSurname;
+        }
+      }
+      
+      // Look for "Given name" or "Given Names" label
+      if (/G[I1L]ven[s]*[Nn]ame/i.test(line)) {
+        // Check same line first  
+        const givenMatch = line.match(/G[I1L]ven[s]*[Nn]ame[s]?[\/s:]*([A-Z][A-Z\s]+)/i);
+        if (givenMatch && givenMatch[1].length > 2) {
+          tempGivenName = givenMatch[1].trim().split(/\s+/).slice(0, 3).join(' ');
+          console.log("✓ Given Name (same line):", tempGivenName);
+        } else if (nextLine && /^[A-Z][A-Z\s]+$/.test(nextLine) && nextLine.length > 2) {
+          tempGivenName = nextLine.trim().split(/\s+/).slice(0, 3).join(' ');
+          console.log("✓ Given Name (next line):", tempGivenName);
+        }
+        
+        // Combine with surname if we have it
+        if (tempGivenName) {
+          if (data.fullName) {
+            // We have surname, add given name
+            data.fullName = `${tempGivenName} ${data.fullName}`.trim();
+            console.log("✓ Full Name (combined):", data.fullName);
+          } else {
+            data.fullName = tempGivenName;
+          }
+        }
+      }
+      
+      // === DATE OF BIRTH ===
+      if (!data.dateOfBirth && /(?:Date[s]*of[s]*[Bb]irth|D[O0]B)/i.test(line)) {
+        // Check same line and next line
+        const datePatterns = [
+          /(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{4})/,
+          /(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2})/
+        ];
+        
+        const searchLines = [line, nextLine, nextNextLine];
+        for (const searchLine of searchLines) {
+          for (const pattern of datePatterns) {
+            const match = searchLine.match(pattern);
             if (match) {
-              const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY", "DD/MM/YY"], true);
-              if (parsed.isValid()) {
+              const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD.MM.YYYY", "DD MM YYYY", "DD/MM/YY"], true);
+              if (parsed.isValid() && parsed.year() >= 1900 && parsed.year() <= 2026) {
                 data.dateOfBirth = parsed.format("YYYY-MM-DD");
-                console.log("✓ DOB from text:", data.dateOfBirth);
+                console.log("✓ DOB:", data.dateOfBirth);
                 break;
               }
             }
           }
+          if (data.dateOfBirth) break;
         }
       }
       
-      // Date of issue patterns - Indian passport specific
-      if (!data.dateOfIssue) {
-        // Only match if explicitly has "issue" in the label (not expiry)
-        if (/(?:Date[\s]*of[\s]*[Il1]ssue|[Il1]ssue[\s]*date)/i.test(line) && !/[Ee]xp[I1l]ry/i.test(line)) {
-          const issuePatterns = [
-            /(?:Date[\s]*of[\s]*[Il1]ssue|[Il1]ssue[\s]*date)[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i,
-            /(?:Date[\s]*of[\s]*[Il1]ssue|[Il1]ssue)[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i
-          ];
-          
-          for (const pattern of issuePatterns) {
-            const match = line.match(pattern);
-            if (match) {
-              const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY"], true);
-              if (parsed.isValid()) {
-                data.dateOfIssue = parsed.format("YYYY-MM-DD");
-                console.log("✓ Issue Date from text:", data.dateOfIssue);
-                break;
-              }
-            }
-          }
-          
-          // Check next line if label found but no date on same line
-          if (!data.dateOfIssue && nextLine) {
-            const nextLineMatch = nextLine.match(/(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/);
-            if (nextLineMatch) {
-              const parsed = moment(nextLineMatch[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY"], true);
-              if (parsed.isValid()) {
-                data.dateOfIssue = parsed.format("YYYY-MM-DD");
-                console.log("✓ Issue Date (next line) from text:", data.dateOfIssue);
-              }
-            }
-          }
-        }
-      }
-      
-      // Date of expiry patterns - Indian passport specific
-      if (!data.dateOfExpiry) {
-        // Only match if explicitly has "expiry" or "valid" in the label (not issue)
-        if (/(?:Date[\s]*of[\s]*[Ee]xp[I1l]ry|[Ee]xp[I1l]ry|Val[I1l]d[\s]*unt[I1l]l)/i.test(line) && !/[Il1]ssue/i.test(line)) {
-          const expiryPatterns = [
-            /(?:Date[\s]*of[\s]*[Ee]xp[I1l]ry|[Ee]xp[I1l]ry[\s]*date|Val[I1l]d[\s]*unt[I1l]l)[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i,
-            /(?:Date[\s]*of[\s]*[Ee]xp[I1l]ry|[Ee]xp[I1l]ry)[:\s]*(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/i
-          ];
-          
-          for (const pattern of expiryPatterns) {
-            const match = line.match(pattern);
-            if (match) {
-              const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY"], true);
-              if (parsed.isValid()) {
-                // Ensure expiry date is different from issue date
-                const expiryDate = parsed.format("YYYY-MM-DD");
-                if (expiryDate !== data.dateOfIssue) {
-                  data.dateOfExpiry = expiryDate;
-                  console.log("✓ Expiry Date from text:", data.dateOfExpiry);
-                  break;
-                }
-              }
-            }
-          }
-          
-          // Check next line if label found but no date on same line
-          if (!data.dateOfExpiry && nextLine) {
-            const nextLineMatch = nextLine.match(/(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/);
-            if (nextLineMatch) {
-              const parsed = moment(nextLineMatch[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD MM YYYY", "DD.MM.YYYY"], true);
-              if (parsed.isValid()) {
-                // Ensure expiry date is different from issue date
-                const expiryDate = parsed.format("YYYY-MM-DD");
-                if (expiryDate !== data.dateOfIssue) {
-                  data.dateOfExpiry = expiryDate;
-                  console.log("✓ Expiry Date (next line) from text:", data.dateOfExpiry);
-                }
-              }
-            }
-          }
-        }
-      }
-      
-      // Nationality patterns - Indian passport specific
-      if (!data.nationality) {
-        // For Indian passport, look for "INDIAN" or "IND"
-        if (/IND[I1]AN?/i.test(line)) {
-          data.nationality = 'INDIAN';
-          console.log("✓ Nationality from text:", data.nationality);
-        } else {
-          const natPatterns = [
-            /[Nn]at[I1l]onal[I1l]ty[:\s]*([A-Z\s]{3,})/i,
-            /^([A-Z]{3})$/ // 3-letter country code
-          ];
-          
-          for (const pattern of natPatterns) {
-            const match = line.match(pattern);
-            if (match) {
-              data.nationality = match[1].trim().toUpperCase();
-              console.log("✓ Nationality from text:", data.nationality);
+      // === DATE OF ISSUE ===
+      if (!data.dateOfIssue && /(?:Date[s]*of[s]*[Il1]ssue|Place[s]*of[s]*[Il1]ssue)/i.test(line) && !/[Ee]xp/i.test(line)) {
+        const searchLines = [line, nextLine, nextNextLine];
+        for (const searchLine of searchLines) {
+          const match = searchLine.match(/(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{4})/);
+          if (match) {
+            const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD.MM.YYYY"], true);
+            if (parsed.isValid() && parsed.year() >= 2000 && parsed.year() <= 2026) {
+              data.dateOfIssue = parsed.format("YYYY-MM-DD");
+              console.log("✓ Date of Issue:", data.dateOfIssue);
               break;
             }
           }
         }
       }
       
-      // Place of birth - Indian passport specific
-      if (!data.placeOfBirth) {
-        if (/(?:Place[\s]*of[\s]*[Bb][I1l]rth|[Bb][I1l]rth[\s]*place)/i.test(line)) {
-          // Try same line first
-          const sameLineMatch = line.match(/(?:Place[\s]*of[\s]*[Bb][I1l]rth|[Bb][I1l]rth[\s]*place)[:\s]*([A-Z][A-Za-z\s,]+)/i);
-          if (sameLineMatch && sameLineMatch[1].length > 2) {
-            data.placeOfBirth = sameLineMatch[1].trim();
-            console.log("✓ Place of Birth from text:", data.placeOfBirth);
-          } else if (nextLine && nextLine.length > 2 && /^[A-Z][A-Za-z\s,]+$/.test(nextLine)) {
-            data.placeOfBirth = nextLine.trim();
-            console.log("✓ Place of Birth (next line) from text:", data.placeOfBirth);
-          }
-        }
-      }
-      
-      // Place of issue - Indian passport specific
-      if (!data.placeOfIssue) {
-        if (/(?:Place[\s]*of[\s]*[Il1]ssue|[Il1]ssu[I1l]ng[\s]*author[I1l]ty)/i.test(line)) {
-          // Try same line first - more flexible pattern
-          const sameLineMatch = line.match(/(?:Place[\s]*of[\s]*[Il1]ssue|[Il1]ssu[I1l]ng)[:\s]*([A-Za-z][A-Za-z\s,\.\-]+)/i);
-          if (sameLineMatch && sameLineMatch[1].length > 2) {
-            data.placeOfIssue = sameLineMatch[1].trim();
-            console.log("✓ Place of Issue from text:", data.placeOfIssue);
-          } else if (nextLine && nextLine.length > 2) {
-            // More flexible - accept any text that looks like a place name
-            const cleaned = nextLine.trim();
-            if (cleaned.length > 2 && !/^\d+$/.test(cleaned)) {
-              data.placeOfIssue = cleaned;
-              console.log("✓ Place of Issue (next line) from text:", data.placeOfIssue);
+      // === DATE OF EXPIRY ===
+      if (!data.dateOfExpiry && /(?:[Ee]xp[I1l]ry|Val[I1l]d)/i.test(line) && !/[Il1]ssue/i.test(line)) {
+        const searchLines = [line, nextLine, nextNextLine];
+        for (const searchLine of searchLines) {
+          const match = searchLine.match(/(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{4})/);
+          if (match) {
+            const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD.MM.YYYY"], true);
+            if (parsed.isValid() && parsed.year() >= 2000) {
+              const expiryDate = parsed.format("YYYY-MM-DD");
+              // Make sure it's different from issue date
+              if (expiryDate !== data.dateOfIssue) {
+                data.dateOfExpiry = expiryDate;
+                console.log("✓ Date of Expiry:", data.dateOfExpiry);
+                break;
+              }
             }
           }
         }
       }
       
-      // Sex/Gender - Indian passport
+      // === PLACE OF BIRTH ===
+      if (!data.placeOfBirth && /Place[s]*of[s]*[Bb]irth/i.test(line)) {
+        // Check same line and next lines
+        const placeMatch = line.match(/Place[s]*of[s]*[Bb]irth[:s]*([A-Z][A-Za-zs,\\.]{2,})/i);
+        if (placeMatch) {
+          data.placeOfBirth = placeMatch[1].trim().substring(0, 50);
+          console.log("✓ Place of Birth:", data.placeOfBirth);
+        } else if (nextLine && nextLine.length > 2 && !/\d{2}[\s\/\.-]\d{2}/.test(nextLine)) {
+          // Next line, but not a date
+          data.placeOfBirth = nextLine.trim().substring(0, 50);
+          console.log("✓ Place of Birth (next line):", data.placeOfBirth);
+        }
+      }
+      
+      // === PLACE OF ISSUE ===
+      if (!data.placeOfIssue && /Place[s]*of[s]*[Il1]ssue/i.test(line)) {
+        // Check same line and next lines (might be multiple lines after the label)
+        const placeMatch = line.match(/Place[s]*of[s]*[Il1]ssue[:s]*([A-Za-z][A-Za-zs,\\.]{2,})/i);
+        if (placeMatch) {
+          data.placeOfIssue = placeMatch[1].trim().substring(0, 50);
+          console.log("✓ Place of Issue:", data.placeOfIssue);
+        } else {
+          // Check next 2-3 lines for a place name (skip date lines)
+          for (const checkLine of [nextLine, nextNextLine]) {
+            if (checkLine && checkLine.length > 2 && !/\d{2}[\s\/\.-]\d{2}/.test(checkLine) && !/^[A-Z]\d+/.test(checkLine)) {
+              data.placeOfIssue = checkLine.trim().substring(0, 50);
+              console.log("✓ Place of Issue (next lines):", data.placeOfIssue);
+              break;
+            }
+          }
+        }
+      }
+      
+      // === SEX/GENDER ===
       if (!data.sex) {
-        // Check if line contains sex/gender label
-        if (/(?:sex|gender)[:\s]/i.test(line)) {
-          const sexMatch = line.match(/(?:sex|gender)[:\s]*(M|F|MALE|FEMALE|[Mm]ale|[Ff]emale)/i);
+        // Check for sex/gender label
+        if (/(?:[Ss]ex|[Gg]ender)[:s\/]/i.test(line)) {
+          const sexMatch = line.match(/(?:[Ss]ex|[Gg]ender)[:s\/]*(M|F|MALE|FEMALE)/i);
           if (sexMatch) {
             data.sex = sexMatch[1].charAt(0).toUpperCase();
-            console.log("✓ Sex from text:", data.sex);
-          } else if (nextLine && /^(M|F|MALE|FEMALE)$/i.test(nextLine)) {
-            data.sex = nextLine.charAt(0).toUpperCase();
-            console.log("✓ Sex (next line) from text:", data.sex);
+            console.log("✓ Sex (with label):", data.sex);
+          } else if (/^[MF]$/i.test(nextLine.trim())) {
+            data.sex = nextLine.trim().toUpperCase();
+            console.log("✓ Sex (next line):", data.sex);
           }
         }
-        // Also check if entire line is just M or F
+        // Check for standalone M or F
         else if (/^[MF]$/i.test(line.trim())) {
           data.sex = line.trim().toUpperCase();
-          console.log("✓ Sex (standalone) from text:", data.sex);
+          console.log("✓ Sex (standalone):", data.sex);
+        }
+      }
+      
+      // === NATIONALITY ===
+      if (!data.nationality) {
+        if (/IND[I1]AN?/i.test(line)) {
+          data.nationality = 'INDIAN';
+          console.log("✓ Nationality (INDIAN detected):", data.nationality);
+        } else if (/[Nn]at[I1l]onal[I1l]ty/i.test(line)) {
+          const natMatch = line.match(/[Nn]at[I1l]onal[I1l]ty[:s]*([A-Z]{3,})/i);
+          if (natMatch) {
+            data.nationality = natMatch[1].toUpperCase();
+            console.log("✓ Nationality:", data.nationality);
+          }
         }
       }
     }
@@ -1106,12 +1038,13 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
     if (!data.dateOfExpiry && data.dateOfIssue) {
       const issueDate = moment(data.dateOfIssue);
       // Indian passport validity: 10 years from date of issue, minus 1 day
-      const expiryDate = issueDate.add(10, 'years').subtract(1, 'day');
+      const expiryDate = issueDate.clone().add(10, 'years').subtract(1, 'day');
       data.dateOfExpiry = expiryDate.format("YYYY-MM-DD");
-      console.log("✓ Expiry Date calculated from issue date:", data.dateOfExpiry);
+      console.log("✓ Expiry Date (calculated):", data.dateOfExpiry);
     }
 
-    console.log("Final extracted data:", data);
+    console.log("==================== FINAL EXTRACTED DATA ====================");
+    console.log(data);
     return data;
   };
 
