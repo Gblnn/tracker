@@ -579,82 +579,24 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = img.width;
-        tempCanvas.height = img.height;
-        const ctx = tempCanvas.getContext('2d');
+        // Use a simpler approach: crop to the center area where document is expected
+        // Based on the visual guide (inset 5%), crop to that region
+        const cropMargin = 0.05; // 5% margin like the visual guide
+        const bounds = {
+          x: Math.floor(img.width * cropMargin),
+          y: Math.floor(img.height * cropMargin),
+          width: Math.floor(img.width * (1 - cropMargin * 2)),
+          height: Math.floor(img.height * (1 - cropMargin * 2))
+        };
         
-        if (!ctx) {
-          resolve(null);
-          return;
-        }
-        
-        ctx.drawImage(img, 0, 0);
-        const imageData = ctx.getImageData(0, 0, img.width, img.height);
-        const data = imageData.data;
-        
-        // Convert to grayscale
-        const grayData: number[] = [];
-        for (let i = 0; i < data.length; i += 4) {
-          const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
-          grayData.push(gray);
-        }
-        
-        // Find content bounds by detecting where there's significant contrast
-        let minX = img.width, maxX = 0, minY = img.height, maxY = 0;
-        const threshold = 30; // Contrast threshold
-        
-        // Scan for edges
-        for (let y = 0; y < img.height; y++) {
-          for (let x = 0; x < img.width; x++) {
-            const idx = y * img.width + x;
-            const gray = grayData[idx];
-            
-            // Check neighbors
-            if (x > 0 && x < img.width - 1 && y > 0 && y < img.height - 1) {
-              const neighbors = [
-                grayData[idx - 1], grayData[idx + 1],
-                grayData[idx - img.width], grayData[idx + img.width]
-              ];
-              
-              const hasEdge = neighbors.some(n => Math.abs(gray - n) > threshold);
-              
-              if (hasEdge) {
-                minX = Math.min(minX, x);
-                maxX = Math.max(maxX, x);
-                minY = Math.min(minY, y);
-                maxY = Math.max(maxY, y);
-              }
-            }
-          }
-        }
-        
-        // Add padding and ensure bounds are valid
-        const padding = 20;
-        if (maxX > minX && maxY > minY) {
-          const bounds = {
-            x: Math.max(0, minX - padding),
-            y: Math.max(0, minY - padding),
-            width: Math.min(img.width, maxX - minX + padding * 2),
-            height: Math.min(img.height, maxY - minY + padding * 2)
-          };
-          
-          // Only use bounds if they represent a significant portion of the image
-          // (prevents over-cropping or using invalid detection)
-          const boundsArea = bounds.width * bounds.height;
-          const imageArea = img.width * img.height;
-          
-          if (boundsArea > imageArea * 0.2 && boundsArea < imageArea * 0.95) {
-            resolve(bounds);
-          } else {
-            resolve(null);
-          }
-        } else {
-          resolve(null);
-        }
+        console.log("Using guided crop bounds:", bounds);
+        resolve(bounds);
       };
       
-      img.onerror = () => resolve(null);
+      img.onerror = () => {
+        console.log("Image load error, using full image");
+        resolve(null);
+      };
       img.src = imageData;
     });
   };
@@ -709,12 +651,12 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
   const processImage = async (imageData: string) => {
     setProcessing(true);
     try {
-      // First, try to find and crop to document bounds
+      // Crop to document bounds (the area inside the visual guide)
       const bounds = await findDocumentBounds(imageData);
       let processedImage = imageData;
       
       if (bounds) {
-        console.log("Document bounds detected:", bounds);
+        console.log("Cropping to bounds:", bounds);
         
         // Crop to detected bounds
         const img = new Image();
@@ -730,20 +672,42 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
         const cropCtx = cropCanvas.getContext('2d');
         
         if (cropCtx) {
+          // Draw the cropped region
           cropCtx.drawImage(
             img,
             bounds.x, bounds.y, bounds.width, bounds.height,
             0, 0, bounds.width, bounds.height
           );
           
-          processedImage = cropCanvas.toDataURL('image/jpeg', 0.95);
-          console.log("Image cropped to document bounds");
+          // Apply additional enhancement to cropped image
+          const imgData = cropCtx.getImageData(0, 0, bounds.width, bounds.height);
+          const data = imgData.data;
+          
+          // Sharpen the text
+          const factor = 1.3;
+          for (let i = 0; i < data.length; i += 4) {
+            const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+            const enhanced = ((brightness - 128) * factor) + 128;
+            const final = Math.min(255, Math.max(0, enhanced));
+            data[i] = final;
+            data[i + 1] = final;
+            data[i + 2] = final;
+          }
+          
+          cropCtx.putImageData(imgData, 0, 0);
+          
+          processedImage = cropCanvas.toDataURL('image/jpeg', 0.98);
+          console.log("✓ Image cropped and enhanced. New dimensions:", bounds.width, "x", bounds.height);
+          
+          // Update the displayed captured image to show the cropped version
+          setCapturedImage(processedImage);
         }
       } else {
-        console.log("No document bounds detected, using full image");
+        console.log("No cropping applied, using full image");
       }
       
       const worker = await ensureOcrWorker();
+      console.log("Starting OCR recognition...");
       const result = await worker.recognize(processedImage, {
         lang: 'eng',
         tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,/-:()<>',
