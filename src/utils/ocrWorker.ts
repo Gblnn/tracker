@@ -150,6 +150,4 @@ export const ensureOcrWorker = async () => {
   return workerPromise;
 };
 
-export const preloadOcrWorker = () => {
-  void ensureOcrWorker();
-};
+export const preloadOcrWorker = () => ensureOcrWorker();

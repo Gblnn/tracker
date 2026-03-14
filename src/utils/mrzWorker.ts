@@ -81,5 +81,5 @@ export const ensureMrzWorker = (): Promise<Tesseract.Worker> => {
 
 /** Call this on app start or when the passports page mounts to warm up the worker. */
 export const preloadMrzWorker = () => {
-  void ensureMrzWorker();
+  return ensureMrzWorker();
 };

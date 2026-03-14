@@ -5,6 +5,7 @@ import { useAuth } from "./components/AuthProvider";
 import ProtectedRoutes from "./components/protectedRoute";
 import { refreshPhonebookCache } from "./utils/phonebookCache";
 import { preloadOcrWorker } from "./utils/ocrWorker";
+import { preloadMrzWorker } from "./utils/mrzWorker";
 import { useBackgroundProcess } from "./context/BackgroundProcessContext";
 
 // Import critical startup pages immediately (no lazy loading)
@@ -93,19 +94,46 @@ export default function App() {
       return;
     }
 
+    let mrzWarmupTimer: number | null = null;
+
     const warmup = () => {
-      preloadOcrWorker();
+      void preloadOcrWorker()
+        .catch((error) => {
+          console.warn("OCR warmup skipped:", error);
+        })
+        .finally(() => {
+          if (!navigator.onLine) {
+            return;
+          }
+
+          // Stagger MRZ warmup so lower-end devices are not hit by two heavy inits at once.
+          mrzWarmupTimer = globalThis.setTimeout(() => {
+            void preloadMrzWorker().catch((error) => {
+              console.warn("MRZ warmup skipped:", error);
+            });
+          }, 1200);
+        });
     };
 
     if (typeof globalThis !== "undefined" && "requestIdleCallback" in globalThis) {
       const requestIdle = globalThis.requestIdleCallback as (callback: IdleRequestCallback) => number;
       const cancelIdle = globalThis.cancelIdleCallback as (handle: number) => void;
       const handle = requestIdle(() => warmup());
-      return () => cancelIdle(handle);
+      return () => {
+        cancelIdle(handle);
+        if (mrzWarmupTimer !== null) {
+          globalThis.clearTimeout(mrzWarmupTimer);
+        }
+      };
     }
 
     const timer = globalThis.setTimeout(warmup, 300);
-    return () => globalThis.clearTimeout(timer);
+    return () => {
+      globalThis.clearTimeout(timer);
+      if (mrzWarmupTimer !== null) {
+        globalThis.clearTimeout(mrzWarmupTimer);
+      }
+    };
   }, [user, userData, cachedAuthState]);
 
   return (

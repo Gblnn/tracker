@@ -915,7 +915,7 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
           </DialogTitle>
           <DialogDescription>
             {!ocrReady 
-              ? `Loading OCR engine... ${ocrLoadProgress}%` 
+              ? `Loading MRZ engine... ${ocrLoadProgress}%` 
               : processing
                 ? "Reading MRZ zone..."
                 : capturedImage
