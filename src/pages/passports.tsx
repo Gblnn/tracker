@@ -442,13 +442,9 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
   const [processing, setProcessing] = useState(false);
   const [ocrReady, setOcrReady] = useState(getOcrLoadState().ready);
   const [ocrLoadProgress, setOcrLoadProgress] = useState(getOcrLoadState().progress);
-  const [extractedText, setExtractedText] = useState<string>("");
-  const [documentDetected, setDocumentDetected] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const edgeCanvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     const unsubscribe = subscribeOcrLoadState((state) => {
@@ -468,22 +464,12 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
     }
     return () => {
       stopCamera();
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
     };
   }, [open, capturedImage]);
-
-  useEffect(() => {
-    if (videoRef.current && !capturedImage && open) {
-      detectDocumentEdges();
-    }
-  }, [capturedImage, open]);
 
   const handleClose = () => {
     setCapturedImage(null);
     setProcessing(false);
-    setExtractedText("");
     stopCamera();
     onClose();
   };
@@ -494,7 +480,7 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
         video: {
           facingMode: { ideal: 'environment' },
           width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          height: { ideal: 1080 },
         }
       });
       streamRef.current = stream;
@@ -513,691 +499,327 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
   };
 
-  const detectDocumentEdges = () => {
+  // Capture and immediately start processing
+  const captureAndProcess = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
     const video = videoRef.current;
-    const canvas = edgeCanvasRef.current;
-    
-    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
-      animationFrameRef.current = requestAnimationFrame(detectDocumentEdges);
-      return;
-    }
+    const canvas = canvasRef.current;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      animationFrameRef.current = requestAnimationFrame(detectDocumentEdges);
-      return;
-    }
-
-    // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    // Draw current video frame
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // Get image data for edge detection
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    
-    // Convert to grayscale and detect edges using simple edge detection
-    const width = canvas.width;
-    const height = canvas.height;
-    const edges: number[] = [];
-    
-    // Simple Sobel-like edge detection
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-        const idx = (y * width + x) * 4;
-        const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-        
-        // Sample neighboring pixels
-        const grayRight = (data[idx + 4] + data[idx + 5] + data[idx + 6]) / 3;
-        const grayDown = (data[idx + width * 4] + data[idx + width * 4 + 1] + data[idx + width * 4 + 2]) / 3;
-        
-        const edgeStrength = Math.abs(gray - grayRight) + Math.abs(gray - grayDown);
-        edges.push(edgeStrength);
-      }
+    const capturedData = canvas.toDataURL('image/png', 1.0);
+    setCapturedImage(capturedData);
+    stopCamera();
+
+    await processImage(capturedData);
+  };
+
+  // ============================================================
+  // IMAGE PREPROCESSING — Grayscale + Contrast
+  // Let Tesseract handle binarization internally.
+  // ============================================================
+  const preprocessForMRZ = (
+    sourceImg: HTMLImageElement,
+    cropX: number, cropY: number, cropW: number, cropH: number,
+    targetScale: number,
+    contrastFactor: number
+  ): string | null => {
+    const c = document.createElement('canvas');
+    c.width = Math.round(cropW * targetScale);
+    c.height = Math.round(cropH * targetScale);
+    const ctx = c.getContext('2d');
+    if (!ctx) return null;
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(sourceImg, cropX, cropY, cropW, cropH, 0, 0, c.width, c.height);
+
+    const imgData = ctx.getImageData(0, 0, c.width, c.height);
+    const px = imgData.data;
+    for (let i = 0; i < px.length; i += 4) {
+      const gray = px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114;
+      const adjusted = Math.min(255, Math.max(0, ((gray - 128) * contrastFactor) + 128));
+      px[i] = adjusted;
+      px[i + 1] = adjusted;
+      px[i + 2] = adjusted;
     }
-    
-    // Calculate average edge strength
-    const avgEdgeStrength = edges.reduce((a, b) => a + b, 0) / edges.length;
-    const hasDocument = avgEdgeStrength > 10; // Threshold for document detection
-    
-    setDocumentDetected(hasDocument);
-    
-    // Continue detection loop
-    animationFrameRef.current = requestAnimationFrame(detectDocumentEdges);
+    ctx.putImageData(imgData, 0, 0);
+    return c.toDataURL('image/png', 1.0);
   };
 
-  const findDocumentBounds = (imageData: string): Promise<{ x: number, y: number, width: number, height: number } | null> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        // Use a simpler approach: crop to the center area where document is expected
-        // Based on the visual guide (inset 5%), crop to that region
-        const cropMargin = 0.05; // 5% margin like the visual guide
-        const bounds = {
-          x: Math.floor(img.width * cropMargin),
-          y: Math.floor(img.height * cropMargin),
-          width: Math.floor(img.width * (1 - cropMargin * 2)),
-          height: Math.floor(img.height * (1 - cropMargin * 2))
-        };
-        
-        console.log("Using guided crop bounds:", bounds);
-        resolve(bounds);
-      };
-      
-      img.onerror = () => {
-        console.log("Image load error, using full image");
-        resolve(null);
-      };
-      img.src = imageData;
-    });
-  };
-
-  const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-
-      const maxWidth = 1920;
-      const scale = video.videoWidth > maxWidth ? maxWidth / video.videoWidth : 1;
-      const targetWidth = Math.floor(video.videoWidth * scale);
-      const targetHeight = Math.floor(video.videoHeight * scale);
-
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // Just capture the raw image - we'll process it later
-        ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
-        
-        const capturedData = canvas.toDataURL('image/png', 1.0);
-        setCapturedImage(capturedData);
-        stopCamera();
-      }
-    }
-  };
-
+  // ============================================================
+  // MAIN PROCESSING — MRZ Only
+  // ============================================================
   const processImage = async (imageData: string) => {
     setProcessing(true);
     try {
-      // Load the full image first
       const img = new Image();
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
         img.onerror = reject;
         img.src = imageData;
       });
 
-      // Crop to document bounds (the area inside the visual guide)
-      const bounds = await findDocumentBounds(imageData);
-      const docX = bounds?.x ?? 0;
-      const docY = bounds?.y ?? 0;
-      const docW = bounds?.width ?? img.width;
-      const docH = bounds?.height ?? img.height;
+      console.log("========== MRZ SCAN ==========");
+      console.log("Image:", img.width, "x", img.height);
 
       const worker = await ensureOcrWorker();
 
-      // ============================================================
-      // PASS 1: MRZ SCAN (bottom ~30% of passport, MRZ-optimized)
-      // ============================================================
-      console.log("========== PASS 1: MRZ SCAN ==========");
-      let mrzData: Partial<PassportRecord> = {};
-
-      try {
-        // MRZ is in the bottom ~30% of the passport
-        const mrzTop = docY + Math.floor(docH * 0.65);
-        const mrzHeight = docH - Math.floor(docH * 0.65);
-
-        // Crop and upscale the MRZ zone (3x for crisp character recognition)
-        const mrzScale = 3;
-        const mrzCanvas = document.createElement('canvas');
-        mrzCanvas.width = docW * mrzScale;
-        mrzCanvas.height = mrzHeight * mrzScale;
-        const mrzCtx = mrzCanvas.getContext('2d');
-
-        if (mrzCtx) {
-          mrzCtx.imageSmoothingEnabled = true;
-          mrzCtx.imageSmoothingQuality = 'high';
-          mrzCtx.drawImage(
-            img,
-            docX, mrzTop, docW, mrzHeight,
-            0, 0, mrzCanvas.width, mrzCanvas.height
-          );
-
-          // Strong preprocessing for MRZ: high contrast black/white
-          const mrzImgData = mrzCtx.getImageData(0, 0, mrzCanvas.width, mrzCanvas.height);
-          const px = mrzImgData.data;
-          for (let i = 0; i < px.length; i += 4) {
-            const gray = px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114;
-            // Aggressive threshold for crisp MRZ characters
-            const bw = gray < 140 ? 0 : 255;
-            px[i] = bw;
-            px[i + 1] = bw;
-            px[i + 2] = bw;
-          }
-          mrzCtx.putImageData(mrzImgData, 0, 0);
-
-          const mrzImage = mrzCanvas.toDataURL('image/png', 1.0);
-          console.log("MRZ zone cropped. Size:", mrzCanvas.width, "x", mrzCanvas.height);
-
-          // Configure Tesseract for MRZ: only allow MRZ characters
-          await worker.setParameters({
-            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<',
-            tessedit_pageseg_mode: '6', // Assume uniform block of text
-            preserve_interword_spaces: '0',
-          });
-
-          const mrzResult = await worker.recognize(mrzImage);
-          const mrzText = mrzResult.data.text;
-          console.log("MRZ raw text:", mrzText);
-          console.log("MRZ confidence:", mrzResult.data.confidence);
-
-          mrzData = parseMRZ(mrzText);
-          console.log("MRZ parsed data:", mrzData);
-        }
-      } catch (mrzError) {
-        console.warn("MRZ scan failed, will fall back to full OCR:", mrzError);
-      }
-
-      // ============================================================
-      // PASS 2: FULL OCR (for fields MRZ doesn't have, or as fallback)
-      // ============================================================
-      // MRZ gives: passport number, name, DOB, expiry, sex, nationality
-      // MRZ lacks: place of birth, place of issue, date of issue
-      const needsFullOcr = !mrzData.passportNumber || !mrzData.fullName ||
-        !mrzData.placeOfBirth || !mrzData.placeOfIssue || !mrzData.dateOfIssue;
-
-      let ocrData: Partial<PassportRecord> = {};
-
-      if (needsFullOcr) {
-        console.log("========== PASS 2: FULL OCR ==========");
-        try {
-          // Upscale the full document area for OCR
-          const scale = 2;
-          const fullCanvas = document.createElement('canvas');
-          fullCanvas.width = docW * scale;
-          fullCanvas.height = docH * scale;
-          const fullCtx = fullCanvas.getContext('2d');
-
-          if (fullCtx) {
-            fullCtx.imageSmoothingEnabled = true;
-            fullCtx.imageSmoothingQuality = 'high';
-            fullCtx.drawImage(
-              img,
-              docX, docY, docW, docH,
-              0, 0, fullCanvas.width, fullCanvas.height
-            );
-
-            // Grayscale with moderate contrast
-            const fullImgData = fullCtx.getImageData(0, 0, fullCanvas.width, fullCanvas.height);
-            const fpx = fullImgData.data;
-            for (let i = 0; i < fpx.length; i += 4) {
-              const gray = fpx[i] * 0.299 + fpx[i + 1] * 0.587 + fpx[i + 2] * 0.114;
-              const contrast = 1.3;
-              const adjusted = Math.min(255, Math.max(0, ((gray - 128) * contrast) + 128));
-              fpx[i] = adjusted;
-              fpx[i + 1] = adjusted;
-              fpx[i + 2] = adjusted;
-            }
-            fullCtx.putImageData(fullImgData, 0, 0);
-
-            const fullImage = fullCanvas.toDataURL('image/png', 1.0);
-            setCapturedImage(fullImage);
-
-            // Reset Tesseract to full character set for text OCR
-            await worker.setParameters({
-              tessedit_char_whitelist: '',
-              tessedit_pageseg_mode: '3', // Fully automatic page segmentation
-              preserve_interword_spaces: '1',
-            });
-
-            const fullResult = await worker.recognize(fullImage);
-            const fullText = fullResult.data.text;
-            console.log("Full OCR text:", fullText);
-            console.log("Full OCR confidence:", fullResult.data.confidence);
-            setExtractedText(fullText);
-
-            ocrData = parsePassportText(fullText);
-            console.log("Full OCR parsed data:", ocrData);
-          }
-        } catch (ocrError) {
-          console.warn("Full OCR failed:", ocrError);
-        }
-      }
-
-      // ============================================================
-      // MERGE: MRZ data takes priority, OCR fills gaps
-      // ============================================================
-      const mergedData: Partial<PassportRecord> = {};
-      const fields: (keyof PassportRecord)[] = [
-        'passportNumber', 'fullName', 'dateOfBirth', 'dateOfExpiry',
-        'dateOfIssue', 'sex', 'nationality', 'placeOfBirth', 'placeOfIssue'
+      // Try two MRZ crops: bottom 30% first (tight), then bottom 45% (generous)
+      const attempts = [
+        { label: "bottom-30%", topPct: 0.70, contrast: 1.5 },
+        { label: "bottom-45%", topPct: 0.55, contrast: 1.4 },
       ];
 
-      for (const field of fields) {
-        const mrzVal = mrzData[field];
-        const ocrVal = ocrData[field];
-        if (mrzVal) {
-          (mergedData as any)[field] = mrzVal;
-        } else if (ocrVal) {
-          (mergedData as any)[field] = ocrVal;
+      let bestData: Partial<PassportRecord> = {};
+
+      for (const attempt of attempts) {
+        if (Object.keys(bestData).length >= 5) break;
+
+        const cropY = Math.floor(img.height * attempt.topPct);
+        const cropH = img.height - cropY;
+        // Scale so output width is ~2000px for crisp MRZ chars
+        const scale = Math.max(1, Math.min(3, 2000 / img.width));
+
+        const mrzImage = preprocessForMRZ(img, 0, cropY, img.width, cropH, scale, attempt.contrast);
+        if (!mrzImage) continue;
+
+        console.log(`── Attempt: ${attempt.label}, scale=${scale.toFixed(1)} ──`);
+
+        await worker.setParameters({
+          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789< ',
+          tessedit_pageseg_mode: '6',
+          preserve_interword_spaces: '0',
+        });
+
+        const result = await worker.recognize(mrzImage);
+        console.log("Raw MRZ text:", result.data.text);
+        console.log("Confidence:", result.data.confidence);
+
+        const parsed = parseMRZ(result.data.text);
+        if (Object.keys(parsed).length > Object.keys(bestData).length) {
+          bestData = parsed;
         }
       }
 
-      // Fallback: Calculate expiry from issue date if not found
-      if (!mergedData.dateOfExpiry && mergedData.dateOfIssue) {
-        const issueDate = moment(mergedData.dateOfIssue);
-        if (issueDate.isValid()) {
-          mergedData.dateOfExpiry = issueDate.clone().add(10, 'years').subtract(1, 'day').format("YYYY-MM-DD");
-          console.log("✓ Expiry calculated from issue:", mergedData.dateOfExpiry);
+      // If tight crops failed, try full-page with MRZ whitelist as last resort
+      if (Object.keys(bestData).length < 3) {
+        console.log("── Last resort: full page with MRZ whitelist ──");
+        const scale = img.width < 1200 ? 2 : (img.width < 2000 ? 1.5 : 1);
+        const fullImg = preprocessForMRZ(img, 0, 0, img.width, img.height, scale, 1.3);
+        if (fullImg) {
+          await worker.setParameters({
+            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789< ',
+            tessedit_pageseg_mode: '3',
+            preserve_interword_spaces: '0',
+          });
+          const fullResult = await worker.recognize(fullImg);
+          console.log("Full page MRZ text:", fullResult.data.text);
+          const fullParsed = parseMRZ(fullResult.data.text);
+          if (Object.keys(fullParsed).length > Object.keys(bestData).length) {
+            bestData = fullParsed;
+          }
         }
       }
 
-      // If nationality is 3-letter code from MRZ, expand for Indian passports
-      if (mergedData.nationality === 'IND') {
-        mergedData.nationality = 'INDIAN';
+      // Expand nationality
+      if (bestData.nationality === 'IND') bestData.nationality = 'INDIAN';
+
+      // Fallback: expiry = issue + 10 years - 1 day (if we somehow got issue but not expiry)
+      if (!bestData.dateOfExpiry && bestData.dateOfBirth) {
+        // MRZ doesn't have issue date; estimate expiry from DOB if person is adult
+        // Common: passport issued around age 18+, valid 10 years
+        // We can't reliably calculate this, so skip
       }
 
-      console.log("==================== FINAL MERGED DATA ====================");
-      console.log(mergedData);
+      console.log("==================== FINAL MRZ DATA ====================");
+      console.log(bestData);
 
-      const hasAnyData = Object.keys(mergedData).length > 0;
-      if (hasAnyData) {
-        onDataExtracted(mergedData);
-        toast.success("Passport data extracted! Please review and fill in missing fields.");
+      if (Object.keys(bestData).length > 0) {
+        onDataExtracted(bestData);
+        toast.success("MRZ data extracted! Review and fill in any missing fields.");
         setCapturedImage(null);
-        setExtractedText("");
         onClose();
       } else {
-        toast.error("Could not extract passport data. Please try again with better lighting.");
+        toast.error("Could not read MRZ. Ensure the bottom two lines of the passport are clearly visible and well-lit.");
       }
     } catch (error) {
-      console.error("Scan Error:", error);
-      toast.error("Failed to process image");
+      console.error("MRZ Scan error:", error);
+      toast.error("Failed to scan passport");
       setCapturedImage(null);
-      setExtractedText("");
     } finally {
       setProcessing(false);
     }
   };
 
   // ============================================================
-  // MRZ PARSER — Standardized Machine Readable Zone
+  // MRZ PARSER — Finds MRZ lines in any OCR text block
   // ============================================================
-  // Passport MRZ is 2 lines of exactly 44 characters each
-  // Line 1: P<ISSUING_COUNTRY<SURNAME<<GIVEN_NAMES<<<...
-  // Line 2: PASSPORT_NO<CHECK<NATIONALITY<DOB<CHECK<SEX<EXPIRY<CHECK<PERSONAL_NO<CHECK<CHECK
+  // ICAO 9303: 2 lines × 44 chars. Line 1 starts with P, line 2 has digits.
+  // MRZ characters: A-Z 0-9 <
   const parseMRZ = (rawText: string): Partial<PassportRecord> => {
     const data: Partial<PassportRecord> = {};
+    if (!rawText || rawText.length < 40) return data;
 
-    console.log("==================== MRZ PARSING ====================");
+    console.log("── MRZ parse ──");
 
-    // Clean up OCR artifacts: normalize characters
-    const cleaned = rawText
-      .replace(/[^A-Z0-9<\n]/gi, '') // Only MRZ chars
-      .toUpperCase();
+    // Extract potential MRZ lines: strip non-MRZ chars per line, keep lines 30+ chars with '<'
+    const lines = rawText.split('\n')
+      .map(l => l.replace(/[^A-Z0-9<]/gi, '').toUpperCase())
+      .filter(l => l.length >= 30 && l.includes('<'));
 
-    const allLines = cleaned.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    console.log("MRZ cleaned lines:", allLines);
+    console.log("MRZ candidates:", lines.map(l => `[${l.length}] ${l}`));
 
-    // Find the two MRZ lines — they should be ~44 chars and contain '<'
-    // Allow some tolerance (38-46 chars) for OCR imperfections
-    const candidateLines = allLines.filter(l => l.length >= 38 && l.length <= 50 && l.includes('<'));
-    console.log("MRZ candidate lines:", candidateLines);
+    if (lines.length < 2) {
+      // Try merging consecutive short lines
+      const rawLines = rawText.split('\n')
+        .map(l => l.replace(/[^A-Z0-9<]/gi, '').toUpperCase())
+        .filter(l => l.length > 0);
+      const merged: string[] = [];
+      let buf = '';
+      for (const rl of rawLines) {
+        buf += rl;
+        if (buf.length >= 30 && buf.includes('<')) {
+          merged.push(buf);
+          buf = '';
+        }
+      }
+      if (buf.length >= 30 && buf.includes('<')) merged.push(buf);
 
-    if (candidateLines.length < 2) {
-      console.log("Could not find 2 MRZ lines");
+      if (merged.length >= 2) {
+        lines.length = 0;
+        lines.push(...merged);
+        console.log("After merge:", lines.map(l => `[${l.length}] ${l}`));
+      }
+    }
+
+    if (lines.length < 2) {
+      console.log("Not enough MRZ lines found");
       return data;
     }
 
-    // Take the last 2 candidates (MRZ is at the bottom)
-    let line1 = candidateLines[candidateLines.length - 2];
-    let line2 = candidateLines[candidateLines.length - 1];
+    // Pick the best pair: line1 should start with 'P' and contain '<<'
+    let line1 = '';
+    let line2 = '';
 
-    // Line 1 starts with P (passport type), Line 2 starts with a passport number
-    // If they're swapped or misidentified, check and fix
-    if (line2.startsWith('P') && line2.includes('<<')) {
-      [line1, line2] = [line2, line1];
+    for (let i = 0; i < lines.length - 1; i++) {
+      const a = lines[i];
+      const b = lines[i + 1];
+      if (a.startsWith('P') && a.includes('<<')) {
+        line1 = a;
+        line2 = b;
+        break;
+      }
     }
 
-    // Pad or trim to exactly 44 characters
+    // Fallback: just use last two lines
+    if (!line1) {
+      line1 = lines[lines.length - 2];
+      line2 = lines[lines.length - 1];
+      // Swap if needed
+      if (line2.startsWith('P') && line2.includes('<<')) {
+        [line1, line2] = [line2, line1];
+      }
+    }
+
+    // Normalize to 44 chars
     line1 = line1.substring(0, 44).padEnd(44, '<');
     line2 = line2.substring(0, 44).padEnd(44, '<');
 
-    console.log("MRZ Line 1:", line1);
-    console.log("MRZ Line 2:", line2);
+    console.log("L1:", line1);
+    console.log("L2:", line2);
 
-    // ---- LINE 1: Type + Country + Name ----
-    // Positions: [0] type, [1] subtype, [2-4] issuing country, [5-43] name
-    const docType = line1.charAt(0);
-    if (docType !== 'P') {
-      console.log("Not a passport MRZ (type:", docType, ")");
-      // Continue anyway — OCR might have misread P
-    }
-
-    const issuingCountry = line1.substring(2, 5).replace(/</g, '').trim();
-    console.log("Issuing country:", issuingCountry);
-
-    // Name section: SURNAME<<GIVEN<NAMES
-    const nameSection = line1.substring(5, 44);
-    const nameParts = nameSection.split('<<').filter(p => p.length > 0);
+    // ── LINE 1: P<COUNTRY<SURNAME<<GIVEN<NAMES ──
+    const nameSection = line1.substring(5);
+    const nameParts = nameSection.split('<<').filter(p => p.replace(/</g, '').length > 0);
     if (nameParts.length >= 2) {
       const surname = nameParts[0].replace(/</g, ' ').trim();
-      const givenNames = nameParts[1].replace(/</g, ' ').trim();
-      data.fullName = `${givenNames} ${surname}`;
-      console.log("✓ MRZ Name:", data.fullName);
+      const given = nameParts.slice(1).map(p => p.replace(/</g, ' ').trim()).join(' ');
+      if (surname && given) {
+        data.fullName = `${given} ${surname}`;
+        console.log("✓ Name:", data.fullName);
+      }
     } else if (nameParts.length === 1) {
       data.fullName = nameParts[0].replace(/</g, ' ').trim();
-      console.log("✓ MRZ Name (single part):", data.fullName);
     }
 
-    // ---- LINE 2: Passport number, Nationality, DOB, Sex, Expiry ----
-    // [0-8] passport number, [9] check digit
-    const rawPassportNo = line2.substring(0, 9).replace(/</g, '').trim();
-    if (rawPassportNo.length >= 7) {
-      data.passportNumber = rawPassportNo;
-      console.log("✓ MRZ Passport Number:", data.passportNumber);
+    // ── LINE 2 field extraction with position-aware digit/alpha correction ──
+    // Helper: correct common OCR errors for digit-only positions
+    const toDigits = (s: string) => s
+      .replace(/O/g, '0').replace(/o/g, '0')
+      .replace(/I/g, '1').replace(/l/g, '1').replace(/L/g, '1')
+      .replace(/S/g, '5').replace(/s/g, '5')
+      .replace(/B/g, '8').replace(/G/g, '6')
+      .replace(/Z/g, '2').replace(/z/g, '2')
+      .replace(/A/g, '4').replace(/T/g, '7')
+      .replace(/[^0-9]/g, '');
+
+    // [0-8] Passport number
+    const passRaw = line2.substring(0, 9).replace(/</g, '');
+    if (passRaw.length >= 6) {
+      // First 1-2 chars are typically alpha, rest digits
+      const alphaEnd = passRaw.search(/\d/);
+      const alpha = alphaEnd > 0 ? passRaw.substring(0, alphaEnd) : passRaw.substring(0, 1);
+      const digits = alphaEnd > 0 ? passRaw.substring(alphaEnd) : passRaw.substring(1);
+      const fixedDigits = toDigits(digits);
+      data.passportNumber = alpha + fixedDigits;
+      console.log("✓ Passport:", data.passportNumber);
     }
 
-    // [10-12] nationality
-    const nationality = line2.substring(10, 13).replace(/</g, '').trim();
-    if (nationality.length >= 2) {
-      data.nationality = nationality;
-      console.log("✓ MRZ Nationality:", data.nationality);
+    // [10-12] Nationality
+    const nat = line2.substring(10, 13).replace(/</g, '').replace(/[0-9]/g, (d) => {
+      const map: Record<string, string> = { '0': 'O', '1': 'I', '5': 'S', '8': 'B' };
+      return map[d] || d;
+    });
+    if (nat.length >= 2) {
+      data.nationality = nat;
+      console.log("✓ Nationality:", nat);
     }
 
-    // [13-18] date of birth (YYMMDD), [19] check digit
-    const dobRaw = line2.substring(13, 19);
-    if (/^\d{6}$/.test(dobRaw)) {
-      const yy = parseInt(dobRaw.substring(0, 2));
-      const mm = dobRaw.substring(2, 4);
-      const dd = dobRaw.substring(4, 6);
-      const fullYear = yy > 50 ? 1900 + yy : 2000 + yy;
-      data.dateOfBirth = `${fullYear}-${mm}-${dd}`;
-      console.log("✓ MRZ DOB:", data.dateOfBirth);
-    }
-
-    // [20] sex
-    const sexChar = line2.charAt(20);
-    if (sexChar === 'M' || sexChar === 'F') {
-      data.sex = sexChar;
-      console.log("✓ MRZ Sex:", data.sex);
-    }
-
-    // [21-26] date of expiry (YYMMDD), [27] check digit
-    const expiryRaw = line2.substring(21, 27);
-    if (/^\d{6}$/.test(expiryRaw)) {
-      const yy = parseInt(expiryRaw.substring(0, 2));
-      const mm = expiryRaw.substring(2, 4);
-      const dd = expiryRaw.substring(4, 6);
-      const fullYear = yy > 50 ? 1900 + yy : 2000 + yy;
-      data.dateOfExpiry = `${fullYear}-${mm}-${dd}`;
-      console.log("✓ MRZ Expiry:", data.dateOfExpiry);
-    }
-
-    console.log("==================== MRZ RESULT ====================");
-    console.log(data);
-    return data;
-  };
-
-  // Full-text OCR parser for fields that MRZ doesn't provide
-  // (place of birth, place of issue, date of issue, and fallback for other fields)
-  const parsePassportText = (text: string): Partial<PassportRecord> => {
-    const data: Partial<PassportRecord> = {};
-    
-    console.log("==================== FULL OCR TEXT PARSING ====================");
-    console.log("Full text:", text);
-    
-    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    console.log("Total lines:", lines.length);
-
-    // Helper function to get next non-empty line
-    const getNextLine = (currentIdx: number): string => {
-      for (let i = currentIdx + 1; i < lines.length; i++) {
-        const next = lines[i];
-        if (next && next.length > 0) return next;
-      }
-      return '';
-    };
-
-    // Fallback: Try to extract from text fields
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const nextLine = getNextLine(i);
-      const nextNextLine = i + 2 < lines.length ? getNextLine(i + 1) : '';
-      
-      // === PASSPORT NUMBER - INDIAN PASSPORT SPECIFIC ===
-      if (!data.passportNumber) {
-        // Look for "Type / Code / No" or "Passport No." sections
-        if (/(?:Type|Code|No\.?|INDIAN)/i.test(line)) {
-          // Check current line and next 2 lines for passport number pattern
-          const checkLines = [line, nextLine, nextNextLine];
-          for (const checkLine of checkLines) {
-            // Indian passport: 1 letter + 7-8 digits
-            const match = checkLine.match(/\b([A-Z][0-9]{7,8})\b/);
-            if (match) {
-              data.passportNumber = match[1];
-              console.log("✓ Passport Number (Indian format):", data.passportNumber);
-              break;
-            }
-          }
-        }
-        
-        // Specific check for "INDIAN" followed by passport number
-        if (!data.passportNumber && /IND[I1]AN?/i.test(line)) {
-          // Check same line and next two lines
-          const indianMatch = line.match(/IND[I1]AN?[\s:]*([A-Z][0-9]{7,8})/i);
-          if (indianMatch) {
-            data.passportNumber = indianMatch[1].toUpperCase();
-            console.log("✓ Passport Number (next to INDIAN):", data.passportNumber);
-          } else if (nextLine) {
-            const nextMatch = nextLine.match(/\b([A-Z][0-9]{7,8})\b/);
-            if (nextMatch) {
-              data.passportNumber = nextMatch[1];
-              console.log("✓ Passport Number (line after INDIAN):", data.passportNumber);
-            }
-          }
-        }
-      }
-      
-      // === NAME - INDIAN PASSPORT (Surname + Given Name) ===
-      let tempSurname = '';
-      let tempGivenName = '';
-      
-      // Look for "Surname" label
-      if (/Surname/i.test(line)) {
-        // Check same line first - capture text after label
-        const surnameMatch = line.match(/Surname[\s\/:]*([A-Z][A-Z\s]+)/i);
-        if (surnameMatch && surnameMatch[1].trim().length > 1) {
-          tempSurname = surnameMatch[1].trim().split(/\s+/).slice(0, 3).join(' '); // Limit words
-          console.log("✓ Surname (same line):", tempSurname);
-        } else if (nextLine && nextLine.length > 1 && /^[A-Z][A-Z\s]*$/i.test(nextLine.trim())) {
-          tempSurname = nextLine.trim().split(/\s+/).slice(0, 3).join(' ');
-          console.log("✓ Surname (next line):", tempSurname);
-        }
-      
-        // If we found surname, store it
-        if (tempSurname && !data.fullName) {
-          data.fullName = tempSurname;
-        }
-      }
-      
-      // Look for "Given name" or "Given Names" label
-      if (/G[i1l]ven[\s]*[Nn]ame/i.test(line) || /Given/i.test(line)) {
-        // Check same line first  
-        const givenMatch = line.match(/G[i1l]ven[\s]*[Nn]ame[\s]?[\s\/:]*([A-Z][A-Z\s]+)/i);
-        if (givenMatch && givenMatch[1].trim().length > 2) {
-          tempGivenName = givenMatch[1].trim().split(/\s+/).slice(0, 3).join(' ');
-          console.log("✓ Given Name (same line):", tempGivenName);
-        } else if (nextLine && nextLine.trim().length > 2 && /^[A-Z][A-Z\s]*$/i.test(nextLine.trim())) {
-          tempGivenName = nextLine.trim().split(/\s+/).slice(0, 3).join(' ');
-          console.log("✓ Given Name (next line):", tempGivenName);
-        }
-        
-        // Combine with surname if we have it
-        if (tempGivenName) {
-          if (data.fullName) {
-            // We have surname, add given name
-            data.fullName = `${tempGivenName} ${data.fullName}`.trim();
-            console.log("✓ Full Name (combined):", data.fullName);
-          } else {
-            data.fullName = tempGivenName;
-          }
-        }
-      }
-      
-      // === DATE OF BIRTH ===
-      if (!data.dateOfBirth && /(?:Date[\s]*of[\s]*[Bb]irth|D[O0]B)/i.test(line)) {
-        // Check same line and next line
-        const datePatterns = [
-          /(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{4})/,
-          /(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2})/
-        ];
-        
-        const searchLines = [line, nextLine, nextNextLine];
-        for (const searchLine of searchLines) {
-          for (const pattern of datePatterns) {
-            const match = searchLine.match(pattern);
-            if (match) {
-              const parsed = moment(match[1], ["DD/MM/YYYY", "DD-MM-YYYY", "DD.MM.YYYY", "DD MM YYYY", "DD/MM/YY"], true);
-              if (parsed.isValid() && parsed.year() >= 1900 && parsed.year() <= 2026) {
-                data.dateOfBirth = parsed.format("YYYY-MM-DD");
-                console.log("✓ DOB:", data.dateOfBirth);
-                break;
-              }
-            }
-          }
-          if (data.dateOfBirth) break;
-        }
-      }
-      
-      // === DATE OF ISSUE & DATE OF EXPIRY ===
-      // Indian passports often have "Date of Issue / Date of Expiry" on one line
-      // with dates on the next line(s), or "Date of Issue: DD/MM/YYYY Date of Expiry: DD/MM/YYYY"
-      if (/[Ii]ssue/i.test(line) || /[Ee]xp[il1]r/i.test(line) || /[Vv]al[il1]d/i.test(line)) {
-        // Find ALL dates on the current line and next lines
-        const dateRegex = /(\d{1,2}[\s\/\.-]\d{1,2}[\s\/\.-]\d{2,4})/g;
-        const allDates: string[] = [];
-        const searchLines = [line, nextLine, nextNextLine];
-        
-        for (const searchLine of searchLines) {
-          let dateMatch;
-          while ((dateMatch = dateRegex.exec(searchLine)) !== null) {
-            allDates.push(dateMatch[1]);
-          }
-          dateRegex.lastIndex = 0; // Reset for next line
-        }
-        
-        console.log("Issue/Expiry line:", line, "| Found dates:", allDates);
-        
-        // If both issue and expiry labels are on this line, first date = issue, second = expiry
-        const hasIssue = /[Ii]ssue/i.test(line);
-        const hasExpiry = /[Ee]xp[il1]r/i.test(line) || /[Vv]al[il1]d/i.test(line);
-        
-        for (let d = 0; d < allDates.length; d++) {
-          const parsed = moment(allDates[d], ["DD/MM/YYYY", "DD-MM-YYYY", "DD.MM.YYYY", "DD MM YYYY", "DD/MM/YY"], true);
-          if (!parsed.isValid()) continue;
-          
-          if (hasIssue && !data.dateOfIssue && parsed.year() >= 2000 && parsed.year() <= 2026) {
-            data.dateOfIssue = parsed.format("YYYY-MM-DD");
-            console.log("✓ Date of Issue:", data.dateOfIssue);
-            continue; // Next date might be expiry
-          }
-          
-          if (hasExpiry && !data.dateOfExpiry && parsed.year() >= 2000) {
-            const expiryDate = parsed.format("YYYY-MM-DD");
-            if (expiryDate !== data.dateOfIssue) {
-              data.dateOfExpiry = expiryDate;
-              console.log("✓ Date of Expiry:", data.dateOfExpiry);
-            }
-          }
-        }
-      }
-      
-      // === PLACE OF BIRTH ===
-      if (!data.placeOfBirth && /Place[\s]*of[\s]*[Bb]irth/i.test(line)) {
-        // Check same line and next lines
-        const placeMatch = line.match(/Place[\s]*of[\s]*[Bb]irth[:\s]*([A-Za-z][A-Za-z\s,\.]{2,})/i);
-        if (placeMatch && !/date|issue|expiry/i.test(placeMatch[1])) {
-          data.placeOfBirth = placeMatch[1].trim().replace(/\s+/g, ' ').substring(0, 50);
-          console.log("✓ Place of Birth:", data.placeOfBirth);
-        } else if (nextLine && nextLine.length > 2 && !/\d{2}[\s\/\.-]\d{2}/.test(nextLine) && !/date|issue|expiry|sex|gender/i.test(nextLine)) {
-          // Next line, but not a date or another label
-          data.placeOfBirth = nextLine.trim().replace(/\s+/g, ' ').substring(0, 50);
-          console.log("✓ Place of Birth (next line):", data.placeOfBirth);
-        }
-      }
-      
-      // === PLACE OF ISSUE ===
-      if (!data.placeOfIssue && /Place[\s]*of[\s]*[Il1]ssue/i.test(line)) {
-        // Check same line and next lines
-        const placeMatch = line.match(/Place[\s]*of[\s]*[Il1]ssue[:\s]*([A-Za-z][A-Za-z\s,\.]{2,})/i);
-        if (placeMatch && !/date|birth|expiry/i.test(placeMatch[1])) {
-          data.placeOfIssue = placeMatch[1].trim().replace(/\s+/g, ' ').substring(0, 50);
-          console.log("✓ Place of Issue:", data.placeOfIssue);
-        } else if (nextLine && nextLine.length > 2 && !/\d{2}[\s\/\.-]\d{2}/.test(nextLine) && !/^[A-Z]\d+/.test(nextLine) && !/date|birth|expiry|sex|gender/i.test(nextLine)) {
-          data.placeOfIssue = nextLine.trim().replace(/\s+/g, ' ').substring(0, 50);
-          console.log("✓ Place of Issue (next line):", data.placeOfIssue);
-        } else if (nextNextLine && nextNextLine.length > 2 && !/\d{2}[\s\/\.-]\d{2}/.test(nextNextLine) && !/^[A-Z]\d+/.test(nextNextLine) && !/date|birth|expiry|sex|gender/i.test(nextNextLine)) {
-          data.placeOfIssue = nextNextLine.trim().replace(/\s+/g, ' ').substring(0, 50);
-          console.log("✓ Place of Issue (next+1 line):", data.placeOfIssue);
-        }
-      }
-      
-      // === SEX/GENDER ===
-      if (!data.sex) {
-        // Check for sex/gender label
-        if (/(?:[Ss]ex|[Gg]ender)[:\s\/]/i.test(line)) {
-          const sexMatch = line.match(/(?:[Ss]ex|[Gg]ender)[:\s\/]*(M|F|MALE|FEMALE)/i);
-          if (sexMatch) {
-            data.sex = sexMatch[1].charAt(0).toUpperCase();
-            console.log("✓ Sex (with label):", data.sex);
-          } else if (/^[MF]$/i.test(nextLine.trim())) {
-            data.sex = nextLine.trim().toUpperCase();
-            console.log("✓ Sex (next line):", data.sex);
-          }
-        }
-        // Check for standalone M or F
-        else if (/^[MF]$/i.test(line.trim())) {
-          data.sex = line.trim().toUpperCase();
-          console.log("✓ Sex (standalone):", data.sex);
-        }
-      }
-      
-      // === NATIONALITY ===
-      if (!data.nationality) {
-        if (/IND[I1]AN?/i.test(line)) {
-          data.nationality = 'INDIAN';
-          console.log("✓ Nationality (INDIAN detected):", data.nationality);
-        } else if (/[Nn]at[I1l]onal[I1l]ty/i.test(line)) {
-          const natMatch = line.match(/[Nn]at[I1l]onal[I1l]ty[:\s]*([A-Z]{3,})/i);
-          if (natMatch) {
-            data.nationality = natMatch[1].toUpperCase();
-            console.log("✓ Nationality:", data.nationality);
-          }
-        }
+    // [13-18] DOB (YYMMDD)
+    const dobStr = toDigits(line2.substring(13, 19));
+    if (dobStr.length === 6) {
+      const yy = parseInt(dobStr.substring(0, 2));
+      const mm = dobStr.substring(2, 4);
+      const dd = dobStr.substring(4, 6);
+      const year = yy > 50 ? 1900 + yy : 2000 + yy;
+      const dobMoment = moment(`${year}-${mm}-${dd}`, 'YYYY-MM-DD', true);
+      if (dobMoment.isValid()) {
+        data.dateOfBirth = dobMoment.format('YYYY-MM-DD');
+        console.log("✓ DOB:", data.dateOfBirth);
       }
     }
 
-    // Fallback: Calculate expiry date from issue date if not found
-    if (!data.dateOfExpiry && data.dateOfIssue) {
-      const issueDate = moment(data.dateOfIssue);
-      // Indian passport validity: 10 years from date of issue, minus 1 day
-      const expiryDate = issueDate.clone().add(10, 'years').subtract(1, 'day');
-      data.dateOfExpiry = expiryDate.format("YYYY-MM-DD");
-      console.log("✓ Expiry Date (calculated):", data.dateOfExpiry);
+    // [20] Sex
+    const sexRaw = line2.charAt(20).toUpperCase();
+    const sexMap: Record<string, string> = { 'M': 'M', 'F': 'F', '0': 'M' };
+    if (sexMap[sexRaw]) {
+      data.sex = sexMap[sexRaw];
+      console.log("✓ Sex:", data.sex);
     }
 
-    console.log("==================== FINAL EXTRACTED DATA ====================");
-    console.log(data);
+    // [21-26] Expiry (YYMMDD)
+    const expStr = toDigits(line2.substring(21, 27));
+    if (expStr.length === 6) {
+      const yy = parseInt(expStr.substring(0, 2));
+      const mm = expStr.substring(2, 4);
+      const dd = expStr.substring(4, 6);
+      const year = yy > 50 ? 1900 + yy : 2000 + yy;
+      const expMoment = moment(`${year}-${mm}-${dd}`, 'YYYY-MM-DD', true);
+      if (expMoment.isValid()) {
+        data.dateOfExpiry = expMoment.format('YYYY-MM-DD');
+        console.log("✓ Expiry:", data.dateOfExpiry);
+      }
+    }
+
+    console.log("── MRZ result:", Object.keys(data).length, "fields ──");
     return data;
   };
 
@@ -1206,21 +828,23 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent style={{ maxWidth: "95vw", maxHeight: "90vh", padding: 0 }}>
-        <DialogHeader style={{ padding: "1.5rem", paddingBottom: "1rem" }}>
+        <DialogHeader style={{ padding: "1rem 1.5rem 0.5rem" }}>
           <DialogTitle style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Camera width="1.25rem" />
-            Scan Passport
+            <ScanLine width="1.25rem" />
+            MRZ Passport Scanner
           </DialogTitle>
           <DialogDescription>
             {!ocrReady 
               ? `Loading OCR engine... ${ocrLoadProgress}%` 
-              : capturedImage 
-                ? "Processing image..." 
-                : "Position passport in frame — MRZ zone will be scanned automatically"}
+              : processing
+                ? "Reading MRZ zone..."
+                : capturedImage
+                  ? "Image captured. Tap Retake to try again."
+                  : "Position the MRZ (bottom 2 lines of text) inside the highlighted zone"}
           </DialogDescription>
         </DialogHeader>
 
-        <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", background: "#000" }}>
+        <div style={{ position: "relative", width: "100%", aspectRatio: "3/2", background: "#000", overflow: "hidden" }}>
           {!capturedImage ? (
             <>
               <video
@@ -1229,47 +853,48 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
                 playsInline
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
+              {/* Passport outline */}
               <div style={{
                 position: "absolute",
-                inset: "5%",
-                border: `2px dashed ${documentDetected ? 'rgba(0, 255, 0, 0.8)' : 'rgba(255, 255, 255, 0.6)'}`,
-                borderRadius: "1rem",
+                inset: "4%",
+                border: "2px solid rgba(255, 255, 255, 0.35)",
+                borderRadius: "0.5rem",
                 pointerEvents: "none",
-                transition: "border-color 0.3s ease"
               }} />
-              {documentDetected && (
-                <div style={{
-                  position: "absolute",
-                  top: "10%",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  background: "rgba(0, 255, 0, 0.9)",
-                  color: "white",
-                  padding: "0.5rem 1rem",
-                  borderRadius: "0.5rem",
-                  fontSize: "0.875rem",
-                  fontWeight: "600",
-                  pointerEvents: "none"
+              {/* MRZ guide zone — highlighted bottom strip */}
+              <div style={{
+                position: "absolute",
+                left: "4%",
+                right: "4%",
+                bottom: "4%",
+                height: "22%",
+                border: "2px solid mediumslateblue",
+                borderRadius: "0.25rem",
+                background: "rgba(123, 104, 238, 0.12)",
+                pointerEvents: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}>
+                <span style={{
+                  color: "rgba(255,255,255,0.8)",
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  letterSpacing: "0.05em",
+                  textShadow: "0 1px 3px rgba(0,0,0,0.7)",
+                  textTransform: "uppercase",
                 }}>
-                  Document Detected
-                </div>
-              )}
+                  MRZ Zone — Align the two bottom lines here
+                </span>
+              </div>
             </>
           ) : (
             <img src={capturedImage} alt="Captured" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
           )}
           <canvas ref={canvasRef} style={{ display: "none" }} />
-          <canvas ref={edgeCanvasRef} style={{ display: "none" }} />
         </div>
 
-        {extractedText && (
-          <div style={{ padding: "1rem", maxHeight: "150px", overflowY: "auto", fontSize: "0.75rem", background: "rgba(100,100,100,0.05)" }}>
-            <strong>Extracted Text:</strong>
-            <pre style={{ whiteSpace: "pre-wrap", marginTop: "0.5rem", opacity: 0.7 }}>{extractedText}</pre>
-          </div>
-        )}
-
-        <div style={{ padding: "1.5rem", paddingTop: "1rem", display: "flex", gap: "0.75rem" }}>
+        <div style={{ padding: "1rem 1.5rem", display: "flex", gap: "0.75rem" }}>
           {!capturedImage ? (
             <>
               <button
@@ -1288,63 +913,18 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
                 Cancel
               </button>
               <button
-                onClick={capturePhoto}
-                disabled={!ocrReady}
+                onClick={captureAndProcess}
+                disabled={!ocrReady || processing}
                 style={{
                   flex: 2,
                   padding: "0.875rem",
                   borderRadius: "0.75rem",
-                  background: ocrReady ? "mediumslateblue" : "rgba(100, 100, 100, 0.3)",
+                  background: (ocrReady && !processing) ? "mediumslateblue" : "rgba(100, 100, 100, 0.3)",
                   color: "white",
                   border: "none",
                   fontSize: "1rem",
                   fontWeight: "600",
-                  cursor: ocrReady ? "pointer" : "not-allowed",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.5rem"
-                }}
-              >
-                <Camera width="1.25rem" />
-                Capture
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => {
-                  setCapturedImage(null);
-                  setExtractedText("");
-                  startCamera();
-                }}
-                disabled={processing}
-                style={{
-                  flex: 1,
-                  padding: "0.875rem",
-                  borderRadius: "0.75rem",
-                  background: "rgba(100, 100, 100, 0.1)",
-                  border: "none",
-                  fontSize: "1rem",
-                  fontWeight: "500",
-                  cursor: processing ? "not-allowed" : "pointer"
-                }}
-              >
-                Retake
-              </button>
-              <button
-                onClick={() => processImage(capturedImage)}
-                disabled={processing}
-                style={{
-                  flex: 2,
-                  padding: "0.875rem",
-                  borderRadius: "0.75rem",
-                  background: processing ? "rgba(100, 100, 100, 0.3)" : "mediumslateblue",
-                  color: "white",
-                  border: "none",
-                  fontSize: "1rem",
-                  fontWeight: "600",
-                  cursor: processing ? "not-allowed" : "pointer",
+                  cursor: (ocrReady && !processing) ? "pointer" : "not-allowed",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1354,16 +934,50 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
                 {processing ? (
                   <>
                     <Loader2 className="animate-spin" width="1.25rem" />
-                    Processing...
+                    Scanning MRZ...
                   </>
                 ) : (
                   <>
                     <ScanLine width="1.25rem" />
-                    Extract Data
+                    Scan Passport
                   </>
                 )}
               </button>
             </>
+          ) : (
+            <button
+              onClick={() => {
+                setCapturedImage(null);
+                startCamera();
+              }}
+              disabled={processing}
+              style={{
+                flex: 1,
+                padding: "0.875rem",
+                borderRadius: "0.75rem",
+                background: processing ? "rgba(100, 100, 100, 0.3)" : "rgba(100, 100, 100, 0.1)",
+                border: "none",
+                fontSize: "1rem",
+                fontWeight: "500",
+                cursor: processing ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem"
+              }}
+            >
+              {processing ? (
+                <>
+                  <Loader2 className="animate-spin" width="1.25rem" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Camera width="1.25rem" />
+                  Retake
+                </>
+              )}
+            </button>
           )}
         </div>
       </DialogContent>
