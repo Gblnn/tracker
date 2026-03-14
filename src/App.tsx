@@ -74,6 +74,7 @@ export default function App() {
   const { addProcess, updateProcess } = useBackgroundProcess();
   const { user, userData, cachedAuthState } = useAuth();
   const phonebookInitialized = useRef(false);
+  const mrzWarmupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Initialize phonebook cache in the background on app launch (only once)
   useEffect(() => {
@@ -94,8 +95,6 @@ export default function App() {
       return;
     }
 
-    let mrzWarmupTimer: number | null = null;
-
     const warmup = () => {
       void preloadOcrWorker()
         .catch((error) => {
@@ -107,12 +106,20 @@ export default function App() {
           }
 
           // Stagger MRZ warmup so lower-end devices are not hit by two heavy inits at once.
-          mrzWarmupTimer = globalThis.setTimeout(() => {
+          mrzWarmupTimerRef.current = setTimeout(() => {
+            mrzWarmupTimerRef.current = null;
             void preloadMrzWorker().catch((error) => {
               console.warn("MRZ warmup skipped:", error);
             });
           }, 1200);
         });
+    };
+
+    const clearMrzTimer = () => {
+      if (mrzWarmupTimerRef.current !== null) {
+        clearTimeout(mrzWarmupTimerRef.current);
+        mrzWarmupTimerRef.current = null;
+      }
     };
 
     if (typeof globalThis !== "undefined" && "requestIdleCallback" in globalThis) {
@@ -121,18 +128,14 @@ export default function App() {
       const handle = requestIdle(() => warmup());
       return () => {
         cancelIdle(handle);
-        if (mrzWarmupTimer !== null) {
-          globalThis.clearTimeout(mrzWarmupTimer);
-        }
+        clearMrzTimer();
       };
     }
 
-    const timer = globalThis.setTimeout(warmup, 300);
+    const timer = setTimeout(warmup, 300);
     return () => {
-      globalThis.clearTimeout(timer);
-      if (mrzWarmupTimer !== null) {
-        globalThis.clearTimeout(mrzWarmupTimer);
-      }
+      clearTimeout(timer);
+      clearMrzTimer();
     };
   }, [user, userData, cachedAuthState]);
 
