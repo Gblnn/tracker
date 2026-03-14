@@ -10,14 +10,22 @@ export default function PageNotFound() {
         justifyContent: "center",
         alignItems: "center",
         fontSize: "1rem",
-        gap: "1rem",
+        // gap: "1rem",
       }}
     >
       <div style={{ position: "absolute", top: 0, left: 0, margin: "2rem" }}>
         <Back />
       </div>
 
-      <div
+      <div style={{border:"solid red ", height:"100%", flex:1}}>
+
+      </div>
+
+      <div style={{border:"solid blue", height:"100%", flex:1}}>
+
+      </div>
+
+      {/* <div
         style={{
           borderRight: "1px solid rgba(100 100 100/ 60%)",
           padding: "0.5rem",
@@ -26,7 +34,7 @@ export default function PageNotFound() {
       >
         <p style={{ fontSize: "1.5rem", fontWeight: "600" }}>404</p>
       </div>
-      <p style={{ fontSize: "0.8rem" }}>This page could not be found</p>
+      <p style={{ fontSize: "0.8rem" }}>This page could not be found</p> */}
     </div>
   );
 }

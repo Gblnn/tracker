@@ -5,7 +5,10 @@ import { ResponsiveModal } from "@/components/responsive-modal";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { db } from "@/firebase";
-import { ensureOcrWorker, getOcrLoadState, subscribeOcrLoadState } from "@/utils/ocrWorker";
+import { ensureOcrWorker } from "@/utils/ocrWorker";
+import { PSM } from "tesseract.js";
+import { ensureMrzWorker, subscribeMrzLoad } from "@/utils/mrzWorker";
+import { parse as parseMRZText } from "mrz";
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where, orderBy } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { 
@@ -441,24 +444,27 @@ interface PassportScannerProps {
 const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onDataExtracted }) => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [ocrReady, setOcrReady] = useState(getOcrLoadState().ready);
-  const [ocrLoadProgress, setOcrLoadProgress] = useState(getOcrLoadState().progress);
+  const [ocrReady, setOcrReady] = useState(false);
+  const [ocrLoadProgress, setOcrLoadProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
-    const unsubscribe = subscribeOcrLoadState((state) => {
-      setOcrReady(state.ready);
-      setOcrLoadProgress(state.progress);
+    // Subscribe to the dedicated MRZ worker load progress
+    const unsubscribe = subscribeMrzLoad((progress, status) => {
+      setOcrLoadProgress(progress);
+      setOcrReady(progress >= 100);
+      console.log(`[MRZ worker] ${status} ${progress}%`);
     });
-
     return unsubscribe;
   }, []);
 
   useEffect(() => {
     if (open) {
-      void ensureOcrWorker();
+      // Preload both workers
+      void ensureMrzWorker();
+      void ensureOcrWorker(); // still used for visual text pass
       if (!capturedImage) {
         startCamera();
       }
@@ -556,24 +562,73 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
   };
 
   // ============================================================
-  // ICAO 9303 CHECK DIGIT — validates MRZ fields
+  // MRZ DATE CONVERSION — YYMMDD → YYYY-MM-DD
   // ============================================================
-  const mrzCheckDigit = (s: string): number => {
-    const weights = [7, 3, 1];
-    let sum = 0;
-    for (let i = 0; i < s.length; i++) {
-      const c = s[i];
-      let val: number;
-      if (c >= '0' && c <= '9') val = parseInt(c);
-      else if (c >= 'A' && c <= 'Z') val = c.charCodeAt(0) - 55;
-      else val = 0; // '<'
-      sum += val * weights[i % 3];
-    }
-    return sum % 10;
+  const mrzDateToISO = (yymmdd: string, context: 'dob' | 'exp'): string | null => {
+    if (!yymmdd || yymmdd.includes('<') || yymmdd.length !== 6) return null;
+    const yy = parseInt(yymmdd.substring(0, 2));
+    const mm = yymmdd.substring(2, 4);
+    const dd = yymmdd.substring(4, 6);
+    // DOB: if yy > current 2-digit year → person was born last century
+    const currentYY = new Date().getFullYear() % 100;
+    const year = context === 'dob'
+      ? (yy > currentYY ? 1900 + yy : 2000 + yy)
+      : 2000 + yy; // expiry is always this century
+    const m = moment(`${year}-${mm}-${dd}`, 'YYYY-MM-DD', true);
+    return m.isValid() ? m.format('YYYY-MM-DD') : null;
   };
 
   // ============================================================
-  // MAIN PROCESSING — MRZ first, visual text only for non-MRZ fields
+  // MAP mrz.parse() result → PassportRecord
+  // ============================================================
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapMRZResult = (parsed: any): Partial<PassportRecord> => {
+    const data: Partial<PassportRecord> = {};
+    const f = parsed.fields;
+    if (!f) return data;
+
+    const val = (field: string): string | undefined => f[field]?.value || undefined;
+
+    // Passport number
+    if (val('documentNumber')) data.passportNumber = val('documentNumber');
+
+    // Full name — mrz parser returns lastName and firstName separately
+    const last = val('lastName')?.trim() ?? '';
+    const first = val('firstName')?.trim() ?? '';
+    if (first && last) data.fullName = `${first} ${last}`;
+    else if (first || last) data.fullName = (first || last);
+
+    // Nationality
+    if (val('nationality')) data.nationality = val('nationality');
+
+    // Sex
+    const sex = val('sex');
+    if (sex === 'M' || sex === 'F') data.sex = sex;
+
+    // Dates
+    const dob = mrzDateToISO(val('birthDate') ?? '', 'dob');
+    if (dob) data.dateOfBirth = dob;
+
+    const exp = mrzDateToISO(val('expirationDate') ?? '', 'exp');
+    if (exp) data.dateOfExpiry = exp;
+
+    return data;
+  };
+
+  // ============================================================
+  // MRZ LINE EXTRACTION — pull valid MRZ lines from OCR output
+  // With mrz.traineddata, '<' is correctly recognised, so we can
+  // rely on simple filtering rules without chevron normalization.
+  // ============================================================
+  const extractMRZLines = (rawText: string): string[] => {
+    return rawText
+      .split('\n')
+      .map((l: string) => l.replace(/\s/g, '').replace(/[^A-Z0-9<]/gi, '').toUpperCase())
+      .filter((l: string) => l.length >= 35 && l.includes('<'));
+  };
+
+  // ============================================================
+  // MAIN PROCESSING — mrz worker for MRZ zone, ocr worker for visual text
   // ============================================================
   const processImage = async (imageData: string) => {
     setProcessing(true);
@@ -588,19 +643,19 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       console.log("========== MRZ SCAN ==========");
       console.log("Image:", img.width, "x", img.height);
 
-      const worker = await ensureOcrWorker();
+      // Use the dedicated MRZ worker (mrz.traineddata — OCR-B specific)
+      const mrzW = await ensureMrzWorker();
 
       // Try MRZ crops: bottom 30% (tight), 45% (generous), 60% (very generous)
       const attempts = [
-        { label: "bottom-30%", topPct: 0.70, contrast: 1.5, psm: '6' },
-        { label: "bottom-45%", topPct: 0.55, contrast: 1.4, psm: '6' },
-        { label: "bottom-60%", topPct: 0.40, contrast: 1.3, psm: '6' },
+        { label: "bottom-30%", topPct: 0.70, contrast: 1.5, psm: PSM.SINGLE_BLOCK },
+        { label: "bottom-45%", topPct: 0.55, contrast: 1.4, psm: PSM.SINGLE_BLOCK },
+        { label: "bottom-60%", topPct: 0.40, contrast: 1.3, psm: PSM.SINGLE_BLOCK },
       ];
 
       let bestData: Partial<PassportRecord> = {};
 
       for (const attempt of attempts) {
-        // Stop if we have all 6 MRZ fields (name, passport#, nationality, dob, sex, expiry)
         if (Object.keys(bestData).length >= 6) break;
 
         const cropY = Math.floor(img.height * attempt.topPct);
@@ -612,38 +667,65 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
 
         console.log(`── Attempt: ${attempt.label}, scale=${scale.toFixed(1)} ──`);
 
-        await worker.setParameters({
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789< ',
+        await mrzW.setParameters({
           tessedit_pageseg_mode: attempt.psm,
           preserve_interword_spaces: '0',
         });
 
-        const result = await worker.recognize(mrzImage);
+        const result = await mrzW.recognize(mrzImage);
         console.log("Raw MRZ text:", result.data.text);
-        console.log("Confidence:", result.data.confidence);
 
-        const parsed = parseMRZ(result.data.text);
-        if (Object.keys(parsed).length > Object.keys(bestData).length) {
-          bestData = parsed;
+        const mrzLines = extractMRZLines(result.data.text);
+        console.log("MRZ lines:", mrzLines);
+        if (mrzLines.length < 2) continue;
+
+        // Find the line-1 / line-2 pair
+        let l1 = '', l2 = '';
+        for (let i = 0; i < mrzLines.length - 1; i++) {
+          if (mrzLines[i].startsWith('P') && mrzLines[i].includes('<<')) {
+            l1 = mrzLines[i].substring(0, 44).padEnd(44, '<');
+            l2 = mrzLines[i + 1].substring(0, 44).padEnd(44, '<');
+            break;
+          }
+        }
+        if (!l1) {
+          l1 = mrzLines[mrzLines.length - 2].substring(0, 44).padEnd(44, '<');
+          l2 = mrzLines[mrzLines.length - 1].substring(0, 44).padEnd(44, '<');
+          if (l2.startsWith('P') && l2.includes('<<')) [l1, l2] = [l2, l1];
+        }
+        console.log("L1:", l1);
+        console.log("L2:", l2);
+
+        try {
+          // autocorrect: true lets mrz fix O→0, I→1 etc. in the right positions
+          const parsed = parseMRZText([l1, l2], { autocorrect: true });
+          console.log("Parsed valid:", parsed.valid, parsed.fields);
+          const mapped = mapMRZResult(parsed);
+          if (Object.keys(mapped).length > Object.keys(bestData).length) {
+            bestData = mapped;
+          }
+        } catch (e) {
+          console.warn('mrz parse error:', e);
         }
       }
 
-      // If tight crops failed, try full-page as last resort
+      // Full-page fallback if crops missed MRZ
       if (Object.keys(bestData).length < 3) {
-        console.log("── Last resort: full page with MRZ whitelist ──");
+        console.log("── Last resort: full page scan ──");
         const scale = img.width < 1200 ? 2 : (img.width < 2000 ? 1.5 : 1);
         const fullImg = preprocessForMRZ(img, 0, 0, img.width, img.height, scale, 1.3);
         if (fullImg) {
-          await worker.setParameters({
-            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789< ',
-            tessedit_pageseg_mode: '3',
-            preserve_interword_spaces: '0',
-          });
-          const fullResult = await worker.recognize(fullImg);
-          console.log("Full page MRZ text:", fullResult.data.text);
-          const fullParsed = parseMRZ(fullResult.data.text);
-          if (Object.keys(fullParsed).length > Object.keys(bestData).length) {
-            bestData = fullParsed;
+          await mrzW.setParameters({ tessedit_pageseg_mode: PSM.AUTO, preserve_interword_spaces: '0' });
+          const fullResult = await mrzW.recognize(fullImg);
+          const fullLines = extractMRZLines(fullResult.data.text);
+          if (fullLines.length >= 2) {
+            const l1 = fullLines[fullLines.length - 2].substring(0, 44).padEnd(44, '<');
+            const l2 = fullLines[fullLines.length - 1].substring(0, 44).padEnd(44, '<');
+            try {
+              const parsed = parseMRZText([l1, l2], { autocorrect: true });
+              const mapped = mapMRZResult(parsed);
+              if (Object.keys(mapped).length > Object.keys(bestData).length) bestData = mapped;
+            } catch { /* ignore */ }
           }
         }
       }
@@ -675,12 +757,13 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
           const scale = img.width < 1200 ? 2 : (img.width < 2000 ? 1.5 : 1);
           const topImg = preprocessForMRZ(img, 0, 0, img.width, topH, scale, 1.4);
           if (topImg) {
-            await worker.setParameters({
+            const ocrW = await ensureOcrWorker();
+            await ocrW.setParameters({
               tessedit_char_whitelist: '',
-              tessedit_pageseg_mode: '4',
+              tessedit_pageseg_mode: PSM.SINGLE_COLUMN,
               preserve_interword_spaces: '1',
             });
-            const topResult = await worker.recognize(topImg);
+            const topResult = await ocrW.recognize(topImg);
             const text = topResult.data.text;
             console.log("Visual text:\n", text);
 
@@ -818,231 +901,6 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
     } finally {
       setProcessing(false);
     }
-  };
-
-  // ============================================================
-  // MRZ PARSER — ICAO 9303 TD3 (passport), 2 × 44 chars
-  // ============================================================
-  // Line 1: P<CCC<SURNAME<<GIVEN<NAMES<<<<<<<<<<<<<<<
-  // Line 2: PPPPPPPPPCNNNYYMMDDCSYYMMDDCPPPPPPPPPPPPPPCC
-  //         0-------89..12-----1920----27             43
-  const parseMRZ = (rawText: string): Partial<PassportRecord> => {
-    const data: Partial<PassportRecord> = {};
-    if (!rawText || rawText.length < 40) return data;
-
-    console.log("── MRZ parse ──");
-
-    // Clean lines: strip non-MRZ chars, keep uppercase
-    let lines = rawText.split('\n')
-      .map((l: string) => l.replace(/[^A-Z0-9<]/gi, '').toUpperCase())
-      .filter((l: string) => l.length >= 30 && l.includes('<'));
-
-    console.log("MRZ candidates:", lines.map((l: string) => `[${l.length}] ${l}`));
-
-    if (lines.length < 2) {
-      // Try merging consecutive short lines
-      const rawLines = rawText.split('\n')
-        .map((l: string) => l.replace(/[^A-Z0-9<]/gi, '').toUpperCase())
-        .filter((l: string) => l.length > 0);
-      const merged: string[] = [];
-      let buf = '';
-      for (const rl of rawLines) {
-        buf += rl;
-        if (buf.length >= 30 && buf.includes('<')) {
-          merged.push(buf);
-          buf = '';
-        }
-      }
-      if (buf.length >= 30 && buf.includes('<')) merged.push(buf);
-
-      if (merged.length >= 2) {
-        lines = merged;
-        console.log("After merge:", lines.map((l: string) => `[${l.length}] ${l}`));
-      }
-    }
-
-    // Relaxed threshold if still not 2 lines
-    if (lines.length < 2) {
-      const relaxed = rawText.split('\n')
-        .map((l: string) => l.replace(/[^A-Z0-9<]/gi, '').toUpperCase())
-        .filter((l: string) => l.length >= 25 && l.includes('<'));
-      if (relaxed.length >= 2) {
-        lines = relaxed;
-        console.log("Relaxed threshold:", lines.map((l: string) => `[${l.length}] ${l}`));
-      }
-    }
-
-    if (lines.length < 2) {
-      console.log("Not enough MRZ lines found");
-      return data;
-    }
-
-    // Pick the best pair: line1 should start with 'P' and contain '<<'
-    let line1 = '';
-    let line2 = '';
-
-    for (let i = 0; i < lines.length - 1; i++) {
-      if (lines[i].startsWith('P') && lines[i].includes('<<')) {
-        line1 = lines[i];
-        line2 = lines[i + 1];
-        break;
-      }
-    }
-
-    // Fallback: use last two lines
-    if (!line1) {
-      line1 = lines[lines.length - 2];
-      line2 = lines[lines.length - 1];
-      if (line2.startsWith('P') && line2.includes('<<')) {
-        [line1, line2] = [line2, line1];
-      }
-    }
-
-    // Normalize to 44 chars
-    line1 = line1.substring(0, 44).padEnd(44, '<');
-    line2 = line2.substring(0, 44).padEnd(44, '<');
-
-    console.log("L1:", line1);
-    console.log("L2:", line2);
-
-    // ── LINE 1: P<CCCSURNAME<<GIVEN<NAMES ──
-    const issuingCountry = line1.substring(2, 5).replace(/</g, '');
-
-    // Name starts at position 5 per ICAO 9303.
-    // Strip leading < fillers. OCR often misreads < as K in the MRZ font,
-    // so also strip a leading K if it's followed by < (i.e. K was a filler, not part of name).
-    let nameSection = line1.substring(5);
-    nameSection = nameSection.replace(/^<+/, ''); // strip leading < fillers
-    // If starts with K< pattern, the K is almost certainly a misread < filler
-    if (/^K</.test(nameSection)) {
-      nameSection = nameSection.substring(1).replace(/^<+/, '');
-    }
-
-    const nameParts = nameSection.split('<<').filter((p: string) => p.replace(/</g, '').length > 0);
-    if (nameParts.length >= 2) {
-      const surname = nameParts[0].replace(/</g, ' ').trim();
-      const given = nameParts.slice(1).map((p: string) => p.replace(/</g, ' ').trim()).join(' ');
-      if (surname && given) {
-        data.fullName = `${given} ${surname}`;
-        console.log("✓ Name:", data.fullName);
-      }
-    } else if (nameParts.length === 1) {
-      data.fullName = nameParts[0].replace(/</g, ' ').trim();
-      console.log("✓ Name (single):", data.fullName);
-    }
-
-    // ── LINE 2 ──
-    // Conservative digit correction: only unambiguous OCR substitutions
-    const toDigitsSafe = (s: string): string => s
-      .replace(/O/g, '0').replace(/D/g, '0')
-      .replace(/I/g, '1').replace(/l/g, '1')
-      .replace(/[^0-9]/g, '');
-
-    // Aggressive digit correction: fallback when safe version fails
-    const toDigitsAggressive = (s: string): string => s
-      .replace(/O/g, '0').replace(/D/g, '0')
-      .replace(/I/g, '1').replace(/l/g, '1').replace(/L/g, '1')
-      .replace(/S/g, '5').replace(/s/g, '5')
-      .replace(/B/g, '8').replace(/G/g, '6')
-      .replace(/Z/g, '2').replace(/z/g, '2')
-      .replace(/T/g, '7')
-      .replace(/[^0-9]/g, '');
-
-    // Parse YYMMDD → YYYY-MM-DD, trying safe then aggressive correction
-    const parseMRZDate = (raw: string, checkChar: string, context: 'dob' | 'exp'): string | null => {
-      for (const converter of [toDigitsSafe, toDigitsAggressive]) {
-        const digits = converter(raw);
-        if (digits.length !== 6) continue;
-        const yy = parseInt(digits.substring(0, 2));
-        const mm = digits.substring(2, 4);
-        const dd = digits.substring(4, 6);
-        const year = yy > 50 ? 1900 + yy : 2000 + yy;
-        const m = moment(`${year}-${mm}-${dd}`, 'YYYY-MM-DD', true);
-        if (!m.isValid()) continue;
-
-        // Validate range
-        if (context === 'dob' && (year < 1920 || year > 2025)) continue;
-        if (context === 'exp' && (year < 2020 || year > 2040)) continue;
-
-        // Check digit validation (informational)
-        const cdExpected = mrzCheckDigit(raw);
-        const cdActual = toDigitsSafe(checkChar);
-        if (cdActual.length === 1) {
-          console.log(`  ${context} check digit: expected=${cdExpected} actual=${cdActual} ${cdExpected === parseInt(cdActual) ? '✓' : '⚠'}`);
-        }
-        return m.format('YYYY-MM-DD');
-      }
-      return null;
-    };
-
-    // [0-8] Passport number, [9] check digit
-    const passSection = line2.substring(0, 9);
-    const passCheckChar = line2.charAt(9);
-    const passRaw = passSection.replace(/</g, '');
-    if (passRaw.length >= 5) {
-      // Don't blindly convert alpha→digit — passport numbers are alphanumeric
-      // Keep alpha chars as alpha, only fix obvious misreads
-      let passNum = passRaw
-        .replace(/0(?=[A-Z]{2})/g, 'O')  // 0 before 2+ alpha is likely O
-        .replace(/[^A-Z0-9]/g, '');
-
-      // Validate with check digit
-      const cdExpected = mrzCheckDigit(passSection);
-      const cdActual = toDigitsSafe(passCheckChar);
-      if (cdActual.length === 1) {
-        const matches = cdExpected === parseInt(cdActual);
-        console.log(`  Passport check digit: expected=${cdExpected} actual=${cdActual} ${matches ? '✓' : '⚠'}`);
-      }
-
-      data.passportNumber = passNum;
-      console.log("✓ Passport:", data.passportNumber);
-    }
-
-    // [10-12] Nationality
-    const natRaw = line2.substring(10, 13).replace(/</g, '');
-    const nat = natRaw.replace(/[0-9]/g, (d: string) => {
-      const map: Record<string, string> = { '0': 'O', '1': 'I', '2': 'Z', '5': 'S', '8': 'B' };
-      return map[d] || d;
-    });
-    if (nat.length >= 2) {
-      data.nationality = nat;
-      console.log("✓ Nationality:", nat);
-    } else if (issuingCountry.length >= 2) {
-      // Fallback: use issuing country from Line 1
-      data.nationality = issuingCountry;
-      console.log("✓ Nationality (from L1):", issuingCountry);
-    }
-
-    // [13-18] DOB (YYMMDD), [19] check digit
-    const dob = parseMRZDate(line2.substring(13, 19), line2.charAt(19), 'dob');
-    if (dob) {
-      data.dateOfBirth = dob;
-      console.log("✓ DOB:", dob);
-    }
-
-    // [20] Sex
-    const sexChar = line2.charAt(20);
-    if (sexChar === 'M' || sexChar === 'F') {
-      data.sex = sexChar;
-      console.log("✓ Sex:", sexChar);
-    } else {
-      // Common OCR misreads of M or F
-      const sexGuess: Record<string, string> = { 'H': 'M', 'W': 'M', 'N': 'M', '0': 'M', 'P': 'F', 'E': 'F' };
-      if (sexGuess[sexChar]) {
-        data.sex = sexGuess[sexChar];
-        console.log("✓ Sex (corrected):", data.sex);
-      }
-    }
-
-    // [21-26] Expiry (YYMMDD), [27] check digit
-    const exp = parseMRZDate(line2.substring(21, 27), line2.charAt(27), 'exp');
-    if (exp) {
-      data.dateOfExpiry = exp;
-      console.log("✓ Expiry:", exp);
-    }
-
-    console.log("── MRZ result:", Object.keys(data).length, "fields ──");
-    return data;
   };
 
   if (!open) return null;
