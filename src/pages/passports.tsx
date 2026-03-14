@@ -632,11 +632,98 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       // Expand nationality
       if (bestData.nationality === 'IND') bestData.nationality = 'INDIAN';
 
-      // Fallback: expiry = issue + 10 years - 1 day (if we somehow got issue but not expiry)
-      if (!bestData.dateOfExpiry && bestData.dateOfBirth) {
-        // MRZ doesn't have issue date; estimate expiry from DOB if person is adult
-        // Common: passport issued around age 18+, valid 10 years
-        // We can't reliably calculate this, so skip
+      // ── VISUAL TEXT PASS: Grab fields NOT in MRZ ──
+      // Place of birth, place of issue, date of issue are only in printed text (top ~70%)
+      if (!bestData.placeOfBirth || !bestData.placeOfIssue || !bestData.dateOfIssue) {
+        console.log("========== VISUAL TEXT PASS ==========");
+        try {
+          const topH = Math.floor(img.height * 0.75);
+          const scale = img.width < 1200 ? 2 : (img.width < 2000 ? 1.5 : 1);
+          const topImg = preprocessForMRZ(img, 0, 0, img.width, topH, scale, 1.4);
+          if (topImg) {
+            await worker.setParameters({
+              tessedit_char_whitelist: '',
+              tessedit_pageseg_mode: '3',
+              preserve_interword_spaces: '1',
+            });
+            const topResult = await worker.recognize(topImg);
+            const text = topResult.data.text;
+            console.log("Visual text:\n", text);
+
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+            const getNext = (idx: number): string => {
+              for (let j = idx + 1; j < lines.length; j++) {
+                if (lines[j].length > 0) return lines[j];
+              }
+              return '';
+            };
+
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i];
+              const next = getNext(i);
+              const next2 = getNext(i + 1);
+
+              // Date of Issue / Date of Expiry (often on one line)
+              if (!bestData.dateOfIssue && (/[Ii]ssue/i.test(line) || /[Ee]xp[il1]r/i.test(line))) {
+                const dateRe = /(\d{1,2}[\s\/\.\-]\d{1,2}[\s\/\.\-]\d{2,4})/g;
+                const dates: string[] = [];
+                for (const src of [line, next, next2]) {
+                  let m;
+                  while ((m = dateRe.exec(src)) !== null) dates.push(m[1]);
+                  dateRe.lastIndex = 0;
+                }
+                for (const ds of dates) {
+                  const p = moment(ds, ["DD/MM/YYYY", "DD-MM-YYYY", "DD.MM.YYYY", "DD/MM/YY"], true);
+                  if (!p.isValid()) continue;
+                  if (!bestData.dateOfIssue && p.year() >= 2000 && p.year() <= 2026) {
+                    bestData.dateOfIssue = p.format("YYYY-MM-DD");
+                    console.log("✓ Date of Issue:", bestData.dateOfIssue);
+                  } else if (!bestData.dateOfExpiry && p.year() >= 2020) {
+                    const val = p.format("YYYY-MM-DD");
+                    if (val !== bestData.dateOfIssue) {
+                      bestData.dateOfExpiry = val;
+                      console.log("✓ Date of Expiry (visual):", bestData.dateOfExpiry);
+                    }
+                  }
+                }
+              }
+
+              // Place of Birth
+              if (!bestData.placeOfBirth && /[Pp]lace[\s]*of[\s]*[Bb]irth/i.test(line)) {
+                const m = line.match(/[Pp]lace[\s]*of[\s]*[Bb]irth[:\s]*([A-Za-z][A-Za-z\s,\.]{2,})/i);
+                if (m && !/date|issue|expiry/i.test(m[1])) {
+                  bestData.placeOfBirth = m[1].trim().replace(/\s+/g, ' ').substring(0, 50);
+                } else if (next.length > 2 && /^[A-Za-z]/.test(next) && !/date|issue|expiry|sex/i.test(next)) {
+                  bestData.placeOfBirth = next.trim().replace(/\s+/g, ' ').substring(0, 50);
+                }
+                if (bestData.placeOfBirth) console.log("✓ Place of Birth:", bestData.placeOfBirth);
+              }
+
+              // Place of Issue
+              if (!bestData.placeOfIssue && /[Pp]lace[\s]*of[\s]*[Il1i]ssue/i.test(line)) {
+                const m = line.match(/[Pp]lace[\s]*of[\s]*[Il1i]ssue[:\s]*([A-Za-z][A-Za-z\s,\.]{2,})/i);
+                if (m && !/date|birth|expiry/i.test(m[1])) {
+                  bestData.placeOfIssue = m[1].trim().replace(/\s+/g, ' ').substring(0, 50);
+                } else if (next.length > 2 && /^[A-Za-z]/.test(next) && !/date|birth|expiry|sex/i.test(next)) {
+                  bestData.placeOfIssue = next.trim().replace(/\s+/g, ' ').substring(0, 50);
+                }
+                if (bestData.placeOfIssue) console.log("✓ Place of Issue:", bestData.placeOfIssue);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("Visual text pass failed:", e);
+        }
+      }
+
+      // Fallback: calculate expiry from issue date if MRZ missed it
+      if (!bestData.dateOfExpiry && bestData.dateOfIssue) {
+        const d = moment(bestData.dateOfIssue);
+        if (d.isValid()) {
+          bestData.dateOfExpiry = d.add(10, 'years').subtract(1, 'day').format("YYYY-MM-DD");
+          console.log("✓ Expiry (calculated):", bestData.dateOfExpiry);
+        }
       }
 
       console.log("==================== FINAL MRZ DATA ====================");
