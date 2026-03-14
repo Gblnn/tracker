@@ -702,11 +702,13 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
 
               // Place of Issue
               if (!bestData.placeOfIssue && /[Pp]lace[\s]*of[\s]*[Il1i]ssue/i.test(line)) {
-                const m = line.match(/[Pp]lace[\s]*of[\s]*[Il1i]ssue[:\s]*([A-Za-z][A-Za-z\s,\.]{2,})/i);
-                if (m && !/date|birth|expiry/i.test(m[1])) {
+                const m = line.match(/[Pp]lace[\s]*of[\s]*[Il1i]ssue[:\s\/]*([A-Za-z0-9][A-Za-z0-9\s,\.\-]{2,})/i);
+                if (m && !/date|birth|expiry|sex/i.test(m[1])) {
                   bestData.placeOfIssue = m[1].trim().replace(/\s+/g, ' ').substring(0, 50);
-                } else if (next.length > 2 && /^[A-Za-z]/.test(next) && !/date|birth|expiry|sex/i.test(next)) {
+                } else if (next.length > 2 && /^[A-Za-z]/.test(next) && !/date|birth|expiry|sex|passport|given|surname/i.test(next)) {
                   bestData.placeOfIssue = next.trim().replace(/\s+/g, ' ').substring(0, 50);
+                } else if (next2.length > 2 && /^[A-Za-z]/.test(next2) && !/date|birth|expiry|sex|passport|given|surname/i.test(next2)) {
+                  bestData.placeOfIssue = next2.trim().replace(/\s+/g, ' ').substring(0, 50);
                 }
                 if (bestData.placeOfIssue) console.log("✓ Place of Issue:", bestData.placeOfIssue);
               }
