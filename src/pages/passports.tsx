@@ -10,8 +10,9 @@ import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where, o
 import { motion } from "framer-motion";
 import { 
   Calendar, Camera, Globe, Loader2, Plus, ScanLine, Trash, UserCircle, X, 
-  FileText, MapPin, BookMarked 
+  FileText, MapPin, BookMarked, Download 
 } from "lucide-react";
+import * as XLSX from "@e965/xlsx";
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -904,10 +905,19 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
     console.log("L1:", line1);
     console.log("L2:", line2);
 
-    // ── LINE 1: P<CCC<SURNAME<<GIVEN<NAMES ──
+    // ── LINE 1: P<CCCSURNAME<<GIVEN<NAMES ──
     const issuingCountry = line1.substring(2, 5).replace(/</g, '');
 
-    const nameSection = line1.substring(5);
+    // Name starts at position 5 per ICAO 9303.
+    // Strip leading < fillers. OCR often misreads < as K in the MRZ font,
+    // so also strip a leading K if it's followed by < (i.e. K was a filler, not part of name).
+    let nameSection = line1.substring(5);
+    nameSection = nameSection.replace(/^<+/, ''); // strip leading < fillers
+    // If starts with K< pattern, the K is almost certainly a misread < filler
+    if (/^K</.test(nameSection)) {
+      nameSection = nameSection.substring(1).replace(/^<+/, '');
+    }
+
     const nameParts = nameSection.split('<<').filter((p: string) => p.replace(/</g, '').length > 0);
     if (nameParts.length >= 2) {
       const surname = nameParts[0].replace(/</g, ' ').trim();
@@ -1380,6 +1390,38 @@ export default function Passports() {
     setDeleteDialogOpen(true);
   };
 
+  const downloadExcel = () => {
+    if (passports.length === 0) {
+      toast.error("No passport records to export");
+      return;
+    }
+
+    const rows = passports.map((p) => ({
+      "Passport Number": p.passportNumber,
+      "Full Name": p.fullName,
+      "Date of Birth": p.dateOfBirth ? moment(p.dateOfBirth).format("DD/MM/YYYY") : "",
+      "Nationality": p.nationality,
+      "Sex": p.sex === "M" ? "Male" : p.sex === "F" ? "Female" : p.sex || "",
+      "Place of Birth": p.placeOfBirth || "",
+      "Place of Issue": p.placeOfIssue || "",
+      "Date of Issue": p.dateOfIssue ? moment(p.dateOfIssue).format("DD/MM/YYYY") : "",
+      "Date of Expiry": p.dateOfExpiry ? moment(p.dateOfExpiry).format("DD/MM/YYYY") : "",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Passports");
+
+    // Auto-size columns
+    const colWidths = Object.keys(rows[0]).map((key) => ({
+      wch: Math.max(key.length, ...rows.map((r) => String((r as Record<string, string>)[key] || "").length)) + 2,
+    }));
+    ws["!cols"] = colWidths;
+
+    XLSX.writeFile(wb, `Passports_${moment().format("YYYY-MM-DD")}.xlsx`);
+    toast.success("Passport list downloaded");
+  };
+
   const isExpired = (expiryDate: string) => {
     return moment(expiryDate).isBefore(moment(), 'day');
   };
@@ -1404,6 +1446,24 @@ export default function Passports() {
                 refreshCompleted={refreshCompleted}
                 fetchingData={refreshing}
               />
+              {passports.length > 0 && (
+                <button
+                  onClick={downloadExcel}
+                  style={{
+                    background: "rgba(100, 100, 100, 0.08)",
+                    border: "none",
+                    borderRadius: "0.5rem",
+                    padding: "0.5rem",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  title="Download as Excel"
+                >
+                  <Download width="1.125rem" />
+                </button>
+              )}
             </div>
           }
         />
@@ -1452,9 +1512,8 @@ export default function Passports() {
                     border: "1px solid rgba(100, 100, 100, 0.1)"
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                      <div style={{
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem", gap: "0.75rem" }}>
+                    <div style={{
                         background: isExpired(passport.dateOfExpiry) ? "rgba(220, 38, 38, 0.1)" :
                                    isExpiringSoon(passport.dateOfExpiry) ? "rgba(234, 179, 8, 0.1)" :
                                    "rgba(123, 104, 238, 0.1)",
@@ -1471,8 +1530,10 @@ export default function Passports() {
                                 "mediumslateblue"} 
                         />
                       </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      
                       <div>
-                        <div style={{ fontSize: "1.125rem", fontWeight: "600", marginBottom: "0.25rem" }}>
+                        <div style={{ fontSize: "1.125rem", fontWeight: "600", marginBottom: "0.25rem", textAlign:"left" }}>
                           {passport.fullName}
                         </div>
                         <div style={{ fontSize: "0.875rem", opacity: 0.6 }}>
