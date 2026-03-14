@@ -650,7 +650,7 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
             const text = topResult.data.text;
             console.log("Visual text:\n", text);
 
-            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const lines = text.split('\n').map((l: string) => l.trim()).filter((l: string) => l.length > 0);
 
             const getNext = (idx: number): string => {
               for (let j = idx + 1; j < lines.length; j++) {
