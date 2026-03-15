@@ -2468,7 +2468,8 @@ export default function DbComponent(props: Props) {
                 >
                   {access && (
                     <button
-                      className={selectable && !projectAllocMode ? "blue" : ""}
+                      
+                      style={{background:selectable?"mediumslateblue":""}}
                       onClick={() => {
                         if (projectAllocMode) {
                           toggleProjectAllocMode();

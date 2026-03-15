@@ -193,7 +193,7 @@ export default function TransferRequests() {
               fontWeight: tab === t ? 600 : 400,
               fontSize: "0.85rem",
               background:
-                tab === t ? "darkslateblue" : "rgba(100,100,100,0.08)",
+                tab === t ? "black" : "rgba(100,100,100,0.08)",
               color: tab === t ? "white" : "inherit",
               cursor: "pointer",
               display: "flex",

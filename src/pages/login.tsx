@@ -62,11 +62,6 @@ export default function Login() {
             break;
         }
       }
-
-      // Ensure non-site_admin users don't land on the site workers page
-      if (returnPath === "/site-admin-workers" && userData.role !== "site_admin") {
-        returnPath = "/index";
-      }
       
       navigate(returnPath, { replace: true });
     } catch (err: any) {
