@@ -32,6 +32,7 @@ import {
   Users,
   Wallet
 } from "lucide-react";
+import { ArrowRightLeft } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -175,11 +176,12 @@ export default function Index() {
     const hasVehicleLogBook = hasModuleAccess('vehicle_log_book');
     const hasPettyCash = hasModuleAccess('petty_cash');
     const hasOfferLetters = hasModuleAccess('offer_letters');
-        const hasShiftLogs = hasModuleAccess('shift_logs');
+    const hasShiftLogs = hasModuleAccess('shift_logs');
+    const hasTransferRequests = hasModuleAccess('transfer_requests');
 
     return hasRecordsMaster || hasUsers || hasNewHire || hasQuickLinks || 
            hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || 
-          hasPettyCash || hasOfferLetters || hasShiftLogs;
+        hasPettyCash || hasOfferLetters || hasShiftLogs || hasTransferRequests;
   };
 
   // Authenticate for specific module
@@ -411,6 +413,14 @@ export default function Index() {
                   title="Shift Logs"
                   icon={<Clock3 width={"2rem"} />}
                   onClick={() => authenticateModule('shift_logs', '/shift-logs', 'Shift Logs')}
+                />
+              )}
+
+              {hasModuleAccess('transfer_requests') && (
+                <GridTile
+                  title="Transfers"
+                  icon={<ArrowRightLeft width={"2rem"} />}
+                  onClick={() => authenticateModule('transfer_requests', '/transfer-requests', 'Transfers')}
                 />
               )}
             </div>

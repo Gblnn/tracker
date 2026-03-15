@@ -22,6 +22,7 @@ import {
 } from "firebase/firestore";
 import { motion } from "framer-motion";
 import {
+  ArrowRightLeft,
   Book,
   BookMarked,
   Car,
@@ -66,6 +67,7 @@ const MODULES = [
   { id: 'vehicle_log_book', name: 'Vehicle Log', icon: Book },
   { id: 'petty_cash', name: 'Petty Cash', icon: Wallet },
   { id: 'offer_letters', name: 'Offer Letters', icon: FileText },
+  { id: 'transfer_requests', name: 'Transfers', icon: ArrowRightLeft },
 ];
 
 // Shared User Details Content Component

@@ -57,6 +57,7 @@ const VehicleLogBook = lazy(() => import("./pages/vehicle-log-book"));
 const Tasks = lazy(() => import("./pages/tasks"));
 const ShiftLogs = lazy(() => import("./pages/shift-logs"));
 const SiteAdminWorkers = lazy(() => import("./pages/site-admin-workers"));
+const TransferRequests = lazy(() => import("./pages/transfer-requests"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -193,6 +194,7 @@ export default function App() {
           <Route path="/projects" element={<Projects />} />
           <Route path="/project-lpo" element={<ProjectLPO />} />
           <Route path="/movement-register" element={<MovementRegister />} />
+          <Route path="/transfer-requests" element={<TransferRequests />} />
           <Route path="/records" element={<Records />} />
           <Route path="/record/:id" element={<RecordDetail />} />
           <Route path="/vale-records" element={<ValeRecords />} />

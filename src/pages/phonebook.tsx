@@ -10,8 +10,8 @@ import {
     getPhonebookFromCache,
     isCacheStale
 } from "@/utils/phonebookCache";
-import { AtSign, Building2, Notebook, PhoneIcon } from "lucide-react";
 import { motion } from "framer-motion";
+import { AtSign, Building2, PhoneIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Phonebook() {
@@ -93,7 +93,8 @@ export default function Phonebook() {
             <RefreshButton onClick={fetchData} fetchingData={loading}/>
             </>
         }
-           icon={<Notebook color="mediumslateblue"/>} title={"Phonebook"}/>
+        //    icon={<Notebook color="mediumslateblue"/>} 
+           title={"Phonebook"}/>
         </div>
         
         <div style={{

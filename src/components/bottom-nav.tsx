@@ -25,12 +25,12 @@ const NavItem: React.FC<NavItemProps> = ({ icon, isActive, onClick, isMobile = f
     <div
       onClick={onClick}
       style={{
-      
+        border:"none",
         flex: isMobile ? 1 : 'none',
         display: "flex",
         justifyContent: "center",
         background: isActive 
-          ? (isMobile ? "linear-gradient(90deg, mediumslateblue, midnightblue)" : "linear-gradient(90deg, mediumslateblue, midnightblue)")
+          ? (isMobile ? "linear-gradient(-15deg, mediumslateblue, darkslateblue)" : "linear-gradient(15deg, darkslateblue, mediumslateblue)")
           : "none",
         color: isActive ? "white" : "darkslategray",
         fontSize: "0.9rem",
@@ -39,6 +39,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, isActive, onClick, isMobile = f
         padding: isMobile ? "0.75rem" : "0.5rem 2rem",
         cursor: "pointer",
         transition: "all",
+        boxShadow:isActive?"1px 1px 10px rgba(0,0,0,0.25)":"none"
       }}
     >
       {icon}

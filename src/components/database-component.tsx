@@ -2505,7 +2505,7 @@ export default function DbComponent(props: Props) {
                   />
                   <button 
                     onClick={() => setViewMode(viewMode === "directive" ? "table" : "directive")}
-                    style={{width:"2.5rem", background:viewMode === "table" ? "mediumslateblue" : "rgba(100 100 100/ 20%)"}}
+                    style={{width:"2.5rem", background:viewMode === "table" ? "mediumslateblue" : "rgba(100 100 100/ 10%)"}}
                     className={viewMode === "table" ? "" : ""}
                   >
                     {viewMode === "directive" ? (
