@@ -8,6 +8,7 @@ import { db } from "@/firebase";
 import { ensureOcrWorker } from "@/utils/ocrWorker";
 import { PSM } from "tesseract.js";
 import { ensureMrzWorker, getMrzLoadState, subscribeMrzLoad } from "@/utils/mrzWorker";
+import { parseMRZ as parseFastMRZ } from "mrz-fast";
 import { parse as parseMRZText } from "mrz";
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where, orderBy } from "firebase/firestore";
 import { motion } from "framer-motion";
@@ -612,7 +613,12 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
     const f = parsed.fields;
     if (!f) return data;
 
-    const val = (field: string): string | undefined => f[field]?.value || undefined;
+    const val = (field: string): string | undefined => {
+      const raw = f[field];
+      if (typeof raw === "string") return raw;
+      if (raw && typeof raw === "object" && typeof raw.value === "string") return raw.value;
+      return undefined;
+    };
 
     // Passport number
     if (val('documentNumber')) data.passportNumber = val('documentNumber');
@@ -629,6 +635,8 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
     // Sex
     const sex = val('sex');
     if (sex === 'M' || sex === 'F') data.sex = sex;
+    else if (sex === 'male') data.sex = 'M';
+    else if (sex === 'female') data.sex = 'F';
 
     // Dates
     const dob = mrzDateToISO(val('birthDate') ?? '', 'dob');
@@ -650,6 +658,14 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       .split('\n')
       .map((l: string) => l.replace(/\s/g, '').replace(/[^A-Z0-9<]/gi, '').toUpperCase())
       .filter((l: string) => l.length >= 35 && l.includes('<'));
+  };
+
+  const parseMrzLines = (l1: string, l2: string): any => {
+    try {
+      return parseFastMRZ([l1, l2], { errorCorrection: true });
+    } catch {
+      return parseMRZText([l1, l2], { autocorrect: true });
+    }
   };
 
   // ============================================================
@@ -726,8 +742,7 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
         console.log("L2:", l2);
 
         try {
-          // autocorrect: true lets mrz fix O→0, I→1 etc. in the right positions
-          const parsed = parseMRZText([l1, l2], { autocorrect: true });
+          const parsed = parseMrzLines(l1, l2);
           console.log("Parsed valid:", parsed.valid, parsed.fields);
           const mapped = mapMRZResult(parsed);
           if (Object.keys(mapped).length > Object.keys(bestData).length) {
@@ -755,7 +770,7 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
             const l1 = fullLines[fullLines.length - 2].substring(0, 44).padEnd(44, '<');
             const l2 = fullLines[fullLines.length - 1].substring(0, 44).padEnd(44, '<');
             try {
-              const parsed = parseMRZText([l1, l2], { autocorrect: true });
+              const parsed = parseMrzLines(l1, l2);
               const mapped = mapMRZResult(parsed);
               if (Object.keys(mapped).length > Object.keys(bestData).length) bestData = mapped;
             } catch { /* ignore */ }
