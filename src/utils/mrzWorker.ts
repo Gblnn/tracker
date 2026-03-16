@@ -12,19 +12,39 @@
 import Tesseract from "tesseract.js";
 
 type MrzLoadListener = (progress: number, status: string) => void;
+type MrzLoadState = {
+  ready: boolean;
+  progress: number;
+  status: string;
+};
 
 let workerInstance: Tesseract.Worker | null = null;
 let workerPromise: Promise<Tesseract.Worker> | null = null;
 const listeners = new Set<MrzLoadListener>();
+const LOCAL_LANG_PATH = "/ocr";
+
+let loadState: MrzLoadState = {
+  ready: false,
+  progress: 0,
+  status: "Loading MRZ engine...",
+};
 
 export const subscribeMrzLoad = (fn: MrzLoadListener): (() => void) => {
   listeners.add(fn);
+  fn(loadState.progress, loadState.status);
   return () => { listeners.delete(fn); };
 };
 
 const notify = (progress: number, status: string) => {
+  loadState = {
+    ready: progress >= 100,
+    progress,
+    status,
+  };
   listeners.forEach((fn) => fn(progress, status));
 };
+
+export const getMrzLoadState = (): MrzLoadState => loadState;
 
 const createMrzWorker = async (): Promise<Tesseract.Worker> => {
   // Try local WASM + remote mrz.traineddata (first run downloads once, then cached)
@@ -46,6 +66,7 @@ const createMrzWorker = async (): Promise<Tesseract.Worker> => {
       const w = await Tesseract.createWorker("mrz", 1, {
         workerPath: "/ocr/worker.min.js",
         corePath,
+        langPath: LOCAL_LANG_PATH,
         logger: loggerFn,
       });
       return w;
@@ -60,7 +81,10 @@ const createMrzWorker = async (): Promise<Tesseract.Worker> => {
 };
 
 export const ensureMrzWorker = (): Promise<Tesseract.Worker> => {
-  if (workerInstance) return Promise.resolve(workerInstance);
+  if (workerInstance) {
+    notify(100, "MRZ engine ready");
+    return Promise.resolve(workerInstance);
+  }
   if (workerPromise) return workerPromise;
 
   notify(0, "Loading MRZ engine...");

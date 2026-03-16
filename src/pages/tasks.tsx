@@ -1,5 +1,6 @@
 import Back from "@/components/back";
 import BottomNav from "@/components/bottom-nav";
+import RefreshButton from "@/components/refresh-button";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { useAuth } from "@/components/AuthProvider";
@@ -16,6 +17,7 @@ export default function Tasks() {
     const [startingShift, setStartingShift] = useState(false);
     const [endingShift, setEndingShift] = useState(false);
     const [checkingShift, setCheckingShift] = useState(false);
+    const [refreshCompleted, setRefreshCompleted] = useState(false);
     const [hasStartedShift, setHasStartedShift] = useState(false);
     const [shiftStartTimeMs, setShiftStartTimeMs] = useState<number | null>(null);
     const [activeShiftLogId, setActiveShiftLogId] = useState<string | null>(null);
@@ -314,92 +316,98 @@ export default function Tasks() {
         }
     };
 
-    useEffect(() => {
-        const checkShiftStatus = async () => {
-            const profile = getCachedProfile();
-            const email = userData?.email || profile?.email;
+    const checkShiftStatus = async (showRefreshCompleted = false) => {
+        const profile = getCachedProfile();
+        const email = userData?.email || profile?.email;
 
-            if (!email) {
-                setHasStartedShift(false);
-                setShiftStartTimeMs(null);
-                setActiveShiftLogId(null);
-                clearCachedShiftStart();
-                return;
-            }
+        if (!email) {
+            setHasStartedShift(false);
+            setShiftStartTimeMs(null);
+            setActiveShiftLogId(null);
+            clearCachedShiftStart();
+            return;
+        }
 
-            // Hydrate immediately from local cache so shift state is available offline.
-            const cachedShift = readCachedShiftStart(email);
-            if (cachedShift) {
-                setHasStartedShift(true);
-                setShiftStartTimeMs(cachedShift.shiftStartTimeMs);
-                setActiveShiftLogId(cachedShift.shiftLogId || null);
-            }
+        // Hydrate immediately from local cache so shift state is available offline.
+        const cachedShift = readCachedShiftStart(email);
+        if (cachedShift) {
+            setHasStartedShift(true);
+            setShiftStartTimeMs(cachedShift.shiftStartTimeMs);
+            setActiveShiftLogId(cachedShift.shiftLogId || null);
+        }
 
-            try {
-                setCheckingShift(true);
-                const snap = await getDocs(query(collection(db, "shift-logs"), where("email", "==", email)));
+        try {
+            setCheckingShift(true);
+            const snap = await getDocs(query(collection(db, "shift-logs"), where("email", "==", email)));
 
-                let latestOpenShiftStartTimeMs = 0;
-                let latestOpenShiftDocId: string | null = null;
+            let latestOpenShiftStartTimeMs = 0;
+            let latestOpenShiftDocId: string | null = null;
 
-                snap.forEach((d) => {
-                    const data = d.data() as any;
-                    let shiftTime: Date | null = null;
-                    let shiftEndTime: Date | null = null;
+            snap.forEach((d) => {
+                const data = d.data() as any;
+                let shiftTime: Date | null = null;
+                let shiftEndTime: Date | null = null;
 
-                    if (data.shift_start_time?.toDate) {
-                        shiftTime = data.shift_start_time.toDate();
-                    } else if (typeof data.shift_start_time === "string") {
-                        shiftTime = new Date(data.shift_start_time);
-                    } else if (data.shift_start_time instanceof Date) {
-                        shiftTime = data.shift_start_time;
-                    } else if (typeof data.shift_start_time_iso === "string") {
-                        shiftTime = new Date(data.shift_start_time_iso);
-                    }
-
-                    if (data.shift_end_time?.toDate) {
-                        shiftEndTime = data.shift_end_time.toDate();
-                    } else if (typeof data.shift_end_time === "string") {
-                        shiftEndTime = new Date(data.shift_end_time);
-                    } else if (data.shift_end_time instanceof Date) {
-                        shiftEndTime = data.shift_end_time;
-                    } else if (typeof data.shift_end_time_iso === "string") {
-                        shiftEndTime = new Date(data.shift_end_time_iso);
-                    }
-
-                    if (shiftTime && !Number.isNaN(shiftTime.getTime())) {
-                        const shiftMs = shiftTime.getTime();
-                        const isOpenShift = !shiftEndTime || Number.isNaN(shiftEndTime.getTime());
-                        if (isOpenShift && shiftMs > latestOpenShiftStartTimeMs) {
-                            latestOpenShiftStartTimeMs = shiftMs;
-                            latestOpenShiftDocId = d.id;
-                        }
-                    }
-                });
-
-                const todayString = new Date().toDateString();
-                const startedToday = latestOpenShiftStartTimeMs > 0
-                    ? new Date(latestOpenShiftStartTimeMs).toDateString() === todayString
-                    : false;
-                setHasStartedShift(startedToday);
-                setShiftStartTimeMs(startedToday ? latestOpenShiftStartTimeMs : null);
-                setActiveShiftLogId(startedToday ? latestOpenShiftDocId : null);
-                if (startedToday) {
-                    writeCachedShiftStart(email, latestOpenShiftStartTimeMs, latestOpenShiftDocId);
-                } else {
-                    clearCachedShiftStart();
+                if (data.shift_start_time?.toDate) {
+                    shiftTime = data.shift_start_time.toDate();
+                } else if (typeof data.shift_start_time === "string") {
+                    shiftTime = new Date(data.shift_start_time);
+                } else if (data.shift_start_time instanceof Date) {
+                    shiftTime = data.shift_start_time;
+                } else if (typeof data.shift_start_time_iso === "string") {
+                    shiftTime = new Date(data.shift_start_time_iso);
                 }
-            } catch (error) {
-                console.error("Error checking shift status:", error);
-                const offlineShift = readCachedShiftStart(email);
-                setHasStartedShift(Boolean(offlineShift?.shiftStartTimeMs));
-                setShiftStartTimeMs(offlineShift?.shiftStartTimeMs || null);
-                setActiveShiftLogId(offlineShift?.shiftLogId || null);
-            } finally {
-                setCheckingShift(false);
-            }
-        };
 
+                if (data.shift_end_time?.toDate) {
+                    shiftEndTime = data.shift_end_time.toDate();
+                } else if (typeof data.shift_end_time === "string") {
+                    shiftEndTime = new Date(data.shift_end_time);
+                } else if (data.shift_end_time instanceof Date) {
+                    shiftEndTime = data.shift_end_time;
+                } else if (typeof data.shift_end_time_iso === "string") {
+                    shiftEndTime = new Date(data.shift_end_time_iso);
+                }
+
+                if (shiftTime && !Number.isNaN(shiftTime.getTime())) {
+                    const shiftMs = shiftTime.getTime();
+                    const isOpenShift = !shiftEndTime || Number.isNaN(shiftEndTime.getTime());
+                    if (isOpenShift && shiftMs > latestOpenShiftStartTimeMs) {
+                        latestOpenShiftStartTimeMs = shiftMs;
+                        latestOpenShiftDocId = d.id;
+                    }
+                }
+            });
+
+            const todayString = new Date().toDateString();
+            const startedToday = latestOpenShiftStartTimeMs > 0
+                ? new Date(latestOpenShiftStartTimeMs).toDateString() === todayString
+                : false;
+            setHasStartedShift(startedToday);
+            setShiftStartTimeMs(startedToday ? latestOpenShiftStartTimeMs : null);
+            setActiveShiftLogId(startedToday ? latestOpenShiftDocId : null);
+
+            if (startedToday) {
+                writeCachedShiftStart(email, latestOpenShiftStartTimeMs, latestOpenShiftDocId);
+            } else {
+                clearCachedShiftStart();
+            }
+
+            if (showRefreshCompleted) {
+                setRefreshCompleted(true);
+                setTimeout(() => setRefreshCompleted(false), 900);
+            }
+        } catch (error) {
+            console.error("Error checking shift status:", error);
+            const offlineShift = readCachedShiftStart(email);
+            setHasStartedShift(Boolean(offlineShift?.shiftStartTimeMs));
+            setShiftStartTimeMs(offlineShift?.shiftStartTimeMs || null);
+            setActiveShiftLogId(offlineShift?.shiftLogId || null);
+        } finally {
+            setCheckingShift(false);
+        }
+    };
+
+    useEffect(() => {
         checkShiftStatus();
     }, [userData?.email]);
 
@@ -432,43 +440,43 @@ export default function Tasks() {
                         blurBG
                         subtitle={tasks.length}
                         extra={
-                            elapsedLabel ? (
-                                <>
-                                
-                                <button
-                                    onClick={() => {
-                                        if (!endingShift) {
-                                            setEndShiftModalOpen(true);
-                                        }
-                                    }}
-                                    disabled={endingShift}
-                                    style={{
-                                        display:"flex",
-                                        alignItems:"center",
-                                        justifyContent:"center",
-                                    
-                                        border: "none",
-                                        margin: 0,
-                                        cursor: endingShift ? "not-allowed" : "pointer",
-                                        fontSize: "0.8rem",
-                                        padding: "0.4rem 0.75rem",
-                                        borderRadius: "0.5rem",
-                                        background: "rgba(100 100 100 / 0.1)",
-                                        fontWeight: 500,
-                                        letterSpacing: "0.02em",
-                                        color: "darkslategrey",
-                                
-                                    }}
-                                >
-                                    <Clock size={15} style={{border:"", width:"1rem"}}/>
-                                    <p style={{width:"4rem", border:"", fontSize:"0.9rem"}}>
-                                        {elapsedLabel}
-                                    </p>
-                                    
-                                </button>
-                                </>
-                                
-                            ) : null
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                <RefreshButton
+                                    fetchingData={checkingShift}
+                                    refreshCompleted={refreshCompleted}
+                                    onClick={() => checkShiftStatus(true)}
+                                />
+                                {elapsedLabel ? (
+                                    <button
+                                        onClick={() => {
+                                            if (!endingShift) {
+                                                setEndShiftModalOpen(true);
+                                            }
+                                        }}
+                                        disabled={endingShift}
+                                        style={{
+                                            display:"flex",
+                                            alignItems:"center",
+                                            justifyContent:"center",
+                                            border: "none",
+                                            margin: 0,
+                                            cursor: endingShift ? "not-allowed" : "pointer",
+                                            fontSize: "0.8rem",
+                                            padding: "0.4rem 0.75rem",
+                                            borderRadius: "0.5rem",
+                                            background: "rgba(100 100 100 / 0.1)",
+                                            fontWeight: 500,
+                                            letterSpacing: "0.02em",
+                                            color: "darkslategrey",
+                                        }}
+                                    >
+                                        <Clock size={15} style={{border:"", width:"1rem"}}/>
+                                        <p style={{width:"4rem", border:"", fontSize:"0.9rem"}}>
+                                            {elapsedLabel}
+                                        </p>
+                                    </button>
+                                ) : null}
+                            </div>
                         }
                         fixed
                         icon={<ClipboardList color="mediumslateblue" />}
@@ -489,11 +497,7 @@ export default function Tasks() {
                         minHeight: "100svh",
                     }}
                 >
-                    {checkingShift ? (
-                        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "70vh" }}>
-                            <Loader2 className="animate-spin" />
-                        </div>
-                    ) : !hasStartedShift ? (
+                    {!hasStartedShift ? (
                         <div
                             style={{
                                 display: "flex",
@@ -547,13 +551,13 @@ export default function Tasks() {
                                     onPointerUp={handleHoldEnd}
                                     onPointerLeave={handleHoldEnd}
                                     onPointerCancel={handleHoldEnd}
-                                    disabled={startingShift}
+                                    disabled={startingShift || checkingShift}
                                     style={{
                                         width: "210px",
                                         height: "210px",
                                         borderRadius: "50%",
                                         border: "none",
-                                        cursor: startingShift ? "not-allowed" : "pointer",
+                                        cursor: startingShift || checkingShift ? "not-allowed" : "pointer",
                                         background: "linear-gradient(darkslateblue, midnightblue)",
                                         color: "white",
                                         boxShadow: "0 18px 40px rgba(0,0,0,0.35)",
@@ -567,6 +571,7 @@ export default function Tasks() {
                                         userSelect: "none",
                                         position: "relative",
                                         zIndex: 1,
+                                        opacity: checkingShift ? 0.8 : 1,
                                     }}
                                 >
                                     {startingShift ? <Loader2 className="animate-spin" /> : "Start"}

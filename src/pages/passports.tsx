@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { db } from "@/firebase";
 import { ensureOcrWorker } from "@/utils/ocrWorker";
 import { PSM } from "tesseract.js";
-import { ensureMrzWorker, subscribeMrzLoad } from "@/utils/mrzWorker";
+import { ensureMrzWorker, getMrzLoadState, subscribeMrzLoad } from "@/utils/mrzWorker";
 import { parse as parseMRZText } from "mrz";
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where, orderBy } from "firebase/firestore";
 import { motion } from "framer-motion";
@@ -444,13 +444,17 @@ interface PassportScannerProps {
 const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onDataExtracted }) => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [ocrReady, setOcrReady] = useState(false);
-  const [ocrLoadProgress, setOcrLoadProgress] = useState(0);
+  const [ocrReady, setOcrReady] = useState(() => getMrzLoadState().ready);
+  const [ocrLoadProgress, setOcrLoadProgress] = useState(() => getMrzLoadState().progress);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
+    const current = getMrzLoadState();
+    setOcrLoadProgress(current.progress);
+    setOcrReady(current.ready);
+
     // Subscribe to the dedicated MRZ worker load progress
     const unsubscribe = subscribeMrzLoad((progress, status) => {
       setOcrLoadProgress(progress);
