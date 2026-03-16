@@ -533,6 +533,10 @@ export default function DbComponent(props: Props) {
 
   const [checked, setChecked] = useState<string[]>([]);
   const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false);
+  const [bulkEditDialogOpen, setBulkEditDialogOpen] = useState(false);
+  const [bulkEditField, setBulkEditField] = useState<"name" | "site">("name");
+  const [bulkEditValue, setBulkEditValue] = useState("");
+  const [bulkEditLoading, setBulkEditLoading] = useState(false);
 
   // Project allocation mode
   const [projectAllocMode, setProjectAllocMode] = useState(false);
@@ -1647,14 +1651,60 @@ export default function DbComponent(props: Props) {
   const toggleProjectAllocMode = () => {
     if (!projectAllocMode) {
       setSelectable(true);
-      setChecked([]);
       setProjectAllocMode(true);
       setProjectDrawerExpanded(true);
       fetchProjects();
     } else {
       setProjectAllocMode(false);
-      setSelectable(false);
+    }
+  };
+
+  const openBulkEditDialog = (field: "name" | "site") => {
+    if (checked.length < 1) {
+      toast.error("Select at least one record");
+      return;
+    }
+    setBulkEditField(field);
+    setBulkEditValue("");
+    setBulkEditDialogOpen(true);
+  };
+
+  const handleBulkEdit = async () => {
+    const value = bulkEditValue.trim();
+    if (!value) {
+      toast.error("Value is required");
+      return;
+    }
+    if (checked.length < 1) {
+      toast.error("Select at least one record");
+      return;
+    }
+
+    try {
+      setBulkEditLoading(true);
+      const batch = writeBatch(db);
+
+      checked.forEach((recordId) => {
+        const recordRef = doc(db, "records", recordId);
+        batch.update(recordRef, {
+          [bulkEditField]: value,
+          modified_on: new Date(),
+        });
+      });
+
+      await batch.commit();
+      toast.success(
+        `${checked.length} record(s) updated: ${bulkEditField === "name" ? "Name" : "Location"}`
+      );
+      setBulkEditDialogOpen(false);
+      setBulkEditValue("");
       setChecked([]);
+      fetchData();
+    } catch (error) {
+      console.error("Error updating selected records:", error);
+      toast.error("Failed to update selected records");
+    } finally {
+      setBulkEditLoading(false);
     }
   };
 
@@ -2318,7 +2368,7 @@ export default function DbComponent(props: Props) {
                     height: "2.25rem",
                     border: "",
                     width: "",
-                    background: "rgba(100 100 100/ 20%)",
+                    background: "rgba(100 100 100/ 10%)",
                     padding: "0.5rem",
                     display: "flex",
                     alignItems: "center",
@@ -2471,31 +2521,133 @@ export default function DbComponent(props: Props) {
                       
                       style={{background:selectable?"mediumslateblue":""}}
                       onClick={() => {
-                        if (projectAllocMode) {
-                          toggleProjectAllocMode();
+                        if (selectable) {
+                          setProjectAllocMode(false);
+                          setSelectable(false);
+                          setChecked([]);
+                          setSelectAll(false);
                         } else {
-                          setSelectable(!selectable);
-                          selectable && setChecked([]);
+                          setSelectable(true);
                         }
                       }}
+                      title={selectable ? "Exit Selection" : "Select Records"}
                     >
                       <CheckSquare2
                         color={selectable && !projectAllocMode ? "white" : "mediumslateblue"}
                       />
                     </button>
                   )}
-                  {access && (
-                    <button
-                      style={projectAllocMode ? {background:"mediumslateblue"} : {}}
-                      onClick={toggleProjectAllocMode}
-                      title="Project Allocation Mode"
-                    >
-                      <FolderKanban
-                        color={projectAllocMode ? "white" : "mediumslateblue"}
-                        width="1.25rem"
-                        height="1.25rem"
-                      />
-                    </button>
+                  {access && selectable && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          style={{
+                            minWidth: "2.5rem",
+                        
+                            paddingInline: "0.65rem",
+                            background: "rgba(100 100 100/ 10%)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                          }}
+                          title="Actions for selected"
+                        >
+                          <EllipsisVerticalIcon width="1rem" color="mediumslateblue" />
+                          {/* <span style={{ fontSize: "0.75rem", color: "mediumslateblue", fontWeight: 600 }}>
+                            {checked.length}
+                          </span> */}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" style={{ width: "230px", padding: "0.5rem" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+                          <p style={{ fontSize: "0.72rem", opacity: 0.6, padding: "0.15rem 0.35rem" }}>
+                            Actions for selected items
+                          </p>
+
+                          <button
+                            onClick={() => {
+                              if (checked.length < 1) {
+                                toast.error("Select at least one record");
+                                return;
+                              }
+                              setProjectAllocMode(true);
+                              setProjectDrawerExpanded(true);
+                              fetchProjects();
+                            }}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-start",
+                              gap: "0.5rem",
+                              padding: "0.6rem 0.65rem",
+                              borderRadius: "0.5rem",
+                              // border: "1px solid rgba(100,100,100,0.12)",
+                              background: projectAllocMode ? "rgba(30,144,255,0.12)" : "rgba(100,100,100,0.03)",
+                            }}
+                          >
+                            <FolderKanban width="0.95rem" color="mediumslateblue" />
+                            <span style={{ fontSize: "0.82rem" }}>Allocate Project</span>
+                          </button>
+
+                          <button
+                            onClick={() => openBulkEditDialog("site")}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-start",
+                              gap: "0.5rem",
+                              padding: "0.6rem 0.65rem",
+                              borderRadius: "0.5rem",
+                              // border: "1px solid rgba(100,100,100,0.12)",
+                              background: "rgba(100,100,100,0.03)",
+                            }}
+                          >
+                            <Globe width="0.95rem" color="mediumslateblue" />
+                            <span style={{ fontSize: "0.82rem" }}>Set Location (Site)</span>
+                          </button>
+
+                          <button
+                            onClick={() => openBulkEditDialog("name")}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-start",
+                              gap: "0.5rem",
+                              padding: "0.6rem 0.65rem",
+                              borderRadius: "0.5rem",
+                              // border: "1px solid rgba(100,100,100,0.12)",
+                              background: "rgba(100,100,100,0.03)",
+                            }}
+                          >
+                            <PenLine width="0.95rem" color="mediumslateblue" />
+                            <span style={{ fontSize: "0.82rem" }}>Rename Selected</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (checked.length < 1) {
+                                toast.error("Select at least one record");
+                                return;
+                              }
+                              setBulkDeleteDialog(true);
+                            }}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-start",
+                              gap: "0.5rem",
+                              padding: "0.6rem 0.65rem",
+                              borderRadius: "0.5rem",
+                              // border: "1px solid rgba(220,20,60,0.2)",
+                              background: "rgba(220,20,60,0.08)",
+                            }}
+                          >
+                            <Trash width="0.95rem" color="crimson" />
+                            <span style={{ fontSize: "0.82rem", color: "crimson" }}>Delete Selected</span>
+                          </button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   )}
 
                   <SearchBar
@@ -2719,7 +2871,7 @@ export default function DbComponent(props: Props) {
                           <Directive
                             icon={<FileArchive/>}
                             noArrow
-                            // id_subtitle={post.id}
+                            id_subtitle={post.project ? post.project : "No project"}
                             className="record-item"
                             space
                             dotColor={selectable ? "violet" : "mediumslateblue"}
@@ -3304,6 +3456,48 @@ export default function DbComponent(props: Props) {
                 )}
               </button>
             </div>
+          </div>
+        </ResponsiveModal>
+
+        {/* BULK EDIT SELECTED */}
+        <ResponsiveModal
+          open={bulkEditDialogOpen}
+          onOpenChange={(open) => {
+            setBulkEditDialogOpen(open);
+            if (!open) setBulkEditValue("");
+          }}
+          title={bulkEditField === "name" ? "Rename Selected" : "Set Location (Site)"}
+          description={`${checked.length} selected record(s)`}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem", padding: "1.25rem" }}>
+            <input
+              placeholder={bulkEditField === "name" ? "Enter new name" : "Enter location/site"}
+              value={bulkEditValue}
+              onChange={(e) => setBulkEditValue(e.target.value)}
+              style={{
+                borderRadius: "0.55rem",
+                border: "1px solid rgba(100,100,100,0.2)",
+                padding: "0.8rem",
+                background: "rgba(100,100,100,0.05)",
+                fontSize: "0.92rem",
+              }}
+            />
+            <button
+              onClick={handleBulkEdit}
+              disabled={bulkEditLoading || checked.length < 1 || !bulkEditValue.trim()}
+              style={{
+                border: "none",
+                background: "black",
+                color: "white",
+                padding: "0.8rem",
+                borderRadius: "0.6rem",
+                fontWeight: 500,
+                cursor: bulkEditLoading ? "not-allowed" : "pointer",
+                opacity: bulkEditLoading ? 0.65 : 1,
+              }}
+            >
+              {bulkEditLoading ? "Updating..." : "Apply to Selected"}
+            </button>
           </div>
         </ResponsiveModal>
 

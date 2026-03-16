@@ -368,8 +368,8 @@ export default function TransferRequests() {
                   style={{
                     padding: "0.2rem 0.6rem",
                     borderRadius: "0.35rem",
-                    background: "rgba(123,104,238,0.1)",
-                    color: "mediumslateblue",
+                    background: "rgba(100,100,100,0.1)",
+                  
                     fontWeight: 500,
                   }}
                 >

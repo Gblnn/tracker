@@ -123,10 +123,19 @@ export default function Projects() {
   const viewProjectPersonnel = (project: ProjectItem) => {
     setViewingProject(project);
     setLoadingPersonnel(true);
-    
-    const personnel = records.filter(r => r.project === project.name);
+
+    const normalizedProjectName = (project.name || "").trim().toLowerCase();
+    const personnel = records.filter(
+      (r) => (r.project || "").trim().toLowerCase() === normalizedProjectName
+    );
     setProjectPersonnel(personnel);
     setLoadingPersonnel(false);
+  };
+
+  const getAllocatedCount = (projectName?: string) => {
+    if (!projectName) return 0;
+    const normalizedProjectName = projectName.trim().toLowerCase();
+    return records.filter((r) => (r.project || "").trim().toLowerCase() === normalizedProjectName).length;
   };
 
   useEffect(() => {
@@ -191,7 +200,7 @@ export default function Projects() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8rem", opacity: 0.8 }}>
                     <Users width="0.9rem" />
-                    {p.assignedRecordIds?.length || p.assignedUserIds?.length || 0} allocated
+                    {getAllocatedCount(p.name)} allocated
                   </div>
                 </div>
               </div>

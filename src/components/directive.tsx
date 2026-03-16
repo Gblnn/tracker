@@ -130,7 +130,7 @@ export default function Directive(props: Props) {
                   height={"1.5rem"}
                   className="check-square"
                   fill={
-                    internalSelected ? "mediumslateblue" : "rgba(100 100 100/ 50%)"
+                    internalSelected ? "mediumslateblue" : "rgba(100 100 100/ 20%)"
                   }
                   stroke={internalSelected ? "white" : "none"}
                 />
@@ -228,7 +228,7 @@ export default function Directive(props: Props) {
                 style={{
                   fontSize: "0.6rem",
                   textAlign: "left",
-                  color: "lightslategray",
+                  color: "mediumslateblue",
                   opacity: "0.75",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
