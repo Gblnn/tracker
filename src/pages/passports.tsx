@@ -446,19 +446,40 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
   const [processing, setProcessing] = useState(false);
   const [ocrReady, setOcrReady] = useState(() => getMrzLoadState().ready);
   const [ocrLoadProgress, setOcrLoadProgress] = useState(() => getMrzLoadState().progress);
+  const [mrzStatus, setMrzStatus] = useState(() => getMrzLoadState().status);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const withTimeout = async <T,>(promiseFactory: () => Promise<T>, label: string, timeoutMs = 15000): Promise<T> => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    try {
+      return await Promise.race([
+        promiseFactory(),
+        new Promise<T>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error(`${label} timed out`));
+          }, timeoutMs);
+        }),
+      ]);
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
+  };
 
   useEffect(() => {
     const current = getMrzLoadState();
     setOcrLoadProgress(current.progress);
     setOcrReady(current.ready);
+    setMrzStatus(current.status);
 
     // Subscribe to the dedicated MRZ worker load progress
     const unsubscribe = subscribeMrzLoad((progress, status) => {
       setOcrLoadProgress(progress);
       setOcrReady(progress >= 100);
+      setMrzStatus(status);
       console.log(`[MRZ worker] ${status} ${progress}%`);
     });
     return unsubscribe;
@@ -648,7 +669,7 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       console.log("Image:", img.width, "x", img.height);
 
       // Use the dedicated MRZ worker (mrz.traineddata — OCR-B specific)
-      const mrzW = await ensureMrzWorker();
+      const mrzW = await withTimeout(() => ensureMrzWorker(), "MRZ engine", 20000);
 
       // Try MRZ crops: bottom 30% (tight), 45% (generous), 60% (very generous)
       const attempts = [
@@ -676,7 +697,11 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
           preserve_interword_spaces: '0',
         });
 
-        const result = await mrzW.recognize(mrzImage);
+        const result: any = await withTimeout(
+          () => mrzW.recognize(mrzImage),
+          `MRZ recognition (${attempt.label})`,
+          12000
+        );
         console.log("Raw MRZ text:", result.data.text);
 
         const mrzLines = extractMRZLines(result.data.text);
@@ -720,7 +745,11 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
         const fullImg = preprocessForMRZ(img, 0, 0, img.width, img.height, scale, 1.3);
         if (fullImg) {
           await mrzW.setParameters({ tessedit_pageseg_mode: PSM.AUTO, preserve_interword_spaces: '0' });
-          const fullResult = await mrzW.recognize(fullImg);
+          const fullResult: any = await withTimeout(
+            () => mrzW.recognize(fullImg),
+            "MRZ recognition (full page)",
+            12000
+          );
           const fullLines = extractMRZLines(fullResult.data.text);
           if (fullLines.length >= 2) {
             const l1 = fullLines[fullLines.length - 2].substring(0, 44).padEnd(44, '<');
@@ -761,13 +790,17 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
           const scale = img.width < 1200 ? 2 : (img.width < 2000 ? 1.5 : 1);
           const topImg = preprocessForMRZ(img, 0, 0, img.width, topH, scale, 1.4);
           if (topImg) {
-            const ocrW = await ensureOcrWorker();
+            const ocrW = await withTimeout(() => ensureOcrWorker(), "OCR engine", 20000);
             await ocrW.setParameters({
               tessedit_char_whitelist: '',
               tessedit_pageseg_mode: PSM.SINGLE_COLUMN,
               preserve_interword_spaces: '1',
             });
-            const topResult = await ocrW.recognize(topImg);
+            const topResult: any = await withTimeout(
+              () => ocrW.recognize(topImg),
+              "Visual OCR recognition",
+              12000
+            );
             const text = topResult.data.text;
             console.log("Visual text:\n", text);
 
@@ -900,7 +933,7 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
       }
     } catch (error) {
       console.error("MRZ Scan error:", error);
-      toast.error("Failed to scan passport");
+      toast.error(error instanceof Error ? error.message : "Failed to scan passport");
       setCapturedImage(null);
     } finally {
       setProcessing(false);
@@ -926,6 +959,9 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
                   ? "Image captured. Tap Retake to try again."
                   : "Position the MRZ (bottom 2 lines of text) inside the highlighted zone"}
           </DialogDescription>
+          <p style={{ fontSize: "0.78rem", opacity: 0.65, marginTop: "0.2rem" }}>
+            MRZ Engine Status: {mrzStatus} {ocrReady ? "(Ready)" : `(${ocrLoadProgress}%)`}
+          </p>
         </DialogHeader>
 
         <div style={{ position: "relative", width: "100%", aspectRatio: "3/2", background: "#000", overflow: "hidden" }}>
