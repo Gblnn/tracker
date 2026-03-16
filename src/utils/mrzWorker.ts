@@ -37,7 +37,16 @@ export const subscribeMrzLoad = (fn: MrzLoadListener): (() => void) => {
 
 const notify = (progress: number, status: string) => {
   loadState = {
-    ready: progress >= 100,
+    ready: loadState.ready,
+    progress,
+    status,
+  };
+  listeners.forEach((fn) => fn(progress, status));
+};
+
+const setReadyState = (ready: boolean, progress: number, status: string) => {
+  loadState = {
+    ready,
     progress,
     status,
   };
@@ -82,21 +91,21 @@ const createMrzWorker = async (): Promise<Tesseract.Worker> => {
 
 export const ensureMrzWorker = (): Promise<Tesseract.Worker> => {
   if (workerInstance) {
-    notify(100, "MRZ engine ready");
+    setReadyState(true, 100, "MRZ engine ready");
     return Promise.resolve(workerInstance);
   }
   if (workerPromise) return workerPromise;
 
-  notify(0, "Loading MRZ engine...");
+  setReadyState(false, 0, "Loading MRZ engine...");
   workerPromise = createMrzWorker()
     .then((w) => {
       workerInstance = w;
-      notify(100, "MRZ engine ready");
+      setReadyState(true, 100, "MRZ engine ready");
       return w;
     })
     .catch((err) => {
       workerPromise = null;
-      notify(0, "Failed to load MRZ engine");
+      setReadyState(false, 0, "Failed to load MRZ engine");
       throw err;
     });
 
