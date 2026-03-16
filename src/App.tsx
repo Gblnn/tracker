@@ -75,7 +75,6 @@ export default function App() {
   const { addProcess, updateProcess } = useBackgroundProcess();
   const { user, userData, cachedAuthState } = useAuth();
   const phonebookInitialized = useRef(false);
-  const mrzWarmupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Initialize phonebook cache in the background on app launch (only once)
   useEffect(() => {
@@ -97,29 +96,14 @@ export default function App() {
     }
 
     const warmup = () => {
-      void preloadOcrWorker()
-        .catch((error) => {
-          console.warn("OCR warmup skipped:", error);
-        })
-        .finally(() => {
-          if (!navigator.onLine) {
-            return;
-          }
+      void preloadOcrWorker().catch((error) => {
+        console.warn("OCR warmup skipped:", error);
+      });
 
-          // Stagger MRZ warmup so lower-end devices are not hit by two heavy inits at once.
-          mrzWarmupTimerRef.current = setTimeout(() => {
-            mrzWarmupTimerRef.current = null;
-            void preloadMrzWorker().catch((error) => {
-              console.warn("MRZ warmup skipped:", error);
-            });
-          }, 1200);
+      if (navigator.onLine) {
+        void preloadMrzWorker().catch((error) => {
+          console.warn("MRZ warmup skipped:", error);
         });
-    };
-
-    const clearMrzTimer = () => {
-      if (mrzWarmupTimerRef.current !== null) {
-        clearTimeout(mrzWarmupTimerRef.current);
-        mrzWarmupTimerRef.current = null;
       }
     };
 
@@ -129,14 +113,12 @@ export default function App() {
       const handle = requestIdle(() => warmup());
       return () => {
         cancelIdle(handle);
-        clearMrzTimer();
       };
     }
 
     const timer = setTimeout(warmup, 300);
     return () => {
       clearTimeout(timer);
-      clearMrzTimer();
     };
   }, [user, userData, cachedAuthState]);
 
