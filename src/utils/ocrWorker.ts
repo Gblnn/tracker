@@ -151,3 +151,17 @@ export const ensureOcrWorker = async () => {
 };
 
 export const preloadOcrWorker = () => ensureOcrWorker();
+
+export const resetOcrWorker = async () => {
+  try {
+    if (workerInstance && typeof workerInstance.terminate === "function") {
+      await workerInstance.terminate();
+    }
+  } catch (error) {
+    console.warn("Failed to terminate OCR worker during reset:", error);
+  } finally {
+    workerInstance = null;
+    workerPromise = null;
+    setLoadState({ ready: false, progress: 0, status: "OCR engine reset" });
+  }
+};
