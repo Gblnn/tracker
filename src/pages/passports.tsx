@@ -651,10 +651,32 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
   // With mrz.traineddata, '<' is correctly recognised, so we can
   // rely on simple filtering rules without chevron normalization.
   // ============================================================
+  // Correct common OCR misreads in MRZ text
+  const correctOCRErrors = (text: string): string => {
+    let corrected = text;
+    
+    // Critical: fix << (angle brackets) misreads
+    corrected = corrected.replace(/LLCC/g, '<<');  // L's → <
+    corrected = corrected.replace(/OO/g, '<<');    // O's → <
+    corrected = corrected.replace(/11/g, '<<');    // 1's → <
+    corrected = corrected.replace(/\bLL\b/g, '<<'); // Standalone LL → <
+    
+    // Additional common misreads
+    corrected = corrected.replace(/([^<])OO([^<])/g, '$1<<$2');  // OO → << (in context)
+    corrected = corrected.replace(/O0/g, '<<');     // O0 → <<
+    corrected = corrected.replace(/0O/g, '<<');     // 0O → <<
+    
+    return corrected;
+  };
+
   const extractMRZLines = (rawText: string): string[] => {
     return rawText
       .split('\n')
-      .map((l: string) => l.replace(/\s/g, '').replace(/[^A-Z0-9<]/gi, '').toUpperCase())
+      .map((l: string) => {
+        let cleaned = l.replace(/\s/g, '').replace(/[^A-Z0-9<]/gi, '').toUpperCase();
+        cleaned = correctOCRErrors(cleaned);
+        return cleaned;
+      })
       .filter((l: string) => l.length >= 35 && l.includes('<'));
   };
 
