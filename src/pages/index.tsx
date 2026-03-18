@@ -311,8 +311,8 @@ export default function Index() {
           paddingTop: "5.75rem",
           paddingBottom: "7.5rem",
           overflowY: "auto",
-          background:
-            "linear-gradient(180deg, rgba(252, 252, 252, 1), rgba(244, 246, 249, 1))",
+          // background:
+          //   "linear-gradient(180deg, rgba(252, 252, 252, 1), rgba(244, 246, 249, 1))",
         }}
       >
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{paddingBottom:"2rem"}}>
@@ -419,7 +419,8 @@ export default function Index() {
                 display: "grid", 
                 gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
                 gap: "0.9rem",
-                paddingBottom: "1rem"
+                paddingBottom: "1rem",
+                // padding:"3.5rem"
               }}
             >
               {hasModuleAccess('records_master') && (

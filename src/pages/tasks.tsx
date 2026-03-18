@@ -440,12 +440,8 @@ export default function Tasks() {
                         blurBG
                         subtitle={tasks.length}
                         extra={
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                <RefreshButton
-                                    fetchingData={checkingShift}
-                                    refreshCompleted={refreshCompleted}
-                                    onClick={() => checkShiftStatus(true)}
-                                />
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                                
                                 {elapsedLabel ? (
                                     <button
                                         onClick={() => {
@@ -468,6 +464,7 @@ export default function Tasks() {
                                             fontWeight: 500,
                                             letterSpacing: "0.02em",
                                             color: "darkslategrey",
+                                            width:"7.5rem"
                                         }}
                                     >
                                         <Clock size={15} style={{border:"", width:"1rem"}}/>
@@ -476,6 +473,11 @@ export default function Tasks() {
                                         </p>
                                     </button>
                                 ) : null}
+                                <RefreshButton
+                                    fetchingData={checkingShift}
+                                    refreshCompleted={refreshCompleted}
+                                    onClick={() => checkShiftStatus(true)}
+                                />
                             </div>
                         }
                         fixed

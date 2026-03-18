@@ -19,6 +19,7 @@ export default function GridTile({ title, icon, onClick }: GridTileProps) {
         gap: "1rem",
         padding: "1.5rem",
         background: "rgba(100 100 100/ 0.05)",
+        boxShadow:"1px 1px 5px rgba(0,0,0,0.15)",
         // background:"linear-gradient(darkslateblue, midnightblue)",
         borderRadius: "0.5rem",
         cursor: "pointer",

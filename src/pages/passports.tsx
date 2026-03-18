@@ -157,7 +157,7 @@ const PassportFormContent: React.FC<PassportFormContentProps> = ({
               >
                 <ScanLine width="1rem" />
                 Scan Passport
-                <img style={{border:"solid white", width:"2rem"}} src="https://companieslogo.com/img/orig/OOMS.OM-26773417.png?t=1720244493"/>
+                
               </motion.button>
             )}
 
