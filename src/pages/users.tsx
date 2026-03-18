@@ -63,6 +63,7 @@ const MODULES = [
   { id: 'passports', name: 'Passports', icon: BookMarked },
   { id: 'asset_master', name: 'Asset Master', icon: Car },
   { id: 'projects', name: 'Projects', icon: Package },
+  { id: 'timetaag', name: 'Timetaag', icon: '/timetaag.png' },
   { id: 'shift_logs', name: 'Shift Logs', icon: Clock3 },
   { id: 'vehicle_log_book', name: 'Vehicle Log', icon: Book },
   { id: 'petty_cash', name: 'Petty Cash', icon: Wallet },
@@ -284,6 +285,7 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
         {MODULES.map((module) => {
           const Icon = module.icon;
           const isEnabled = modulePermissions[module.id] || false;
+          const isImageIcon = typeof Icon === "string";
           return (
             <motion.div
               key={module.id}
@@ -301,7 +303,20 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <Icon width="1.25rem" style={{ color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }} />
+                {isImageIcon ? (
+                  <img
+                    src={Icon as string}
+                    alt={module.name}
+                    style={{
+                      width: "1.25rem",
+                      height: "1.25rem",
+                      objectFit: "contain",
+                      opacity: isEnabled ? 1 : 0.7,
+                    }}
+                  />
+                ) : (
+                  <Icon width="1.25rem" style={{ color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }} />
+                )}
                 <span style={{ fontSize: "1rem", color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }}>{module.name}</span>
               </div>
               <div

@@ -3,8 +3,8 @@ import RefreshButton from "@/components/refresh-button";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { db } from "@/firebase";
-import { addDoc, collection, getDocs } from "firebase/firestore";
-import { Loader2, Package, Plus, Users } from "lucide-react";
+import { addDoc, collection, doc, getDocs, updateDoc } from "firebase/firestore";
+import { Loader2, Mail, Package, Plus, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -16,6 +16,7 @@ type ProjectItem = {
   assignedUserIds?: string[];
   assignedPeople?: string[];
   assignedUsers?: string[];
+  focalPointEmail?: string;
 };
 
 type RecordItem = {
@@ -36,11 +37,16 @@ export default function Projects() {
   const [createOpen, setCreateOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectDescription, setNewProjectDescription] = useState("");
+  const [newProjectFocalPointEmail, setNewProjectFocalPointEmail] = useState("");
   const [creating, setCreating] = useState(false);
 
   const [viewingProject, setViewingProject] = useState<ProjectItem | null>(null);
   const [projectPersonnel, setProjectPersonnel] = useState<RecordItem[]>([]);
   const [loadingPersonnel, setLoadingPersonnel] = useState(false);
+  const [focalPointModalOpen, setFocalPointModalOpen] = useState(false);
+  const [selectedProjectForFocalPoint, setSelectedProjectForFocalPoint] = useState<ProjectItem | null>(null);
+  const [focalPointEmailInput, setFocalPointEmailInput] = useState("");
+  const [savingFocalPoint, setSavingFocalPoint] = useState(false);
 
   const fetchData = async (isManualRefresh = false) => {
     try {
@@ -100,6 +106,7 @@ export default function Projects() {
       await addDoc(collection(db, "projects"), {
         name,
         description,
+        focalPointEmail: newProjectFocalPointEmail.trim(),
         assignedRecordIds: [],
         assignedUserIds: [],
         assignedPeople: [],
@@ -111,6 +118,7 @@ export default function Projects() {
       setCreateOpen(false);
       setNewProjectName("");
       setNewProjectDescription("");
+      setNewProjectFocalPointEmail("");
       fetchData();
     } catch (error) {
       console.error("Error creating project:", error);
@@ -138,6 +146,41 @@ export default function Projects() {
     return records.filter((r) => (r.project || "").trim().toLowerCase() === normalizedProjectName).length;
   };
 
+  const openFocalPointModal = (project: ProjectItem) => {
+    setSelectedProjectForFocalPoint(project);
+    setFocalPointEmailInput(project.focalPointEmail || "");
+    setFocalPointModalOpen(true);
+  };
+
+  const allocateFocalPointEmail = async () => {
+    if (!selectedProjectForFocalPoint) return;
+
+    const email = focalPointEmailInput.trim();
+    if (!email) {
+      toast.error("Please enter a focal point email");
+      return;
+    }
+
+    try {
+      setSavingFocalPoint(true);
+      await updateDoc(doc(db, "projects", selectedProjectForFocalPoint.id), {
+        focalPointEmail: email,
+        updatedAt: new Date(),
+      });
+
+      toast.success("Focal point email allocated");
+      setFocalPointModalOpen(false);
+      setSelectedProjectForFocalPoint(null);
+      setFocalPointEmailInput("");
+      fetchData();
+    } catch (error) {
+      console.error("Error allocating focal point email:", error);
+      toast.error("Failed to allocate focal point email");
+    } finally {
+      setSavingFocalPoint(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -163,7 +206,7 @@ export default function Projects() {
       />
 
 
-      <div style={{padding:"1rem" }}>
+      <div style={{padding:"1.25rem" }}>
         {loading ? (
           <div style={{ display: "flex", justifyContent: "center", alignItems:"center", padding: "2rem", border:"", height:"80svh" }}>
             <Loader2 className="animate-spin" style={{ }} />
@@ -197,11 +240,38 @@ export default function Projects() {
                   {p.description || "No description"}
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8rem", opacity: 0.8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8rem", opacity: 0.8 }}>
                     <Users width="0.9rem" />
                     {getAllocatedCount(p.name)} allocated
                   </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  
+
+                  <div style={{ fontSize: "0.78rem", opacity: 0.7, marginBottom: "", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                  <Mail width="0.85rem" />
+                  {p.focalPointEmail || "No focal point email"}
+                </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openFocalPointModal(p);
+                    }}
+                    style={{
+                      border: "1px solid rgba(100,100,100,0.2)",
+                      background: "white",
+                      borderRadius: "0.5rem",
+                      fontSize: "0.75rem",
+                      padding: "0.4rem 0.6rem",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.3rem",
+                    }}
+                  >
+                    <Mail width="0.8rem" />
+                    Allocate
+                  </button>
                 </div>
               </div>
             ))}
@@ -276,6 +346,28 @@ export default function Projects() {
               resize: "vertical",
             }}
           />
+
+          <input
+            value={newProjectFocalPointEmail}
+            onChange={(e) => setNewProjectFocalPointEmail(e.target.value)}
+            placeholder="Focal Point Email (optional)"
+            list="project-focal-point-email-options"
+            style={{
+              borderRadius: "0.55rem",
+              border: "1px solid rgba(100,100,100,0.2)",
+              padding: "0.8rem",
+              background: "rgba(100,100,100,0.05)",
+              fontSize: "0.95rem",
+            }}
+          />
+          <datalist id="project-focal-point-email-options">
+            {records
+              .map((record) => record.email)
+              .filter((email): email is string => !!email)
+              .map((email) => (
+                <option key={email} value={email} />
+              ))}
+          </datalist>
 
           <button
             onClick={createProject}
@@ -362,6 +454,61 @@ export default function Projects() {
               ))}
             </div>
           )}
+        </div>
+      </ResponsiveModal>
+
+      <ResponsiveModal
+        open={focalPointModalOpen}
+        onOpenChange={(open) => {
+          setFocalPointModalOpen(open);
+          if (!open) {
+            setSelectedProjectForFocalPoint(null);
+            setFocalPointEmailInput("");
+          }
+        }}
+        title={selectedProjectForFocalPoint?.name || "Allocate Focal Point Email"}
+        description="Assign focal point email for this project"
+      >
+        <div style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
+          <input
+            value={focalPointEmailInput}
+            onChange={(e) => setFocalPointEmailInput(e.target.value)}
+            placeholder="Enter focal point email"
+            list="focal-point-email-options"
+            style={{
+              borderRadius: "0.55rem",
+              border: "1px solid rgba(100,100,100,0.2)",
+              padding: "0.8rem",
+              background: "rgba(100,100,100,0.05)",
+              fontSize: "0.95rem",
+            }}
+          />
+
+          <datalist id="focal-point-email-options">
+            {records
+              .map((record) => record.email)
+              .filter((email): email is string => !!email)
+              .map((email) => (
+                <option key={email} value={email} />
+              ))}
+          </datalist>
+
+          <button
+            onClick={allocateFocalPointEmail}
+            disabled={savingFocalPoint}
+            style={{
+              border: "none",
+              background: "black",
+              color: "white",
+              padding: "0.8rem",
+              borderRadius: "0.6rem",
+              fontWeight: 500,
+              cursor: savingFocalPoint ? "not-allowed" : "pointer",
+              opacity: savingFocalPoint ? 0.65 : 1,
+            }}
+          >
+            {savingFocalPoint ? "Saving..." : "Save Focal Point Email"}
+          </button>
         </div>
       </ResponsiveModal>
     </div>

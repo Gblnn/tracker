@@ -603,6 +603,47 @@ export default function DbComponent(props: Props) {
 
   // Collect all Firestore fields for tabular view
   const allKeys = useMemo(() => {
+    const preferredColumnOrder = [
+      "employeeCode",
+      "name",
+      "display_name",
+      "designation",
+      "workerType",
+      "companyName",
+      "project",
+      "site",
+      "type",
+      "state",
+      "systemRole",
+      "email",
+      "contact",
+      "cug",
+      "dateofJoin",
+      "salaryBasic",
+      "allowance",
+      "civil_id",
+      "civil_expiry",
+      "license_number",
+      "license_expiry",
+      "passportNumber",
+      "passportExpiry",
+      "medical_due_on",
+      "vt_hse_induction",
+      "vt_car_1",
+      "vt_car_2",
+      "vt_car_3",
+      "vt_car_4",
+      "vt_car_5",
+      "vt_car_6",
+      "vt_car_7",
+      "vt_car_8",
+      "vt_car_9",
+      "vt_car_10",
+      "created_on",
+      "modified_on",
+      "notify",
+    ];
+
     const keys = new Set<string>();
     records.forEach((record: any) => {
       if (!record) return;
@@ -612,7 +653,13 @@ export default function DbComponent(props: Props) {
         }
       });
     });
-    return Array.from(keys).sort();
+
+    const orderedKeys = preferredColumnOrder.filter((key) => keys.has(key));
+    const remainingKeys = Array.from(keys)
+      .filter((key) => !preferredColumnOrder.includes(key))
+      .sort();
+
+    return [...orderedKeys, ...remainingKeys];
   }, [records]);
 
   const [filterProject, setFilterProject] = useState("");
@@ -889,7 +936,7 @@ export default function DbComponent(props: Props) {
     if (props.dbCategory) {
       const cachedData = getCachedRecords(props.dbCategory);
       if (cachedData && cachedData.sortby === sortby) {
-        console.log("⚡ Loading records from cache");
+        console.log("Loading records from cache");
         setRecords(cachedData.records);
         setTotalRecords(cachedData.totalRecords);
         setHasInitialData(true);
@@ -2533,7 +2580,7 @@ export default function DbComponent(props: Props) {
                       title={selectable ? "Exit Selection" : "Select Records"}
                     >
                       <CheckSquare2
-                        color={selectable && !projectAllocMode ? "white" : "mediumslateblue"}
+                        color={selectable? "white" : "mediumslateblue"}
                       />
                     </button>
                   )}
@@ -2720,8 +2767,8 @@ export default function DbComponent(props: Props) {
                                   alignItems: "center",
                                   justifyContent: "center",
                                   gap: "0.35rem",
-                                  background: sortby === opt.value ? "rgba(30,144,255,0.12)" : "rgba(100,100,100,0.06)",
-                                  color: sortby === opt.value ? "mediumslateblue" : "inherit",
+                                  background: sortby === opt.value ? "mediumslateblue" : "rgba(100,100,100,0.06)",
+                                  color: sortby === opt.value ? "white" : "inherit",
                                   cursor: "pointer",
                                   border: sortby === opt.value ? "1px solid rgba(30,144,255,0.25)" : "1px solid transparent",
                                 }}
@@ -2839,10 +2886,11 @@ export default function DbComponent(props: Props) {
                   className="record-list"
                   style={{
                     overflowY: "auto",
+                    overflowX: viewMode === "table" ? "auto" : "hidden",
                     height: "74svh",
                     padding: "0.25rem",
                     willChange: "scroll-position",
-                    contain: "paint",
+                    contain: viewMode === "table" ? "none" : "paint",
                   }}
                 >
                   {viewMode === "directive" ? (
@@ -2967,34 +3015,42 @@ export default function DbComponent(props: Props) {
                   ) : (
                     // TABLE VIEW
                     <motion.div
-                      initial={{ opacity: 0 }}
-                      whileInView={{ opacity: 1 }}
+                      // initial={{ opacity: 0 }}
+                      // whileInView={{ opacity: 1 }}
                       style={{
-                        paddingTop: "1rem",
+                        paddingTop: "0.25rem",
                         paddingBottom: "5rem",
-                        overflowX: "auto"
+                        position: "relative"
                       }}
                     >
                       <table style={{
                         width: "100%",
-                        borderCollapse: "collapse",
+                        borderCollapse: "separate",
+                        borderSpacing: 0,
                         fontSize: "0.9rem"
                       }}>
-                        <thead>
+                        <thead style={{backdropFilter:"blur(16px)"}}>
                           <tr style={{
-                          
-                            borderBottom: "2px solid rgba(100 100 100/ 20%)",
-                            background: "rgba(100 100 100/ 5%)"
+                            borderBottom: "2px solid rgba(100 100 100/ 20%)"
                           }}>
                             {selectable && (
-                              <th style={{ padding: "0.75rem", textAlign: "left", width: "40px", position: "sticky", left: 0, background: "rgba(100 100 100/ 5%)" }}>
+                              <th style={{ padding: "0.75rem", textAlign: "left", width: "40px", position: "sticky", top: 0, left: 0, zIndex: 4, background: "color-mix(in srgb, var(--background) 94%, rgba(100, 100, 100, 0.12))", boxShadow: "inset 0 -1px 0 rgba(100 100 100/ 20%), 1px 0 0 rgba(100 100 100/ 10%)" }}>
                                 <CheckSquare2 width="1rem" color="mediumslateblue" />
                               </th>
                             )}
                             {allKeys.map((key) => (
                               <th
                                 key={key}
-                                style={{ padding: "0.75rem", textAlign: "left", whiteSpace: "nowrap" }}
+                                style={{
+                                  padding: "0.75rem",
+                                  textAlign: "left",
+                                  whiteSpace: "nowrap",
+                                  position: "sticky",
+                                  top: 0,
+                                  zIndex: 2,
+                                  background: "color-mix(in srgb, var(--background) 94%, rgba(100, 100, 100, 0.12))",
+                                  boxShadow: "inset 0 -1px 0 rgba(100 100 100/ 20%)"
+                                }}
                               >
                                 {key}
                               </th>
@@ -3034,7 +3090,7 @@ export default function DbComponent(props: Props) {
                               >
                                 {selectable && (
                                   <td 
-                                    style={{ padding: "0.75rem", position: "sticky", left: 0, background: "white" }}
+                                    style={{ padding: "0.75rem", position: "sticky", left: 0, zIndex: 1, background: "var(--background)" }}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleSelect(post.id);

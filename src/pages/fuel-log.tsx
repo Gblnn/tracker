@@ -133,6 +133,9 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
             >
               <ScanLine width="1rem" />
               Scan Bill
+               |
+              <img style={{border:"", width:"1rem", marginLeft:"0.5rem"}} src="https://companieslogo.com/img/orig/OOMS.OM-26773417.png?t=1720244493"/>
+              Omanoil
             </motion.button>
           )}
             <motion.div

@@ -39,7 +39,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, isActive, onClick, isMobile = f
         padding: isMobile ? "0.75rem" : "0.5rem 2rem",
         cursor: "pointer",
         transition: "all",
-        boxShadow:isActive?"1px 1px 10px rgba(0,0,0,0.25)":"none"
+        boxShadow:isActive?"1px 1px 5px rgba(0,0,0,0.5)":"none"
       }}
     >
       {icon}

@@ -174,14 +174,34 @@ export default function Index() {
     const hasQRGenerator = hasModuleAccess('qr_generator');
     const hasVehicleMaster = hasModuleAccess('asset_master');
     const hasVehicleLogBook = hasModuleAccess('vehicle_log_book');
+    const hasTimetaag = hasModuleAccess('timetaag');
     const hasPettyCash = hasModuleAccess('petty_cash');
     const hasOfferLetters = hasModuleAccess('offer_letters');
     const hasShiftLogs = hasModuleAccess('shift_logs');
     const hasTransferRequests = hasModuleAccess('transfer_requests');
 
     return hasRecordsMaster || hasUsers || hasNewHire || hasQuickLinks || 
-           hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || 
+               hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || hasTimetaag ||
         hasPettyCash || hasOfferLetters || hasShiftLogs || hasTransferRequests;
+  };
+
+  const getAccessibleModuleCount = () => {
+    let count = 0;
+    if (hasModuleAccess("records_master")) count++;
+    if (admin && (!userData || userData.role !== "user")) count++;
+    if (hasModuleAccess("new_hire")) count++;
+    if (hasModuleAccess("quick_links")) count++;
+    if (hasModuleAccess("qr_generator")) count++;
+    if (hasModuleAccess("projects")) count++;
+    if (hasModuleAccess("asset_master")) count++;
+    if (hasModuleAccess("vehicle_log_book")) count++;
+    if (hasModuleAccess("timetaag")) count++;
+    if (hasModuleAccess("passports")) count++;
+    if (hasModuleAccess("petty_cash")) count++;
+    if (hasModuleAccess("offer_letters")) count++;
+    if (hasModuleAccess("shift_logs")) count++;
+    if (hasModuleAccess("transfer_requests")) count++;
+    return count;
   };
 
   // Authenticate for specific module
@@ -286,18 +306,91 @@ export default function Index() {
           />
       <div
         style={{
-          border: "",
           padding: "1.25rem",
-          
-          // background:
-          //   "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
           height: "100svh",
+          paddingTop: "5.75rem",
+          paddingBottom: "7.5rem",
+          overflowY: "auto",
+          background:
+            "linear-gradient(180deg, rgba(252, 252, 252, 1), rgba(244, 246, 249, 1))",
         }}
       >
-        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} style={{paddingBottom:"8rem"}}>
-          <br/>
-          <br/>
-          <br />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{paddingBottom:"2rem"}}>
+          <div
+            style={{
+              borderRadius: "1rem",
+              padding: "1rem",
+              marginBottom: "1rem",
+              border: "1px solid rgba(22, 28, 36, 0.12)",
+              background:
+                "linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(242, 247, 245, 0.96))",
+              boxShadow: "0 12px 20px rgba(15, 23, 42, 0.06)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "0.75rem",
+                flexWrap: "wrap",
+                marginBottom: "0.75rem",
+              }}
+            >
+              <p style={{ fontSize: "0.72rem", opacity: 0.65, letterSpacing: "0.14rem", textTransform: "uppercase", fontWeight: 700 }}>
+                Operations Board
+              </p>
+              <div
+                style={{
+                  fontSize: "0.72rem",
+                  fontWeight: 700,
+                  padding: "0.28rem 0.6rem",
+                  borderRadius: "999px",
+                  background: "rgba(0, 120, 90, 0.14)",
+                  color: "rgb(0, 98, 74)",
+                }}
+              >
+                {getAccessibleModuleCount()} ACTIVE
+              </div>
+            </div>
+            <p style={{ fontSize: "1.28rem", fontWeight: 700, marginTop: "0.1rem", marginBottom: "0.35rem", lineHeight: 1.15 }}>
+              {userData?.name || userData?.email?.split("@")[0] || "User"}
+            </p>
+            <p style={{ fontSize: "0.82rem", opacity: 0.72, marginBottom: "0.75rem" }}>
+              Use shortcuts below to report issues or request a feature.
+            </p>
+            <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+              <button
+                onClick={() => setRequestDialog(true)}
+                style={{
+                  border: "1px solid rgba(0, 98, 74, 0.2)",
+                  borderRadius: "0.7rem",
+                  padding: "0.55rem 0.85rem",
+                  fontSize: "0.8rem",
+                  background: "rgba(0, 128, 128, 0.1)",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Request Feature
+              </button>
+              <button
+                onClick={() => setBugDialog(true)}
+                style={{
+                  border: "1px solid rgba(153, 27, 27, 0.2)",
+                  borderRadius: "0.7rem",
+                  padding: "0.55rem 0.85rem",
+                  fontSize: "0.8rem",
+                  background: "rgba(220, 20, 60, 0.09)",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Report Bug
+              </button>
+            </div>
+          </div>
+
           {loading ? (
             <div
               style={{
@@ -312,12 +405,21 @@ export default function Index() {
             </div>
           ) : (
             hasAnyModules() ? (
+            <>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.9rem" }}>
+              <p style={{ fontSize: "0.72rem", letterSpacing: "0.14rem", textTransform: "uppercase", opacity: 0.65, fontWeight: 700 }}>
+                Modules
+              </p>
+              <p style={{ fontSize: "0.74rem", opacity: 0.62 }}>
+                Tap a tile to open
+              </p>
+            </div>
             <div
               style={{ 
                 display: "grid", 
-                gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-                gap: "1rem",
-                paddingBottom: "2rem"
+                gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+                gap: "0.9rem",
+                paddingBottom: "1rem"
               }}
             >
               {hasModuleAccess('records_master') && (
@@ -365,6 +467,14 @@ export default function Index() {
                   title="Projects"
                   icon={<Package width={"2rem"} />}
                   onClick={() => authenticateModule('projects', '/projects', 'Projects')}
+                />
+              )}
+
+              {hasModuleAccess('timetaag') && (
+                <GridTile
+                  title="Timetaag"
+                  icon={<img src="/timetaag.png" alt="Timetaag" style={{ width: "2rem", height: "2rem", objectFit: "contain" }} />}
+                  onClick={() => authenticateModule('timetaag', '/timetaag', 'Timetaag')}
                 />
               )}
 
@@ -424,6 +534,7 @@ export default function Index() {
                 />
               )}
             </div>
+            </>
             ) : (
               <div style={{ 
                 display: "flex", 

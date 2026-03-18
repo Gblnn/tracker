@@ -21,7 +21,7 @@ export default function RefreshButton(props: Props) {
         onClick={props.onClick}
       >
         {props.fetchingData ? (
-          <Loader2 className="animate-spin" style={{ color: "mediumslateblue" }} />
+          <Loader2 className="animate-spin" style={{}} />
         ) : props.refreshCompleted ? (
           <motion.div
             initial={{ opacity: 0 }}
@@ -43,7 +43,7 @@ export default function RefreshButton(props: Props) {
             exit={{ opacity: 0 }}
             style={{ border: "", display: "flex" }}
           >
-            <RefreshCcw width={"1rem"} height={"1rem"} color="mediumslateblue" />
+            <RefreshCcw width={"1rem"} height={"1rem"}/>
           </motion.div>
         )}
       </button>
