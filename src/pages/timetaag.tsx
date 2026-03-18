@@ -6,6 +6,20 @@ function getTodayDate() {
   return new Date().toISOString().split("T")[0];
 }
 
+function getTimetaagFunctionUrl() {
+  const envUrl = (import.meta.env.VITE_TIMETAAG_FUNCTION_URL as string | undefined)?.trim();
+  if (envUrl) {
+    return envUrl;
+  }
+
+  // Vite dev server (5173) does not host Netlify functions; use Netlify dev default port.
+  if (window.location.hostname === "localhost" && window.location.port === "5173") {
+    return "http://localhost:8888/.netlify/functions/timetaag-process-data";
+  }
+
+  return "/.netlify/functions/timetaag-process-data";
+}
+
 export default function Timetaag() {
   const [fromDate, setFromDate] = useState(getTodayDate());
   const [toDate, setToDate] = useState(getTodayDate());
@@ -18,7 +32,7 @@ export default function Timetaag() {
     setError("");
 
     try {
-      const response = await fetch("/.netlify/functions/timetaag-process-data", {
+      const response = await fetch(getTimetaagFunctionUrl(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -61,7 +75,7 @@ export default function Timetaag() {
         fixed
         title="Timetaag"
         subtitle="Module"
-        icon={<img src="/timetaag.png" alt="Timetaag" style={{ width: "1.5rem", height: "1.5rem", objectFit: "contain" }} />}
+        // icon={<img src="/timetaag.png" alt="Timetaag" style={{ width: "1.5rem", height: "1.5rem", objectFit: "contain" }} />}
       />
       <div
         style={{

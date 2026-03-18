@@ -27,6 +27,18 @@ type TimetaagRequestBody = {
 
 const TIMETAAG_BASE_URL = "https://app.timetaag.com/api/v1";
 
+class HttpError extends Error {
+  status: number;
+  data?: unknown;
+
+  constructor(message: string, status: number, data?: unknown) {
+    super(message);
+    this.name = "HttpError";
+    this.status = status;
+    this.data = data;
+  }
+}
+
 function getIdempotencyKey(payload: unknown) {
   return Buffer.from(JSON.stringify(payload)).toString("base64");
 }
@@ -75,8 +87,10 @@ function findTokenInUnknown(data: unknown): string | null {
 }
 
 async function getAuthTokenFromLogin() {
-  const loginEmail = process.env.TIMETAAG_ADMIN_EMAIL;
-  const loginPassword = process.env.TIMETAAG_ADMIN_PASSWORD;
+  const loginEmail = process.env.TIMETAAG_ADMIN_EMAIL?.trim();
+  const loginPassword = process.env.TIMETAAG_ADMIN_PASSWORD?.trim();
+  const loginApiKey = process.env.TIMETAAG_API_KEY?.trim();
+  const loginClientDbName = process.env.TIMETAAG_CLIENT_DB_NAME?.trim();
 
   if (!loginEmail || !loginPassword) {
     throw new Error(
@@ -87,15 +101,22 @@ async function getAuthTokenFromLogin() {
   const loginPayload = {
     email: loginEmail,
     password: loginPassword,
+    ...(loginClientDbName ? { client_db_name: loginClientDbName } : {}),
   };
+
+  const loginHeaders: Record<string, string> = {
+    "Idempotency-Key": getIdempotencyKey(loginPayload),
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+
+  if (loginApiKey) {
+    loginHeaders["BioTaag-API-Key"] = loginApiKey;
+  }
 
   const loginResponse = await fetch(`${TIMETAAG_BASE_URL}/AdminLogin`, {
     method: "POST",
-    headers: {
-      "Idempotency-Key": getIdempotencyKey(loginPayload),
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
+    headers: loginHeaders,
     body: JSON.stringify(loginPayload),
   });
 
@@ -109,7 +130,12 @@ async function getAuthTokenFromLogin() {
   }
 
   if (!loginResponse.ok) {
-    throw new Error(`AdminLogin failed (${loginResponse.status})`);
+    const messageFromApi =
+      isRecord(loginData) && typeof loginData.message === "string" && loginData.message.trim()
+        ? loginData.message
+        : `AdminLogin failed (${loginResponse.status})`;
+
+    throw new HttpError(messageFromApi, loginResponse.status, loginData);
   }
 
   const token = findTokenInUnknown(loginData);
@@ -120,9 +146,9 @@ async function getAuthTokenFromLogin() {
   return token;
 }
 
-async function resolveAuthToken() {
-  const directToken = process.env.TIMETAAG_AUTH_KEY;
-  if (directToken) {
+async function resolveAuthToken(apiKey?: string) {
+  const directToken = process.env.TIMETAAG_AUTH_KEY?.trim();
+  if (directToken && (!apiKey || directToken !== apiKey.trim())) {
     return directToken;
   }
 
@@ -146,8 +172,19 @@ export default async (req: Request) => {
   const defaultDbName = process.env.TIMETAAG_CLIENT_DB_NAME ?? "tt_10000";
 
   try {
-    authKey = await resolveAuthToken();
+    authKey = await resolveAuthToken(apiKey);
   } catch (error) {
+    if (error instanceof HttpError) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: error.message,
+          data: error.data,
+        }),
+        { status: error.status, headers: jsonHeaders }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         success: false,

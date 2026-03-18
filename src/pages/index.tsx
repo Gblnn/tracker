@@ -15,6 +15,7 @@ import { LoadingOutlined } from "@ant-design/icons";
 import emailjs from "@emailjs/browser";
 import { motion } from "framer-motion";
 import {
+  ArrowRightLeft,
   BookMarked,
   BookMarkedIcon,
   Bug,
@@ -32,7 +33,6 @@ import {
   Users,
   Wallet
 } from "lucide-react";
-import { ArrowRightLeft } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -185,24 +185,24 @@ export default function Index() {
         hasPettyCash || hasOfferLetters || hasShiftLogs || hasTransferRequests;
   };
 
-  const getAccessibleModuleCount = () => {
-    let count = 0;
-    if (hasModuleAccess("records_master")) count++;
-    if (admin && (!userData || userData.role !== "user")) count++;
-    if (hasModuleAccess("new_hire")) count++;
-    if (hasModuleAccess("quick_links")) count++;
-    if (hasModuleAccess("qr_generator")) count++;
-    if (hasModuleAccess("projects")) count++;
-    if (hasModuleAccess("asset_master")) count++;
-    if (hasModuleAccess("vehicle_log_book")) count++;
-    if (hasModuleAccess("timetaag")) count++;
-    if (hasModuleAccess("passports")) count++;
-    if (hasModuleAccess("petty_cash")) count++;
-    if (hasModuleAccess("offer_letters")) count++;
-    if (hasModuleAccess("shift_logs")) count++;
-    if (hasModuleAccess("transfer_requests")) count++;
-    return count;
-  };
+  // const getAccessibleModuleCount = () => {
+  //   let count = 0;
+  //   if (hasModuleAccess("records_master")) count++;
+  //   if (admin && (!userData || userData.role !== "user")) count++;
+  //   if (hasModuleAccess("new_hire")) count++;
+  //   if (hasModuleAccess("quick_links")) count++;
+  //   if (hasModuleAccess("qr_generator")) count++;
+  //   if (hasModuleAccess("projects")) count++;
+  //   if (hasModuleAccess("asset_master")) count++;
+  //   if (hasModuleAccess("vehicle_log_book")) count++;
+  //   if (hasModuleAccess("timetaag")) count++;
+  //   if (hasModuleAccess("passports")) count++;
+  //   if (hasModuleAccess("petty_cash")) count++;
+  //   if (hasModuleAccess("offer_letters")) count++;
+  //   if (hasModuleAccess("shift_logs")) count++;
+  //   if (hasModuleAccess("transfer_requests")) count++;
+  //   return count;
+  // };
 
   // Authenticate for specific module
   const authenticateModule = (moduleId: string, path: string, moduleName: string) => {
@@ -316,7 +316,7 @@ export default function Index() {
         }}
       >
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{paddingBottom:"2rem"}}>
-          <div
+          {/* <div
             style={{
               borderRadius: "1rem",
               padding: "1rem",
@@ -389,7 +389,7 @@ export default function Index() {
                 Report Bug
               </button>
             </div>
-          </div>
+          </div> */}
 
           {loading ? (
             <div
