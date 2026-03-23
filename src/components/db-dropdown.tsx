@@ -35,6 +35,7 @@ export default function DbDropDown(props: Props) {
           <button
             style={{
               width: "2.5rem",
+              boxShadow:"1px 1px 5px rgba(0,0,0,0.3)",
             }}
           >
             {props.trigger}
