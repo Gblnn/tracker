@@ -117,7 +117,7 @@ export default function Back(props: Props) {
                     alignItems: "center",
                     height: "1.25rem",
                     borderRadius: "0.5rem",
-                    background: "rgba(100 100 100/ 0.2)",
+                    background: "rgba(100 100 100/ 0.1)",
                 
                     padding: "0.25rem",
                     paddingTop: "0.335rem",

@@ -422,7 +422,7 @@ export default function Index() {
                 paddingBottom: "1rem",
                 // padding:"3.5rem"
               }}
-            >
+            >        
               {hasModuleAccess('records_master') && (
                 <GridTile
                   title="Records"

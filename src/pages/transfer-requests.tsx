@@ -190,7 +190,7 @@ export default function TransferRequests() {
               padding: "0.45rem 1rem",
               borderRadius: "2rem",
               border: "none",
-              fontWeight: tab === t ? 600 : 400,
+              fontWeight: 500,
               fontSize: "0.85rem",
               background:
                 tab === t ? "black" : "rgba(100,100,100,0.08)",

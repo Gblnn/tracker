@@ -12,11 +12,6 @@ function getTimetaagFunctionUrl() {
     return envUrl;
   }
 
-  // Vite dev server (5173) does not host Netlify functions; use Netlify dev default port.
-  if (window.location.hostname === "localhost" && window.location.port === "5173") {
-    return "http://localhost:8888/.netlify/functions/timetaag-process-data";
-  }
-
   return "/.netlify/functions/timetaag-process-data";
 }
 

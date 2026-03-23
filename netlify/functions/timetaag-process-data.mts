@@ -27,6 +27,10 @@ type TimetaagRequestBody = {
 
 const TIMETAAG_BASE_URL = "https://app.timetaag.com/api/v1";
 
+function normalizeToken(value: string) {
+  return value.replace(/^Bearer\s+/i, "").trim();
+}
+
 class HttpError extends Error {
   status: number;
   data?: unknown;
@@ -149,7 +153,7 @@ async function getAuthTokenFromLogin() {
 async function resolveAuthToken(apiKey?: string) {
   const directToken = process.env.TIMETAAG_AUTH_KEY?.trim();
   if (directToken && (!apiKey || directToken !== apiKey.trim())) {
-    return directToken;
+    return normalizeToken(directToken);
   }
 
   return getAuthTokenFromLogin();
@@ -235,7 +239,7 @@ export default async (req: Request) => {
   const idempotencyKey = getIdempotencyKey(payload);
 
   const requestHeaders: Record<string, string> = {
-    Authorization: `Bearer ${authKey}`,
+    Authorization: `Bearer ${normalizeToken(authKey)}`,
     "Content-Type": "application/json",
     "Idempotency-Key": idempotencyKey,
     Accept: "application/json",

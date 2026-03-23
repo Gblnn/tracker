@@ -99,6 +99,7 @@ export default function UserReset() {
               className={email != "" ? "" : "disabled"}
               style={{
                 background: "midnightblue",
+                color: "white",
                 height: "2.5rem",
                 fontSize: "0.9rem",
               }}
