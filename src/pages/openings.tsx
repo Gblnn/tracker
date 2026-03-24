@@ -448,7 +448,7 @@ export default function Openings() {
         title="Add New Job Opening"
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
-        description="Create a clean and mobile-friendly opening card for applicants"
+        description=""
       >
         <div style={{ padding: "0 1rem 1rem", display: "grid", gap: "0.9rem" }}>
           <div style={{ display: "grid", gap: "0.35rem" }}>
@@ -528,13 +528,13 @@ export default function Openings() {
             Actively Hiring
           </label>
 
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginTop: "0.5rem" }}>
-            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
+          <div style={{ display: "flex", justifyContent: "", gap: "0.5rem", marginTop: "0.5rem", border:'' }}>
+            <button style={{display:"flex", flex:1}} onClick={() => setAddDialogOpen(false)}>
               Cancel
-            </Button>
-            <Button onClick={handleAddOpening} disabled={saving}>
+            </button>
+            <button style={{display:"flex", flex:1, background:"black", color:"white"}} onClick={handleAddOpening} disabled={saving}>
               {saving ? "Adding..." : "Add Opening"}
-            </Button>
+            </button>
           </div>
         </div>
       </ResponsiveModal>
@@ -545,7 +545,7 @@ export default function Openings() {
           title="All Applications"
           open={allApplicationsModalOpen}
           onOpenChange={setAllApplicationsModalOpen}
-          description={`Total Applications ${applications.length}`}
+          description={`${applications.length}`}
         >
           {renderApplicationsContent()}
         </ResponsiveModal>
@@ -555,7 +555,7 @@ export default function Openings() {
             <DialogHeader>
               <DialogTitle>All Applications</DialogTitle>
               <DialogDescription>
-                Total applications: {applications.length}
+                {applications.length}
               </DialogDescription>
             </DialogHeader>
             {renderApplicationsContent()}

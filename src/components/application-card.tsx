@@ -1,5 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Check, File, X } from "lucide-react";
 import moment from "moment";
 import { memo } from "react";
 
@@ -58,8 +56,8 @@ function ApplicationCardBase({
         <div style={{ minWidth: 0 }}>
           <div
             style={{
-              fontWeight: 700,
-              fontSize: "0.9rem",
+              fontWeight: 600,
+              fontSize: "1rem",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -103,12 +101,26 @@ function ApplicationCardBase({
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
+          background: "rgba(100,100,100,0.05)",
+          width: "fit-content",
+          padding: "0.2rem 0.45rem",
+          borderRadius: "0.45rem",
+          color:"mediumslateblue",
+          fontWeight: 500
         }}
       >
         {app.email}
       </a>
 
-      <a href={`tel:${app.phone}`} style={{ fontSize: "0.8rem" }}>
+      <a href={`tel:${app.phone}`} style={{
+         fontSize: "0.8rem" ,
+         background: "rgba(100,100,100,0.05)",
+          width: "fit-content",
+          padding: "0.2rem 0.45rem",
+          borderRadius: "0.45rem",
+          color:"mediumslateblue",
+          fontWeight: 500
+         }}>
         {app.phone}
       </a>
 
@@ -131,6 +143,7 @@ function ApplicationCardBase({
             rel="noopener noreferrer"
             style={{
               display: "flex",
+              flex:1,
               alignItems: "center",
               justifyContent: "center",
               gap: "0.35rem",
@@ -138,9 +151,10 @@ function ApplicationCardBase({
               background: "rgba(100 100 100 / 0.1)",
               borderRadius: "0.45rem",
               padding: "0.3rem 0.55rem",
+              fontWeight: 500,
             }}
           >
-            <File width={"0.85rem"} />
+            
             View CV
           </a>
         ) : (
@@ -148,26 +162,25 @@ function ApplicationCardBase({
         )}
 
         {showShortlistAction ? (
-          <Button
-            size="sm"
-            variant={shortlisted ? "secondary" : "outline"}
+          <button
+            style={{display:"flex", flex:1, fontSize:"0.8rem"}}
+            
             onClick={() => onShortlist(app)}
             disabled={shortlisted || shortlisting || !app.id}
           >
-            <Check width={"0.85rem"} />
+            {/* <Check width={"0.85rem"} /> */}
             {shortlisted ? "Shortlisted" : shortlisting ? "Adding..." : "Shortlist"}
-          </Button>
+          </button>
         ) : null}
 
-        <Button
-          size="sm"
-          variant="destructive"
+        <button
+          style={{display:"flex", flex:1, fontSize:"0.8rem"}}
           onClick={() => onDecline(app)}
           disabled={declining || !app.id}
         >
-          <X width={"0.85rem"} />
+        
           {declining ? "Processing..." : secondaryActionLabel}
-        </Button>
+        </button>
       </div>
     </div>
   );
