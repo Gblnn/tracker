@@ -235,7 +235,7 @@ export default function Index() {
           editMode={userData?.editor===true? true : false}
             title="StarBoard"
             subtitle={"v1.19"}
-            icon={<img src="/stardox-bg.png" style={{ width: "1.75rem" }} />}
+            // icon={<img src="/stardox-bg.png" style={{ width: "1.75rem" }} />}
             noback
             extra={
               <div
@@ -311,6 +311,8 @@ export default function Index() {
           paddingTop: "5.75rem",
           paddingBottom: "7.5rem",
           overflowY: "auto",
+          // background:"url('/clouds.jpg')",
+          // backgroundSize:"cover"
           // background:
           //   "linear-gradient(180deg, rgba(252, 252, 252, 1), rgba(244, 246, 249, 1))",
         }}
@@ -406,14 +408,14 @@ export default function Index() {
           ) : (
             hasAnyModules() ? (
             <>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.9rem" }}>
+            {/* <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.9rem" }}>
               <p style={{ fontSize: "0.72rem", letterSpacing: "0.14rem", textTransform: "uppercase", opacity: 0.65, fontWeight: 700 }}>
                 Modules
               </p>
               <p style={{ fontSize: "0.74rem", opacity: 0.62 }}>
                 Tap a tile to open
               </p>
-            </div>
+            </div> */}
             <div
               style={{ 
                 display: "grid", 

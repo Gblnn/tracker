@@ -1,9 +1,29 @@
 import { motion } from "framer-motion";
 import { ChevronRight, PenLine, Users } from "lucide-react";
-import { useState } from "react";
-import { Modal, Input, Select, Checkbox, Button, message } from "antd";
+import { useEffect, useState } from "react";
 import { db } from "@/firebase";
-import { doc, updateDoc, deleteDoc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import { ResponsiveModal } from "@/components/responsive-modal";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import ApplicationCard from "@/components/application-card";
+import { toast } from "sonner";
 
 interface Props {
   id?: string;
@@ -16,10 +36,15 @@ interface Props {
   activelyHiring?: boolean;
   applicants?: any;
   applicantsList?: Array<{
+    id?: string;
     name: string;
     email: string;
     phone: string;
     cv: string;
+    cvLink?: string;
+    jobId?: string;
+    jobTitle?: string;
+    created_at?: any;
   }>;
 }
 
@@ -34,6 +59,44 @@ export default function Work(props: Props) {
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [applicantsData, setApplicantsData] = useState(props.applicantsList || []);
+  const [shortlistedApplicationIds, setShortlistedApplicationIds] = useState<
+    Set<string>
+  >(new Set());
+  const [shortlistingId, setShortlistingId] = useState<string | null>(null);
+  const [decliningId, setDecliningId] = useState<string | null>(null);
+  const [applicantsRenderLimit, setApplicantsRenderLimit] = useState(24);
+
+  useEffect(() => {
+    setApplicantsData(props.applicantsList || []);
+  }, [props.applicantsList]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+
+    setApplicantsRenderLimit(24);
+
+    const fetchShortlistedApplications = async () => {
+      try {
+        const shortlistQuery = query(collection(db, "shortlist"));
+        const shortlistSnapshot = await getDocs(shortlistQuery);
+        const ids = new Set<string>();
+
+        shortlistSnapshot.forEach((shortlistedDoc: any) => {
+          const shortlisted = shortlistedDoc.data();
+          if (shortlisted.applicationId) {
+            ids.add(shortlisted.applicationId);
+          }
+        });
+
+        setShortlistedApplicationIds(ids);
+      } catch (error) {
+        console.error("Failed to load shortlist state", error);
+      }
+    };
+
+    fetchShortlistedApplications();
+  }, [drawerOpen]);
 
   const handleSave = async () => {
     if (!props.id) return;
@@ -45,11 +108,11 @@ export default function Work(props: Props) {
         description: editData.description,
         activelyHiring: editData.activelyHiring,
       });
-      message.success("Opening updated");
+      toast.success("Opening updated");
       setEditOpen(false);
       window.location.reload();
     } catch (err) {
-      message.error("Failed to update opening");
+      toast.error("Failed to update opening");
     } finally {
       setSaving(false);
     }
@@ -60,13 +123,75 @@ export default function Work(props: Props) {
     setDeleting(true);
     try {
       await deleteDoc(doc(db, "openings", props.id));
-      message.success("Opening deleted");
+      toast.success("Opening deleted");
       setEditOpen(false);
       window.location.reload();
     } catch (err) {
-      message.error("Failed to delete opening");
+      toast.error("Failed to delete opening");
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleShortlistApplicant = async (app: any) => {
+    if (!app?.id) {
+      toast.error("Unable to shortlist this applicant");
+      return;
+    }
+
+    if (shortlistedApplicationIds.has(app.id)) {
+      toast("Already shortlisted");
+      return;
+    }
+
+    setShortlistingId(app.id);
+    try {
+      const existingShortlistQuery = query(
+        collection(db, "shortlist"),
+        where("applicationId", "==", app.id)
+      );
+      const existingSnapshot = await getDocs(existingShortlistQuery);
+
+      if (!existingSnapshot.empty) {
+        setShortlistedApplicationIds((prev) => new Set(prev).add(app.id));
+        toast("Already shortlisted");
+        return;
+      }
+
+      const { id, ...payload } = app;
+      await addDoc(collection(db, "shortlist"), {
+        ...payload,
+        applicationId: id,
+        shortlistedAt: new Date(),
+        sourceCollection: "applications",
+      });
+
+      setShortlistedApplicationIds((prev) => new Set(prev).add(id));
+      toast.success("Application added to shortlist");
+    } catch (error) {
+      console.error("Shortlist failed", error);
+      toast.error("Failed to add to shortlist");
+    } finally {
+      setShortlistingId(null);
+    }
+  };
+
+  const handleDeclineApplicant = async (app: any) => {
+    if (!app?.id) {
+      toast.error("Unable to decline this applicant");
+      return;
+    }
+
+    setDecliningId(app.id);
+    try {
+      await deleteDoc(doc(db, "applications", app.id));
+      setApplicantsData((prev) => prev.filter((item) => item.id !== app.id));
+      toast.success("Application declined");
+    } catch (error) {
+      console.error("Decline failed", error);
+      toast.error("Failed to decline applicant");
+    } finally {
+      setDecliningId(null);
     }
   };
 
@@ -207,69 +332,52 @@ export default function Work(props: Props) {
           </div>
         </div>
       </div>
-      <Modal
+      <ResponsiveModal
         title="Update Job Posting"
         open={editOpen}
-        onCancel={() => setEditOpen(false)}
-        onOk={handleSave}
-        confirmLoading={saving}
-        okText="Save"
-        cancelText="Cancel"
-        footer={[
-          <Button
-            key="delete"
-            danger
-            loading={deleting}
-            onClick={handleDelete}
-            disabled={saving}
-          >
-            Delete
-          </Button>,
-          <Button
-            key="cancel"
-            onClick={() => setEditOpen(false)}
-            disabled={saving || deleting}
-          >
-            Cancel
-          </Button>,
-          <Button
-            key="save"
-            type="primary"
-            onClick={handleSave}
-            loading={saving}
-            disabled={deleting}
-          >
-            Save
-          </Button>,
-        ]}
+        onOpenChange={setEditOpen}
+        description="Edit details for this opening"
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div>
-            <label>Job Type</label>
+        <div style={{ padding: "0 1rem 1rem", display: "grid", gap: "0.85rem" }}>
+          <div style={{ display: "grid", gap: "0.35rem" }}>
+            <label style={{ fontSize: "0.8rem", fontWeight: 600 }}>Job Type</label>
             <Select
               value={editData.jobType}
-              onChange={(value) =>
+              onValueChange={(value) =>
                 setEditData((prev) => ({ ...prev, jobType: value }))
               }
-              style={{ width: "100%" }}
             >
-              <Select.Option value="full-time">Full Time</Select.Option>
-              <Select.Option value="part-time">Part Time</Select.Option>
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="full-time">Full Time</SelectItem>
+                <SelectItem value="part-time">Part Time</SelectItem>
+              </SelectContent>
             </Select>
           </div>
-          <div>
-            <label>Job Title</label>
-            <Input
+
+          <div style={{ display: "grid", gap: "0.35rem" }}>
+            <label style={{ fontSize: "0.8rem", fontWeight: 600 }}>Job Title</label>
+            <input
               value={editData.jobTitle}
               onChange={(e) =>
                 setEditData((prev) => ({ ...prev, jobTitle: e.target.value }))
               }
               placeholder="Enter job title"
+              style={{
+                width: "100%",
+                border: "1px solid rgba(100,100,100,0.3)",
+                borderRadius: "0.5rem",
+                padding: "0.6rem 0.7rem",
+                fontSize: "0.9rem",
+              }}
             />
           </div>
-          <div>
-            <label>Description</label>
-            <Input.TextArea
+
+          <div style={{ display: "grid", gap: "0.35rem" }}>
+            <label style={{ fontSize: "0.8rem", fontWeight: 600 }}>Description</label>
+            <textarea
               value={editData.description}
               onChange={(e) =>
                 setEditData((prev) => ({
@@ -279,109 +387,118 @@ export default function Work(props: Props) {
               }
               placeholder="Enter job description"
               rows={4}
+              style={{
+                width: "100%",
+                border: "1px solid rgba(100,100,100,0.3)",
+                borderRadius: "0.5rem",
+                padding: "0.6rem 0.7rem",
+                fontSize: "0.9rem",
+                resize: "vertical",
+              }}
             />
           </div>
-          <div>
+
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.6rem",
+              fontSize: "0.85rem",
+              fontWeight: 500,
+            }}
+          >
             <Checkbox
               checked={editData.activelyHiring}
-              onChange={(e) =>
+              onCheckedChange={(checked) =>
                 setEditData((prev) => ({
                   ...prev,
-                  activelyHiring: e.target.checked,
+                  activelyHiring: checked === true,
                 }))
               }
+            />
+            Actively Hiring
+          </label>
+
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", marginTop: "0.5rem" }}>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={saving || deleting}
             >
-              Actively Hiring
-            </Checkbox>
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <Button
+                variant="outline"
+                onClick={() => setEditOpen(false)}
+                disabled={saving || deleting}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={saving || deleting}>
+                {saving ? "Saving..." : "Save"}
+              </Button>
+            </div>
           </div>
         </div>
-      </Modal>
-      {/* Applicants Drawer */}
-      <Modal
+      </ResponsiveModal>
+      {/* Applicants Dialog */}
+      <ResponsiveModal
         title="Applicants"
         open={drawerOpen}
-        onCancel={() => setDrawerOpen(false)}
-        footer={null}
-        width={800}
+        onOpenChange={setDrawerOpen}
+        description={`${applicantsData.length || 0} applicant${Number(applicantsData.length) === 1 ? "" : "s"} for this role`}
       >
-        {props.applicantsList && props.applicantsList.length > 0 ? (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#f5f5f5" }}>
-                <th style={{ padding: 8, border: "1px solid #eee" }}>Name</th>
-                <th style={{ padding: 8, border: "1px solid #eee" }}>Email</th>
-                <th style={{ padding: 8, border: "1px solid #eee" }}>Phone</th>
-                <th style={{ padding: 8, border: "1px solid #eee" }}>CV</th>
-                <th style={{ padding: 8, border: "1px solid #eee" }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {props.applicantsList.map((app, idx) => (
-                <tr key={idx}>
-                  <td style={{ padding: 8, border: "1px solid #eee" }}>
-                    {app.name}
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee" }}>
-                    <a href={"mailto:" + app.email}>{app.email}</a>
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee" }}>
-                    <a href={"tel:" + app.phone}>{app.phone}</a>
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee" }}>
-                    {app.cv ? (
-                      <a
-                        href={app.cv}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => {
-                          if (!app.cv) {
-                            e.preventDefault();
-                            message.error("CV URL is not available");
-                          }
-                        }}
-                      >
-                        View CV
-                      </a>
-                    ) : (
-                      <span style={{ color: "#888" }}>No CV available</span>
-                    )}
-                  </td>
-                  <td>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "0.5rem",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        border: "",
-                      }}
-                    >
-                      <button
-                        style={{ padding: "0.15rem 1rem", fontSize: "0.8rem" }}
-                      >
-                        Shortlist
-                      </button>
-                      <button
-                        style={{
-                          padding: "0.15rem 1rem",
-                          fontSize: "0.8rem",
-                          color: "indianred",
-                        }}
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div style={{ textAlign: "center", color: "#888" }}>
-            No applicants found.
-          </div>
-        )}
-      </Modal>
+        <div style={{ padding: "0 1rem 1rem" }}>
+          {applicantsData && applicantsData.length > 0 ? (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                gap: "0.8rem",
+                maxHeight: "70vh",
+                overflowY: "auto",
+              }}
+            >
+              {applicantsData.slice(0, applicantsRenderLimit).map((app, idx) => {
+                const shortlisted = app.id
+                  ? shortlistedApplicationIds.has(app.id)
+                  : false;
+
+                return (
+                  <ApplicationCard
+                    key={app.id || idx}
+                    app={app}
+                    shortlisted={shortlisted}
+                    shortlisting={shortlistingId === app.id}
+                    declining={decliningId === app.id}
+                    onShortlist={handleShortlistApplicant}
+                    onDecline={handleDeclineApplicant}
+                  />
+              )})}
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", color: "#888", padding: "2rem 0" }}>
+              No applicants found.
+            </div>
+          )}
+
+          {applicantsData.length > applicantsRenderLimit && (
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "0.9rem" }}>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  setApplicantsRenderLimit((prev) =>
+                    Math.min(prev + 24, applicantsData.length)
+                  )
+                }
+              >
+                Load More ({applicantsData.length - applicantsRenderLimit} remaining)
+              </Button>
+            </div>
+          )}
+        </div>
+      </ResponsiveModal>
     </motion.div>
   );
 }

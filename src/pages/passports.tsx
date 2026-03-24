@@ -12,12 +12,13 @@ import { parse as parseMRZText } from "mrz";
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where, orderBy } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { 
-  Calendar, Camera, Globe, Loader2, Plus, ScanLine, Trash, UserCircle, X, 
-  FileText, MapPin, BookMarked, Download 
+  AlertTriangle, Calendar, Camera, CheckCircle2, ChevronRight, Clock, Globe,
+  Loader2, PenLine, Plus, ScanLine, Trash, UserCircle, X,
+  FileText, MapPin, BookMarked, Download
 } from "lucide-react";
 import * as XLSX from "@e965/xlsx";
 import moment from "moment";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type PassportRecord = {
@@ -34,6 +35,18 @@ type PassportRecord = {
   userId: string;
   createdAt: Date;
   updatedAt: Date;
+};
+
+// Shared input style for the form
+const fieldStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "0.65rem 0.75rem",
+  borderRadius: "0.5rem",
+  border: "1px solid rgba(100, 100, 100, 0.18)",
+  background: "rgba(100,100,100,0.04)",
+  fontSize: "0.9rem",
+  fontWeight: 500,
+  boxSizing: "border-box",
 };
 
 // Passport Form Component
@@ -87,343 +100,197 @@ const PassportFormContent: React.FC<PassportFormContentProps> = ({
   onScanPassport,
 }) => {
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", maxHeight: "75vh", width: "100%" }}>
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", maxHeight: "85vh", width: "100%" }}>
       {/* Fixed Header */}
       <div style={{
         display: "flex",
         justifyContent: "space-between",
-        padding: "1.5rem",
-        paddingBottom: "1rem",
+        padding: "1.25rem 1.5rem 1rem",
         borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
         background: "var(--background)",
         boxSizing: "border-box",
-        alignItems: "center"
+        alignItems: "center",
+        flexShrink: 0,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
           <div style={{
             background: "darkslateblue",
-            padding: "0.75rem",
-            borderRadius: "0.75rem",
+            padding: "0.55rem",
+            borderRadius: "0.6rem",
             display: "flex",
             alignItems: "center",
             justifyContent: "center"
           }}>
-            <BookMarked color="white" width="1.5rem" />
+            <BookMarked color="white" width="1.1rem" />
           </div>
-          <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em" }}>
+          <h2 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>
             {editingPassport ? "Edit Passport" : "Add Passport"}
           </h2>
         </div>
+        {!editingPassport && (
+          <button
+            type="button"
+            onClick={onScanPassport}
+            style={{
+              background: "rgba(72, 61, 139, 0.1)",
+              border: "none",
+              borderRadius: "0.5rem",
+              padding: "0.5rem 0.75rem",
+              cursor: "pointer",
+              color: "darkslateblue",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: "0.35rem",
+            }}
+          >
+            <ScanLine width="0.9rem" />
+            Scan MRZ
+          </button>
+        )}
       </div>
 
       {/* Scrollable Content */}
-      <div style={{ 
+      <div style={{
         flex: 1,
-        padding: "1.5rem",
-        paddingTop: "1.5rem",
-        paddingBottom: "0",
-        width: "100%",
-        boxSizing: "border-box",
+        padding: "1.25rem 1.5rem",
         overflowY: "auto",
-        minHeight: 0
+        minHeight: 0,
+        boxSizing: "border-box",
       }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", width: "100%", paddingBottom: "1.5rem" }}>
-            
-            {/* Scan Passport Button */}
-            {!editingPassport && (
-              <motion.button
-                type="button"
-                onClick={onScanPassport}
-                whileTap={{ scale: 0.95 }}
-                style={{
-                  background: "darkslateblue",
-                  padding: "0.75rem",
-                  borderRadius: "0.5rem",
-                  border: "none",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.5rem",
-                  cursor: "pointer",
-                  color: "white",
-                  fontSize: "1rem",
-                  fontWeight: "500"
-                }}
-              >
-                <ScanLine width="1rem" />
-                Scan Passport
-                
-              </motion.button>
-            )}
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
 
-            {/* Passport Number */}
-            <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "1rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <FileText width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} />
-                <label style={{ fontSize: "0.875rem", fontWeight: "600", opacity: 0.7 }}>
-                  Passport Number *
-                </label>
-              </div>
+          {/* Passport Number + Full Name */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, opacity: 0.65, display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                <FileText width="0.75rem" /> Passport No. *
+              </label>
               <input
                 type="text"
                 value={passportNumber}
                 onChange={(e) => setPassportNumber(e.target.value)}
-                placeholder="e.g., N1234567"
+                placeholder="e.g. N1234567"
                 required
-                style={{
-                  width: "100%",
-                  padding: "0.875rem",
-                  borderRadius: "0.75rem",
-                  border: "1px solid rgba(100, 100, 100, 0.2)",
-                  background: "var(--background)",
-                  fontSize: "1rem",
-                  fontWeight: "500"
-                }}
+                style={fieldStyle}
               />
             </div>
-
-            {/* Full Name */}
-            <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "1rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <UserCircle width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} />
-                <label style={{ fontSize: "0.875rem", fontWeight: "600", opacity: 0.7 }}>
-                  Full Name *
-                </label>
-              </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, opacity: 0.65, display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                <Globe width="0.75rem" /> Nationality *
+              </label>
               <input
                 type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Full name as on passport"
+                value={nationality}
+                onChange={(e) => setNationality(e.target.value)}
+                placeholder="e.g. Indian"
                 required
-                style={{
-                  width: "100%",
-                  padding: "0.875rem",
-                  borderRadius: "0.75rem",
-                  border: "1px solid rgba(100, 100, 100, 0.2)",
-                  background: "var(--background)",
-                  fontSize: "1rem",
-                  fontWeight: "500"
-                }}
+                style={fieldStyle}
               />
             </div>
+          </div>
 
-            {/* Date of Birth */}
-            <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "1rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <Calendar width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} />
-                <label style={{ fontSize: "0.875rem", fontWeight: "600", opacity: 0.7 }}>
-                  Date of Birth *
-                </label>
-              </div>
-              <input
-                type="date"
-                value={dateOfBirth}
-                onChange={(e) => setDateOfBirth(e.target.value)}
-                required
-                style={{
-                  width: "100%",
-                  padding: "0.875rem",
-                  borderRadius: "0.75rem",
-                  border: "1px solid rgba(100, 100, 100, 0.2)",
-                  background: "var(--background)",
-                  fontSize: "1rem",
-                  fontWeight: "500"
-                }}
-              />
+          {/* Full Name spanning full width */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+            <label style={{ fontSize: "0.75rem", fontWeight: 600, opacity: 0.65, display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <UserCircle width="0.75rem" /> Full Name *
+            </label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Full name as on passport"
+              required
+              style={fieldStyle}
+            />
+          </div>
+
+          {/* Date of Birth + Sex */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, opacity: 0.65, display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                <Calendar width="0.75rem" /> Date of Birth *
+              </label>
+              <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} required style={fieldStyle} />
             </div>
-
-            {/* Sex */}
-            <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "1rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <UserCircle width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} />
-                <label style={{ fontSize: "0.875rem", fontWeight: "600", opacity: 0.7 }}>
-                  Sex
-                </label>
-              </div>
-              <select
-                value={sex}
-                onChange={(e) => setSex(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "0.875rem",
-                  borderRadius: "0.75rem",
-                  border: "1px solid rgba(100, 100, 100, 0.2)",
-                  background: "var(--background)",
-                  fontSize: "1rem",
-                  fontWeight: "500"
-                }}
-              >
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, opacity: 0.65, display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                <UserCircle width="0.75rem" /> Sex
+              </label>
+              <select value={sex} onChange={(e) => setSex(e.target.value)} style={fieldStyle}>
                 <option value="">Select</option>
                 <option value="M">Male</option>
                 <option value="F">Female</option>
               </select>
             </div>
-
-            {/* Place of Birth */}
-            <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "1rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <MapPin width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} />
-                <label style={{ fontSize: "0.875rem", fontWeight: "600", opacity: 0.7 }}>
-                  Place of Birth
-                </label>
-              </div>
-              <input
-                type="text"
-                value={placeOfBirth}
-                onChange={(e) => setPlaceOfBirth(e.target.value)}
-                placeholder="City, Country"
-                style={{
-                  width: "100%",
-                  padding: "0.875rem",
-                  borderRadius: "0.75rem",
-                  border: "1px solid rgba(100, 100, 100, 0.2)",
-                  background: "var(--background)",
-                  fontSize: "1rem",
-                  fontWeight: "500"
-                }}
-              />
-            </div>
-
-            {/* Nationality */}
-            <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "1rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <Globe width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} />
-                <label style={{ fontSize: "0.875rem", fontWeight: "600", opacity: 0.7 }}>
-                  Nationality *
-                </label>
-              </div>
-              <input
-                type="text"
-                value={nationality}
-                onChange={(e) => setNationality(e.target.value)}
-                placeholder="e.g., Indian, American"
-                required
-                style={{
-                  width: "100%",
-                  padding: "0.875rem",
-                  borderRadius: "0.75rem",
-                  border: "1px solid rgba(100, 100, 100, 0.2)",
-                  background: "var(--background)",
-                  fontSize: "1rem",
-                  fontWeight: "500"
-                }}
-              />
-            </div>
-
-            {/* Place of Issue */}
-            <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "1rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <MapPin width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} />
-                <label style={{ fontSize: "0.875rem", fontWeight: "600", opacity: 0.7 }}>
-                  Place of Issue
-                </label>
-              </div>
-              <input
-                type="text"
-                value={placeOfIssue}
-                onChange={(e) => setPlaceOfIssue(e.target.value)}
-                placeholder="Issuing location"
-                style={{
-                  width: "100%",
-                  padding: "0.875rem",
-                  borderRadius: "0.75rem",
-                  border: "1px solid rgba(100, 100, 100, 0.2)",
-                  background: "var(--background)",
-                  fontSize: "1rem",
-                  fontWeight: "500"
-                }}
-              />
-            </div>
-
-            {/* Date of Issue */}
-            <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "1rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <Calendar width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} />
-                <label style={{ fontSize: "0.875rem", fontWeight: "600", opacity: 0.7 }}>
-                  Date of Issue
-                </label>
-              </div>
-              <input
-                type="date"
-                value={dateOfIssue}
-                onChange={(e) => setDateOfIssue(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "0.875rem",
-                  borderRadius: "0.75rem",
-                  border: "1px solid rgba(100, 100, 100, 0.2)",
-                  background: "var(--background)",
-                  fontSize: "1rem",
-                  fontWeight: "500"
-                }}
-              />
-            </div>
-
-            {/* Date of Expiry */}
-            <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "1rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <Calendar width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} />
-                <label style={{ fontSize: "0.875rem", fontWeight: "600", opacity: 0.7 }}>
-                  Date of Expiry *
-                </label>
-              </div>
-              <input
-                type="date"
-                value={dateOfExpiry}
-                onChange={(e) => setDateOfExpiry(e.target.value)}
-                required
-                style={{
-                  width: "100%",
-                  padding: "0.875rem",
-                  borderRadius: "0.75rem",
-                  border: "1px solid rgba(100, 100, 100, 0.2)",
-                  background: "var(--background)",
-                  fontSize: "1rem",
-                  fontWeight: "500"
-                }}
-              />
-            </div>
-
           </div>
-        </motion.div>
+
+          {/* Place of Birth + Place of Issue */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, opacity: 0.65, display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                <MapPin width="0.75rem" /> Place of Birth
+              </label>
+              <input type="text" value={placeOfBirth} onChange={(e) => setPlaceOfBirth(e.target.value)} placeholder="City, Country" style={fieldStyle} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, opacity: 0.65, display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                <MapPin width="0.75rem" /> Place of Issue
+              </label>
+              <input type="text" value={placeOfIssue} onChange={(e) => setPlaceOfIssue(e.target.value)} placeholder="Issuing location" style={fieldStyle} />
+            </div>
+          </div>
+
+          {/* Date of Issue + Date of Expiry */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, opacity: 0.65, display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                <Calendar width="0.75rem" /> Date of Issue
+              </label>
+              <input type="date" value={dateOfIssue} onChange={(e) => setDateOfIssue(e.target.value)} style={fieldStyle} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, opacity: 0.65, display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                <Calendar width="0.75rem" /> Date of Expiry *
+              </label>
+              <input type="date" value={dateOfExpiry} onChange={(e) => setDateOfExpiry(e.target.value)} required style={fieldStyle} />
+            </div>
+          </div>
+
+        </div>
       </div>
 
       {/* Fixed Footer */}
       <div style={{
-        padding: "1.5rem",
-        paddingTop: "1rem",
+        padding: "1rem 1.5rem calc(1rem + env(safe-area-inset-bottom, 0px))",
         borderTop: "1px solid rgba(100, 100, 100, 0.1)",
         background: "var(--background)",
-        boxSizing: "border-box"
+        boxSizing: "border-box",
+        flexShrink: 0,
       }}>
         <button
           type="submit"
           disabled={submitting}
           style={{
             width: "100%",
-            padding: "1rem",
+            padding: "0.875rem",
             borderRadius: "0.75rem",
             background: submitting ? "rgba(100, 100, 100, 0.3)" : "darkslateblue",
             color: "white",
             border: "none",
-            fontSize: "1rem",
-            fontWeight: "600",
+            fontSize: "0.95rem",
+            fontWeight: 600,
             cursor: submitting ? "not-allowed" : "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "0.5rem"
+            gap: "0.5rem",
           }}
         >
           {submitting ? (
             <>
-              <Loader2 className="animate-spin" width="1.25rem" />
+              <Loader2 className="animate-spin" width="1rem" />
               Saving...
             </>
           ) : (
@@ -1147,6 +1014,14 @@ const PassportScanner: React.FC<PassportScannerProps> = ({ open, onClose, onData
   );
 };
 
+// Small reusable cell for detail view
+const DetailCell = ({ label, value, mono, large, valueColor }: { label: string; value: string; mono?: boolean; large?: boolean; valueColor?: string }) => (
+  <div style={{ background: "rgba(100,100,100,0.05)", padding: "0.65rem 0.8rem", borderRadius: "0.6rem" }}>
+    <div style={{ fontSize: "0.68rem", opacity: 0.5, marginBottom: "0.2rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
+    <div style={{ fontSize: large ? "1rem" : "0.875rem", fontWeight: 600, fontFamily: mono ? "monospace" : undefined, color: valueColor }}>{value}</div>
+  </div>
+);
+
 // Main Passports Component
 export default function Passports() {
   const { user } = useAuth();
@@ -1371,6 +1246,10 @@ export default function Passports() {
     return daysUntilExpiry > 0 && daysUntilExpiry <= 60;
   };
 
+  const daysUntilExpiry = (expiryDate: string) => {
+    return moment(expiryDate).diff(moment(), 'days');
+  };
+
   return (
     <>
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
@@ -1398,6 +1277,10 @@ export default function Passports() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    boxShadow:"1px 1px 5px rgba(0,0,0,0.4)",
+                    height:"2.75rem",
+                    width:"3rem"
+
                   }}
                   title="Download as Excel"
                 >
@@ -1434,83 +1317,115 @@ export default function Passports() {
                 </EmptyHeader>
               </Empty>
             ) : (
-              passports.map((passport) => (
-                <motion.div
-                  key={passport.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    setSelectedPassport(passport);
-                    setDrawerDetailOpen(true);
-                  }}
-                  style={{
-                    background: "rgba(100, 100, 100, 0.04)",
-                    borderRadius: "1rem",
-                    padding: "1.25rem",
-                    cursor: "pointer",
-                    border: "1px solid rgba(100, 100, 100, 0.1)"
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem", gap: "0.75rem" }}>
-                    <div style={{
-                        background: isExpired(passport.dateOfExpiry) ? "rgba(220, 38, 38, 0.1)" :
-                                   isExpiringSoon(passport.dateOfExpiry) ? "rgba(234, 179, 8, 0.1)" :
-                                   "rgba(123, 104, 238, 0.1)",
-                        padding: "0.75rem",
-                        borderRadius: "0.75rem",
+              passports.map((passport) => {
+                const expired = isExpired(passport.dateOfExpiry);
+                const expiringSoon = isExpiringSoon(passport.dateOfExpiry);
+                const days = daysUntilExpiry(passport.dateOfExpiry);
+                const statusColor = expired ? "#dc2626" : expiringSoon ? "#d97706" : "#16a34a";
+                const statusBg = expired ? "rgba(220,38,38,0.08)" : expiringSoon ? "rgba(217,119,6,0.08)" : "rgba(22,163,74,0.08)";
+                const StatusIcon = expired ? AlertTriangle : expiringSoon ? Clock : CheckCircle2;
+                const statusLabel = expired
+                  ? "Expired"
+                  : expiringSoon
+                    ? `${days}d left`
+                    : "Valid";
+
+                return (
+                  <motion.div
+                    key={passport.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    whileTap={{ scale: 0.985 }}
+                    onClick={() => {
+                      setSelectedPassport(passport);
+                      setDrawerDetailOpen(true);
+                    }}
+                    style={{
+                      background: "rgba(100, 100, 100, 0.04)",
+                      borderRadius: "1rem",
+                      padding: "1rem 1.1rem",
+                      cursor: "pointer",
+                      border: `1px solid ${expired ? "rgba(220,38,38,0.15)" : expiringSoon ? "rgba(217,119,6,0.15)" : "rgba(100,100,100,0.09)"}`,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.7rem",
+                    }}
+                  >
+                    {/* Top row: icon + name + status badge + chevron */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      <div style={{
+                        background: expired ? "rgba(220,38,38,0.1)" : expiringSoon ? "rgba(217,119,6,0.1)" : "rgba(72,61,139,0.1)",
+                        padding: "0.6rem",
+                        borderRadius: "0.65rem",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center"
+                        justifyContent: "center",
+                        flexShrink: 0,
                       }}>
-                        <BookMarked 
-                          width="1.5rem" 
-                          color={isExpired(passport.dateOfExpiry) ? "rgb(220, 38, 38)" :
-                                isExpiringSoon(passport.dateOfExpiry) ? "rgb(234, 179, 8)" :
-                                "mediumslateblue"} 
+                        <BookMarked
+                          width="1.25rem"
+                          color={expired ? "#dc2626" : expiringSoon ? "#d97706" : "darkslateblue"}
                         />
                       </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                      
-                      <div>
-                        <div style={{ fontSize: "1.125rem", fontWeight: "600", marginBottom: "0.25rem", textAlign:"left" }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: "0.95rem", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {passport.fullName}
                         </div>
-                        <div style={{ fontSize: "0.875rem", opacity: 0.6 }}>
-                          {passport.passportNumber}
+                        <div style={{ fontSize: "0.78rem", opacity: 0.55, marginTop: "0.1rem" }}>
+                          {passport.passportNumber} · {passport.nationality}
                         </div>
                       </div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.75rem", fontSize: "0.875rem" }}>
-                    <div>
-                      <div style={{ opacity: 0.6, marginBottom: "0.25rem" }}>Nationality</div>
-                      <div style={{ fontWeight: "500" }}>{passport.nationality}</div>
-                    </div>
-                    <div>
-                      <div style={{ opacity: 0.6, marginBottom: "0.25rem" }}>Expiry</div>
-                      <div style={{ 
-                        fontWeight: "500",
-                        color: isExpired(passport.dateOfExpiry) ? "rgb(220, 38, 38)" :
-                               isExpiringSoon(passport.dateOfExpiry) ? "rgb(234, 179, 8)" :
-                               "inherit"
-                      }}>
-                        {moment(passport.dateOfExpiry).format("DD MMM YYYY")}
-                        {isExpired(passport.dateOfExpiry) && " (Expired)"}
-                        {isExpiringSoon(passport.dateOfExpiry) && " (Soon)"}
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                        <span style={{
+                          display: "flex", alignItems: "center", gap: "0.25rem",
+                          background: statusBg,
+                          color: statusColor,
+                          fontSize: "0.72rem",
+                          fontWeight: 700,
+                          padding: "0.25rem 0.55rem",
+                          borderRadius: "999px",
+                          whiteSpace: "nowrap",
+                        }}>
+                          <StatusIcon width="0.7rem" />
+                          {statusLabel}
+                        </span>
+                        <ChevronRight width="1rem" style={{ opacity: 0.3 }} />
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))
+
+                    {/* Bottom row: expiry + DOB */}
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "0.5rem",
+                      borderTop: "1px solid rgba(100,100,100,0.08)",
+                      paddingTop: "0.65rem",
+                    }}>
+                      <div>
+                        <div style={{ fontSize: "0.68rem", opacity: 0.5, marginBottom: "0.15rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Expires</div>
+                        <div style={{ fontSize: "0.82rem", fontWeight: 600, color: statusColor }}>
+                          {moment(passport.dateOfExpiry).format("DD MMM YYYY")}
+                        </div>
+                      </div>
+                      {passport.dateOfBirth && (
+                        <div>
+                          <div style={{ fontSize: "0.68rem", opacity: 0.5, marginBottom: "0.15rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Date of Birth</div>
+                          <div style={{ fontSize: "0.82rem", fontWeight: 600 }}>
+                            {moment(passport.dateOfBirth).format("DD MMM YYYY")}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })
             )}
           </div>
         </div>
 
         {/* Add Button */}
         <motion.button
-          initial={{ opacity: 0, y: isMobile ? 20 : 0 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut", delay: 0.2 }}
           whileTap={{ scale: 0.96 }}
@@ -1520,15 +1435,14 @@ export default function Passports() {
             setDrawerOpen(true);
           }}
           style={{
-            transition: "none",
             position: "fixed",
             bottom: isMobile ? "calc(1rem + env(safe-area-inset-bottom, 0px))" : "calc(2rem + env(safe-area-inset-bottom, 0px))",
             right: isMobile ? "1rem" : "1.5rem",
             left: isMobile ? "1rem" : "auto",
-            width: isMobile ? "calc(100% - 2rem)" : "3.5rem",
-            height: isMobile ? "auto" : "3.5rem",
-            padding: isMobile ? "1rem" : "0",
-            borderRadius: isMobile ? "0.5rem" : "0.75rem",
+            width: isMobile ? "calc(100% - 2rem)" : "auto",
+            height: isMobile ? "auto" : "3.25rem",
+            padding: isMobile ? "0.875rem" : "0 1.25rem",
+            borderRadius: "0.75rem",
             background: "darkslateblue",
             color: "white",
             border: "none",
@@ -1537,15 +1451,14 @@ export default function Passports() {
             alignItems: "center",
             justifyContent: "center",
             gap: "0.5rem",
-            fontSize: isMobile ? "1rem" : "inherit",
-            fontWeight: isMobile ? "500" : "normal",
+            fontSize: "0.95rem",
+            fontWeight: 600,
             zIndex: 50,
-            boxShadow: isMobile ? "0 4px 12px rgba(0, 0, 0, 0.15)" : "none",
-            marginBottom: "1rem"
+            boxShadow: "0 4px 16px rgba(72,61,139,0.35)",
           }}
         >
-          <Plus width="1.25rem" height="1.75rem" strokeWidth={2.5} />
-          {isMobile && <span>Add Passport</span>}
+          <Plus width="1.125rem" strokeWidth={2.5} />
+          Add Passport
         </motion.button>
       </motion.div>
 
@@ -1597,157 +1510,91 @@ export default function Passports() {
           title=""
           description=""
         >
-          <div style={{ padding: "1.5rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", maxHeight: "85vh" }}>
+            {/* Header */}
+            <div style={{
+              padding: "1.25rem 1.5rem 1rem",
+              borderBottom: "1px solid rgba(100,100,100,0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexShrink: 0,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                 <div style={{
-                  background: "rgba(123, 104, 238, 0.1)",
-                  padding: "0.75rem",
-                  borderRadius: "0.75rem",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
+                  background: isExpired(selectedPassport.dateOfExpiry) ? "rgba(220,38,38,0.1)" : isExpiringSoon(selectedPassport.dateOfExpiry) ? "rgba(217,119,6,0.1)" : "rgba(72,61,139,0.1)",
+                  padding: "0.55rem", borderRadius: "0.6rem", display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  <BookMarked width="1.5rem" color="mediumslateblue" />
+                  <BookMarked width="1.1rem" color={isExpired(selectedPassport.dateOfExpiry) ? "#dc2626" : isExpiringSoon(selectedPassport.dateOfExpiry) ? "#d97706" : "darkslateblue"} />
                 </div>
-                <h2 style={{ fontSize: "1.5rem", fontWeight: "700", margin: 0 }}>
-                  Passport Details
-                </h2>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: "1rem" }}>Passport Details</div>
+                  <div style={{ fontSize: "0.75rem", opacity: 0.5 }}>{selectedPassport.passportNumber}</div>
+                </div>
               </div>
-              <button
-                onClick={() => setDrawerDetailOpen(false)}
-                style={{
-                  background: "rgba(100, 100, 100, 0.08)",
-                  border: "none",
-                  borderRadius: "0.5rem",
-                  padding: "0.5rem",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}
-              >
-                <X width="1.25rem" />
+              <button onClick={() => setDrawerDetailOpen(false)} style={{ background: "rgba(100,100,100,0.08)", border: "none", borderRadius: "0.5rem", padding: "0.4rem", cursor: "pointer", display: "flex" }}>
+                <X width="1.1rem" />
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-              <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "0.75rem" }}>
-                <div style={{ fontSize: "0.75rem", opacity: 0.6, marginBottom: "0.25rem" }}>PASSPORT NUMBER</div>
-                <div style={{ fontSize: "1.125rem", fontWeight: "600" }}>{selectedPassport.passportNumber}</div>
-              </div>
-
-              <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "0.75rem" }}>
-                <div style={{ fontSize: "0.75rem", opacity: 0.6, marginBottom: "0.25rem" }}>FULL NAME</div>
-                <div style={{ fontSize: "1.125rem", fontWeight: "600" }}>{selectedPassport.fullName}</div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.75rem" }}>
-                <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "0.75rem" }}>
-                  <div style={{ fontSize: "0.75rem", opacity: 0.6, marginBottom: "0.25rem" }}>DATE OF BIRTH</div>
-                  <div style={{ fontSize: "0.95rem", fontWeight: "500" }}>
-                    {moment(selectedPassport.dateOfBirth).format("DD MMM YYYY")}
-                  </div>
+            {/* Scrollable content */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "1.25rem 1.5rem", minHeight: 0 }}>
+              {(isExpired(selectedPassport.dateOfExpiry) || isExpiringSoon(selectedPassport.dateOfExpiry)) && (
+                <div style={{
+                  display: "flex", alignItems: "center", gap: "0.5rem",
+                  background: isExpired(selectedPassport.dateOfExpiry) ? "rgba(220,38,38,0.08)" : "rgba(217,119,6,0.08)",
+                  border: `1px solid ${isExpired(selectedPassport.dateOfExpiry) ? "rgba(220,38,38,0.2)" : "rgba(217,119,6,0.2)"}`,
+                  color: isExpired(selectedPassport.dateOfExpiry) ? "#dc2626" : "#d97706",
+                  borderRadius: "0.65rem", padding: "0.65rem 0.85rem", marginBottom: "1rem",
+                  fontSize: "0.82rem", fontWeight: 600,
+                }}>
+                  {isExpired(selectedPassport.dateOfExpiry)
+                    ? <><AlertTriangle width="0.9rem" /> This passport has expired</>
+                    : <><Clock width="0.9rem" /> Expires in {daysUntilExpiry(selectedPassport.dateOfExpiry)} days</>}
                 </div>
+              )}
 
-                {selectedPassport.sex && (
-                  <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "0.75rem" }}>
-                    <div style={{ fontSize: "0.75rem", opacity: 0.6, marginBottom: "0.25rem" }}>SEX</div>
-                    <div style={{ fontSize: "0.95rem", fontWeight: "500" }}>
-                      {selectedPassport.sex === 'M' ? 'Male' : 'Female'}
-                    </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                  <DetailCell label="Passport No." value={selectedPassport.passportNumber} mono />
+                  <DetailCell label="Nationality" value={selectedPassport.nationality} />
+                </div>
+                <DetailCell label="Full Name" value={selectedPassport.fullName} large />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                  <DetailCell label="Date of Birth" value={moment(selectedPassport.dateOfBirth).format("DD MMM YYYY")} />
+                  {selectedPassport.sex && <DetailCell label="Sex" value={selectedPassport.sex === 'M' ? 'Male' : 'Female'} />}
+                </div>
+                {(selectedPassport.placeOfBirth || selectedPassport.placeOfIssue) && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                    {selectedPassport.placeOfBirth && <DetailCell label="Place of Birth" value={selectedPassport.placeOfBirth} />}
+                    {selectedPassport.placeOfIssue && <DetailCell label="Place of Issue" value={selectedPassport.placeOfIssue} />}
                   </div>
                 )}
-              </div>
-
-              <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "0.75rem" }}>
-                <div style={{ fontSize: "0.75rem", opacity: 0.6, marginBottom: "0.25rem" }}>NATIONALITY</div>
-                <div style={{ fontSize: "1rem", fontWeight: "500" }}>{selectedPassport.nationality}</div>
-              </div>
-
-              {selectedPassport.placeOfBirth && (
-                <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "0.75rem" }}>
-                  <div style={{ fontSize: "0.75rem", opacity: 0.6, marginBottom: "0.25rem" }}>PLACE OF BIRTH</div>
-                  <div style={{ fontSize: "1rem", fontWeight: "500" }}>{selectedPassport.placeOfBirth}</div>
-                </div>
-              )}
-
-              {selectedPassport.placeOfIssue && (
-                <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "0.75rem" }}>
-                  <div style={{ fontSize: "0.75rem", opacity: 0.6, marginBottom: "0.25rem" }}>PLACE OF ISSUE</div>
-                  <div style={{ fontSize: "1rem", fontWeight: "500" }}>{selectedPassport.placeOfIssue}</div>
-                </div>
-              )}
-
-              {selectedPassport.dateOfIssue && (
-                <div style={{ background: "rgba(100, 100, 100, 0.05)", padding: "1rem", borderRadius: "0.75rem" }}>
-                  <div style={{ fontSize: "0.75rem", opacity: 0.6, marginBottom: "0.25rem" }}>DATE OF ISSUE</div>
-                  <div style={{ fontSize: "1rem", fontWeight: "500" }}>
-                    {moment(selectedPassport.dateOfIssue).format("DD MMM YYYY")}
-                  </div>
-                </div>
-              )}
-
-              <div style={{ 
-                background: isExpired(selectedPassport.dateOfExpiry) ? "rgba(220, 38, 38, 0.1)" :
-                           isExpiringSoon(selectedPassport.dateOfExpiry) ? "rgba(234, 179, 8, 0.1)" :
-                           "rgba(100, 100, 100, 0.05)", 
-                padding: "1rem", 
-                borderRadius: "0.75rem",
-                border: isExpired(selectedPassport.dateOfExpiry) ? "1px solid rgba(220, 38, 38, 0.2)" :
-                        isExpiringSoon(selectedPassport.dateOfExpiry) ? "1px solid rgba(234, 179, 8, 0.2)" :
-                        "none"
-              }}>
-                <div style={{ fontSize: "0.75rem", opacity: 0.6, marginBottom: "0.25rem" }}>DATE OF EXPIRY</div>
-                <div style={{ 
-                  fontSize: "1rem", 
-                  fontWeight: "600",
-                  color: isExpired(selectedPassport.dateOfExpiry) ? "rgb(220, 38, 38)" :
-                         isExpiringSoon(selectedPassport.dateOfExpiry) ? "rgb(234, 179, 8)" :
-                         "inherit"
-                }}>
-                  {moment(selectedPassport.dateOfExpiry).format("DD MMM YYYY")}
-                  {isExpired(selectedPassport.dateOfExpiry) && " (Expired)"}
-                  {isExpiringSoon(selectedPassport.dateOfExpiry) && " (Expiring Soon)"}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                  {selectedPassport.dateOfIssue && <DetailCell label="Date of Issue" value={moment(selectedPassport.dateOfIssue).format("DD MMM YYYY")} />}
+                  <DetailCell
+                    label="Date of Expiry"
+                    value={moment(selectedPassport.dateOfExpiry).format("DD MMM YYYY")}
+                    valueColor={isExpired(selectedPassport.dateOfExpiry) ? "#dc2626" : isExpiringSoon(selectedPassport.dateOfExpiry) ? "#d97706" : undefined}
+                  />
                 </div>
               </div>
+            </div>
 
-              <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem" }}>
-                <button
-                  onClick={() => handleEdit(selectedPassport)}
-                  style={{
-                    flex: 1,
-                    padding: "0.875rem",
-                    borderRadius: "0.75rem",
-                    background: "mediumslateblue",
-                    color: "white",
-                    border: "none",
-                    fontSize: "1rem",
-                    fontWeight: "600",
-                    cursor: "pointer"
-                  }}
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => showDeleteConfirmation(selectedPassport.id)}
-                  style={{
-                    padding: "0.875rem",
-                    borderRadius: "0.75rem",
-                    background: "rgba(220, 38, 38, 0.1)",
-                    color: "rgb(220, 38, 38)",
-                    border: "none",
-                    fontSize: "1rem",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}
-                >
-                  <Trash width="1.25rem" />
-                </button>
-              </div>
+            {/* Action buttons */}
+            <div style={{ padding: "1rem 1.5rem calc(1rem + env(safe-area-inset-bottom, 0px))", borderTop: "1px solid rgba(100,100,100,0.1)", display: "flex", gap: "0.6rem", flexShrink: 0 }}>
+              <button
+                onClick={() => handleEdit(selectedPassport)}
+                style={{ flex: 1, padding: "0.8rem", borderRadius: "0.65rem", background: "darkslateblue", color: "white", border: "none", fontSize: "0.9 rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem" }}
+              >
+                <PenLine width="0.9rem" /> Edit
+              </button>
+              <button
+                onClick={() => showDeleteConfirmation(selectedPassport.id)}
+                style={{ padding: "0.8rem 1rem", borderRadius: "0.65rem", background: "rgba(220,38,38,0.08)", color: "#dc2626",fontSize: "0.9rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem", flex:1 }}
+              >
+                <Trash width="0.9rem" /> Delete
+              </button>
             </div>
           </div>
         </ResponsiveModal>

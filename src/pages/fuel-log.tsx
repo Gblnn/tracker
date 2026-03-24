@@ -1763,7 +1763,7 @@ export default function FuelLog() {
                   noArrow 
                   tag={log.amount_spent.toFixed(3)} 
                   key={log.id} 
-                  icon={<Fuel color={log.isPending ? "gray" : "orange"}/>} 
+                  icon={<Fuel color={log.isPending ? "gray" : "darkslategrey"}/>} 
                   title={moment(log.date).format("DD MMM YYYY")}
                   onClick={() => {
                     if (!log.isPending) {

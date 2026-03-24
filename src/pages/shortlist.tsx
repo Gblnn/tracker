@@ -1,513 +1,272 @@
+import ApplicationCard from "@/components/application-card";
 import Back from "@/components/back";
 import RefreshButton from "@/components/refresh-button";
-import Work from "@/components/work";
-import { db } from "@/firebase";
-import { Checkbox, Input, message, Modal, Select } from "antd";
+import { Button } from "@/components/ui/button";
 import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  query,
-  writeBatch,
-} from "firebase/firestore";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { db } from "@/firebase";
+import { collection, deleteDoc, doc, getDocs, query } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { LoaderCircle, Trash2 } from "lucide-react";
-import moment from "moment";
-import { useEffect, useState } from "react";
-// import { Opening } from "@/components/opening";
+import { LoaderCircle, RefreshCw, Trash2, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
-interface JobOpening {
+interface ShortlistRecord {
   id: string;
-  jobTitle: string;
-  jobType: string;
-  description: string;
-  activelyHiring: boolean;
-  created_at: any;
+  applicationId?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  jobTitle?: string;
+  created_at?: any;
+  cv?: string;
+  cvLink?: string;
+  shortlistedAt?: any;
 }
 
 export default function Shortlist() {
-  const [fetchingData, setfetchingData] = useState(false);
-  const [records, setRecords] = useState<JobOpening[]>([]);
-  const [applications, setApplications] = useState<any>([]);
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [allApplicationsModalOpen, setAllApplicationsModalOpen] =
-    useState(false);
-  const [newOpening, setNewOpening] = useState({
-    jobType: "full-time",
-    jobTitle: "",
-    description: "",
-    activelyHiring: false,
-  });
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [fetchingData, setFetchingData] = useState(false);
+  const [records, setRecords] = useState<ShortlistRecord[]>([]);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
+  const [confirmClearAllOpen, setConfirmClearAllOpen] = useState(false);
+  const [recordToRemove, setRecordToRemove] = useState<ShortlistRecord | null>(null);
+  const [renderLimit, setRenderLimit] = useState(24);
+  const [clearingAll, setClearingAll] = useState(false);
 
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
-    fetchApplications();
     try {
-      setfetchingData(true);
-      const RecordCollection = collection(db, "shortlist");
-      const recordQuery = query(RecordCollection);
-      const querySnapshot = await getDocs(recordQuery);
-      const fetchedData: any = [];
+      setFetchingData(true);
+      const shortlistSnapshot = await getDocs(query(collection(db, "shortlist")));
+      const fetchedData: ShortlistRecord[] = [];
 
-      querySnapshot.forEach((doc: any) => {
-        fetchedData.push({ id: doc.id, ...doc.data() });
+      shortlistSnapshot.forEach((shortlistDoc: any) => {
+        fetchedData.push({ id: shortlistDoc.id, ...shortlistDoc.data() });
       });
+
+      fetchedData.sort((a, b) => {
+        const aTime = a.shortlistedAt?.toDate ? a.shortlistedAt.toDate().getTime() : 0;
+        const bTime = b.shortlistedAt?.toDate ? b.shortlistedAt.toDate().getTime() : 0;
+        return bTime - aTime;
+      });
+
       setRecords(fetchedData);
-
-      setfetchingData(false);
     } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const fetchApplications = async () => {
-    const RecordCollection = collection(db, "applications");
-    const recordQuery = query(RecordCollection);
-    const querySnapshot = await getDocs(recordQuery);
-    const fetchedData: any = [];
-
-    querySnapshot.forEach((doc: any) => {
-      fetchedData.push({ id: doc.id, ...doc.data() });
-    });
-    setApplications(fetchedData);
-  };
-
-  const handleAddOpening = async () => {
-    setSaving(true);
-    try {
-      await addDoc(collection(db, "openings"), {
-        jobType: newOpening.jobType,
-        jobTitle: newOpening.jobTitle,
-        description: newOpening.description,
-        activelyHiring: newOpening.activelyHiring,
-        created_at: new Date(),
-      });
-      message.success("Opening added");
-      setAddDialogOpen(false);
-      setNewOpening({
-        jobType: "full-time",
-        jobTitle: "",
-        description: "",
-        activelyHiring: false,
-      });
-      fetchData();
-    } catch (err) {
-      message.error("Failed to add opening");
+      console.error(error);
+      toast.error("Failed to load shortlisted candidates");
     } finally {
-      setSaving(false);
+      setFetchingData(false);
     }
   };
 
-  const handleDeleteApplication = async (id: string) => {
+  const visibleRecords = useMemo(() => {
+    return records.slice(0, renderLimit);
+  }, [records, renderLimit]);
+
+  const handleRequestRemove = (record: ShortlistRecord) => {
+    setRecordToRemove(record);
+    setConfirmRemoveOpen(true);
+  };
+
+  const handleRemoveFromShortlist = async () => {
+    if (!recordToRemove?.id) return;
+
+    setRemovingId(recordToRemove.id);
     try {
-      await deleteDoc(doc(db, "applications", id));
-      message.success("Application deleted");
-      fetchApplications();
-    } catch (err) {
-      message.error("Failed to delete application");
+      await deleteDoc(doc(db, "shortlist", recordToRemove.id));
+      setRecords((prev) => prev.filter((record) => record.id !== recordToRemove.id));
+      toast.success("Removed from shortlist");
+      setConfirmRemoveOpen(false);
+      setRecordToRemove(null);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to remove shortlisted candidate");
+    } finally {
+      setRemovingId(null);
     }
   };
 
-  const handleClearAllApplications = async () => {
-    Modal.confirm({
-      title: "Clear All Applications",
-      content:
-        "Are you sure you want to delete all applications? This action cannot be undone.",
-      okText: "Yes",
-      okType: "danger",
-      cancelText: "No",
-      onOk: async () => {
-        setDeleting(true);
-        try {
-          const batch = writeBatch(db);
-          applications.forEach((app: any) => {
-            batch.delete(doc(db, "applications", app.id));
-          });
-          await batch.commit();
-          message.success("All applications cleared");
-          fetchApplications();
-        } catch (err) {
-          message.error("Failed to clear applications");
-        } finally {
-          setDeleting(false);
-        }
-      },
-    });
+  const handleClearAll = async () => {
+    setClearingAll(true);
+    try {
+      await Promise.all(records.map((record) => deleteDoc(doc(db, "shortlist", record.id))));
+      setRecords([]);
+      toast.success("Shortlist cleared");
+      setConfirmClearAllOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to clear shortlist");
+    } finally {
+      setClearingAll(false);
+    }
   };
 
   return (
     <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
-      <div
-        className=""
-        style={{
-          minHeight: "",
-          paddingTop: "",
-          background: "",
-        }}
-      >
-        <div
-          style={{
-            padding: "",
-            width: "100%",
-            maxWidth: "",
-            margin: "0 auto",
-          }}
-        >
-          <Back
-            title={"Shortlist"}
-            fixed
-            extra={
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-              >
-                <RefreshButton
-                  onClick={fetchData}
-                  fetchingData={fetchingData}
-                />
-              </div>
-            }
-          />
-
-          {fetchingData ? (
-            <div
-              style={{
-                width: "100%",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                height: "100svh",
-              }}
+      <Back
+        title={"Shortlist"}
+        fixed
+        extra={
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <RefreshButton onClick={fetchData} fetchingData={fetchingData} />
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setConfirmClearAllOpen(true)}
+              disabled={records.length === 0 || clearingAll}
             >
-              <LoaderCircle
-                color="mediumslateblue"
-                className="animate-spin"
-                width={"3rem"}
-                height={"3rem"}
-              />
-            </div>
-          ) : records.length > 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              className="careers-grid"
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "2rem",
-                padding: "2rem",
-                paddingTop: "6rem",
-              }}
-            >
-              {records.map((record: any) => {
-                let applicants = 0;
-                const applicantsList = applications
-                  .filter((e: any) => e.jobId === record.id)
-                  .map((e: any) => {
-                    console.log("CV URL for applicant:", e.name, ":", e.cv);
-                    return {
-                      name: e.name,
-                      email: e.email,
-                      phone: e.phone,
-                      cv: e.cvLink,
-                    };
-                  });
-                applicants = applicantsList.length;
-                return (
-                  <Work
-                    key={record.id}
-                    id={record.id}
-                    date={moment(record.created_at.toDate()).format("LL")}
-                    designation={record.jobTitle}
-                    mailto={record.mailto}
-                    desc={record.description}
-                    jobType={record.jobType}
-                    activelyHiring={record.activelyHiring}
-                    applicants={applicants}
-                    applicantsList={applicantsList}
-                  />
-                );
-              })}
-            </motion.div>
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                height: "100svh",
-                justifyContent: "center",
-                alignItems: "center",
-                width: "100%",
-                opacity: "0.5",
-              }}
-            >
-              <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "center",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexFlow: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    textAlign: "center",
-                  }}
-                >
-                  <p>No Short Listed Candidates</p>
-                  <p style={{ fontSize: "0.6rem" }}></p>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </div>
-      </div>
-      <Modal
-        title="Add New Job Opening"
-        open={addDialogOpen}
-        onCancel={() => setAddDialogOpen(false)}
-        onOk={handleAddOpening}
-        confirmLoading={saving}
-        okText="Add"
-        cancelText="Cancel"
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div>
-            <label>Job-Type</label>
-            <Select
-              value={newOpening.jobType}
-              onChange={(value) =>
-                setNewOpening((prev) => ({ ...prev, jobType: value }))
-              }
-              style={{ width: "100%" }}
-            >
-              <Select.Option value="full-time">Full Time</Select.Option>
-              <Select.Option value="part-time">Part Time</Select.Option>
-            </Select>
-          </div>
-          <div>
-            <label>Job-Title</label>
-            <Input
-              value={newOpening.jobTitle}
-              onChange={(e) =>
-                setNewOpening((prev) => ({ ...prev, jobTitle: e.target.value }))
-              }
-              placeholder="Enter job title"
-            />
-          </div>
-          <div>
-            <label>Description</label>
-            <Input.TextArea
-              value={newOpening.description}
-              onChange={(e) =>
-                setNewOpening((prev) => ({
-                  ...prev,
-                  description: e.target.value,
-                }))
-              }
-              placeholder="Enter job description"
-              rows={4}
-            />
-          </div>
-          <div>
-            <Checkbox
-              checked={newOpening.activelyHiring}
-              onChange={(e) =>
-                setNewOpening((prev) => ({
-                  ...prev,
-                  activelyHiring: e.target.checked,
-                }))
-              }
-            >
-              Actively Hiring
-            </Checkbox>
-          </div>
-        </div>
-      </Modal>
-
-      {/* All Applications Modal */}
-      <Modal
-        title={
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <span>All Applications</span>
-            <button
-              onClick={handleClearAllApplications}
-              style={{
-                background: "none",
-                border: "none",
-                color: "crimson",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                fontSize: "0.9rem",
-                marginRight: "2rem",
-              }}
-              disabled={deleting || applications.length === 0}
-            >
-              Clear All
-            </button>
+              <Trash2 width={"0.9rem"} />
+              {clearingAll ? "Clearing..." : "Clear All"}
+            </Button>
           </div>
         }
-        open={allApplicationsModalOpen}
-        onCancel={() => setAllApplicationsModalOpen(false)}
-        width={1000}
-        footer={null}
-      >
-        <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#f5f5f5" }}>
-                <th
-                  style={{
-                    padding: "12px",
-                    textAlign: "left",
-                    borderBottom: "1px solid #eee",
-                  }}
-                >
-                  Name
-                </th>
-                <th
-                  style={{
-                    padding: "12px",
-                    textAlign: "left",
-                    borderBottom: "1px solid #eee",
-                  }}
-                >
-                  Email
-                </th>
-                <th
-                  style={{
-                    padding: "12px",
-                    textAlign: "left",
-                    borderBottom: "1px solid #eee",
-                  }}
-                >
-                  Phone
-                </th>
-                <th
-                  style={{
-                    padding: "12px",
-                    textAlign: "left",
-                    borderBottom: "1px solid #eee",
-                  }}
-                >
-                  Applied For
-                </th>
-                <th
-                  style={{
-                    padding: "12px",
-                    textAlign: "left",
-                    borderBottom: "1px solid #eee",
-                  }}
-                >
-                  Applied On
-                </th>
-                <th
-                  style={{
-                    padding: "12px",
-                    textAlign: "left",
-                    borderBottom: "1px solid #eee",
-                  }}
-                >
-                  CV
-                </th>
-                <th
-                  style={{
-                    padding: "12px",
-                    textAlign: "left",
-                    borderBottom: "1px solid #eee",
-                  }}
-                ></th>
-              </tr>
-            </thead>
-            <tbody>
-              {applications.map((app: any) => {
-                const jobTitle =
-                  records.find((r: any) => r.id === app.jobId)?.jobTitle ||
-                  "Unknown Position";
-                return (
-                  <tr key={app.id} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "12px" }}>{app.name}</td>
-                    <td style={{ padding: "12px" }}>
-                      <a href={`mailto:${app.email}`}>{app.email}</a>
-                    </td>
-                    <td style={{ padding: "12px" }}>
-                      <a href={`tel:${app.phone}`}>{app.phone}</a>
-                    </td>
-                    <td style={{ padding: "12px" }}>{jobTitle}</td>
-                    <td style={{ padding: "12px" }}>
-                      {app.created_at?.toDate
-                        ? moment(app.created_at.toDate()).format("LL")
-                        : "N/A"}
-                    </td>
-                    <td style={{ padding: "12px" }}>
-                      {app.cvLink ? (
-                        <a
-                          href={app.cvLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          View CV
-                        </a>
-                      ) : (
-                        "No CV"
-                      )}
-                    </td>
-                    <td style={{ padding: "12px" }}>
-                      <button
-                        onClick={() => {
-                          Modal.confirm({
-                            title: "Delete Application",
-                            content:
-                              "Are you sure you want to delete this application?",
-                            okText: "Yes",
-                            okType: "danger",
-                            cancelText: "No",
-                            onOk: () => handleDeleteApplication(app.id),
-                          });
-                        }}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          color: "crimson",
-                          cursor: "pointer",
-                          padding: "4px",
-                        }}
-                      >
-                        <Trash2 width="1rem" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {applications.length === 0 && (
-            <div
-              style={{ textAlign: "center", padding: "2rem", color: "#888" }}
-            >
-              No applications found
-            </div>
-          )}
+      />
+
+      {fetchingData ? (
+        <div
+          style={{
+            width: "100%",
+            minHeight: "80svh",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <LoaderCircle className="animate-spin" width={"2.1rem"} />
         </div>
-      </Modal>
+      ) : records.length > 0 ? (
+        <div style={{ paddingTop: "5.6rem", paddingInline: "1rem", paddingBottom: "1.5rem" }}>
+          <div
+            style={{
+              display: "grid",
+              gap: "0.6rem",
+              marginBottom: "0.85rem",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", opacity: 0.8 }}>
+              <Users width={"0.9rem"} />
+              <span style={{ fontSize: "0.85rem" }}>
+                {records.length} shortlisted {records.length === 1 ? "candidate" : "candidates"}
+              </span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gap: "0.7rem",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            }}
+          >
+            {visibleRecords.map((record) => (
+              <ApplicationCard
+                key={record.id}
+                app={{
+                  id: record.id,
+                  name: record.name || "Unnamed Candidate",
+                  email: record.email || "N/A",
+                  phone: record.phone || "N/A",
+                  jobTitle: record.jobTitle || "Unknown Role",
+                  created_at: record.created_at,
+                  cv: record.cv,
+                  cvLink: record.cvLink,
+                }}
+                shortlisted
+                shortlisting={false}
+                declining={removingId === record.id}
+                onShortlist={() => {
+                  // No-op: shortlisted records are already in shortlist.
+                }}
+                onDecline={() => handleRequestRemove(record)}
+                showShortlistAction={false}
+                secondaryActionLabel="Remove"
+              />
+            ))}
+          </div>
+
+          {renderLimit < records.length ? (
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "0.85rem" }}>
+              <Button variant="outline" onClick={() => setRenderLimit((prev) => prev + 24)}>
+                <RefreshCw width={"0.85rem"} />
+                Load More
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div
+          style={{
+            minHeight: "80svh",
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            textAlign: "center",
+            padding: "1rem",
+          }}
+        >
+          <div style={{ opacity: 0.7, display: "grid", gap: "0.35rem" }}>
+            <h3 style={{ fontSize: "1.05rem", fontWeight: 650 }}>No shortlisted candidates</h3>
+            <p style={{ fontSize: "0.85rem" }}>
+              Add candidates from the applications list to see them here.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <Dialog open={confirmRemoveOpen} onOpenChange={setConfirmRemoveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove from shortlist?</DialogTitle>
+            <DialogDescription>
+              {recordToRemove?.name || "This candidate"} will be removed from shortlist.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setConfirmRemoveOpen(false);
+                setRecordToRemove(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleRemoveFromShortlist} disabled={!!removingId}>
+              {removingId ? "Removing..." : "Remove"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmClearAllOpen} onOpenChange={setConfirmClearAllOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clear shortlist?</DialogTitle>
+            <DialogDescription>
+              This will remove every candidate from shortlist.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmClearAllOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleClearAll} disabled={clearingAll}>
+              {clearingAll ? "Clearing..." : "Clear All"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

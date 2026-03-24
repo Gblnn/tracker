@@ -69,7 +69,7 @@ export default function Timetaag() {
       <Back
         fixed
         title="Timetaag"
-        subtitle="Module"
+        // subtitle="Module"
         // icon={<img src="/timetaag.png" alt="Timetaag" style={{ width: "1.5rem", height: "1.5rem", objectFit: "contain" }} />}
       />
       <div

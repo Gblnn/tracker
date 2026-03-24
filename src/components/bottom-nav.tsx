@@ -30,7 +30,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, isActive, onClick, isMobile = f
         display: "flex",
         justifyContent: "center",
         background: isActive 
-          ? (isMobile ? "linear-gradient(-15deg, mediumslateblue, darkslateblue)" : "linear-gradient(15deg, darkslateblue, mediumslateblue)")
+          ? (isMobile ? "darkslategrey" : "darkslategrey")
           : "none",
         color: isActive ? "white" : "darkslategray",
         fontSize: "0.9rem",
@@ -125,7 +125,8 @@ export default function BottomNav() {
       }}>
         {/* Mobile Bottom Nav */}
         <div className="mobile-nav" style={{
-          background: "white",
+          background: "rgba(255, 255, 255, 0.5)",
+          backdropFilter: "blur(16px)",
           display: "flex",
           padding: "1.5rem 2rem",
           paddingBottom: "2rem",
@@ -152,7 +153,8 @@ export default function BottomNav() {
           bottom: "1.5rem",
           left: "50%",
           transform: "translateX(-50%)",
-          background: "white",
+          background: "rgba(250, 250, 250, 0.4)",
+          backdropFilter: "blur(16px)",
           display: "none",
           flexDirection: "row",
           padding: "0.5rem",

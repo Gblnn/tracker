@@ -481,7 +481,7 @@ export default function Tasks() {
                             </div>
                         }
                         fixed
-                        icon={<ClipboardList color="mediumslateblue" />}
+                        icon={<ClipboardList color="darkslategrey" />}
                         title={"Tasks"}
                     />
                 </div>
@@ -560,7 +560,7 @@ export default function Tasks() {
                                         borderRadius: "50%",
                                         border: "none",
                                         cursor: startingShift || checkingShift ? "not-allowed" : "pointer",
-                                        background: "linear-gradient(darkslateblue, midnightblue)",
+                                        background: "darkslategrey",
                                         color: "white",
                                         boxShadow: "0 18px 40px rgba(0,0,0,0.35)",
                                         display: "flex",
