@@ -298,8 +298,8 @@ export default function TransferRequests() {
                   display: "flex",
                   flexDirection: "column",
                   gap: "0.6rem",
-                  height: "100%",
                   transition: "all 0.15s ease",
+                  
                 }}
               >
               {/* Worker info + status */}
@@ -309,6 +309,7 @@ export default function TransferRequests() {
                   justifyContent: "space-between",
                   alignItems: "flex-start",
                   gap: "0.5rem",
+                  
                 }}
               >
                 <div>
@@ -323,6 +324,7 @@ export default function TransferRequests() {
                 </div>
                 <span
                   style={{
+                    
                     padding: "0.25rem 0.65rem",
                     borderRadius: "2rem",
                     fontSize: "0.75rem",
