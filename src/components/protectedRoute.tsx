@@ -19,7 +19,7 @@ const ROLE_RESTRICTED_ROUTES = {
 const MODULE_ROUTE_PERMISSIONS: Record<string, string[]> = {
   records_master: ["/records", "/record-list", "/record/", "/vale-records", "/movement-register"],
   user_management: ["/users", "/user", "/admin", "/access-control", "/access-requests"],
-  new_hire: ["/new-hire", "/openings"],
+  new_hire: ["/new-hire", "/openings", "/shortlist"],
   phonebook: ["/phonebook"],
   quick_links: ["/quick-links"],
   qr_generator: ["/qr-code-generator"],
@@ -30,7 +30,7 @@ const MODULE_ROUTE_PERMISSIONS: Record<string, string[]> = {
   timetaag: ["/timetaag"],
   shift_logs: ["/shift-logs"],
   vehicle_log_book: ["/vehicle-log-book"],
-  offer_letters: ["/offer-letters", "/openings", "/shortlist"],
+  offer_letters: ["/offer-letters"],
   transfer_requests: ["/transfer-requests"]
 };
 
