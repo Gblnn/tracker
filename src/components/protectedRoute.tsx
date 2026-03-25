@@ -15,6 +15,58 @@ const ROLE_RESTRICTED_ROUTES = {
   profile: ["/profile", "/records", "/phonebook"] // Basic profile access
 };
 
+// Module-level clearance can explicitly grant route access regardless of role list.
+const MODULE_ROUTE_PERMISSIONS: Record<string, string[]> = {
+  records_master: ["/records", "/record-list", "/record/", "/vale-records", "/movement-register"],
+  user_management: ["/users", "/user", "/admin", "/access-control", "/access-requests"],
+  new_hire: ["/new-hire"],
+  phonebook: ["/phonebook"],
+  quick_links: ["/quick-links"],
+  qr_generator: ["/qr-code-generator"],
+  fuel_log: ["/fuel-log"],
+  passports: ["/passports"],
+  asset_master: ["/asset-master", "/devices"],
+  projects: ["/projects", "/project-lpo"],
+  timetaag: ["/timetaag"],
+  shift_logs: ["/shift-logs"],
+  vehicle_log_book: ["/vehicle-log-book"],
+  offer_letters: ["/offer-letters", "/openings", "/shortlist"],
+  transfer_requests: ["/transfer-requests"]
+};
+
+const routeMatchesPath = (route: string, path: string): boolean => {
+  if (route.endsWith("/")) {
+    return path.startsWith(route);
+  }
+  return route === path;
+};
+
+const getModulePermissions = (clearance: string | undefined): Record<string, boolean> => {
+  if (!clearance) return {};
+  try {
+    const parsed = JSON.parse(clearance);
+    if (parsed && typeof parsed === "object") {
+      return parsed as Record<string, boolean>;
+    }
+  } catch {
+    // Ignore legacy non-JSON clearance format.
+  }
+  return {};
+};
+
+const hasRoutePermissionFromModules = (
+  path: string,
+  permissions: Record<string, boolean>
+): boolean => {
+  for (const [moduleId, routes] of Object.entries(MODULE_ROUTE_PERMISSIONS)) {
+    if (!permissions[moduleId]) continue;
+    if (routes.some((route) => routeMatchesPath(route, path))) {
+      return true;
+    }
+  }
+  return false;
+};
+
 export default function ProtectedRoutes() {
   const { user, userData, loading } = useAuth();
   const location = useLocation();
@@ -43,6 +95,8 @@ export default function ProtectedRoutes() {
   // Check role-based route restrictions
   const allowedRoutes = ROLE_RESTRICTED_ROUTES[userData.role as keyof typeof ROLE_RESTRICTED_ROUTES];
   const currentPath = location.pathname;
+  const modulePermissions = getModulePermissions(userData.clearance);
+  const hasModuleRouteAccess = hasRoutePermissionFromModules(currentPath, modulePermissions);
   
   // Helper function to check if a path matches allowed routes (including dynamic routes)
   const isPathAllowed = (path: string, allowedRoutes: string[]): boolean => {
@@ -64,14 +118,14 @@ export default function ProtectedRoutes() {
   
   // If role is defined and has specific route restrictions (not wildcard)
   if (allowedRoutes && allowedRoutes.length > 0 && !allowedRoutes.includes("*")) {
-    if (!isPathAllowed(currentPath, allowedRoutes)) {
+    if (!isPathAllowed(currentPath, allowedRoutes) && !hasModuleRouteAccess) {
       // Redirect to their default page based on role
       const defaultRoute = allowedRoutes[0];
       return <Navigate to={defaultRoute} replace />;
     }
   }
   // If role is not defined in ROLE_RESTRICTED_ROUTES, allow access to /index only
-  else if (!allowedRoutes && currentPath !== "/index") {
+  else if (!allowedRoutes && currentPath !== "/index" && !hasModuleRouteAccess) {
     return <Navigate to="/index" replace />;
   }
 
@@ -79,7 +133,8 @@ export default function ProtectedRoutes() {
   const requiredClearance =
     CLEARANCE_ROUTES[location.pathname as keyof typeof CLEARANCE_ROUTES];
   if (requiredClearance) {
-    const hasClearance = requiredClearance.includes(userData.clearance);
+    const hasLegacyClearance = requiredClearance.includes(userData.clearance);
+    const hasClearance = hasLegacyClearance || hasModuleRouteAccess;
     if (!hasClearance) {
       // If no clearance, redirect to record-list with error state
       return (
