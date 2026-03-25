@@ -5,158 +5,74 @@ const jsonHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-type TimetaagRequestBody = {
-  fdate?: string;
-  tdate?: string;
-  calculate?: number;
-  report?: string;
-  group1?: number;
-  group2?: string;
-  sort_column?: number;
-  client_db_name?: string;
-  emp_code?: number;
-  emp_ids?: string;
-  designation?: number;
-  location?: number;
-  att_set?: number;
-  department?: number;
-  branch?: number;
-  page?: number;
-  per_page?: number;
-};
-
 const TIMETAAG_BASE_URL = "https://app.timetaag.com/api/v1";
 
-function normalizeToken(value: string) {
-  return value.replace(/^Bearer\s+/i, "").trim();
-}
-
-class HttpError extends Error {
-  status: number;
-  data?: unknown;
-
-  constructor(message: string, status: number, data?: unknown) {
-    super(message);
-    this.name = "HttpError";
-    this.status = status;
-    this.data = data;
-  }
-}
-
-function getIdempotencyKey(payload: unknown) {
-  return Buffer.from(JSON.stringify(payload)).toString("base64");
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function findTokenInUnknown(data: unknown): string | null {
-  if (typeof data === "string" && data.trim()) {
-    return data;
+async function getAuthToken(): Promise<string> {
+  // If a static token is already configured, use it directly.
+  const directToken = process.env.TIMETAAG_AUTH_KEY?.trim();
+  if (directToken) {
+    return directToken.replace(/^Bearer\s+/i, "").trim();
   }
 
-  if (Array.isArray(data)) {
-    for (const item of data) {
-      const token = findTokenInUnknown(item);
-      if (token) {
-        return token;
-      }
-    }
-    return null;
-  }
+  // Otherwise exchange email + password for a fresh token.
+  const email = process.env.TIMETAAG_ADMIN_EMAIL?.trim();
+  const password = process.env.TIMETAAG_ADMIN_PASSWORD?.trim();
 
-  if (!isRecord(data)) {
-    return null;
-  }
-
-  const tokenKeys = ["token", "access_token", "accessToken", "auth_key", "authKey", "bearer"];
-  for (const key of tokenKeys) {
-    const value = data[key];
-    if (typeof value === "string" && value.trim()) {
-      return value;
-    }
-  }
-
-  const nestedKeys = ["data", "result", "payload", "response"];
-  for (const key of nestedKeys) {
-    const nested = data[key];
-    const nestedToken = findTokenInUnknown(nested);
-    if (nestedToken) {
-      return nestedToken;
-    }
-  }
-
-  return null;
-}
-
-async function getAuthTokenFromLogin() {
-  const loginEmail = process.env.TIMETAAG_ADMIN_EMAIL?.trim();
-  const loginPassword = process.env.TIMETAAG_ADMIN_PASSWORD?.trim();
-  const loginApiKey = process.env.TIMETAAG_API_KEY?.trim();
-  const loginClientDbName = process.env.TIMETAAG_CLIENT_DB_NAME?.trim();
-
-  if (!loginEmail || !loginPassword) {
+  if (!email || !password) {
     throw new Error(
-      "Set TIMETAAG_AUTH_KEY or provide TIMETAAG_ADMIN_EMAIL and TIMETAAG_ADMIN_PASSWORD"
+      "Missing credentials: set TIMETAAG_AUTH_KEY, or both TIMETAAG_ADMIN_EMAIL and TIMETAAG_ADMIN_PASSWORD environment variables."
     );
   }
 
-  const loginPayload = {
-    email: loginEmail,
-    password: loginPassword,
-    ...(loginClientDbName ? { client_db_name: loginClientDbName } : {}),
-  };
-
-  const loginHeaders: Record<string, string> = {
-    "Idempotency-Key": getIdempotencyKey(loginPayload),
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  };
-
-  if (loginApiKey) {
-    loginHeaders["BioTaag-API-Key"] = loginApiKey;
-  }
-
-  const loginResponse = await fetch(`${TIMETAAG_BASE_URL}/AdminLogin`, {
-    method: "POST",
-    headers: loginHeaders,
-    body: JSON.stringify(loginPayload),
-  });
-
-  const loginText = await loginResponse.text();
-  let loginData: unknown = loginText;
-
+  let loginRes: Response;
   try {
-    loginData = JSON.parse(loginText);
+    loginRes = await fetch(`${TIMETAAG_BASE_URL}/AdminLogin`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch (err) {
+    throw new Error(
+      `Network error reaching Timetaag login: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+
+  let loginData: unknown;
+  try {
+    loginData = await loginRes.json();
   } catch {
-    // Keep text response.
+    throw new Error(`AdminLogin failed (${loginRes.status}): response was not valid JSON`);
   }
 
-  if (!loginResponse.ok) {
-    const messageFromApi =
-      isRecord(loginData) && typeof loginData.message === "string" && loginData.message.trim()
-        ? loginData.message
-        : `AdminLogin failed (${loginResponse.status})`;
-
-    throw new HttpError(messageFromApi, loginResponse.status, loginData);
+  if (!loginRes.ok) {
+    const d = loginData as Record<string, unknown> | null;
+    const msg =
+      d && typeof d.message === "string" && d.message.trim()
+        ? d.message
+        : `AdminLogin failed with status ${loginRes.status}`;
+    throw new Error(msg);
   }
 
-  const token = findTokenInUnknown(loginData);
+  // Extract token – check the most common response shapes.
+  const d = loginData as Record<string, unknown>;
+  const nested = (d.data ?? d.result) as Record<string, unknown> | undefined;
+
+  const token =
+    (typeof d.token === "string" && d.token.trim() ? d.token.trim() : undefined) ??
+    (typeof d.access_token === "string" && d.access_token.trim() ? d.access_token.trim() : undefined) ??
+    (nested && typeof nested.token === "string" && nested.token.trim() ? nested.token.trim() : undefined) ??
+    (nested && typeof nested.access_token === "string" && nested.access_token.trim() ? nested.access_token.trim() : undefined);
+
   if (!token) {
-    throw new Error("AdminLogin succeeded but token was not found in response");
+    throw new Error(
+      `AdminLogin succeeded (${loginRes.status}) but no token was found in the response: ${JSON.stringify(loginData)}`
+    );
   }
 
   return token;
-}
-
-async function resolveAuthToken(apiKey?: string) {
-  const directToken = process.env.TIMETAAG_AUTH_KEY?.trim();
-  if (directToken && (!apiKey || directToken !== apiKey.trim())) {
-    return normalizeToken(directToken);
-  }
-
-  return getAuthTokenFromLogin();
 }
 
 export default async (req: Request) => {
@@ -171,117 +87,115 @@ export default async (req: Request) => {
     );
   }
 
-  let authKey = "";
-  const apiKey = process.env.TIMETAAG_API_KEY;
-  const defaultDbName = process.env.TIMETAAG_CLIENT_DB_NAME ?? "tt_10000";
-
+  let body: Record<string, unknown>;
   try {
-    authKey = await resolveAuthToken(apiKey);
-  } catch (error) {
-    if (error instanceof HttpError) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: error.message,
-          data: error.data,
-        }),
-        { status: error.status, headers: jsonHeaders }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : "Failed to resolve Timetaag auth token",
-      }),
-      { status: 500, headers: jsonHeaders }
-    );
-  }
-
-  let incomingBody: TimetaagRequestBody;
-
-  try {
-    incomingBody = (await req.json()) as TimetaagRequestBody;
+    body = (await req.json()) as Record<string, unknown>;
   } catch {
     return new Response(
-      JSON.stringify({ success: false, error: "Invalid JSON payload" }),
+      JSON.stringify({ success: false, error: "Invalid JSON body" }),
       { status: 400, headers: jsonHeaders }
     );
   }
 
-  if (!incomingBody.fdate || !incomingBody.tdate) {
+  const { fdate, tdate } = body;
+  if (!fdate || !tdate) {
     return new Response(
       JSON.stringify({ success: false, error: "fdate and tdate are required" }),
       { status: 400, headers: jsonHeaders }
     );
   }
 
-  const payload = {
-    fdate: incomingBody.fdate,
-    tdate: incomingBody.tdate,
-    calculate: incomingBody.calculate ?? 0,
-    report: incomingBody.report ?? "basic",
-    group1: incomingBody.group1 ?? 0,
-    group2: incomingBody.group2 ?? "LocationId",
-    sort_column: incomingBody.sort_column ?? 0,
-    client_db_name: incomingBody.client_db_name ?? defaultDbName,
-    emp_code: incomingBody.emp_code ?? 1,
-    emp_ids: incomingBody.emp_ids ?? "1,2",
-    designation: incomingBody.designation ?? 1,
-    location: incomingBody.location ?? 1,
-    att_set: incomingBody.att_set ?? 1,
-    department: incomingBody.department ?? 1,
-    branch: incomingBody.branch ?? 1,
-    page: incomingBody.page ?? 1,
-    per_page: incomingBody.per_page ?? 10,
-  };
-
-  const idempotencyKey = getIdempotencyKey(payload);
-
-  const requestHeaders: Record<string, string> = {
-    Authorization: `Bearer ${normalizeToken(authKey)}`,
-    "Content-Type": "application/json",
-    "Idempotency-Key": idempotencyKey,
-    Accept: "application/json",
-  };
-
-  if (apiKey) {
-    requestHeaders["BioTaag-API-Key"] = apiKey;
-  }
-
-  const upstreamResponse = await fetch(`${TIMETAAG_BASE_URL}/GetProcessData`, {
-    method: "POST",
-    headers: requestHeaders,
-    body: JSON.stringify(payload),
-  });
-
-  const responseText = await upstreamResponse.text();
-  let responseData: unknown = responseText;
-
+  let token: string;
   try {
-    responseData = JSON.parse(responseText);
-  } catch {
-    // Keep plain text response if not valid JSON.
-  }
-
-  if (!upstreamResponse.ok) {
+    token = await getAuthToken();
+  } catch (err) {
     return new Response(
       JSON.stringify({
         success: false,
-        status: upstreamResponse.status,
-        error: "Timetaag API request failed",
+        error: err instanceof Error ? err.message : "Authentication failed",
+      }),
+      { status: 500, headers: jsonHeaders }
+    );
+  }
+
+  const clientDbName = process.env.TIMETAAG_CLIENT_DB_NAME?.trim() ?? "tt_10000";
+
+  // Build the GetProcessData payload.
+  // Only include the core pagination/grouping fields with sensible defaults.
+  // Optional filter fields (emp_code, emp_ids, etc.) are forwarded ONLY if the
+  // caller explicitly provided them – sending hardcoded IDs like emp_code=1
+  // against a different client database causes a 500 from the API.
+  const payload: Record<string, unknown> = {
+    fdate,
+    tdate,
+    calculate: body.calculate ?? 0,
+    report: body.report ?? "basic",
+    group1: body.group1 ?? 0,
+    group2: body.group2 ?? "LocationId",
+    sort_column: body.sort_column ?? 0,
+    client_db_name: body.client_db_name ?? clientDbName,
+    page: body.page ?? 1,
+    per_page: body.per_page ?? 10,
+  };
+
+  // Forward optional filters only when the caller provided them.
+  for (const field of [
+    "emp_code",
+    "emp_ids",
+    "designation",
+    "location",
+    "att_set",
+    "department",
+    "branch",
+  ]) {
+    if (body[field] !== undefined) {
+      payload[field] = body[field];
+    }
+  }
+
+  let upstreamRes: Response;
+  try {
+    upstreamRes = await fetch(`${TIMETAAG_BASE_URL}/GetProcessData`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: `Network error calling Timetaag API: ${err instanceof Error ? err.message : String(err)}`,
+      }),
+      { status: 502, headers: jsonHeaders }
+    );
+  }
+
+  const responseText = await upstreamRes.text();
+  let responseData: unknown = responseText;
+  try {
+    responseData = JSON.parse(responseText);
+  } catch {
+    // Keep raw text when the API returns non-JSON.
+  }
+
+  if (!upstreamRes.ok) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        status: upstreamRes.status,
+        error: `Timetaag API returned ${upstreamRes.status}`,
         data: responseData,
       }),
-      { status: upstreamResponse.status, headers: jsonHeaders }
+      { status: upstreamRes.status, headers: jsonHeaders }
     );
   }
 
   return new Response(
-    JSON.stringify({
-      success: true,
-      status: upstreamResponse.status,
-      data: responseData,
-    }),
+    JSON.stringify({ success: true, data: responseData }),
     { status: 200, headers: jsonHeaders }
   );
 };
