@@ -168,7 +168,7 @@ export default function Index() {
   // Check if user has any modules allocated
   const hasAnyModules = () => {
     const hasRecordsMaster = hasModuleAccess('records_master');
-    const hasUsers = admin && (!userData || userData.role !== 'user');
+    const hasUsers = admin || hasModuleAccess('user_management');
     const hasNewHire = hasModuleAccess('new_hire');
     const hasQuickLinks = hasModuleAccess('quick_links');
     const hasQRGenerator = hasModuleAccess('qr_generator');
@@ -433,7 +433,7 @@ export default function Index() {
                 />
               )}
 
-              {admin && (!userData || userData.role !== 'user') && (
+              {(admin || hasModuleAccess('user_management')) && (
                 <GridTile
                   title="Users"
                   icon={<Users />}
