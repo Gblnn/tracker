@@ -77,7 +77,7 @@ function ApplicationCardBase({
             {app.jobTitle || "Unknown Role"}
           </div>
         </div>
-        <span
+        {/* <span
           style={{
             fontSize: "0.68rem",
             fontWeight: 600,
@@ -91,7 +91,7 @@ function ApplicationCardBase({
           }}
         >
           {shortlisted ? "Shortlisted" : "Applied"}
-        </span>
+        </span> */}
       </div>
 
       <a
@@ -163,7 +163,7 @@ function ApplicationCardBase({
 
         {showShortlistAction ? (
           <button
-            style={{display:"flex", flex:1, fontSize:"0.8rem"}}
+            style={{display:"flex", flex:1, fontSize:"0.8rem", color:shortlisted ?"rgb(22,163,74)":""}}
             
             onClick={() => onShortlist(app)}
             disabled={shortlisted || shortlisting || !app.id}

@@ -147,15 +147,22 @@ export default async (req: Request) => {
     }
   }
 
+  // Set headers to match the working app.js implementation
+  const headers: Record<string, string> = {
+    "Authorization": `Bearer ${token}`,
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+  };
+  // Optionally add BioTaag-API-Key if provided in the request body
+  if (body.biotaag_key) {
+    headers["BioTaag-API-Key"] = String(body.biotaag_key);
+  }
+
   let upstreamRes: Response;
   try {
     upstreamRes = await fetch(`${TIMETAAG_BASE_URL}/GetProcessData`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
       body: JSON.stringify(payload),
     });
   } catch (err) {

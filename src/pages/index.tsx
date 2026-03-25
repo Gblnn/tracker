@@ -234,7 +234,7 @@ export default function Index() {
           fixed
           editMode={userData?.editor===true? true : false}
             title="StarBoard"
-            subtitle={"v1.19"}
+            subtitle={"v1.21"}
             // icon={<img src="/stardox-bg.png" style={{ width: "1.75rem" }} />}
             noback
             extra={
@@ -428,7 +428,7 @@ export default function Index() {
               {hasModuleAccess('records_master') && (
                 <GridTile
                   title="Records"
-                  icon={<FileArchive width={"3rem"}  />}
+                  icon={<FileArchive color="mediumslateblue" width={"3rem"}  />}
                   onClick={() => navigate('/records')}
                 />
               )}
@@ -444,7 +444,7 @@ export default function Index() {
               {hasModuleAccess('new_hire') && (
                 <GridTile
                   title="New Hire"
-                  icon={<UserCheck width={"2rem"}  />}
+                  icon={<UserCheck color="salmon" width={"2rem"}  />}
                   onClick={() => authenticateModule('new_hire', '/new-hire', 'New Hire')}
                 />
               )}
