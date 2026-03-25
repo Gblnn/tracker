@@ -107,7 +107,7 @@ export default function IndexDropDown(props:Props) {
           height: "2.5rem",
           width: "2.5rem",
           background: isOnline 
-            ? "darkslategrey"
+            ? "black"
             : "linear-gradient(indianred, darkred)",
           color: "white",
           borderRadius: "0.375rem",

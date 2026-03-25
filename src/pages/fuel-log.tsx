@@ -1857,7 +1857,7 @@ export default function FuelLog() {
             marginBottom:"1rem"
           }}
         >
-          <Plus width="1.25rem" height="1.75rem" strokeWidth={2.5} />
+          {/* <Plus width="1.25rem" height="1.75rem" strokeWidth={2.5} /> */}
           {isMobile && <span>Log Fuel</span>}
         </motion.button>
         
