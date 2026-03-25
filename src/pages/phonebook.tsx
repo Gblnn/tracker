@@ -25,7 +25,17 @@ export default function Phonebook() {
         const displayName = record.display_name || record.name;
         const query = searchQuery.toLowerCase();
         const queryForNumbers = searchQuery.trim();
-        
+
+        // *123 syntax: match numbers ending with the digits after *
+        if (queryForNumbers.startsWith("*")) {
+            const suffix = queryForNumbers.slice(1);
+            if (suffix.length === 0) return true;
+            return (
+                (record.contact && String(record.contact).endsWith(suffix)) ||
+                (record.cug && String(record.cug).endsWith(suffix))
+            );
+        }
+
         return displayName.toLowerCase().includes(query) ||
             record.name.toLowerCase().includes(query) ||
             record.email.toLowerCase().includes(query) ||
