@@ -8,22 +8,23 @@ const jsonHeaders = {
 const TIMETAAG_BASE_URL = "https://app.timetaag.com/api/v1";
 
 async function getAuthToken(): Promise<string> {
-  // If a static token is already configured, use it directly.
+  // If TIMETAAG_API_KEY is set, use it as the Bearer token directly (no login needed)
+  const apiKey = process.env.TIMETAAG_API_KEY?.trim();
+  if (apiKey) {
+    return apiKey;
+  }
+  // Fallback to legacy token or login
   const directToken = process.env.TIMETAAG_AUTH_KEY?.trim();
   if (directToken) {
     return directToken.replace(/^Bearer\s+/i, "").trim();
   }
-
-  // Otherwise exchange email + password for a fresh token.
   const email = process.env.TIMETAAG_ADMIN_EMAIL?.trim();
   const password = process.env.TIMETAAG_ADMIN_PASSWORD?.trim();
-
   if (!email || !password) {
     throw new Error(
-      "Missing credentials: set TIMETAAG_AUTH_KEY, or both TIMETAAG_ADMIN_EMAIL and TIMETAAG_ADMIN_PASSWORD environment variables."
+      "Missing credentials: set TIMETAAG_API_KEY, TIMETAAG_AUTH_KEY, or both TIMETAAG_ADMIN_EMAIL and TIMETAAG_ADMIN_PASSWORD environment variables."
     );
   }
-
   let loginRes: Response;
   try {
     loginRes = await fetch(`${TIMETAAG_BASE_URL}/AdminLogin`, {
@@ -39,14 +40,12 @@ async function getAuthToken(): Promise<string> {
       `Network error reaching Timetaag login: ${err instanceof Error ? err.message : String(err)}`
     );
   }
-
   let loginData: unknown;
   try {
     loginData = await loginRes.json();
   } catch {
     throw new Error(`AdminLogin failed (${loginRes.status}): response was not valid JSON`);
   }
-
   if (!loginRes.ok) {
     const d = loginData as Record<string, unknown> | null;
     const msg =
@@ -55,23 +54,18 @@ async function getAuthToken(): Promise<string> {
         : `AdminLogin failed with status ${loginRes.status}`;
     throw new Error(msg);
   }
-
-  // Extract token – check the most common response shapes.
   const d = loginData as Record<string, unknown>;
   const nested = (d.data ?? d.result) as Record<string, unknown> | undefined;
-
   const token =
     (typeof d.token === "string" && d.token.trim() ? d.token.trim() : undefined) ??
     (typeof d.access_token === "string" && d.access_token.trim() ? d.access_token.trim() : undefined) ??
     (nested && typeof nested.token === "string" && nested.token.trim() ? nested.token.trim() : undefined) ??
     (nested && typeof nested.access_token === "string" && nested.access_token.trim() ? nested.access_token.trim() : undefined);
-
   if (!token) {
     throw new Error(
       `AdminLogin succeeded (${loginRes.status}) but no token was found in the response: ${JSON.stringify(loginData)}`
     );
   }
-
   return token;
 }
 
