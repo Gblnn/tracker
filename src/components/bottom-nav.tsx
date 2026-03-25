@@ -127,6 +127,7 @@ export default function BottomNav() {
         <div className="mobile-nav" style={{
           background: "rgba(255, 255, 255, 0.5)",
           backdropFilter: "blur(16px)",
+          WebkitBackdropFilter:"blur(16px)",
           display: "flex",
           padding: "1.5rem 2rem",
           paddingBottom: "2rem",
@@ -155,6 +156,7 @@ export default function BottomNav() {
           transform: "translateX(-50%)",
           background: "rgba(250, 250, 250, 0.4)",
           backdropFilter: "blur(16px)",
+          WebkitBackdropFilter:"blur(16px)",
           display: "none",
           flexDirection: "row",
           padding: "0.5rem",
