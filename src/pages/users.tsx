@@ -605,6 +605,7 @@ export default function Users() {
     >
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
         <Back
+        icon={<UsersIcon color="mediumslateblue"/>}
           title="Users"
           extra={
             <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -626,7 +627,7 @@ export default function Users() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              height: "75svh",
+              height: "",
               
             }}
           >
@@ -641,7 +642,7 @@ export default function Users() {
               flexFlow: "column",
               gap: "0.5rem",
               border: "",
-              height: "82svh",
+              height: "",
               overflowY: "auto",
             }}
           >

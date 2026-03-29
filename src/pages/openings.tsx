@@ -29,6 +29,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  orderBy,
   query,
   where,
 } from "firebase/firestore";
@@ -116,7 +117,7 @@ export default function Openings() {
 
   const fetchApplications = async () => {
     const RecordCollection = collection(db, "applications");
-    const recordQuery = query(RecordCollection);
+    const recordQuery = query(RecordCollection, orderBy("created_at", "desc"));
     const querySnapshot = await getDocs(recordQuery);
     const fetchedData: any = [];
 

@@ -436,7 +436,7 @@ export default function Index() {
               {(admin || hasModuleAccess('user_management')) && (
                 <GridTile
                   title="Users"
-                  icon={<Users />}
+                  icon={<Users color="violet" />}
                   onClick={() => navigate('/users')}
                 />
               )}

@@ -367,7 +367,7 @@ export default function Work(props: Props) {
               placeholder="Enter job title"
               style={{
                 width: "100%",
-                border: "1px solid rgba(100,100,100,0.3)",
+                // border: "1px solid rgba(100,100,100,0.3)",
                 borderRadius: "0.5rem",
                 padding: "0.6rem 0.7rem",
                 fontSize: "0.9rem",
@@ -386,14 +386,15 @@ export default function Work(props: Props) {
                 }))
               }
               placeholder="Enter job description"
-              rows={4}
+              rows={5}
               style={{
                 width: "100%",
-                border: "1px solid rgba(100,100,100,0.3)",
+                // border: "1px solid rgba(100,100,100,0.3)",
                 borderRadius: "0.5rem",
                 padding: "0.6rem 0.7rem",
                 fontSize: "0.9rem",
                 resize: "vertical",
+                background:"rgba(100,100,100,0.1)",
               }}
             />
           </div>
@@ -408,6 +409,7 @@ export default function Work(props: Props) {
             }}
           >
             <Checkbox
+            style={{border:"none"}}
               checked={editData.activelyHiring}
               onCheckedChange={(checked) =>
                 setEditData((prev) => ({

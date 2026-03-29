@@ -473,7 +473,7 @@ export default function Index() {
         open={addModalOpen}
         onOpenChange={setAddModalOpen}
         title="Add New Link"
-        description="Create a new quick link to access frequently used resources."
+        description=""
       >
         <AddLinkContent />
       </ResponsiveModal>
