@@ -46,9 +46,9 @@ export function ResponsiveModal({
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent style={{ width: "100%" }}>
-          <div style={{ padding: "1rem", border:"", textAlign:"left", width:"100%" }}>
-            <DrawerTitle style={{}}>{title}</DrawerTitle>
-            {description && <DrawerDescription style={{paddingTop:"1rem"}}> {description}</DrawerDescription>}
+          <div style={{ padding: "", border:"", textAlign:"left", width:"100%" }}>
+            <DrawerTitle style={{display:"flex", justifyContent:"center", width:"100%", border:"", padding:"0.5rem"}}>{title}</DrawerTitle>
+            {description && <DrawerDescription style={{padding:"1rem"}}> {description}</DrawerDescription>}
           </div>
           <div style={{ width: "100%" }}>
             {children}
@@ -62,7 +62,7 @@ export function ResponsiveModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle >{title}</DialogTitle>
           {description && <DialogDescription >{description}</DialogDescription>}
         </DialogHeader>
         {children}

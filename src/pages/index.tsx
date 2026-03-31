@@ -17,7 +17,7 @@ import { motion } from "framer-motion";
 import {
   ArrowRightLeft,
   BookMarked,
-  BookMarkedIcon,
+  BookOpen,
   Bug,
   Car,
   Clock3,
@@ -230,12 +230,13 @@ export default function Index() {
         <ConfettiExplosion/>
         </div> */}
         <Back
+       
         blurBG
           fixed
           editMode={userData?.editor===true? true : false}
             title="StarBoard"
             subtitle={"v1.21"}
-            // icon={<img src="/stardox-bg.png" style={{ width: "1.75rem" }} />}
+            icon={<img src="/stardox-bg.png" style={{ width: "1.75rem" }} />}
             noback
             extra={
               <div
@@ -468,7 +469,7 @@ export default function Index() {
               {hasModuleAccess('projects') && (
                 <GridTile
                   title="Projects"
-                  icon={<Package width={"2rem"} />}
+                  icon={<Package width={"2rem"} color="green"/>}
                   onClick={() => authenticateModule('projects', '/projects', 'Projects')}
                 />
               )}
@@ -492,7 +493,7 @@ export default function Index() {
               {hasModuleAccess('vehicle_log_book') && (
                 <GridTile
                   title="Vehicle Log"
-                  icon={<BookMarkedIcon width={"2rem"}  />}
+                  icon={<BookOpen width={"2rem"}  />}
                   onClick={() => authenticateModule('vehicle_log_book', '/vehicle-log-book', 'Vehicle Log')}
                 />
               )}

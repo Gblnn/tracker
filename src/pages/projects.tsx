@@ -469,7 +469,7 @@ export default function Projects() {
         title={selectedProjectForFocalPoint?.name || "Allocate Focal Point Email"}
         description="Assign focal point email for this project"
       >
-        <div style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
+        <div style={{ padding: "", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
           <input
             value={focalPointEmailInput}
             onChange={(e) => setFocalPointEmailInput(e.target.value)}

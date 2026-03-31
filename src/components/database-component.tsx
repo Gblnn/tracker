@@ -695,6 +695,7 @@ export default function DbComponent(props: Props) {
         const lowerSearch = search.toLowerCase();
         const matchesSearch =
           (record.name && record.name.toLowerCase().includes(lowerSearch)) ||
+          (record.civil_number && String(record.civil_number).toLowerCase().includes(lowerSearch)) ||
           (record.display_name && record.display_name.toLowerCase().includes(lowerSearch)) ||
           (record.email && record.email.toLowerCase().includes(lowerSearch)) ||
           (record.employeeCode && String(record.employeeCode).toLowerCase().includes(lowerSearch)) ||
@@ -2919,7 +2920,7 @@ export default function DbComponent(props: Props) {
                           <Directive
                             icon={<FileArchive/>}
                             noArrow
-                            id_subtitle={post.project ? post.project : "No project"}
+                            id_subtitle={(post.employeeCode ? post.employeeCode : "No Civil ID") + (post.civil_number ? ` - ${post.civil_number}` : "")}
                             className="record-item"
                             space
                             dotColor={selectable ? "violet" : "mediumslateblue"}

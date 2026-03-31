@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 interface Props {
   icon?: any;
   title?: any;
+  titleColor?: string;
   extra?: any;
   noback?: boolean;
   subtitle?: any;
@@ -92,6 +93,7 @@ export default function Back(props: Props) {
                 border:"",
                 width: "max-content",
                 fontSize: props.fontSize ? props.fontSize : "1.5rem",
+                color:props.titleColor ? props.titleColor : "inherit",
               }}
               onClick={props.onTap}
             >
@@ -118,7 +120,7 @@ export default function Back(props: Props) {
                     height: "1.25rem",
                     borderRadius: "0.5rem",
                     background: "rgba(100 100 100/ 0.1)",
-                
+                    color:props.titleColor ? props.titleColor : "inherit",
                     padding: "0.25rem",
                     paddingTop: "0.335rem",
                     paddingLeft: "0.35rem",
