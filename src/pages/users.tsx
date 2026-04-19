@@ -601,15 +601,13 @@ export default function Users() {
   return (
     <div
       style={{
-        padding: "1.25rem",
-        // background:
-        //   "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
-        height: "100svh",
+       
       }}
     >
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
         <Back
-        icon={<UsersIcon color="mediumslateblue"/>}
+        blurBG
+       fixed
           title="Users"
           extra={
             <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -627,27 +625,33 @@ export default function Users() {
         {fetchingData && users.length < 1 ? (
           <div
             style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
               border: "",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              height: "",
+              height: "100svh",
               
             }}
           >
-            <Loader2 className="animate-spin" style={{ color: "mediumslateblue", scale: "2" }} />
+            <Loader2 className="animate-spin" style={{ color: "mediumslateblue", scale: "1.5" }} />
           </div>
         ) : (
           <div
-          className="record-list"
+          className=""
           
             style={{
               display: "flex",
               flexFlow: "column",
-              gap: "0.5rem",
+              gap: "0.75rem",
               border: "",
               height: "",
               overflowY: "auto",
+              padding: "1.5rem",
+              paddingTop:"4rem"
             }}
           >
             {users.map((user: any) => (

@@ -316,7 +316,7 @@ export default function Offboarding() {
   return (
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <Back blurBG fixed title="Employee Offboarding" subtitle="Close and archive records" />
+        <Back blurBG fixed title="Offboarding" />
 
         <div
           style={{

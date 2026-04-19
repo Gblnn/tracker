@@ -6,37 +6,67 @@ interface GridTileProps {
   onClick: () => void;
 }
 
+// Light blue tint
+
 export default function GridTile({ title, icon, onClick }: GridTileProps) {
   return (
-    <motion.div
-      whileTap={{ scale: 0.99 }}
+    <motion.button
+      type="button"
+      whileTap={{ scale: 0.95 }}
       onClick={onClick}
       style={{
-        
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
-        gap: "1rem",
-        padding: "1.5rem",
-        background: "rgba(250 250 250/ 0.35)",
-        boxShadow:"1px 1px 5px rgba(0,0,0,0.15)",
-        // background:"linear-gradient(darkslateblue, midnightblue)",
-        borderRadius: "0.5rem",
+        justifyContent: "flex-start",
+        gap: "0.6rem",
+        width: "100%",
+        padding: "0.5rem 0.4rem",
+        background: "transparent",
+        border: "none",
         cursor: "pointer",
-        transition: "all 0.2s ease",
-        aspectRatio: "1",
-        backdropFilter:"blur(16px)",
-        WebkitBackdropFilter:"blur(16px)",
-        // color:"white"
-        color:"darkslategray"
+        transition: "transform 0.12s ease-out",
+        color: "#374151",
       }}
-      
     >
-      {icon}
-      <p style={{fontSize: "0.85rem", fontWeight: 500, textAlign: "center", opacity: 0.85}}>
+      <div
+        style={{
+          width: "4.25rem",
+          height: "4.25rem",
+          borderRadius: "1.2rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "rgba(100 100 100 / 0.05)",
+          boxShadow: "none",
+          
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "inherit",
+          }}
+        >
+          {icon}
+        </div>
+      </div>
+      <p
+        style={{
+          margin: 0,
+          fontSize: "0.8rem",
+          fontWeight: 500,
+          textAlign: "center",
+          lineHeight: 1.25,
+          opacity: 0.9,
+          maxWidth: "6.5rem",
+          textWrap: "balance",
+        }}
+      >
         {title}
       </p>
-    </motion.div>
+    </motion.button>
   );
 }

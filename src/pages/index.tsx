@@ -26,11 +26,11 @@ import {
 
   KeyRound,
   Link,
+  LogOut,
   Mail,
   Package,
   QrCode,
   Smartphone,
-  LogOut,
   UserCheck,
   Users,
   Wallet
@@ -239,9 +239,9 @@ export default function Index() {
         blurBG
           fixed
           editMode={userData?.editor===true? true : false}
-            title="StarBoard"
-            subtitle={"v1.22"}
-            icon={<img src="/stardox-bg.png" style={{ width: "1.75rem" }} />}
+            title="WorkSpace"
+            subtitle={"1.22"}
+            // icon={<Circle fill="black" style={{ width: "1.75rem" }} />}
             noback
             extra={
               <div
@@ -425,8 +425,8 @@ export default function Index() {
             <div
               style={{ 
                 display: "grid", 
-                gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-                gap: "0.9rem",
+                gridTemplateColumns: "repeat(auto-fill, minmax(95px, 1fr))",
+                gap: "0.65rem",
                 paddingBottom: "1rem",
                 // padding:"3.5rem"
               }}
@@ -465,7 +465,7 @@ export default function Index() {
 
               {hasModuleAccess('qr_generator') && (
                 <GridTile
-                  title="QR Generator"
+                  title="QR"
                   icon={<QrCode width={"2rem"}  />}
                   onClick={() => authenticateModule('qr_generator', '/qr-code-generator', 'QR Generator')}
                 />
@@ -482,7 +482,7 @@ export default function Index() {
               {hasModuleAccess('timetaag') && (
                 <GridTile
                   title="Timetaag"
-                  icon={<img src="/timetaag.png" alt="Timetaag" style={{ width: "2rem", height: "2rem", objectFit: "contain" }} />}
+                  icon={<img src="/timetaag.png" alt="Timetaag" style={{ width: "2rem", height: "2rem", objectFit: "contain", filter: "grayscale(1) brightness(0.7) contrast(1.2)" }} />}
                   onClick={() => authenticateModule('timetaag', '/timetaag', 'Timetaag')}
                 />
               )}
@@ -553,7 +553,7 @@ export default function Index() {
                 {hasModuleAccess('offboarding') && (
                   <GridTile
                     title="Offboarding"
-                    icon={<LogOut width={"2rem"} color="crimson" />}
+                    icon={<LogOut width={"2rem"} />}
                     onClick={() => authenticateModule('offboarding', '/offboarding', 'Offboarding')}
                   />
                 )}

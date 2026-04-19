@@ -156,7 +156,7 @@ export default function TransferRequests() {
       <Back
         blurBG
         fixed
-        title="Transfer Requests"
+        title="Transfers"
         subtitle={pendingRequests.length > 0 ? pendingRequests.length : undefined}
         extra={
           <RefreshButton

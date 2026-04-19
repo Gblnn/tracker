@@ -24,6 +24,7 @@ import {
   DownloadCloud,
   EllipsisVerticalIcon,
   FileDown,
+  Filter,
   Globe,
   Info,
   Laptop2,
@@ -674,6 +675,7 @@ export default function AssetMaster() {
     const [assets, setAssets] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string>("all");
+    const [assignmentFilter, setAssignmentFilter] = useState<"all" | "assigned" | "unassigned">("all");
     const [addAssetDrawer, setAddAssetDrawer] = useState(false);
     const [editAssetDrawer, setEditAssetDrawer] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState<any>(null);
@@ -975,6 +977,13 @@ export default function AssetMaster() {
     const filteredAssets = useMemo(() => {
       let filtered = assets;
 
+      if (assignmentFilter !== "all") {
+        filtered = filtered.filter((asset) => {
+          const isAssigned = Boolean(asset.assignedTo);
+          return assignmentFilter === "assigned" ? isAssigned : !isAssigned;
+        });
+      }
+
       if (selectedCategory !== "all") {
         filtered = filtered.filter((asset) => asset.category === selectedCategory);
       }
@@ -991,7 +1000,7 @@ export default function AssetMaster() {
         asset.serialNumber?.toLowerCase().includes(query) ||
         asset.location?.toLowerCase().includes(query)
       );
-    }, [assets, selectedCategory, searchQuery]);
+    }, [assets, assignmentFilter, selectedCategory, searchQuery]);
 
     const categoryCounts = useMemo(() => {
       const counts: Record<string, number> = {};
@@ -1000,6 +1009,24 @@ export default function AssetMaster() {
         counts[key] = (counts[key] || 0) + 1;
       }
       return counts;
+    }, [assets]);
+
+    const assignmentCounts = useMemo(() => {
+      let assigned = 0;
+      let unassigned = 0;
+
+      for (const asset of assets) {
+        if (asset.assignedTo) {
+          assigned += 1;
+        } else {
+          unassigned += 1;
+        }
+      }
+
+      return {
+        assigned,
+        unassigned,
+      };
     }, [assets]);
 
     const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
@@ -1438,7 +1465,7 @@ export default function AssetMaster() {
           <Back 
             fixed
             blurBG
-            title="Asset Master" 
+            title="Assets" 
             extra={
               <div style={{ display: "flex", gap: "0.5rem", height: "2.75rem" }}>
                 <RefreshButton
@@ -1538,31 +1565,68 @@ export default function AssetMaster() {
               })}
             </div>
 
-            <div style={{ position: "relative" }}>
-              <Search
-                width={18}
-                style={{
-                  position: "absolute",
-                  left: "0.75rem",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  opacity: 0.5,
-                }}
-              />
-              <input
-                type="text"
-                placeholder="Search assets..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "0.75rem 1rem 0.75rem 2.5rem",
-                  borderRadius: "0.75rem",
-                  background: "rgba(150, 150, 150, 0.15)",
-                  fontSize: "1rem",
-                  border: "none",
-                }}
-              />
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "stretch" }}>
+              <div style={{ position: "relative", flex: 1 }}>
+                <Search
+                  width={18}
+                  style={{
+                    position: "absolute",
+                    left: "0.75rem",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    opacity: 0.5,
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="Search assets..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem 0.75rem 2.5rem",
+                    borderRadius: "0.75rem",
+                    background: "rgba(150, 150, 150, 0.15)",
+                    fontSize: "1rem",
+                    border: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    title={`Assignment filter: ${assignmentFilter}`}
+                    aria-label="Filter assets by assignment"
+                    style={{
+                      width: "3rem",
+                      minWidth: "3rem",
+                      borderRadius: "0.75rem",
+                      background: assignmentFilter === "all" ? "rgba(150, 150, 150, 0.15)" : "black",
+                      color: assignmentFilter === "all" ? "inherit" : "white",
+                      border: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Filter width={16} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" style={{ marginTop: "0.25rem" }}>
+                  <DropdownMenuItem onClick={() => setAssignmentFilter("all")} style={{ width: "100%", fontWeight: assignmentFilter === "all" ? 600 : 400 }}>
+                    All statuses ({assets.length})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setAssignmentFilter("assigned")} style={{ width: "100%", fontWeight: assignmentFilter === "assigned" ? 600 : 400 }}>
+                    Assigned ({assignmentCounts.assigned})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setAssignmentFilter("unassigned")} style={{ width: "100%", fontWeight: assignmentFilter === "unassigned" ? 600 : 400 }}>
+                    Unassigned ({assignmentCounts.unassigned})
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         )}
