@@ -29,6 +29,8 @@ import {
   Mail,
   Package,
   QrCode,
+  Smartphone,
+  LogOut,
   UserCheck,
   Users,
   Wallet
@@ -179,10 +181,12 @@ export default function Index() {
     const hasOfferLetters = hasModuleAccess('offer_letters');
     const hasShiftLogs = hasModuleAccess('shift_logs');
     const hasTransferRequests = hasModuleAccess('transfer_requests');
+    const hasSimCards = hasModuleAccess('sim_cards');
+      const hasOffboarding = hasModuleAccess('offboarding');
 
     return hasRecordsMaster || hasUsers || hasNewHire || hasQuickLinks || 
                hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || hasTimetaag ||
-        hasPettyCash || hasOfferLetters || hasShiftLogs || hasTransferRequests;
+        hasPettyCash || hasOfferLetters || hasShiftLogs || hasTransferRequests || hasSimCards || hasOffboarding;
   };
 
   // const getAccessibleModuleCount = () => {
@@ -226,6 +230,7 @@ export default function Index() {
   return (
     <>
     
+  
       {/* <div style={{border:"", display:"flex", alignItems:"center", justifyContent:'center'}}>
         <ConfettiExplosion/>
         </div> */}
@@ -429,7 +434,7 @@ export default function Index() {
               {hasModuleAccess('records_master') && (
                 <GridTile
                   title="Records"
-                  icon={<FileArchive color="mediumslateblue" width={"3rem"}  />}
+                  icon={<FileArchive width={"3rem"}  />}
                   onClick={() => navigate('/records')}
                 />
               )}
@@ -437,7 +442,7 @@ export default function Index() {
               {(admin || hasModuleAccess('user_management')) && (
                 <GridTile
                   title="Users"
-                  icon={<Users color="violet" />}
+                  icon={<Users />}
                   onClick={() => navigate('/users')}
                 />
               )}
@@ -445,7 +450,7 @@ export default function Index() {
               {hasModuleAccess('new_hire') && (
                 <GridTile
                   title="New Hire"
-                  icon={<UserCheck color="salmon" width={"2rem"}  />}
+                  icon={<UserCheck width={"2rem"}  />}
                   onClick={() => authenticateModule('new_hire', '/new-hire', 'New Hire')}
                 />
               )}
@@ -469,7 +474,7 @@ export default function Index() {
               {hasModuleAccess('projects') && (
                 <GridTile
                   title="Projects"
-                  icon={<Package width={"2rem"} color="green"/>}
+                  icon={<Package width={"2rem"}/>}
                   onClick={() => authenticateModule('projects', '/projects', 'Projects')}
                 />
               )}
@@ -537,6 +542,21 @@ export default function Index() {
                   onClick={() => authenticateModule('transfer_requests', '/transfer-requests', 'Transfers')}
                 />
               )}
+
+              {hasModuleAccess('sim_cards') && (
+                <GridTile
+                  title="SIM Cards"
+                  icon={<Smartphone width={"2rem"} />}
+                  onClick={() => authenticateModule('sim_cards', '/sim-cards', 'SIM Cards')}
+                />
+              )}
+                {hasModuleAccess('offboarding') && (
+                  <GridTile
+                    title="Offboarding"
+                    icon={<LogOut width={"2rem"} color="crimson" />}
+                    onClick={() => authenticateModule('offboarding', '/offboarding', 'Offboarding')}
+                  />
+                )}
             </div>
             </>
             ) : (

@@ -68,7 +68,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
         display:"flex",
         justifyContent:"space-between",
         padding: "1rem",
-        paddingBottom: "",
+        paddingBottom:"0.5rem",
         borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
         background: "var(--background)",
         boxSizing: "border-box",

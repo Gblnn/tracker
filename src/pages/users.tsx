@@ -29,6 +29,7 @@ import {
   Clock3,
   Package,
   Eye,
+  Smartphone,
   FileArchive,
   FileText,
   Fuel,
@@ -44,7 +45,8 @@ import {
   User,
   UserCheck,
   Users as UsersIcon,
-  Wallet
+  Wallet,
+  LogOut,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -69,6 +71,8 @@ const MODULES = [
   { id: 'petty_cash', name: 'Petty Cash', icon: Wallet },
   { id: 'offer_letters', name: 'Offer Letters', icon: FileText },
   { id: 'transfer_requests', name: 'Transfers', icon: ArrowRightLeft },
+  { id: 'sim_cards', name: 'SIM Cards', icon: Smartphone },
+    { id: 'offboarding', name: 'Offboarding', icon: LogOut },
 ];
 
 // Shared User Details Content Component

@@ -24,6 +24,7 @@ import {
   DownloadCloud,
   EllipsisVerticalIcon,
   FileDown,
+  Globe,
   Info,
   Laptop2,
   Loader2,
@@ -719,12 +720,13 @@ export default function AssetMaster() {
     }
 
     const assetCategories = [
-        { id: "vehicle", label: "Vehicle", icon: <Car width={20} /> },
-        { id: "laptop", label: "Laptop", icon: <Laptop2 width={20} /> },
-        { id: "phone", label: "Phone", icon: <Smartphone width={20} /> },
-        { id: "tool", label: "Tool", icon: <Wrench width={20} /> },
-        { id: "machinery", label: "Machinery", icon: <Cog width={20} /> },
-        { id: "other", label: "Other", icon: <Package width={20} /> },
+      { id: "vehicle", label: "Vehicle", icon: <Car width={20} /> },
+      { id: "laptop", label: "Laptop", icon: <Laptop2 width={20} /> },
+      { id: "phone", label: "Phone", icon: <Smartphone width={20} /> },
+      { id: "network", label: "Network Device", icon: <Globe width={20} /> },
+      { id: "tool", label: "Tool", icon: <Wrench width={20} /> },
+      { id: "machinery", label: "Machinery", icon: <Cog width={20} /> },
+      { id: "other", label: "Other", icon: <Package width={20} /> },
     ];
 
     const conditionOptions = ["Excellent", "Good", "Fair", "Poor", "Needs Repair"];

@@ -58,7 +58,9 @@ const Tasks = lazy(() => import("./pages/tasks"));
 const ShiftLogs = lazy(() => import("./pages/shift-logs"));
 const SiteAdminWorkers = lazy(() => import("./pages/site-admin-workers"));
 const TransferRequests = lazy(() => import("./pages/transfer-requests"));
+const SimCards = lazy(() => import("./pages/sim-cards"));
 const Timetaag = lazy(() => import("@/pages/timetaag"));
+const Offboarding = lazy(() => import("./pages/offboarding"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -178,7 +180,9 @@ export default function App() {
           <Route path="/project-lpo" element={<ProjectLPO />} />
           <Route path="/movement-register" element={<MovementRegister />} />
           <Route path="/transfer-requests" element={<TransferRequests />} />
+          <Route path="/sim-cards" element={<SimCards />} />
           <Route path="/timetaag" element={<Timetaag />} />
+            <Route path="/offboarding" element={<Offboarding />} />
           <Route path="/records" element={<Records />} />
           <Route path="/record/:id" element={<RecordDetail />} />
           <Route path="/vale-records" element={<ValeRecords />} />

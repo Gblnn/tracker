@@ -57,6 +57,7 @@ const getDateFromUnknown = (value: any): Date | null => {
 export default function ShiftLogs() {
   const [logs, setLogs] = useState<ShiftLogItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
 
   const fetchShiftLogs = async () => {
     try {
@@ -89,6 +90,15 @@ export default function ShiftLogs() {
 
   useEffect(() => {
     fetchShiftLogs();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    const applyMatch = () => setIsDesktop(mediaQuery.matches);
+    applyMatch();
+    mediaQuery.addEventListener("change", applyMatch);
+    return () => mediaQuery.removeEventListener("change", applyMatch);
   }, []);
 
   const getCoordinateText = (coordinate?: { latitude?: number; longitude?: number; accuracy?: number }) => {
@@ -160,19 +170,31 @@ export default function ShiftLogs() {
                 border: "1px solid rgba(100,100,100,0.2)",
                 borderRadius: "0.75rem",
                 background: "rgba(100,100,100,0.04)",
-                overflowX: "auto",
+                display: "flex",
+                flexDirection: "column",
+                minHeight: 0,
+                flex: 1,
+                overflow: "hidden",
               }}
             >
-              <table style={{ width: "100%", minWidth: "1180px", borderCollapse: "collapse" }}>
+              <div
+                style={{
+                  overflowX: "auto",
+                  overflowY: isDesktop ? "auto" : "visible",
+                  minHeight: 0,
+                  flex: 1,
+                }}
+              >
+              <table style={{ width: "100%", minWidth: "1180px", borderCollapse: "separate", borderSpacing: 0, background: "#fff" }}>
                 <thead>
                   <tr style={{ background: "rgba(100,100,100,0.12)" }}>
-                    <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: 600 }}>Employee</th>
-                    <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: 600 }}>Code</th>
-                    <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: 600 }}>Email</th>
-                    <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: 600 }}>Start Time</th>
-                    <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: 600 }}>End Time</th>
-                    <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: 600 }}>Start Coordinates</th>
-                    <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: 600 }}>End Coordinates</th>
+                    <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: 600, position: isDesktop ? "sticky" : "static", top: 0, zIndex: 5, background: "#f1f3f5", borderBottom: "1px solid rgba(100,100,100,0.2)" }}>Employee</th>
+                    <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: 600, position: isDesktop ? "sticky" : "static", top: 0, zIndex: 5, background: "#f1f3f5", borderBottom: "1px solid rgba(100,100,100,0.2)" }}>Code</th>
+                    <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: 600, position: isDesktop ? "sticky" : "static", top: 0, zIndex: 5, background: "#f1f3f5", borderBottom: "1px solid rgba(100,100,100,0.2)" }}>Email</th>
+                    <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: 600, position: isDesktop ? "sticky" : "static", top: 0, zIndex: 5, background: "#f1f3f5", borderBottom: "1px solid rgba(100,100,100,0.2)" }}>Start Time</th>
+                    <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: 600, position: isDesktop ? "sticky" : "static", top: 0, zIndex: 5, background: "#f1f3f5", borderBottom: "1px solid rgba(100,100,100,0.2)" }}>End Time</th>
+                    <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: 600, position: isDesktop ? "sticky" : "static", top: 0, zIndex: 5, background: "#f1f3f5", borderBottom: "1px solid rgba(100,100,100,0.2)" }}>Start Coordinates</th>
+                    <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: 600, position: isDesktop ? "sticky" : "static", top: 0, zIndex: 5, background: "#f1f3f5", borderBottom: "1px solid rgba(100,100,100,0.2)" }}>End Coordinates</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -258,6 +280,7 @@ export default function ShiftLogs() {
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </div>
