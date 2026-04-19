@@ -637,7 +637,7 @@ export default function Users() {
               
             }}
           >
-            <Loader2 className="animate-spin" style={{ color: "mediumslateblue", scale: "1.5" }} />
+            <Loader2 className="animate-spin" style={{ color: "darkblue", scale: "1.5" }} />
           </div>
         ) : (
           <div
@@ -669,15 +669,32 @@ export default function Users() {
                 key={user.id}
                 icon={
                   user.role == "admin" || user.role == "site_admin" ? (
-                    <Eye width={"1.25rem"} color="black" />
+                    <Eye width={"1.25rem"} color="darkblue" />
                   ) : user.role == "hr" ? (
-                    <ShieldPlus width={"1.25rem"} color="black" />
+                    <ShieldPlus width={"1.25rem"} color="darkblue" />
                   ) : (
-                    <User width={"1.25rem"} color="black" />
+                    <User width={"1.25rem"} color="darkblue" />
                   )
                 }
                 title={user.name}
                 id_subtitle={user.email}
+                subtext={
+                  user.last_active
+                    ? (() => {
+                        const d = new Date(user.last_active);
+                        const now = new Date();
+                        const diffMs = now.getTime() - d.getTime();
+                        const diffMins = Math.floor(diffMs / 60000);
+                        const diffHours = Math.floor(diffMins / 60);
+                        const diffDays = Math.floor(diffHours / 24);
+                        if (diffMins < 1) return "Active just now";
+                        if (diffMins < 60) return `Active ${diffMins}m ago`;
+                        if (diffHours < 24) return `Active ${diffHours}h ago`;
+                        if (diffDays < 30) return `Active ${diffDays}d ago`;
+                        return `Last active ${d.toLocaleDateString()}`;
+                      })()
+                    : undefined
+                }
               />
             ))}
           </div>

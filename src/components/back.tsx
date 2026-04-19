@@ -142,7 +142,7 @@ export default function Back(props: Props) {
                       <PenLine
                         width={"1rem"}
                         height={"1rem"}
-                        color="mediumslateblue"
+                        color="darkblue"
                       />
                     )}
                   </motion.div>

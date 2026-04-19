@@ -2567,7 +2567,7 @@ export default function DbComponent(props: Props) {
                   {access && (
                     <button
                       
-                      style={{background:selectable?"mediumslateblue":""}}
+                      style={{background:selectable?"darkblue":""}}
                       onClick={() => {
                         if (selectable) {
                           setProjectAllocMode(false);
@@ -2581,7 +2581,7 @@ export default function DbComponent(props: Props) {
                       title={selectable ? "Exit Selection" : "Select Records"}
                     >
                       <CheckSquare2
-                        color={selectable? "white" : "mediumslateblue"}
+                        color={selectable? "white" : "darkblue"}
                       />
                     </button>
                   )}
@@ -2667,7 +2667,7 @@ export default function DbComponent(props: Props) {
                               background: "rgba(100,100,100,0.03)",
                             }}
                           >
-                            <PenLine width="0.95rem" color="mediumslateblue" />
+                            <PenLine width="0.95rem" color="darkblue" />
                             <span style={{ fontSize: "0.82rem" }}>Rename Selected</span>
                           </button>
 
@@ -2710,7 +2710,7 @@ export default function DbComponent(props: Props) {
                     className={viewMode === "table" ? "" : ""}
                   >
                     {viewMode === "directive" ? (
-                      <Table2 width={"1rem"} color="mediumslateblue" />
+                      <Table2 width={"1rem"} color="darkblue" />
                     ) : (
                       <Table2 width={"1rem"} color="white" />
                     )}
@@ -2718,14 +2718,14 @@ export default function DbComponent(props: Props) {
                   <Popover>
                     <PopoverTrigger asChild>
                       <button style={{ width: "2.5rem", position: "relative" }}>
-                        <Filter color="mediumslateblue" width={"1rem"} />
+                        <Filter color="darkblue" width={"1rem"} />
                         {activeFilterCount > 0 && (
                           <span
                             style={{
                               position: "absolute",
                               top: "0.2rem",
                               right: "0.2rem",
-                              background: "mediumslateblue",
+                              background: "darkblue",
                               color: "white",
                               fontSize: "0.6rem",
                               fontWeight: 700,
@@ -2768,7 +2768,7 @@ export default function DbComponent(props: Props) {
                                   alignItems: "center",
                                   justifyContent: "center",
                                   gap: "0.35rem",
-                                  background: sortby === opt.value ? "mediumslateblue" : "rgba(100,100,100,0.06)",
+                                  background: sortby === opt.value ? "darkblue" : "rgba(100,100,100,0.06)",
                                   color: sortby === opt.value ? "white" : "inherit",
                                   cursor: "pointer",
                                   border: sortby === opt.value ? "1px solid rgba(30,144,255,0.25)" : "1px solid transparent",
@@ -2901,7 +2901,7 @@ export default function DbComponent(props: Props) {
                       whileInView={{ opacity: 1 }}
                       style={{
                         display: "grid",
-                        gap: "0.6rem",
+                        gap: "0.75rem",
                         gridTemplateColumns: "repeat(auto-fill, minmax(min(350px, 100%), 1fr))",
                         maxWidth: "100%",
                         paddingTop:"1rem",
@@ -2918,7 +2918,7 @@ export default function DbComponent(props: Props) {
                           //   whileInView={{ opacity: 1 }}
                           // >
                           <Directive
-                            icon={<FileArchive/>}
+                            icon={<FileArchive color="darkblue"/>}
                             noArrow
                             id_subtitle={(post.employeeCode ? post.employeeCode : "No Civil ID") + (post.civil_number ? ` - ${post.civil_number}` : "")}
                             className="record-item"
@@ -3036,7 +3036,7 @@ export default function DbComponent(props: Props) {
                           }}>
                             {selectable && (
                               <th style={{ padding: "0.75rem", textAlign: "left", width: "40px", position: "sticky", top: 0, left: 0, zIndex: 4, background: "color-mix(in srgb, var(--background) 94%, rgba(100, 100, 100, 0.12))", boxShadow: "inset 0 -1px 0 rgba(100 100 100/ 20%), 1px 0 0 rgba(100 100 100/ 10%)" }}>
-                                <CheckSquare2 width="1rem" color="mediumslateblue" />
+                                <CheckSquare2 width="1rem" color="darkblue" />
                               </th>
                             )}
                             {allKeys.map((key) => (

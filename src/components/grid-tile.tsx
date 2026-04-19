@@ -39,7 +39,7 @@ export default function GridTile({ title, icon, onClick }: GridTileProps) {
           justifyContent: "center",
           background: "rgba(100 100 100 / 0.05)",
           boxShadow: "none",
-          
+          color:"darkblue"
         }}
       >
         <div

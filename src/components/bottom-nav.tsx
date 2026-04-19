@@ -30,9 +30,9 @@ const NavItem: React.FC<NavItemProps> = ({ icon, isActive, onClick, isMobile = f
         display: "flex",
         justifyContent: "center",
         background: isActive 
-          ? (isMobile ? "black" : "black")
+          ? (isMobile ? "midnightblue" : "midnightblue")
           : "none",
-        color: isActive ? "white" : "darkslategray",
+        color: isActive ? "white" : "darkslateblue",
         fontSize: "0.9rem",
         borderRadius: "0.75rem",
         alignItems: "center",

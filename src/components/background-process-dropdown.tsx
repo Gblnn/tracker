@@ -83,19 +83,15 @@ export default function BackgroundProcessDropdown(props: Props) {
           padding: "none",
           height: "2.5rem",
           width: "2.5rem",
-          background: hasActiveProcesses 
-            ? "rgba(30, 144, 255, 0.2)" 
-            : isOnline 
-              ? "rgba(100, 100, 100, 0.1)"
-              : "rgba(100, 100, 100, 0.1)",
+          
           borderRadius: "0.375rem",
           position: "relative",
         }}
       >
         {hasActiveProcesses ? (
-          <Loader2 className="animate-spin" width="1.25rem" color="mediumslateblue" />
+          <Loader2 className="animate-spin" width="1.25rem" color="darkblue" />
         ) : isOnline ? (
-          <Cloud width="1.25rem" color="darkslategrey" />
+          <Cloud width="1.25rem" color="darkblue" />
         ) : (
           <CloudOff width="1.25rem" color="rgb(239, 68, 68)" />
         )}

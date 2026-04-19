@@ -259,6 +259,16 @@ const AuthProvider = ({ children }: Props) => {
         setUserData(userData);
         cacheAuthState(result.user);
         setCachedAuthState(false);
+
+        // Record last active timestamp in background
+        import("@/firebase").then(({ getFirebaseDb }) => {
+          import("firebase/firestore").then(({ doc, updateDoc }) => {
+            const db = getFirebaseDb();
+            updateDoc(doc(db, "users", userData.id), {
+              last_active: new Date().toISOString(),
+            }).catch(() => {});
+          });
+        });
         
         // Cache profile data in background
         fetchAndCacheProfile(email, userData.allocated_vehicle).catch(err => 
@@ -327,7 +337,19 @@ const AuthProvider = ({ children }: Props) => {
     if (hasValidCache.current) {
       console.log("⚡ Using cached auth - instant access!");
       setCachedAuthState(true);
-      
+
+      // Stamp last_active for sessions resumed from persistence (no explicit login)
+      if (userData?.id && navigator.onLine) {
+        import("@/firebase").then(({ getFirebaseDb }) => {
+          import("firebase/firestore").then(({ doc, updateDoc }) => {
+            const db = getFirebaseDb();
+            updateDoc(doc(db, "users", userData.id), {
+              last_active: new Date().toISOString(),
+            }).catch(() => {});
+          });
+        });
+      }
+
       // Pre-fetch profile data in background if user email is available
       if (userData?.email) {
         fetchAndCacheProfile(userData.email, userData.allocated_vehicle).catch(err => 

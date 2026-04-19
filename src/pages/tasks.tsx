@@ -560,7 +560,7 @@ export default function Tasks() {
                                         borderRadius: "50%",
                                         border: "none",
                                         cursor: startingShift || checkingShift ? "not-allowed" : "pointer",
-                                        background: "black",
+                                        background: "darkblue",
                                         color: "white",
                                         boxShadow: "0 18px 40px rgba(0,0,0,0.35)",
                                         display: "flex",

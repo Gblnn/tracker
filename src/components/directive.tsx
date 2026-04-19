@@ -98,7 +98,7 @@ export default function Directive(props: Props) {
           justifyContent: "space-between",
           alignItems: "center",
           background: "rgba(100 100 100/ 0.05)",
-          boxShadow:"1px 1px 5px rgba(0,0,0,0.2)",
+          // boxShadow:"1px 1px 5px rgba(0,0,0,0.2)",
           borderRadius: "0.5rem",
           // border: "1px solid rgba(100 100 100/ 0.2)",
           transition: "all 0.2s ease",
@@ -229,7 +229,7 @@ export default function Directive(props: Props) {
                 style={{
                   fontSize: "0.6rem",
                   textAlign: "left",
-                  color: "mediumslateblue",
+                  color: "gray",
                   opacity: "0.75",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
