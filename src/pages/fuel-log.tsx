@@ -2,6 +2,7 @@ import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import Directive from "@/components/directive";
 import DropDown from "@/components/dropdown";
+import LineCharter from "@/components/bar-chart";
 import NumberPlate from "@/components/number-plate";
 import RefreshButton from "@/components/refresh-button";
 import { ResponsiveModal } from "@/components/responsive-modal";
@@ -11,13 +12,12 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/
 import { useBackgroundProcess } from "@/context/BackgroundProcessContext";
 import { db } from "@/firebase";
 import { fetchAndCacheFuelLogs, getCachedFuelLogs, type FuelLog as FuelLogType } from "@/utils/fuelLogsCache";
-import { ensureOcrWorker, getOcrLoadState, subscribeOcrLoadState } from "@/utils/ocrWorker";
 import { addPendingFuelLog, getPendingFuelLogs, getPendingFuelLogsCount, syncAllPendingFuelLogs } from "@/utils/offlineFuelLogs";
 import { getCachedProfile } from "@/utils/profileCache";
 import { fetchAndCacheVehicle, getCachedVehicle } from "@/utils/vehicleCache";
 import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { Calendar, Camera, Car, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical, Fuel, Gauge, Loader2, ScanLine, WifiOff, X } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical, Fuel, Gauge, Loader2, WifiOff } from "lucide-react";
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -39,7 +39,6 @@ interface FuelLogFormContentProps {
   submitting: boolean;
   userProfile: any;
   handleSubmit: (e: React.FormEvent) => void;
-  onScanBill: () => void;
 }
 
 const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
@@ -58,10 +57,48 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
   submitting,
   userProfile,
   handleSubmit,
-  onScanBill,
 }) => {
+  const [fuelPrice, setFuelPrice] = useState<number>(0.229); // Default Oman fuel price (OMR/L)
+  const [isAutoCalculating, setIsAutoCalculating] = useState(false);
+
+  // Fetch current fuel price for Oman
+  useEffect(() => {
+    const fetchFuelPrice = async () => {
+      try {
+        // Try to fetch from a fuel price API
+        // Using Open-Meteo or similar free API - fallback to Oman average
+        const response = await fetch('https://api.api-ninjas.com/v1/fuelprices?city=muscat&country=om', {
+          headers: { 'X-Api-Key': 'YOUR_API_KEY' }, // Replace with actual API key if needed
+        }).catch(() => null);
+        
+        if (response?.ok) {
+          const data = await response.json();
+          if (data && data[0]?.diesel) {
+            setFuelPrice(parseFloat(data[0].diesel) || 0.229);
+          }
+        }
+      } catch (error) {
+        // Silently fail and use default price
+        console.log('Using default fuel price for Oman');
+      }
+    };
+    
+    // Fetch on component mount
+    fetchFuelPrice();
+  }, []);
+
+  // Auto-calculate litres when amount changes
+  useEffect(() => {
+    if (amountSpent && fuelPrice > 0) {
+      setIsAutoCalculating(true);
+      const calculatedLitres = (parseFloat(amountSpent) / fuelPrice).toFixed(2);
+      setLitres(calculatedLitres);
+      setIsAutoCalculating(false);
+    }
+  }, [amountSpent, fuelPrice]);
+
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", maxHeight: "75vh", width: "100%" }}>
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", maxHeight: "82vh", width: "100%" }}>
       {/* Fixed Header */}
       <div style={{
         border:"",
@@ -111,33 +148,6 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", width: "100%", paddingBottom: "1.5rem" }}>
             {/* Date Input with Quick Actions */}
-
-            {!editingLog && (
-            <motion.button
-              type="button"
-              onClick={onScanBill}
-              whileTap={{ scale: 0.95 }}
-              style={{
-                background: "black",
-                padding: "0.75rem 0.75rem",
-                borderRadius: "0.5rem",
-                border: "none",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.375rem",
-                cursor: "pointer",
-                color: "white",
-                fontSize: "1rem",
-                fontWeight: "500"
-              }}
-            >
-              <ScanLine width="1rem" />
-              Scan Bill
-               |
-              <img style={{border:"", width:"1rem", marginLeft:"0.5rem"}} src="https://companieslogo.com/img/orig/OOMS.OM-26773417.png?t=1720244493"/>
-              Omanoil
-            </motion.button>
-          )}
             <motion.div
               ref={dateSectionRef}
               whileTap={{ scale: 0.99 }}
@@ -198,7 +208,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <Gauge width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                <Gauge width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} />
                 <label
                   htmlFor="odometer"
                   style={{
@@ -253,7 +263,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <DollarSign width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                <DollarSign width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} />
                 <label
                   htmlFor="amount"
                   style={{
@@ -298,6 +308,36 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
               </div>
             </motion.div>
 
+            {/* Fuel Price Display & Override */}
+            <div style={{
+              padding: "0.75rem 1rem",
+              borderRadius: "0.75rem",
+              background: "rgba(100, 100, 100, 0.05)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              fontSize: "0.85rem",
+            }}>
+              <span style={{ fontWeight: 500, fontSize:"1rem", paddingLeft:"0.5rem" }}>Fuel Price / Litre</span>
+              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={fuelPrice}
+                  onChange={(e) => setFuelPrice(parseFloat(e.target.value) || 0.229)}
+                  style={{
+                    width: "5rem",
+                    padding: "0.4rem 0.5rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid rgba(100, 100, 100, 0.2)",
+                    fontSize: "1rem",
+                    textAlign: "right",
+                  }}
+                />
+                <span style={{ fontWeight: 600 }}>OMR/L</span>
+              </div>
+            </div>
+
             {/* Litres Input */}
             <motion.div
               whileTap={{ scale: 0.99 }}
@@ -308,7 +348,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <Fuel width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                <Fuel width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} />
                 <label
                   htmlFor="litres"
                   style={{
@@ -319,6 +359,18 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
                 >
                   Litres Filled
                 </label>
+                {isAutoCalculating && (
+                  <span style={{
+                    fontSize: "0.7rem",
+                    background: "rgba(72, 61, 139, 0.15)",
+                    color: "darkblue",
+                    padding: "0.2rem 0.5rem",
+                    borderRadius: "0.3rem",
+                    fontWeight: 600,
+                  }}>
+                    Auto
+                  </span>
+                )}
               </div>
               <div style={{ position: "relative" }}>
                 <input
@@ -351,16 +403,14 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
                 </span>
               </div>
             </motion.div>
-
-
           </div>
         </motion.div>
       </div>
-      
+
       {/* Fixed Submit Button */}
       <div style={{
         padding: "1rem",
-        paddingBottom: "2rem",
+        paddingBottom: "1rem",
         background: "var(--background)",
         boxSizing: "border-box"
       }}>
@@ -373,9 +423,8 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
             width: "100%",
             padding: "1rem",
             borderRadius: "1rem",
-            marginBottom:"0.5rem",
             background: submitting || !userProfile || !date || !amountSpent || !vehicleNumber || !litres
-              ? "rgba(100, 100, 100, 1)" 
+              ? "rgba(100, 100, 100, 1)"
               : "black",
             color: "white",
             fontSize: "1.0625rem",
@@ -401,7 +450,6 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
   );
 };
 
-// Shared Fuel Log Detail Component
 interface FuelLogDetailContentProps {
   selectedLog: FuelLogType;
   handleEdit: () => void;
@@ -413,908 +461,210 @@ const FuelLogDetailContent: React.FC<FuelLogDetailContentProps> = ({
   handleEdit,
   handleDelete,
 }) => {
+  const [tripSummaries, setTripSummaries] = useState<Array<{ id: string; summary: string; kms: string }>>([]);
+  const [tripSummary, setTripSummary] = useState("");
+  const [tripKms, setTripKms] = useState("");
+
+  const handleAddTripSummary = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (tripSummary.trim() && tripKms.trim()) {
+      const newTrip = {
+        id: Date.now().toString(),
+        summary: tripSummary.trim(),
+        kms: tripKms.trim(),
+      };
+      setTripSummaries([...tripSummaries, newTrip]);
+      setTripSummary("");
+      setTripKms("");
+    }
+  };
+
   return (
-    <>
-      {/* Fixed Header */}
+    <div style={{ width: "100%", display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Compact Header */}
       <div style={{
         width: "100%",
-        padding: "1rem",
-        paddingTop:"0rem",
-        paddingBottom: "0.75rem",
+        padding: "0.75rem 1rem",
         borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
         background: "var(--background)",
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-          <h1 style={{ fontSize: "1.75rem", fontWeight: "600", letterSpacing: "-0.02em", marginLeft:"0.5rem" }}>Summary</h1>
-          <DropDown
-            trigger={<EllipsisVertical width="1.1rem" />}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+          <h1 style={{ fontSize: "1.25rem", fontWeight: "600", letterSpacing: "-0.02em", marginLeft: "0.5rem" }}>Summary</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            {selectedLog.vehicle_number && (
+              <NumberPlate private={true} number={selectedLog.vehicle_number} />
+            )}
+            <DropDown
+              trigger={<EllipsisVertical width="1.1rem" />}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Scrollable Content */}
-      <div style={{ 
-        padding: "1rem",
-        paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
-        width: "100%",
-        boxSizing: "border-box",
-        overflowY: "auto"
-      }}>
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}
-        >
-          {/* Date */}
-          <motion.div
-            whileTap={{ scale: 0.98 }}
-            style={{
-              padding: "0.75rem",
-              borderRadius: "0.75rem",
-              background: "rgba(100, 100, 100, 0.05)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
-              <Calendar color="orange" width="1rem" height="1rem" style={{ opacity: 0.7 }} />
-              <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Date</span>
-            </div>
-            <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
-              {moment(selectedLog.date).format("DD MMM YYYY")}
-            </div>
-          </motion.div>
-          
-          {/* Vehicle Number */}
-          <motion.div
-            whileTap={{ scale: 0.98 }}
-            style={{
-              padding: "0.75rem",
-              borderRadius: "0.75rem",
-              background: "rgba(100, 100, 100, 0.05)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
-              <Car color="orange" width="1rem" height="1rem" style={{ opacity: 0.7 }}  />
-              <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Vehicle Number</span>
-            </div>
-            <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
-              {selectedLog.vehicle_number}
-            </div>
-          </motion.div>
+      {/* Compact Summary Content */}
+      <div style={{ padding: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem", flexShrink: 0 }}>
 
-          {/* Odometer Reading */}
-          <motion.div
-            whileTap={{ scale: 0.98 }}
-            style={{
-              padding: "0.75rem",
-              borderRadius: "0.75rem",
-              background: "rgba(100, 100, 100, 0.05)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
-              <Gauge color="orange" width="1rem" height="1rem" style={{ opacity: 0.7 }}  />
-              <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Odometer </span>
-            </div>
-            <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: "" }}>
-              {selectedLog.odometer_reading.toLocaleString()} km
-            </div>
-          </motion.div>
+        {/* 2x2 Grid Layout */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+          <div style={{ background: "rgba(100, 100, 100, 0.05)", borderRadius: "0.75rem", padding: "0.75rem" }}>
+            <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem" }}>Date</div>
+            <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{moment(selectedLog.date).format("DD MMM YYYY")}</div>
+          </div>
 
-          {/* Amount Spent */}
-          <motion.div
-            whileTap={{ scale: 0.98 }}
-            style={{
-              padding: "0.75rem",
-              borderRadius: "0.75rem",
-              background: "rgba(100, 100, 100, 0.05)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem" }}>
-              <DollarSign color="orange" width="1rem" height="1rem" style={{ opacity: 0.9 }}  />
-              <span style={{ fontSize: "0.6875rem", fontWeight: "600", opacity: 0.8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Amount Spent</span>
-            </div>
-            <div style={{ fontSize: "1rem", fontWeight: "600", paddingLeft: ""}}>
-              OMR {selectedLog.amount_spent.toFixed(3)} 
-            </div>
-          </motion.div>
-        </motion.div>
+          <div style={{ background: "rgba(100, 100, 100, 0.05)", borderRadius: "0.75rem", padding: "0.75rem" }}>
+            <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem" }}>Amount</div>
+            <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{selectedLog.amount_spent ? `OMR ${selectedLog.amount_spent}` : "-"}</div>
+          </div>
+
+          <div style={{ background: "rgba(100, 100, 100, 0.05)", borderRadius: "0.75rem", padding: "0.75rem" }}>
+            <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem" }}>Litres</div>
+            <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{selectedLog.litres ? `${selectedLog.litres} L` : "-"}</div>
+          </div>
+
+          <div style={{ background: "rgba(100, 100, 100, 0.05)", borderRadius: "0.75rem", padding: "0.75rem" }}>
+            <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem" }}>Odometer</div>
+            <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{selectedLog.odometer_reading ? `${selectedLog.odometer_reading} km` : "-"}</div>
+          </div>
+        </div>
       </div>
-    </>
-  );
-};
 
-// Bill Scanner Component
-interface BillScannerProps {
-  open: boolean;
-  onClose: () => void;
-  onDataExtracted: (data: { amount: string; litres: string; odometer?: string; billDate?: string }) => void;
-}
+      {/* Compact Trip Summaries Interface */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <div style={{ padding: "0 0.75rem 0.5rem" }}>
+          <div style={{ fontSize: "0.72rem", opacity: 0.65, fontWeight: 600 }}>Trip Summaries</div>
+        </div>
 
-const BillScanner: React.FC<BillScannerProps> = ({ open, onClose, onDataExtracted }) => {
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [ocrReady, setOcrReady] = useState(getOcrLoadState().ready);
-  const [ocrLoadProgress, setOcrLoadProgress] = useState(getOcrLoadState().progress);
-  const [ocrLoadStatus, setOcrLoadStatus] = useState(getOcrLoadState().status);
-  const [extractedText, setExtractedText] = useState<string>("");
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  useEffect(() => {
-    const unsubscribe = subscribeOcrLoadState((state) => {
-      setOcrReady(state.ready);
-      setOcrLoadProgress(state.progress);
-      setOcrLoadStatus(state.status);
-    });
-
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      void ensureOcrWorker();
-      if (!capturedImage) {
-        startCamera();
-      }
-    }
-    return () => {
-      stopCamera();
-    };
-  }, [open, capturedImage]);
-
-  const handleClose = () => {
-    setCapturedImage(null);
-    setProcessing(false);
-    setExtractedText("");
-    stopCamera();
-    onClose();
-  };
-
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch (error) {
-      console.error("Error accessing camera:", error);
-      toast.error("Could not access camera");
-      onClose();
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-  };
-
-  const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-
-      // Keep enough detail for OCR, but avoid huge images that slow recognition.
-      const maxWidth = 1600;
-      const scale = video.videoWidth > maxWidth ? maxWidth / video.videoWidth : 1;
-      const targetWidth = Math.floor(video.videoWidth * scale);
-      const targetHeight = Math.floor(video.videoHeight * scale);
-
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
-        const imageData = canvas.toDataURL('image/jpeg', 0.8);
-        setCapturedImage(imageData);
-        stopCamera();
-      }
-    }
-  };
-
-  const processImage = async (imageData: string) => {
-    setProcessing(true);
-    try {
-      const worker = await ensureOcrWorker();
-      const result = await worker.recognize(imageData);
-
-      const text = result.data.text;
-      console.log("Extracted text:", text);
-      setExtractedText(text);
-
-      // Parse the text to extract fuel bill information
-      const extractedData = parseFuelBillText(text);
-      
-      if (extractedData.amount || extractedData.litres) {
-        onDataExtracted(extractedData);
-        const amountText = extractedData.amount ? `OMR ${extractedData.amount}` : 'Not found';
-        const litresText = extractedData.litres ? `${extractedData.litres} L` : 'Not found';
-        const dateText = extractedData.billDate ? moment(extractedData.billDate).format("DD MMM YYYY") : 'Not found';
-        toast.success(`Amount: ${amountText} • Volume: ${litresText} • Date: ${dateText}`);
-        setCapturedImage(null);
-        setExtractedText("");
-        onClose();
-      } else {
-        toast.error("No data extracted. Check the text below and adjust the bill angle/lighting, then retake.");
-        // Keep the image and text so user can see what was extracted
-      }
-    } catch (error) {
-      console.error("OCR Error:", error);
-      toast.error("Failed to process image");
-      setCapturedImage(null);
-      setExtractedText("");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const parseFuelBillText = (text: string): { amount: string; litres: string; odometer?: string; billDate?: string } => {
-    let amount = '';
-    let litres = '';
-    let odometer = '';
-    let billDate = '';
-
-    const parseDateCandidate = (candidate: string): string => {
-      const cleanedCandidate = candidate
-        .replace(/\b(?:time|tel|vat|amount|volume|qty|litre|liter|invoice|receipt|payment|date)\b/gi, " ")
-        .replace(/[^\w\s\/.,:-]/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-
-      if (!cleanedCandidate) return "";
-
-      const dateFormats = [
-        "DD/MM/YYYY", "D/M/YYYY", "DD-MM-YYYY", "D-M-YYYY", "DD.MM.YYYY", "D.M.YYYY",
-        "DD/MM/YY", "D/M/YY", "DD-MM-YY", "D-M-YY", "DD.MM.YY", "D.M.YY",
-        "YYYY/MM/DD", "YYYY-MM-DD", "YYYY.MM.DD",
-        "DD MMM YYYY", "D MMM YYYY", "DD MMM YY", "D MMM YY",
-        "DD MMMM YYYY", "D MMMM YYYY", "DD MMMM YY", "D MMMM YY",
-        "MMM DD YYYY", "MMMM DD YYYY", "MMM D YYYY", "MMMM D YYYY"
-      ];
-
-      const parsed = moment(cleanedCandidate, dateFormats, true);
-      return parsed.isValid() ? parsed.format("YYYY-MM-DD") : "";
-    };
-
-    // Clean the text - remove extra spaces and normalize
-    const cleanedText = text.replace(/\s+/g, ' ').trim();
-    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    
-    console.log("==================== OCR TEXT PARSING ====================");
-    console.log("Total lines:", lines.length);
-    console.log("Full text:", cleanedText);
-    console.log("Lines:", lines);
-    
-    // Log all lines containing "amount" for debugging
-    const amountLines = lines.filter(line => /amount/i.test(line));
-    if (amountLines.length > 0) {
-      console.log("📋 Lines containing 'amount':", amountLines);
-    }
-    
-    // Try to find amount and volume in adjacent lines or same line
-    for (let i = 0; i < lines.length; i++) {
-      const rawLine = lines[i];
-      const nextRawLine = i < lines.length - 1 ? lines[i + 1] : '';
-      const currentLine = lines[i].toLowerCase().replace(/\s+/g, ' ').trim();
-      const nextLine = i < lines.length - 1 ? lines[i + 1].toLowerCase().replace(/\s+/g, ' ').trim() : '';
-
-      if (!billDate) {
-        const paymentDateSameLine = rawLine.match(/payment\s*date\s*[:\-]?\s*(.+)$/i);
-        if (paymentDateSameLine?.[1]) {
-          const parsedPaymentDate = parseDateCandidate(paymentDateSameLine[1]);
-          if (parsedPaymentDate) {
-            billDate = parsedPaymentDate;
-            console.log("✓ DATE found (Payment Date same line):", billDate, "from:", rawLine);
-          }
-        }
-
-        if (!billDate && /payment\s*date/i.test(rawLine)) {
-          const parsedPaymentDate = parseDateCandidate(nextRawLine);
-          if (parsedPaymentDate) {
-            billDate = parsedPaymentDate;
-            console.log("✓ DATE found (Payment Date next line):", billDate, "from label:", rawLine, "value:", nextRawLine);
-          }
-        }
-      }
-      
-      // Check for AMOUNT label (with value on same or next line)
-      // IMPORTANT: Exclude "VAT Amount", "Actual Amount" - match only standalone "Amount"
-      if (!amount) {
-        // Same line patterns: "Amount: 10.500", "Amount 10.500 OMR", "Amt: 10.500"
-        // Use negative lookbehind to exclude "VAT Amount", "Actual Amount", etc.
-        const amountSameLinePatterns = [
-          /(?<!vat\s)(?<!actual\s)(?<!net\s)(?<!gross\s)(?<!sub\s)(?<!\w)amount[:\s]*(?:omr|rial|rials?)?\s*(\d+\.?\d*)/i,
-          /^amount[:\s]*(?:omr|rial|rials?)?\s*(\d+\.?\d*)/i, // Amount at start of line
-          /(?:total|payable|pay)[:\s]*(?:omr|rial|rials?)?\s*(\d+\.?\d*)/i,
-          /(?:omr|rial|rials?)[:\s]*(\d+\.?\d*)/i
-        ];
-        
-        for (const pattern of amountSameLinePatterns) {
-          const match = currentLine.match(pattern);
-          if (match) {
-            // Double-check: ensure we're not matching "vat amount" or "actual amount"
-            const lineHasVat = /vat\s+amount/i.test(currentLine);
-            const lineHasActual = /actual\s+amount/i.test(currentLine);
-            const lineHasNet = /net\s+amount/i.test(currentLine);
-            const lineHasGross = /gross\s+amount/i.test(currentLine);
-            
-            if (!lineHasVat && !lineHasActual && !lineHasNet && !lineHasGross) {
-              amount = match[1];
-              console.log("✓ AMOUNT found (same line):", amount, "from:", currentLine);
-              break;
-            } else {
-              if (lineHasVat) console.log("⚠️ SKIPPED VAT Amount:", currentLine);
-              if (lineHasActual) console.log("⚠️ SKIPPED Actual Amount:", currentLine);
-              if (lineHasNet) console.log("⚠️ SKIPPED Net Amount:", currentLine);
-              if (lineHasGross) console.log("⚠️ SKIPPED Gross Amount:", currentLine);
-            }
-          }
-        }
-        
-        // Check if current line has the label "amount" (not vat/actual amount) and next line has the value
-        if (!amount) {
-          const hasAmountLabel = /(?<!vat\s)(?<!actual\s)(?<!net\s)(?<!gross\s)(?<!\w)amount/i.test(currentLine);
-          const hasVatAmount = /vat\s+amount/i.test(currentLine);
-          const hasActualAmount = /actual\s+amount/i.test(currentLine);
-          const hasNetAmount = /net\s+amount/i.test(currentLine);
-          const hasGrossAmount = /gross\s+amount/i.test(currentLine);
-          
-          if (hasAmountLabel && !hasVatAmount && !hasActualAmount && !hasNetAmount && !hasGrossAmount) {
-            const numberMatch = nextLine.match(/(\d+\.?\d+)/);
-            if (numberMatch) {
-              amount = numberMatch[1];
-              console.log("✓ AMOUNT found (next line):", amount, "from label:", currentLine, "value:", nextLine);
-            }
-          } else if (hasVatAmount || hasActualAmount || hasNetAmount || hasGrossAmount) {
-            if (hasVatAmount) console.log("⚠️ SKIPPED VAT Amount (label on separate line):", currentLine);
-            if (hasActualAmount) console.log("⚠️ SKIPPED Actual Amount (label on separate line):", currentLine);
-            if (hasNetAmount) console.log("⚠️ SKIPPED Net Amount (label on separate line):", currentLine);
-            if (hasGrossAmount) console.log("⚠️ SKIPPED Gross Amount (label on separate line):", currentLine);
-          }
-        }
-      }
-
-      // Check for VOLUME/LITRES label (with value on same or next line)
-      if (!litres) {
-        // Same line patterns: "Volume: 25.5", "Vol: 25.5 L", "Qty: 25.5"
-        const litresSameLinePatterns = [
-          /(?:volume|vol|quantity|qty|litres?|liters?)[:\s]*(\d+\.?\d*)/i,
-          /(\d+\.?\d*)\s*(?:l\b|ltr|ltrs)/i
-        ];
-        
-        for (const pattern of litresSameLinePatterns) {
-          const match = currentLine.match(pattern);
-          if (match) {
-            litres = match[1];
-            console.log("✓ VOLUME/LITRES found (same line):", litres, "from:", currentLine);
-            break;
-          }
-        }
-        
-        // Check if current line has the label and next line has the value
-        if (!litres && /(?:volume|vol|quantity|qty|litres?|liters?)/.test(currentLine)) {
-          const numberMatch = nextLine.match(/(\d+\.?\d+)/);
-          if (numberMatch) {
-            litres = numberMatch[1];
-            console.log("✓ VOLUME/LITRES found (next line):", litres, "from label:", currentLine, "value:", nextLine);
-          }
-        }
-      }
-
-      // Check for ODOMETER
-      if (!odometer) {
-        const odometerPatterns = [
-          /(?:odo|odometer|mileage|km)[:\s]*(\d{3,})/i,
-          /(\d{4,})\s*(?:km|kms)/i
-        ];
-        
-        for (const pattern of odometerPatterns) {
-          const match = currentLine.match(pattern);
-          if (match) {
-            odometer = match[1];
-            console.log("✓ ODOMETER found:", odometer, "from:", currentLine);
-            break;
-          }
-        }
-      }
-    }
-
-    // Fallback: If still not found, use broader patterns across entire text
-    if (!amount || !litres) {
-      console.log("⚠️ Attempting table/cash fallback...");
-
-      const hasProductQtyHeader = lines.some(
-        (line) => /product/i.test(line) && /(?:qty|quantity)/i.test(line)
-      );
-
-      for (let i = 0; i < lines.length; i++) {
-        const rawLine = lines[i];
-        const currentLine = rawLine.toLowerCase().replace(/\s+/g, " ").trim();
-        const nextLine = i < lines.length - 1 ? lines[i + 1].toLowerCase().replace(/\s+/g, " ").trim() : "";
-
-        if (!amount && /\bcash\b/i.test(currentLine)) {
-          const cashMatch = currentLine.match(/\bcash\b[^\d]*(\d+\.?\d*)/i) || currentLine.match(/(\d+\.?\d*)[^\n]*\bcash\b/i);
-          if (cashMatch?.[1]) {
-            amount = cashMatch[1];
-            console.log("✓ AMOUNT found (cash label):", amount, "from:", currentLine);
-          }
-        }
-
-        if (!litres && (hasProductQtyHeader || /mogas\s*(?:91|95)/i.test(currentLine))) {
-          const numberStrings = currentLine.match(/\d+\.?\d*/g) || [];
-          const litreCandidate = numberStrings.find((value) => {
-            const num = parseFloat(value);
-            // Ignore octane labels and keep realistic litre values.
-            return num !== 91 && num !== 95 && num > 1 && num <= 150;
-          });
-
-          if (litreCandidate) {
-            litres = litreCandidate;
-            console.log("✓ LITRES found (product/qty row):", litres, "from:", currentLine);
-          } else if (/mogas\s*(?:91|95)/i.test(currentLine)) {
-            const nextLineMatch = nextLine.match(/(\d+\.?\d*)/);
-            if (nextLineMatch) {
-              const num = parseFloat(nextLineMatch[1]);
-              if (num !== 91 && num !== 95 && num > 1 && num <= 150) {
-                litres = nextLineMatch[1];
-                console.log("✓ LITRES found (next line after mogas row):", litres, "from:", nextLine);
-              }
-            }
-          }
-        }
-
-        if (amount && litres) break;
-      }
-    }
-
-    if (!amount) {
-      console.log("⚠️ Attempting fallback for AMOUNT...");
-      
-      // Try to find "Amount" but exclude lines with "VAT Amount" or "Actual Amount"
-      const amountMatches = cleanedText.match(/(?<!vat\s)(?<!actual\s)(?<!net\s)(?<!gross\s)(?<!sub\s)(?<!\w)amount[:\s]*(?:omr|rial)?\s*(\d+\.?\d*)/i);
-      
-      if (amountMatches && !(/vat\s+amount/i.test(cleanedText.substring(Math.max(0, amountMatches.index! - 20), amountMatches.index!)))) {
-        amount = amountMatches[1];
-        console.log("✓ AMOUNT found (fallback - negative lookbehind):", amount);
-      } else {
-        // Try other fallback patterns
-        const fallbackPatterns = [
-          /total[:\s]*(?:omr|rial)?\s*(\d+\.?\d*)/i,
-          /payable[:\s]*(\d+\.?\d*)/i
-        ];
-        
-        for (const pattern of fallbackPatterns) {
-          const match = cleanedText.match(pattern);
-          if (match) {
-            amount = match[1];
-            console.log("✓ AMOUNT found (fallback - alternative):", amount);
-            break;
-          }
-        }
-      }
-    }
-
-    if (!litres) {
-      console.log("⚠️ Attempting fallback for LITRES...");
-      const fallbackPatterns = [
-        /volume[:\s]*(\d+\.?\d*)/i,
-        /(?:qty|quantity)[:\s]*(\d+\.?\d*)\s*(?:l\b|ltr)/i,
-        /(\d+\.?\d*)\s*(?:litres?|liters?)/i,
-        /(\d+\.?\d*)\s*l\b/i
-      ];
-      
-      for (const pattern of fallbackPatterns) {
-        const match = cleanedText.match(pattern);
-        if (match) {
-          litres = match[1];
-          console.log("✓ LITRES found (fallback):", litres);
-          break;
-        }
-      }
-    }
-
-    if (!billDate) {
-      console.log("⚠️ Attempting fallback for DATE...");
-      const dateFallbackPatterns = [
-        /payment\s*date\s*[:\-]?\s*([0-3]?\d[\/\-.][01]?\d[\/\-.](?:\d{2}|\d{4}))/i,
-        /payment\s*date\s*[:\-]?\s*([0-3]?\d\s*[A-Za-z]{3,9}\s*\d{2,4})/i,
-        /payment\s*date\s*[:\-]?\s*([A-Za-z]{3,9}\s*[0-3]?\d,?\s*\d{2,4})/i,
-        /\b([0-3]?\d[\/\-.][01]?\d[\/\-.](?:\d{2}|\d{4}))\b/
-      ];
-
-      for (const pattern of dateFallbackPatterns) {
-        const match = text.match(pattern);
-        if (match?.[1]) {
-          const parsedDate = parseDateCandidate(match[1]);
-          if (parsedDate) {
-            billDate = parsedDate;
-            console.log("✓ DATE found (fallback):", billDate, "from:", match[1]);
-            break;
-          }
-        }
-      }
-    }
-
-    // Last resort: Extract all decimal numbers and make educated guesses
-    if (!amount || !litres) {
-      console.log("⚠️ Last resort: Looking for decimal numbers...");
-      const decimalNumbers = cleanedText.match(/\d+\.\d{1,3}/g);
-      if (decimalNumbers && decimalNumbers.length > 0) {
-        console.log("Found decimal numbers:", decimalNumbers);
-        
-        // Amount usually has 3 decimals in OMR (e.g., 10.500)
-        if (!amount) {
-          const threeDecimal = decimalNumbers.find(n => n.split('.')[1]?.length === 3);
-          if (threeDecimal) {
-            amount = threeDecimal;
-            console.log("✓ AMOUNT guessed (3 decimals):", amount);
-          }
-        }
-        
-        // Litres usually has 1-2 decimals and is a reasonable volume (5-100)
-        if (!litres) {
-          const reasonableLitres = decimalNumbers.find(n => {
-            const num = parseFloat(n);
-            const decimals = n.split('.')[1]?.length || 0;
-            return num >= 5 && num <= 100 && decimals <= 2 && n !== amount;
-          });
-          if (reasonableLitres) {
-            litres = reasonableLitres;
-            console.log("✓ LITRES guessed (reasonable volume):", litres);
-          }
-        }
-      }
-    }
-
-    console.log("==================== FINAL RESULT ====================");
-    console.log("Amount:", amount || "NOT FOUND");
-    console.log("Litres:", litres || "NOT FOUND");
-    console.log("Odometer:", odometer || "NOT FOUND");
-    console.log("Date:", billDate || "NOT FOUND");
-    console.log("========================================================");
-    
-    return { amount, litres, odometer, billDate };
-  };
-
-  const retake = () => {
-    setCapturedImage(null);
-    setProcessing(false);
-    setExtractedText("");
-    startCamera();
-  };
-
-  if (!open) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent 
-        style={{ 
-          maxWidth: "95vw", 
-          borderRadius: "1rem",
-          width: "500px",
-          padding: 0,
-          overflow: "hidden",
-          border: "none"
-        }}
-      >
-        <div style={{ 
-          position: "relative", 
-          width: "100%",
-          background: "black"
-        }}>
-          {/* Header */}
-          <div style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 10,
-            padding: "1rem",
-            background: "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)",
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "0 0.75rem 0.75rem",
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center"
-          }}>
-            <h3 style={{ color: "white", fontSize: "1.125rem", fontWeight: "600" }}>
-              {processing ? "Processing..." : capturedImage ? "Review Image" : "Scan Fuel Bill"}
-            </h3>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={handleClose}
-              style={{
-                background: "rgba(255,255,255,0.2)",
-                border: "none",
-                borderRadius: "50%",
-                width: "2rem",
-                height: "2rem",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer"
-              }}
-            >
-              <X color="white" width="1.25rem" />
-            </motion.button>
-          </div>
-
-          {/* Camera/Image View */}
-          <div style={{ 
-            position: "relative",
-            width: "100%",
-            aspectRatio: "4/3",
-            background: "black"
-          }}>
-            {!capturedImage ? (
-              <>
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover"
-                  }}
-                />
-              </>
-            ) : (
-              <img
-                src={capturedImage}
-                alt="Captured bill"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "contain"
-                }}
-              />
-            )}
-
-            {processing && (
-              <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: "rgba(0,0,0,0.7)",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "1rem"
-              }}>
-                <Loader2 className="animate-spin" color="white" width="2.5rem" />
-                <p style={{ color: "white", fontSize: "1rem" }}>Extracting bill information...</p>
-              </div>
-            )}
-          </div>
-
-          {/* Camera Guidance */}
-          {!capturedImage && (
+            flexDirection: "column",
+            gap: "0.35rem",
+          }}
+        >
+          {tripSummaries.length === 0 ? (
             <div style={{
-              padding: "0.625rem 1rem",
-              background: "rgba(0,0,0,0.6)",
-              borderTop: "1px solid rgba(255,255,255,0.1)",
-              borderBottom: "1px solid rgba(255,255,255,0.1)"
-            }}>
-              <p style={{
-                color: "white",
-                fontSize: "0.75rem",
-                textAlign: "center",
-                margin: 0,
-                lineHeight: 1.4
-              }}>
-                {ocrReady
-                  ? "💡Position bill flat. Ensure good lighting."
-                  : "OCR engine is loading. You can monitor progress below."}
-              </p>
-            </div>
-          )}
-
-          {/* Persistent OCR status */}
-          <div style={{
-            padding: "0.75rem 1rem",
-            background: "rgba(0,0,0,0.75)",
-            borderTop: "1px solid rgba(255,255,255,0.12)",
-            borderBottom: "1px solid rgba(255,255,255,0.12)"
-          }}>
-            <div style={{
+              flex: 1,
               display: "flex",
-              justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: "0.375rem"
+              justifyContent: "center",
+              color: "rgba(100, 100, 100, 0.4)",
+              fontSize: "0.8rem",
+              textAlign: "center",
+              padding: "0.75rem",
             }}>
-              <span style={{ color: "white", fontSize: "0.75rem", fontWeight: 600 }}>
-                OCR Engine
-              </span>
-              <span style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.75rem" }}>
-                {ocrLoadProgress}%
-              </span>
+              No trip summaries yet.
             </div>
-            <div style={{
-              width: "100%",
-              height: "0.325rem",
-              background: "rgba(255,255,255,0.2)",
-              borderRadius: "999px",
-              overflow: "hidden"
-            }}>
-              <div style={{
-                width: `${ocrLoadProgress}%`,
-                height: "100%",
-                background: ocrReady ? "#22c55e" : "#f59e0b",
-                transition: "width 0.2s ease"
-              }} />
-            </div>
-            <p style={{
-              margin: "0.375rem 0 0",
-              color: "rgba(255,255,255,0.82)",
-              fontSize: "0.68rem",
-              lineHeight: 1.35,
-              textTransform: "capitalize"
-            }}>
-              {ocrLoadStatus}
-            </p>
-          </div>
-
-          {/* Controls */}
-          {!processing && (
-            <div style={{
-              padding: "1.5rem",
-              display: "flex",
-              gap: "1rem",
-              justifyContent: "center"
-            }}>
-              {!capturedImage ? (
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={capturePhoto}
-                  disabled={!ocrReady}
-                  style={{
-                    width:"100%",
-                    background: ocrReady ? "white" : "rgba(255,255,255,0.5)",
-                    color: "black",
-                    border: "none",
-                    padding: "1rem 2rem",
-                    borderRadius: "2rem",
-                    fontSize: "1rem",
-                    fontWeight: "600",
-                    cursor: ocrReady ? "pointer" : "not-allowed",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    boxShadow: "0 4px 12px rgba(30, 144, 255, 0.4)"
-                  }}
-                >
-                  <Camera width="1.25rem" />
-                  Capture Bill
-                </motion.button>
-              ) : (
-                <>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={retake}
-                    style={{
-                      background: "rgba(100,100,100,0.2)",
-                      color: "white",
-                      border: "1px solid rgba(255,255,255,0.3)",
-                      padding: "0.75rem 1.5rem",
-                      borderRadius: "1rem",
-                      fontSize: "0.875rem",
-                      fontWeight: "600",
-                      cursor: "pointer",
-                      flex:1
-                    }}
-                  >
-                    Retake
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => processImage(capturedImage)}
-                    disabled={!ocrReady}
-                    style={{
-                      background: ocrReady ? "mediumslateblue" : "rgba(30, 144, 255, 0.5)",
-                      color: "white",
-                      border: "none",
-                      padding: "0.75rem 1.5rem",
-                      borderRadius: "1rem",
-                      fontSize: "0.875rem",
-                      fontWeight: "600",
-                      cursor: ocrReady ? "pointer" : "not-allowed"
-                    }}
-                  >
-                    Process Image
-                  </motion.button>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Extracted Text Display (for debugging) */}
-          {extractedText && !processing && (
-            <div style={{
-              padding: "1rem 1.5rem",
-              paddingBottom: "1.5rem",
-              maxHeight: "200px",
-              overflowY: "auto",
-              background: "rgba(30,30,30,0.95)",
-              borderTop: "1px solid rgba(255,255,255,0.1)"
-            }}>
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "0.625rem"
-              }}>
-                <p style={{ 
-                  color: "white", 
-                  fontSize: "0.75rem", 
-                  fontWeight: "600", 
-                  margin: 0,
-                  opacity: 0.8
+          ) : (
+            tripSummaries.map((trip, index) => (
+              <div
+                key={trip.id}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr auto",
+                  gap: "0.5rem",
+                  alignItems: "start",
+                  background: "rgba(72, 61, 139, 0.08)",
+                  border: "1px solid rgba(72, 61, 139, 0.2)",
+                  borderRadius: "0.6rem",
+                  padding: "0.55rem 0.6rem",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: "0.66rem", opacity: 0.55, marginBottom: "0.2rem" }}>Trip {index + 1}</div>
+                  <div style={{ fontSize: "0.82rem", lineHeight: "1.25", wordBreak: "break-word" }}>
+                    {trip.summary}
+                  </div>
+                </div>
+                <div style={{
+                  fontSize: "0.76rem",
+                  fontWeight: 700,
+                  color: "darkblue",
+                  whiteSpace: "nowrap",
+                  paddingTop: "0.1rem",
                 }}>
-                  📄 Detected Text
-                </p>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(extractedText);
-                    toast.success("Text copied to clipboard");
-                  }}
-                  style={{
-                    background: "rgba(255,255,255,0.1)",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    color: "white",
-                    padding: "0.25rem 0.625rem",
-                    borderRadius: "0.375rem",
-                    fontSize: "0.65rem",
-                    cursor: "pointer"
-                  }}
-                >
-                  Copy
-                </button>
+                  {trip.kms} km
+                </div>
               </div>
-              <pre style={{ 
-                color: "rgba(255,255,255,0.85)", 
-                fontSize: "0.7rem", 
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                fontFamily: "monospace",
-                margin: 0,
-                lineHeight: 1.5,
-                background: "rgba(0,0,0,0.3)",
-                padding: "0.625rem",
-                borderRadius: "0.375rem",
-                border: "1px solid rgba(255,255,255,0.1)"
-              }}>
-                {extractedText}
-              </pre>
-              <p style={{
-                color: "rgba(255,255,255,0.6)",
-                fontSize: "0.65rem",
-                marginTop: "0.5rem",
-                marginBottom: 0,
-                fontStyle: "italic"
-              }}>
-                💡 Check console logs for detailed parsing results
-              </p>
-            </div>
+            ))
           )}
-
-          <canvas ref={canvasRef} style={{ display: "none" }} />
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <form
+          onSubmit={handleAddTripSummary}
+          style={{
+            padding: "0.65rem 0.75rem 0.75rem",
+            borderTop: "1px solid rgba(100, 100, 100, 0.1)",
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: "0.45rem",
+            background: "var(--background)",
+          }}
+        >
+          <input
+            type="text"
+            value={tripSummary}
+            onChange={(e) => setTripSummary(e.target.value)}
+            placeholder="Trip summary..."
+            style={{
+              flex: 1,
+              padding: "0.5rem",
+              borderRadius: "0.5rem",
+              border: "1px solid rgba(100, 100, 100, 0.1)",
+              fontSize: "1rem",
+              fontFamily: "inherit",
+              backgroundColor: "rgba(100, 100, 100, 0.02)",
+              outline: "none",
+            }}
+            onFocus={(e) => (e.target.style.border = "1px solid darkblue")}
+            onBlur={(e) => (e.target.style.border = "1px solid rgba(100, 100, 100, 0.1)")}
+          />
+
+          <input
+            type="number"
+            value={tripKms}
+            onChange={(e) => setTripKms(e.target.value)}
+            placeholder="km"
+            step="0.1"
+            style={{
+              width: "4.2rem",
+              padding: "0.5rem",
+              borderRadius: "0.5rem",
+              border: "1px solid rgba(100, 100, 100, 0.1)",
+              fontSize: "1rem",
+              backgroundColor: "rgba(100, 100, 100, 0.02)",
+              outline: "none",
+            }}
+            onFocus={(e) => (e.target.style.border = "1px solid darkblue")}
+            onBlur={(e) => (e.target.style.border = "1px solid rgba(100, 100, 100, 0.1)")}
+          />
+
+          <button
+            type="submit"
+            style={{
+              padding: "0.5rem 0.75rem",
+              borderRadius: "0.5rem",
+              background: "darkblue",
+              color: "white",
+              border: "none",
+              fontSize: "1rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "filter 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(0.92)")}
+            onMouseLeave={(e) => (e.currentTarget.style.filter = "brightness(1)")}
+          >
+            Add
+          </button>
+        </form>
+      </div>
+    </div>
   );
 };
 
@@ -1342,8 +692,51 @@ export default function FuelLog() {
   const [vehicleRegistrationType, setVehicleRegistrationType] = useState<string>("Private");
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [scannerOpen, setScannerOpen] = useState(false);
+  const [activeChart, setActiveChart] = useState(0);
   const { addProcess, updateProcess } = useBackgroundProcess();
+  const vehicleNumber = userProfile?.allocated_vehicle || userData?.allocated_vehicle;
+
+  // Calculate monthly fuel consumption and mileage
+  const monthlyData = (() => {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const currentYear = new Date().getFullYear();
+    const data = months.map((month) => ({
+      name: month,
+      fuel: 0,
+      mileage: 0,
+    }));
+
+    fuelLogs.forEach((log) => {
+      const logDate = new Date(log.date);
+      if (logDate.getFullYear() === currentYear) {
+        const monthIndex = logDate.getMonth();
+        if (data[monthIndex]) {
+          data[monthIndex].fuel += Number(log.litres) || 0;
+        }
+      }
+    });
+
+    // Calculate mileage for each month
+    const sortedLogs = [...fuelLogs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    for (let i = 0; i < sortedLogs.length - 1; i++) {
+      const currentLog = sortedLogs[i + 1];
+      const previousLog = sortedLogs[i];
+      const currentDate = new Date(currentLog.date);
+      
+      if (currentDate.getFullYear() === currentYear) {
+        const distance = Number(currentLog.odometer_reading) - Number(previousLog.odometer_reading);
+        const litres = Number(currentLog.litres);
+        if (distance > 0 && litres > 0) {
+          const monthIndex = currentDate.getMonth();
+          if (data[monthIndex]) {
+            data[monthIndex].mileage = distance / litres;
+          }
+        }
+      }
+    }
+
+    return data;
+  })();
 
   useEffect(() => {
     // Load cached profile data immediately
@@ -1669,26 +1062,6 @@ export default function FuelLog() {
     setDrawerOpen(true);
   };
 
-  const handleScanBill = () => {
-    setScannerOpen(true);
-  };
-
-  const handleDataExtracted = (data: { amount: string; litres: string; odometer?: string; billDate?: string }) => {
-    if (data.amount) {
-      setAmountSpent(data.amount);
-    }
-    if (data.litres) {
-      setLitres(data.litres);
-    }
-    if (data.odometer) {
-      setOdometerReading(data.odometer);
-    }
-    if (data.billDate) {
-      setDate(data.billDate);
-    }
-    setScannerOpen(false);
-  };
-
   return (
     <>
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
@@ -1725,12 +1098,108 @@ export default function FuelLog() {
             // icon={<Fuel color="orange" width="1.75rem" />}
           />
         <div style={{ padding: "1.25rem", paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}>
-          
+          <div style={{ height: "0.75rem" }} />
 
-          <div style={{ height: "2rem" }} />
+          <div
+            style={{
+              position: "sticky",
+              top: isMobile ? "4.35rem" : "4.85rem",
+              zIndex: 15,
+              marginBottom: "1rem",
+              marginLeft: "-1.25rem",
+              marginRight: "-1.25rem",
+              padding: "0.65rem 1.25rem",
+              // borderTop: "1px solid rgba(100, 100, 100, 0.12)",
+              borderBottom: "1px solid rgba(100, 100, 100, 0.12)",
+              background: "rgba(100 100 100/ 1%)",
+              WebkitBackdropFilter: "blur(16px)",
+              backdropFilter: "blur(16px)",
+              boxSizing: "border-box",
+            }}
+          >
+            {/* Charts Carousel Section */}
+            <div style={{ borderTop: "1px solid rgba(100, 100, 100, 0.1)", paddingTop: "0.5rem" }}>
+              {isMobile ? (
+                // Mobile: Horizontal scroll with dots
+                <>
+                  <div 
+                    ref={(el) => {
+                      if (el) {
+                        el.addEventListener('scroll', () => {
+                          const scrollPosition = el.scrollLeft;
+                          const chartsPerView = Math.round(scrollPosition / el.offsetWidth);
+                          setActiveChart(chartsPerView);
+                        });
+                      }
+                    }}
+                    style={{ display: "flex", overflowX: "auto", gap: "0", scrollBehavior: "smooth", scrollSnapType: "x mandatory" }}>
+                    {/* Monthly Fuel Consumption Chart */}
+                    <div style={{ minWidth: "100%", flexShrink: 0, scrollSnapAlign: "start", paddingRight: "0" }}>
+                      <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Monthly Fuel Consumed</div>
+                      <div style={{ height: "60px", width: "100%" }}>
+                        <LineCharter data={monthlyData} dataKey="fuel" lineColor="darkblue" />
+                      </div>
+                    </div>
+
+                    {/* Monthly Mileage Trend Chart */}
+                    <div style={{ minWidth: "100%", flexShrink: 0, scrollSnapAlign: "start", paddingRight: "0" }}>
+                      <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Mileage Trend</div>
+                      <div style={{ height: "60px", width: "100%" }}>
+                        <LineCharter data={monthlyData} dataKey="mileage" lineColor="darkblue" />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Dot Indicators */}
+                  <div style={{ display: "flex", justifyContent: "center", gap: "0.4rem", marginTop: "0.5rem" }}>
+                    <div
+                      onClick={() => setActiveChart(0)}
+                      style={{
+                        width: "0.5rem",
+                        height: "0.5rem",
+                        borderRadius: "50%",
+                        background: activeChart === 0 ? "darkblue" : "rgba(100, 100, 100, 0.3)",
+                        cursor: "pointer",
+                        transition: "background 0.2s",
+                      }}
+                    />
+                    <div
+                      onClick={() => setActiveChart(1)}
+                      style={{
+                        width: "0.5rem",
+                        height: "0.5rem",
+                        borderRadius: "50%",
+                        background: activeChart === 1 ? "darkblue" : "rgba(100, 100, 100, 0.3)",
+                        cursor: "pointer",
+                        transition: "background 0.2s",
+                      }}
+                    />
+                  </div>
+                </>
+              ) : (
+                // Desktop: Side by side
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                  {/* Monthly Fuel Consumption Chart */}
+                  <div>
+                    <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Monthly Fuel Consumed</div>
+                    <div style={{ height: "60px", width: "100%" }}>
+                      <LineCharter data={monthlyData} dataKey="fuel" lineColor="darkblue" />
+                    </div>
+                  </div>
+
+                  {/* Monthly Mileage Trend Chart */}
+                  <div>
+                    <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Mileage Trend</div>
+                    <div style={{ height: "60px", width: "100%" }}>
+                      <LineCharter data={monthlyData} dataKey="mileage" lineColor="darkblue" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Fuel Logs List */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", paddingBottom: "5.5rem", paddingTop:"2rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", paddingBottom: "5.5rem", paddingTop:"2.5rem" }}>
                       
             {loading ? 
             (
@@ -1857,7 +1326,7 @@ export default function FuelLog() {
             marginBottom:"1rem"
           }}
         >
-          {/* <Plus width="1.25rem" height="1.75rem" strokeWidth={2.5} /> */}
+          <Fuel width="1.25rem" height="1.75rem" strokeWidth={2.5} />
           {isMobile && <span>Log Fuel</span>}
         </motion.button>
         
@@ -1869,10 +1338,12 @@ export default function FuelLog() {
         onOpenChange={setDrawerOpen}
         title=""
         description=""
+        hideHeader
+        contentStyle={{ overflow: "hidden" }}
       >
         <FuelLogFormContent
           date={date}
-          vehicleNumber={userProfile?.allocated_vehicle || userData?.allocated_vehicle}
+          vehicleNumber={vehicleNumber}
           odometerReading={odometerReading}
           setOdometerReading={setOdometerReading}
           amountSpent={amountSpent}
@@ -1886,16 +1357,8 @@ export default function FuelLog() {
           userProfile={userProfile}
           handleSubmit={handleSubmit}
           isPrivateVehicle={vehicleRegistrationType === "Private"}
-          onScanBill={handleScanBill}
         />
       </ResponsiveModal>
-
-      {/* Bill Scanner */}
-      <BillScanner
-        open={scannerOpen}
-        onClose={() => setScannerOpen(false)}
-        onDataExtracted={handleDataExtracted}
-      />
 
       {/* Detail View - Responsive Modal */}
       {selectedLog && (

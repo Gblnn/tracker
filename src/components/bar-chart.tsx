@@ -1,10 +1,12 @@
 import { Line, LineChart, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface Props{
-  lineColor?:string
+  lineColor?:string;
+  data?: Array<{[key: string]: any}>;
+  dataKey?: string;
 }
 
-const data = [
+const defaultData = [
   {
     name: 'Jan',
     days: 0,
@@ -59,12 +61,15 @@ const data = [
 ];
 
 const LineCharter = (props:Props) => {
+  const data = props.data || defaultData;
+  const dataKey = props.dataKey || 'days';
+
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart width={300} height={100} data={data} dataKey={"name"} style={{padding:"0.05rem"}}>
-        <Line type="monotone" dataKey="days" stroke={props.lineColor?props.lineColor:"#8884d8"} strokeWidth={2} dot={false}/>
+      <LineChart width={300} height={100} data={data} style={{padding:"0.05rem"}}>
+        <Line type="monotone" dataKey={dataKey} stroke={props.lineColor?props.lineColor:"#8884d8"} strokeWidth={2} dot={false}/>
         
-        <Tooltip labelFormatter={(name)=>name==0?"Jan":name==1?"Feb":name==2?"Mar":name==3?"Apr":name==4?"May":name==5?"Jun":name==6?"Jul":name==7?"Aug":name==8?"Sep":name==9?"Oct":name==10?"Nov":name==11&&"Dec"} contentStyle={{borderRadius:"0.5rem", padding:"0.5rem", paddingTop:0, paddingBottom:0, background:"black", color:"white", border:"none"}}/>
+        <Tooltip contentStyle={{borderRadius:"0.5rem", padding:"0.5rem", paddingTop:0, paddingBottom:0, background:"rgba(255, 255, 255, 0.95)", color:"#333", border:"1px solid rgba(100, 100, 100, 0.15)"}}/>
       </LineChart>
     </ResponsiveContainer>
   );

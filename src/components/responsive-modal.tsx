@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect, ReactNode, CSSProperties } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,8 @@ interface ResponsiveModalProps {
   title: string;
   description?: string;
   children: ReactNode;
+  hideHeader?: boolean;
+  contentStyle?: CSSProperties;
 }
 
 export function ResponsiveModal({
@@ -27,6 +29,8 @@ export function ResponsiveModal({
   title,
   description,
   children,
+  hideHeader = false,
+  contentStyle,
 }: ResponsiveModalProps) {
   const [isMobile, setIsMobile] = useState(() => 
     typeof window !== 'undefined' ? window.innerWidth <= 768 : false
@@ -42,15 +46,36 @@ export function ResponsiveModal({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  const hasHeaderContent = !hideHeader && Boolean(title || description);
+  const useEdgeToEdgeContent = !hasHeaderContent;
+
+  const mobileContentStyle: CSSProperties = {
+    width: "100%",
+    ...(useEdgeToEdgeContent ? { padding: 0, gap: 0 } : null),
+    ...contentStyle,
+  };
+
+  const mobileBodyStyle: CSSProperties = {
+    width: "100%",
+    paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+  };
+
+  const desktopContentStyle: CSSProperties = {
+    ...(useEdgeToEdgeContent ? { padding: 0, gap: 0 } : { padding: "2rem" }),
+    ...contentStyle,
+  };
+
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent style={{ width: "100%" }}>
-          <div style={{ padding: "", border:"", textAlign:"left", width:"100%" }}>
-            <DrawerTitle style={{display:"flex", justifyContent:"center", width:"100%", border:"", padding:"0.5rem"}}>{title}</DrawerTitle>
-            {description && <DrawerDescription style={{padding:"1rem"}}> {description}</DrawerDescription>}
-          </div>
-          <div style={{ width: "100%" }}>
+        <DrawerContent style={mobileContentStyle}>
+          {!hideHeader && (title || description) && (
+            <div style={{ padding: "", border:"", textAlign:"left", width:"100%" }}>
+              {title && <DrawerTitle style={{display:"flex", justifyContent:"center", width:"100%", border:"", padding:"0.5rem"}}>{title}</DrawerTitle>}
+              {description && <DrawerDescription style={{padding:"1rem"}}> {description}</DrawerDescription>}
+            </div>
+          )}
+          <div style={mobileBodyStyle}>
             {children}
           </div>
         </DrawerContent>
@@ -60,11 +85,13 @@ export function ResponsiveModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle >{title}</DialogTitle>
-          {description && <DialogDescription >{description}</DialogDescription>}
-        </DialogHeader>
+      <DialogContent style={desktopContentStyle}>
+        {!hideHeader && (title || description) && (
+          <DialogHeader style={{ paddingBottom: "0.5rem" }}>
+            {title && <DialogTitle >{title}</DialogTitle>}
+            {description && <DialogDescription >{description}</DialogDescription>}
+          </DialogHeader>
+        )}
         {children}
       </DialogContent>
     </Dialog>
