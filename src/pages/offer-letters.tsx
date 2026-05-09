@@ -1,5 +1,4 @@
 ﻿import Back from "@/components/back";
-import { Checkbox } from "@/components/ui/checkbox";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { RichTextEditor } from "@/components/rich-text-editor";
@@ -45,6 +44,8 @@ import {
   CreditCard,
   Database,
   Dot,
+  Eye,
+  EyeOff,
   Expand,
   FilePlus2,
   FileText,
@@ -65,6 +66,7 @@ import {
   TextCursor,
   Trash2,
   User,
+  X,
 } from "lucide-react";
 import moment from "moment";
 import React, { useEffect, useRef, useState } from "react";
@@ -134,6 +136,43 @@ const leftColumnStyle = {
   maxWidth: "200px",
 };
 
+const PREVIEW_JUMP_TIP_DISMISSED_KEY = "offerLetters.previewJumpTipDismissed";
+
+const PREVIEW_FIELD_ORDER = [
+  "candidateName",
+  "passportNumber",
+  "position",
+  "workLocation",
+  "salary",
+  "allowance",
+  "attendance",
+  "probation",
+  "reportingDate",
+  "contractPeriod",
+  "noticePeriod",
+  "accomodation",
+  "food",
+  "transport",
+  "communication",
+  "insurance",
+  "annualLeave",
+  "gratuity",
+  "leaveEncashment",
+  "grossSalary",
+  "airPassage",
+  "sectorOfTravel",
+  "classOfTravel",
+  "visaStatus",
+  "medicalTerms",
+  "incrementTerms",
+  "workingHours",
+  "medical",
+];
+
+const PREVIEW_FIELD_ORDER_INDEX = new Map(
+  PREVIEW_FIELD_ORDER.map((fieldId, index) => [fieldId, index])
+);
+
 type FieldType = "text" | "textarea" | "number" | "date";
 
 type FieldConfig = {
@@ -179,8 +218,6 @@ type FormData = {
   classOfTravel: string;
   medicalTerms: string;
   incrementTerms: string;
-  jobSummary: string;
-  responsibilities: string;
   roles: Array<{ title: string; description: string }>;
   allowances: Array<{ title: string; description: string }>;
   customFields?: { [key: string]: string };
@@ -198,9 +235,14 @@ type Preset = {
 interface SortableTableRowProps {
   id: string;
   children: React.ReactNode;
+  dragEnabled?: boolean;
 }
 
-const SortableTableRow: React.FC<SortableTableRowProps> = ({ id, children }) => {
+const SortableTableRow: React.FC<SortableTableRowProps> = ({
+  id,
+  children,
+  dragEnabled = true,
+}) => {
   const [isHovered, setIsHovered] = useState(false);
   const {
     attributes,
@@ -209,18 +251,22 @@ const SortableTableRow: React.FC<SortableTableRowProps> = ({ id, children }) => 
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, disabled: !dragEnabled });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: dragEnabled ? CSS.Transform.toString(transform) : undefined,
     transition,
     opacity: isDragging ? 0.5 : 1,
     position: "relative" as const,
+    cursor: "pointer",
   };
 
   return (
     <tr
       ref={setNodeRef}
+      {...(dragEnabled ? attributes : {})}
+      {...(dragEnabled ? listeners : {})}
+      data-field-id={id}
       style={style}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -236,27 +282,24 @@ const SortableTableRow: React.FC<SortableTableRowProps> = ({ id, children }) => 
             children: (
               <>
                 <div
-                  {...attributes}
-                  {...listeners}
                   style={{
                     position: "absolute",
-                    left: "4px",
+                    left: "-20px",
                     top: "50%",
                     transform: "translateY(-50%)",
-                    cursor: "grab",
-                    opacity: isHovered || isDragging ? 1 : 0,
-                    transition: "opacity 0.2s ease",
+                    cursor: dragEnabled ? "grab" : "default",
+                    opacity: dragEnabled && (isHovered || isDragging) ? 1 : 0,
+                    transition: "opacity 0.4s ease",
                     display: "flex",
                     alignItems: "center",
-                    padding: "4px",
-                    color: "rgba(147, 112, 219, 0.7)",
+                    color: "rgba(0 0 139/ 55%)",
+                    pointerEvents: dragEnabled ? "auto" : "none",
+                    zIndex: 2,
                   }}
                 >
-                  <GripVertical size={16} />
+                  <GripVertical size={13} />
                 </div>
-                <div style={{ paddingLeft: isHovered || isDragging ? "24px" : "0", transition: "padding-left 0.2s ease" }}>
-                  {child.props.children}
-                </div>
+                {child.props.children}
               </>
             ),
           });
@@ -323,8 +366,6 @@ const [searchTerm, setSearchTerm] = useState("");
     classOfTravel: "",
     medicalTerms: "",
     incrementTerms: "",
-    jobSummary: "",
-    responsibilities: "",
     roles: [],
     allowances: [],
     customFields: {},
@@ -349,6 +390,7 @@ const [searchTerm, setSearchTerm] = useState("");
   const benefitsSectionRef = useRef<HTMLDivElement>(null);
   const termsSectionRef = useRef<HTMLDivElement>(null);
   const rolesSectionRef = useRef<HTMLDivElement>(null);
+  const additionalTermsSectionRef = useRef<HTMLDivElement>(null);
   const customSectionRef = useRef<HTMLDivElement>(null);
 
   const serviceId = "service_fixajl8";
@@ -387,7 +429,7 @@ const [searchTerm, setSearchTerm] = useState("");
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 4,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -438,11 +480,86 @@ const [searchTerm, setSearchTerm] = useState("");
     { id: "visaStatus", label: "Visa Status", type: "textarea", placeholder: "Enter Visa Terms", rows: 4, enabled: true, section: "paragraph" },
     { id: "medicalTerms", label: "Medical Terms", type: "textarea", placeholder: "Enter detailed medical terms", rows: 4, enabled: true, section: "paragraph" },
     { id: "incrementTerms", label: "Increment Terms", type: "textarea", placeholder: "Enter increment terms", rows: 4, enabled: true, section: "paragraph" },
-    { id: "workingHours", label: "Working Hours", type: "text", placeholder: "Enter Working Terms", enabled: true, section: "paragraph" },
-    { id: "jobSummary", label: "Job Summary", type: "textarea", placeholder: "Enter Job Summary", rows: 4, enabled: true, section: "paragraph" },
-    { id: "responsibilities", label: "Responsibilities", type: "textarea", placeholder: "Enter Responsibilities", rows: 4, enabled: true, section: "paragraph" },
+    { id: "workingHours", label: "Working Hours", type: "textarea", placeholder: "Enter Working Terms", enabled: true, section: "paragraph" },
     { id: "medical", label: "Medical", type: "textarea", placeholder: "Enter Medical Terms", rows: 4, enabled: false, section: "paragraph" },
   ];
+
+  // Keep this map for backward compatibility when field IDs are renamed in code.
+  const FIELD_ID_ALIASES: Record<string, string> = {
+    // Example: oldId: "newId"
+  };
+
+  const normalizeLabel = (label?: string) =>
+    (label || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+
+  const getMergedFieldConfig = (
+    savedConfig?: FieldConfig[],
+    passportNumberValue?: string
+  ): FieldConfig[] => {
+    const defaultWithFallback = defaultFieldConfig.map((field) =>
+      field.id === "passportNumber" && passportNumberValue
+        ? { ...field, enabled: true }
+        : field
+    );
+
+    if (!savedConfig || savedConfig.length === 0) {
+      return defaultWithFallback;
+    }
+
+    const defaultMap = new Map(defaultWithFallback.map((field) => [field.id, field]));
+    const seenIds = new Set<string>();
+    const merged: FieldConfig[] = [];
+
+    const getResolvedId = (field: FieldConfig): string | null => {
+      if (defaultMap.has(field.id)) return field.id;
+
+      const aliasedId = FIELD_ID_ALIASES[field.id];
+      if (aliasedId && defaultMap.has(aliasedId)) return aliasedId;
+
+      const fieldKey = `${field.section}|${field.type}|${normalizeLabel(field.label)}`;
+      const fallbackMatch = defaultWithFallback.find(
+        (defaultField) =>
+          !seenIds.has(defaultField.id) &&
+          `${defaultField.section}|${defaultField.type}|${normalizeLabel(defaultField.label)}` === fieldKey
+      );
+
+      return fallbackMatch?.id || null;
+    };
+
+    savedConfig.forEach((field) => {
+      const resolvedId = getResolvedId(field);
+
+      if (!resolvedId) {
+        if (!seenIds.has(field.id)) {
+          merged.push(field);
+          seenIds.add(field.id);
+        }
+        return;
+      }
+
+      if (seenIds.has(resolvedId)) {
+        return;
+      }
+
+      merged.push({
+        ...defaultMap.get(resolvedId),
+        ...field,
+        id: resolvedId,
+      });
+      seenIds.add(resolvedId);
+    });
+
+    defaultWithFallback.forEach((field) => {
+      if (!seenIds.has(field.id)) {
+        merged.push(field);
+      }
+    });
+
+    return merged;
+  };
 
   const [fieldConfig, setFieldConfig] = useState<FieldConfig[]>(defaultFieldConfig);
   
@@ -452,6 +569,7 @@ const [searchTerm, setSearchTerm] = useState("");
     compensation: false,
     benefits: false,
     terms: false,
+    additionalTerms: false,
     roles: false,
     custom: false,
   });
@@ -459,8 +577,12 @@ const [searchTerm, setSearchTerm] = useState("");
   // PDF generation progress
   const [pdfProgress, setPdfProgress] = useState(0);
   
-  // Highlighted section state
-  const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
+  // Highlighted field state
+  const [highlightedFieldId, setHighlightedFieldId] = useState<string | null>(null);
+  const [showPreviewJumpTip, setShowPreviewJumpTip] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem(PREVIEW_JUMP_TIP_DISMISSED_KEY) !== "1";
+  });
   const [fieldConfigDialogVisible, setFieldConfigDialogVisible] = useState(false);
   const [newFieldName, setNewFieldName] = useState("");
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
@@ -468,14 +590,47 @@ const [searchTerm, setSearchTerm] = useState("");
   const [newFieldType, setNewFieldType] = useState<FieldType>("text");
   const [newFieldSection, setNewFieldSection] = useState<"table" | "paragraph">("table");
   const [draggedFieldIndex, setDraggedFieldIndex] = useState<number | null>(null);
+  const [fieldConfigSectionsCollapsed, setFieldConfigSectionsCollapsed] = useState<{ table: boolean; paragraph: boolean }>({
+    table: false,
+    paragraph: false,
+  });
+  const [addCustomFieldDialogVisible, setAddCustomFieldDialogVisible] = useState(false);
   const [headerVisible, setHeaderVisible] = useState(true);
+  const [showInputScrollTopButton, setShowInputScrollTopButton] = useState(false);
+  const [previewDragEnabled, setPreviewDragEnabled] = useState(false);
   const fieldListScrollRef = useRef<HTMLDivElement>(null);
+  const inputFormScrollRef = useRef<HTMLDivElement>(null);
+  const inputScrollRafRef = useRef<number | null>(null);
+  const sectionHighlightTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialFieldConfigLoad = useRef(true);
   
   // Role editor dialog state
   const [roleEditorDialogVisible, setRoleEditorDialogVisible] = useState(false);
   const [editingRoleIndex, setEditingRoleIndex] = useState<number | null>(null);
   const [editingRoleContent, setEditingRoleContent] = useState("");
+
+  const SECTION_FIELD_IDS: Record<string, string[]> = {
+    basic: ["candidateName", "passportNumber", "position", "workLocation", "reportingDate"],
+    compensation: ["salary", "allowance", "grossSalary"],
+    benefits: ["accomodation", "food", "transport", "communication", "insurance", "airPassage", "sectorOfTravel", "classOfTravel"],
+    terms: [
+      "attendance",
+      "probation",
+      "contractPeriod",
+      "noticePeriod",
+    ],
+    additionalTerms: [
+      "annualLeave",
+      "gratuity",
+      "leaveEncashment",
+      "visaStatus",
+      "medicalTerms",
+      "incrementTerms",
+      "workingHours",
+      "medical",
+    ],
+  };
 
   // Add this after other useEffect hooks
   useEffect(() => {
@@ -492,6 +647,34 @@ const [searchTerm, setSearchTerm] = useState("");
       setHasChanges(false);
     }
   }, [formData, selectedPreset, originalPresetData]);
+
+  // Auto-save field visibility state whenever fieldConfig changes
+  useEffect(() => {
+    // Skip on initial load
+    if (isInitialFieldConfigLoad.current) {
+      isInitialFieldConfigLoad.current = false;
+      return;
+    }
+
+    // Only auto-save if we're editing an existing letter
+    if (!loadedLetterId) {
+      return;
+    }
+
+    const autoSaveFieldConfig = async () => {
+      try {
+        const letterRef = doc(db, "offer_letters", loadedLetterId);
+        await updateDoc(letterRef, {
+          fieldConfig: fieldConfig,
+        });
+        console.log("Field visibility state saved automatically");
+      } catch (error) {
+        console.error("Error auto-saving field config:", error);
+      }
+    };
+
+    autoSaveFieldConfig();
+  }, [fieldConfig, loadedLetterId]);
 
   const fetchPresets = async () => {
     try {
@@ -552,11 +735,10 @@ const [searchTerm, setSearchTerm] = useState("");
         date: formData.date, // Keep the current date
       });
       // Load field configuration if available
-      if (preset.fieldConfig) {
-        setFieldConfig(preset.fieldConfig);
-      } else {
-        setFieldConfig(defaultFieldConfig);
-      }
+      setFieldConfig(
+        getMergedFieldConfig(preset.fieldConfig, preset.data?.passportNumber)
+      );
+      isInitialFieldConfigLoad.current = true; // Reset flag for new preset
       setSelectedPreset(presetId);
       setOriginalPresetData(preset.data);
       setHasChanges(false);
@@ -1018,6 +1200,7 @@ const [searchTerm, setSearchTerm] = useState("");
       const newLetter = cleanDataForFirestore({
         ...formData,
         refNo: nextRef,  // Use the new reference number
+        fieldConfig: fieldConfig,
         air_passage: air_passage,
         comm: comm,
         visaS: visaS,
@@ -1182,6 +1365,7 @@ const [searchTerm, setSearchTerm] = useState("");
 
       await updateDoc(letterRef, cleanDataForFirestore({
         ...presetData,
+        fieldConfig: fieldConfig,
         air_passage: air_passage,
         comm: comm,
         visaS: visaS,
@@ -1245,8 +1429,6 @@ const [searchTerm, setSearchTerm] = useState("");
       classOfTravel: ol.classOfTravel || "",
       medicalTerms: ol.medicalTerms || "",
       incrementTerms: ol.incrementTerms || "",
-      jobSummary: ol.jobSummary,
-      responsibilities: ol.responsibilities,
       roles: ol.roles,
       allowances: ol.allowances,
     });
@@ -1254,6 +1436,8 @@ const [searchTerm, setSearchTerm] = useState("");
     setComm(ol.comm);
     setVisaS(ol.visaS);
     setJoiningDate(ol.joiningDate);
+    setFieldConfig(getMergedFieldConfig(ol.fieldConfig, ol.passportNumber));
+    isInitialFieldConfigLoad.current = true; // Reset flag so next changes will be auto-saved
     setOriginalFormData(ol);
     setLoadedLetterId(ol.id);
     // Reset preset related states
@@ -1333,8 +1517,6 @@ const [searchTerm, setSearchTerm] = useState("");
       classOfTravel: "",
       medicalTerms: "",
       incrementTerms: "",
-      jobSummary: "",
-      responsibilities: "",
       roles: [{ title: "", description: "" }],
       allowances: [{ title: "", description: "" }],
       customFields: {},
@@ -1345,32 +1527,88 @@ const [searchTerm, setSearchTerm] = useState("");
     setLoadedLetterId(null);
     setOriginalFormData(null);
     setFieldConfig(defaultFieldConfig);
+    isInitialFieldConfigLoad.current = true; // Reset flag for new letter
   };
 
-  // Scroll to and highlight section
-  const scrollToSection = (sectionKey: string) => {
+  const normalizePreviewFieldId = (fieldId?: string) => {
+    if (!fieldId) return "";
+    if (fieldId === "allowance-main") return "allowance";
+    if (fieldId === "noticePeriod-main") return "noticePeriod";
+    return fieldId;
+  };
+
+  const getFirstEnabledFieldIdForSection = (sectionKey: string) => {
+    const candidateIds = SECTION_FIELD_IDS[sectionKey] || [];
+    const firstEnabled = candidateIds.find((id) => fieldConfig.some((f) => f.enabled && f.id === id));
+    return firstEnabled || null;
+  };
+
+  // Scroll to and highlight section/field
+  const scrollToSection = (sectionKey: string, preferredFieldId?: string) => {
     const sectionRefs: { [key: string]: React.RefObject<HTMLDivElement> } = {
       basic: basicSectionRef,
       compensation: compensationSectionRef,
       benefits: benefitsSectionRef,
       terms: termsSectionRef,
+      additionalTerms: additionalTermsSectionRef,
       roles: rolesSectionRef,
       custom: customSectionRef,
     };
 
     const sectionRef = sectionRefs[sectionKey];
-    if (sectionRef?.current) {
+    const sectionElement = sectionRef?.current;
+    if (sectionElement) {
+      const normalizedPreferredFieldId = normalizePreviewFieldId(preferredFieldId);
+      const targetFieldId =
+        normalizedPreferredFieldId && fieldConfig.some((f) => f.enabled && f.id === normalizedPreferredFieldId)
+          ? normalizedPreferredFieldId
+          : getFirstEnabledFieldIdForSection(sectionKey);
+
+      const doScrollAndHighlight = () => {
+        const container = inputFormScrollRef.current;
+        if (container) {
+          const targetFieldElement = targetFieldId
+            ? (container.querySelector(`[data-input-field-id="${targetFieldId}"]`) as HTMLDivElement | null)
+            : null;
+
+          const targetElement = targetFieldElement || sectionElement;
+          const targetRect = targetElement.getBoundingClientRect();
+          const containerRect = container.getBoundingClientRect();
+          const topOffset = 12;
+          const nextTop =
+            container.scrollTop + (targetRect.top - containerRect.top) - topOffset;
+
+          container.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
+
+          const focusable = targetFieldElement?.querySelector("input, textarea") as
+            | HTMLInputElement
+            | HTMLTextAreaElement
+            | null;
+          if (focusable) {
+            focusable.focus({ preventScroll: true });
+          }
+        } else {
+          sectionElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        setHighlightedFieldId(targetFieldId || null);
+        if (sectionHighlightTimeoutRef.current) {
+          clearTimeout(sectionHighlightTimeoutRef.current);
+        }
+        sectionHighlightTimeoutRef.current = setTimeout(() => {
+          setHighlightedFieldId(null);
+        }, 1200);
+      };
+
       // Expand section if collapsed
       if (sectionsCollapsed[sectionKey]) {
         setSectionsCollapsed(prev => ({ ...prev, [sectionKey]: false }));
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(doScrollAndHighlight);
+        });
+      } else {
+        doScrollAndHighlight();
       }
-      
-      // Scroll to section with offset for header
-      sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-      
-      // Highlight section temporarily
-      setHighlightedSection(sectionKey);
-      setTimeout(() => setHighlightedSection(null), 2000);
     }
   };
 
@@ -1390,8 +1628,8 @@ const [searchTerm, setSearchTerm] = useState("");
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0.8rem 1rem",
-          background: "linear-gradient(135deg, rgba(0 0 139/ 10%), rgba(56 189 248/ 8%))",
-          border: "1px solid rgba(0 0 139/ 24%)",
+          background: "rgba(15 23 42/ 4%)",
+          border: "1px solid rgba(15 23 42/ 12%)",
           borderRadius: "0.7rem",
           cursor: "pointer",
           marginTop: "1rem",
@@ -1457,6 +1695,7 @@ const [searchTerm, setSearchTerm] = useState("");
     return (
       <div
         key={field.id}
+        data-input-field-id={field.id}
         style={{
           display: "flex",
           flexDirection: "column",
@@ -1466,6 +1705,8 @@ const [searchTerm, setSearchTerm] = useState("");
           border: "1px solid rgba(100 116 139/ 20%)",
           background: "rgba(255 255 255/ 82%)",
           boxShadow: "0 1px 2px rgba(15 23 42/ 4%)",
+          outline: "none",
+          animation: highlightedFieldId === field.id ? "fieldFocusPulse 1s ease" : "none",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1524,6 +1765,380 @@ const [searchTerm, setSearchTerm] = useState("");
         )}
       </div>
     );
+  };
+
+  const renderFieldConfigItem = (field: FieldConfig, index: number) => (
+    <motion.div
+      key={field.id}
+      draggable
+      onDragStart={() => handleDragStart(index)}
+      onDragOver={(e) => handleDragOver(e, index)}
+      onDragEnd={handleDragEnd}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "0.4rem",
+        padding: "0.5rem 0.6rem",
+        background: draggedFieldIndex === index
+          ? "rgba(0 0 139/ 10%)"
+          : field.enabled
+          ? "rgba(255 255 255/ 90%)"
+          : "rgba(15 23 42/ 3%)",
+        borderRadius: "0.5rem",
+        border: `1px solid ${
+          draggedFieldIndex === index
+            ? "rgba(0 0 139/ 30%)"
+            : field.enabled
+            ? "rgba(15 23 42/ 12%)"
+            : "rgba(15 23 42/ 8%)"
+        }`,
+        opacity: draggedFieldIndex === index ? 0.6 : field.enabled ? 1 : 0.6,
+        cursor: "grab",
+        transition: "all 0.2s ease",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            cursor: "grab",
+            display: "flex",
+            alignItems: "center",
+            color: "rgba(0 0 139/ 55%)",
+            flexShrink: 0,
+          }}
+          title="Drag to reorder"
+        >
+          <GripVertical width="0.85rem" />
+        </div>
+
+        <button
+          onClick={() => handleToggleField(field.id)}
+          title={field.enabled ? "Hide this field" : "Show this field"}
+          style={{
+            width: "2.35rem",
+            height: "2.35rem",
+            borderRadius: "0.7rem",
+            border: "1px solid rgba(15 23 42/ 14%)",
+            background: field.enabled ? "rgba(0 0 139/ 8%)" : "rgba(15 23 42/ 4%)",
+            color: field.enabled ? "darkblue" : "rgba(15 23 42/ 55%)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            marginRight: "0.35rem",
+          }}
+        >
+          {field.enabled ? <Eye width="1.35rem" /> : <EyeOff width="1.35rem" />}
+        </button>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {editingFieldId === field.id ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <input
+                type="text"
+                value={editingFieldLabel}
+                onChange={(e) => setEditingFieldLabel(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveFieldLabel();
+                  if (e.key === "Escape") handleCancelEditFieldLabel();
+                }}
+                autoFocus
+                style={{
+                  flex: 1,
+                  minWidth: "100px",
+                  padding: "0.3rem 0.5rem",
+                  borderRadius: "0.4rem",
+                  border: "1px solid rgba(0 0 139/ 40%)",
+                  fontSize: "0.8rem",
+                  fontWeight: 500,
+                }}
+              />
+              <button
+                onClick={handleSaveFieldLabel}
+                style={{
+                  background: "rgba(16 185 129/ 12%)",
+                  border: "1px solid rgba(16 185 129/ 35%)",
+                  color: "#047857",
+                  cursor: "pointer",
+                  padding: "0.22rem",
+                  borderRadius: "0.35rem",
+                  display: "flex",
+                  alignItems: "center",
+                  flexShrink: 0,
+                }}
+                title="Save"
+              >
+                <Check width="0.65rem" />
+              </button>
+              <button
+                onClick={handleCancelEditFieldLabel}
+                style={{
+                  background: "rgba(239 68 68/ 10%)",
+                  border: "1px solid rgba(239 68 68/ 35%)",
+                  color: "#b91c1c",
+                  cursor: "pointer",
+                  padding: "0.22rem",
+                  borderRadius: "0.35rem",
+                  display: "flex",
+                  alignItems: "center",
+                  flexShrink: 0,
+                }}
+                title="Cancel"
+              >
+                <FileX width="0.65rem" />
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", overflow: "hidden" }}>
+                <div style={{ fontWeight: 500, fontSize: "0.82rem", color: "rgba(15 23 42/ 92%)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {field.label}
+                </div>
+                {field.isCustom && (
+                  <span
+                    style={{
+                      fontSize: "0.6rem",
+                      color: "darkblue",
+                      background: "rgba(0 0 139/ 8%)",
+                      border: "1px solid rgba(0 0 139/ 20%)",
+                      padding: "0.08rem 0.3rem",
+                      borderRadius: "999px",
+                      flexShrink: 0,
+                    }}
+                  >
+                    Custom
+                  </span>
+                )}
+              </div>
+              <div
+                style={{
+                  fontSize: "0.65rem",
+                  color: "rgba(15 23 42/ 55%)",
+                  marginTop: "0.1rem",
+                }}
+              >
+                {field.type}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", flexShrink: 0 }}>
+        {editingFieldId !== field.id && !field.isCustom && (
+          <button
+            onClick={() => handleStartEditFieldLabel(field.id, field.label)}
+            style={{
+              background: "rgba(15 23 42/ 4%)",
+              border: "1px solid rgba(15 23 42/ 12%)",
+              color: "rgba(15 23 42/ 75%)",
+              cursor: "pointer",
+              width: "2.05rem",
+              height: "2.05rem",
+              borderRadius: "0.68rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+            title="Edit field name"
+          >
+            <Pencil width="1.1rem" />
+          </button>
+        )}
+        {field.isCustom && (
+          <button
+            onClick={() => handleRemoveCustomField(field.id)}
+            style={{
+              background: "rgba(220 38 38/ 8%)",
+              border: "1px solid rgba(220 38 38/ 20%)",
+              color: "#b91c1c",
+              cursor: "pointer",
+              padding: "0.22rem 0.35rem",
+              borderRadius: "0.35rem",
+              fontSize: "0.65rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.15rem",
+              flexShrink: 0,
+            }}
+          >
+            <Trash2 width="0.65rem" />
+          </button>
+        )}
+      </div>
+    </motion.div>
+  );
+
+  const renderFieldConfigSection = (
+    section: "table" | "paragraph",
+    title: string,
+    icon: React.ReactNode
+  ) => {
+    const sectionFields = fieldConfig.filter((f) => f.section === section);
+    const activeCount = sectionFields.filter((f) => f.enabled).length;
+    const isCollapsed = fieldConfigSectionsCollapsed[section];
+
+    return (
+      <div
+        style={{
+          border: "1px solid rgba(15 23 42/ 10%)",
+          borderRadius: "0.75rem",
+          background: "rgba(255 255 255/ 88%)",
+          padding: "0.75rem",
+        }}
+      >
+        <button
+          onClick={() =>
+            setFieldConfigSectionsCollapsed((prev) => ({
+              ...prev,
+              [section]: !prev[section],
+            }))
+          }
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            marginBottom: isCollapsed ? 0 : "0.75rem",
+            paddingBottom: "0.5rem",
+            borderBottom: "1px solid rgba(15 23 42/ 10%)",
+            width: "100%",
+            background: "transparent",
+            borderLeft: "none",
+            borderRight: "none",
+            borderTop: "none",
+            cursor: "pointer",
+            textAlign: "left",
+          }}
+        >
+          {icon}
+          <h4 style={{ fontSize: "0.9rem", fontWeight: 600, margin: 0, color: "rgba(15 23 42/ 85%)" }}>
+            {title}
+          </h4>
+          <span style={{ marginLeft: "auto", fontSize: "0.72rem", color: "rgba(15 23 42/ 55%)" }}>
+            {activeCount}/{sectionFields.length} active
+          </span>
+          <span style={{ display: "flex", alignItems: "center", color: "rgba(15 23 42/ 60%)" }}>
+            {isCollapsed ? <ChevronRight width="0.95rem" /> : <ChevronDown width="0.95rem" />}
+          </span>
+        </button>
+
+        {!isCollapsed && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {sectionFields.map((field) => renderFieldConfigItem(field, fieldConfig.indexOf(field)))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const handleFieldConfigDialogChange = (open: boolean) => {
+    setFieldConfigDialogVisible(open);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (inputScrollRafRef.current !== null) {
+        cancelAnimationFrame(inputScrollRafRef.current);
+      }
+      if (sectionHighlightTimeoutRef.current) {
+        clearTimeout(sectionHighlightTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const getSectionForFieldId = (fieldId: string) => {
+    const normalizedId =
+      fieldId === "allowance-main"
+        ? "allowance"
+        : fieldId === "noticePeriod-main"
+        ? "noticePeriod"
+        : fieldId;
+
+    if (["candidateName", "passportNumber", "position", "workLocation", "reportingDate"].includes(normalizedId)) {
+      return "basic";
+    }
+
+    if (["salary", "allowance", "grossSalary"].includes(normalizedId)) {
+      return "compensation";
+    }
+
+    if (["accomodation", "food", "transport", "communication", "insurance", "airPassage", "sectorOfTravel", "classOfTravel"].includes(normalizedId)) {
+      return "benefits";
+    }
+
+    if (["attendance", "probation", "contractPeriod", "noticePeriod"].includes(normalizedId)) {
+      return "terms";
+    }
+
+    if (["annualLeave", "gratuity", "leaveEncashment", "visaStatus", "medicalTerms", "incrementTerms", "workingHours", "medical"].includes(normalizedId)) {
+      return "additionalTerms";
+    }
+
+    return "custom";
+  };
+
+  const handleInputSectionScroll = () => {
+    if (inputScrollRafRef.current !== null) return;
+
+    const container = inputFormScrollRef.current;
+    if (!container) return;
+
+    inputScrollRafRef.current = window.requestAnimationFrame(() => {
+      const scrollTop = container.scrollTop;
+
+      // Hysteresis avoids rapid toggle flicker while users are near the boundary.
+      setHeaderVisible((prev) => {
+        if (prev && scrollTop > 52) return false;
+        if (!prev && scrollTop < 6) return true;
+        return prev;
+      });
+      setShowInputScrollTopButton(scrollTop > 180);
+      inputScrollRafRef.current = null;
+    });
+  };
+
+  const handleInputScrollToTop = () => {
+    const container = inputFormScrollRef.current;
+    if (!container) return;
+    container.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handlePreviewTableClick = (event: React.MouseEvent<HTMLTableSectionElement>) => {
+    const target = event.target as HTMLElement;
+    const row = target.closest("tr[data-field-id]") as HTMLTableRowElement | null;
+    if (!row) return;
+
+    const fieldId = row.dataset.fieldId;
+    if (!fieldId) return;
+
+    scrollToSection(getSectionForFieldId(fieldId), fieldId);
+  };
+
+  const handleDismissPreviewJumpTip = () => {
+    setShowPreviewJumpTip(false);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(PREVIEW_JUMP_TIP_DISMISSED_KEY, "1");
+    }
+  };
+
+  const getSortedFieldsForSection = (sectionFieldIds: string[]) => {
+    const sectionFieldIdSet = new Set(sectionFieldIds);
+
+    return fieldConfig
+      .filter((field) => field.enabled && sectionFieldIdSet.has(field.id))
+      .sort((a, b) => {
+        const aOrder = PREVIEW_FIELD_ORDER_INDEX.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+        const bOrder = PREVIEW_FIELD_ORDER_INDEX.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+
+        if (aOrder !== bOrder) {
+          return aOrder - bOrder;
+        }
+
+        return fieldConfig.findIndex((field) => field.id === a.id) - fieldConfig.findIndex((field) => field.id === b.id);
+      });
   };
 
   const renderInputForm = () => (
@@ -1914,24 +2529,45 @@ const [searchTerm, setSearchTerm] = useState("");
               Manage Fields
             </span>
           </div>
-          <button
-            onClick={() => setFieldConfigDialogVisible(true)}
-            style={{
-              background: "rgba(100 100 100/ 0.025)",
-              color: "darkblue",
-              border: "none",
-              padding: "0.15rem 0.75rem",
-              borderRadius: "0.5rem",
-              cursor: "pointer",
-              fontSize: "0.8rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
-          >
-            <Menu width={"0.8rem"} />
-            Configure
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <button
+              onClick={() => setPreviewDragEnabled((prev) => !prev)}
+              style={{
+                background: previewDragEnabled ? "rgba(0 0 139/ 10%)" : "rgba(100 100 100/ 0.08)",
+                color: previewDragEnabled ? "darkblue" : "rgba(0 0 0/ 65%)",
+               
+                padding: "0.15rem 0.75rem",
+                borderRadius: "0.5rem",
+                cursor: "pointer",
+                fontSize: "0.8rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+              }}
+              title={previewDragEnabled ? "Disable drag & drop in preview" : "Enable drag & drop in preview"}
+            >
+              <GripVertical width={"0.8rem"} />
+              Drag: {previewDragEnabled ? "On" : "Off"}
+            </button>
+            <button
+              onClick={() => setFieldConfigDialogVisible(true)}
+              style={{
+                background: "rgba(100 100 100/ 0.025)",
+                color: "darkblue",
+                border: "none",
+                padding: "0.15rem 0.75rem",
+                borderRadius: "0.5rem",
+                cursor: "pointer",
+                fontSize: "0.8rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+              }}
+            >
+              <Menu width={"0.8rem"} />
+              Configure
+            </button>
+          </div>
         </div>
               </div>
             </motion.div>
@@ -1941,12 +2577,15 @@ const [searchTerm, setSearchTerm] = useState("");
 
       {/* Scrollable Content Section */}
       <div
+        ref={inputFormScrollRef}
+        onScroll={handleInputSectionScroll}
         style={{
           flex: 1,
           overflowY: "auto",
           padding: "1rem",
           paddingTop: headerVisible ? "0.75rem" : "2.75rem",
           paddingBottom: "1.5rem",
+          transition: "padding-top 0.25s ease",
           display: "flex",
           flexDirection: "column",
           gap: "0.75rem",
@@ -1991,21 +2630,19 @@ const [searchTerm, setSearchTerm] = useState("");
         <div 
           ref={basicSectionRef}
           style={{
+            order: 1,
             borderRadius: "0.8rem",
             padding: "0.65rem",
             border: "1px solid rgba(148 163 184/ 25%)",
             background: "rgba(255 255 255/ 84%)",
             transition: "background-color 0.3s ease",
             boxShadow: "0 1px 2px rgba(15 23 42/ 5%)",
-            outline: highlightedSection === "basic" ? "2px solid rgba(0 0 139/ 28%)" : "none"
           }}
         >
           {renderSectionHeader("basic", "Basic Information", <User width="1.1rem" />, "Candidate details")}
           {!sectionsCollapsed.basic && (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              {fieldConfig
-                .filter(f => f.enabled && ["candidateName", "passportNumber", "position", "workLocation", "reportingDate"].includes(f.id))
-                .map(field => renderField(field))}
+              {getSortedFieldsForSection(["candidateName", "passportNumber", "position", "workLocation", "reportingDate"]).map((field) => renderField(field))}
             </div>
           )}
         </div>
@@ -2014,21 +2651,19 @@ const [searchTerm, setSearchTerm] = useState("");
         <div 
           ref={compensationSectionRef}
           style={{
+            order: 2,
             borderRadius: "0.8rem",
             padding: "0.65rem",
             border: "1px solid rgba(148 163 184/ 25%)",
             background: "rgba(255 255 255/ 84%)",
             transition: "background-color 0.3s ease",
             boxShadow: "0 1px 2px rgba(15 23 42/ 5%)",
-            outline: highlightedSection === "compensation" ? "2px solid rgba(0 0 139/ 28%)" : "none"
           }}
         >
           {renderSectionHeader("compensation", "Compensation", <CreditCard width="1.1rem" />, "Salary and allowances")}
           {!sectionsCollapsed.compensation && (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {fieldConfig
-              .filter(f => f.enabled && ["salary", "allowance", "grossSalary"].includes(f.id))
-              .map(field => (
+            {getSortedFieldsForSection(["salary", "allowance", "grossSalary"]).map((field) => (
                 <React.Fragment key={field.id}>
                   {renderField(field)}
                   {/* Additional Allowances after allowance field */}
@@ -2139,21 +2774,19 @@ const [searchTerm, setSearchTerm] = useState("");
         <div 
           ref={benefitsSectionRef}
           style={{
+            order: 4,
             borderRadius: "0.8rem",
             padding: "0.65rem",
             border: "1px solid rgba(148 163 184/ 25%)",
             background: "rgba(255 255 255/ 84%)",
             transition: "background-color 0.3s ease",
             boxShadow: "0 1px 2px rgba(15 23 42/ 5%)",
-            outline: highlightedSection === "benefits" ? "2px solid rgba(0 0 139/ 28%)" : "none"
           }}
         >
           {renderSectionHeader("benefits", "Benefits & Perks", <Gift width="1.1rem" />, "Accommodation, food, transport & more")}
           {!sectionsCollapsed.benefits && (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              {fieldConfig
-                .filter(f => f.enabled && ["accomodation", "food", "transport", "communication", "insurance", "airPassage", "sectorOfTravel", "classOfTravel"].includes(f.id))
-                .map(field => renderField(field))}
+              {getSortedFieldsForSection(["accomodation", "food", "transport", "communication", "insurance", "airPassage", "sectorOfTravel", "classOfTravel"]).map((field) => renderField(field))}
             </div>
           )}
         </div>
@@ -2162,21 +2795,19 @@ const [searchTerm, setSearchTerm] = useState("");
         <div 
           ref={termsSectionRef}
           style={{
+            order: 3,
             borderRadius: "0.8rem",
             padding: "0.65rem",
             border: "1px solid rgba(148 163 184/ 25%)",
             background: "rgba(255 255 255/ 84%)",
             transition: "background-color 0.3s ease",
             boxShadow: "0 1px 2px rgba(15 23 42/ 5%)",
-            outline: highlightedSection === "terms" ? "2px solid rgba(0 0 139/ 28%)" : "none"
           }}
         >
-          {renderSectionHeader("terms", "Terms & Conditions", <Shield width="1.1rem" />, "Contract, probation, leave & policies")}
+          {renderSectionHeader("terms", "Terms & Conditions", <Shield width="1.1rem" />, "Contract, probation & notice period")}
           {!sectionsCollapsed.terms && (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              {fieldConfig
-                .filter(f => f.enabled && ["attendance", "probation", "contractPeriod", "noticePeriod", "visaStatus", "medicalTerms", "incrementTerms", "workingHours", "annualLeave", "gratuity", "leaveEncashment", "jobSummary", "responsibilities", "medical"].includes(f.id))
-                .map(field => (
+              {getSortedFieldsForSection(["attendance", "probation", "contractPeriod", "noticePeriod"]).map((field) => (
                   <React.Fragment key={field.id}>
                     {renderField(field)}
                     {/* Notice Period Subsections after noticePeriod field */}
@@ -2276,17 +2907,38 @@ const [searchTerm, setSearchTerm] = useState("");
           )}
         </div>
 
-        {/* Roles & Responsibilities Section */}
-        <div 
-          ref={rolesSectionRef}
+        {/* Policies & Clauses Section */}
+        <div
+          ref={additionalTermsSectionRef}
           style={{
+            order: 5,
             borderRadius: "0.8rem",
             padding: "0.65rem",
             border: "1px solid rgba(148 163 184/ 25%)",
             background: "rgba(255 255 255/ 84%)",
             transition: "background-color 0.3s ease",
             boxShadow: "0 1px 2px rgba(15 23 42/ 5%)",
-            outline: highlightedSection === "roles" ? "2px solid rgba(0 0 139/ 28%)" : "none"
+          }}
+        >
+          {renderSectionHeader("additionalTerms", "Policies & Clauses", <Shield width="1.1rem" />, "Visa, medical, leave entitlements & more")}
+          {!sectionsCollapsed.additionalTerms && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {getSortedFieldsForSection(["annualLeave", "gratuity", "leaveEncashment", "visaStatus", "medicalTerms", "incrementTerms", "workingHours", "medical"]).map((field) => renderField(field))}
+            </div>
+          )}
+        </div>
+
+        {/* Roles & Responsibilities Section */}
+        <div 
+          ref={rolesSectionRef}
+          style={{
+            order: 6,
+            borderRadius: "0.8rem",
+            padding: "0.65rem",
+            border: "1px solid rgba(148 163 184/ 25%)",
+            background: "rgba(255 255 255/ 84%)",
+            transition: "background-color 0.3s ease",
+            boxShadow: "0 1px 2px rgba(15 23 42/ 5%)",
           }}
         >
           {renderSectionHeader("roles", "Roles & Responsibilities", <FileText width="1.1rem" />, "Detailed job duties")}
@@ -2406,13 +3058,13 @@ const [searchTerm, setSearchTerm] = useState("");
           <div 
             ref={customSectionRef}
             style={{
+              order: 7,
               borderRadius: "0.8rem",
               padding: "0.65rem",
               border: "1px solid rgba(148 163 184/ 25%)",
               background: "rgba(255 255 255/ 84%)",
               transition: "background-color 0.3s ease",
               boxShadow: "0 1px 2px rgba(15 23 42/ 5%)",
-              outline: highlightedSection === "custom" ? "2px solid rgba(0 0 139/ 28%)" : "none"
             }}
           >
             {renderSectionHeader("custom", "Custom Fields", <Sparkles width="1.1rem" />, "Additional fields")}
@@ -2426,6 +3078,32 @@ const [searchTerm, setSearchTerm] = useState("");
           </div>
         )}
       </div>
+
+      {showInputScrollTopButton && (
+        <button
+          onClick={handleInputScrollToTop}
+          title="Scroll to top"
+          style={{
+            position: "absolute",
+            right: "1rem",
+            bottom: "1rem",
+            width: "2.2rem",
+            height: "2.2rem",
+            borderRadius: "0.65rem",
+            border: "1px solid rgba(0 0 139/ 24%)",
+            background: "rgba(0 0 139/ 92%)",
+            color: "white",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 8px 20px rgba(15 23 42/ 18%)",
+            zIndex: 15,
+          }}
+        >
+          <ChevronUp width="1rem" />
+        </button>
+      )}
     </div>
   );
 
@@ -2465,7 +3143,8 @@ const [searchTerm, setSearchTerm] = useState("");
 
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
           <input
-            style={{ width: "fit-content" }}
+            className="preview-date-input"
+            style={{ width: "fit-content", colorScheme: "light" }}
             type="date"
             name="date"
             value={formData.date}
@@ -2497,6 +3176,45 @@ const [searchTerm, setSearchTerm] = useState("");
           }
         </div>
       </div>
+
+      {showPreviewJumpTip && (
+        <div
+          style={{
+            marginLeft: "1rem",
+            marginBottom: "0.75rem",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.45rem",
+            fontSize: "0.72rem",
+
+            background: "linear-gradient(180deg, rgba(248 250 252/ 95%), rgba(241 245 249/ 90%))",
+            border: "1px solid rgba(100 116 139/ 22%)",
+            borderRadius: "0.5rem",
+            padding: "0.35rem 0.55rem",
+            fontWeight:"500"
+          }}
+        >
+          <Sparkles color="darkblue" width="0.78rem" />
+          <span><b style={{fontWeight:800}}>Tip </b> Click any row or clause title to jump to and highlight its input field.</span>
+          <button
+            type="button"
+            onClick={handleDismissPreviewJumpTip}
+            aria-label="Dismiss tip"
+            style={{
+              border: "none",
+              background: "transparent",
+              color: "rgba(15 23 42/ 68%)",
+              cursor: "pointer",
+              fontSize: "0.7rem",
+              fontWeight: 600,
+              padding: "0 0 0 0.25rem",
+              lineHeight: 1,
+            }}
+          >
+            <X size="0.9rem" />
+          </button>
+        </div>
+      )}
 
       <div
         ref={tableRef}
@@ -2588,7 +3306,7 @@ const [searchTerm, setSearchTerm] = useState("");
             fontSize: "0.8rem",
             cursor: "pointer"
           }}
-          onClick={() => scrollToSection("basic")}
+          onClick={() => scrollToSection("basic", "position")}
         >
           We at <b>Sohar Star United LLC</b>, Sohar, Sultanate of Oman, are
           delighted to offer you the position of{" "}
@@ -2600,7 +3318,8 @@ const [searchTerm, setSearchTerm] = useState("");
         {/* Details Table */}
         <table
           style={{
-            width: "100%",
+            width: "calc(100% - 22px)",
+            marginLeft: "22px",
             borderCollapse: "collapse",
             marginBottom: "2rem",
             fontSize: "0.9rem",
@@ -2615,15 +3334,15 @@ const [searchTerm, setSearchTerm] = useState("");
             <col style={{ width: "65%" }} />
           </colgroup>
           <DndContext
-            sensors={sensors}
+            sensors={previewDragEnabled ? sensors : []}
             collisionDetection={closestCenter}
-            onDragEnd={handleFieldDragEnd}
+            onDragEnd={previewDragEnabled ? handleFieldDragEnd : undefined}
           >
             <SortableContext
               items={fieldConfig.filter(f => f.enabled && f.section === "table").map(f => f.id)}
               strategy={verticalListSortingStrategy}
             >
-              <tbody style={{}}>
+              <tbody style={{}} onClick={handlePreviewTableClick}>
                 {/* Render fields dynamically based on fieldConfig order */}
                 {fieldConfig
                   .filter(f => f.enabled && f.section === "table")
@@ -2631,7 +3350,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     // Handle special field rendering
                     if (field.id === "candidateName") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.candidateName || "[Candidate Name]"}
@@ -2641,7 +3360,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "passportNumber") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.passportNumber || "[Passport Number]"}
@@ -2651,7 +3370,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "position") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.position || "[Position]"}
@@ -2661,7 +3380,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "workLocation") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.workLocation || "Anywhere in Oman"}
@@ -2671,7 +3390,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "salary") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         OMR {formData.salary || "[Basic Salary]"}
@@ -2682,7 +3401,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 if (field.id === "allowance") {
                   return (
                     <React.Fragment key={field.id}>
-                      <SortableTableRow key="allowance-main" id={field.id}>
+                      <SortableTableRow dragEnabled={previewDragEnabled} key="allowance-main" id={field.id}>
                         <td style={leftColumnStyle}>{field.label}</td>
                         <td style={tableCellStyle}>
                           {formData.allowance || "N/A"}
@@ -2705,7 +3424,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "attendance") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={{ ...leftColumnStyle, textAlign: "left" }}>Site/ Office Attendance, including overtime</td>
                       <td style={tableCellStyle}>
                         {formData.attendance || "N/A"}
@@ -2715,7 +3434,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "probation") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.probation || "N/A"}
@@ -2725,7 +3444,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "reportingDate") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.reportingDate
@@ -2737,7 +3456,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "contractPeriod") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.contractPeriod || "N/A"}
@@ -2748,7 +3467,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 if (field.id === "noticePeriod") {
                   return (
                     <React.Fragment key={field.id}>
-                      <SortableTableRow key="noticePeriod-main" id={field.id}>
+                      <SortableTableRow dragEnabled={previewDragEnabled} key="noticePeriod-main" id={field.id}>
                         <td style={{ ...leftColumnStyle, border: "none" }}>
                           {field.label}
                         </td>
@@ -2769,7 +3488,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "accomodation") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>Accommodation</td>
                       <td style={tableCellStyle}>
                         {formData.accomodation || "Single Room Bachelors Accommodation shall be provided by the Company"}
@@ -2779,7 +3498,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "food") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.food || "Shall be provided by the Company in Site Office and at Camp"}
@@ -2789,7 +3508,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "transport") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.transport || "A Car shall be provided by the Company for official use only"}
@@ -2799,7 +3518,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "communication") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.communication || "A postpaid Company SIM shall be provided for official use only"}
@@ -2809,7 +3528,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "insurance") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.insurance || "WC, Medical & Group Life Insurance, under the Company account"}
@@ -2819,7 +3538,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "annualLeave") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.annualLeave || "No leave shall be granted throughout the project unless there is an extreme emergency."}
@@ -2829,7 +3548,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "gratuity") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={tableCellStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.gratuity || "N/A"}
@@ -2839,7 +3558,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "leaveEncashment") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.leaveEncashment || "N/A"}
@@ -2849,7 +3568,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
                 if (field.id === "grossSalary") {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         OMR{" "}
@@ -2876,7 +3595,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 // Custom fields
                 if (field.isCustom) {
                   return (
-                    <SortableTableRow key={field.id} id={field.id}>
+                    <SortableTableRow dragEnabled={previewDragEnabled} key={field.id} id={field.id}>
                       <td style={leftColumnStyle}>{field.label}</td>
                       <td style={tableCellStyle}>
                         {formData.customFields?.[field.id] || "N/A"}
@@ -3140,9 +3859,13 @@ const [searchTerm, setSearchTerm] = useState("");
           );
           return clauses.map((clause, idx) => {
             // Map clause titles to sections
-            const getSectionForClause = (title: string) => {
-              if (title === "Air Passage") return "benefits";
-              return "terms"; // All other clauses are in terms section
+            const getTargetForClause = (title: string): { section: string; fieldId?: string } => {
+              if (title === "Air Passage") return { section: "benefits", fieldId: "airPassage" };
+              if (title === "Visa Status") return { section: "terms", fieldId: "visaStatus" };
+              if (title === "Medical") return { section: "terms", fieldId: "medicalTerms" };
+              if (title === "Increment Terms") return { section: "terms", fieldId: "incrementTerms" };
+              if (title === "Working Hours") return { section: "terms", fieldId: "workingHours" };
+              return { section: "terms" };
             };
 
             return (
@@ -3157,7 +3880,10 @@ const [searchTerm, setSearchTerm] = useState("");
                     fontSize: "0.9rem",
                     cursor: "pointer"
                   }}
-                  onClick={() => scrollToSection(getSectionForClause(clause.title))}
+                  onClick={() => {
+                    const target = getTargetForClause(clause.title);
+                    scrollToSection(target.section, target.fieldId);
+                  }}
                 >
                   ({idx + 1}) {clause.title}
                 </h3>
@@ -3488,7 +4214,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     width: "100%",
                     fontSize: "0.9rem",
                     padding: "0.5rem 1rem",
-                    background: pdfLoading ? "darkblue" : "darkslateblue",
+                    background: pdfLoading ? "darkslateblue" : "darkblue",
                     color: "white",
                     border: "none",
                     borderRadius: "0.5rem",
@@ -3766,7 +4492,7 @@ const [searchTerm, setSearchTerm] = useState("");
               onChange={(e) => setSearchTerm(e.target.value)}
               onFocus={(e) => {
                 e.currentTarget.style.borderColor = "darkblue";
-                e.currentTarget.style.background = "rgba(123 104 238/ 0.05)";
+                e.currentTarget.style.background = "rgba(0 0 139/ 0.05)";
               }}
               onBlur={(e) => {
                 e.currentTarget.style.borderColor = "rgba(100 100 100/ 15%)";
@@ -4099,6 +4825,32 @@ const [searchTerm, setSearchTerm] = useState("");
         .preview i {
           font-style: italic;
         }
+        .preview-date-input {
+          border: 1px solid rgba(15 23 42/ 18%);
+          border-radius: 0.5rem;
+          padding: 0.35rem 0.55rem;
+          color: rgba(15 23 42/ 92%);
+          background: rgba(255 255 255/ 95%);
+        }
+        .preview-date-input::-webkit-calendar-picker-indicator {
+          cursor: pointer;
+          filter: brightness(0) saturate(100%) invert(12%) sepia(97%) saturate(2524%) hue-rotate(236deg) brightness(91%) contrast(115%);
+          opacity: 0.95;
+        }
+        @keyframes fieldFocusPulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(0 0 139/ 0%);
+            background: rgba(255 255 255/ 82%);
+          }
+          45% {
+            box-shadow: 0 0 0 5px rgba(0 0 139/ 16%);
+            background: rgba(237 244 255/ 95%);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(0 0 139/ 0%);
+            background: rgba(255 255 255/ 82%);
+          }
+        }
       `}</style>
 
       <Modal
@@ -4267,9 +5019,9 @@ const [searchTerm, setSearchTerm] = useState("");
                 }}
                 onFocus={(e) => {
                   e.currentTarget.style.outline = "none";
-                  e.currentTarget.style.borderColor = "skyblue";
+                  e.currentTarget.style.borderColor = "darkblue";
                   e.currentTarget.style.boxShadow =
-                    "0 0 0 2px rgba(135, 206, 235, 0.2)";
+                    "0 0 0 2px rgba(0 0 139/ 0.15)";
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = "rgba(100 100 100/ 20%)";
@@ -4375,64 +5127,140 @@ const [searchTerm, setSearchTerm] = useState("");
       {/* Field Configuration Dialog */}
       <ResponsiveModal
         open={fieldConfigDialogVisible}
-        onOpenChange={setFieldConfigDialogVisible}
+        onOpenChange={handleFieldConfigDialogChange}
         title="Manage Fields"
-        description="Configure which fields to show and customize their labels"
+        contentStyle={{ maxWidth: "760px" }}
+      
       >
-        <div style={{ 
-          display: "flex", 
-          flexDirection: "column", 
-          height: "70vh",
-          maxHeight: "700px",
-          overflow: "hidden"
-        }}>
-          {/* Add Custom Field Section - Sticky */}
-          <div
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "70vh",
+            maxHeight: "700px",
+            overflow: "hidden",
+            background: "rgba(248 250 252/ 75%)",
+            gap: "1rem",
+          }}
+        >
+          {/* <div
             style={{
-              padding: "1rem 1.5rem",
-              borderBottom: "1px solid rgba(100 100 100/ 15%)",
-              background: "var(--background)",
+              padding: "0.75rem 1.25rem",
+              borderBottom: "1px solid rgba(15 23 42/ 10%)",
+              background: "rgba(255 255 255/ 94%)",
               flexShrink: 0,
             }}
           >
-            <div style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              gap: "0.5rem", 
-              marginBottom: "0.75rem" 
-            }}>
-              <Sparkles width="1rem" style={{ color: "darkblue" }} />
-              <h3 style={{ fontSize: "0.95rem", fontWeight: "600", margin: 0 }}>
-                Add Custom Field
-              </h3>
-            </div>
-            
-            <div style={{ 
-              display: "flex", 
-              flexWrap: "wrap",
+            <p style={{ margin: 0, fontSize: "0.75rem", color: "rgba(15 23 42/ 60%)" }}>
+              Drag rows to reorder and toggle visibility.
+            </p>
+          </div> */}
+
+          <div
+            ref={fieldListScrollRef}
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              overflowX: "hidden",
+              paddingLeft: "0.75rem",
+              paddingRight: "0.75rem",
+              paddingTop: "0.6rem",
+              paddingBottom: "0.6rem",
+              display: "flex",
+              flexDirection: "column",
               gap: "0.5rem",
-            }}>
-              <input
-                type="text"
-                value={newFieldName}
-                onChange={(e) => setNewFieldName(e.target.value)}
-                placeholder="Field name"
-                style={{
-                  flex: "1 1 200px",
-                  minWidth: "150px",
-                  padding: "0.625rem 0.75rem",
-                  borderRadius: "0.5rem",
-                  fontSize: "0.875rem",
-                }}
-              />
+            }}
+          >
+            {renderFieldConfigSection(
+              "table",
+              "Table Fields",
+              <Database width="1rem" style={{ color: "darkblue" }} />
+            )}
+
+            {renderFieldConfigSection(
+              "paragraph",
+              "Paragraph Fields",
+              <FileText width="1rem" style={{ color: "darkblue" }} />
+            )}
+          </div>
+
+          {/* Bottom button area */}
+          <div
+            style={{
+              paddingLeft: "0.75rem",
+              paddingRight: "0.75rem",
+              paddingBottom: "0.6rem",
+              paddingTop: "0.5rem",
+              borderTop: "1px solid rgba(15 23 42/ 10%)",
+              background: "rgba(255 255 255/ 94%)",
+              flexShrink: 0,
+            }}
+          >
+            <button
+              onClick={() => setAddCustomFieldDialogVisible(true)}
+              style={{
+                width: "100%",
+                background: "rgba(255 255 255/ 10%)",
+                color: "darkblue",
+                border: "1px solid rgba(0 0 139/ 20%)",
+                padding: "0.5rem",
+                borderRadius: "0.45rem",
+                cursor: "pointer",
+                fontSize: "0.8rem",
+                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.35rem",
+              }}
+            >
+              <Plus width="0.75rem" />
+              Add Custom Field
+            </button>
+          </div>
+        </div>
+      </ResponsiveModal>
+
+      {/* Add Custom Field Dialog */}
+      <ResponsiveModal
+        open={addCustomFieldDialogVisible}
+        onOpenChange={setAddCustomFieldDialogVisible}
+        title="Add Custom Field"
+        // description="Create a new field to add to your offer letter"
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <div>
+            <label style={{ fontSize: "0.72rem", fontWeight: 600, color: "rgba(15 23 42/ 80%)", marginBottom: "0.3rem", display: "block" }}>
+              Field Name
+            </label>
+            <input
+              type="text"
+              value={newFieldName}
+              onChange={(e) => setNewFieldName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAddCustomField();
+              }}
+              placeholder="Enter field name"
+              autoFocus
+              style={{
+                width: "100%",
+                padding: "0.5rem 0.6rem",
+                borderRadius: "0.45rem",
+                border: "1px solid rgba(15 23 42/ 15%)",
+                background: "rgba(255 255 255/ 95%)",
+                fontSize: "0.8rem",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: "0.72rem", fontWeight: 600, color: "rgba(15 23 42/ 80%)", marginBottom: "0.3rem", display: "block" }}>
+                Field Type
+              </label>
               <Select value={newFieldType} onValueChange={(value: FieldType) => setNewFieldType(value)}>
-                <SelectTrigger 
-                  style={{
-                    flex: "0 0 auto",
-                    minWidth: "110px",
-                    padding: "0.625rem 0.75rem",
-                  }}
-                >
+                <SelectTrigger style={{ padding: "0.5rem 0.6rem", fontSize: "0.8rem" }}>
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent position="popper">
@@ -4442,14 +5270,14 @@ const [searchTerm, setSearchTerm] = useState("");
                   <SelectItem value="date">Date</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: "0.72rem", fontWeight: 600, color: "rgba(15 23 42/ 80%)", marginBottom: "0.3rem", display: "block" }}>
+                Section
+              </label>
               <Select value={newFieldSection} onValueChange={(value: "table" | "paragraph") => setNewFieldSection(value)}>
-                <SelectTrigger 
-                  style={{
-                    flex: "0 0 auto",
-                    minWidth: "110px",
-                    padding: "0.625rem 0.75rem",
-                  }}
-                >
+                <SelectTrigger style={{ padding: "0.5rem 0.6rem", fontSize: "0.8rem" }}>
                   <SelectValue placeholder="Section" />
                 </SelectTrigger>
                 <SelectContent position="popper">
@@ -4457,463 +5285,63 @@ const [searchTerm, setSearchTerm] = useState("");
                   <SelectItem value="paragraph">Paragraph</SelectItem>
                 </SelectContent>
               </Select>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleAddCustomField}
-                style={{
-                  flex: "0 0 auto",
-                  background: "darkblue",
-                  color: "white",
-                  border: "none",
-                  padding: "0.625rem 1rem",
-                  borderRadius: "0.5rem",
-                  cursor: "pointer",
-                  fontSize: "0.875rem",
-                  fontWeight: "500",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                }}
-              >
-                <Plus width="1rem" />
-                <span style={{ whiteSpace: "nowrap" }}>Add Field</span>
-              </motion.button>
             </div>
           </div>
 
-          {/* Scrollable Field List */}
-          <div 
-            ref={fieldListScrollRef}
-            style={{ 
-              flex: 1,
-              overflowY: "auto",
-              overflowX: "hidden",
-              padding: "1rem 1.5rem",
-            }}
-          >
-            {/* Table Fields Section */}
-            <div style={{ marginBottom: "2rem" }}>
-              <div style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                gap: "0.5rem",
-                marginBottom: "0.75rem",
-                paddingBottom: "0.5rem",
-                borderBottom: "2px solid rgba(0 0 139/ 20%)"
-              }}>
-                <Database width="1rem" style={{ color: "rgb(59 130 246)" }} />
-                <h4 style={{ 
-                  fontSize: "0.9rem", 
-                  fontWeight: "600",
-                  margin: 0,
-                  color: "rgb(59 130 246)"
-                }}>
-                  Table Fields
-                </h4>
-                <span style={{ 
-                  fontSize: "0.7rem", 
-                  opacity: 0.6,
-                  marginLeft: "auto"
-                }}>
-                  {fieldConfig.filter(f => f.section === "table" && f.enabled).length} active
-                </span>
-              </div>
-              
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                {fieldConfig.filter(f => f.section === "table").map((field) => {
-                  const index = fieldConfig.indexOf(field);
-                  return (
-                    <motion.div
-                      key={field.id}
-                      draggable
-                      onDragStart={() => handleDragStart(index)}
-                      onDragOver={(e) => handleDragOver(e, index)}
-                      onDragEnd={handleDragEnd}
-                      whileHover={{ scale: draggedFieldIndex !== index ? 1.01 : 1 }}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.75rem",
-                        padding: "0.75rem",
-                        background: draggedFieldIndex === index
-                          ? "rgba(123 104 238/ 15%)"
-                          : field.enabled
-                          ? "rgba(100 100 100/ 4%)"
-                          : "rgba(100 100 100/ 2%)",
-                        borderRadius: "0.625rem",
-                        border: `1px solid ${
-                          draggedFieldIndex === index
-                            ? "rgba(123 104 238/ 40%)"
-                            : field.enabled
-                            ? "rgba(100 100 100/ 15%)"
-                            : "rgba(100 100 100/ 8%)"
-                        }`,
-                        opacity: draggedFieldIndex === index ? 0.6 : field.enabled ? 1 : 0.5,
-                        cursor: "grab",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
-                    {/* Drag Handle */}
-                    <div
-                      style={{
-                        cursor: "grab",
-                        display: "flex",
-                        alignItems: "center",
-                        color: "rgba(123 104 238/ 70%)",
-                      }}
-                    >
-                      <GripVertical width="1.2rem" />
-                    </div>
-                    <Checkbox
-                      checked={field.enabled}
-                      onCheckedChange={() => handleToggleField(field.id)}
-                      title={field.enabled ? "Click to hide this field" : "Click to show this field"}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        {editingFieldId === field.id ? (
-                          <>
-                            <input
-                              type="text"
-                              value={editingFieldLabel}
-                              onChange={(e) => setEditingFieldLabel(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSaveFieldLabel();
-                                if (e.key === "Escape") handleCancelEditFieldLabel();
-                              }}
-                              autoFocus
-                              style={{
-                                flex: 1,
-                                padding: "0.25rem 0.5rem",
-                                borderRadius: "0.25rem",
-                                border: "1px solid rgba(123 104 238/ 50%)",
-                                fontSize: "0.9rem",
-                                fontWeight: 500,
-                              }}
-                            />
-                            <button
-                              onClick={handleSaveFieldLabel}
-                              style={{
-                                background: "rgba(34 197 94/ 20%)",
-                                border: "1px solid rgba(34 197 94/ 40%)",
-                                color: "#86efac",
-                                cursor: "pointer",
-                                padding: "0.25rem",
-                                borderRadius: "0.25rem",
-                                display: "flex",
-                                alignItems: "center",
-                              }}
-                              title="Save (Enter)"
-                            >
-                              <Check width="0.9rem" />
-                            </button>
-                            <button
-                              onClick={handleCancelEditFieldLabel}
-                              style={{
-                                background: "rgba(239 68 68/ 20%)",
-                                border: "1px solid rgba(239 68 68/ 40%)",
-                                color: "#fca5a5",
-                                cursor: "pointer",
-                                padding: "0.25rem",
-                                borderRadius: "0.25rem",
-                                display: "flex",
-                                alignItems: "center",
-                              }}
-                              title="Cancel (Esc)"
-                            >
-                              <FileX width="0.9rem" />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <div style={{ fontWeight: 500, fontSize: "0.9rem", color: "black" }}>
-                              {field.label}
-                              {field.isCustom && (
-                                <span
-                                  style={{
-                                    marginLeft: "0.5rem",
-                                    fontSize: "0.7rem",
-                                    color: "#b8a3ff",
-                                    background: "rgba(123 104 238/ 25%)",
-                                    padding: "0.15rem 0.5rem",
-                                    borderRadius: "0.25rem",
-                                  }}
-                                >
-                                  Custom
-                                </span>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => handleStartEditFieldLabel(field.id, field.label)}
-                              style={{
-                                background: "rgba(123 104 238/ 15%)",
-                                border: "1px solid rgba(123 104 238/ 30%)",
-                                color: "#b8a3ff",
-                                cursor: "pointer",
-                                padding: "0.25rem",
-                                borderRadius: "0.25rem",
-                                display: "flex",
-                                alignItems: "center",
-                              }}
-                              title="Edit field name"
-                            >
-                              <Pencil width="0.8rem" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "rgba(255 255 255/ 60%)",
-                          marginTop: "0.25rem",
-                        }}
-                      >
-                        Type: {field.type}
-                      </div>
-                    </div>
-                  </div>
-                  {field.isCustom && (
-                    <button
-                      onClick={() => handleRemoveCustomField(field.id)}
-                      style={{
-                        background: "rgba(205 92 92/ 15%)",
-                        border: "1px solid rgba(205 92 92/ 30%)",
-                        color: "#ff9999",
-                        cursor: "pointer",
-                        padding: "0.25rem 0.5rem",
-                        borderRadius: "0.25rem",
-                        fontSize: "0.8rem",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.25rem",
-                      }}
-                    >
-                      <Trash2 width="0.9rem" />
-                      Remove
-                    </button>
-                  )}
-                </motion.div>
-              );
-            })}
-              </div>
-            </div>
-
-            {/* Paragraph Fields Section */}
-            <div>
-              <div style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                gap: "0.5rem",
-                marginBottom: "0.75rem",
-                paddingBottom: "0.5rem",
-                borderBottom: "2px solid rgba(168 85 247/ 20%)"
-              }}>
-                <FileText width="1rem" style={{ color: "rgb(168 85 247)" }} />
-                <h4 style={{ 
-                  fontSize: "0.9rem", 
-                  fontWeight: "600",
-                  margin: 0,
-                  color: "rgb(168 85 247)"
-                }}>
-                  Paragraph Fields
-                </h4>
-                <span style={{ 
-                  fontSize: "0.7rem", 
-                  opacity: 0.6,
-                  marginLeft: "auto"
-                }}>
-                  {fieldConfig.filter(f => f.section === "paragraph" && f.enabled).length} active
-                </span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                {fieldConfig.filter(f => f.section === "paragraph").map((field) => {
-                  const index = fieldConfig.indexOf(field);
-                  return (
-                    <motion.div
-                      key={field.id}
-                      draggable
-                      onDragStart={() => handleDragStart(index)}
-                      onDragOver={(e) => handleDragOver(e, index)}
-                      onDragEnd={handleDragEnd}
-                      whileHover={{ scale: draggedFieldIndex !== index ? 1.01 : 1 }}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.75rem",
-                        padding: "0.75rem",
-                        background: draggedFieldIndex === index
-                          ? "rgba(123 104 238/ 15%)"
-                          : field.enabled
-                          ? "rgba(100 100 100/ 4%)"
-                          : "rgba(100 100 100/ 2%)",
-                        borderRadius: "0.625rem",
-                        border: `1px solid ${
-                          draggedFieldIndex === index
-                            ? "rgba(123 104 238/ 40%)"
-                            : field.enabled
-                            ? "rgba(100 100 100/ 15%)"
-                            : "rgba(100 100 100/ 8%)"
-                        }`,
-                        opacity: draggedFieldIndex === index ? 0.6 : field.enabled ? 1 : 0.5,
-                        cursor: "grab",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
-                        {/* Drag Handle */}
-                        <div
-                          style={{
-                            cursor: "grab",
-                            display: "flex",
-                            alignItems: "center",
-                            color: "rgba(123 104 238/ 70%)",
-                          }}
-                        >
-                          <GripVertical width="1.2rem" />
-                        </div>
-                        <Checkbox
-                          checked={field.enabled}
-                          onCheckedChange={() => handleToggleField(field.id)}
-                          title={field.enabled ? "Click to hide this field" : "Click to show this field"}
-                        />
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                            {editingFieldId === field.id ? (
-                              <>
-                                <input
-                                  type="text"
-                                  value={editingFieldLabel}
-                                  onChange={(e) => setEditingFieldLabel(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleSaveFieldLabel();
-                                    if (e.key === "Escape") handleCancelEditFieldLabel();
-                                  }}
-                                  autoFocus
-                                  style={{
-                                    flex: 1,
-                                    padding: "0.25rem 0.5rem",
-                                    borderRadius: "0.25rem",
-                                    border: "1px solid rgba(123 104 238/ 50%)",
-                                    background: "rgba(255 255 255/ 10%)",
-                                    color: "white",
-                                    fontSize: "0.9rem",
-                                    fontWeight: 500,
-                                  }}
-                                />
-                                <button
-                                  onClick={handleSaveFieldLabel}
-                                  style={{
-                                    background: "rgba(34 197 94/ 20%)",
-                                    border: "1px solid rgba(34 197 94/ 40%)",
-                                    color: "#86efac",
-                                    cursor: "pointer",
-                                    padding: "0.25rem",
-                                    borderRadius: "0.25rem",
-                                    display: "flex",
-                                    alignItems: "center",
-                                  }}
-                                  title="Save (Enter)"
-                                >
-                                  <Check width="0.9rem" />
-                                </button>
-                                <button
-                                  onClick={handleCancelEditFieldLabel}
-                                  style={{
-                                    background: "rgba(239 68 68/ 20%)",
-                                    border: "1px solid rgba(239 68 68/ 40%)",
-                                    color: "#fca5a5",
-                                    cursor: "pointer",
-                                    padding: "0.25rem",
-                                    borderRadius: "0.25rem",
-                                    display: "flex",
-                                    alignItems: "center",
-                                  }}
-                                  title="Cancel (Esc)"
-                                >
-                                  <FileX width="0.9rem" />
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <div style={{ fontWeight: 500, fontSize: "0.9rem" }}>
-                                  {field.label}
-                                  {field.isCustom && (
-                                    <span
-                                      style={{
-                                        marginLeft: "0.5rem",
-                                        fontSize: "0.7rem",
-                                        color: "#8b5cf6",
-                                        background: "rgba(123 104 238/ 15%)",
-                                        padding: "0.15rem 0.5rem",
-                                        borderRadius: "0.25rem",
-                                      }}
-                                    >
-                                      Custom
-                                    </span>
-                                  )}
-                                </div>
-                                <button
-                                  onClick={() => handleStartEditFieldLabel(field.id, field.label)}
-                                  style={{
-                                    background: "rgba(123 104 238/ 15%)",
-                                    border: "1px solid rgba(123 104 238/ 30%)",
-                                    color: "#b8a3ff",
-                                    cursor: "pointer",
-                                    padding: "0.25rem",
-                                    borderRadius: "0.25rem",
-                                    display: "flex",
-                                    alignItems: "center",
-                                  }}
-                                  title="Edit field name"
-                                >
-                                  <Pencil width="0.8rem" />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: "0.75rem",
-                              opacity: 0.6,
-                              marginTop: "0.25rem",
-                            }}
-                          >
-                            Type: {field.type}
-                          </div>
-                        </div>
-                      </div>
-                      {field.isCustom && (
-                        <button
-                          onClick={() => handleRemoveCustomField(field.id)}
-                          style={{
-                            background: "rgba(205 92 92/ 15%)",
-                            border: "1px solid rgba(205 92 92/ 30%)",
-                            color: "#ff9999",
-                            cursor: "pointer",
-                            padding: "0.25rem 0.5rem",
-                            borderRadius: "0.25rem",
-                            fontSize: "0.8rem",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.25rem",
-                          }}
-                        >
-                          <Trash2 width="0.9rem" />
-                          Remove
-                        </button>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
+          <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.2rem" }}>
+            <button
+              onClick={() => {
+                setAddCustomFieldDialogVisible(false);
+                setNewFieldName("");
+                setNewFieldType("text");
+                setNewFieldSection("table");
+              }}
+              style={{
+                flex: 1,
+                padding: "0.5rem",
+                borderRadius: "0.4rem",
+                border: "1px solid rgba(15 23 42/ 15%)",
+                background: "rgba(15 23 42/ 4%)",
+                color: "rgba(15 23 42/ 80%)",
+                cursor: "pointer",
+                fontSize: "0.76rem",
+                fontWeight: 500,
+              }}
+            >
+              Cancel
+            </button>
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => {
+                handleAddCustomField();
+                setAddCustomFieldDialogVisible(false);
+              }}
+              style={{
+                flex: 1,
+                padding: "0.5rem",
+                borderRadius: "0.4rem",
+                background: "darkblue",
+                color: "white",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "0.76rem",
+                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.35rem",
+              }}
+            >
+              <Plus width="0.7rem" />
+              Add Field
+            </motion.button>
           </div>
         </div>
       </ResponsiveModal>
+
     </>
   );
 }
+
 
