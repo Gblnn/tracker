@@ -1,4 +1,4 @@
-import Back from "@/components/back";
+﻿import Back from "@/components/back";
 import { Checkbox } from "@/components/ui/checkbox";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { ResponsiveModal } from "@/components/responsive-modal";
@@ -105,7 +105,17 @@ const styles = {
 
 // Input style for all fields
 const inputStyle = {
-  fontSize: "1rem",
+  width: "100%",
+  fontSize: "0.92rem",
+  lineHeight: 1.4,
+  padding: "0.65rem 0.75rem",
+  borderRadius: "0.6rem",
+  border: "1px solid rgba(15 23 42/ 18%)",
+  background: "rgba(255 255 255/ 96%)",
+  color: "rgba(17 24 39/ 92%)",
+  outline: "none",
+  boxShadow: "0 1px 2px rgba(15 23 42/ 6%)",
+  transition: "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
 };
 
 // Table cell style for preview
@@ -1379,20 +1389,22 @@ const [searchTerm, setSearchTerm] = useState("");
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0.75rem 1rem",
-          background: "rgba(100 100 100/ 0.05)",
-          borderRadius: "0.5rem",
+          padding: "0.8rem 1rem",
+          background: "linear-gradient(135deg, rgba(0 0 139/ 10%), rgba(56 189 248/ 8%))",
+          border: "1px solid rgba(0 0 139/ 24%)",
+          borderRadius: "0.7rem",
           cursor: "pointer",
           marginTop: "1rem",
           marginBottom: "0.75rem",
-        
+
+          boxShadow: "0 1px 2px rgba(2 6 23/ 6%)",
           transition: "all 0.2s ease",
         }}
         
         
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <div style={{ color: "mediumslateblue", display: "flex", alignItems: "center" }}>
+          <div style={{ color: "darkblue", display: "flex", alignItems: "center" }}>
             {icon}
           </div>
           <div>
@@ -1406,7 +1418,7 @@ const [searchTerm, setSearchTerm] = useState("");
             )}
           </div>
         </div>
-        <div style={{ color: "mediumslateblue", display: "flex", alignItems: "center" }}>
+        <div style={{ color: "darkblue", display: "flex", alignItems: "center" }}>
           {isCollapsed ? <ChevronRight width="1.2rem" /> : <ChevronDown width="1.2rem" />}
         </div>
       </div>
@@ -1426,13 +1438,34 @@ const [searchTerm, setSearchTerm] = useState("");
           handleCustomFieldChange(field.id, e.target.value)
       : handleInputChange;
 
+    const handleFocusStyle = (
+      e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+      e.currentTarget.style.borderColor = "rgba(0 0 139/ 55%)";
+      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0 0 139/ 15%)";
+      e.currentTarget.style.background = "rgba(255 255 255/ 100%)";
+    };
+
+    const handleBlurStyle = (
+      e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+      e.currentTarget.style.borderColor = "rgba(15 23 42/ 18%)";
+      e.currentTarget.style.boxShadow = "0 1px 2px rgba(15 23 42/ 6%)";
+      e.currentTarget.style.background = "rgba(255 255 255/ 96%)";
+    };
+
     return (
       <div
         key={field.id}
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: "0.5rem",
+          gap: "0.45rem",
+          padding: "0.65rem",
+          borderRadius: "0.7rem",
+          border: "1px solid rgba(100 116 139/ 20%)",
+          background: "rgba(255 255 255/ 82%)",
+          boxShadow: "0 1px 2px rgba(15 23 42/ 4%)",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1471,6 +1504,8 @@ const [searchTerm, setSearchTerm] = useState("");
             name={field.id}
             value={value}
             onChange={onChange}
+            onFocus={handleFocusStyle}
+            onBlur={handleBlurStyle}
             placeholder={field.placeholder}
             rows={field.rows || 4}
             style={inputStyle}
@@ -1481,6 +1516,8 @@ const [searchTerm, setSearchTerm] = useState("");
             name={field.id}
             value={value}
             onChange={onChange}
+            onFocus={handleFocusStyle}
+            onBlur={handleBlurStyle}
             placeholder={field.placeholder}
             style={inputStyle}
           />
@@ -1499,6 +1536,11 @@ const [searchTerm, setSearchTerm] = useState("");
         fontSize: "0.8rem",
         maxHeight: "72%",
         width: "30%",
+        border: "1px solid rgba(100 116 139/ 22%)",
+        borderRadius: "1rem",
+        background: "linear-gradient(180deg, rgba(248 250 252/ 95%), rgba(241 245 249/ 90%))",
+        boxShadow: "0 16px 35px rgba(15 23 42/ 10%)",
+        overflow: "hidden",
       }}
     >
       {/* Fixed Header Section */}
@@ -1512,8 +1554,9 @@ const [searchTerm, setSearchTerm] = useState("");
           zIndex: 10,
           // boxShadow: "0 2px 8px rgba(0 0 0/ 10%)",
           display:"flex",
-          alignItems:"center",
-          justifyContent:"center",
+          alignItems:"stretch",
+          justifyContent:"stretch",
+          width: "100%",
         }}
       >
         {/* Toggle Button */}
@@ -1522,10 +1565,11 @@ const [searchTerm, setSearchTerm] = useState("");
           style={{
           
             position: "absolute",
-            right: "",
+            left: "50%",
+            transform: "translateX(-50%)",
             top: headerVisible ? "auto" : "0.5rem",
             bottom: headerVisible ? "-0.75rem" : "auto",
-            background: "mediumslateblue",
+            background: "darkblue",
             color: "white",
             border: "none",
             borderRadius: "50%",
@@ -1557,7 +1601,7 @@ const [searchTerm, setSearchTerm] = useState("");
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
-              style={{ overflow: "hidden" }}
+              style={{ overflow: "hidden", width: "100%" }}
             >
               <div
                 style={{
@@ -1565,6 +1609,7 @@ const [searchTerm, setSearchTerm] = useState("");
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
+                  width: "100%",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -1619,7 +1664,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 color: "",
               }}
             >
-              <FileText width="1rem" color="mediumslateblue" />
+              <FileText width="1rem" color="darkblue" />
               <span>Presets</span>
               <div style={{ width: "7rem" }}></div>
             </div>
@@ -1628,7 +1673,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 onClick={() => setPresetDialogVisible(true)}
                 style={{
                   background: "rgba(100 100 100/ 0.025)",
-                  color: "mediumslateblue",
+                  color: "darkblue",
                   border: "none",
                   padding: "0.15rem 0.75rem",
                   borderRadius: "0.5rem",
@@ -1718,7 +1763,7 @@ const [searchTerm, setSearchTerm] = useState("");
                       willChange: "transform",
                     }}
                   >
-                    <MoreVertical color="mediumslateblue" width={"0.8rem"} />
+                    <MoreVertical color="darkblue" width={"0.8rem"} />
                   </motion.button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
@@ -1747,7 +1792,7 @@ const [searchTerm, setSearchTerm] = useState("");
                       !hasChanges ? "opacity-50 cursor-not-allowed" : ""
                     }
                   >
-                    <RefreshCcw color="mediumslateblue" className="w-4" />
+                    <RefreshCcw color="darkblue" className="w-4" />
                     <span>Update</span>
                     <p></p>
                   </DropdownMenuItem>
@@ -1808,7 +1853,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 }
               }}
             >
-              <RefreshCcw color="mediumslateblue" width={"0.8rem"} />
+              <RefreshCcw color="darkblue" width={"0.8rem"} />
               Update
             </button>
             <button
@@ -1864,7 +1909,7 @@ const [searchTerm, setSearchTerm] = useState("");
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Sparkles width="1rem" color="mediumslateblue" />
+            <Sparkles width="1rem" color="darkblue" />
             <span style={{ fontSize: "0.9rem", fontWeight: "500" }}>
               Manage Fields
             </span>
@@ -1873,7 +1918,7 @@ const [searchTerm, setSearchTerm] = useState("");
             onClick={() => setFieldConfigDialogVisible(true)}
             style={{
               background: "rgba(100 100 100/ 0.025)",
-              color: "mediumslateblue",
+              color: "darkblue",
               border: "none",
               padding: "0.15rem 0.75rem",
               borderRadius: "0.5rem",
@@ -1899,16 +1944,25 @@ const [searchTerm, setSearchTerm] = useState("");
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: "1.5rem",
-          paddingTop: headerVisible ? "1rem" : "3rem",
+          padding: "1rem",
+          paddingTop: headerVisible ? "0.75rem" : "2.75rem",
+          paddingBottom: "1.5rem",
           display: "flex",
           flexDirection: "column",
-          gap: "0.5rem",
+          gap: "0.75rem",
         }}
       >
         {/* Reference Number - Always visible */}
         <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.45rem",
+            padding: "0.75rem",
+            borderRadius: "0.7rem",
+            border: "1px solid rgba(100 116 139/ 20%)",
+            background: "rgba(255 255 255/ 85%)",
+          }}
         >
           <label
             style={{
@@ -1928,18 +1982,22 @@ const [searchTerm, setSearchTerm] = useState("");
             placeholder="Enter Reference Number"
             style={inputStyle}
           />
+          <span style={{ fontSize: "0.72rem", color: "rgba(30 41 59/ 70%)" }}>
+            Use a consistent format to keep references searchable.
+          </span>
         </div>
 
         {/* Basic Information Section */}
         <div 
           ref={basicSectionRef}
           style={{
-            borderRadius: "0.5rem",
-            padding: "0.5rem",
-            marginLeft: "-0.5rem",
-            marginRight: "-0.5rem",
+            borderRadius: "0.8rem",
+            padding: "0.65rem",
+            border: "1px solid rgba(148 163 184/ 25%)",
+            background: "rgba(255 255 255/ 84%)",
             transition: "background-color 0.3s ease",
-            background: highlightedSection === "basic" ? "rgba(100 150 255/ 15%)" : "transparent"
+            boxShadow: "0 1px 2px rgba(15 23 42/ 5%)",
+            outline: highlightedSection === "basic" ? "2px solid rgba(0 0 139/ 28%)" : "none"
           }}
         >
           {renderSectionHeader("basic", "Basic Information", <User width="1.1rem" />, "Candidate details")}
@@ -1956,12 +2014,13 @@ const [searchTerm, setSearchTerm] = useState("");
         <div 
           ref={compensationSectionRef}
           style={{
-            borderRadius: "0.5rem",
-            padding: "0.5rem",
-            marginLeft: "-0.5rem",
-            marginRight: "-0.5rem",
+            borderRadius: "0.8rem",
+            padding: "0.65rem",
+            border: "1px solid rgba(148 163 184/ 25%)",
+            background: "rgba(255 255 255/ 84%)",
             transition: "background-color 0.3s ease",
-            background: highlightedSection === "compensation" ? "rgba(100 150 255/ 15%)" : "transparent"
+            boxShadow: "0 1px 2px rgba(15 23 42/ 5%)",
+            outline: highlightedSection === "compensation" ? "2px solid rgba(0 0 139/ 28%)" : "none"
           }}
         >
           {renderSectionHeader("compensation", "Compensation", <CreditCard width="1.1rem" />, "Salary and allowances")}
@@ -2013,7 +2072,7 @@ const [searchTerm, setSearchTerm] = useState("");
                                 value={allowance.title}
                                 onChange={(e) => handleAllowanceChange(index, "title", e.target.value)}
                                 placeholder="Enter Allowance type"
-                                style={{ fontSize: "0.95rem" }}
+                                style={{ ...inputStyle, fontSize: "0.92rem" }}
                               />
                               <motion.button
                                 whileTap={{ scale: 0.95 }}
@@ -2039,7 +2098,7 @@ const [searchTerm, setSearchTerm] = useState("");
                               value={allowance.description}
                               onChange={(e) => handleAllowanceChange(index, "description", e.target.value)}
                               placeholder="Enter Allowance Amount"
-                              style={{ width: "100%", fontSize: "0.95rem", borderRadius: "0.5rem" }}
+                              style={{ ...inputStyle, fontSize: "0.92rem" }}
                             />
                           </motion.div>
                         ))}
@@ -2055,7 +2114,7 @@ const [searchTerm, setSearchTerm] = useState("");
                           justifyContent: "center",
                           gap: "0.5rem",
                           background: "rgba(100 100 100/ 10%)",
-                          color: "mediumslateblue",
+                          color: "darkblue",
                           border: "none",
                           padding: "0.5rem 1rem",
                           borderRadius: "0.5rem",
@@ -2080,12 +2139,13 @@ const [searchTerm, setSearchTerm] = useState("");
         <div 
           ref={benefitsSectionRef}
           style={{
-            borderRadius: "0.5rem",
-            padding: "0.5rem",
-            marginLeft: "-0.5rem",
-            marginRight: "-0.5rem",
+            borderRadius: "0.8rem",
+            padding: "0.65rem",
+            border: "1px solid rgba(148 163 184/ 25%)",
+            background: "rgba(255 255 255/ 84%)",
             transition: "background-color 0.3s ease",
-            background: highlightedSection === "benefits" ? "rgba(100 150 255/ 15%)" : "transparent"
+            boxShadow: "0 1px 2px rgba(15 23 42/ 5%)",
+            outline: highlightedSection === "benefits" ? "2px solid rgba(0 0 139/ 28%)" : "none"
           }}
         >
           {renderSectionHeader("benefits", "Benefits & Perks", <Gift width="1.1rem" />, "Accommodation, food, transport & more")}
@@ -2102,12 +2162,13 @@ const [searchTerm, setSearchTerm] = useState("");
         <div 
           ref={termsSectionRef}
           style={{
-            borderRadius: "0.5rem",
-            padding: "0.5rem",
-            marginLeft: "-0.5rem",
-            marginRight: "-0.5rem",
+            borderRadius: "0.8rem",
+            padding: "0.65rem",
+            border: "1px solid rgba(148 163 184/ 25%)",
+            background: "rgba(255 255 255/ 84%)",
             transition: "background-color 0.3s ease",
-            background: highlightedSection === "terms" ? "rgba(100 150 255/ 15%)" : "transparent"
+            boxShadow: "0 1px 2px rgba(15 23 42/ 5%)",
+            outline: highlightedSection === "terms" ? "2px solid rgba(0 0 139/ 28%)" : "none"
           }}
         >
           {renderSectionHeader("terms", "Terms & Conditions", <Shield width="1.1rem" />, "Contract, probation, leave & policies")}
@@ -2158,7 +2219,7 @@ const [searchTerm, setSearchTerm] = useState("");
                                 value={subsection}
                                 onChange={(e) => handleNoticePeriodSubsectionChange(index, e.target.value)}
                                 placeholder="Enter notice period subsection"
-                                style={{ width: "100%", fontSize: "0.95rem", borderRadius: "0.5rem" }}
+                                style={{ ...inputStyle, fontSize: "0.92rem" }}
                                 rows={2}
                               />
                               <motion.button
@@ -2194,7 +2255,7 @@ const [searchTerm, setSearchTerm] = useState("");
                             justifyContent: "center",
                             gap: "0.5rem",
                             background: "rgba(100 100 100/ 10%)",
-                            color: "mediumslateblue",
+                            color: "darkblue",
                             border: "none",
                             padding: "0.5rem 1rem",
                             borderRadius: "0.5rem",
@@ -2219,12 +2280,13 @@ const [searchTerm, setSearchTerm] = useState("");
         <div 
           ref={rolesSectionRef}
           style={{
-            borderRadius: "0.5rem",
-            padding: "0.5rem",
-            marginLeft: "-0.5rem",
-            marginRight: "-0.5rem",
+            borderRadius: "0.8rem",
+            padding: "0.65rem",
+            border: "1px solid rgba(148 163 184/ 25%)",
+            background: "rgba(255 255 255/ 84%)",
             transition: "background-color 0.3s ease",
-            background: highlightedSection === "roles" ? "rgba(100 150 255/ 15%)" : "transparent"
+            boxShadow: "0 1px 2px rgba(15 23 42/ 5%)",
+            outline: highlightedSection === "roles" ? "2px solid rgba(0 0 139/ 28%)" : "none"
           }}
         >
           {renderSectionHeader("roles", "Roles & Responsibilities", <FileText width="1.1rem" />, "Detailed job duties")}
@@ -2256,7 +2318,7 @@ const [searchTerm, setSearchTerm] = useState("");
                       value={role.title}
                       onChange={(e) => handleRoleChange(index, "title", e.target.value)}
                       placeholder="Enter role title"
-                      style={{ fontSize: "0.95rem" }}
+                      style={{ ...inputStyle, fontSize: "0.92rem" }}
                     />
                     <motion.button
                       whileTap={{ scale: 0.95 }}
@@ -2270,7 +2332,7 @@ const [searchTerm, setSearchTerm] = useState("");
                         alignItems: "center",
                         justifyContent: "center",
                         background: "rgba(100 100 100/ 10%)",
-                        color: "mediumslateblue",
+                        color: "darkblue",
                         
                         padding: "0.5rem 0.75rem",
                         borderRadius: "0.45rem",
@@ -2322,7 +2384,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 justifyContent: "center",
                 gap: "0.5rem",
                 background: "rgba(100 100 100/ 10%)",
-                color: "mediumslateblue",
+                color: "darkblue",
                 border: "none",
                 padding: "0.5rem 1rem",
                 borderRadius: "0.5rem",
@@ -2344,12 +2406,13 @@ const [searchTerm, setSearchTerm] = useState("");
           <div 
             ref={customSectionRef}
             style={{
-              borderRadius: "0.5rem",
-              padding: "0.5rem",
-              marginLeft: "-0.5rem",
-              marginRight: "-0.5rem",
+              borderRadius: "0.8rem",
+              padding: "0.65rem",
+              border: "1px solid rgba(148 163 184/ 25%)",
+              background: "rgba(255 255 255/ 84%)",
               transition: "background-color 0.3s ease",
-              background: highlightedSection === "custom" ? "rgba(100 150 255/ 15%)" : "transparent"
+              boxShadow: "0 1px 2px rgba(15 23 42/ 5%)",
+              outline: highlightedSection === "custom" ? "2px solid rgba(0 0 139/ 28%)" : "none"
             }}
           >
             {renderSectionHeader("custom", "Custom Fields", <Sparkles width="1.1rem" />, "Additional fields")}
@@ -2389,7 +2452,7 @@ const [searchTerm, setSearchTerm] = useState("");
               {saving ? (
                 <LoaderCircle className="animate-spin" width={"1rem"} />
               ) : (
-                <Database width={"1rem"} color="mediumslateblue" />
+                <Database width={"1rem"} color="darkblue" />
               )}
               <p
                 style={{ textTransform: "uppercase", letterSpacing: "0.05rem" }}
@@ -2421,9 +2484,9 @@ const [searchTerm, setSearchTerm] = useState("");
             //   {saving ? (
             //     <LoaderCircle width={"1rem"} className="animate-spin" />
             //   ) : !loadedLetterId ? (
-            //     <Plus width={"1rem"} color="mediumslateblue" />
+            //     <Plus width={"1rem"} color="darkblue" />
             //   ) : (
-            //     <Plus width={"1rem"} color="mediumslateblue" />
+            //     <Plus width={"1rem"} color="darkblue" />
             //   )}
             //   {saving
             //     ? "Saving"
@@ -2900,15 +2963,17 @@ const [searchTerm, setSearchTerm] = useState("");
                   {formData.roles.map((role, index) =>
                     role.title.trim() || role.description.trim() ? (
                       <div key={index}>
-                        <h3
-                          style={{
-                            fontSize: "0.9rem",
-                            fontWeight: "600",
-                            marginBottom: "0.5rem",
-                          }}
-                        >
-                          {role.title || "[ROLE TITLE]"}
-                        </h3>
+                        {role.title.trim() ? (
+                          <h3
+                            style={{
+                              fontSize: "0.9rem",
+                              fontWeight: "600",
+                              marginBottom: "0.5rem",
+                            }}
+                          >
+                            {role.title}
+                          </h3>
+                        ) : null}
                         <div 
                           className="role-description-content"
                           style={{ fontSize: "0.8rem", color: "#444" }}
@@ -3352,14 +3417,14 @@ const [searchTerm, setSearchTerm] = useState("");
             //       {saving ? (
             //         <LoaderCircle className="animate-spin" width={"1rem"} />
             //       ) : (
-            //         <Database width={"1rem"} color="mediumslateblue" />
+            //         <Database width={"1rem"} color="darkblue" />
             //       )}
             //       <p>{loadedLetterId}</p>
             //     </div>
             //   )
             // }
             // title="Doc"
-            // icon={<File color="mediumslateblue" />}
+            // icon={<File color="darkblue" />}
             // subtitle={
             //   formData.position && (
             //     <p style={{ textTransform: "uppercase" }}>
@@ -3382,7 +3447,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     <LoaderCircle className="animate-spin" width={"1rem"} />
                   ) : (
                     loadedLetterId && (
-                      <Database color="mediumslateblue" width={"1rem"} />
+                      <Database color="darkblue" width={"1rem"} />
                     )
                   )}
 
@@ -3423,7 +3488,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     width: "100%",
                     fontSize: "0.9rem",
                     padding: "0.5rem 1rem",
-                    background: pdfLoading ? "mediumslateblue" : "darkslateblue",
+                    background: pdfLoading ? "darkblue" : "darkslateblue",
                     color: "white",
                     border: "none",
                     borderRadius: "0.5rem",
@@ -3469,9 +3534,9 @@ const [searchTerm, setSearchTerm] = useState("");
                   {saving ? (
                     <LoaderCircle className="animate-spin" />
                   ) : !loadedLetterId ? (
-                    <Save color="mediumslateblue" />
+                    <Save color="darkblue" />
                   ) : (
-                    <CloudUpload color="mediumslateblue" />
+                    <CloudUpload color="darkblue" />
                   )}
                 </button> */}
 
@@ -3500,7 +3565,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     {saving ? (
                       <LoaderCircle className="animate-spin" />
                     ) : (
-                      <Save width={"1.25rem"} color="mediumslateblue" />
+                      <Save width={"1.25rem"} color="darkblue" />
                     )}
                   </motion.button>
                 ) : (
@@ -3529,9 +3594,9 @@ const [searchTerm, setSearchTerm] = useState("");
                         {saving ? (
                           <LoaderCircle className="animate-spin" />
                         ) : !loadedLetterId ? (
-                          <Save color="mediumslateblue" width={"1.25rem"} />
+                          <Save color="darkblue" width={"1.25rem"} />
                         ) : (
-                          <Save color="mediumslateblue" width={"1.25rem"} />
+                          <Save color="darkblue" width={"1.25rem"} />
                         )}
 
                         <ChevronDown width={"1rem"} />
@@ -3585,7 +3650,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     fetchOfferLetters();
                   }}
                 >
-                  <Database color="mediumslateblue" width={"1.25rem"} />
+                  <Database color="darkblue" width={"1.25rem"} />
                 </motion.button>
               </div>
             }
@@ -3601,7 +3666,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 height: "75svh",
               }}
             >
-              <LoadingOutlined style={{ color: "mediumslateblue", scale: "2" }} />
+              <LoadingOutlined style={{ color: "darkblue", scale: "2" }} />
             </div>
           ) : (
             <div
@@ -3700,7 +3765,7 @@ const [searchTerm, setSearchTerm] = useState("");
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor = "mediumslateblue";
+                e.currentTarget.style.borderColor = "darkblue";
                 e.currentTarget.style.background = "rgba(123 104 238/ 0.05)";
               }}
               onBlur={(e) => {
@@ -3759,7 +3824,7 @@ const [searchTerm, setSearchTerm] = useState("");
           <>
             <LoaderCircle
               width={"0.8rem"}
-              color="mediumslateblue"
+              color="darkblue"
               className="animate-spin"
             />
             <p>Fetching</p>
@@ -3770,7 +3835,7 @@ const [searchTerm, setSearchTerm] = useState("");
             whileInView={{ opacity: 1 }}
             style={{ display: "flex", alignItems: "center" }}
           >
-            <Dot color="mediumslateblue" />
+            <Dot color="darkblue" />
             {"Fetched " + offerLetters.length + " "}
             {offerLetters.length > 1 ? "Items" : "Item"}
           </motion.div>
@@ -4252,7 +4317,7 @@ const [searchTerm, setSearchTerm] = useState("");
           setPresetName("");
         }}
         title="Rename Preset"
-        titleIcon={<FileText color="mediumslateblue" />}
+        titleIcon={<FileText color="darkblue" />}
         extra={
           <input
             type="text"
@@ -4292,7 +4357,7 @@ const [searchTerm, setSearchTerm] = useState("");
           setEditingRoleContent("");
         }}
         title={editingRoleIndex !== null ? `Edit: ${formData.roles[editingRoleIndex]?.title || "Role Description"}` : "Edit Role Description"}
-        titleIcon={<FileText color="mediumslateblue" />}
+        titleIcon={<FileText color="darkblue" />}
         extra={
           <div style={{ width: "100%", minHeight: "400px" }}>
             <RichTextEditor
@@ -4336,7 +4401,7 @@ const [searchTerm, setSearchTerm] = useState("");
               gap: "0.5rem", 
               marginBottom: "0.75rem" 
             }}>
-              <Sparkles width="1rem" style={{ color: "mediumslateblue" }} />
+              <Sparkles width="1rem" style={{ color: "darkblue" }} />
               <h3 style={{ fontSize: "0.95rem", fontWeight: "600", margin: 0 }}>
                 Add Custom Field
               </h3>
@@ -4398,7 +4463,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 onClick={handleAddCustomField}
                 style={{
                   flex: "0 0 auto",
-                  background: "mediumslateblue",
+                  background: "darkblue",
                   color: "white",
                   border: "none",
                   padding: "0.625rem 1rem",
@@ -4435,7 +4500,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 gap: "0.5rem",
                 marginBottom: "0.75rem",
                 paddingBottom: "0.5rem",
-                borderBottom: "2px solid rgba(59 130 246/ 20%)"
+                borderBottom: "2px solid rgba(0 0 139/ 20%)"
               }}>
                 <Database width="1rem" style={{ color: "rgb(59 130 246)" }} />
                 <h4 style={{ 
@@ -4851,3 +4916,4 @@ const [searchTerm, setSearchTerm] = useState("");
     </>
   );
 }
+
