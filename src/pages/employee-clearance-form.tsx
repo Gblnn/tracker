@@ -95,7 +95,7 @@ const inputStyle = {
 // Table cell style for preview
 const tableCellStyle = {
   border: "1.5px solid rgba(0 0 0/ 85%)",
-  padding: "3px 8px",
+  padding: "5px 8px",
   fontSize: "0.75rem",
   verticalAlign: "top",
   fontFamily: "",
@@ -1674,7 +1674,7 @@ const [searchTerm, setSearchTerm] = useState("");
           const cellStyle: React.CSSProperties = {
             borderRight: "1.5px solid rgba(0 0 0/ 85%)",
             borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
-            padding: "3px 8px",
+            padding: "5px 8px",
             fontSize: "0.82rem",
           };
           return (
@@ -1711,7 +1711,7 @@ const [searchTerm, setSearchTerm] = useState("");
           const cellStyle: React.CSSProperties = {
             borderRight: "1.5px solid rgba(0 0 0/ 85%)",
             borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
-            padding: "3px 8px",
+            padding: "5px 8px",
             fontSize: "0.8rem",
           };
           const headerCellStyle: React.CSSProperties = { ...cellStyle, fontWeight: 600 };
@@ -1767,7 +1767,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 style={{
                   borderRight: "1.5px solid rgba(0 0 0/ 85%)",
                   borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
-                  padding: "3px 8px",
+                  padding: "4px 8px",
                   fontSize: "0.8rem",
                   minHeight: "2.5rem",
                 }}
