@@ -15,6 +15,7 @@ interface Props {
   editModeLoading?: boolean;
   fixed?: boolean;
   blurBG?: boolean;
+  fontFamily?: string;
 }
 
 export default function Back(props: Props) {
@@ -88,6 +89,7 @@ export default function Back(props: Props) {
 
             <h2
               style={{
+                fontFamily: props.fontFamily ? props.fontFamily : "inherit",
                 letterSpacing: "0.025rem",
                 fontWeight: 400,
                 border:"",

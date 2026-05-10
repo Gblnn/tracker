@@ -1,4 +1,4 @@
-import { ClipboardList, Fuel, HardHat, Notebook, Package } from "lucide-react";
+import { Fuel, HardHat, Notebook, Package } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -11,7 +11,7 @@ interface NavItemProps {
   isMobile?: boolean;
 }
 
-type NavItemId = "modules" | "workers" | "tasks" | "phonebook" | "fuel-log";
+type NavItemId = "modules" | "workers" | "phonebook" | "fuel-log";
 
 interface NavItemConfig {
   id: NavItemId;
@@ -30,16 +30,16 @@ const NavItem: React.FC<NavItemProps> = ({ icon, isActive, onClick, isMobile = f
         display: "flex",
         justifyContent: "center",
         background: isActive 
-          ? (isMobile ? "midnightblue" : "midnightblue")
+          ? (isMobile ? "darkblue" : "darkblue")
           : "none",
-        color: isActive ? "white" : "darkslateblue",
+        color: isActive ? "white" : "black",
         fontSize: "0.9rem",
         borderRadius: "0.75rem",
         alignItems: "center",
         padding: isMobile ? "0.75rem" : "0.5rem 2rem",
         cursor: "pointer",
         transition: "all",
-        boxShadow:isActive?"1px 1px 5px rgba(0,0,0,0.5)":"none"
+        // boxShadow:isActive?"1px 1px 5px rgba(0,0,0,0.5)":"none"
       }}
     >
       {icon}
@@ -51,7 +51,7 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const { userData } = useAuth();
-  const [activeNav, setActiveNav] = useState<"modules" | "workers" | "tasks" | "phonebook" | "fuel-log" | null>(null);
+  const [activeNav, setActiveNav] = useState<"modules" | "workers" | "phonebook" | "fuel-log" | null>(null);
   const isSiteAdmin = userData?.role === "site_admin";
 
   const hasModuleAccess = (moduleId: string) => {
@@ -72,7 +72,6 @@ export default function BottomNav() {
       label: isSiteAdmin ? "Workers" : "Modules",
       path: isSiteAdmin ? "/site-admin-workers" : "/index",
     },
-    { id: "tasks" as const, icon: <ClipboardList />, label: "Tasks", path: "/tasks" },
     { id: "phonebook" as const, icon: <Notebook />, label: "Phonebook", path: "/phonebook" },
     ...(hasFuelLogModule ? [{ id: "fuel-log" as const, icon: <Fuel />, label: "Fuel Log", path: "/fuel-log" }] : []),
   ];
@@ -86,8 +85,6 @@ export default function BottomNav() {
       setActiveNav("workers");
     } else if (currentPath === "/phonebook") {
       setActiveNav("phonebook");
-    } else if (currentPath === "/tasks") {
-      setActiveNav("tasks");
     } else if (currentPath === "/fuel-log") {
       setActiveNav("fuel-log");
     } else {
@@ -106,8 +103,6 @@ export default function BottomNav() {
     } else if (item.id === "modules") {
       navigate(item.path);
     } else if (item.id === "workers") {
-      navigate(item.path);
-    } else if (item.id === "tasks") {
       navigate(item.path);
     }
   };

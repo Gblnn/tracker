@@ -1440,7 +1440,7 @@ export default function FuelLog() {
             <Fuel color="darkblue" width="1.75rem" />
           </div>
           <div>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: "0.5rem" }}>No Vehicle Assigned</h2>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 500, letterSpacing: "-0.02em", marginBottom: "0.5rem" }}>No Vehicle Assigned</h2>
             <p style={{ fontSize: "0.9rem", opacity: 0.6, lineHeight: 1.5 }}>
               You don't have a vehicle allocated to you yet. Contact your administrator or submit a request to get a vehicle assigned.
             </p>

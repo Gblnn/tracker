@@ -236,11 +236,12 @@ export default function Index() {
         <ConfettiExplosion/>
         </div> */}
         <Back
-       
+      //  fontFamily="'Britney', cursive"
+       fontSize="1.75rem"
         blurBG
           fixed
           editMode={userData?.editor===true? true : false}
-            title="WorkSpace"
+            title="Starboard"
             subtitle={"1.22"}
             // icon={<Circle fill="black" style={{ width: "1.75rem" }} />}
             noback

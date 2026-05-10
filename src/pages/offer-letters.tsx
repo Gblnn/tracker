@@ -125,6 +125,8 @@ const tableCellStyle = {
   border: "1px solid rgba(100 100 100/ 50%)",
   padding: "4.75px 10px",
   fontSize: "0.75rem",
+  fontWeight: 500,
+  textTransform: "uppercase" as const,
   verticalAlign: "top",
   fontFamily: "",
   background: "none",
@@ -3309,7 +3311,7 @@ const [searchTerm, setSearchTerm] = useState("");
         
         {/* Scrollable content wrapper */}
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
             {
               <div style={{ fontWeight: 600, textTransform: "uppercase" }}>
                 REF: {formData.refNo || "[REF NO]"}
@@ -3339,6 +3341,7 @@ const [searchTerm, setSearchTerm] = useState("");
             marginBottom: "1.25rem",
             textAlign: "justify",
             fontSize: "0.8rem",
+            fontWeight: 500,
             cursor: "pointer"
           }}
           onClick={() => scrollToSection("basic", "position")}
@@ -3699,7 +3702,7 @@ const [searchTerm, setSearchTerm] = useState("");
                   style={{
                     fontWeight: "600",
                     marginBottom: "1rem",
-                    fontSize: "1rem",
+                    fontSize: "0.85rem",
                     textTransform: "uppercase",
                     cursor: "pointer"
                   }}
@@ -3730,7 +3733,7 @@ const [searchTerm, setSearchTerm] = useState("");
                         ) : null}
                         <div 
                           className="role-description-content"
-                          style={{ fontSize: "0.8rem", color: "#444" }}
+                          style={{ fontSize: "0.8rem", fontWeight: 500, color: "#444" }}
                           dangerouslySetInnerHTML={{ 
                             __html: role.description || "[ROLE DESCRIPTION]" 
                           }}
@@ -4133,6 +4136,33 @@ const [searchTerm, setSearchTerm] = useState("");
 
   return (
     <>
+      {/* Mobile not available screen */}
+      <div className="mobile-only" style={{
+        display: "none",
+        height: "100svh",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "1rem",
+        padding: "2rem",
+        textAlign: "center",
+        background: "rgba(200 200 200/ 8%)",
+        position: "relative",
+      }}>
+        <div style={{ position: "absolute", top: 0, left: 0, width: "100%", padding:"1.25rem" }}>
+          <Back noback={false} />
+        </div>
+        <svg width="3rem" height="3rem" viewBox="0 0 24 24" fill="none" stroke="darkblue" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+          <line x1="12" y1="18" x2="12" y2="18.01"/>
+        </svg>
+        <p style={{ fontWeight: 600, fontSize: "1.1rem", color: "darkblue" }}>Not available on mobile</p>
+        <p style={{ fontSize: "0.85rem", color: "rgba(0 0 0/ 55%)", maxWidth: "20rem" }}>
+          This page is not currently available on mobile devices. Please use a desktop or laptop to access Offer Letters.
+        </p>
+      </div>
+
+      <div className="desktop-only" style={{ display: "block" }}>
       {/* <div style={{border:"", display:"flex", alignItems:"center", justifyContent:'center'}}>
         <ConfettiExplosion/>
         </div> */}
@@ -5375,6 +5405,14 @@ const [searchTerm, setSearchTerm] = useState("");
         </div>
       </ResponsiveModal>
 
+      </div>{/* end desktop-only */}
+
+      <style>{`
+        @media (max-width: 767px) {
+          .mobile-only { display: flex !important; }
+          .desktop-only { display: none !important; }
+        }
+      `}</style>
     </>
   );
 }

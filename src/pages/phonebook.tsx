@@ -212,12 +212,12 @@ export default function Phonebook() {
                         width: "100%"
                     }}>
 
-                        <Directive onClick={() => { selectedRecord?.email && (location.href = "mailto:" + selectedRecord?.email); }} icon={<AtSign width={"1.25rem"} color="mediumslateblue"/>} notName title={selectedRecord?.email||"No Email"} />
+                        <Directive onClick={() => { selectedRecord?.email && (location.href = "mailto:" + selectedRecord?.email); }} icon={<AtSign width={"1.25rem"} color="darkblue"/>} notName title={selectedRecord?.email||"No Email"} />
                         <div style={{display:"flex", gap:"0.75rem", width: "100%"}}>
-                            <Directive notName onClick={() => { selectedRecord?.contact && (location.href = "tel:" + selectedRecord?.contact); }} title={selectedRecord?.contact||"No Contact"} icon={<PhoneIcon width={"1.25rem"} color="mediumslateblue"/>}/>
+                            <Directive notName onClick={() => { selectedRecord?.contact && (location.href = "tel:" + selectedRecord?.contact); }} title={selectedRecord?.contact||"No Contact"} icon={<PhoneIcon width={"1.25rem"} color="darkblue"/>}/>
                             {
                                 selectedRecord?.cug &&
-                                <Directive notName onClick={() => { selectedRecord?.cug && (location.href = "tel:" + selectedRecord?.cug); }} title={selectedRecord?.cug||"No CUG"} icon={<Building2 width={"1.25rem"} color="mediumslateblue"/>}/>
+                                <Directive notName onClick={() => { selectedRecord?.cug && (location.href = "tel:" + selectedRecord?.cug); }} title={selectedRecord?.cug||"No CUG"} icon={<Building2 width={"1.25rem"} color="darkblue"/>}/>
                             }
                             
                         </div>

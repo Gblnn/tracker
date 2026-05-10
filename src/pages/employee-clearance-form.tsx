@@ -95,11 +95,11 @@ const inputStyle = {
 // Table cell style for preview
 const tableCellStyle = {
   border: "1.5px solid rgba(0 0 0/ 85%)",
-  padding: "5px 8px",
-  fontSize: "0.75rem",
+  padding: "4px 8px 8px 8px",
   verticalAlign: "top",
   fontFamily: "",
   background: "none",
+  textTransform: "uppercase",
 };
 
 
@@ -145,6 +145,7 @@ type FormData = {
   reportingDate: string;
   resignationDate: string;
   relievingDate: string;
+  employeeRemarks: string;
   contractPeriod: string;
   noticePeriod: string;
   noticePeriodSubsections: string[];
@@ -216,6 +217,7 @@ const [searchTerm, setSearchTerm] = useState("");
     reportingDate: "",
     resignationDate: "",
     relievingDate: "",
+    employeeRemarks: "",
     contractPeriod: "",
     noticePeriod: "",
     noticePeriodSubsections: [],
@@ -866,13 +868,13 @@ const [searchTerm, setSearchTerm] = useState("");
 
       setPdfProgress(35);
       const tableCanvas = await html2canvas(tableNode, {
-        scale: 1.5,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: null,
       });
 
-      const tableImgData = tableCanvas.toDataURL("image/jpeg", 0.8);
+      const tableImgData = tableCanvas.toDataURL("image/jpeg", 1.0);
       const pdf = new jsPDF({ unit: "px", format: "a4" });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const tableProps = pdf.getImageProperties(tableImgData);
@@ -988,6 +990,7 @@ const [searchTerm, setSearchTerm] = useState("");
       reportingDate: ol.reportingDate,
       resignationDate: ol.resignationDate || "",
       relievingDate: ol.relievingDate || "",
+      employeeRemarks: ol.employeeRemarks || "",
       contractPeriod: ol.contractPeriod,
       noticePeriod: ol.noticePeriod,
       noticePeriodSubsections: ol.noticePeriodSubsections,
@@ -1078,6 +1081,7 @@ const [searchTerm, setSearchTerm] = useState("");
       reportingDate: "",
       resignationDate: "",
       relievingDate: "",
+      employeeRemarks: "",
       contractPeriod: "",
       noticePeriod: "",
       noticePeriodSubsections: [""],
@@ -1565,6 +1569,19 @@ const [searchTerm, setSearchTerm] = useState("");
             style={{ ...inputStyle, colorScheme: "light" }}
           />
         </div>
+
+        {/* Employee Remarks */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+          <label style={{ fontSize: "0.8rem", fontWeight: 500, color: "rgba(0 0 0/ 75%)" }}>Employee Remarks</label>
+          <textarea
+            name="employeeRemarks"
+            value={formData.employeeRemarks}
+            onChange={handleInputChange}
+            rows={3}
+            placeholder="Any remarks from the employee..."
+            style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
+          />
+        </div>
       </div>
 
       {showInputScrollTopButton && (
@@ -1637,7 +1654,7 @@ const [searchTerm, setSearchTerm] = useState("");
           color: "black",
           boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
           fontFamily: "Aptos",
-          fontSize: "0.8rem",
+          fontSize: "0.73rem",
           margin: "1 auto",
           marginBottom: "4rem",
           height: "1100px",
@@ -1650,7 +1667,7 @@ const [searchTerm, setSearchTerm] = useState("");
       >
         <br/><br/><br/><br/><br/>
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
           <div style={{ fontWeight: 600, textTransform: "uppercase" }}>
             REF: {formData.refNo || "[REF NO]"}
           </div>
@@ -1660,7 +1677,7 @@ const [searchTerm, setSearchTerm] = useState("");
         <h2
           style={{
             textAlign: "center",
-            fontSize: "1rem",
+            fontSize: "0.78rem",
             marginBottom: "1rem",
             textTransform: "uppercase",
             letterSpacing: 1,
@@ -1674,17 +1691,20 @@ const [searchTerm, setSearchTerm] = useState("");
           const cellStyle: React.CSSProperties = {
             borderRight: "1.5px solid rgba(0 0 0/ 85%)",
             borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
-            padding: "5px 8px",
-            fontSize: "0.82rem",
+            padding: "3px 8px 8px 8px",
+            fontSize: "0.75rem",
+            fontWeight: 500,
           };
           return (
             <div
               style={{
+                textTransform: "uppercase",
                 width: "100%",
-                marginBottom: "1rem",
+                marginBottom: "0.4rem",
                 display: "grid",
                 gridTemplateColumns: "35% 1fr",
                 borderTop: "1.5px solid rgba(0 0 0/ 85%)",
+                fontSize:"0.68rem",
                 borderLeft: "1.5px solid rgba(0 0 0/ 85%)",
               }}
             >
@@ -1703,7 +1723,7 @@ const [searchTerm, setSearchTerm] = useState("");
           );
         })()}
 
-        <p style={{ marginBottom: "0.9rem", fontSize: "0.8rem" }}>
+        <p style={{ marginBottom: "0.8rem", marginTop: "0.4rem", fontSize: "0.73rem", fontWeight: 500 }}>
           The following authorities of each department shall make sure and sign that employee has retured everything that belongs to each department.
         </p>
 
@@ -1711,19 +1731,22 @@ const [searchTerm, setSearchTerm] = useState("");
           const cellStyle: React.CSSProperties = {
             borderRight: "1.5px solid rgba(0 0 0/ 85%)",
             borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
-            padding: "5px 8px",
-            fontSize: "0.8rem",
+            padding: "3px 8px 8px 8px",
+            fontSize: "0.73rem",
+            fontWeight: 500,
           };
-          const headerCellStyle: React.CSSProperties = { ...cellStyle, fontWeight: 600 };
+          const headerCellStyle: React.CSSProperties = { ...cellStyle, fontWeight: 600, fontSize: "0.68rem" };
           return (
             <div
               style={{
                 width: "100%",
-                marginBottom: "1rem",
+                marginBottom: "0.4rem",
                 display: "grid",
+            
                 gridTemplateColumns: "40% 20% 20% 20%",
                 borderTop: "1.5px solid rgba(0 0 0/ 85%)",
                 borderLeft: "1.5px solid rgba(0 0 0/ 85%)",
+                textTransform: "uppercase",
               }}
             >
               <div style={headerCellStyle}>Department</div>
@@ -1747,8 +1770,8 @@ const [searchTerm, setSearchTerm] = useState("");
           <div style={{ ...tableCellStyle, minHeight: "3rem" }}></div>
         </div>
 
-        <div style={{ marginTop: "1.2rem" }}>
-          <p style={{ marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.8rem" }}>Employee acknowledgment</p>
+        <div style={{ marginTop: "0.4rem" }}>
+          <p style={{ marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.73rem" }}>Employee acknowledgment</p>
           <div
             style={{
               width: "100%",
@@ -1756,6 +1779,8 @@ const [searchTerm, setSearchTerm] = useState("");
               gridTemplateColumns: "1fr 1fr",
               borderTop: "1.5px solid rgba(0 0 0/ 85%)",
               borderLeft: "1.5px solid rgba(0 0 0/ 85%)",
+              fontWeight: 500,
+              color:"black"
             }}
           >
             {[
@@ -1767,14 +1792,35 @@ const [searchTerm, setSearchTerm] = useState("");
                 style={{
                   borderRight: "1.5px solid rgba(0 0 0/ 85%)",
                   borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
-                  padding: "4px 8px",
-                  fontSize: "0.8rem",
+                  padding: "3px 8px 8px 8px",
+                  fontSize: "0.73rem",
+                  fontWeight: 500,
+                  textTransform: "uppercase",
                   minHeight: "2.5rem",
                 }}
               >
-                <span style={{ opacity: 0.7 }}>{label}</span>
+                {label}
               </div>
             ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: "0.4rem" }}>
+          <p style={{ marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.73rem" }}>Employee remarks</p>
+          <div
+            style={{
+              width: "100%",
+              borderTop: "1.5px solid rgba(0 0 0/ 85%)",
+              borderLeft: "1.5px solid rgba(0 0 0/ 85%)",
+              borderRight: "1.5px solid rgba(0 0 0/ 85%)",
+              borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
+              minHeight: "4rem",
+              padding: "5px 8px",
+              fontSize: "0.73rem",
+              fontWeight: 500,
+            }}
+          >
+            {formData.employeeRemarks || ""}
           </div>
         </div>
         </div>

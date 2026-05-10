@@ -481,8 +481,10 @@ export default function Tasks() {
                             </div>
                         }
                         fixed
-                        icon={<ClipboardList color="darkslategrey" />}
+                        // icon={<ClipboardList color="darkslategrey" />}
                         title={"Tasks"}
+                        // fontFamily="'Britney', cursive"
+                        fontSize="1.75rem"
                     />
                 </div>
 
