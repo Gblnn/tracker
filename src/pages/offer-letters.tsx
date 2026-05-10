@@ -5164,7 +5164,7 @@ const [searchTerm, setSearchTerm] = useState("");
         open={fieldConfigDialogVisible}
         onOpenChange={handleFieldConfigDialogChange}
         title="Manage Fields"
-        contentStyle={{ maxWidth: "760px" }}
+        contentStyle={{ maxWidth: "560px" }}
       
       >
         <div

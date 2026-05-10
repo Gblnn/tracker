@@ -15,7 +15,7 @@ import { fetchAndCacheFuelLogs, getCachedFuelLogs, type FuelLog as FuelLogType }
 import { addPendingFuelLog, getPendingFuelLogs, getPendingFuelLogsCount, syncAllPendingFuelLogs } from "@/utils/offlineFuelLogs";
 import { getCachedProfile } from "@/utils/profileCache";
 import { fetchAndCacheVehicle, getCachedVehicle } from "@/utils/vehicleCache";
-import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { Calendar, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical, Fuel, Gauge, Loader2, WifiOff } from "lucide-react";
 import moment from "moment";
@@ -112,17 +112,8 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
         alignItems:"center"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <div style={{
-            background: "black",
-            padding: "0.75rem",
-            borderRadius: "0.75rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-          }}>
-            <Fuel color="white" width="1.5rem" />
-          </div>
-          <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em" }}>{editingLog ? "Edit Log" : "Log Fuel"}</h2>
+          
+          <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em", paddingLeft:"1rem" }}>{editingLog ? "Edit Log" : "Log Fuel"}</h2>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           
@@ -454,12 +445,14 @@ interface FuelLogDetailContentProps {
   selectedLog: FuelLogType;
   handleEdit: () => void;
   handleDelete: () => void;
+  isPrivateVehicle: boolean;
 }
 
 const FuelLogDetailContent: React.FC<FuelLogDetailContentProps> = ({
   selectedLog,
   handleEdit,
   handleDelete,
+  isPrivateVehicle,
 }) => {
   const [tripSummaries, setTripSummaries] = useState<Array<{ id: string; summary: string; kms: string }>>([]);
   const [tripSummary, setTripSummary] = useState("");
@@ -492,7 +485,7 @@ const FuelLogDetailContent: React.FC<FuelLogDetailContentProps> = ({
           <h1 style={{ fontSize: "1.25rem", fontWeight: "600", letterSpacing: "-0.02em", marginLeft: "0.5rem" }}>Summary</h1>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             {selectedLog.vehicle_number && (
-              <NumberPlate private={true} number={selectedLog.vehicle_number} />
+              <NumberPlate private={isPrivateVehicle} number={selectedLog.vehicle_number} />
             )}
             <DropDown
               trigger={<EllipsisVertical width="1.1rem" />}
@@ -744,24 +737,42 @@ export default function FuelLog() {
     if (cachedProfile) {
       setUserProfile(cachedProfile);
     }
-    
-    // Load cached vehicle data to get registration type
-    const loadVehicleData = async () => {
-      const vehicleNumber = cachedProfile?.allocated_vehicle || userData?.allocated_vehicle;
-      if (vehicleNumber) {
-        // Try to get cached vehicle first
-        const cachedVehicle = getCachedVehicle();
-        if (cachedVehicle?.registration_type) {
-          setVehicleRegistrationType(cachedVehicle.registration_type);
+
+    // Live-fetch allocated_vehicle from the records document so changes made
+    // in asset master are reflected immediately (not just after next login).
+    // Then immediately fetch the vehicle's registration_type using the live number.
+    const fetchAllocatedVehicleFromRecord = async () => {
+      if (!userData?.email) return;
+      try {
+        const snap = await getDocs(
+          query(collection(db, "records"), where("email", "==", userData.email))
+        );
+        if (!snap.empty) {
+          const recordData = snap.docs[0].data();
+          const liveVehicle = recordData.allocated_vehicle || null;
+          setUserProfile((prev: any) => ({
+            ...(prev || cachedProfile || {}),
+            allocated_vehicle: liveVehicle,
+          }));
+          // Fetch registration type using the live vehicle number
+          if (liveVehicle) {
+            const vehicleData = await fetchAndCacheVehicle(liveVehicle);
+            if (vehicleData?.registration_type) {
+              setVehicleRegistrationType(vehicleData.registration_type);
+            }
+          }
         }
-        // Fetch fresh vehicle data to ensure we have latest registration type
-        const vehicleData = await fetchAndCacheVehicle(vehicleNumber);
-        if (vehicleData?.registration_type) {
-          setVehicleRegistrationType(vehicleData.registration_type);
-        }
+      } catch (err) {
+        console.warn("Failed to live-fetch allocated_vehicle from records:", err);
       }
     };
-    loadVehicleData();
+    fetchAllocatedVehicleFromRecord();
+
+    // While the live fetch runs, immediately apply cached registration type if available
+    const cachedVehicle = getCachedVehicle();
+    if (cachedVehicle?.registration_type) {
+      setVehicleRegistrationType(cachedVehicle.registration_type);
+    }
     
     // Load cached fuel logs immediately
     if (userData?.email) {
@@ -1372,6 +1383,7 @@ export default function FuelLog() {
             selectedLog={selectedLog}
             handleEdit={handleEdit}
             handleDelete={showDeleteConfirmation}
+            isPrivateVehicle={vehicleRegistrationType === "Private"}
           />
         </ResponsiveModal>
       )}

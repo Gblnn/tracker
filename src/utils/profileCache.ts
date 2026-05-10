@@ -124,7 +124,9 @@ export const fetchAndCacheProfile = async (email: string, allocatedVehicle?: str
         medical_completed_on: docData.medical_completed_on,
         medical_due_on: docData.medical_due_on,
         vt_hse_induction: docData.vt_hse_induction,
-        allocated_vehicle: allocatedVehicle,  // from users collection
+        // Prefer the allocated_vehicle stored on the record itself (set by asset master)
+        // and fall back to the value passed from the users collection
+        allocated_vehicle: docData.allocated_vehicle || allocatedVehicle,
       };
       
       cacheProfileData(profileData);

@@ -69,6 +69,8 @@ interface AssetDetailsContentProps {
   onOpenUserDialog: () => void;
   assetNotes: string;
   setAssetNotes: (value: string) => void;
+  assetRegistrationType: string;
+  setAssetRegistrationType: (value: string) => void;
   loading: boolean;
   onSave: () => void;
   onDelete?: () => void;
@@ -121,6 +123,8 @@ const AssetDetailsContent: React.FC<AssetDetailsContentProps> = ({
   onOpenUserDialog,
   assetNotes,
   setAssetNotes,
+  assetRegistrationType,
+  setAssetRegistrationType,
   loading,
   onSave,
   onDelete,
@@ -149,7 +153,7 @@ const AssetDetailsContent: React.FC<AssetDetailsContentProps> = ({
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <div style={{
-              background: "black",
+              background: "darkblue",
               color: "white",
               padding: "0.75rem",
               borderRadius: "0.75rem",
@@ -175,7 +179,7 @@ const AssetDetailsContent: React.FC<AssetDetailsContentProps> = ({
                       style={{
                         marginTop: "0.25rem",
                         fontSize: "0.75rem",
-                        color: "mediumslateblue",
+                        color: "darkblue",
                         background: "rgba(123, 104, 238, 0.1)",
                         border: "none",
                         borderRadius: "0.5rem",
@@ -248,7 +252,7 @@ const AssetDetailsContent: React.FC<AssetDetailsContentProps> = ({
                 alignItems: "center",
                 gap: "0.5rem"
               }}>
-                <Package color="mediumslateblue" width="1.125rem" />
+                <Package color="darkblue" width="1.125rem" />
                 Assigned To
               </label>
               <button
@@ -549,12 +553,57 @@ const AssetDetailsContent: React.FC<AssetDetailsContentProps> = ({
             {/* Condition */}
             <ChevronSelect
               title="Condition"
-              icon={<Package color="mediumslateblue" width="1.125rem" />}
+              icon={<Package color="darkblue" width="1.125rem" />}
               options={conditionOptions.map(opt => ({ value: opt, label: opt }))}
               value={assetCondition}
               onChange={setAssetCondition}
               placeholder="Select condition"
             />
+
+            {/* Registration Type (vehicles only) */}
+            {assetCategory === "vehicle" && (
+              <div style={{
+                background: "rgba(100, 100, 100, 0.05)",
+                padding: "1rem",
+                borderRadius: "1rem",
+              }}>
+                <label style={{
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  opacity: 0.9,
+                  marginBottom: "0.75rem",
+                  display: "block"
+                }}>
+                  Registration Type
+                </label>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  {["Private", "Commercial"].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setAssetRegistrationType(type)}
+                      style={{
+                        flex: 1,
+                        padding: "0.625rem 0.75rem",
+                        borderRadius: "0.75rem",
+                        border: "none",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        fontSize: "0.9rem",
+                        background: assetRegistrationType === type
+                          ? (type === "Private" ? "goldenrod" : "darkblue")
+                          : "rgba(100, 100, 100, 0.1)",
+                        color: assetRegistrationType === type
+                          ? (type === "Private" ? "black" : "white")
+                          : "inherit",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Location (only for non-vehicles) */}
             {assetCategory !== "vehicle" && (
@@ -696,6 +745,7 @@ export default function AssetMaster() {
     const [assetLocation, setAssetLocation] = useState("");
     const [assetAssignedTo, setAssetAssignedTo] = useState<string | null>(null);
     const [assetNotes, setAssetNotes] = useState("");
+    const [assetRegistrationType, setAssetRegistrationType] = useState("Private");
 
     interface Asset {
         id: string;
@@ -790,6 +840,27 @@ export default function AssetMaster() {
         }
     };
 
+    // Sync allocated_vehicle on the records document when a vehicle assignment changes.
+    // newRecordId = the record the vehicle is now assigned to (null = unassigned)
+    // oldRecordId = the record it was previously assigned to (null = was unassigned)
+    // vehicleNumber = the vehicle's plate / ID stored in vehicle_master
+    const syncVehicleAllocationToRecord = async (
+        newRecordId: string | null | undefined,
+        oldRecordId: string | null | undefined,
+        vehicleNumber: string
+    ) => {
+        const oldId = oldRecordId || null;
+        const newId = newRecordId || null;
+        // Clear old record's allocated_vehicle if it changed
+        if (oldId && oldId !== newId) {
+            await updateDoc(doc(db, "records", oldId), { allocated_vehicle: null });
+        }
+        // Set new record's allocated_vehicle
+        if (newId) {
+            await updateDoc(doc(db, "records", newId), { allocated_vehicle: vehicleNumber });
+        }
+    };
+
     const addAsset = async () => {
         if (!assetName || !assetCategory) {
             toast.error("Please fill in required fields");
@@ -808,12 +879,20 @@ export default function AssetMaster() {
                     year: assetYear,
                     type: assetModel, // or create a separate field for vehicle type
                     status: assetCondition,
-                    registration_type: "Private", // default value
+                    registration_type: assetRegistrationType,
                     assigned_to: assetAssignedTo,
                     notes: assetNotes,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 });
+                // Sync allocation to the records document so fuel-log can read it
+                if (assetAssignedTo && assetId) {
+                    try {
+                        await syncVehicleAllocationToRecord(assetAssignedTo, null, assetId);
+                    } catch (syncErr) {
+                        console.warn("Vehicle allocation sync to records failed (non-critical):", syncErr);
+                    }
+                }
             } else {
                 // For other categories, add to assets collection
                 await addDoc(collection(db, "assets"), {
@@ -854,32 +933,45 @@ export default function AssetMaster() {
             
             // If this is a vehicle (from vehicle_master), update that collection
             if (selectedAsset.isVehicle) {
+                const effectiveVehicleNumber = assetId || selectedAsset.assetId;
                 await updateDoc(doc(db, "vehicle_master", selectedAsset.id), {
-                    vehicle_number: assetId || selectedAsset.assetId,
-                    make: assetBrand || selectedAsset.brand,
-                    model: assetModel || selectedAsset.model,
-                    year: assetYear || selectedAsset.year,
-                    type: assetModel || selectedAsset.type,
-                    status: assetCondition || selectedAsset.condition,
-                    assigned_to: assetAssignedTo !== null ? assetAssignedTo : selectedAsset.assignedTo,
-                    notes: assetNotes || selectedAsset.notes,
+                    vehicle_number: effectiveVehicleNumber || null,
+                    make: assetBrand || selectedAsset.brand || null,
+                    model: assetModel || selectedAsset.model || null,
+                    year: assetYear || selectedAsset.year || null,
+                    type: assetModel || selectedAsset.type || null,
+                    status: assetCondition || selectedAsset.condition || null,
+                    registration_type: assetRegistrationType,
+                    assigned_to: assetAssignedTo,
+                    notes: assetNotes || selectedAsset.notes || null,
                     updatedAt: new Date().toISOString()
                 });
+                // Sync allocation to the records document so fuel-log can read it.
+                // Wrapped in its own try-catch so a failure here never blocks the asset update.
+                try {
+                    await syncVehicleAllocationToRecord(
+                        assetAssignedTo,
+                        selectedAsset.assignedTo,
+                        effectiveVehicleNumber
+                    );
+                } catch (syncErr) {
+                    console.warn("Vehicle allocation sync to records failed (non-critical):", syncErr);
+                }
             } else {
                 // For other assets, update the assets collection
                 await updateDoc(doc(db, "assets", selectedAsset.id), {
-                    name: assetName || selectedAsset.name,
-                    category: assetCategory || selectedAsset.category,
-                    assetId: assetId || selectedAsset.assetId,
-                    brand: assetBrand || selectedAsset.brand,
-                    model: assetModel || selectedAsset.model,
-                    serialNumber: assetSerialNumber || selectedAsset.serialNumber,
-                    purchaseDate: assetPurchaseDate || selectedAsset.purchaseDate,
-                    purchasePrice: assetPurchasePrice || selectedAsset.purchasePrice,
-                    condition: assetCondition || selectedAsset.condition,
-                    location: assetLocation || selectedAsset.location,
-                    assignedTo: assetAssignedTo !== null ? assetAssignedTo : selectedAsset.assignedTo,
-                    notes: assetNotes || selectedAsset.notes,
+                    name: assetName || selectedAsset.name || null,
+                    category: assetCategory || selectedAsset.category || null,
+                    assetId: assetId || selectedAsset.assetId || null,
+                    brand: assetBrand || selectedAsset.brand || null,
+                    model: assetModel || selectedAsset.model || null,
+                    serialNumber: assetSerialNumber || selectedAsset.serialNumber || null,
+                    purchaseDate: assetPurchaseDate || selectedAsset.purchaseDate || null,
+                    purchasePrice: assetPurchasePrice || selectedAsset.purchasePrice || null,
+                    condition: assetCondition || selectedAsset.condition || null,
+                    location: assetLocation || selectedAsset.location || null,
+                    assignedTo: assetAssignedTo,
+                    notes: assetNotes || selectedAsset.notes || null,
                     updated_at: new Date()
                 });
             }
@@ -888,9 +980,9 @@ export default function AssetMaster() {
             setEditAssetDrawer(false);
             resetForm();
             await fetchAssets();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error updating asset:", error);
-            toast.error("Failed to update asset");
+            toast.error(`Failed to update asset: ${error?.message || error}`);
         } finally {
             setLoading(false);
         }
@@ -931,6 +1023,7 @@ export default function AssetMaster() {
         setAssetLocation("");
         setAssetAssignedTo(null);
         setAssetNotes("");
+        setAssetRegistrationType("Private");
         setSelectedAsset(null);
     };
 
@@ -949,6 +1042,7 @@ export default function AssetMaster() {
         setAssetLocation(asset.location || "");
         setAssetAssignedTo(asset.assignedTo || null);
         setAssetNotes(asset.notes || "");
+        setAssetRegistrationType(asset.registration_type || "Private");
         setEditAssetDrawer(true);
     };
 
@@ -1528,7 +1622,7 @@ export default function AssetMaster() {
                 style={{
                   padding: "0.5rem 1rem",
                   borderRadius: "1rem",
-                  background: selectedCategory === "all" ? "black" : "rgba(150, 150, 150, 0.15)",
+                  background: selectedCategory === "all" ? "darkblue" : "rgba(150, 150, 150, 0.15)",
                   color: selectedCategory === "all" ? "white" : "inherit",
                   border: "none",
                   fontSize: "0.875rem",
@@ -1547,7 +1641,7 @@ export default function AssetMaster() {
                     style={{
                       padding: "0.5rem 1rem",
                       borderRadius: "1rem",
-                      background: selectedCategory === cat.id ? "black" : "rgba(150, 150, 150, 0.15)",
+                      background: selectedCategory === cat.id ? "darkblue" : "rgba(150, 150, 150, 0.15)",
                       color: selectedCategory === cat.id ? "white" : "inherit",
                       border: "none",
                       fontSize: "0.875rem",
@@ -1603,7 +1697,7 @@ export default function AssetMaster() {
                       width: "3rem",
                       minWidth: "3rem",
                       borderRadius: "0.75rem",
-                      background: assignmentFilter === "all" ? "rgba(150, 150, 150, 0.15)" : "black",
+                      background: assignmentFilter === "all" ? "rgba(150, 150, 150, 0.15)" : "darkblue",
                       color: assignmentFilter === "all" ? "inherit" : "white",
                       border: "none",
                       display: "flex",
@@ -1653,7 +1747,7 @@ export default function AssetMaster() {
                         justifyContent: "center",
                         height: "75svh",
                     }}>
-                        <Loader2 className="animate-spin" style={{ color: "mediumslateblue", scale: "2" }} />
+                        <Loader2 className="animate-spin" style={{ color: "darkblue", scale: "2" }} />
                     </div>
                 ) : assets.length === 0 ? (
                     <Empty style={{ height: "75svh" }}>
@@ -1669,7 +1763,7 @@ export default function AssetMaster() {
                                 style={{
                                     padding: "0.75rem 1.5rem",
                                     borderRadius: "0.5rem",
-                                    background: "black",
+                                    background: "darkblue",
                                     color: "white",
                                     border: "none",
                                     cursor: "pointer",
@@ -1760,6 +1854,8 @@ export default function AssetMaster() {
                     onReuseExisting={openReuseDialog}
                     assetNotes={assetNotes}
                     setAssetNotes={setAssetNotes}
+                    assetRegistrationType={assetRegistrationType}
+                    setAssetRegistrationType={setAssetRegistrationType}
                     loading={loading}
                     onSave={addAsset}
                     isEditMode={false}
@@ -1803,6 +1899,8 @@ export default function AssetMaster() {
                     onOpenUserDialog={openAssigneeDialog}
                     assetNotes={assetNotes}
                     setAssetNotes={setAssetNotes}
+                    assetRegistrationType={assetRegistrationType}
+                    setAssetRegistrationType={setAssetRegistrationType}
                     loading={loading}
                     onSave={updateAsset}
                     onDelete={() => setDeleteConfirmDialog(true)}
@@ -2155,7 +2253,7 @@ export default function AssetMaster() {
                 <AddRecordButton
                     icon={<Plus color="white" />}
                 onClick={openAddAssetDialog}
-                    style="black"
+                    style="darkblue"
                 />
             )}
         </div>
