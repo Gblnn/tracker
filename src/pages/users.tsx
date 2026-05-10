@@ -70,6 +70,7 @@ const MODULES = [
   { id: 'vehicle_log_book', name: 'Vehicle Log', icon: Book },
   { id: 'petty_cash', name: 'Petty Cash', icon: Wallet },
   { id: 'offer_letters', name: 'Offer Letters', icon: FileText },
+  { id: 'employee_clearance_form', name: 'Employee Clearance', icon: FileText },
   { id: 'transfer_requests', name: 'Transfers', icon: ArrowRightLeft },
   { id: 'sim_cards', name: 'SIM Cards', icon: Smartphone },
     { id: 'offboarding', name: 'Offboarding', icon: LogOut },

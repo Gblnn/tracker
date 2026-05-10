@@ -587,6 +587,7 @@ const [searchTerm, setSearchTerm] = useState("");
   const [newFieldName, setNewFieldName] = useState("");
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
   const [editingFieldLabel, setEditingFieldLabel] = useState("");
+  const [editingFieldType, setEditingFieldType] = useState<FieldType>("text");
   const [newFieldType, setNewFieldType] = useState<FieldType>("text");
   const [newFieldSection, setNewFieldSection] = useState<"table" | "paragraph">("table");
   const [draggedFieldIndex, setDraggedFieldIndex] = useState<number | null>(null);
@@ -1090,32 +1091,45 @@ const [searchTerm, setSearchTerm] = useState("");
     }
   };
 
-  const handleStartEditFieldLabel = (fieldId: string, currentLabel: string) => {
+  const handleStartEditFieldLabel = (
+    fieldId: string,
+    currentLabel: string,
+    currentType: FieldType
+  ) => {
     setEditingFieldId(fieldId);
     setEditingFieldLabel(currentLabel);
+    setEditingFieldType(currentType);
   };
 
   const handleSaveFieldLabel = () => {
     if (!editingFieldId || !editingFieldLabel.trim()) {
       setEditingFieldId(null);
       setEditingFieldLabel("");
+      setEditingFieldType("text");
       return;
     }
 
     setFieldConfig((prev) =>
       prev.map((field) =>
         field.id === editingFieldId
-          ? { ...field, label: editingFieldLabel.trim() }
+          ? {
+              ...field,
+              label: editingFieldLabel.trim(),
+              type: editingFieldType,
+              rows: editingFieldType === "textarea" ? field.rows ?? 4 : undefined,
+            }
           : field
       )
     );
     setEditingFieldId(null);
     setEditingFieldLabel("");
+    setEditingFieldType("text");
   };
 
   const handleCancelEditFieldLabel = () => {
     setEditingFieldId(null);
     setEditingFieldLabel("");
+    setEditingFieldType("text");
   };
 
 
@@ -1855,11 +1869,30 @@ const [searchTerm, setSearchTerm] = useState("");
                   fontWeight: 500,
                 }}
               />
+              <select
+                value={editingFieldType}
+                onChange={(e) => setEditingFieldType(e.target.value as FieldType)}
+                style={{
+                  width: "6.25rem",
+                  padding: "0.3rem 0.35rem",
+                  borderRadius: "0.4rem",
+                  border: "1px solid rgba(0 0 139/ 28%)",
+                  fontSize: "0.72rem",
+                  background: "rgba(255 255 255/ 96%)",
+                  color: "rgba(15 23 42/ 90%)",
+                }}
+                title="Field type"
+              >
+                <option value="text">text</option>
+                <option value="textarea">textarea</option>
+                <option value="number">number</option>
+                <option value="date">date</option>
+              </select>
               <button
                 onClick={handleSaveFieldLabel}
                 style={{
                   background: "rgba(16 185 129/ 12%)",
-                  border: "1px solid rgba(16 185 129/ 35%)",
+                  // border: "1px solid rgba(16 185 129/ 35%)",
                   color: "#047857",
                   cursor: "pointer",
                   padding: "0.22rem",
@@ -1867,16 +1900,17 @@ const [searchTerm, setSearchTerm] = useState("");
                   display: "flex",
                   alignItems: "center",
                   flexShrink: 0,
+                  width: "2rem",
                 }}
                 title="Save"
               >
-                <Check width="0.65rem" />
+                <Check width="0.75rem" />
               </button>
               <button
                 onClick={handleCancelEditFieldLabel}
                 style={{
                   background: "rgba(239 68 68/ 10%)",
-                  border: "1px solid rgba(239 68 68/ 35%)",
+                  // border: "1px solid rgba(239 68 68/ 35%)",
                   color: "#b91c1c",
                   cursor: "pointer",
                   padding: "0.22rem",
@@ -1884,10 +1918,11 @@ const [searchTerm, setSearchTerm] = useState("");
                   display: "flex",
                   alignItems: "center",
                   flexShrink: 0,
+                  width: "2rem",
                 }}
                 title="Cancel"
               >
-                <FileX width="0.65rem" />
+                <X width="0.75rem" />
               </button>
             </div>
           ) : (
@@ -1929,7 +1964,7 @@ const [searchTerm, setSearchTerm] = useState("");
       <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", flexShrink: 0 }}>
         {editingFieldId !== field.id && !field.isCustom && (
           <button
-            onClick={() => handleStartEditFieldLabel(field.id, field.label)}
+            onClick={() => handleStartEditFieldLabel(field.id, field.label, field.type)}
             style={{
               background: "rgba(15 23 42/ 4%)",
               border: "1px solid rgba(15 23 42/ 12%)",
@@ -1943,7 +1978,7 @@ const [searchTerm, setSearchTerm] = useState("");
               justifyContent: "center",
               flexShrink: 0,
             }}
-            title="Edit field name"
+            title="Edit field"
           >
             <Pencil width="1.1rem" />
           </button>
@@ -5206,7 +5241,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 padding: "0.5rem",
                 borderRadius: "0.45rem",
                 cursor: "pointer",
-                fontSize: "0.8rem",
+                fontSize: "0.9rem",
                 fontWeight: 500,
                 display: "flex",
                 alignItems: "center",

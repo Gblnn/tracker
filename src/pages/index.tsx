@@ -179,6 +179,7 @@ export default function Index() {
     const hasTimetaag = hasModuleAccess('timetaag');
     const hasPettyCash = hasModuleAccess('petty_cash');
     const hasOfferLetters = hasModuleAccess('offer_letters');
+    const hasEmployeeClearanceForm = hasModuleAccess('employee_clearance_form');
     const hasShiftLogs = hasModuleAccess('shift_logs');
     const hasTransferRequests = hasModuleAccess('transfer_requests');
     const hasSimCards = hasModuleAccess('sim_cards');
@@ -186,7 +187,7 @@ export default function Index() {
 
     return hasRecordsMaster || hasUsers || hasNewHire || hasQuickLinks || 
                hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || hasTimetaag ||
-        hasPettyCash || hasOfferLetters || hasShiftLogs || hasTransferRequests || hasSimCards || hasOffboarding;
+        hasPettyCash || hasOfferLetters || hasEmployeeClearanceForm || hasShiftLogs || hasTransferRequests || hasSimCards || hasOffboarding;
   };
 
   // const getAccessibleModuleCount = () => {
@@ -524,6 +525,14 @@ export default function Index() {
                   title="Offer Letters"
                   icon={<FileText width={"2rem"}  />}
                   onClick={() => authenticateModule('offer_letters', '/offer-letters', 'Offer Letters')}
+                />
+              )}
+
+              {hasModuleAccess('employee_clearance_form') && (
+                <GridTile
+                  title="Forms"
+                  icon={<FileText width={"2rem"}  />}
+                  onClick={() => authenticateModule('employee_clearance_form', '/employee-clearance-form', 'Forms')}
                 />
               )}
 

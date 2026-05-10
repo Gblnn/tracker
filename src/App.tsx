@@ -31,6 +31,7 @@ const Medicals = lazy(() => import("./pages/medicals"));
 const MovementRegister = lazy(() => import("./pages/movement-register"));
 const NewHire = lazy(() => import("./pages/new-hire"));
 const OfferLetters = lazy(() => import("./pages/offer-letters"));
+const EmployeeClearanceForm = lazy(() => import("./pages/employee-clearance-form"));
 const Openings = lazy(() => import("./pages/openings"));
 const Profile = lazy(() => import("./pages/profile"));
 const ProjectLPO = lazy(() => import("./pages/project-lpo"));
@@ -162,6 +163,7 @@ export default function App() {
           <Route path="/user" element={<UserPage />} />
           <Route path="/new-hire" element={<NewHire />} />
           <Route path="/offer-letters" element={<OfferLetters />} />
+          <Route path="/employee-clearance-form" element={<EmployeeClearanceForm />} />
           <Route path="/phonebook" element={<Phonebook />} />
           <Route path="/devices" element={<Devices />} />
           <Route path="/agreements" element={<Agreements />} />
