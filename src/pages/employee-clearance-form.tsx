@@ -95,7 +95,7 @@ const inputStyle = {
 // Table cell style for preview
 const tableCellStyle = {
   border: "1.5px solid rgba(0 0 0/ 85%)",
-  padding: "8px 12px",
+  padding: "3px 8px",
   fontSize: "0.75rem",
   verticalAlign: "top",
   fontFamily: "",
@@ -105,14 +105,16 @@ const tableCellStyle = {
 
 
 const clearanceDepartmentRows: string[] = [
-  "Store",
+  "Site Store",
   "Site Admin",
   "Project / Site Manager",
+  "General Store",
   "IT Department",
   "Corporate admin",
   "Finance department",
+  "Director ( Operations )",
   "HR Department",
-  "Director(operations)",
+  
 ];
 
 type FieldType = "text" | "textarea" | "number" | "date";
@@ -1672,7 +1674,7 @@ const [searchTerm, setSearchTerm] = useState("");
           const cellStyle: React.CSSProperties = {
             borderRight: "1.5px solid rgba(0 0 0/ 85%)",
             borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
-            padding: "8px 12px",
+            padding: "3px 8px",
             fontSize: "0.82rem",
           };
           return (
@@ -1709,7 +1711,7 @@ const [searchTerm, setSearchTerm] = useState("");
           const cellStyle: React.CSSProperties = {
             borderRight: "1.5px solid rgba(0 0 0/ 85%)",
             borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
-            padding: "8px 12px",
+            padding: "3px 8px",
             fontSize: "0.8rem",
           };
           const headerCellStyle: React.CSSProperties = { ...cellStyle, fontWeight: 600 };
@@ -1726,8 +1728,8 @@ const [searchTerm, setSearchTerm] = useState("");
             >
               <div style={headerCellStyle}>Department</div>
               <div style={headerCellStyle}>Name</div>
-              <div style={headerCellStyle}>Signature</div>
-              <div style={headerCellStyle}>Date</div>
+              <div style={headerCellStyle}>Signature & Date</div>
+              <div style={headerCellStyle}>Notes</div>
               {clearanceDepartmentRows.map((department) => (
                 <React.Fragment key={department}>
                   <div style={cellStyle}>{department}</div>
@@ -1746,10 +1748,33 @@ const [searchTerm, setSearchTerm] = useState("");
         </div>
 
         <div style={{ marginTop: "1.2rem" }}>
-          <p style={{ marginBottom: "0.8rem", fontWeight: 600 }}>Employee acknowledgment</p>
-          <div style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
-            <div style={{ minWidth: "250px" }}>Signature of employee: ____________________</div>
-            <div style={{ minWidth: "180px" }}>Date: ____________________</div>
+          <p style={{ marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.8rem" }}>Employee acknowledgment</p>
+          <div
+            style={{
+              width: "100%",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              borderTop: "1.5px solid rgba(0 0 0/ 85%)",
+              borderLeft: "1.5px solid rgba(0 0 0/ 85%)",
+            }}
+          >
+            {[
+              { label: "Signature of employee", value: "" },
+              { label: "Date", value: "" },
+            ].map(({ label }) => (
+              <div
+                key={label}
+                style={{
+                  borderRight: "1.5px solid rgba(0 0 0/ 85%)",
+                  borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
+                  padding: "3px 8px",
+                  fontSize: "0.8rem",
+                  minHeight: "2.5rem",
+                }}
+              >
+                <span style={{ opacity: 0.7 }}>{label}</span>
+              </div>
+            ))}
           </div>
         </div>
         </div>

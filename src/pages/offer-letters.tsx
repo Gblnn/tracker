@@ -123,7 +123,7 @@ const inputStyle = {
 // Table cell style for preview
 const tableCellStyle = {
   border: "1px solid rgba(100 100 100/ 50%)",
-  padding: "8px 12px",
+  padding: "4.75px 10px",
   fontSize: "0.75rem",
   verticalAlign: "top",
   fontFamily: "",
