@@ -14,7 +14,7 @@ import { db } from "@/firebase";
 import { fetchAndCacheFuelLogs, getCachedFuelLogs, type FuelLog as FuelLogType } from "@/utils/fuelLogsCache";
 import { addPendingFuelLog, getPendingFuelLogs, getPendingFuelLogsCount, syncAllPendingFuelLogs } from "@/utils/offlineFuelLogs";
 import { getCachedProfile } from "@/utils/profileCache";
-import { fetchAndCacheVehicle, getCachedVehicle } from "@/utils/vehicleCache";
+import { fetchAndCacheVehicle, getCachedVehicle, type VehicleData } from "@/utils/vehicleCache";
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { Calendar, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical, Fuel, Gauge, Loader2, WifiOff } from "lucide-react";
@@ -27,6 +27,9 @@ interface FuelLogFormContentProps {
   date: string;
   vehicleNumber: string | undefined;
   isPrivateVehicle: boolean;
+  vehicleCount: number;
+  onPrevVehicle: () => void;
+  onNextVehicle: () => void;
   odometerReading: string;
   setOdometerReading: (reading: string) => void;
   amountSpent: string;
@@ -45,6 +48,9 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
   date,
   vehicleNumber,
   isPrivateVehicle,
+  vehicleCount,
+  onPrevVehicle,
+  onNextVehicle,
   odometerReading,
   setOdometerReading,
   amountSpent,
@@ -115,9 +121,26 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
           
           <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em", paddingLeft:"1rem" }}>{editingLog ? "Edit Log" : "Log Fuel"}</h2>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          
+        <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+          {vehicleNumber && vehicleCount > 1 && (
+            <button
+              type="button"
+              onClick={onPrevVehicle}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", display: "flex", alignItems: "center", opacity: 0.6 }}
+            >
+              <ChevronLeft width="1.1rem" />
+            </button>
+          )}
           {vehicleNumber && <NumberPlate private={isPrivateVehicle} number={vehicleNumber} />}
+          {vehicleNumber && vehicleCount > 1 && (
+            <button
+              type="button"
+              onClick={onNextVehicle}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", display: "flex", alignItems: "center", opacity: 0.6 }}
+            >
+              <ChevronRight width="1.1rem" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -683,11 +706,17 @@ export default function FuelLog() {
   const [deleting, setDeleting] = useState(false);
   const [editingLog, setEditingLog] = useState<FuelLogType | null>(null);
   const [vehicleRegistrationType, setVehicleRegistrationType] = useState<string>("Private");
+  const [allocatedVehicles, setAllocatedVehicles] = useState<VehicleData[]>([]);
+  const [selectedVehicleIndex, setSelectedVehicleIndex] = useState(0);
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
+  const [noVehicleModal, setNoVehicleModal] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [activeChart, setActiveChart] = useState(0);
   const { addProcess, updateProcess } = useBackgroundProcess();
-  const vehicleNumber = userProfile?.allocated_vehicle || userData?.allocated_vehicle;
+  const vehicleNumber: string | undefined =
+    (allocatedVehicles[selectedVehicleIndex]?.vehicle_number) ||
+    (userProfile?.allocated_vehicle) ||
+    undefined;
 
   // Calculate monthly fuel consumption and mileage
   const monthlyData = (() => {
@@ -748,14 +777,40 @@ export default function FuelLog() {
           query(collection(db, "records"), where("email", "==", userData.email))
         );
         if (!snap.empty) {
+          const recordDocId = snap.docs[0].id;
           const recordData = snap.docs[0].data();
           const liveVehicle = recordData.allocated_vehicle || null;
           setUserProfile((prev: any) => ({
             ...(prev || cachedProfile || {}),
             allocated_vehicle: liveVehicle,
           }));
-          // Fetch registration type using the live vehicle number
-          if (liveVehicle) {
+          // Fetch all vehicles assigned to this record
+          const vehiclesSnap = await getDocs(
+            query(collection(db, "vehicle_master"), where("assigned_to", "==", recordDocId))
+          );
+          const vehicles: VehicleData[] = vehiclesSnap.docs.map(d => ({
+            vehicle_number: d.data().vehicle_number || "",
+            make: d.data().make || "",
+            model: d.data().model || "",
+            year: d.data().year || "",
+            type: d.data().type || "",
+            status: d.data().status || "",
+            registration_type: d.data().registration_type,
+          }));
+          if (vehicles.length > 0) {
+            setAllocatedVehicles(vehicles);
+            // Position index at currently allocated vehicle
+            const idx = liveVehicle
+              ? vehicles.findIndex(v => v.vehicle_number === liveVehicle)
+              : 0;
+            const initIdx = idx >= 0 ? idx : 0;
+            setSelectedVehicleIndex(initIdx);
+            const initVehicle = vehicles[initIdx];
+            if (initVehicle?.registration_type) {
+              setVehicleRegistrationType(initVehicle.registration_type);
+            }
+          } else if (liveVehicle) {
+            // Fallback: single vehicle via cache
             const vehicleData = await fetchAndCacheVehicle(liveVehicle);
             if (vehicleData?.registration_type) {
               setVehicleRegistrationType(vehicleData.registration_type);
@@ -935,10 +990,27 @@ export default function FuelLog() {
     }
   };
 
+  const handlePrevVehicle = () => {
+    if (allocatedVehicles.length <= 1) return;
+    const newIdx = (selectedVehicleIndex - 1 + allocatedVehicles.length) % allocatedVehicles.length;
+    setSelectedVehicleIndex(newIdx);
+    const v = allocatedVehicles[newIdx];
+    if (v?.registration_type) setVehicleRegistrationType(v.registration_type);
+  };
+
+  const handleNextVehicle = () => {
+    if (allocatedVehicles.length <= 1) return;
+    const newIdx = (selectedVehicleIndex + 1) % allocatedVehicles.length;
+    setSelectedVehicleIndex(newIdx);
+    const v = allocatedVehicles[newIdx];
+    if (v?.registration_type) setVehicleRegistrationType(v.registration_type);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const vehicleNumber = userProfile?.allocated_vehicle || userData?.allocated_vehicle;
+    const vehicleNumber = allocatedVehicles[selectedVehicleIndex]?.vehicle_number
+      || userProfile?.allocated_vehicle;
     
     if (!vehicleNumber || !amountSpent) {
       toast.error("Please fill in all required fields");
@@ -1306,6 +1378,10 @@ export default function FuelLog() {
           whileTap={{ scale: 0.96 }}
           whileHover={{ scale: isMobile ? 1 : 1.05 }}
           onClick={() => {
+            if (!vehicleNumber) {
+              setNoVehicleModal(true);
+              return;
+            }
             setEditingLog(null);
             setDate(moment().format("YYYY-MM-DD"));
             setOdometerReading("");
@@ -1343,6 +1419,73 @@ export default function FuelLog() {
         
       </motion.div>
 
+      {/* No Vehicle Modal */}
+      <ResponsiveModal
+        open={noVehicleModal}
+        onOpenChange={setNoVehicleModal}
+        title=""
+        description=""
+        hideHeader
+      >
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "2rem 1.5rem", gap: "1rem", textAlign: "center" }}>
+          <div style={{
+            width: "3.5rem",
+            height: "3.5rem",
+            borderRadius: "50%",
+            background: "rgba(0,0,139,0.08)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}>
+            <Fuel color="darkblue" width="1.75rem" />
+          </div>
+          <div>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: "0.5rem" }}>No Vehicle Assigned</h2>
+            <p style={{ fontSize: "0.9rem", opacity: 0.6, lineHeight: 1.5 }}>
+              You don't have a vehicle allocated to you yet. Contact your administrator or submit a request to get a vehicle assigned.
+            </p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", width: "100%", marginTop: "0.5rem" }}>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                setNoVehicleModal(false);
+                toast.info("Vehicle request feature coming soon");
+              }}
+              style={{
+                width: "100%",
+                padding: "0.875rem",
+                borderRadius: "0.75rem",
+                background: "darkblue",
+                color: "white",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "0.95rem",
+                fontWeight: 500,
+              }}
+            >
+              Request a Vehicle
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setNoVehicleModal(false)}
+              style={{
+                width: "100%",
+                padding: "0.875rem",
+                borderRadius: "0.75rem",
+                background: "rgba(100,100,100,0.1)",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "0.95rem",
+                fontWeight: 500,
+              }}
+            >
+              Close
+            </motion.button>
+          </div>
+        </div>
+      </ResponsiveModal>
+
       {/* Fuel Log Form - Responsive Modal */}
       <ResponsiveModal
         open={drawerOpen}
@@ -1368,6 +1511,9 @@ export default function FuelLog() {
           userProfile={userProfile}
           handleSubmit={handleSubmit}
           isPrivateVehicle={vehicleRegistrationType === "Private"}
+          vehicleCount={allocatedVehicles.length}
+          onPrevVehicle={handlePrevVehicle}
+          onNextVehicle={handleNextVehicle}
         />
       </ResponsiveModal>
 

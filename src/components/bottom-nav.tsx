@@ -54,8 +54,16 @@ export default function BottomNav() {
   const [activeNav, setActiveNav] = useState<"modules" | "workers" | "tasks" | "phonebook" | "fuel-log" | null>(null);
   const isSiteAdmin = userData?.role === "site_admin";
 
-  // Check if user has an allocated vehicle
-  const hasAllocatedVehicle = !!userData?.allocated_vehicle;
+  const hasModuleAccess = (moduleId: string) => {
+    try {
+      const permissions = JSON.parse(userData?.clearance || '{}');
+      return permissions[moduleId] === true;
+    } catch {
+      return false;
+    }
+  };
+
+  const hasFuelLogModule = hasModuleAccess('fuel_log');
 
   const navItems: NavItemConfig[] = [
     {
@@ -66,7 +74,7 @@ export default function BottomNav() {
     },
     { id: "tasks" as const, icon: <ClipboardList />, label: "Tasks", path: "/tasks" },
     { id: "phonebook" as const, icon: <Notebook />, label: "Phonebook", path: "/phonebook" },
-    ...(hasAllocatedVehicle ? [{ id: "fuel-log" as const, icon: <Fuel />, label: "Fuel Log", path: "/fuel-log" }] : []),
+    ...(hasFuelLogModule ? [{ id: "fuel-log" as const, icon: <Fuel />, label: "Fuel Log", path: "/fuel-log" }] : []),
   ];
 
   // Update active nav based on current path
@@ -87,15 +95,6 @@ export default function BottomNav() {
       setActiveNav(null);
     }
   }, [location.pathname, isSiteAdmin]);
-
-  const hasModuleAccess = (moduleId: string) => {
-    try {
-      const permissions = JSON.parse(userData?.clearance || '{}');
-      return permissions[moduleId] === true;
-    } catch {
-      return false;
-    }
-  };
 
   const handleNavClick = (item: typeof navItems[0]) => {
     if (item.id === "phonebook" && (hasModuleAccess('phonebook') || isSiteAdmin)) {
