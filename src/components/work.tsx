@@ -446,12 +446,13 @@ export default function Work(props: Props) {
       </ResponsiveModal>
       {/* Applicants Dialog */}
       <ResponsiveModal
-        title="Applicants"
+        title={"Applicants for "+`${props.designation}`}
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
-        description={`${applicantsData.length || 0} applicant${Number(applicantsData.length) === 1 ? "" : "s"} for this role`}
+        // description={`${applicantsData.length || 0} applicant${Number(applicantsData.length) === 1 ? "" : "s"} for this role`}
+        contentStyle={{ padding: "1rem" }}
       >
-        <div style={{ padding: "0 1rem 1rem" }}>
+        <div style={{ padding: "0" }}>
           {applicantsData && applicantsData.length > 0 ? (
             <div
               style={{
@@ -488,6 +489,7 @@ export default function Work(props: Props) {
           {applicantsData.length > applicantsRenderLimit && (
             <div style={{ display: "flex", justifyContent: "center", marginTop: "0.9rem" }}>
               <Button
+              style={{flex:1}}
                 variant="outline"
                 onClick={() =>
                   setApplicantsRenderLimit((prev) =>

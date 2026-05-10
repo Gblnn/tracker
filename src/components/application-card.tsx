@@ -105,7 +105,7 @@ function ApplicationCardBase({
           width: "fit-content",
           padding: "0.2rem 0.45rem",
           borderRadius: "0.45rem",
-          color:"mediumslateblue",
+          color:"#1e3a8a",
           fontWeight: 500
         }}
       >
@@ -118,7 +118,7 @@ function ApplicationCardBase({
           width: "fit-content",
           padding: "0.2rem 0.45rem",
           borderRadius: "0.45rem",
-          color:"mediumslateblue",
+          color:"#1e3a8a",
           fontWeight: 500
          }}>
         {app.phone}

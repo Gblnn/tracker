@@ -279,6 +279,7 @@ export default function Openings() {
         {applications.length > applicationsRenderLimit && (
           <div style={{ display: "flex", justifyContent: "center", marginTop: "0.9rem" }}>
             <Button
+            style={{flex:1}}
               variant="outline"
               onClick={() =>
                 setApplicationsRenderLimit((prev) =>
@@ -326,7 +327,7 @@ export default function Openings() {
                 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
               >
                 <button
-                  style={{ fontSize: "0.8rem", padding: "0.65rem 1.25rem", boxShadow:"1px 1px 5px rgba( 0 0 0/ 0.4)" }}
+                  style={{ fontSize: "0.8rem", padding: "0.65rem 1.25rem", boxShadow:"1px 1px 5px rgba( 0 0 0/ 0.4)", background: "#1e3a8a", color: "white" }}
                   onClick={() => setAllApplicationsModalOpen(true)}
                 >
                   <FileText width={"0.9rem"} />
@@ -351,7 +352,7 @@ export default function Openings() {
               }}
             >
               <LoaderCircle
-                color="mediumslateblue"
+                color="#1e3a8a"
                 className="animate-spin"
                 width={"3rem"}
                 height={"3rem"}
@@ -533,7 +534,7 @@ export default function Openings() {
             <button style={{display:"flex", flex:1}} onClick={() => setAddDialogOpen(false)}>
               Cancel
             </button>
-            <button style={{display:"flex", flex:1, background:"black", color:"white"}} onClick={handleAddOpening} disabled={saving}>
+            <button style={{display:"flex", flex:1, background:"#1e3a8a", color:"white"}} onClick={handleAddOpening} disabled={saving}>
               {saving ? "Adding..." : "Add Opening"}
             </button>
           </div>

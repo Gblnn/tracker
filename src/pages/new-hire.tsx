@@ -77,13 +77,13 @@ export default function NewHire() {
           <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
             <Directive
               onClick={() => usenavigate("/openings")}
-              icon={<BriefcaseBusiness width={"1.25rem"} color="salmon" />}
+              icon={<BriefcaseBusiness width={"1.25rem"} color="darkblue" />}
               title={"Openings"}
             />
             <Directive
               onClick={() => usenavigate("/shortlist")}
               title={"Short-list"}
-              icon={<List width={"1.25rem"} />}
+              icon={<List width={"1.25rem"} color="darkblue" />}
             />
             {/* <Directive
               onClick={() => usenavigate("/offer-letters")}
@@ -99,7 +99,7 @@ export default function NewHire() {
 
             <Directive
               title={"OnBoarding"}
-              icon={<PartyPopper color="goldenrod" />}
+              icon={<PartyPopper color="darkblue" />}
             
             />
 
