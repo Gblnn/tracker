@@ -433,7 +433,7 @@ export default function Index() {
                   id_subtitle={link.url}
                   icon={
                     <Link
-                      
+                      color="darkblue"
                       style={{ width: "1.25rem" }}
                     />
                   }

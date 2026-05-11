@@ -16,6 +16,7 @@ interface Props {
   fixed?: boolean;
   blurBG?: boolean;
   fontFamily?: string;
+  shadow?:boolean;
 }
 
 export default function Back(props: Props) {
@@ -37,6 +38,7 @@ export default function Back(props: Props) {
         background: props.blurBG ? "rgba(100 100 100/ 1%)" : "none",
         WebkitBackdropFilter: props.blurBG ? "blur(16px)" : "",
         backdropFilter: props.blurBG ? "blur(16px)" : "",
+        boxShadow:props.shadow?"1px 1px 10px rgba(0,0,0,0.2)":"none"
         
       }}
     >

@@ -236,6 +236,7 @@ export default function Index() {
         <ConfettiExplosion/>
         </div> */}
         <Back
+        shadow
       //  fontFamily="'Britney', cursive"
        fontSize="1.75rem"
         blurBG
@@ -430,6 +431,7 @@ export default function Index() {
                 gridTemplateColumns: "repeat(auto-fill, minmax(75px, 1fr))",
                 gap: "0.4rem",
                 paddingBottom: "1rem",
+                paddingTop:"0.5rem"
                 // padding:"3.5rem"
               }}
             >        

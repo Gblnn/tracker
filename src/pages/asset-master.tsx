@@ -2251,9 +2251,9 @@ export default function AssetMaster() {
             {/* Floating Add Button */}
             {userData?.role === "admin" && (
                 <AddRecordButton
-                    icon={<Plus color="white" />}
+                    icon={<Plus  />}
                 onClick={openAddAssetDialog}
-                    style="darkblue"
+                    style=""
                 />
             )}
         </div>
