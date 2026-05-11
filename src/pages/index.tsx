@@ -238,7 +238,7 @@ export default function Index() {
         <Back
         shadow
       //  fontFamily="'Britney', cursive"
-       fontSize="1.75rem"
+      //  fontSize="1.5rem"
         blurBG
           fixed
           editMode={userData?.editor===true? true : false}
@@ -428,7 +428,7 @@ export default function Index() {
             <div
               style={{ 
                 display: "grid", 
-                gridTemplateColumns: "repeat(auto-fill, minmax(75px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(88px, 1fr))",
                 gap: "0.4rem",
                 paddingBottom: "1rem",
                 paddingTop:"0.5rem"
