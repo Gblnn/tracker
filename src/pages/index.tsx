@@ -427,8 +427,8 @@ export default function Index() {
             <div
               style={{ 
                 display: "grid", 
-                gridTemplateColumns: "repeat(auto-fill, minmax(95px, 1fr))",
-                gap: "0.65rem",
+                gridTemplateColumns: "repeat(auto-fill, minmax(75px, 1fr))",
+                gap: "0.4rem",
                 paddingBottom: "1rem",
                 // padding:"3.5rem"
               }}

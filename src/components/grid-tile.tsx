@@ -21,7 +21,7 @@ export default function GridTile({ title, icon, onClick }: GridTileProps) {
         justifyContent: "flex-start",
         gap: "0.6rem",
         width: "100%",
-        padding: "0.5rem 0.4rem",
+        padding: "0.35rem 0.4rem",
         background: "transparent",
         border: "none",
         cursor: "pointer",
@@ -31,9 +31,9 @@ export default function GridTile({ title, icon, onClick }: GridTileProps) {
     >
       <div
         style={{
-          width: "4.25rem",
-          height: "4.25rem",
-          borderRadius: "1.2rem",
+          width: "3.75rem",
+          height: "3.75rem",
+          borderRadius: "1.1rem",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -56,7 +56,7 @@ export default function GridTile({ title, icon, onClick }: GridTileProps) {
       <p
         style={{
           margin: 0,
-          fontSize: "0.8rem",
+          fontSize: "0.72rem",
           fontWeight: 500,
           textAlign: "center",
           lineHeight: 1.25,
