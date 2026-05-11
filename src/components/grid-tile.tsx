@@ -31,8 +31,8 @@ export default function GridTile({ title, icon, onClick }: GridTileProps) {
     >
       <div
         style={{
-          width: "3.75rem",
-          height: "3.75rem",
+          width: "4rem",
+          height: "4rem",
           borderRadius: "1.1rem",
           display: "flex",
           alignItems: "center",
