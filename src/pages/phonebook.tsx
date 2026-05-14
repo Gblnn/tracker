@@ -11,7 +11,7 @@ import {
     isCacheStale
 } from "@/utils/phonebookCache";
 import { motion } from "framer-motion";
-import { AtSign, Building2, PhoneIcon } from "lucide-react";
+import { AtSign, Building2, Notebook, PhoneIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Phonebook() {
@@ -94,6 +94,7 @@ export default function Phonebook() {
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
         <div style={{padding: "", position:"fixed", zIndex: 20}}>
             <Back
+            icon={<Notebook color="darkblue"/>}
             noback
             blurBG
             subtitle={records.length}
@@ -160,8 +161,8 @@ export default function Phonebook() {
                         setSelectedRecord(record);
                         setDrawerOpen(true);
                     }}
-                    icon={<Avatar  className="h-10 w-10">
-                                    <AvatarFallback style={{fontWeight:"600", background:"rgba(100 100 100/ 0.1)", fontSize:"1rem", color:""}} className="text-lg">
+                    icon={<Avatar style={{ color:"darkblue"}} className="h-12 w-12">
+                                    <AvatarFallback style={{fontWeight:"600", background:"rgba(100 100 100/ 0.1)", fontSize:"1.25rem", color:""}} className="text-lg">
                                       {displayName
                                         ? getInitials(displayName.split("@")[0])
                                         : "?"}
