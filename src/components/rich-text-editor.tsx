@@ -1,12 +1,17 @@
-import React, { useRef, useEffect } from "react";
-import { Bold, Italic, List, ListOrdered } from "lucide-react";
-import { motion } from "framer-motion";
+import React, { useRef, useEffect, useState } from "react";
+import { Bold, ClipboardList, Italic, List, ListOrdered } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   minHeight?: string;
+  showPasteStyleToggle?: boolean;
 }
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
@@ -14,8 +19,21 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   onChange,
   placeholder = "Enter text...",
   minHeight = "150px",
+  showPasteStyleToggle = false,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const [preservePasteStyle, setPreservePasteStyle] = useState(false);
+  const [activeCommands, setActiveCommands] = useState<Record<string, boolean>>({});
+  const appFontFamily = "ClashGrotesk-Variable, system-ui, -apple-system, sans-serif";
+
+  const updateActiveCommands = () => {
+    setActiveCommands({
+      bold: document.queryCommandState("bold"),
+      italic: document.queryCommandState("italic"),
+      insertUnorderedList: document.queryCommandState("insertUnorderedList"),
+      insertOrderedList: document.queryCommandState("insertOrderedList"),
+    });
+  };
 
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== value) {
@@ -24,6 +42,20 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   }, [value]);
 
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    if (preservePasteStyle) {
+      e.preventDefault();
+      const html = e.clipboardData.getData("text/html") || e.clipboardData.getData("text/plain");
+      // Parse and strip font-family from all inline styles
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      doc.body.querySelectorAll<HTMLElement>("*").forEach((el) => {
+        el.style.fontFamily = appFontFamily;
+      });
+      document.execCommand("insertHTML", false, doc.body.innerHTML);
+      requestAnimationFrame(() => { handleInput(); });
+      return;
+    }
+
     e.preventDefault();
     const text = e.clipboardData.getData("text/plain");
     const selection = window.getSelection();
@@ -51,126 +83,176 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     document.execCommand(command, false, value);
     editorRef.current?.focus();
     handleInput();
+    updateActiveCommands();
   };
 
-  const formatButton = (
-    icon: React.ReactNode,
-    command: string,
-    title: string,
-    value?: string
-  ) => (
-    <motion.button
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      type="button"
-      onClick={(e) => {
-        e.preventDefault();
-        execCommand(command, value);
-      }}
-      title={title}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "0.4rem 0.6rem",
-        background: "rgba(100, 100, 100, 0.05)",
-        border: "",
-        borderRadius: "0.3rem",
-        cursor: "pointer",
-        color: "mediumslateblue",
-        transition: "background 0.2s",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "rgba(147, 112, 219, 0.2)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "rgba(100, 100, 100, 0.1)";
-      }}
-    >
-      {icon}
-    </motion.button>
-  );
+  const ToolbarButton = ({
+    icon,
+    command,
+    title,
+    value,
+  }: {
+    icon: React.ReactNode;
+    command: string;
+    title: string;
+    value?: string;
+  }) => {
+    const isActive = !!activeCommands[command];
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "h-8 w-8 rounded-md transition-colors",
+              isActive
+                ? "bg-primary/20 text-primary font-semibold hover:bg-primary/25"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            )}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              execCommand(command, value);
+            }}
+          >
+            {icon}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          {title}
+        </TooltipContent>
+      </Tooltip>
+    );
+  };
 
   return (
-    <div
-      style={{
-        width: "100%",
-        border: "1px solid rgba(100, 100, 100, 0.2)",
-        borderRadius: "0.5rem",
-        overflow: "hidden",
-        background: "rgba(255, 255, 255, 0.05)",
-      }}
-    >
-      {/* Toolbar */}
-      <div
-        style={{
-          border:"",
-          display: "flex",
-          gap: "0.5rem",
-          padding: "0.5rem 1rem",
-          borderBottom: "1px solid rgba(100, 100, 100, 0.2)",
-          background: "rgba(100, 100, 100, 0.05)",
-          flexWrap: "wrap",
-        }}
-      >
-        {formatButton(<Bold width={16} />, "bold", "Bold (Ctrl+B)")}
-        {formatButton(<Italic width={16} />, "italic", "Italic (Ctrl+I)")}
-        {formatButton(<List width={16} />, "insertUnorderedList", "Bullet List")}
-        {formatButton(<ListOrdered width={16} />, "insertOrderedList", "Numbered List")}
+    <TooltipProvider delayDuration={300}>
+      <div className="w-full rounded-md border border-input bg-background shadow-sm overflow-hidden transition-shadow">
+        {/* Toolbar */}
+        <div className="flex gap-0.5 px-2 py-1.5 border-b border-border bg-muted/40 flex-nowrap overflow-x-auto">
+          <ToolbarButton icon={<Bold size={14} />} command="bold" title="Bold (Ctrl+B)" />
+          <ToolbarButton icon={<Italic size={14} />} command="italic" title="Italic (Ctrl+I)" />
+
+          <Separator orientation="vertical" className="mx-1 h-5" />
+
+          <ToolbarButton icon={<List size={14} />} command="insertUnorderedList" title="Bullet List" />
+          <ToolbarButton icon={<ListOrdered size={14} />} command="insertOrderedList" title="Numbered List" />
+
+          <Separator orientation="vertical" className="mx-1 h-5" />
+
+          {/* Font size selector */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Select
+                  onValueChange={(size) => {
+                    if (size) execCommand("fontSize", size);
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[90px] rounded-md text-xs border-input bg-background focus:ring-1">
+                    <SelectValue placeholder="Size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">8 pt</SelectItem>
+                    <SelectItem value="2">10 pt</SelectItem>
+                    <SelectItem value="3">12 pt</SelectItem>
+                    <SelectItem value="4">14 pt</SelectItem>
+                    <SelectItem value="5">18 pt</SelectItem>
+                    <SelectItem value="6">24 pt</SelectItem>
+                    <SelectItem value="7">36 pt</SelectItem>
+                  </SelectContent>
+                </Select>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">Font Size</TooltipContent>
+          </Tooltip>
+
+          {showPasteStyleToggle && (
+            <>
+              <Separator orientation="vertical" className="mx-1 h-5" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "h-8 gap-1.5 px-2.5 text-xs font-medium rounded-md transition-colors",
+                      preservePasteStyle
+                        ? "bg-primary/20 text-primary font-semibold hover:bg-primary/25"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    )}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setPreservePasteStyle((prev) => !prev);
+                    }}
+                  >
+                    <ClipboardList size={13} />
+                    
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  {preservePasteStyle
+                    ? "Paste original styling"
+                    : "Paste plain text"}
+                </TooltipContent>
+              </Tooltip>
+            </>
+          )}
+        </div>
+
+        {/* Editor */}
+        <div
+          ref={editorRef}
+          contentEditable
+          onInput={() => { handleInput(); updateActiveCommands(); }}
+          onBlur={handleInput}
+          onKeyUp={updateActiveCommands}
+          onMouseUp={updateActiveCommands}
+          onPaste={handlePaste}
+          suppressContentEditableWarning
+          style={{ minHeight, maxHeight: "400px", fontFamily: appFontFamily }}
+          className="px-3 py-2 text-sm leading-relaxed outline-none overflow-y-auto cursor-text"
+          data-placeholder={placeholder}
+        />
+
+        <style>{`
+          [contenteditable]:empty:before {
+            content: attr(data-placeholder);
+            color: hsl(var(--muted-foreground));
+            pointer-events: none;
+          }
+          [contenteditable],
+          [contenteditable] * {
+            font-family: ClashGrotesk-Variable, system-ui, -apple-system, sans-serif !important;
+          }
+          [contenteditable] ul {
+            list-style-type: disc !important;
+            list-style-position: outside !important;
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            padding-left: 0.5rem;
+          }
+          [contenteditable] ol {
+            list-style-type: decimal !important;
+            list-style-position: outside !important;
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            padding-left: 0.5rem;
+          }
+          [contenteditable] li {
+            margin-bottom: 0.25rem;
+            display: list-item !important;
+            margin-left: 1rem;
+          }
+          [contenteditable] p {
+            margin: 0.5rem 0;
+          }
+        `}</style>
       </div>
-
-      {/* Editor */}
-      <div
-        ref={editorRef}
-        contentEditable
-        onInput={handleInput}
-        onBlur={handleInput}
-        onPaste={handlePaste}
-        suppressContentEditableWarning
-        style={{
-          padding: "0.75rem",
-          minHeight,
-          outline: "none",
-          fontSize: "0.95rem",
-          lineHeight: "1.6",
-          cursor: "text",
-          overflowY: "auto",
-          maxHeight: "400px",
-        }}
-        data-placeholder={placeholder}
-      />
-
-      <style>{`
-        [contenteditable]:empty:before {
-          content: attr(data-placeholder);
-          color: #999;
-          pointer-events: none;
-        }
-        [contenteditable] ul {
-          list-style-type: disc !important;
-          list-style-position: outside !important;
-          margin-left: 1.5rem;
-          margin-top: 0.5rem;
-          margin-bottom: 0.5rem;
-          padding-left: 0.5rem;
-        }
-        [contenteditable] ol {
-          list-style-type: decimal !important;
-          list-style-position: outside !important;
-          margin-left: 1.5rem;
-          margin-top: 0.5rem;
-          margin-bottom: 0.5rem;
-          padding-left: 0.5rem;
-        }
-        [contenteditable] li {
-          margin-bottom: 0.25rem;
-          display: list-item !important;
-          margin-left: 1rem;
-        }
-        [contenteditable] p {
-          margin: 0.5rem 0;
-        }
-      `}</style>
-    </div>
+    </TooltipProvider>
   );
 };

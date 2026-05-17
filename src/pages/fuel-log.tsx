@@ -1297,17 +1297,27 @@ export default function FuelLog() {
                 <Loader2 className="animate-spin"/>
               </div>
             ) : fuelLogs.length === 0 ? (
-              <Empty style={{ minHeight: "70vh" }}>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <Fuel />
-                  </EmptyMedia>
-                  <EmptyTitle>No fuel logs yet</EmptyTitle>
-                  <EmptyDescription>
-                    Click the + button to add your first fuel log
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
+              <div
+                style={{
+                  gridColumn: isMobile ? undefined : "1 / -1",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  minHeight: "70vh",
+                }}
+              >
+                <Empty style={{ minHeight: "70vh", width: "100%" }}>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <Fuel />
+                    </EmptyMedia>
+                    <EmptyTitle>No fuel logs yet</EmptyTitle>
+                    <EmptyDescription>
+                      Click the + button to add your first fuel log
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              </div>
             ) : (
               fuelLogs.map((log) => (
                 <Directive 

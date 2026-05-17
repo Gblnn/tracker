@@ -41,7 +41,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, isActive, onClick, isMobile = f
         padding: isMobile ? "0.75rem" : "0.5rem 2rem",
         cursor: "pointer",
         transition: "all 220ms ease",
-        border: isActive ? "1px solid rgba(186, 218, 255, 0.48)" : "1px solid transparent",
+        // border: isActive ? "1px solid rgba(186, 218, 255, 0.48)" : "1px solid transparent",
         boxShadow: isActive
           ? "inset 0 1px 0 rgba(255,255,255,0.62), inset 0 -10px 16px rgba(8,30,120,0.5), 0 10px 22px rgba(4,16,60,0.4), 0 0 18px rgba(52,110,255,0.24), 0 0 0 1px rgba(160,204,255,0.18)"
           : "none",

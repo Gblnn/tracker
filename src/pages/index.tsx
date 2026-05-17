@@ -249,7 +249,7 @@ export default function Index() {
         <ConfettiExplosion/>
         </div> */}
         <Back
-        
+        shadow
       //  fontFamily="'Britney', cursive"
       //  fontSize="1.5rem"
         blurBG
@@ -442,7 +442,8 @@ export default function Index() {
               style={{ 
                 display: "grid", 
                 gridTemplateColumns: getGridColumns(),
-                gap: screenWidth >= 1024 ? "0.6rem" : "0.8rem",
+                columnGap: screenWidth >= 1024 ? "0.2rem" : "0.3rem",
+                rowGap: screenWidth >= 1024 ? "0.6rem" : "0.8rem",
                 paddingBottom: "1rem",
                 paddingTop:"0.5rem"
               }}

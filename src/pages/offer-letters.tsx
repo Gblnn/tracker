@@ -130,8 +130,7 @@ const inputStyle = {
 // Table cell style for preview
 const tableCellStyle = {
   border: "1px solid rgba(100 100 100/ 50%)",
-  padding: "4.75px 10px",
-  fontSize: "0.75rem",
+  padding: "4.75px 10px 12px 10px",
   fontWeight: 500,
   textTransform: "uppercase" as const,
   verticalAlign: "top",
@@ -332,7 +331,7 @@ const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
-  const [hideDesktopInputSection, setHideDesktopInputSection] = useState(false);
+  const [hideDesktopInputSection, setHideDesktopInputSection] = useState(true);
   const [responsiveFormDrawerOpen, setResponsiveFormDrawerOpen] = useState(false);
   const [previewContentHeight, setPreviewContentHeight] = useState(1);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -682,6 +681,26 @@ const [searchTerm, setSearchTerm] = useState("");
   const [headerVisible, setHeaderVisible] = useState(true);
   const [showInputScrollTopButton, setShowInputScrollTopButton] = useState(false);
   const [previewDragEnabled, setPreviewDragEnabled] = useState(false);
+  const [firstPageFontSizeRem] = useState(0.8);
+  const [firstPageTableFontSizeRem, setFirstPageTableFontSizeRem] = useState(0.7);
+  const [firstPageGapPt, setFirstPageGapPt] = useState(0);
+
+  const clampFirstPageTableFontRem = (value: number) => {
+    if (!Number.isFinite(value)) return 0.7;
+    return Math.min(1, Math.max(0.5, value));
+  };
+
+  const setFirstPageTableFontPt = (pt: number) => {
+    setFirstPageTableFontSizeRem(clampFirstPageTableFontRem(pt / 10));
+  };
+
+  const adjustFirstPageTableFontPt = (deltaPt: number) => {
+    setFirstPageTableFontSizeRem((prev) =>
+      clampFirstPageTableFontRem(prev + deltaPt / 10)
+    );
+  };
+
+  const firstPageGap = (baseRem: number) => `calc(${baseRem}rem + ${firstPageGapPt}pt)`;
   const fieldListScrollRef = useRef<HTMLDivElement>(null);
   const inputFormScrollRef = useRef<HTMLDivElement>(null);
   const inputScrollRafRef = useRef<number | null>(null);
@@ -2292,6 +2311,85 @@ const [searchTerm, setSearchTerm] = useState("");
       });
   };
 
+  const renderTableTypographyControl = () => (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        minHeight: "3.25rem",
+        marginTop: "0.75rem",
+        padding: "0.75rem",
+        background: "rgba(100 100 100/ 5%)",
+        borderRadius: "0.75rem",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <TextCursor width="1rem" color="darkblue" />
+        <span style={{ fontSize: "0.9rem", fontWeight: "500" }}>
+          Font Size
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+        <button
+          type="button"
+          onClick={() => adjustFirstPageTableFontPt(-0.5)}
+          style={{
+            width: "2rem",
+            height: "2rem",
+            borderRadius: "0.5rem",
+            background: "rgba(100 100 100/ 8%)",
+            color: "rgba(0 0 0/ 72%)",
+            cursor: "pointer",
+            fontSize: "1rem",
+            lineHeight: 1,
+          }}
+          title="Decrease by 0.5 pt"
+        >
+          -
+        </button>
+        <input
+          type="number"
+          min={5}
+          max={10}
+          step={0.1}
+          value={(firstPageTableFontSizeRem * 10).toFixed(1)}
+          onChange={(e) => setFirstPageTableFontPt(Number(e.target.value))}
+          style={{
+            width: "4.2rem",
+            height: "2rem",
+            borderRadius: "0.5rem",
+            padding: "0 0.45rem",
+            fontSize: "0.8rem",
+            background: "rgba(255 255 255/ 92%)",
+            color: "rgba(0 0 0/ 80%)",
+            textAlign: "center",
+          }}
+        />
+        {/* <span style={{ fontSize: "0.74rem", color: "rgba(0 0 0/ 60%)", minWidth: "1.6rem" }}>
+          pt
+        </span> */}
+        <button
+          type="button"
+          onClick={() => adjustFirstPageTableFontPt(0.5)}
+          style={{
+            width: "2rem",
+            height: "2rem",
+            borderRadius: "0.5rem",
+            background: "rgba(100 100 100/ 8%)",
+            color: "rgba(0 0 0/ 72%)",
+            cursor: "pointer",
+            fontSize: "1rem",
+            lineHeight: 1,
+          }}
+          title="Increase by 0.5 pt"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+
   const renderInputForm = (isDrawer = false, animateDesktop = false) => {
 
     return (
@@ -2313,6 +2411,7 @@ const [searchTerm, setSearchTerm] = useState("");
         background: isDrawer ? "transparent" : "linear-gradient(180deg, rgba(248 250 252/ 95%), rgba(241 245 249/ 90%))",
         boxShadow: isDrawer ? "none" : "0 16px 35px rgba(15 23 42/ 10%)",
         overflow: isDrawer ? "visible" : "hidden",
+        
       }}
     >
       {/* Fixed Header Section */}
@@ -2695,6 +2794,7 @@ const [searchTerm, setSearchTerm] = useState("");
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            minHeight: "3.25rem",
             padding: "0.75rem",
             background: "rgba(100 100 100/ 5%)",
             borderRadius: "0.75rem",
@@ -2748,6 +2848,8 @@ const [searchTerm, setSearchTerm] = useState("");
             </button>
           </div>
         </div>
+
+        {renderTableTypographyControl()}
               </div>
             </motion.div>
           )}
@@ -3203,6 +3305,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     onChange={(value) => handleRoleChange(index, "description", value)}
                     placeholder="Enter role description (use toolbar for formatting)"
                     minHeight="150px"
+                    showPasteStyleToggle
                   />
                 </motion.div>
               ))}
@@ -3376,6 +3479,25 @@ const [searchTerm, setSearchTerm] = useState("");
               onChange={handleInputChange}
               placeholder="Enter Date"
             ></input>
+            <Select
+              value={String(firstPageGapPt)}
+              onValueChange={(value) => setFirstPageGapPt(Number(value))}
+            >
+              <SelectTrigger style={{ width: "7.25rem", height: "2rem", fontSize: "0.75rem" }}>
+                <SelectValue placeholder="Gap" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="-4">-4 pt</SelectItem>
+                <SelectItem value="-2">-2 pt</SelectItem>
+                <SelectItem value="0">0 pt</SelectItem>
+                <SelectItem value="2">+2 pt</SelectItem>
+                <SelectItem value="4">+4 pt</SelectItem>
+                <SelectItem value="6">+6 pt</SelectItem>
+                <SelectItem value="8">+8 pt</SelectItem>
+                <SelectItem value="10">+10 pt</SelectItem>
+                <SelectItem value="12">+12 pt</SelectItem>
+              </SelectContent>
+            </Select>
             {
               // <button
               //   onClick={handleSave}
@@ -3461,7 +3583,7 @@ const [searchTerm, setSearchTerm] = useState("");
           height: "1100px",
           maxHeight: "1100px",
           fontFamily: "Aptos",
-          fontSize: "0.8rem",
+          fontSize: `${firstPageFontSizeRem}rem`,
           margin: "1 auto",
           marginBottom: "4rem",
           position: "relative",
@@ -3502,7 +3624,7 @@ const [searchTerm, setSearchTerm] = useState("");
         
         {/* Scrollable content wrapper */}
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: firstPageGap(0.4) }}>
             {
               <div style={{ fontWeight: 600, textTransform: "uppercase" }}>
                 REF: {formData.refNo || "[REF NO]"}
@@ -3518,8 +3640,8 @@ const [searchTerm, setSearchTerm] = useState("");
           style={{
             textAlign: "center",
             fontWeight: "",
-            fontSize: "1rem",
-            marginBottom: "1rem",
+            fontSize: `${(firstPageFontSizeRem * 1.25).toFixed(3)}rem`,
+            marginBottom: firstPageGap(1),
             textTransform: "uppercase",
             letterSpacing: 1,
           }}
@@ -3529,9 +3651,9 @@ const [searchTerm, setSearchTerm] = useState("");
         {/* Intro Paragraph */}
         <p
           style={{
-            marginBottom: "1.25rem",
+            marginBottom: firstPageGap(1.25),
             textAlign: "justify",
-            fontSize: "0.8rem",
+            fontSize: `${firstPageFontSizeRem}rem`,
             fontWeight: 500,
             cursor: "pointer"
           }}
@@ -3550,8 +3672,8 @@ const [searchTerm, setSearchTerm] = useState("");
             width: "calc(100% - 22px)",
             marginLeft: "22px",
             borderCollapse: "collapse",
-            marginBottom: "2rem",
-            fontSize: "0.9rem",
+            marginBottom: firstPageGap(2),
+            fontSize: `${firstPageTableFontSizeRem}rem`,
             border: "1px solid",
             textTransform: "uppercase",
             background:"none",
@@ -4669,8 +4791,9 @@ const [searchTerm, setSearchTerm] = useState("");
 
               {/* Preview */}
               <motion.div
-                layout
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
                 style={{
                   flex: screenWidth < FORM_PANEL_BREAKPOINT ? "0 1 90%" : "0 1 auto",
                   maxWidth: screenWidth < FORM_PANEL_BREAKPOINT ? "800px" : "100%",
@@ -5448,6 +5571,7 @@ const [searchTerm, setSearchTerm] = useState("");
               onChange={(value) => setEditingRoleContent(value)}
               placeholder="Enter role description (use toolbar for formatting)"
               minHeight="400px"
+              showPasteStyleToggle
             />
           </div>
         }
