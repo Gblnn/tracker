@@ -1,5 +1,5 @@
-﻿import Back from "@/components/back";
-import { useAuth } from "@/components/AuthProvider";
+﻿import { useAuth } from "@/components/AuthProvider";
+import Back from "@/components/back";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import DefaultDialog from "@/components/ui/default-dialog";
@@ -75,7 +75,6 @@ import {
   FileX,
   Gift,
   GripVertical,
-  Hash,
   Loader2,
   LoaderCircle,
   Menu,
