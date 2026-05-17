@@ -20,12 +20,13 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRightLeft,
-  Book,
   BookMarked,
   Car,
+  ChevronDown,
+  ChevronRight,
   Clock3,
   Package,
   Eye,
@@ -67,7 +68,7 @@ const MODULES = [
   { id: 'projects', name: 'Projects', icon: Package },
   { id: 'timetaag', name: 'Timetaag', icon: '/timetaag.png' },
   { id: 'shift_logs', name: 'Shift Logs', icon: Clock3 },
-  { id: 'vehicle_log_book', name: 'Vehicle Log', icon: Book },
+  { id: 'vehicle_log_book', name: 'Vehicles', icon: Car },
   { id: 'petty_cash', name: 'Petty Cash', icon: Wallet },
   { id: 'offer_letters', name: 'Offer Letters', icon: FileText },
   { id: 'employee_clearance_form', name: 'Employee Clearance', icon: FileText },
@@ -75,6 +76,11 @@ const MODULES = [
   { id: 'sim_cards', name: 'SIM Cards', icon: Smartphone },
     { id: 'offboarding', name: 'Offboarding', icon: LogOut },
 ];
+
+const OFFER_LETTERS_EDIT_KEY = "offer_letters_edit";
+
+const countEnabledModules = (permissions: Record<string, boolean>) =>
+  MODULES.filter((module) => permissions[module.id] === true).length;
 
 // Shared User Details Content Component
 interface UserDetailsContentProps {
@@ -115,8 +121,8 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
   // Parse clearance to count enabled modules
   const getEnabledModulesCount = () => {
     try {
-      const modules = JSON.parse(clearance || '{}');
-      return Object.values(modules).filter(v => v === true).length;
+      const modules = JSON.parse(clearance || '{}') as Record<string, boolean>;
+      return countEnabledModules(modules);
     } catch {
       return 0;
     }
@@ -278,12 +284,20 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
   modulePermissions,
   onToggleModule,
   onSave,
-  showIcon = true
+  
 }) => {
+  const [offerLettersOptionsOpen, setOfferLettersOptionsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!modulePermissions.offer_letters) {
+      setOfferLettersOptionsOpen(false);
+    }
+  }, [modulePermissions.offer_letters]);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
-        {showIcon && <KeyRound width="1.5rem" />}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem", justifyContent:"center" }}>
+        
         <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Module Clearance</h2>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "50vh", overflowY: "auto" }}>
@@ -291,63 +305,173 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
           const Icon = module.icon;
           const isEnabled = modulePermissions[module.id] || false;
           const isImageIcon = typeof Icon === "string";
+          const isOfferLettersModule = module.id === "offer_letters";
           return (
-            <motion.div
-              key={module.id}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onToggleModule(module.id)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "1rem",
-                borderRadius: "0.75rem",
-                background: isEnabled ? "rgba(100, 100, 100, 0.1)" : "rgba(100, 100, 100, 0.05)",
-                cursor: "pointer",
-                transition: "all 0.2s"
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                {isImageIcon ? (
-                  <img
-                    src={Icon as string}
-                    alt={module.name}
-                    style={{
-                      width: "1.25rem",
-                      height: "1.25rem",
-                      objectFit: "contain",
-                      opacity: isEnabled ? 1 : 0.7,
-                    }}
-                  />
-                ) : (
-                  <Icon width="1.25rem" style={{ color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }} />
-                )}
-                <span style={{ fontSize: "1rem", color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }}>{module.name}</span>
-              </div>
-              <div
+            <div key={module.id} style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+              <motion.div
+                whileTap={{ scale: 0.98 }}
                 style={{
-                  width: "2.5rem",
-                  height: "1.5rem",
                   borderRadius: "0.75rem",
-                  background: isEnabled ? "black" : "rgba(100, 100, 100, 0.2)",
-                  position: "relative",
-                  transition: "all 0.3s"
+                  background: isEnabled ? "rgba(100, 100, 100, 0.1)" : "rgba(100, 100, 100, 0.05)",
+                  transition: "all 0.2s",
+                  overflow: "hidden",
                 }}
               >
                 <div
+                  onClick={() => onToggleModule(module.id)}
                   style={{
-                    width: "1.25rem",
-                    height: "1.25rem",
-                    borderRadius: "50%",
-                    background: "white",
-                    position: "absolute",
-                    top: "0.125rem",
-                    left: isEnabled ? "1.125rem" : "0.125rem",
-                    transition: "all 0.3s"
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "1rem",
+                    cursor: "pointer",
                   }}
-                />
-              </div>
-            </motion.div>
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    {isOfferLettersModule ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!isEnabled) return;
+                          setOfferLettersOptionsOpen((prev) => !prev);
+                        }}
+                        style={{
+                          width: "1.5rem",
+                          height: "1.5rem",
+                          border: "none",
+                          background: "transparent",
+                          padding: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: isEnabled ? "rgba(15, 23, 42, 0.85)" : "rgba(100, 100, 100, 0.65)",
+                          cursor: isEnabled ? "pointer" : "not-allowed",
+                        }}
+                        title={offerLettersOptionsOpen ? "Collapse Offer Letters" : "Expand Offer Letters"}
+                      >
+                        {offerLettersOptionsOpen && isEnabled ? (
+                          <ChevronDown width="1.05rem" />
+                        ) : (
+                          <ChevronRight width="1.05rem" />
+                        )}
+                      </button>
+                    ) : isImageIcon ? (
+                      <img
+                        src={Icon as string}
+                        alt={module.name}
+                        style={{
+                          width: "1.25rem",
+                          height: "1.25rem",
+                          objectFit: "contain",
+                          opacity: isEnabled ? 1 : 0.7,
+                        }}
+                      />
+                    ) : (
+                      <Icon width="1.25rem" style={{ color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }} />
+                    )}
+                    <span style={{ fontSize: "1rem", color: isEnabled ? "inherit" : "rgba(100, 100, 100, 0.7)" }}>{module.name}</span>
+                  </div>
+
+                  <div
+                    style={{
+                      width: "2.5rem",
+                      height: "1.5rem",
+                      borderRadius: "0.75rem",
+                      background: isEnabled ? "black" : "rgba(100, 100, 100, 0.2)",
+                      position: "relative",
+                      transition: "all 0.3s"
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "1.25rem",
+                        height: "1.25rem",
+                        borderRadius: "50%",
+                        background: "white",
+                        position: "absolute",
+                        top: "0.125rem",
+                        left: isEnabled ? "1.125rem" : "0.125rem",
+                        transition: "all 0.3s"
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {isOfferLettersModule && isEnabled && (
+                  <AnimatePresence initial={false}>
+                    {offerLettersOptionsOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        style={{
+                          overflow: "hidden",
+                          borderTop: "1px solid rgba(100, 100, 100, 0.14)",
+                        }}
+                      >
+                        <motion.div
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => onToggleModule(OFFER_LETTERS_EDIT_KEY)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "0.75rem 1rem",
+                            margin: "0.45rem",
+                            borderRadius: "0.6rem",
+                            background: modulePermissions[OFFER_LETTERS_EDIT_KEY]
+                              ? "rgba(0, 0, 0, 0.08)"
+                              : "rgba(100, 100, 100, 0.05)",
+                            cursor: "pointer",
+                            transition: "all 0.2s",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "0.9rem",
+                              color: modulePermissions[OFFER_LETTERS_EDIT_KEY]
+                                ? "inherit"
+                                : "rgba(100, 100, 100, 0.8)",
+                            }}
+                          >
+                            Editing Privileges
+                          </span>
+                          <div
+                            style={{
+                              width: "2.25rem",
+                              height: "1.35rem",
+                              borderRadius: "0.7rem",
+                              background: modulePermissions[OFFER_LETTERS_EDIT_KEY]
+                                ? "black"
+                                : "rgba(100, 100, 100, 0.2)",
+                              position: "relative",
+                              transition: "all 0.3s",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: "1.1rem",
+                                height: "1.1rem",
+                                borderRadius: "50%",
+                                background: "white",
+                                position: "absolute",
+                                top: "0.125rem",
+                                left: modulePermissions[OFFER_LETTERS_EDIT_KEY]
+                                  ? "1.025rem"
+                                  : "0.125rem",
+                                transition: "all 0.3s",
+                              }}
+                            />
+                          </div>
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                )}
+              </motion.div>
+            </div>
           );
         })}
       </div>
@@ -395,7 +519,7 @@ export default function Users() {
   const [clearance, setClearance] = useState("");
   const [editor, setEditor] = useState("");
   const [sensitive_data, setSensitiveData] = useState("");
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
   // Clearance drawer states
   const [clearanceDrawerOpen, setClearanceDrawerOpen] = useState(false);
@@ -417,18 +541,36 @@ export default function Users() {
 
   // Toggle module permission
   const toggleModulePermission = (moduleId: string) => {
-    setModulePermissions(prev => ({
-      ...prev,
-      [moduleId]: !prev[moduleId]
-    }));
+    setModulePermissions(prev => {
+      const nextValue = !prev[moduleId];
+      const updated = {
+        ...prev,
+        [moduleId]: nextValue,
+      };
+
+      if (moduleId === "offer_letters" && !nextValue) {
+        updated[OFFER_LETTERS_EDIT_KEY] = false;
+      }
+
+      return updated;
+    });
   };
 
   // Toggle module permission for create user
   const toggleCreateUserModulePermission = (moduleId: string) => {
-    setCreateUserModulePermissions(prev => ({
-      ...prev,
-      [moduleId]: !prev[moduleId]
-    }));
+    setCreateUserModulePermissions(prev => {
+      const nextValue = !prev[moduleId];
+      const updated = {
+        ...prev,
+        [moduleId]: nextValue,
+      };
+
+      if (moduleId === "offer_letters" && !nextValue) {
+        updated[OFFER_LETTERS_EDIT_KEY] = false;
+      }
+
+      return updated;
+    });
   };
 
   // Save module permissions to clearance
@@ -524,6 +666,15 @@ export default function Users() {
 
   useEffect(() => {
     fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const deleteUser = async () => {
@@ -645,8 +796,9 @@ export default function Users() {
           className=""
           
             style={{
-              display: "flex",
-              flexFlow: "column",
+              display: isMobile ? "flex" : "grid",
+              flexFlow: isMobile ? "column" : undefined,
+              gridTemplateColumns: isMobile ? undefined : "repeat(4, 1fr)",
               gap: "0.75rem",
               border: "",
               height: "",
@@ -829,7 +981,7 @@ export default function Users() {
             onClick={() => setCreateUserClearanceDrawerOpen(true)}
             title="Module Clearance"
             icon={<KeyRound width="1.25rem" color="mediumslateblue" />}
-            id_subtitle={`${Object.values(createUserModulePermissions).filter(v => v === true).length} modules enabled`}
+            id_subtitle={`${countEnabledModules(createUserModulePermissions)} modules enabled`}
           />
           <motion.button
             whileTap={{ scale: 0.97 }}

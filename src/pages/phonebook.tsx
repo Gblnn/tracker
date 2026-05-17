@@ -20,6 +20,7 @@ export default function Phonebook() {
     const [selectedRecord, setSelectedRecord] = useState<PhonebookRecord | null>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
     const filteredRecords = records.filter(record => {
         const displayName = record.display_name || record.name;
@@ -89,6 +90,15 @@ export default function Phonebook() {
         loadData();
     }, []);
 
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
     return(
         <>
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
@@ -146,8 +156,9 @@ export default function Phonebook() {
             paddingLeft: "1.25rem",
             paddingRight: "1.25rem",
             paddingBottom: "8rem",
-            display: "flex",
-            flexDirection: "column",
+            display: isMobile ? "flex" : "grid",
+            flexDirection: isMobile ? "column" : undefined,
+            gridTemplateColumns: isMobile ? undefined : "repeat(4, 1fr)",
             gap: "0.75rem",
             zIndex: "",
         }}>

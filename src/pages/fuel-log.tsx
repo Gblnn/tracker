@@ -1282,7 +1282,7 @@ export default function FuelLog() {
           </div>
 
           {/* Fuel Logs List */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", paddingBottom: "5.5rem", paddingTop:"2.5rem" }}>
+          <div style={{ display: isMobile ? "flex" : "grid", flexDirection: isMobile ? "column" : undefined, gridTemplateColumns: isMobile ? undefined : "repeat(4, 1fr)", gap: "0.75rem", paddingBottom: "5.5rem", paddingTop:"2.5rem" }}>
                       
             {loading ? 
             (

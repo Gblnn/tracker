@@ -1,15 +1,19 @@
 ﻿import Back from "@/components/back";
-import DefaultDialog from "@/components/ui/default-dialog";
+import { useAuth } from "@/components/AuthProvider";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import DefaultDialog from "@/components/ui/default-dialog";
+import {
+  Drawer,
+  DrawerContent,
+} from "@/components/ui/drawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import {
   Select,
   SelectContent,
@@ -19,8 +23,25 @@ import {
 } from "@/components/ui/select";
 import { auth, db } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
+import {
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import emailjs from "@emailjs/browser";
-import { Drawer, Input, message, Modal } from "antd";
+import { Drawer as AntDrawer, Input, message, Modal } from "antd";
 import {
   addDoc,
   collection,
@@ -44,14 +65,17 @@ import {
   CreditCard,
   Database,
   Dot,
+  Expand,
   Eye,
   EyeOff,
-  Expand,
+  File,
+  FilePlus,
   FilePlus2,
   FileText,
   FileX,
   Gift,
   GripVertical,
+  Hash,
   Loader2,
   LoaderCircle,
   Menu,
@@ -62,31 +86,15 @@ import {
   RefreshCcw,
   Save,
   Shield,
+  Sidebar,
   Sparkles,
   TextCursor,
   Trash2,
   User,
-  X,
+  X
 } from "lucide-react";
 import moment from "moment";
 import React, { useEffect, useRef, useState } from "react";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 // Add styles at the top of the file
 const styles = {
@@ -137,6 +145,10 @@ const leftColumnStyle = {
   width: "35%",
   maxWidth: "200px",
 };
+
+const PREVIEW_BASE_WIDTH = 800;
+const PREVIEW_MOBILE_GUTTER = 32;
+const FORM_PANEL_BREAKPOINT = 1300;
 
 const PREVIEW_JUMP_TIP_DISMISSED_KEY = "offerLetters.previewJumpTipDismissed";
 
@@ -315,11 +327,39 @@ const SortableTableRow: React.FC<SortableTableRowProps> = ({
 export default function OfferLetters() {
   //   const usenavigate = useNavigate();
 const [searchTerm, setSearchTerm] = useState("");
+  const { userData } = useAuth();
   const [bugDialog, setBugDialog] = useState(false);
   const [issue, setIssue] = useState("");
   const [loading, setLoading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+  const [hideDesktopInputSection, setHideDesktopInputSection] = useState(false);
+  const [responsiveFormDrawerOpen, setResponsiveFormDrawerOpen] = useState(false);
+  const [previewContentHeight, setPreviewContentHeight] = useState(1);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const canEditOfferLetters = (() => {
+    if (userData?.role === "admin" || userData?.role === "site_admin") {
+      return true;
+    }
+
+    try {
+      const permissions = JSON.parse(userData?.clearance || "{}");
+      if (permissions.offer_letters !== true) return false;
+      return permissions.offer_letters_edit === true;
+    } catch {
+      return false;
+    }
+  })();
+  const previewScale =
+    screenWidth < FORM_PANEL_BREAKPOINT
+      ? Math.min(
+          1,
+          Math.max(
+            0.32,
+            (screenWidth - PREVIEW_MOBILE_GUTTER) / PREVIEW_BASE_WIDTH
+          )
+        )
+      : 1;
   const getNextReferenceNumber = (existingLetters: Array<{refNo?: string}>) => {
     // Extract existing reference numbers and find the highest one
     const numbers = existingLetters
@@ -378,10 +418,52 @@ const [searchTerm, setSearchTerm] = useState("");
     fetchOfferLetters();
   }, []);
 
+  useEffect(() => {
+    // Track screen width for responsive layout
+    const handleResize = () => {
+      setScreenWidth(window.innerWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    const node = previewContentRef.current;
+    if (!node) return;
+
+    const updateHeight = () => {
+      setPreviewContentHeight(node.scrollHeight || 1);
+    };
+
+    updateHeight();
+
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      updateHeight();
+    });
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!canEditOfferLetters) {
+      setResponsiveFormDrawerOpen(false);
+      setDrawerVisible(false);
+      setHideDesktopInputSection(false);
+    }
+  }, [canEditOfferLetters]);
+
   const tableRef = useRef<HTMLDivElement>(null);
   const rolesRef = useRef<HTMLDivElement>(null);
   const restRef = useRef<HTMLDivElement>(null);
   const signatureRef = useRef<HTMLDivElement>(null);
+  const previewContentRef = useRef<HTMLDivElement>(null);
   const lastRoleRef = useRef<HTMLDivElement>(null);
   const lastAllowanceRef = useRef<HTMLDivElement>(null);
   const lastSubsectionRef = useRef<HTMLDivElement>(null);
@@ -1644,15 +1726,15 @@ const [searchTerm, setSearchTerm] = useState("");
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0.8rem 1rem",
-          background: "rgba(15 23 42/ 4%)",
+          // background: "rgba(15 23 42/ 4%)",
           border: "1px solid rgba(15 23 42/ 12%)",
           borderRadius: "0.7rem",
           cursor: "pointer",
           marginTop: "1rem",
           marginBottom: "0.75rem",
 
-          boxShadow: "0 1px 2px rgba(2 6 23/ 6%)",
-          transition: "all 0.2s ease",
+          // boxShadow: "0 1px 2px rgba(2 6 23/ 6%)",
+          // transition: "all 0.2s ease",
         }}
         
         
@@ -2154,6 +2236,39 @@ const [searchTerm, setSearchTerm] = useState("");
     scrollToSection(getSectionForFieldId(fieldId), fieldId);
   };
 
+  const handlePreviewRolesClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    const roleDiv = target.closest("[data-preview-role-index]") as HTMLElement | null;
+    if (!roleDiv) return;
+
+    const indexStr = roleDiv.dataset.previewRoleIndex;
+    if (indexStr === undefined) return;
+    const index = parseInt(indexStr, 10);
+
+    // Expand the roles section if collapsed
+    const doScroll = () => {
+      const container = inputFormScrollRef.current;
+      if (!container) return;
+      const roleEl = container.querySelector(`[data-role-index="${index}"]`) as HTMLElement | null;
+      if (!roleEl) return;
+      const containerRect = container.getBoundingClientRect();
+      const roleRect = roleEl.getBoundingClientRect();
+      container.scrollTo({ top: container.scrollTop + (roleRect.top - containerRect.top) - 12, behavior: "smooth" });
+      const input = roleEl.querySelector("input") as HTMLInputElement | null;
+      if (input) input.focus({ preventScroll: true });
+      setHighlightedFieldId(`role-${index}`);
+      if (sectionHighlightTimeoutRef.current) clearTimeout(sectionHighlightTimeoutRef.current);
+      sectionHighlightTimeoutRef.current = setTimeout(() => setHighlightedFieldId(null), 1200);
+    };
+
+    if (sectionsCollapsed.roles) {
+      setSectionsCollapsed(prev => ({ ...prev, roles: false }));
+      window.requestAnimationFrame(() => window.requestAnimationFrame(doScroll));
+    } else {
+      doScroll();
+    }
+  };
+
   const handleDismissPreviewJumpTip = () => {
     setShowPreviewJumpTip(false);
     if (typeof window !== "undefined") {
@@ -2178,21 +2293,27 @@ const [searchTerm, setSearchTerm] = useState("");
       });
   };
 
-  const renderInputForm = () => (
-    <div
+  const renderInputForm = (isDrawer = false, animateDesktop = false) => {
+
+    return (
+    <motion.div
+      initial={!isDrawer && animateDesktop ? { opacity: 0, x: -24, filter: "blur(2px)" } : false}
+      animate={!isDrawer && animateDesktop ? { opacity: 1, x: 0, filter: "blur(0px)" } : undefined}
+      exit={!isDrawer && animateDesktop ? { opacity: 0, x: -18, filter: "blur(2px)" } : undefined}
+      transition={!isDrawer && animateDesktop ? { duration: 0.3, ease: [0.22, 1, 0.36, 1] } : undefined}
       style={{
-        position: "fixed",
+        position: isDrawer ? "relative" : "fixed",
         display: "flex",
         flexDirection: "column",
-        height: "100%",
+        height: isDrawer ? "auto" : "100%",
         fontSize: "0.8rem",
-        maxHeight: "72%",
-        width: "30%",
-        border: "1px solid rgba(100 116 139/ 22%)",
-        borderRadius: "1rem",
-        background: "linear-gradient(180deg, rgba(248 250 252/ 95%), rgba(241 245 249/ 90%))",
-        boxShadow: "0 16px 35px rgba(15 23 42/ 10%)",
-        overflow: "hidden",
+        maxHeight: isDrawer ? "none" : "72%",
+        width: isDrawer ? "100%" : "30%",
+        border: isDrawer ? "none" : "1px solid rgba(100 116 139/ 22%)",
+        borderRadius: isDrawer ? "0" : "1rem",
+        background: isDrawer ? "transparent" : "linear-gradient(180deg, rgba(248 250 252/ 95%), rgba(241 245 249/ 90%))",
+        boxShadow: isDrawer ? "none" : "0 16px 35px rgba(15 23 42/ 10%)",
+        overflow: isDrawer ? "visible" : "hidden",
       }}
     >
       {/* Fixed Header Section */}
@@ -2257,7 +2378,7 @@ const [searchTerm, setSearchTerm] = useState("");
             >
               <div
                 style={{
-                  padding: "1.25rem",
+                  padding: isDrawer ? "0.75rem" : "1.25rem",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -2267,25 +2388,45 @@ const [searchTerm, setSearchTerm] = useState("");
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <h2>Offer Letter </h2>
                 </div>
-                <button
-                  onClick={handleClearForm}
-                  style={{
-                    background: "rgba(100 100 100/ 10%)",
-                    padding: "0.15rem 0.75rem",
-                    border: "none",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    fontSize: "0.75rem",
-                  }}
-                >
-                  <FileX color="indianred" width="0.9rem" />
-                  Clear Form
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  {!isDrawer && screenWidth >= FORM_PANEL_BREAKPOINT && (
+                    <button
+                      onClick={() => setHideDesktopInputSection(true)}
+                      style={{
+                        background: "rgba(100 100 100/ 10%)",
+                        padding: "0.15rem 0.75rem",
+                        border: "none",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        fontSize: "0.75rem",
+                      }}
+                    >
+                      <Sidebar color="darkblue" width="0.9rem" />
+                      Hide Section
+                    </button>
+                  )}
+                  <button
+                    onClick={handleClearForm}
+                    style={{
+                      background: "rgba(100 100 100/ 10%)",
+                      padding: "0.15rem 0.75rem",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      fontSize: "0.75rem",
+                    }}
+                  >
+                    <FileX color="indianred" width="0.9rem" />
+                    Clear Form
+                  </button>
+                </div>
               </div>
 
-              <div style={{ padding: "0 1.5rem 1.5rem 1.5rem" }}>
+              <div style={{ padding: isDrawer ? "0 0.75rem 0.75rem 0.75rem" : "0 1.5rem 1.5rem 1.5rem" }}>
                 {/* Presets section */}
                 <div
                   style={{
@@ -2567,25 +2708,27 @@ const [searchTerm, setSearchTerm] = useState("");
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <button
-              onClick={() => setPreviewDragEnabled((prev) => !prev)}
-              style={{
-                background: previewDragEnabled ? "rgba(0 0 139/ 10%)" : "rgba(100 100 100/ 0.08)",
-                color: previewDragEnabled ? "darkblue" : "rgba(0 0 0/ 65%)",
-               
-                padding: "0.15rem 0.75rem",
-                borderRadius: "0.5rem",
-                cursor: "pointer",
-                fontSize: "0.8rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-              }}
-              title={previewDragEnabled ? "Disable drag & drop in preview" : "Enable drag & drop in preview"}
-            >
-              <GripVertical width={"0.8rem"} />
-              Drag: {previewDragEnabled ? "On" : "Off"}
-            </button>
+            {!isDrawer && (
+              <button
+                onClick={() => setPreviewDragEnabled((prev) => !prev)}
+                style={{
+                  background: previewDragEnabled ? "rgba(0 0 139/ 10%)" : "rgba(100 100 100/ 0.08)",
+                  color: previewDragEnabled ? "darkblue" : "rgba(0 0 0/ 65%)",
+                 
+                  padding: "0.15rem 0.75rem",
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  fontSize: "0.8rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+                title={previewDragEnabled ? "Disable drag & drop in preview" : "Enable drag & drop in preview"}
+              >
+                <GripVertical width={"0.8rem"} />
+                Drag: {previewDragEnabled ? "On" : "Off"}
+              </button>
+            )}
             <button
               onClick={() => setFieldConfigDialogVisible(true)}
               style={{
@@ -2618,6 +2761,7 @@ const [searchTerm, setSearchTerm] = useState("");
         onScroll={handleInputSectionScroll}
         style={{
           flex: 1,
+          minHeight: 0,
           overflowY: "auto",
           padding: "1rem",
           paddingTop: headerVisible ? "0.75rem" : "2.75rem",
@@ -2986,6 +3130,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 <motion.div
                   key={index}
                   ref={index === formData.roles.length - 1 ? lastRoleRef : null}
+                  data-role-index={index}
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
@@ -2993,12 +3138,13 @@ const [searchTerm, setSearchTerm] = useState("");
                   style={{
                     display: "flex",
                     flexFlow: "column",
-                    border: "1px solid rgba(100 100 100/ 20%)",
+                    border: highlightedFieldId === `role-${index}` ? "1px solid rgba(0 0 139/ 35%)" : "1px solid rgba(100 100 100/ 20%)",
                     borderRadius: "0.5rem",
                     padding: "0.45rem",
                     marginBottom: "0.5rem",
-                    background: "rgba(100 100 100/ 5%)",
+                    background: highlightedFieldId === `role-${index}` ? "rgba(0 0 139/ 6%)" : "rgba(100 100 100/ 5%)",
                     willChange: "transform, opacity",
+                    animation: highlightedFieldId === `role-${index}` ? "fieldFocusPulse 1s ease" : "none",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
@@ -3141,14 +3287,47 @@ const [searchTerm, setSearchTerm] = useState("");
           <ChevronUp width="1rem" />
         </button>
       )}
-    </div>
+    </motion.div>
   );
+  };
 
   const renderPreview = () => (
-    <ScrollArea>
+    <div
+      style={{
+        width: "100%",
+        display: "flex",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          width: screenWidth < FORM_PANEL_BREAKPOINT ? "100%" : "auto",
+          maxWidth: `${PREVIEW_BASE_WIDTH * previewScale}px`,
+          minWidth: 0,
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            width: `${PREVIEW_BASE_WIDTH * previewScale}px`,
+            height: `${previewContentHeight * previewScale}px`,
+          }}
+        >
+          <div
+            ref={previewContentRef}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: `${PREVIEW_BASE_WIDTH}px`,
+              transform: `scale(${previewScale})`,
+              transformOrigin: "top left",
+            }}
+          >
       {/* Page 1: Table only */}
       <div
         style={{
+          border:"",
           display: "flex",
           gap: "0.5rem",
           alignItems: "center",
@@ -3157,6 +3336,15 @@ const [searchTerm, setSearchTerm] = useState("");
           justifyContent: "space-between",
         }}
       >
+        {
+          loadedLetterId && (
+            <div style={{display:"flex", padding:"0.5rem 0.75rem", borderRadius:"0.5rem", background:"rgba(250 250 250)", gap:"0.5rem", border:"1px solid rgba(100 100 100/ 20%)", alignItems:"center"}}>
+          <File width="1rem" color="darkblue"/>
+          {loadedLetterId}
+        </div>
+        )
+        }
+        
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           {/* <Eye />
           <h2>Preview</h2> */}
@@ -3178,43 +3366,47 @@ const [searchTerm, setSearchTerm] = useState("");
           )} */}
         </div>
 
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-          <input
-            className="preview-date-input"
-            style={{ width: "fit-content", colorScheme: "light" }}
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={handleInputChange}
-            placeholder="Enter Date"
-          ></input>
-          {
-            // <button
-            //   onClick={handleSave}
-            //   style={{
-            //     background: "rgba(100 100 100/ 40%)",
-            //     fontSize: "0.8rem",
-            //     padding: "0.5rem 1rem ",
-            //   }}
-            // >
-            //   {saving ? (
-            //     <LoaderCircle width={"1rem"} className="animate-spin" />
-            //   ) : !loadedLetterId ? (
-            //     <Plus width={"1rem"} color="darkblue" />
-            //   ) : (
-            //     <Plus width={"1rem"} color="darkblue" />
-            //   )}
-            //   {saving
-            //     ? "Saving"
-            //     : !loadedLetterId
-            //     ? "Add to Database"
-            //     : "Save as New"}
-            // </button>
-          }
-        </div>
+        {canEditOfferLetters && (
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", border:"" }}>
+            <input
+              className="preview-date-input"
+              style={{ width: "fit-content", colorScheme: "light" }}
+              type="date"
+              name="date"
+              value={formData.date}
+              onChange={handleInputChange}
+              placeholder="Enter Date"
+            ></input>
+            {
+              // <button
+              //   onClick={handleSave}
+              //   style={{
+              //     background: "rgba(100 100 100/ 40%)",
+              //     fontSize: "0.8rem",
+              //     padding: "0.5rem 1rem ",
+              //   }}
+              // >
+              //   {saving ? (
+              //     <LoaderCircle width={"1rem"} className="animate-spin" />
+              //   ) : !loadedLetterId ? (
+              //     <Plus width={"1rem"} color="darkblue" />
+              //   ) : (
+              //     <Plus width={"1rem"} color="darkblue" />
+              //   )}
+              //   {saving
+              //     ? "Saving"
+              //     : !loadedLetterId
+              //     ? "Add to Database"
+              //     : "Save as New"}
+              // </button>
+            }
+          </div>
+        )}
       </div>
 
-      {showPreviewJumpTip && (
+      
+  
+      {canEditOfferLetters && showPreviewJumpTip && (
         <div
           style={{
             marginLeft: "1rem",
@@ -3711,6 +3903,7 @@ const [searchTerm, setSearchTerm] = useState("");
                   Roles & Responsibilities
                 </h2>
                 <div
+                  onClick={handlePreviewRolesClick}
                   style={{
                     display: "flex",
                     flexDirection: "column",
@@ -3719,7 +3912,11 @@ const [searchTerm, setSearchTerm] = useState("");
                 >
                   {formData.roles.map((role, index) =>
                     role.title.trim() || role.description.trim() ? (
-                      <div key={index}>
+                      <div
+                        key={index}
+                        data-preview-role-index={index}
+                        style={{ cursor: "pointer" }}
+                      >
                         {role.title.trim() ? (
                           <h3
                             style={{
@@ -4114,7 +4311,10 @@ const [searchTerm, setSearchTerm] = useState("");
         </div>
         </div>
       </div>
-    </ScrollArea>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 
   const handleRenamePreset = async (newName: string) => {
@@ -4136,32 +4336,6 @@ const [searchTerm, setSearchTerm] = useState("");
 
   return (
     <>
-      {/* Mobile not available screen */}
-      <div className="mobile-only" style={{
-        display: "none",
-        height: "100svh",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "1rem",
-        padding: "2rem",
-        textAlign: "center",
-        background: "rgba(200 200 200/ 8%)",
-        position: "relative",
-      }}>
-        <div style={{ position: "absolute", top: 0, left: 0, width: "100%", padding:"1.25rem" }}>
-          <Back noback={false} />
-        </div>
-        <svg width="3rem" height="3rem" viewBox="0 0 24 24" fill="none" stroke="darkblue" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-          <line x1="12" y1="18" x2="12" y2="18.01"/>
-        </svg>
-        <p style={{ fontWeight: 600, fontSize: "1.1rem", color: "darkblue" }}>Not available on mobile</p>
-        <p style={{ fontSize: "0.85rem", color: "rgba(0 0 0/ 55%)", maxWidth: "20rem" }}>
-          This page is not currently available on mobile devices. Please use a desktop or laptop to access Offer Letters.
-        </p>
-      </div>
-
       <div className="desktop-only" style={{ display: "block" }}>
       {/* <div style={{border:"", display:"flex", alignItems:"center", justifyContent:'center'}}>
         <ConfettiExplosion/>
@@ -4179,19 +4353,21 @@ const [searchTerm, setSearchTerm] = useState("");
         }}
       >
         <motion.div>
-          <button
-            style={{
-              position: "fixed",
-              bottom: 0,
-              right: 0,
-              zIndex: 10,
-              margin: "2rem",
-            }}
-            onClick={() => setDrawerVisible(true)}
-            className="mobile-menu-button"
-          >
-            <Menu color="black" width="1.5rem" />
-          </button>
+          {canEditOfferLetters && (
+            <button
+              style={{
+                position: "fixed",
+                bottom: 0,
+                right: 0,
+                zIndex: 10,
+                margin: "2rem",
+              }}
+              onClick={() => setDrawerVisible(true)}
+              className="mobile-menu-button"
+            >
+              <Menu color="black" width="1.5rem" />
+            </button>
+          )}
           <Back
             blurBG
             fixed
@@ -4234,15 +4410,15 @@ const [searchTerm, setSearchTerm] = useState("");
                     textTransform: "uppercase",
                   }}
                 >
-                  {saving ? (
+                  {/* {saving ? (
                     <LoaderCircle className="animate-spin" width={"1rem"} />
                   ) : (
                     loadedLetterId && (
                       <Database color="darkblue" width={"1rem"} />
                     )
-                  )}
+                  )} */}
 
-                  {loadedLetterId}
+                  {/* {loadedLetterId} */}
                 </p>
                 {hasChanges && loadedLetterId && (
                   <div
@@ -4278,7 +4454,7 @@ const [searchTerm, setSearchTerm] = useState("");
                   style={{
                     width: "100%",
                     fontSize: "0.9rem",
-                    padding: "0.5rem 1rem",
+                    padding: "0.5rem 1.25rem",
                     background: pdfLoading ? "darkslateblue" : "darkblue",
                     color: "white",
                     border: "none",
@@ -4308,12 +4484,12 @@ const [searchTerm, setSearchTerm] = useState("");
                     {pdfLoading ? (
                       <>
                         <LoaderCircle className="animate-spin" width="1rem" />
-                        <span>Generating ({pdfProgress}%)...</span>
+                        <span>({pdfProgress}%)</span>
                       </>
                     ) : (
                       <>
-                        <Sparkles color="white" width={"1rem"} />
-                        Generate PDF
+                        <FilePlus color="white" width={"1rem"} />
+                        Generate 
                       </>
                     )}
                   </div>
@@ -4331,93 +4507,95 @@ const [searchTerm, setSearchTerm] = useState("");
                   )}
                 </button> */}
 
-                {!loadedLetterId ? (
-                  <motion.button
-                    onClick={!loadedLetterId ? handleSave : handleSaveChanges}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "rgba(100 100 100/ 10%)",
-                      fontSize: "0.75rem",
-                      // border: "1px solid rgba(100 100 100/ 40%)",
-                      padding: "0.5rem 1rem",
-                      borderRadius: "0.5rem",
-                      cursor: "pointer",
-                      height: "",
-                      willChange: "transform",
-                    }}
-                  >
-                    {saving ? (
-                      <LoaderCircle className="animate-spin" />
-                    ) : (
-                      <Save width={"1.25rem"} color="darkblue" />
-                    )}
-                  </motion.button>
-                ) : (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <motion.button
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          background: "rgba(100 100 100/ 10%)",
-                          fontSize: "0.75rem",
-                          // border: "1px solid rgba(100 100 100/ 40%)",
-                          padding: "0.65rem 1rem",
-                          borderRadius: "0.5rem",
-                          cursor: "pointer",
-                          height: "",
-                          willChange: "transform",
-                        }}
-                      >
-                        {saving ? (
-                          <LoaderCircle className="animate-spin" />
-                        ) : !loadedLetterId ? (
-                          <Save color="darkblue" width={"1.25rem"} />
-                        ) : (
-                          <Save color="darkblue" width={"1.25rem"} />
-                        )}
+                {canEditOfferLetters && (
+                  !loadedLetterId ? (
+                    <motion.button
+                      onClick={!loadedLetterId ? handleSave : handleSaveChanges}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "rgba(100 100 100/ 10%)",
+                        fontSize: "0.75rem",
+                        // border: "1px solid rgba(100 100 100/ 40%)",
+                        padding: "0.5rem 1rem",
+                        borderRadius: "0.5rem",
+                        cursor: "pointer",
+                        height: "",
+                        willChange: "transform",
+                      }}
+                    >
+                      {saving ? (
+                        <LoaderCircle className="animate-spin" />
+                      ) : (
+                        <Save width={"1.25rem"} color="darkblue" />
+                      )}
+                    </motion.button>
+                  ) : (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <motion.button
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "rgba(100 100 100/ 10%)",
+                            fontSize: "0.75rem",
+                            // border: "1px solid rgba(100 100 100/ 40%)",
+                            padding: "0.65rem 1rem",
+                            borderRadius: "0.5rem",
+                            cursor: "pointer",
+                            height: "",
+                            willChange: "transform",
+                          }}
+                        >
+                          {saving ? (
+                            <LoaderCircle className="animate-spin" />
+                          ) : !loadedLetterId ? (
+                            <Save color="darkblue" width={"1.25rem"} />
+                          ) : (
+                            <Save color="darkblue" width={"1.25rem"} />
+                          )}
 
-                        <ChevronDown width={"1rem"} />
-                      </motion.button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem
-                        style={{
-                          display: "flex",
-                          justifyContent: "flex-start",
-                        }}
-                        onClick={handleSaveChanges}
-                      >
-                        <Save color="royalblue" className="w-4" />
-                        <span>Save Changes</span>
-                      </DropdownMenuItem>
+                          <ChevronDown width={"1rem"} />
+                        </motion.button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem
+                          style={{
+                            display: "flex",
+                            justifyContent: "flex-start",
+                          }}
+                          onClick={handleSaveChanges}
+                        >
+                          <Save color="royalblue" className="w-4" />
+                          <span>Save Changes</span>
+                        </DropdownMenuItem>
 
-                      <DropdownMenuItem
-                        style={{
-                          display: "flex",
-                          justifyContent: "flex-start",
-                        }}
-                        onClick={handleSave}
-                      >
-                        <FilePlus2 className="w-4" />
-                        <span>Save as New</span>
-                        <p></p>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <DropdownMenuItem
+                          style={{
+                            display: "flex",
+                            justifyContent: "flex-start",
+                          }}
+                          onClick={handleSave}
+                        >
+                          <FilePlus2 className="w-4" />
+                          <span>Save as New</span>
+                          <p></p>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )
                 )}
 
                 <motion.button
@@ -4467,33 +4645,122 @@ const [searchTerm, setSearchTerm] = useState("");
                 height: "calc(100vh - 8rem)",
                 border: "",
                 justifyContent: "center",
+                alignItems: "flex-start",
                 paddingTop: "5rem",
+                position: "relative",
               }}
             >
-              {/* Input Form - Hidden on mobile */}
-              <div className="input-form" style={styles.inputForm}>
-                {renderInputForm()}
-              </div>
+              {/* Input Form - Visible on wide screens */}
+              <AnimatePresence mode="sync">
+                {canEditOfferLetters && screenWidth >= FORM_PANEL_BREAKPOINT && !hideDesktopInputSection && (
+                  <motion.div
+                    key="desktop-input-section"
+                    initial={{ opacity: 0, x: -28, scale: 0.98, width: 0 }}
+                    animate={{ opacity: 1, x: 0, scale: 1, width: "30%" }}
+                    exit={{ opacity: 0, x: -22, scale: 0.985, width: 0 }}
+                    transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ overflow: "hidden", flexShrink: 0 }}
+                  >
+                    <div className="input-form" style={{ ...styles.inputForm, width: "100%", overflow: "auto", maxHeight: "calc(100vh - 8rem - 5rem)" }}>
+                      {renderInputForm(false, true)}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-              {/* Preview - Full width on mobile */}
-              <div className="" style={{}}>
+              {/* Preview */}
+              <motion.div
+                layout
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                style={{
+                  flex: screenWidth < FORM_PANEL_BREAKPOINT ? "0 1 90%" : "0 1 auto",
+                  maxWidth: screenWidth < FORM_PANEL_BREAKPOINT ? "800px" : "100%",
+                }}
+              >
                 {renderPreview()}
-              </div>
+              </motion.div>
+
+              {/* Floating button for narrow screens */}
+              {canEditOfferLetters && (screenWidth < FORM_PANEL_BREAKPOINT || hideDesktopInputSection) && (
+                <motion.button
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    if (screenWidth >= FORM_PANEL_BREAKPOINT && hideDesktopInputSection) {
+                      setHideDesktopInputSection(false);
+                    } else {
+                      setResponsiveFormDrawerOpen(true);
+                    }
+                  }}
+                  style={{
+                    position: "fixed",
+                    bottom: "2rem",
+                    right: "2rem",
+                    width: "3.5rem",
+                    height: "3.5rem",
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, rgba(15, 5, 130, 0.96), rgba(25, 12, 170, 0.94))",
+                    border: "1.5px solid rgba(186, 218, 255, 0.5)",
+                    color: "white",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 40,
+                    boxShadow: "0 8px 24px rgba(37, 99, 235, 0.3), inset 0 1px 3px rgba(255, 255, 255, 0.7)",
+                  }}
+                  title={screenWidth >= FORM_PANEL_BREAKPOINT && hideDesktopInputSection ? "Show section" : "Edit form"}
+                >
+                  <Pencil width="1.2rem" />
+                </motion.button>
+              )}
             </div>
           )}
         </motion.div>
 
-        {/* Mobile Drawer */}
-        <Drawer
-          style={{ background: "black", color: "white" }}
-          title="Offer Letter Details"
-          placement="left"
-          onClose={() => setDrawerVisible(false)}
-          open={drawerVisible}
-          width="100%"
-        >
-          {renderInputForm()}
-        </Drawer>
+        {canEditOfferLetters && (
+          <AntDrawer
+            style={{ background: "black", color: "white" }}
+            title="Offer Letter Details"
+            placement="left"
+            onClose={() => setDrawerVisible(false)}
+            open={drawerVisible}
+            width="100%"
+          >
+            {renderInputForm(true)}
+          </AntDrawer>
+        )}
+
+        {/* Responsive Form Drawer (shadcn) for narrow screens */}
+        {canEditOfferLetters && (
+          <Drawer open={responsiveFormDrawerOpen} onOpenChange={setResponsiveFormDrawerOpen}>
+            <DrawerContent
+              style={{
+                padding: "0.75rem",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                height: "85vh",
+                maxHeight: "85vh",
+              }}
+            >
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  width: "100%",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  WebkitOverflowScrolling: "touch",
+                }}
+              >
+                {renderInputForm(true)}
+              </div>
+            </DrawerContent>
+          </Drawer>
+        )}
 
         <DefaultDialog
           title={"Report a Bug"}
@@ -4526,7 +4793,7 @@ const [searchTerm, setSearchTerm] = useState("");
         />
 
         {/* Offer Letters Drawer */}
-        <Drawer
+        <AntDrawer
       title="Offer Letters"
       placement="right"
       onClose={() => {
@@ -4792,7 +5059,7 @@ const [searchTerm, setSearchTerm] = useState("");
         </div>
       )}
       </div>
-    </Drawer>
+    </AntDrawer>
         {/* {loadedLetterId && (
           <button
             onClick={handleSaveChanges}
@@ -5271,7 +5538,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 padding: "0.5rem",
                 borderRadius: "0.45rem",
                 cursor: "pointer",
-                fontSize: "0.9rem",
+                fontSize: "0.8rem",
                 fontWeight: 500,
                 display: "flex",
                 alignItems: "center",
@@ -5279,7 +5546,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 gap: "0.35rem",
               }}
             >
-              <Plus width="0.75rem" />
+             <Plus size={15}/>
               Add Custom Field
             </button>
           </div>
@@ -5295,7 +5562,7 @@ const [searchTerm, setSearchTerm] = useState("");
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           <div>
-            <label style={{ fontSize: "0.72rem", fontWeight: 600, color: "rgba(15 23 42/ 80%)", marginBottom: "0.3rem", display: "block" }}>
+            <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "rgba(15 23 42/ 80%)", marginBottom: "0.3rem", display: "block" }}>
               Field Name
             </label>
             <input
@@ -5313,7 +5580,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 borderRadius: "0.45rem",
                 border: "1px solid rgba(15 23 42/ 15%)",
                 background: "rgba(255 255 255/ 95%)",
-                fontSize: "0.8rem",
+                fontSize: "0.9rem",
                 boxSizing: "border-box",
               }}
             />
@@ -5321,11 +5588,11 @@ const [searchTerm, setSearchTerm] = useState("");
 
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: "0.72rem", fontWeight: 600, color: "rgba(15 23 42/ 80%)", marginBottom: "0.3rem", display: "block" }}>
+              <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "rgba(15 23 42/ 80%)", marginBottom: "0.3rem", display: "block" }}>
                 Field Type
               </label>
               <Select value={newFieldType} onValueChange={(value: FieldType) => setNewFieldType(value)}>
-                <SelectTrigger style={{ padding: "0.5rem 0.6rem", fontSize: "0.8rem" }}>
+                <SelectTrigger style={{ padding: "0.5rem 0.6rem", fontSize: "0.9rem" }}>
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent position="popper">
@@ -5338,11 +5605,11 @@ const [searchTerm, setSearchTerm] = useState("");
             </div>
 
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: "0.72rem", fontWeight: 600, color: "rgba(15 23 42/ 80%)", marginBottom: "0.3rem", display: "block" }}>
+              <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "rgba(15 23 42/ 80%)", marginBottom: "0.3rem", display: "block" }}>
                 Section
               </label>
               <Select value={newFieldSection} onValueChange={(value: "table" | "paragraph") => setNewFieldSection(value)}>
-                <SelectTrigger style={{ padding: "0.5rem 0.6rem", fontSize: "0.8rem" }}>
+                <SelectTrigger style={{ padding: "0.5rem 0.6rem", fontSize: "0.9rem" }}>
                   <SelectValue placeholder="Section" />
                 </SelectTrigger>
                 <SelectContent position="popper">
@@ -5369,7 +5636,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 background: "rgba(15 23 42/ 4%)",
                 color: "rgba(15 23 42/ 80%)",
                 cursor: "pointer",
-                fontSize: "0.76rem",
+                fontSize: "0.9rem",
                 fontWeight: 500,
               }}
             >
@@ -5390,7 +5657,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 color: "white",
                 border: "none",
                 cursor: "pointer",
-                fontSize: "0.76rem",
+                fontSize: "0.9rem",
                 fontWeight: 500,
                 display: "flex",
                 alignItems: "center",
@@ -5398,7 +5665,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 gap: "0.35rem",
               }}
             >
-              <Plus width="0.7rem" />
+              {/* <Plus width="0.7rem" /> */}
               Add Field
             </motion.button>
           </div>
@@ -5406,13 +5673,6 @@ const [searchTerm, setSearchTerm] = useState("");
       </ResponsiveModal>
 
       </div>{/* end desktop-only */}
-
-      <style>{`
-        @media (max-width: 767px) {
-          .mobile-only { display: flex !important; }
-          .desktop-only { display: none !important; }
-        }
-      `}</style>
     </>
   );
 }

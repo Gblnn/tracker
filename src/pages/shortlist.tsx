@@ -13,7 +13,7 @@ import {
 import { db } from "@/firebase";
 import { collection, deleteDoc, doc, getDocs, query } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { LoaderCircle, RefreshCw, Trash2, Users } from "lucide-react";
+import { LoaderCircle, RefreshCw, Search, Trash2, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -39,6 +39,7 @@ export default function Shortlist() {
   const [recordToRemove, setRecordToRemove] = useState<ShortlistRecord | null>(null);
   const [renderLimit, setRenderLimit] = useState(24);
   const [clearingAll, setClearingAll] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -69,9 +70,20 @@ export default function Shortlist() {
     }
   };
 
+  const filteredRecords = useMemo(() => {
+    if (!searchQuery.trim()) return records;
+    const q = searchQuery.toLowerCase();
+    return records.filter(
+      (r) =>
+        r.name?.toLowerCase().includes(q) ||
+        r.jobTitle?.toLowerCase().includes(q) ||
+        r.email?.toLowerCase().includes(q)
+    );
+  }, [records, searchQuery]);
+
   const visibleRecords = useMemo(() => {
-    return records.slice(0, renderLimit);
-  }, [records, renderLimit]);
+    return filteredRecords.slice(0, renderLimit);
+  }, [filteredRecords, renderLimit]);
 
   const handleRequestRemove = (record: ShortlistRecord) => {
     setRecordToRemove(record);
@@ -132,6 +144,51 @@ export default function Shortlist() {
         }
       />
 
+      {/* Search bar — pinned below header */}
+      {!fetchingData && records.length > 0 && (
+        <div
+          style={{
+            position: "fixed",
+            top: "4.25rem",
+            left: 0,
+            right: 0,
+            padding: "0.65rem 1rem",
+            background: "rgba(250,250,250,0.95)",
+            backdropFilter: "blur(8px)",
+            zIndex: 15,
+            borderBottom: "1px solid rgba(100,100,100,0.1)",
+          }}
+        >
+          <div style={{ position: "relative" }}>
+            <Search
+              style={{
+                position: "absolute",
+                left: "0.7rem",
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: "0.85rem",
+                opacity: 0.45,
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Search by name, role or email…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "0.6rem 0.85rem 0.6rem 2.1rem",
+                borderRadius: "0.55rem",
+                background: "rgba(100,100,100,0.08)",
+                fontSize: "0.875rem",
+                border: "none",
+                outline: "none",
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {fetchingData ? (
         <div
           style={{
@@ -145,60 +202,79 @@ export default function Shortlist() {
           <LoaderCircle className="animate-spin" width={"2.1rem"} />
         </div>
       ) : records.length > 0 ? (
-        <div style={{ paddingTop: "5.6rem", paddingInline: "1rem", paddingBottom: "1.5rem" }}>
+        <div
+          style={{
+            paddingTop: records.length > 0 ? "8.5rem" : "5.6rem",
+            paddingInline: "1rem",
+            paddingBottom: "1.5rem",
+          }}
+        >
+          {/* Stats row */}
           <div
             style={{
-              display: "grid",
-              gap: "0.6rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
               marginBottom: "0.85rem",
+              opacity: 0.75,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", opacity: 0.8 }}>
-              <Users width={"0.9rem"} />
-              <span style={{ fontSize: "0.85rem" }}>
-                {records.length} shortlisted {records.length === 1 ? "candidate" : "candidates"}
-              </span>
+            <Users style={{ width: "0.85rem" }} />
+            <span style={{ fontSize: "0.82rem" }}>
+              {searchQuery
+                ? `${filteredRecords.length} of ${records.length} candidates`
+                : `${records.length} shortlisted ${records.length === 1 ? "candidate" : "candidates"}`}
+            </span>
+          </div>
+
+          {filteredRecords.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "3rem 1rem",
+                opacity: 0.55,
+              }}
+            >
+              <p style={{ fontSize: "0.875rem" }}>No candidates match "{searchQuery}"</p>
             </div>
-          </div>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gap: "0.75rem",
+                gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))",
+              }}
+            >
+              {visibleRecords.map((record) => (
+                <ApplicationCard
+                  key={record.id}
+                  app={{
+                    id: record.id,
+                    name: record.name || "Unnamed Candidate",
+                    email: record.email || "N/A",
+                    phone: record.phone || "N/A",
+                    jobTitle: record.jobTitle || "Unknown Role",
+                    created_at: record.created_at,
+                    cv: record.cv,
+                    cvLink: record.cvLink,
+                  }}
+                  shortlisted
+                  shortlisting={false}
+                  declining={removingId === record.id}
+                  onShortlist={() => {}}
+                  onDecline={() => handleRequestRemove(record)}
+                  showShortlistAction={false}
+                  secondaryActionLabel="Remove"
+                />
+              ))}
+            </div>
+          )}
 
-          <div
-            style={{
-              display: "grid",
-              gap: "0.7rem",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            }}
-          >
-            {visibleRecords.map((record) => (
-              <ApplicationCard
-                key={record.id}
-                app={{
-                  id: record.id,
-                  name: record.name || "Unnamed Candidate",
-                  email: record.email || "N/A",
-                  phone: record.phone || "N/A",
-                  jobTitle: record.jobTitle || "Unknown Role",
-                  created_at: record.created_at,
-                  cv: record.cv,
-                  cvLink: record.cvLink,
-                }}
-                shortlisted
-                shortlisting={false}
-                declining={removingId === record.id}
-                onShortlist={() => {
-                  // No-op: shortlisted records are already in shortlist.
-                }}
-                onDecline={() => handleRequestRemove(record)}
-                showShortlistAction={false}
-                secondaryActionLabel="Remove"
-              />
-            ))}
-          </div>
-
-          {renderLimit < records.length ? (
-            <div style={{ display: "flex", justifyContent: "center", marginTop: "0.85rem" }}>
+          {renderLimit < filteredRecords.length ? (
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
               <Button variant="outline" onClick={() => setRenderLimit((prev) => prev + 24)}>
                 <RefreshCw width={"0.85rem"} />
-                Load More
+                Load More ({filteredRecords.length - renderLimit} remaining)
               </Button>
             </div>
           ) : null}
@@ -215,9 +291,10 @@ export default function Shortlist() {
             padding: "1rem",
           }}
         >
-          <div style={{ opacity: 0.7, display: "grid", gap: "0.35rem" }}>
-            <h3 style={{ fontSize: "1.05rem", fontWeight: 650 }}>No shortlisted candidates</h3>
-            <p style={{ fontSize: "0.85rem" }}>
+          <div style={{ opacity: 0.65, display: "grid", gap: "0.4rem" }}>
+            <Users style={{ width: "2rem", margin: "0 auto", opacity: 0.4 }} />
+            <h3 style={{ fontSize: "1rem", fontWeight: 650, marginTop: "0.35rem" }}>No shortlisted candidates</h3>
+            <p style={{ fontSize: "0.83rem", opacity: 0.75 }}>
               Add candidates from the applications list to see them here.
             </p>
           </div>

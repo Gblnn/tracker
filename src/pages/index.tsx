@@ -17,7 +17,6 @@ import { motion } from "framer-motion";
 import {
   ArrowRightLeft,
   BookMarked,
-  BookOpen,
   Bug,
   Car,
   Clock3,
@@ -46,6 +45,7 @@ export default function Index() {
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [valeLoginPrompt, setValeLoginPrompt] = useState(false);
   const [logoutPrompt, setLogoutPrompt] = useState(false);
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const navigate = useNavigate();
   const [issue, setIssue] = useState("");
   const [loading, setLoading] = useState(false);
@@ -92,6 +92,19 @@ export default function Index() {
       }
     }
   }, [userData, navigate]);
+
+  useEffect(() => {
+    const handleResize = () => setScreenWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Determine grid columns based on screen size
+  const getGridColumns = () => {
+    if (screenWidth < 414) return "repeat(3, 1fr)"; // iPhone SE: 3 columns
+    if (screenWidth < 768) return "repeat(4, 1fr)"; // iPhone XR and similar: 4 columns
+    return "repeat(auto-fill, minmax(110px, 1fr))"; // Desktop: auto-fill
+  };
 
   // Sync pending fuel logs on app launch
   useEffect(() => {
@@ -236,7 +249,7 @@ export default function Index() {
         <ConfettiExplosion/>
         </div> */}
         <Back
-        shadow
+        
       //  fontFamily="'Britney', cursive"
       //  fontSize="1.5rem"
         blurBG
@@ -244,7 +257,7 @@ export default function Index() {
           editMode={userData?.editor===true? true : false}
             title="Starboard"
             subtitle={"1.22"}
-            // icon={<Circle fill="black" style={{ width: "1.75rem" }} />}
+            icon={<img src="/stardox-bg.png" style={{width:"2rem"}} alt="Starboard" />}
             noback
             extra={
               <div
@@ -428,17 +441,16 @@ export default function Index() {
             <div
               style={{ 
                 display: "grid", 
-                gridTemplateColumns: "repeat(auto-fill, minmax(88px, 1fr))",
-                gap: "0.4rem",
+                gridTemplateColumns: getGridColumns(),
+                gap: screenWidth >= 1024 ? "0.6rem" : "0.8rem",
                 paddingBottom: "1rem",
                 paddingTop:"0.5rem"
-                // padding:"3.5rem"
               }}
-            >        
+            >
               {hasModuleAccess('records_master') && (
                 <GridTile
                   title="Records"
-                  icon={<FileArchive width={"3rem"}  />}
+                  icon={<FileArchive width="2.5rem" />}
                   onClick={() => navigate('/records')}
                 />
               )}
@@ -446,7 +458,7 @@ export default function Index() {
               {(admin || hasModuleAccess('user_management')) && (
                 <GridTile
                   title="Users"
-                  icon={<Users />}
+                  icon={<Users width="2.5rem" />}
                   onClick={() => navigate('/users')}
                 />
               )}
@@ -454,7 +466,7 @@ export default function Index() {
               {hasModuleAccess('new_hire') && (
                 <GridTile
                   title="New Hire"
-                  icon={<UserCheck width={"2rem"}  />}
+                  icon={<UserCheck width="2.5rem" />}
                   onClick={() => authenticateModule('new_hire', '/new-hire', 'New Hire')}
                 />
               )}
@@ -462,7 +474,7 @@ export default function Index() {
               {hasModuleAccess('quick_links') && (
                 <GridTile
                   title="Links"
-                  icon={<Link width={"2rem"}  />}
+                  icon={<Link width="2.5rem" />}
                   onClick={() => authenticateModule('quick_links', '/quick-links', 'Links')}
                 />
               )}
@@ -470,7 +482,7 @@ export default function Index() {
               {hasModuleAccess('qr_generator') && (
                 <GridTile
                   title="QR"
-                  icon={<QrCode width={"2rem"}  />}
+                  icon={<QrCode width="2.5rem" />}
                   onClick={() => authenticateModule('qr_generator', '/qr-code-generator', 'QR Generator')}
                 />
               )}
@@ -478,7 +490,7 @@ export default function Index() {
               {hasModuleAccess('projects') && (
                 <GridTile
                   title="Projects"
-                  icon={<Package width={"2rem"}/>}
+                  icon={<Package width="2.5rem" />}
                   onClick={() => authenticateModule('projects', '/projects', 'Projects')}
                 />
               )}
@@ -486,7 +498,7 @@ export default function Index() {
               {hasModuleAccess('timetaag') && (
                 <GridTile
                   title="Timetaag"
-                  icon={<img src="/timetaag.png" alt="Timetaag" style={{ width: "2rem", height: "2rem", objectFit: "contain", filter: "grayscale(1) brightness(0.7) contrast(1.2)" }} />}
+                  icon={<img src="/timetaag.png" alt="Timetaag" style={{ width: "2.5rem", height: "2.5rem", objectFit: "contain", filter: "grayscale(1) brightness(0.7) contrast(1.2)" }} />}
                   onClick={() => authenticateModule('timetaag', '/timetaag', 'Timetaag')}
                 />
               )}
@@ -494,23 +506,23 @@ export default function Index() {
               {hasModuleAccess('asset_master') && (
                 <GridTile
                   title="Asset Master"
-                  icon={<Car width={"2rem"}  />}
+                  icon={<Car width="2.5rem" />}
                   onClick={() => authenticateModule('asset_master', '/asset-master', 'Asset Master')}
                 />
               )}
 
               {hasModuleAccess('vehicle_log_book') && (
                 <GridTile
-                  title="Vehicle Log"
-                  icon={<BookOpen width={"2rem"}  />}
-                  onClick={() => authenticateModule('vehicle_log_book', '/vehicle-log-book', 'Vehicle Log')}
+                  title="Vehicles"
+                  icon={<Car width="2.5rem" />}
+                  onClick={() => authenticateModule('vehicle_log_book', '/vehicles', 'Vehicles')}
                 />
               )}
 
               {hasModuleAccess('passports') && (
                 <GridTile
                   title="Passports"
-                  icon={<BookMarked width={"2rem"}  />}
+                  icon={<BookMarked width="2.5rem" />}
                   onClick={() => authenticateModule('passports', '/passports', 'Passports')}
                 />
               )}
@@ -518,7 +530,7 @@ export default function Index() {
               {hasModuleAccess('petty_cash') && (
                 <GridTile
                   title="Petty Cash"
-                  icon={<Wallet width={"2rem"}  />}
+                  icon={<Wallet width="2.5rem" />}
                   onClick={() => authenticateModule('petty_cash', '/petty-cash', 'Petty Cash')}
                 />
               )}
@@ -526,7 +538,7 @@ export default function Index() {
               {hasModuleAccess('offer_letters') && (
                 <GridTile
                   title="Offer Letters"
-                  icon={<FileText width={"2rem"}  />}
+                  icon={<FileText width="2.5rem" />}
                   onClick={() => authenticateModule('offer_letters', '/offer-letters', 'Offer Letters')}
                 />
               )}
@@ -534,7 +546,7 @@ export default function Index() {
               {hasModuleAccess('employee_clearance_form') && (
                 <GridTile
                   title="Forms"
-                  icon={<FileText width={"2rem"}  />}
+                  icon={<FileText width="2.5rem" />}
                   onClick={() => authenticateModule('employee_clearance_form', '/employee-clearance-form', 'Forms')}
                 />
               )}
@@ -542,7 +554,7 @@ export default function Index() {
               {hasModuleAccess('shift_logs') && (
                 <GridTile
                   title="Shift Logs"
-                  icon={<Clock3 width={"2rem"} />}
+                  icon={<Clock3 width="2.5rem" />}
                   onClick={() => authenticateModule('shift_logs', '/shift-logs', 'Shift Logs')}
                 />
               )}
@@ -550,7 +562,7 @@ export default function Index() {
               {hasModuleAccess('transfer_requests') && (
                 <GridTile
                   title="Transfers"
-                  icon={<ArrowRightLeft width={"2rem"} />}
+                  icon={<ArrowRightLeft width="2.5rem" />}
                   onClick={() => authenticateModule('transfer_requests', '/transfer-requests', 'Transfers')}
                 />
               )}
@@ -558,17 +570,18 @@ export default function Index() {
               {hasModuleAccess('sim_cards') && (
                 <GridTile
                   title="SIM Cards"
-                  icon={<Smartphone width={"2rem"} />}
+                  icon={<Smartphone width="2.5rem" />}
                   onClick={() => authenticateModule('sim_cards', '/sim-cards', 'SIM Cards')}
                 />
               )}
-                {hasModuleAccess('offboarding') && (
-                  <GridTile
-                    title="Offboarding"
-                    icon={<LogOut width={"2rem"} />}
-                    onClick={() => authenticateModule('offboarding', '/offboarding', 'Offboarding')}
-                  />
-                )}
+
+              {hasModuleAccess('offboarding') && (
+                <GridTile
+                  title="Offboarding"
+                  icon={<LogOut width="2.5rem" />}
+                  onClick={() => authenticateModule('offboarding', '/offboarding', 'Offboarding')}
+                />
+              )}
             </div>
             </>
             ) : (

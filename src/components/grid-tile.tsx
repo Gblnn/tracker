@@ -6,13 +6,11 @@ interface GridTileProps {
   onClick: () => void;
 }
 
-// Light blue tint
-
 export default function GridTile({ title, icon, onClick }: GridTileProps) {
   return (
     <motion.button
       type="button"
-      whileTap={{ scale: 0.95 }}
+      whileTap={{ scale: 0.93 }}
       onClick={onClick}
       style={{
         display: "flex",
@@ -37,17 +35,35 @@ export default function GridTile({ title, icon, onClick }: GridTileProps) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "rgba(100 100 100 / 0.05)",
-          boxShadow: "none",
-          color:"darkblue"
+          background: "rgba(250 250 250)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          // border: "1px solid rgba(186, 218, 255, 0.5)",
+          // boxShadow: "0 8px 16px rgba(20, 60, 180, 0.25), inset 0 1px 3px rgba(255, 255, 255, 0.7)",
+          color: "darkblue",
+          transition: "all 240ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+          position: "relative",
+          overflow: "hidden",
+          transform: "translateY(-2px)",
         }}
       >
+        <div
+          style={{
+            position: "absolute",
+            inset: "0.05rem",
+            borderRadius: "1rem",
+            pointerEvents: "none",
+            background: "linear-gradient(165deg, rgba(255,255,255,0.5) 0%, rgba(200,230,255,0.2) 50%, rgba(255,255,255,0) 100%)",
+          }}
+        />
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             color: "inherit",
+            position: "relative",
+            zIndex: 1,
           }}
         >
           {icon}
@@ -63,6 +79,7 @@ export default function GridTile({ title, icon, onClick }: GridTileProps) {
           opacity: 0.9,
           maxWidth: "6.5rem",
           textWrap: "balance",
+          transition: "opacity 240ms ease",
         }}
       >
         {title}

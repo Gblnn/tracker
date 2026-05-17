@@ -177,6 +177,7 @@ export default function App() {
           <Route path="/fuel-log" element={<FuelLog />} />
           <Route path="/passports" element={<Passports />} />
           <Route path="/asset-master" element={<AssetMaster />} />
+          <Route path="/vehicles" element={<VehicleLogBook />} />
           <Route path="/vehicle-log-book" element={<VehicleLogBook />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/project-lpo" element={<ProjectLPO />} />

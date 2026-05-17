@@ -29,7 +29,7 @@ const MODULE_ROUTE_PERMISSIONS: Record<string, string[]> = {
   projects: ["/projects", "/project-lpo"],
   timetaag: ["/timetaag"],
   shift_logs: ["/shift-logs"],
-  vehicle_log_book: ["/vehicle-log-book"],
+  vehicle_log_book: ["/vehicle-log-book", "/vehicles"],
   offer_letters: ["/offer-letters"],
   employee_clearance_form: ["/employee-clearance-form"],
   transfer_requests: ["/transfer-requests"]

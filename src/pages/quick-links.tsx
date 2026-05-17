@@ -374,7 +374,14 @@ export default function Index() {
           }
 
           <br />
-          <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gap: "0.6rem",
+              alignItems: "start",
+            }}
+          >
             {links.length==0&&loading ? (
               <div
                 style={{

@@ -46,22 +46,25 @@ export function ResponsiveModal({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const hasHeaderContent = !hideHeader && Boolean(title || description);
-  const useEdgeToEdgeContent = !hasHeaderContent;
-
   const mobileContentStyle: CSSProperties = {
     width: "100%",
-    ...(useEdgeToEdgeContent ? { padding: 0, gap: 0 } : null),
+    display: "flex",
+    flexDirection: "column",
+    padding: "0",
+    gap: "0",
     ...contentStyle,
   };
 
   const mobileBodyStyle: CSSProperties = {
     width: "100%",
+    display: "flex",
+    flexDirection: "column",
     paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+    overflowY: "auto",
   };
 
   const desktopContentStyle: CSSProperties = {
-    ...(useEdgeToEdgeContent ? { padding: 0, gap: 0 } : { padding: "2rem" }),
+    ...(hideHeader ? { padding: "0", gap: "0" } : { padding: "2rem" }),
     ...contentStyle,
   };
 
@@ -70,9 +73,9 @@ export function ResponsiveModal({
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent style={mobileContentStyle}>
           {!hideHeader && (title || description) && (
-            <div style={{ padding: "", border:"", textAlign:"left", width:"100%" }}>
-              {title && <DrawerTitle style={{display:"flex", justifyContent:"center", width:"100%", border:"", padding:"0.5rem"}}>{title}</DrawerTitle>}
-              {description && <DrawerDescription style={{padding:"1rem"}}> {description}</DrawerDescription>}
+            <div style={{ padding: "0.5rem 1rem", textAlign: "left", width: "100%", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+              {title && <DrawerTitle style={{ padding: "0.5rem 0" }}>{title}</DrawerTitle>}
+              {description && <DrawerDescription style={{ padding: "0.5rem 0" }}>{description}</DrawerDescription>}
             </div>
           )}
           <div style={mobileBodyStyle}>
@@ -88,8 +91,8 @@ export function ResponsiveModal({
       <DialogContent style={desktopContentStyle}>
         {!hideHeader && (title || description) && (
           <DialogHeader style={{ paddingBottom: "0.5rem" }}>
-            {title && <DialogTitle >{title}</DialogTitle>}
-            {description && <DialogDescription >{description}</DialogDescription>}
+            {title && <DialogTitle>{title}</DialogTitle>}
+            {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
         )}
         {children}

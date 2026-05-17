@@ -23,6 +23,24 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   }, [value]);
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain");
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return;
+    selection.deleteFromDocument();
+    const range = selection.getRangeAt(0);
+    const textNode = document.createTextNode(text);
+    range.insertNode(textNode);
+    range.setStartAfter(textNode);
+    range.setEndAfter(textNode);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
   const handleInput = () => {
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
@@ -107,6 +125,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         contentEditable
         onInput={handleInput}
         onBlur={handleInput}
+        onPaste={handlePaste}
         suppressContentEditableWarning
         style={{
           padding: "0.75rem",

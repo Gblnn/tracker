@@ -14,6 +14,7 @@ import emailjs from "@emailjs/browser";
 import moment from "moment";
 import { auth } from "@/firebase";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 interface Props {
   className?: string;
@@ -96,28 +97,50 @@ export default function IndexDropDown(props:Props) {
   return (
     <>
     <DropdownMenu>
-      <DropdownMenuTrigger
-        className={props.className}
-        style={{
-          outline: "none",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "none",
-          height: "2.5rem",
-          width: "2.5rem",
-          background: isOnline 
-            ? "darkblue"
-            : "linear-gradient(indianred, darkred)",
-          color: "white",
-          borderRadius: "0.375rem",
-        }}
-      >
-        {userData?.email ? (
-          <p className="text-sm">{getInitials(userData.name.split("@")[0])}</p>
-        ) : (
-          <UserX className="opacity-50" />
-        )}
+      <DropdownMenuTrigger asChild>
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          className={props.className}
+          style={{
+            outline: "none",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "none",
+            height: "2.5rem",
+            width: "2.5rem",
+            background: isOnline 
+              ? "linear-gradient(145deg, rgba(15, 5, 130, 0.96), rgba(25, 12, 170, 0.94) 45%, rgba(12, 3, 105, 0.98))"
+              : "linear-gradient(indianred, darkred)",
+            color: isOnline ? "#f2f8ff" : "white",
+            borderRadius: "0.375rem",
+            border: isOnline ? "1px solid rgba(186, 218, 255, 0.48)" : "none",
+            boxShadow: isOnline
+              ? "inset 0 1px 0 rgba(255,255,255,0.62), inset 0 -10px 16px rgba(8,30,120,0.5), 0 8px 16px rgba(4,16,60,0.4), 0 0 14px rgba(52,110,255,0.2), 0 0 0 1px rgba(160,204,255,0.18)"
+              : "none",
+            transition: "all 220ms ease",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {isOnline && (
+            <div
+              style={{
+                position: "absolute",
+                inset: "0.06rem",
+                borderRadius: "0.35rem",
+                pointerEvents: "none",
+                background: "linear-gradient(165deg, rgba(255,255,255,0.45) 0%, rgba(188,222,255,0.2) 18%, rgba(255,255,255,0) 52%), radial-gradient(135% 80% at 14% -10%, rgba(255,255,255,0.65), rgba(255,255,255,0) 58%)",
+              }}
+            />
+          )}
+          {userData?.email ? (
+            <p className="text-sm">{getInitials(userData.name.split("@")[0])}</p>
+          ) : (
+            <UserX className="opacity-50" />
+          )}
+        </motion.button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent className="mr-5 mt-1" style={{display:"flex", justifyContent:"flex-start", alignItems:"flex-start"}}>

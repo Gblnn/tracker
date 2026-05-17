@@ -74,7 +74,14 @@ export default function NewHire() {
           />
           <br />
 
-          <div style={{ display: "flex", flexFlow: "column", gap: "0.5rem" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+              gap: "0.6rem",
+              alignItems: "stretch",
+            }}
+          >
             <Directive
               onClick={() => usenavigate("/openings")}
               icon={<BriefcaseBusiness width={"1.25rem"} color="darkblue" />}

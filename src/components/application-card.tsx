@@ -1,4 +1,5 @@
 import moment from "moment";
+import { Check, ExternalLink, UserMinus } from "lucide-react";
 import { memo } from "react";
 
 export interface ApplicationCardData {
@@ -38,147 +39,112 @@ function ApplicationCardBase({
   return (
     <div
       style={{
-        border: "1px solid rgba(100,100,100,0.14)",
-        borderRadius: "0.8rem",
-        padding: "0.8rem",
+        border: "1px solid rgba(100,100,100,0.12)",
+        borderRadius: "0.9rem",
+        padding: "1rem",
         display: "grid",
-        gap: "0.5rem",
-        background: "rgba(100,100,100,0.03)",
+        gap: "0.65rem",
+        background: "rgba(255,255,255,0.5)",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "0.5rem",
-        }}
-      >
+      {/* Name + role */}
+      <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", alignItems: "flex-start" }}>
         <div style={{ minWidth: 0 }}>
-          <div
-            style={{
-              fontWeight: 600,
-              fontSize: "1rem",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
+          <div style={{ fontWeight: 600, fontSize: "0.95rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {app.name}
           </div>
-          <div
-            style={{
-              fontSize: "0.78rem",
-              opacity: 0.72,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
+          <div style={{ fontSize: "0.76rem", opacity: 0.58, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "0.15rem" }}>
             {app.jobTitle || "Unknown Role"}
           </div>
         </div>
-        {/* <span
-          style={{
-            fontSize: "0.68rem",
-            fontWeight: 600,
-            padding: "0.22rem 0.5rem",
-            borderRadius: "999px",
-            background: shortlisted
-              ? "rgba(34,197,94,0.14)"
-              : "rgba(100,100,100,0.12)",
-            color: shortlisted ? "rgb(22,163,74)" : "rgba(30,30,30,0.75)",
-            alignSelf: "start",
-          }}
-        >
-          {shortlisted ? "Shortlisted" : "Applied"}
-        </span> */}
+        {shortlisted && (
+          <span style={{ flexShrink: 0, fontSize: "0.65rem", fontWeight: 600, padding: "0.2rem 0.5rem", borderRadius: "999px", background: "rgba(34,197,94,0.12)", color: "rgb(21,128,61)" }}>
+            Shortlisted
+          </span>
+        )}
       </div>
 
-      <a
-        href={`mailto:${app.email}`}
-        style={{
-          fontSize: "0.8rem",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-          background: "rgba(100,100,100,0.05)",
-          width: "fit-content",
-          padding: "0.2rem 0.45rem",
-          borderRadius: "0.45rem",
-          color:"#1e3a8a",
-          fontWeight: 500
-        }}
-      >
-        {app.email}
-      </a>
+      {/* Contact details */}
+      <div style={{ display: "grid", gap: "0.3rem" }}>
+        <a
+          href={`mailto:${app.email}`}
+          style={{ fontSize: "0.78rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", background: "rgba(100,100,100,0.06)", width: "fit-content", maxWidth: "100%", padding: "0.22rem 0.5rem", borderRadius: "0.4rem", color: "#1e3a8a", fontWeight: 500 }}
+        >
+          {app.email}
+        </a>
+        <a
+          href={`tel:${app.phone}`}
+          style={{ fontSize: "0.78rem", background: "rgba(100,100,100,0.06)", width: "fit-content", padding: "0.22rem 0.5rem", borderRadius: "0.4rem", color: "#1e3a8a", fontWeight: 500 }}
+        >
+          {app.phone}
+        </a>
+      </div>
 
-      <a href={`tel:${app.phone}`} style={{
-         fontSize: "0.8rem" ,
-         background: "rgba(100,100,100,0.05)",
-          width: "fit-content",
-          padding: "0.2rem 0.45rem",
-          borderRadius: "0.45rem",
-          color:"#1e3a8a",
-          fontWeight: 500
-         }}>
-        {app.phone}
-      </a>
-
-      <div style={{ fontSize: "0.74rem", opacity: 0.72 }}>
+      <div style={{ fontSize: "0.72rem", opacity: 0.55 }}>
         Applied: {app.created_at?.toDate ? moment(app.created_at.toDate()).format("LL") : "N/A"}
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "0.45rem",
-          flexWrap: "wrap",
-          marginTop: "0.1rem",
-        }}
-      >
+      {/* Actions */}
+      <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginTop: "0.1rem" }}>
         {cvUrl ? (
           <a
             href={cvUrl}
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              display: "flex",
-              flex:1,
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.35rem",
-              fontSize: "0.8rem",
-              background: "rgba(100 100 100 / 0.1)",
-              borderRadius: "0.45rem",
-              padding: "0.3rem 0.55rem",
-              fontWeight: 500,
-            }}
+            style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.35rem", fontSize: "0.78rem", fontWeight: 500, background: "rgba(100,100,100,0.08)", borderRadius: "0.5rem", padding: "0.45rem 0.6rem", color: "inherit", textDecoration: "none" }}
           >
-            
+            <ExternalLink style={{ width: "0.75rem", height: "0.75rem" }} />
             View CV
           </a>
         ) : (
-          <div style={{ fontSize: "0.76rem", opacity: 0.65 }}>No CV available</div>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.74rem", opacity: 0.5 }}>No CV</div>
         )}
 
         {showShortlistAction ? (
           <button
-            style={{display:"flex", flex:1, fontSize:"0.8rem", color:shortlisted ?"rgb(22,163,74)":""}}
-            
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.35rem",
+              fontSize: "0.78rem",
+              fontWeight: 500,
+              borderRadius: "0.5rem",
+              padding: "0.45rem 0.6rem",
+              background: shortlisted ? "rgba(34,197,94,0.12)" : "rgba(100,100,100,0.08)",
+              color: shortlisted ? "rgb(21,128,61)" : "inherit",
+              opacity: shortlisted || shortlisting || !app.id ? 0.7 : 1,
+              cursor: shortlisted || shortlisting || !app.id ? "not-allowed" : "pointer",
+            }}
             onClick={() => onShortlist(app)}
             disabled={shortlisted || shortlisting || !app.id}
           >
-            {/* <Check width={"0.85rem"} /> */}
+            <Check style={{ width: "0.75rem", height: "0.75rem" }} />
             {shortlisted ? "Shortlisted" : shortlisting ? "Adding..." : "Shortlist"}
           </button>
         ) : null}
 
         <button
-          style={{display:"flex", flex:1, fontSize:"0.8rem"}}
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.35rem",
+            fontSize: "0.78rem",
+            fontWeight: 500,
+            borderRadius: "0.5rem",
+            padding: "0.45rem 0.6rem",
+            background: "rgba(239,68,68,0.08)",
+            color: "rgb(185,28,28)",
+            opacity: declining || !app.id ? 0.7 : 1,
+            cursor: declining || !app.id ? "not-allowed" : "pointer",
+          }}
           onClick={() => onDecline(app)}
           disabled={declining || !app.id}
         >
-        
+          <UserMinus style={{ width: "0.75rem", height: "0.75rem" }} />
           {declining ? "Processing..." : secondaryActionLabel}
         </button>
       </div>

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "./AuthProvider";
+import { motion } from "framer-motion";
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -22,28 +23,46 @@ interface NavItemConfig {
 
 const NavItem: React.FC<NavItemProps> = ({ icon, isActive, onClick, isMobile = false }) => {
   return (
-    <div
+    <motion.div
       onClick={onClick}
+      whileTap={{ scale: 0.95 }}
+      transition={{ type: "spring", stiffness: 400, damping: 20 }}
       style={{
-        border:"none",
         flex: isMobile ? 1 : 'none',
         display: "flex",
         justifyContent: "center",
-        background: isActive 
-          ? (isMobile ? "darkblue" : "darkblue")
-          : "none",
-        color: isActive ? "white" : "black",
+        background: isActive
+          ? "linear-gradient(145deg, rgba(15, 5, 130, 0.96), rgba(25, 12, 170, 0.94) 45%, rgba(12, 3, 105, 0.98))"
+          : "transparent",
+        color: isActive ? "#f2f8ff" : "black",
         fontSize: "0.9rem",
-        borderRadius: "0.75rem",
+        borderRadius: "0.9rem",
         alignItems: "center",
         padding: isMobile ? "0.75rem" : "0.5rem 2rem",
         cursor: "pointer",
-        transition: "all",
-        // boxShadow:isActive?"1px 1px 5px rgba(0,0,0,0.5)":"none"
+        transition: "all 220ms ease",
+        border: isActive ? "1px solid rgba(186, 218, 255, 0.48)" : "1px solid transparent",
+        boxShadow: isActive
+          ? "inset 0 1px 0 rgba(255,255,255,0.62), inset 0 -10px 16px rgba(8,30,120,0.5), 0 10px 22px rgba(4,16,60,0.4), 0 0 18px rgba(52,110,255,0.24), 0 0 0 1px rgba(160,204,255,0.18)"
+          : "none",
+        transform: isActive ? "translateY(-1px)" : "translateY(0)",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
+      {isActive && (
+        <div
+          style={{
+            position: "absolute",
+            inset: "0.08rem",
+            borderRadius: "0.8rem",
+            pointerEvents: "none",
+            background: "linear-gradient(165deg, rgba(255,255,255,0.45) 0%, rgba(188,222,255,0.2) 18%, rgba(255,255,255,0) 52%), radial-gradient(135% 80% at 14% -10%, rgba(255,255,255,0.65), rgba(255,255,255,0) 58%)",
+          }}
+        />
+      )}
       {icon}
-    </div>
+    </motion.div>
   );
 };
 
