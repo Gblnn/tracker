@@ -1372,6 +1372,17 @@ const [searchTerm, setSearchTerm] = useState("");
   const handlePrintPDF = async () => {
     setPdfLoading(true);
     setPdfProgress(0);
+
+    // Off-screen container that is always at full 800 px width with no
+    // parent CSS transform. We clone each page node into here so that
+    // html2canvas captures at desktop resolution regardless of the
+    // mobile previewScale applied to the visible preview container.
+    const offscreen = document.createElement("div");
+    offscreen.style.cssText =
+      `position:fixed;top:0;left:-${PREVIEW_BASE_WIDTH + 100}px;` +
+      `width:${PREVIEW_BASE_WIDTH}px;opacity:0;pointer-events:none;z-index:-9999;overflow:visible;`;
+    document.body.appendChild(offscreen);
+
     try {
       const tableNode = tableRef.current;
       const rolesNode = rolesRef.current;
@@ -1379,61 +1390,70 @@ const [searchTerm, setSearchTerm] = useState("");
       const signatureNode = signatureRef.current;
       if (!tableNode || !restNode || !signatureNode) {
         message.error("Failed to generate PDF: missing sections");
-        setPdfLoading(false);
         return;
       }
 
+      // Clone a node into the off-screen container, stripping any
+      // inherited transform so html2canvas sees natural layout dimensions.
+      const prepareClone = (node: HTMLElement) => {
+        const clone = node.cloneNode(true) as HTMLElement;
+        clone.style.transform = "none";
+        clone.style.position = "relative";
+        clone.style.width = `${PREVIEW_BASE_WIDTH}px`;
+        offscreen.appendChild(clone);
+        return clone;
+      };
+
+      const tableClone     = prepareClone(tableNode);
+      const rolesClone     = rolesNode     ? prepareClone(rolesNode)     : null;
+      const restClone      = prepareClone(restNode);
+      const signatureClone = prepareClone(signatureNode);
+
       const html2canvasOptions = {
-        scale: 1.5, // Reduced scale for better performance while maintaining readability
+        scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: null
+        backgroundColor: null,
+        windowWidth: PREVIEW_BASE_WIDTH,
       };
 
-      const compressImage = (canvas: HTMLCanvasElement) => {
-        return canvas.toDataURL("image/jpeg", 0.7); // Using JPEG with 70% quality for better compression
-      };
+      const toJpeg = (canvas: HTMLCanvasElement) =>
+        canvas.toDataURL("image/jpeg", 0.5);
 
-      // Render table (page 1)
+      // Page 1 — terms table
       setPdfProgress(20);
-      const tableCanvas = await html2canvas(tableNode, html2canvasOptions);
-      const tableImgData = compressImage(tableCanvas);
+      const tableImgData = toJpeg(await html2canvas(tableClone, html2canvasOptions));
       const pdf = new jsPDF({ unit: "px", format: "a4" });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const tableProps = pdf.getImageProperties(tableImgData);
-      const tableHeight = (tableProps.height * pageWidth) / tableProps.width;
-      pdf.addImage(tableImgData, "JPEG", 0, 0, pageWidth, tableHeight, undefined, 'FAST');
+      pdf.addImage(tableImgData, "JPEG", 0, 0, pageWidth,
+        (tableProps.height * pageWidth) / tableProps.width, undefined, "FAST");
       setPdfProgress(40);
 
-      // Render roles (page 2) if present
-      if (rolesNode) {
-        const rolesCanvas = await html2canvas(rolesNode, html2canvasOptions);
-        const rolesImgData = compressImage(rolesCanvas);
+      // Page 2 — roles (optional)
+      if (rolesClone) {
+        const rolesImgData = toJpeg(await html2canvas(rolesClone, html2canvasOptions));
         pdf.addPage();
         const rolesProps = pdf.getImageProperties(rolesImgData);
-        const rolesHeight = (rolesProps.height * pageWidth) / rolesProps.width;
-        pdf.addImage(rolesImgData, "JPEG", 0, 0, pageWidth, rolesHeight, undefined, 'FAST');
+        pdf.addImage(rolesImgData, "JPEG", 0, 0, pageWidth,
+          (rolesProps.height * pageWidth) / rolesProps.width, undefined, "FAST");
       }
       setPdfProgress(60);
 
-      // Render rest (page 3)
-      const restCanvas = await html2canvas(restNode, html2canvasOptions);
-      const restImgData = compressImage(restCanvas);
+      // Page 3 — clauses / rest
+      const restImgData = toJpeg(await html2canvas(restClone, html2canvasOptions));
       pdf.addPage();
       const restProps = pdf.getImageProperties(restImgData);
-      const restHeight = (restProps.height * pageWidth) / restProps.width;
-      pdf.addImage(restImgData, "JPEG", 0, 0, pageWidth, restHeight, undefined, 'FAST');
+      pdf.addImage(restImgData, "JPEG", 0, 0, pageWidth,
+        (restProps.height * pageWidth) / restProps.width, undefined, "FAST");
       setPdfProgress(80);
 
-      // Render signatures (page 4)
-      if (signatureNode) {
-        const signatureCanvas = await html2canvas(signatureNode, html2canvasOptions);
-        const signatureImgData = compressImage(signatureCanvas);
-        pdf.addPage();
-        const signatureProps = pdf.getImageProperties(signatureImgData);
-        const signatureHeight = (signatureProps.height * pageWidth) / signatureProps.width;
-        pdf.addImage(signatureImgData, "JPEG", 0, 0, pageWidth, signatureHeight, undefined, 'FAST');
-      }
+      // Page 4 — signatures
+      const signatureImgData = toJpeg(await html2canvas(signatureClone, html2canvasOptions));
+      pdf.addPage();
+      const signatureProps = pdf.getImageProperties(signatureImgData);
+      pdf.addImage(signatureImgData, "JPEG", 0, 0, pageWidth,
+        (signatureProps.height * pageWidth) / signatureProps.width, undefined, "FAST");
       setPdfProgress(90);
 
       pdf.save(`Offer_Letter_${formData.candidateName || "Candidate"}.pdf`);
@@ -1441,6 +1461,7 @@ const [searchTerm, setSearchTerm] = useState("");
     } catch (err) {
       message.error("Failed to generate PDF");
     } finally {
+      document.body.removeChild(offscreen);
       setPdfLoading(false);
       setTimeout(() => setPdfProgress(0), 500);
     }
@@ -4638,20 +4659,40 @@ const [searchTerm, setSearchTerm] = useState("");
                   onClick={handlePrintPDF}
                   style={{
                     width: "100%",
-                    fontSize: "0.9rem",
-                    padding: "0.5rem 1.25rem",
-                    background: pdfLoading ? "darkslateblue" : "darkblue",
+                    fontSize: "0.85rem",
+                    fontWeight: 500,
+                    letterSpacing: "0.01em",
+                    padding: "0.55rem 1.3rem",
+                    background: pdfLoading
+                      ? "linear-gradient(145deg, rgba(21, 12, 112, 0.94), rgba(24, 12, 125, 0.9) 45%, rgba(13, 7, 88, 0.95))"
+                      : "linear-gradient(145deg, rgba(15, 5, 130, 0.96), rgba(25, 12, 170, 0.94) 45%, rgba(12, 3, 105, 0.98))",
                     color: "white",
-                    border: "none",
-                    borderRadius: "0.5rem",
+                   
+                    borderRadius: "0.8rem",
                     cursor: pdfLoading ? "not-allowed" : "pointer",
                     opacity: pdfLoading ? 0.7 : 1,
-                    boxShadow: "1px 1px 10px rgba(0 0 0/ 30%)",
+                    boxShadow:
+                      "inset 0 1px 0 rgba(255,255,255,0.62), inset 0 -10px 16px rgba(8,30,120,0.5), 0 10px 22px rgba(4,16,60,0.4), 0 0 18px rgba(52,110,255,0.24), 0 0 0 1px rgba(160,204,255,0.18)",
                     position: "relative",
                     overflow: "hidden",
+                    transition: "transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease",
                   }}
                   disabled={pdfLoading}
                 >
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "0.08rem",
+                      bottom: "0.08rem",
+                      left: "0.08rem",
+                      right: "0.08rem",
+                      borderRadius: "0.8rem",
+                      pointerEvents: "none",
+                      background:
+                        "linear-gradient(165deg, rgba(255,255,255,0.25) 0%, rgba(188,222,255,0.12) 18%, rgba(255,255,255,0) 52%), radial-gradient(135% 80% at 14% -10%, rgba(255,255,255,0.42), rgba(255,255,255,0) 58%)",
+                    }}
+                  />
+
                   {pdfLoading && (
                     <div
                       style={{
@@ -4991,7 +5032,7 @@ const [searchTerm, setSearchTerm] = useState("");
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {/* Search Bar */}
-        <div style={{ position: "sticky", top: 0, background: "white", zIndex: 10, paddingBottom: "0.5rem" }}>
+        <div style={{ position: "sticky", top: 0, background: "white", zIndex: 10, paddingBottom: "" }}>
           <div style={{ position: "relative" }}>
             <input
               style={{

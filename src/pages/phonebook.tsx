@@ -150,9 +150,12 @@ export default function Phonebook() {
                     style={{
                         width: "100%",
                         padding: "0.75rem 1rem",
-                        borderRadius: "0.5rem",
-                        background: "rgba(150, 150, 150, 0.15)",
+                        borderRadius: "0.9rem",
+                        background: "rgba(246 248 252 / 0.78)",
+                        border: "1px solid rgba(210 218 234 / 0.7)",
+                        boxShadow: "0 1px 4px rgba(79 70 229 / 0.06), inset 0 1px 0 rgba(255 255 255 / 0.85)",
                         fontSize: "1rem",
+                        outline: "none",
                     }}
                 />
             </div>
