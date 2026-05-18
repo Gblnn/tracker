@@ -243,14 +243,14 @@ export default function Directive(props: Props) {
                 style={{
                   fontSize: "0.6rem",
                   textAlign: "left",
-                  color: "gray",
+                  color: "",
                   opacity: "0.75",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
                   width: "30ch",
                   border: "",
-                  fontWeight: 600,
+                  fontWeight: 500,
                 }}
               >
                 {props.id_subtitle}

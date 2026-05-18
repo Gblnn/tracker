@@ -2,58 +2,77 @@ import { motion } from "framer-motion";
 
 interface GridTileProps {
   title: string;
+  description?: string;
   icon: React.ReactNode;
   onClick: () => void;
 }
 
-export default function GridTile({ title, icon, onClick }: GridTileProps) {
+export default function GridTile({ title, description, icon, onClick }: GridTileProps) {
   return (
     <motion.button
       type="button"
-      whileTap={{ scale: 0.93 }}
+     
+      whileTap={{ scale: 0.985 }}
       onClick={onClick}
       style={{
         display: "flex",
-        flexDirection: "column",
+        flexDirection: "row",
         alignItems: "center",
         justifyContent: "flex-start",
-        gap: "0.6rem",
+        gap: "0.7rem",
         width: "100%",
-        padding: "0.35rem 0.4rem",
-        background: "transparent",
-        border: "none",
+        minHeight: "4.3rem",
+        padding: "0.62rem 0.7rem",
+        background: "rgba(246 248 252 / 0.78)",
+        border: "1px solid rgba(255,255,255,0.65)",
+        borderRadius: "0.88rem",
+        // boxShadow: "0 6px 14px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255,255,255,0.9)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
         cursor: "pointer",
-        transition: "transform 0.12s ease-out",
-        color: "#374151",
+        transition: "transform 0.16s ease-out, box-shadow 0.16s ease-out, border-color 0.16s ease-out",
+        color: "#1f2937",
+        textAlign: "left",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
       <div
         style={{
-          width: "4rem",
-          height: "4rem",
-          borderRadius: "1.1rem",
+          position: "absolute",
+          inset: "0.05rem",
+          borderRadius: "0.82rem",
+          pointerEvents: "none",
+          background: "linear-gradient(165deg, rgba(255,255,255,0.34) 0%, rgba(220,230,245,0.14) 45%, rgba(255,255,255,0) 100%)",
+        }}
+      />
+      <div
+        style={{
+          width: "2.5rem",
+          height: "2.5rem",
+          borderRadius: "0.72rem",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "rgba(250 250 250)",
+          background: "rgba(255,255,255,0.96)",
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
-          // border: "1px solid rgba(186, 218, 255, 0.5)",
-          // boxShadow: "0 8px 16px rgba(20, 60, 180, 0.25), inset 0 1px 3px rgba(255, 255, 255, 0.7)",
           color: "darkblue",
-          transition: "all 240ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+          flexShrink: 0,
+          transition: "all 220ms cubic-bezier(0.34, 1.56, 0.64, 1)",
           position: "relative",
           overflow: "hidden",
-          transform: "translateY(-2px)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 10px rgba(15, 23, 42, 0.08)",
         }}
       >
         <div
           style={{
             position: "absolute",
             inset: "0.05rem",
-            borderRadius: "1rem",
+            borderRadius: "0.66rem",
             pointerEvents: "none",
-            background: "linear-gradient(165deg, rgba(255,255,255,0.5) 0%, rgba(200,230,255,0.2) 50%, rgba(255,255,255,0) 100%)",
+            background:
+              "linear-gradient(165deg, rgba(255,255,255,0.68) 0%, rgba(230,236,248,0.32) 52%, rgba(255,255,255,0) 100%)",
           }}
         />
         <div
@@ -64,26 +83,48 @@ export default function GridTile({ title, icon, onClick }: GridTileProps) {
             color: "inherit",
             position: "relative",
             zIndex: 1,
+            transform: "scale(0.85)",
           }}
         >
           {icon}
         </div>
       </div>
-      <p
-        style={{
-          margin: 0,
-          fontSize: "0.72rem",
-          fontWeight: 500,
-          textAlign: "center",
-          lineHeight: 1.25,
-          opacity: 0.9,
-          maxWidth: "6.5rem",
-          textWrap: "balance",
-          transition: "opacity 240ms ease",
-        }}
-      >
-        {title}
-      </p>
+      <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, gap: "0.2rem" }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: "0.9rem",
+            fontWeight: 500,
+            letterSpacing: "0.01em",
+            lineHeight: 1.1,
+            color: "rgba(17, 24, 39, 0.96)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          {title}
+        </p>
+        <p
+          style={{
+            margin: 0,
+            fontSize: "0.7rem",
+            fontWeight: 500,
+            lineHeight: 1.2,
+            color: "rgba(75, 85, 99, 0.82)",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          {description || "Open module"}
+        </p>
+      </div>
     </motion.button>
   );
 }

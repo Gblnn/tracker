@@ -1,15 +1,7 @@
 import Back from "@/components/back";
-import DefaultDialog from "@/components/ui/default-dialog";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import DefaultDialog from "@/components/ui/default-dialog";
 import {
   Select,
   SelectContent,
@@ -20,7 +12,7 @@ import {
 import { auth, db } from "@/firebase";
 import { LoadingOutlined } from "@ant-design/icons";
 import emailjs from "@emailjs/browser";
-import { Drawer, Input, message, Modal } from "antd";
+import { Input, message, Modal } from "antd";
 import {
   addDoc,
   collection,
@@ -40,42 +32,22 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  ChevronUp,
   Database,
-  Dot,
   Eye,
   EyeOff,
-  FilePlus2,
+  FilePlus,
   FileText,
   FileX,
   GripVertical,
   LoaderCircle,
-  Menu,
   Pencil,
   Plus,
   Save,
-  Sparkles,
   Trash2,
-  X,
+  X
 } from "lucide-react";
 import moment from "moment";
 import React, { useEffect, useRef, useState } from "react";
-// Add styles at the top of the file
-const styles = {
-  mobileMenuButton: {
-    display: "none",
-  },
-  inputForm: {
-    width: "30%",
-    // background: "rgba(255 255 255/ 5%)",
-    borderRadius: "0.5rem",
-  },
-  preview: {
-    flex: 1,
-    // background: "rgba(255 255 255/ 5%)",
-    borderRadius: "0.5rem",
-  },
-};
 
 // Input style for all fields
 const inputStyle = {
@@ -178,14 +150,27 @@ type Preset = {
   fieldConfig?: FieldConfig[];
 };
 
+type FormTemplateId = "employee_clearance" | "leave_application" | "salary_advance";
+
+const PREVIEW_BASE_WIDTH = 800;
+const PREVIEW_MOBILE_GUTTER = 24;
+
+const FORM_TEMPLATE_OPTIONS: Array<{ id: FormTemplateId; label: string; fileName: string }> = [
+  { id: "employee_clearance", label: "Employee Clearance Form", fileName: "Employee_Clearance_Form" },
+  { id: "leave_application", label: "Leave Application Form", fileName: "Leave_Application_Form" },
+  { id: "salary_advance", label: "Salary Advance Form", fileName: "Salary_Advance_Form" },
+];
+
 export default function EmployeeClearanceForm() {
   //   const usenavigate = useNavigate();
-const [searchTerm, setSearchTerm] = useState("");
+  const todayDisplayDate = moment().format("DD/MM/YYYY");
   const [bugDialog, setBugDialog] = useState(false);
   const [issue, setIssue] = useState("");
   const [loading, setLoading] = useState(false);
-  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [selectedFormTemplate, setSelectedFormTemplate] = useState<FormTemplateId>("employee_clearance");
+  const [printRefNoOverride, setPrintRefNoOverride] = useState<string | null>(null);
   const getNextReferenceNumber = (existingLetters: Array<{refNo?: string}>) => {
     // Extract existing reference numbers and find the highest one
     const numbers = existingLetters
@@ -247,22 +232,26 @@ const [searchTerm, setSearchTerm] = useState("");
     fetchOfferLetters();
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => setScreenWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const tableRef = useRef<HTMLDivElement>(null);
 
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
 
-  const [offerLettersDrawerVisible, setOfferLettersDrawerVisible] =
-    useState(false);
   const [offerLetters, setOfferLetters] = useState<any[]>([]);
-  const [offerLettersLoading, setOfferLettersLoading] = useState(false);
+  const [, setOfferLettersLoading] = useState(false);
   const [editingLetter, setEditingLetter] = useState<any>(null);
   // const [addingToShortlist, setAddingToShortlist] = useState(false);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadedLetterId, setLoadedLetterId] = useState<string | null>(null);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [, setHasChanges] = useState(false);
   const [originalFormData, setOriginalFormData] = useState<any>(null);
   const [air_passage, setAirPassage] = useState(true);
   const [comm, setComm] = useState(true);
@@ -409,10 +398,7 @@ const [searchTerm, setSearchTerm] = useState("");
     paragraph: false,
   });
   const [addCustomFieldDialogVisible, setAddCustomFieldDialogVisible] = useState(false);
-  const [showInputScrollTopButton, setShowInputScrollTopButton] = useState(false);
   const fieldListScrollRef = useRef<HTMLDivElement>(null);
-  const inputFormScrollRef = useRef<HTMLDivElement>(null);
-  const inputScrollRafRef = useRef<number | null>(null);
   const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialFieldConfigLoad = useRef(true);
   
@@ -420,6 +406,20 @@ const [searchTerm, setSearchTerm] = useState("");
   const [roleEditorDialogVisible, setRoleEditorDialogVisible] = useState(false);
   const [editingRoleIndex, setEditingRoleIndex] = useState<number | null>(null);
   const [editingRoleContent, setEditingRoleContent] = useState("");
+  const previewScale =
+    screenWidth < 960
+      ? Math.min(
+          1,
+          Math.max(
+            0.32,
+            (screenWidth - PREVIEW_MOBILE_GUTTER) / PREVIEW_BASE_WIDTH
+          )
+        )
+      : 1;
+  const previewRefNo = printRefNoOverride || formData.refNo;
+  const selectedTemplateMeta = FORM_TEMPLATE_OPTIONS.find(
+    (template) => template.id === selectedFormTemplate
+  ) || FORM_TEMPLATE_OPTIONS[0];
 
   // Add this after other useEffect hooks
   useEffect(() => {
@@ -858,23 +858,46 @@ const [searchTerm, setSearchTerm] = useState("");
   const handlePrintPDF = async () => {
     setPdfLoading(true);
     setPdfProgress(0);
+    const nextRef = getNextReferenceNumber([
+      ...offerLetters.map((letter: any) => ({ refNo: letter.refNo })),
+      ...(formData.refNo ? [{ refNo: formData.refNo }] : []),
+    ]);
+    setPrintRefNoOverride(nextRef);
+
+    const offscreen = document.createElement("div");
+    offscreen.style.cssText =
+      `position:fixed;top:0;left:-${PREVIEW_BASE_WIDTH + 100}px;` +
+      `width:${PREVIEW_BASE_WIDTH}px;opacity:0;pointer-events:none;z-index:-9999;overflow:visible;`;
+    document.body.appendChild(offscreen);
+
     try {
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
+
       const tableNode = tableRef.current;
       if (!tableNode) {
         message.error("Failed to generate PDF: missing preview section");
-        setPdfLoading(false);
         return;
       }
 
+      const tableClone = tableNode.cloneNode(true) as HTMLElement;
+      tableClone.style.transform = "none";
+      tableClone.style.position = "relative";
+      tableClone.style.width = `${PREVIEW_BASE_WIDTH}px`;
+      tableClone.style.maxWidth = `${PREVIEW_BASE_WIDTH}px`;
+      offscreen.appendChild(tableClone);
+
       setPdfProgress(35);
-      const tableCanvas = await html2canvas(tableNode, {
-        scale: 3,
+      const tableCanvas = await html2canvas(tableClone, {
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: null,
+        windowWidth: PREVIEW_BASE_WIDTH,
       });
 
-      const tableImgData = tableCanvas.toDataURL("image/jpeg", 1.0);
+      const tableImgData = tableCanvas.toDataURL("image/jpeg", 0.9);
       const pdf = new jsPDF({ unit: "px", format: "a4" });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const tableProps = pdf.getImageProperties(tableImgData);
@@ -883,11 +906,16 @@ const [searchTerm, setSearchTerm] = useState("");
       pdf.addImage(tableImgData, "JPEG", 0, 0, pageWidth, tableHeight, undefined, "FAST");
       setPdfProgress(90);
 
-      pdf.save(`Employee_Clearance_Form_${formData.candidateName || "Employee"}.pdf`);
+      pdf.save(`${selectedTemplateMeta.fileName}_${nextRef.replace(/[\/]/g, "-")}.pdf`);
+      setFormData((prev) => ({ ...prev, refNo: nextRef }));
       setPdfProgress(100);
     } catch (err) {
       message.error("Failed to generate PDF");
     } finally {
+      if (offscreen.parentNode) {
+        offscreen.parentNode.removeChild(offscreen);
+      }
+      setPrintRefNoOverride(null);
       setPdfLoading(false);
       setTimeout(() => setPdfProgress(0), 500);
     }
@@ -1025,7 +1053,6 @@ const [searchTerm, setSearchTerm] = useState("");
     setSelectedPreset("");
     setOriginalPresetData(null);
     setHasChanges(false);
-    setOfferLettersDrawerVisible(false);
   };
 
   // const handleAddToShortlist = async () => {
@@ -1406,43 +1433,13 @@ const [searchTerm, setSearchTerm] = useState("");
     setFieldConfigDialogVisible(open);
   };
 
-  useEffect(() => {
-    return () => {
-      if (inputScrollRafRef.current !== null) {
-        cancelAnimationFrame(inputScrollRafRef.current);
-      }
-    };
-  }, []);
-
-  const handleInputSectionScroll = () => {
-    if (inputScrollRafRef.current !== null) return;
-
-    const container = inputFormScrollRef.current;
-    if (!container) return;
-
-    inputScrollRafRef.current = window.requestAnimationFrame(() => {
-      const scrollTop = container.scrollTop;
-      setShowInputScrollTopButton(scrollTop > 180);
-      inputScrollRafRef.current = null;
-    });
-  };
-
-  const handleInputScrollToTop = () => {
-    const container = inputFormScrollRef.current;
-    if (!container) return;
-    container.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   const renderInputForm = () => (
     <div
       style={{
-        position: "fixed",
         display: "flex",
         flexDirection: "column",
-        height: "100%",
         fontSize: "0.8rem",
-        maxHeight: "72%",
-        width: "30%",
+        width: "100%",
         border: "1px solid rgba(100 116 139/ 22%)",
         borderRadius: "1rem",
         background: "linear-gradient(180deg, rgba(248 250 252/ 95%), rgba(241 245 249/ 90%))",
@@ -1480,19 +1477,14 @@ const [searchTerm, setSearchTerm] = useState("");
         </button>
       </div>
 
-      {/* Scrollable Content Section */}
       <div
-        ref={inputFormScrollRef}
-        onScroll={handleInputSectionScroll}
         style={{
-          flex: 1,
-          overflowY: "auto",
           padding: "1.25rem",
           paddingBottom: "1.5rem",
           paddingTop: "1.5rem",
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.75rem",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "0.75rem 1rem",
         }}
       >
         {/* Reference Number */}
@@ -1583,249 +1575,344 @@ const [searchTerm, setSearchTerm] = useState("");
           />
         </div>
       </div>
-
-      {showInputScrollTopButton && (
-        <button
-          onClick={handleInputScrollToTop}
-          title="Scroll to top"
-          style={{
-            position: "absolute",
-            right: "1rem",
-            bottom: "1rem",
-            width: "2.2rem",
-            height: "2.2rem",
-            borderRadius: "0.65rem",
-            border: "1px solid rgba(0 0 139/ 24%)",
-            background: "rgba(0 0 139/ 92%)",
-            color: "white",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 8px 20px rgba(15 23 42/ 18%)",
-            zIndex: 15,
-          }}
-        >
-          <ChevronUp width="1rem" />
-        </button>
-      )}
     </div>
   );
 
-  const renderPreview = () => (
-    <ScrollArea>
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          alignItems: "center",
-          marginBottom: "1rem",
-          marginLeft: "1rem",
-          justifyContent: "space-between",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }} />
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-          <input
-            className="preview-date-input"
-            style={{ width: "fit-content", colorScheme: "light" }}
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={handleInputChange}
-            placeholder="Enter Date"
-          />
+  const renderEmployeeClearanceBody = () => (
+    <>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+        <div style={{ fontWeight: 600, textTransform: "uppercase" }}>
+          REF: {previewRefNo || "[REF NO]"}
         </div>
+        <div style={{ fontWeight: 600 }}>{todayDisplayDate}</div>
       </div>
 
-    
-
-      <div
-        ref={tableRef}
+      <h2
         style={{
-          width: "100%",
-          maxWidth: 800,
-          boxSizing: "border-box",
-          padding: "4rem",
-          backgroundColor: "white",
-          background: "url(/letter-head.png)",
-          backgroundSize: "contain",
-          backgroundPosition: "center",
-          color: "black",
-          boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
-          fontFamily: "Aptos",
-          fontSize: "0.73rem",
-          margin: "1 auto",
-          marginBottom: "4rem",
-          height: "1100px",
-          maxHeight: "1100px",
-          position: "relative",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
+          textAlign: "center",
+          fontSize: "0.78rem",
+          marginBottom: "1rem",
+          textTransform: "uppercase",
+          letterSpacing: 1,
+          fontWeight: 600,
         }}
       >
-        <br/><br/><br/><br/><br/>
-        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
-          <div style={{ fontWeight: 600, textTransform: "uppercase" }}>
-            REF: {formData.refNo || "[REF NO]"}
+        EMPLOYEE CLEARANCE FORM
+      </h2>
+
+      {(() => {
+        const cellStyle: React.CSSProperties = {
+          borderRight: "1.5px solid rgba(0 0 0/ 85%)",
+          borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
+          padding: "3px 8px 8px 8px",
+          fontSize: "0.75rem",
+          fontWeight: 500,
+        };
+        return (
+          <div
+            style={{
+              textTransform: "uppercase",
+              width: "100%",
+              marginBottom: "0.4rem",
+              display: "grid",
+              gridTemplateColumns: "35% 1fr",
+              borderTop: "1.5px solid rgba(0 0 0/ 85%)",
+              fontSize: "0.68rem",
+              borderLeft: "1.5px solid rgba(0 0 0/ 85%)",
+            }}
+          >
+            <div style={cellStyle}>Name</div>
+            <div style={cellStyle}></div>
+            <div style={cellStyle}>Designation</div>
+            <div style={cellStyle}></div>
+            <div style={cellStyle}>Joining Date</div>
+            <div style={cellStyle}></div>
+            <div style={cellStyle}>Resignation/Termination Date</div>
+            <div style={cellStyle}></div>
+            <div style={cellStyle}>Relieving Date</div>
+            <div style={cellStyle}></div>
           </div>
-          <div style={{ fontWeight: 600 }}>{moment(new Date(formData.date)).format("DD/MM/YYYY")}</div>
-        </div>
+        );
+      })()}
 
-        <h2
-          style={{
-            textAlign: "center",
-            fontSize: "0.78rem",
-            marginBottom: "1rem",
-            textTransform: "uppercase",
-            letterSpacing: 1,
-            fontWeight: 600,
-          }}
-        >
-          EMPLOYEE CLEARANCE FORM
-        </h2>
+      <p style={{ marginBottom: "0.8rem", marginTop: "0.4rem", fontSize: "0.73rem", fontWeight: 500 }}>
+        The following authorities of each department shall make sure and sign that employee has returned everything that belongs to each department.
+      </p>
 
-        {(() => {
-          const cellStyle: React.CSSProperties = {
-            borderRight: "1.5px solid rgba(0 0 0/ 85%)",
-            borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
-            padding: "3px 8px 8px 8px",
-            fontSize: "0.75rem",
-            fontWeight: 500,
-          };
-          return (
-            <div
-              style={{
-                textTransform: "uppercase",
-                width: "100%",
-                marginBottom: "0.4rem",
-                display: "grid",
-                gridTemplateColumns: "35% 1fr",
-                borderTop: "1.5px solid rgba(0 0 0/ 85%)",
-                fontSize:"0.68rem",
-                borderLeft: "1.5px solid rgba(0 0 0/ 85%)",
-              }}
-            >
-              <div style={cellStyle}>Name</div>
-
-              <div style={cellStyle}>{formData.candidateName || ""}</div>
-              <div style={cellStyle}>Designation</div>
-              <div style={cellStyle}>{formData.position || ""}</div>
-              <div style={cellStyle}>Joining Date</div>
-              <div style={cellStyle}>{formData.reportingDate ? moment(formData.reportingDate).format("DD/MM/YYYY") : ""}</div>
-              <div style={cellStyle}>Resignation/Termination Date</div>
-              <div style={cellStyle}>{formData.resignationDate ? moment(formData.resignationDate).format("DD/MM/YYYY") : ""}</div>
-              <div style={cellStyle}>Relieving Date</div>
-              <div style={cellStyle}>{formData.relievingDate ? moment(formData.relievingDate).format("DD/MM/YYYY") : ""}</div>
-            </div>
-          );
-        })()}
-
-        <p style={{ marginBottom: "0.8rem", marginTop: "0.4rem", fontSize: "0.73rem", fontWeight: 500 }}>
-          The following authorities of each department shall make sure and sign that employee has retured everything that belongs to each department.
-        </p>
-
-        {(() => {
-          const cellStyle: React.CSSProperties = {
-            borderRight: "1.5px solid rgba(0 0 0/ 85%)",
-            borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
-            padding: "3px 8px 8px 8px",
-            fontSize: "0.73rem",
-            fontWeight: 500,
-          };
-          const headerCellStyle: React.CSSProperties = { ...cellStyle, fontWeight: 600, fontSize: "0.68rem" };
-          return (
-            <div
-              style={{
-                width: "100%",
-                marginBottom: "0.4rem",
-                display: "grid",
-            
-                gridTemplateColumns: "40% 20% 20% 20%",
-                borderTop: "1.5px solid rgba(0 0 0/ 85%)",
-                borderLeft: "1.5px solid rgba(0 0 0/ 85%)",
-                textTransform: "uppercase",
-              }}
-            >
-              <div style={headerCellStyle}>Department</div>
-              <div style={headerCellStyle}>Name</div>
-              <div style={headerCellStyle}>Signature & Date</div>
-              <div style={headerCellStyle}>Notes</div>
-              {clearanceDepartmentRows.map((department) => (
-                <React.Fragment key={department}>
-                  <div style={cellStyle}>{department}</div>
-                  <div style={cellStyle}></div>
-                  <div style={cellStyle}></div>
-                  <div style={cellStyle}></div>
-                </React.Fragment>
-              ))}
-            </div>
-          );
-        })()}
-
-        <div style={{ marginBottom: "0.9rem" }}>
-          <p style={{ fontWeight: 600, marginBottom: "0.35rem" }}>Address of employee for correspondence</p>
-          <div style={{ ...tableCellStyle, minHeight: "3rem" }}></div>
-        </div>
-
-        <div style={{ marginTop: "0.4rem" }}>
-          <p style={{ marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.73rem" }}>Employee acknowledgment</p>
+      {(() => {
+        const cellStyle: React.CSSProperties = {
+          borderRight: "1.5px solid rgba(0 0 0/ 85%)",
+          borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
+          padding: "3px 8px 8px 8px",
+          fontSize: "0.73rem",
+          fontWeight: 500,
+        };
+        const headerCellStyle: React.CSSProperties = { ...cellStyle, fontWeight: 600, fontSize: "0.68rem" };
+        return (
           <div
             style={{
               width: "100%",
+              marginBottom: "0.4rem",
               display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              gridTemplateColumns: "40% 20% 20% 20%",
               borderTop: "1.5px solid rgba(0 0 0/ 85%)",
               borderLeft: "1.5px solid rgba(0 0 0/ 85%)",
-              fontWeight: 500,
-              color:"black"
+              textTransform: "uppercase",
             }}
           >
-            {[
-              { label: "Signature of employee", value: "" },
-              { label: "Date", value: "" },
-            ].map(({ label }) => (
-              <div
-                key={label}
-                style={{
-                  borderRight: "1.5px solid rgba(0 0 0/ 85%)",
-                  borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
-                  padding: "3px 8px 8px 8px",
-                  fontSize: "0.73rem",
-                  fontWeight: 500,
-                  textTransform: "uppercase",
-                  minHeight: "2.5rem",
-                }}
-              >
-                {label}
-              </div>
+            <div style={headerCellStyle}>Department</div>
+            <div style={headerCellStyle}>Name</div>
+            <div style={headerCellStyle}>Signature & Date</div>
+            <div style={headerCellStyle}>Notes</div>
+            {clearanceDepartmentRows.map((department) => (
+              <React.Fragment key={department}>
+                <div style={cellStyle}>{department}</div>
+                <div style={cellStyle}></div>
+                <div style={cellStyle}></div>
+                <div style={cellStyle}></div>
+              </React.Fragment>
             ))}
           </div>
-        </div>
+        );
+      })()}
 
-        <div style={{ marginTop: "0.4rem" }}>
-          <p style={{ marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.73rem" }}>Employee remarks</p>
-          <div
-            style={{
-              width: "100%",
-              borderTop: "1.5px solid rgba(0 0 0/ 85%)",
-              borderLeft: "1.5px solid rgba(0 0 0/ 85%)",
-              borderRight: "1.5px solid rgba(0 0 0/ 85%)",
-              borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
-              minHeight: "4rem",
-              padding: "5px 8px",
-              fontSize: "0.73rem",
-              fontWeight: 500,
-            }}
-          >
-            {formData.employeeRemarks || ""}
-          </div>
-        </div>
+      <div style={{ marginBottom: "0.9rem" }}>
+        <p style={{ fontWeight: 600, marginBottom: "0.35rem" }}>Address of employee for correspondence</p>
+        <div style={{ ...tableCellStyle, minHeight: "3rem" }}></div>
+      </div>
+
+      <div style={{ marginTop: "0.4rem" }}>
+        <p style={{ marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.73rem" }}>Employee acknowledgment</p>
+        <div
+          style={{
+            width: "100%",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            borderTop: "1.5px solid rgba(0 0 0/ 85%)",
+            borderLeft: "1.5px solid rgba(0 0 0/ 85%)",
+            fontWeight: 500,
+            color: "black",
+          }}
+        >
+          {["Signature of employee", "Date"].map((label) => (
+            <div
+              key={label}
+              style={{
+                borderRight: "1.5px solid rgba(0 0 0/ 85%)",
+                borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
+                padding: "3px 8px 8px 8px",
+                fontSize: "0.73rem",
+                fontWeight: 500,
+                textTransform: "uppercase",
+                minHeight: "2.5rem",
+              }}
+            >
+              {label}
+            </div>
+          ))}
         </div>
       </div>
-    </ScrollArea>
+
+      <div style={{ marginTop: "0.4rem" }}>
+        <p style={{ marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.73rem" }}>Employee remarks</p>
+        <div
+          style={{
+            width: "100%",
+            border: "1.5px solid rgba(0 0 0/ 85%)",
+            minHeight: "4rem",
+            padding: "5px 8px",
+            fontSize: "0.73rem",
+            fontWeight: 500,
+          }}
+        ></div>
+      </div>
+    </>
+  );
+
+  const renderLeaveApplicationBody = () => {
+    const cellStyle: React.CSSProperties = {
+      borderRight: "1.5px solid rgba(0 0 0/ 85%)",
+      borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
+      padding: "4px 8px 8px 8px",
+      fontSize: "0.73rem",
+      fontWeight: 500,
+      minHeight: "2.4rem",
+      textTransform: "uppercase",
+    };
+
+    return (
+      <>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+          <div style={{ fontWeight: 600, textTransform: "uppercase" }}>REF: {previewRefNo || "[REF NO]"}</div>
+          <div style={{ fontWeight: 600 }}>{todayDisplayDate}</div>
+        </div>
+        <h2 style={{ textAlign: "center", fontSize: "0.84rem", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: 1, fontWeight: 700 }}>
+          Leave Application Form
+        </h2>
+        <div style={{ width: "100%", display: "grid", gridTemplateColumns: "35% 1fr", borderTop: "1.5px solid rgba(0 0 0/ 85%)", borderLeft: "1.5px solid rgba(0 0 0/ 85%)", marginBottom: "0.9rem" }}>
+          {[
+            "Employee Name",
+            "Employee Code",
+            "Department",
+            "Leave Type",
+            "From Date",
+            "To Date",
+            "Total Days",
+            "Contact During Leave",
+          ].map((label) => (
+            <React.Fragment key={label}>
+              <div style={cellStyle}>{label}</div>
+              <div style={cellStyle}></div>
+            </React.Fragment>
+          ))}
+        </div>
+        <div style={{ marginBottom: "0.9rem" }}>
+          <p style={{ fontWeight: 600, marginBottom: "0.35rem", textTransform: "uppercase" }}>Reason for leave</p>
+          <div style={{ border: "1.5px solid rgba(0 0 0/ 85%)", minHeight: "8rem" }}></div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.9rem", marginTop: "2rem" }}>
+          <div>
+            <div style={{ borderTop: "1.5px solid rgba(0 0 0/ 85%)", paddingTop: "0.3rem", fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 600 }}>Employee Signature</div>
+          </div>
+          <div>
+            <div style={{ borderTop: "1.5px solid rgba(0 0 0/ 85%)", paddingTop: "0.3rem", fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 600 }}>Date</div>
+          </div>
+          <div>
+            <div style={{ borderTop: "1.5px solid rgba(0 0 0/ 85%)", paddingTop: "0.3rem", fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 600 }}>Department Head Approval</div>
+          </div>
+          <div>
+            <div style={{ borderTop: "1.5px solid rgba(0 0 0/ 85%)", paddingTop: "0.3rem", fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 600 }}>HR Approval</div>
+          </div>
+        </div>
+      </>
+    );
+  };
+
+  const renderSalaryAdvanceBody = () => {
+    const cellStyle: React.CSSProperties = {
+      borderRight: "1.5px solid rgba(0 0 0/ 85%)",
+      borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
+      padding: "4px 8px 8px 8px",
+      fontSize: "0.73rem",
+      fontWeight: 500,
+      minHeight: "2.4rem",
+      textTransform: "uppercase",
+    };
+
+    return (
+      <>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+          <div style={{ fontWeight: 600, textTransform: "uppercase" }}>REF: {previewRefNo || "[REF NO]"}</div>
+          <div style={{ fontWeight: 600 }}>{todayDisplayDate}</div>
+        </div>
+        <h2 style={{ textAlign: "center", fontSize: "0.84rem", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: 1, fontWeight: 700 }}>
+          Salary Advance Form
+        </h2>
+        <div style={{ width: "100%", display: "grid", gridTemplateColumns: "35% 1fr", borderTop: "1.5px solid rgba(0 0 0/ 85%)", borderLeft: "1.5px solid rgba(0 0 0/ 85%)", marginBottom: "0.9rem" }}>
+          {[
+            "Employee Name",
+            "Employee Code",
+            "Designation",
+            "Department",
+            "Requested Amount",
+            "Repayment Month",
+          ].map((label) => (
+            <React.Fragment key={label}>
+              <div style={cellStyle}>{label}</div>
+              <div style={cellStyle}></div>
+            </React.Fragment>
+          ))}
+        </div>
+        <div style={{ marginBottom: "0.9rem" }}>
+          <p style={{ fontWeight: 600, marginBottom: "0.35rem", textTransform: "uppercase" }}>Reason for salary advance</p>
+          <div style={{ border: "1.5px solid rgba(0 0 0/ 85%)", minHeight: "8rem" }}></div>
+        </div>
+        <div style={{ marginBottom: "1rem" }}>
+          <p style={{ fontWeight: 600, marginBottom: "0.35rem", textTransform: "uppercase" }}>Employee declaration</p>
+          <div style={{ border: "1.5px solid rgba(0 0 0/ 85%)", minHeight: "5.5rem", padding: "0.6rem", fontSize: "0.73rem" }}>
+            I confirm that the above request is correct and I agree to the approved recovery arrangement.
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.9rem", marginTop: "2rem" }}>
+          <div><div style={{ borderTop: "1.5px solid rgba(0 0 0/ 85%)", paddingTop: "0.3rem", fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 600 }}>Employee Signature</div></div>
+          <div><div style={{ borderTop: "1.5px solid rgba(0 0 0/ 85%)", paddingTop: "0.3rem", fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 600 }}>Manager Approval</div></div>
+          <div><div style={{ borderTop: "1.5px solid rgba(0 0 0/ 85%)", paddingTop: "0.3rem", fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 600 }}>Finance Approval</div></div>
+        </div>
+      </>
+    );
+  };
+
+  const renderSelectedFormBody = () => {
+    switch (selectedFormTemplate) {
+      case "leave_application":
+        return renderLeaveApplicationBody();
+      case "salary_advance":
+        return renderSalaryAdvanceBody();
+      default:
+        return renderEmployeeClearanceBody();
+    }
+  };
+
+  const renderPreview = () => (
+    <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
+      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", justifyContent: "center", flexWrap: "wrap", width: "100%", maxWidth: `${PREVIEW_BASE_WIDTH}px` }}>
+        <Select value={selectedFormTemplate} onValueChange={(value: FormTemplateId) => setSelectedFormTemplate(value)}>
+          <SelectTrigger style={{ width: "15rem", background: "rgba(255 255 255/ 95%)" }}>
+            <SelectValue placeholder="Select form" />
+          </SelectTrigger>
+          <SelectContent style={{}}>
+            {FORM_TEMPLATE_OPTIONS.map((template) => (
+              <SelectItem key={template.id} value={template.id}>
+                {template.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div
+        style={{
+          
+        
+          width: PREVIEW_BASE_WIDTH * previewScale,
+          height: 1100 * previewScale,
+          margin: "0 auto 4rem",
+        }}
+      >
+        <div
+          ref={tableRef}
+          style={{
+            
+            width: `${PREVIEW_BASE_WIDTH}px`,
+            maxWidth: `${PREVIEW_BASE_WIDTH}px`,
+            boxSizing: "border-box",
+            padding: "4rem",
+            backgroundColor: "white",
+            background: "url(/letter-head.png)",
+            backgroundSize: "contain",
+            backgroundPosition: "center",
+            color: "black",
+            boxShadow: "0 0 10px rgba(0 0 0/ 10%)",
+            fontFamily: "Aptos",
+            fontSize: "0.73rem",
+            height: "1100px",
+            maxHeight: "1100px",
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            transform: `scale(${previewScale})`,
+            transformOrigin: "top left",
+          }}
+        >
+          <br/><br/><br/><br/><br/>
+          <div style={{ flex: 1, overflowY: "hidden", overflowX: "hidden" }}>
+            {renderSelectedFormBody()}
+          </div>
+        
+        </div>
+      </div>
+    </div>
   );
 
   const handleRenamePreset = async (newName: string) => {
@@ -1845,6 +1932,12 @@ const [searchTerm, setSearchTerm] = useState("");
     }
   };
 
+  void handleSave;
+  void handleDeleteLetter;
+  void handleSaveChanges;
+  void handleLetterClick;
+  void renderInputForm;
+
   return (
     <>
       {/* <div style={{border:"", display:"flex", alignItems:"center", justifyContent:'center'}}>
@@ -1863,19 +1956,6 @@ const [searchTerm, setSearchTerm] = useState("");
         }}
       >
         <motion.div>
-          <button
-            style={{
-              position: "fixed",
-              bottom: 0,
-              right: 0,
-              zIndex: 10,
-              margin: "2rem",
-            }}
-            onClick={() => setDrawerVisible(true)}
-            className="mobile-menu-button"
-          >
-            <Menu color="black" width="1.5rem" />
-          </button>
           <Back
             blurBG
             fixed
@@ -1907,47 +1987,7 @@ const [searchTerm, setSearchTerm] = useState("");
             //     </p>
             //   )
             // }
-            title={
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <p
-                  style={{
-                    fontSize: "1rem",
-                    display: "flex",
-                    gap: "0.5rem",
-                    alignItems: "center",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {saving ? (
-                    <LoaderCircle className="animate-spin" width={"1rem"} />
-                  ) : (
-                    loadedLetterId && (
-                      <Database color="darkblue" width={"1rem"} />
-                    )
-                  )}
-
-                  {loadedLetterId}
-                </p>
-                {hasChanges && loadedLetterId && (
-                  <div
-                    style={{
-                      fontSize: "0.7rem",
-                      color: "#f59e0b",
-                      background: "rgba(245 158 11/ 15%)",
-                      padding: "0.25rem 0.5rem",
-                      borderRadius: "0.25rem",
-                      fontWeight: 500,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.25rem",
-                    }}
-                  >
-                    <Dot color="#f59e0b" width="1rem" />
-                    Unsaved Changes
-                  </div>
-                )}
-              </div>
-            }
+        
             extra={
               <div
                 style={{
@@ -1963,13 +2003,17 @@ const [searchTerm, setSearchTerm] = useState("");
                     width: "100%",
                     fontSize: "0.9rem",
                     padding: "0.5rem 1rem",
-                    background: pdfLoading ? "darkslateblue" : "darkblue",
+                    background: pdfLoading
+                      ? "linear-gradient(145deg, rgba(21, 12, 112, 0.94), rgba(24, 12, 125, 0.9) 45%, rgba(13, 7, 88, 0.95))"
+                      : "linear-gradient(145deg, rgba(15, 5, 130, 0.96), rgba(25, 12, 170, 0.94) 45%, rgba(12, 3, 105, 0.98))",
+                      boxShadow:
+                      "inset 0 1px 0 rgba(255,255,255,0.62), inset 0 -10px 16px rgba(8,30,120,0.5), 0 10px 22px rgba(4,16,60,0.4), 0 0 18px rgba(52,110,255,0.24), 0 0 0 1px rgba(160,204,255,0.18)",
                     color: "white",
                     border: "none",
                     borderRadius: "0.5rem",
                     cursor: pdfLoading ? "not-allowed" : "pointer",
                     opacity: pdfLoading ? 0.7 : 1,
-                    boxShadow: "1px 1px 10px rgba(0 0 0/ 30%)",
+                  
                     position: "relative",
                     overflow: "hidden",
                   }}
@@ -1996,137 +2040,12 @@ const [searchTerm, setSearchTerm] = useState("");
                       </>
                     ) : (
                       <>
-                        <Sparkles color="white" width={"1rem"} />
+                        <FilePlus color="white" width={"1rem"} />
                         Generate PDF
                       </>
                     )}
                   </div>
                 </button>
-
-                {/* <button
-                  onClick={!loadedLetterId ? handleSave : handleSaveChanges}
-                >
-                  {saving ? (
-                    <LoaderCircle className="animate-spin" />
-                  ) : !loadedLetterId ? (
-                    <Save color="darkblue" />
-                  ) : (
-                    <CloudUpload color="darkblue" />
-                  )}
-                </button> */}
-
-                {!loadedLetterId ? (
-                  <motion.button
-                    onClick={!loadedLetterId ? handleSave : handleSaveChanges}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "rgba(100 100 100/ 10%)",
-                      fontSize: "0.75rem",
-                      // border: "1px solid rgba(100 100 100/ 40%)",
-                      padding: "0.5rem 1rem",
-                      borderRadius: "0.5rem",
-                      cursor: "pointer",
-                      height: "",
-                      willChange: "transform",
-                    }}
-                  >
-                    {saving ? (
-                      <LoaderCircle className="animate-spin" />
-                    ) : (
-                      <Save width={"1.25rem"} color="darkblue" />
-                    )}
-                  </motion.button>
-                ) : (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <motion.button
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          background: "rgba(100 100 100/ 10%)",
-                          fontSize: "0.75rem",
-                          // border: "1px solid rgba(100 100 100/ 40%)",
-                          padding: "0.65rem 1rem",
-                          borderRadius: "0.5rem",
-                          cursor: "pointer",
-                          height: "",
-                          willChange: "transform",
-                        }}
-                      >
-                        {saving ? (
-                          <LoaderCircle className="animate-spin" />
-                        ) : !loadedLetterId ? (
-                          <Save color="darkblue" width={"1.25rem"} />
-                        ) : (
-                          <Save color="darkblue" width={"1.25rem"} />
-                        )}
-
-                        <ChevronDown width={"1rem"} />
-                      </motion.button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem
-                        style={{
-                          display: "flex",
-                          justifyContent: "flex-start",
-                        }}
-                        onClick={handleSaveChanges}
-                      >
-                        <Save color="royalblue" className="w-4" />
-                        <span>Save Changes</span>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        style={{
-                          display: "flex",
-                          justifyContent: "flex-start",
-                        }}
-                        onClick={handleSave}
-                      >
-                        <FilePlus2 className="w-4" />
-                        <span>Save as New</span>
-                        <p></p>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  style={{
-                    // border: "1px solid rgba(100 100 100/ 30%)",
-                    background: "rgba(100 100 100/ 10%)",
-                    padding: "0.5rem 0.75rem",
-                  }}
-                  onClick={() => {
-                    // Show cached letters immediately
-                    if (offerLettersCache.length > 0) {
-                      setOfferLetters(offerLettersCache);
-                    }
-                    setOfferLettersDrawerVisible(true);
-                    // Fetch new letters in background
-                    fetchOfferLetters();
-                  }}
-                >
-                  <Database color="darkblue" width={"1.25rem"} />
-                </motion.button>
               </div>
             }
           />
@@ -2152,32 +2071,15 @@ const [searchTerm, setSearchTerm] = useState("");
                 border: "",
                 justifyContent: "center",
                 paddingTop: "5rem",
+              
               }}
             >
-              {/* Input Form - Hidden on mobile */}
-              <div className="input-form" style={styles.inputForm}>
-                {renderInputForm()}
-              </div>
-
-              {/* Preview - Full width on mobile */}
-              <div className="" style={{}}>
+              <div className="" style={{ width: "100%", display: "flex", justifyContent: "center" }}>
                 {renderPreview()}
               </div>
             </div>
           )}
         </motion.div>
-
-        {/* Mobile Drawer */}
-        <Drawer
-          style={{ background: "black", color: "white" }}
-          title="Clearance Form Details"
-          placement="left"
-          onClose={() => setDrawerVisible(false)}
-          open={drawerVisible}
-          width="100%"
-        >
-          {renderInputForm()}
-        </Drawer>
 
         <DefaultDialog
           title={"Report a Bug"}
@@ -2209,274 +2111,6 @@ const [searchTerm, setSearchTerm] = useState("");
           updating={loading}
         />
 
-        {/* Employee Clearance Forms Drawer */}
-        <Drawer
-      title="Employee Clearance Forms"
-      placement="right"
-      onClose={() => {
-        setOfferLettersDrawerVisible(false);
-    
-      }}
-      open={offerLettersDrawerVisible}
-      width={window.innerWidth <= 768 ? "100%" : 500}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {/* Search Bar */}
-        <div style={{ position: "sticky", top: 0, background: "white", zIndex: 10, paddingBottom: "0.5rem" }}>
-          <div style={{ position: "relative" }}>
-            <input
-              style={{
-                background: "rgba(100 100 100/0.08)",
-                color: "black",
-                width: "100%",
-                padding: "0.6rem 2.5rem 0.6rem 1rem",
-                borderRadius: "0.5rem",
-                border: "1px solid rgba(100 100 100/ 15%)",
-                fontSize: "0.9rem",
-                outline: "none",
-                transition: "all 0.2s ease",
-              }}
-              placeholder="Search by name or position..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "darkblue";
-                e.currentTarget.style.background = "rgba(0 0 139/ 0.05)";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "rgba(100 100 100/ 15%)";
-                e.currentTarget.style.background = "rgba(100 100 100/0.08)";
-              }}
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                style={{
-                  position: "absolute",
-                  right: "0.5rem",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "rgba(0 0 0/ 50%)",
-                  padding: "0.25rem",
-                  display: "flex",
-                  alignItems: "center",
-                  borderRadius: "0.25rem",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(100 100 100/ 10%)";
-                  e.currentTarget.style.color = "black";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "none";
-                  e.currentTarget.style.color = "rgba(0 0 0/ 50%)";
-                }}
-              >
-                <FileX width="1rem" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          style={{
-            display: "flex",
-            color: "black",
-            fontSize: "0.8rem",
-            gap: "0.5rem",
-            justifyContent: "center",
-            alignItems: "center",
-            marginBottom: "1rem",
-            height: "1rem",
-          }}
-        >
-        {
-        offerLettersLoading ? (
-          <>
-            <LoaderCircle
-              width={"0.8rem"}
-              color="darkblue"
-              className="animate-spin"
-            />
-            <p>Fetching</p>
-          </>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            style={{ display: "flex", alignItems: "center" }}
-          >
-            <Dot color="darkblue" />
-            {"Fetched " + offerLetters.length + " "}
-            {offerLetters.length > 1 ? "Items" : "Item"}
-          </motion.div>
-        )}
-      </motion.div>
-
-      {offerLetters.length === 0 ? (
-        <Empty style={{ maxHeight: "70vh", paddingBottom: "4rem" }}>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <FileText />
-            </EmptyMedia>
-            <EmptyTitle style={{ marginTop: "1rem", fontSize: "1.1rem" }}>
-              No clearance forms saved yet
-            </EmptyTitle>
-            <EmptyDescription style={{ marginTop: "0.5rem", fontSize: "0.9rem", opacity: 0.7 }}>
-              {offerLettersLoading 
-                ? "Loading saved forms..." 
-                : "Create and save your first clearance form to see it here"}
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : (
-        <div style={{ maxHeight: "70vh", overflowY: "auto", paddingBottom: "4rem" }}>
-          {offerLetters
-          .filter((ol) =>
-    (ol.candidateName + " " + ol.position)
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-  )
-          .map((ol:any) => (
-            <div
-              key={ol.id}
-              style={{
-                border: "1px solid #eee",
-                borderRadius: 8,
-                padding: 16,
-                marginBottom: 12,
-                background: "#fafbfc",
-                cursor: "pointer",
-                transition: "box-shadow 0.2s",
-                display: "flex",
-                gap: "1rem"
-              }}
-            >
-              
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  gap: "1rem",
-                  
-                  width:"100%"
-                }}
-              >
-                {/* <Checkbox 
-                  checked={selectedLetters.includes(ol.id)}
-                  onChange={(e) => {
-                    const target = e.target as HTMLInputElement;
-                    if (target.checked) {
-                      setSelectedLetters(prev => [...prev, ol.id]);
-                    } else {
-                      setSelectedLetters(prev => prev.filter(id => id !== ol.id));
-                    }
-                  }}
-                  style={{ marginTop: "4px" }}
-                /> */}
-                <div style={{ flex: 1 }} onClick={() => handleLetterClick(ol)}>
-                  <div
-                    style={{
-                      fontWeight: 500,
-                      fontSize: 14,
-                      color: "black",
-                      textTransform: "capitalize",
-                      display: "flex",
-                      gap: "0.5rem",
-                      alignItems: "center",
-                    }}
-                  >
-                    {ol.candidateName || "[No Name]"}
-                  </div>
-                  {/* <div
-                    style={{
-                      fontWeight: 500,
-                      fontSize: 14,
-                      color: "black",
-                      textTransform: "capitalize",
-                      display: "flex",
-                      gap: "0.5rem",
-                      alignItems: "center",
-                    }}
-                  >
-                    {ol.passportNumber || "[No Passport Number]"}
-                  </div> */}
-                  <div
-                    style={{
-                      color:"black",
-                      opacity:"0.45",
-                      fontWeight: 600,
-                      fontSize: 11,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {ol.refNo || "[No Reference Number]"}
-                  </div>
-                  {/* <div
-                    style={{
-                      color: "royalblue",
-                      fontWeight: 500,
-                      fontSize: 11,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {ol.position || "[No Position]"}
-                  </div> */}
-                  
-
-                  <div style={{ color: "#888", fontSize: 10 }}>
-                    {ol.generated_at && ol.generated_at.toDate
-                      ? "Last Modified : " +
-                        moment(ol.generated_at.toDate()).format(
-                          "DD MMM YYYY, h:mm A"
-                        )
-                      : ""}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "0.5rem",
-                    marginLeft: "1rem",
-                  }}
-                >
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      Modal.confirm({
-                        title: "Delete Clearance Form",
-                        content:
-                          "Are you sure you want to delete this clearance form?",
-                        okText: "Yes",
-                        okType: "danger",
-                        cancelText: "No",
-                        onOk: () => handleDeleteLetter(ol.id),
-                      });
-                    }}
-                    style={{
-                      background: "rgba(150 150 150/ 10%)",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: "0.15rem 0.5rem",
-                      color: "indianred",
-                      fontSize: "0.7rem",
-                    }}
-                  >
-                    {deleting ? <LoadingOutlined /> : "Delete"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      </div>
-    </Drawer>
         {/* {loadedLetterId && (
           <button
             onClick={handleSaveChanges}

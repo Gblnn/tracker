@@ -62,6 +62,7 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
+  CloudOff,
   CreditCard,
   Database,
   Dot,
@@ -337,16 +338,29 @@ const [searchTerm, setSearchTerm] = useState("");
   const [previewContentHeight, setPreviewContentHeight] = useState(1);
   const [pdfLoading, setPdfLoading] = useState(false);
   const canEditOfferLetters = (() => {
-    if (userData?.role === "admin" || userData?.role === "site_admin") {
-      return true;
-    }
-
     try {
-      const permissions = JSON.parse(userData?.clearance || "{}");
-      if (permissions.offer_letters !== true) return false;
-      return permissions.offer_letters_edit === true;
-    } catch {
+      const permissions = JSON.parse(userData?.clearance || "{}") as Record<string, boolean>;
+      const hasStructuredClearance = Object.keys(permissions).length > 0;
+      const hasOfferLettersModule = permissions.offer_letters === true;
+      const hasOfferLettersEdit = permissions.offer_letters_edit === true;
+      const hasExplicitEditBlock = permissions.offer_letters_edit === false;
+
+      if (hasOfferLettersModule) {
+        return hasOfferLettersEdit;
+      }
+
+      if (permissions.offer_letters === false || hasExplicitEditBlock) {
+        return false;
+      }
+
+      if (userData?.role === "admin" || userData?.role === "site_admin") {
+        // Preserve legacy admin behavior only for accounts without structured module clearance.
+        return !hasStructuredClearance;
+      }
+
       return false;
+    } catch {
+      return userData?.role === "admin" || userData?.role === "site_admin";
     }
   })();
   const previewScale =
@@ -360,9 +374,10 @@ const [searchTerm, setSearchTerm] = useState("");
         )
       : 1;
   const showPreviewSpacingControls =
-    screenWidth < FORM_PANEL_BREAKPOINT
+    canEditOfferLetters &&
+    (screenWidth < FORM_PANEL_BREAKPOINT
       ? responsiveFormDrawerOpen
-      : !hideDesktopInputSection;
+      : !hideDesktopInputSection);
   const getNextReferenceNumber = (existingLetters: Array<{refNo?: string}>) => {
     // Extract existing reference numbers and find the highest one
     const numbers = existingLetters
@@ -458,7 +473,7 @@ const [searchTerm, setSearchTerm] = useState("");
     if (!canEditOfferLetters) {
       setResponsiveFormDrawerOpen(false);
       setDrawerVisible(false);
-      setHideDesktopInputSection(false);
+      setHideDesktopInputSection(true);
     }
   }, [canEditOfferLetters]);
 
@@ -775,7 +790,7 @@ const [searchTerm, setSearchTerm] = useState("");
     }
 
     // Only auto-save if we're editing an existing letter
-    if (!loadedLetterId) {
+    if (!loadedLetterId || !canEditOfferLetters) {
       return;
     }
 
@@ -792,7 +807,7 @@ const [searchTerm, setSearchTerm] = useState("");
     };
 
     autoSaveFieldConfig();
-  }, [fieldConfig, loadedLetterId]);
+  }, [fieldConfig, loadedLetterId, canEditOfferLetters]);
 
   const fetchPresets = async () => {
     try {
@@ -1314,6 +1329,11 @@ const [searchTerm, setSearchTerm] = useState("");
   };
 
   const handleSave = async () => {
+    if (!canEditOfferLetters) {
+      message.error("Editing privileges are disabled for Offer Letters");
+      return;
+    }
+
     setSaving(true);
     try {
       // Validate required fields
@@ -1468,6 +1488,11 @@ const [searchTerm, setSearchTerm] = useState("");
   };
 
   const handleEditLetter = async () => {
+    if (!canEditOfferLetters) {
+      message.error("Editing privileges are disabled for Offer Letters");
+      return;
+    }
+
     if (!editingLetter?.id) return;
     setSaving(true);
     try {
@@ -1486,6 +1511,11 @@ const [searchTerm, setSearchTerm] = useState("");
   };
 
   const handleDeleteLetter = async (id: string) => {
+    if (!canEditOfferLetters) {
+      message.error("Editing privileges are disabled for Offer Letters");
+      return;
+    }
+
     setDeleting(true);
     try {
       await deleteDoc(doc(db, "offer_letters", id));
@@ -1506,6 +1536,11 @@ const [searchTerm, setSearchTerm] = useState("");
   };
 
   const handleSaveChanges = async () => {
+    if (!canEditOfferLetters) {
+      message.error("Editing privileges are disabled for Offer Letters");
+      return;
+    }
+
     if (!loadedLetterId) return;
 
     try {
@@ -3528,36 +3563,42 @@ const [searchTerm, setSearchTerm] = useState("");
           minWidth: 0,
         }}
       >
-        {/* Info bar — letter ID + unsaved changes */}
+        {/* Info bar — letter ID + 
+         */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: "0.5rem",
-            padding: "0.4rem",
+            padding: "0.25rem",
+            paddingRight:"0.6rem",
             marginBottom: "0.5rem",
             background: "rgba(248 250 252 / 0.92)",
             backdropFilter: "blur(8px)",
-            borderRadius: "0.85rem",
+            borderRadius: "0.8rem",
             border: "1px solid rgba(100 116 139 / 18%)",
+            width: "fit-content",
+            justifyContent: "flex-start",
+            
             // boxShadow: "0 1px 6px rgba(15 23 42 / 0.06)",
           }}
         >
           {loadedLetterId ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "rgba(0 0 0/ 70%)", paddingLeft: "0.75rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8rem", color: "rgba(0 0 0/ 70%)", paddingLeft: "0.75rem" }}>
               <File width="1rem" color="darkblue" />
               <span style={{ fontWeight: 500 }}>{loadedLetterId}</span>
             </div>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.78rem", color: "rgba(0 0 0/ 45%)", paddingLeft: "0.75rem" }}>
-              <File width="1rem" />
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.78rem", color: "rgba(0 0 0/ 45%)", paddingLeft: "0.75rem" }}>
+              <CloudOff width="1rem" />
               <span>Unsaved</span>
             </div>
-          )}
+          )
+          }
 
           {hasChanges && (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.72rem", color: "rgba(180 100 0 / 90%)", background: "rgba(251 191 36 / 15%)", padding: "0.2rem 0.5rem", borderRadius: "0.4rem" }}>
-              <span style={{ width: "0.45rem", height: "0.45rem", borderRadius: "50%", background: "currentColor", flexShrink: 0, display: "inline-block" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.72rem", color: "rgba(180 100 0 / 90%)", padding: "0.2rem 0.5rem", borderRadius: "0.4rem" }}>
+              <span className="animate-ping" style={{ width: "0.45rem", height: "0.45rem", borderRadius: "50%", background: "currentColor", flexShrink: 0, display: "inline-block" }} />
               Unsaved changes
             </div>
           )}
@@ -4626,7 +4667,7 @@ const [searchTerm, setSearchTerm] = useState("");
 
                   {/* {loadedLetterId} */}
                 </p>
-                {hasChanges && loadedLetterId && (
+                {/* {hasChanges && loadedLetterId && (
                   <div
                     style={{
                       fontSize: "0.7rem",
@@ -4643,7 +4684,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     <Dot color="#f59e0b" width="1rem" />
                     Unsaved Changes
                   </div>
-                )}
+                )} */}
               </div>
             }
             extra={

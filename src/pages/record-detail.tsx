@@ -55,6 +55,7 @@ interface EditRecordFormContentProps {
   editedSite: string | undefined;
   editedProject: string | undefined;
   editedSystemRole: string | undefined;
+  editedAllocatedVehicle: string | undefined;
   setEditedName: (value: string) => void;
   setEditedDisplayName: (value: string) => void;
   setEditedEmail: (value: string) => void;
@@ -68,6 +69,7 @@ interface EditRecordFormContentProps {
   setEditedSite: (value: string) => void;
   setEditedProject: (value: string) => void;
   setEditedSystemRole: (value: string) => void;
+  setEditedAllocatedVehicle: (value: string) => void;
   loading: boolean;
   handleSubmit: () => void;
 }
@@ -88,6 +90,7 @@ const EditRecordFormContent: React.FC<EditRecordFormContentProps> = ({
   editedSite,
   editedProject,
   editedSystemRole,
+  editedAllocatedVehicle,
   setEditedName,
   setEditedDisplayName,
   setEditedEmail,
@@ -101,6 +104,7 @@ const EditRecordFormContent: React.FC<EditRecordFormContentProps> = ({
   setEditedSite,
   setEditedProject,
   setEditedSystemRole,
+  setEditedAllocatedVehicle,
   loading,
   handleSubmit,
 }) => {
@@ -404,6 +408,27 @@ const EditRecordFormContent: React.FC<EditRecordFormContentProps> = ({
               onChange={(value) => setEditedSystemRole(value)}
             />
           </div>
+
+          {/* Allocated Vehicle */}
+          <div>
+            <label style={{ fontSize: "0.875rem", fontWeight: "600", opacity: 0.9, marginBottom: "0.5rem", display: "block" }}>
+              Allocated Vehicle
+            </label>
+            <input
+              type="text"
+              value={editedAllocatedVehicle !== undefined ? editedAllocatedVehicle : record?.allocated_vehicle || ""}
+              onChange={(e) => setEditedAllocatedVehicle(e.target.value)}
+              placeholder="Enter vehicle number (leave empty to deallocate)"
+              style={{
+                width: "100%",
+                padding: "0.875rem 1rem",
+                borderRadius: "0.75rem",
+                fontSize: "1rem",
+                fontWeight: "500",
+                background: "rgba(100, 100, 100, 0.08)",
+              }}
+            />
+          </div>
         </div>
       </div>
 
@@ -482,6 +507,7 @@ export default function RecordDetail() {
   const [editedSite, setEditedSite] = useState<string | undefined>();
   const [editedProject, setEditedProject] = useState<string | undefined>();
   const [editedSystemRole, setEditedSystemRole] = useState<string | undefined>();
+  const [editedAllocatedVehicle, setEditedAllocatedVehicle] = useState<string | undefined>();
   
   // Document states
   const [civil, setCivil] = useState(false);
@@ -641,6 +667,7 @@ export default function RecordDetail() {
     setEditedSite(undefined);
     setEditedProject(undefined);
     setEditedSystemRole(undefined);
+    setEditedAllocatedVehicle(undefined);
   };
 
   const archiveRecord = async () => {
@@ -692,6 +719,11 @@ export default function RecordDetail() {
     if (!id) return;
     setLoading(true);
     try {
+      const resolvedAllocatedVehicle = editedAllocatedVehicle !== undefined
+        ? editedAllocatedVehicle.trim()
+        : (record.allocated_vehicle || "");
+      const allocatedVehicleToSave = resolvedAllocatedVehicle === "" ? null : resolvedAllocatedVehicle;
+
       await updateDoc(doc(db, "records", id), {
         name: editedName !== undefined ? editedName : (record.name || ""),
         display_name: editedDisplayName !== undefined ? editedDisplayName : (record.display_name || ""),
@@ -706,6 +738,7 @@ export default function RecordDetail() {
         companyName: editedCompanyName !== undefined ? editedCompanyName : (record.companyName || ""),
         dateofJoin: editedDateofJoin !== undefined ? editedDateofJoin : (record.dateofJoin || ""),
         contact: editedContact !== undefined ? editedContact : (record.contact || ""),
+        allocated_vehicle: allocatedVehicleToSave,
         modified_on: new Date(),
       });
 
@@ -725,6 +758,7 @@ export default function RecordDetail() {
         companyName: editedCompanyName !== undefined ? editedCompanyName : (record.companyName || ""),
         dateofJoin: editedDateofJoin !== undefined ? editedDateofJoin : (record.dateofJoin || ""),
         contact: editedContact !== undefined ? editedContact : (record.contact || ""),
+        allocated_vehicle: allocatedVehicleToSave,
       });
 
       toast.success("Record updated successfully");
@@ -1029,6 +1063,7 @@ export default function RecordDetail() {
           editedSite={editedSite}
           editedProject={editedProject}
           editedSystemRole={editedSystemRole}
+          editedAllocatedVehicle={editedAllocatedVehicle}
           setEditedName={setEditedName}
           setEditedDisplayName={setEditedDisplayName}
           setEditedEmail={setEditedEmail}
@@ -1042,6 +1077,7 @@ export default function RecordDetail() {
           setEditedSite={setEditedSite}
           setEditedProject={setEditedProject}
           setEditedSystemRole={setEditedSystemRole}
+          setEditedAllocatedVehicle={setEditedAllocatedVehicle}
           loading={loading}
           handleSubmit={editRecord}
         />

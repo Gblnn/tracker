@@ -14,7 +14,7 @@ import { AtSign, Building2, Notebook, PhoneIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const listAvatarFallbackStyle = {
-    fontWeight: 600,
+    fontWeight: 500,
     background: "linear-gradient(145deg, rgba(236,241,255,0.95), rgba(226,236,255,0.92))",
     fontSize: "1.25rem",
     boxShadow: "0 2px 8px rgba(79, 70, 229, 0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
@@ -152,7 +152,7 @@ export default function Phonebook() {
                         padding: "0.75rem 1rem",
                         borderRadius: "0.9rem",
                         background: "rgba(246 248 252 / 0.78)",
-                        border: "1px solid rgba(210 218 234 / 0.7)",
+                        // border: "1px solid rgba(210 218 234 / 0.7)",
                         boxShadow: "0 1px 4px rgba(79 70 229 / 0.06), inset 0 1px 0 rgba(255 255 255 / 0.85)",
                         fontSize: "1rem",
                         outline: "none",
@@ -185,7 +185,7 @@ export default function Phonebook() {
                         setSelectedRecord(record);
                         setDrawerOpen(true);
                     }}
-                                        icon={<Avatar className="h-12 w-12">
+                                        icon={<Avatar className="">
                                             <AvatarFallback style={listAvatarFallbackStyle} className="text-lg">
                                                 {displayName
                                                     ? getInitials(displayName.split("@")[0])

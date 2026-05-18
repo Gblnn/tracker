@@ -82,6 +82,15 @@ const OFFER_LETTERS_EDIT_KEY = "offer_letters_edit";
 const countEnabledModules = (permissions: Record<string, boolean>) =>
   MODULES.filter((module) => permissions[module.id] === true).length;
 
+const CONTROL_THEME = {
+  panelBg: "linear-gradient(145deg, rgba(9, 22, 76, 0.95), rgba(15, 44, 126, 0.9) 45%, rgba(12, 28, 92, 0.96))",
+  panelGlow: "0 18px 50px rgba(13, 37, 112, 0.34), inset 0 1px 0 rgba(255,255,255,0.4)",
+  accentText: "rgba(214, 230, 255, 0.96)",
+  mutedText: "rgba(214, 230, 255, 0.78)",
+  actionBg: "linear-gradient(145deg, rgba(15, 5, 130, 0.96), rgba(25, 12, 170, 0.94) 45%, rgba(12, 3, 105, 0.98))",
+  actionShadow: "inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -10px 16px rgba(8,30,120,0.45), 0 14px 30px rgba(9,13,75,0.38)",
+} as const;
+
 // Shared User Details Content Component
 interface UserDetailsContentProps {
   display_name: string;
@@ -529,6 +538,10 @@ export default function Users() {
 
   const auth = getAuth();
 
+  // const privilegedUsersCount = users.filter((user: any) =>
+  //   ["admin", "site_admin", "hr"].includes(String(user.role || "").toLowerCase())
+  // ).length;
+
   // Parse module permissions from clearance string
   useEffect(() => {
     try {
@@ -753,7 +766,8 @@ export default function Users() {
   return (
     <div
       style={{
-       
+        minHeight: "100vh",
+        background: "radial-gradient(circle at 12% -8%, rgba(35, 84, 220, 0.26), rgba(255,255,255,0) 42%), radial-gradient(circle at 86% 8%, rgba(42, 110, 255, 0.2), rgba(255,255,255,0) 40%), var(--background)",
       }}
     >
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
@@ -773,6 +787,68 @@ export default function Users() {
         />
 
         <br />
+
+        <div
+          style={{
+            top: "5rem",
+            left: "1.25rem",
+            right: "1.25rem",
+            borderRadius: "1.1rem",
+            overflow: "hidden",
+            background: CONTROL_THEME.panelBg,
+            // boxShadow: CONTROL_THEME.panelGlow,
+            position: "fixed",
+            zIndex: 18,
+            WebkitBackdropFilter: "blur(12px)",
+            backdropFilter: "blur(12px)",
+            
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(160deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.06) 38%, rgba(255,255,255,0) 100%)",
+              pointerEvents: "none"
+              
+            }}
+          />
+          <div style={{ position: "relative", padding: "1rem 1.5rem", }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: "0.9rem",
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                <span style={{ fontSize: "0.65rem", letterSpacing: "0.12em", textTransform: "uppercase", color: CONTROL_THEME.mutedText }}>
+                  Access Control Module
+                </span>
+                <h2 style={{ fontSize: isMobile ? "1.32rem" : "1.34rem", fontWeight: 600, color: "white", lineHeight: 1.2 }}>
+                  User Permissions
+                </h2>
+                {/* <p style={{ fontSize: "0.7rem", color: CONTROL_THEME.accentText }}>
+                  Manage clearance to modules and what they can modify.
+                </p> */}
+              </div>
+
+              <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
+                {/* <div style={{ padding: "0.4rem 0.62rem", borderRadius: "0.66rem", background: "rgba(255,255,255,0.15)", color: "white", fontSize: "0.74rem", fontWeight: 600 }}>
+                  {users.length} users
+                </div>
+                <div style={{ padding: "0.4rem 0.62rem", borderRadius: "0.66rem", background: "rgba(255,255,255,0.15)", color: "white", fontSize: "0.74rem", fontWeight: 600 }}>
+                  {privilegedUsersCount} privileged
+                </div> */}
+                {/* <div style={{ padding: "0.4rem 0.62rem", borderRadius: "0.66rem", background: "rgba(255,255,255,0.15)", color: "white", fontSize: "0.74rem", fontWeight: 600 }}>
+                  {averageModuleClearance} avg modules
+                </div> */}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {fetchingData && users.length < 1 ? (
           <div
@@ -803,8 +879,9 @@ export default function Users() {
               border: "",
               height: "",
               overflowY: "auto",
-              padding: "1.5rem",
-              paddingTop:"4rem"
+              padding: "1.25rem",
+              paddingTop: isMobile ? "9.2rem" : "10rem",
+              paddingBottom: "7rem"
             }}
           >
             {users.map((user: any) => (
@@ -846,7 +923,7 @@ export default function Users() {
                         if (diffDays < 30) return `Active ${diffDays}d ago`;
                         return `Last active ${d.toLocaleDateString()}`;
                       })()
-                    : undefined
+                    : "No Activity Yet"
                 }
               />
             ))}
@@ -1037,8 +1114,10 @@ export default function Users() {
           right: "2rem",
           width: "3.5rem",
           height: "3.5rem",
-          borderRadius: "0.5rem",
-          background: "rgba(100 100 100/ 0.1)",
+          borderRadius: "0.9rem",
+          background: CONTROL_THEME.actionBg,
+          boxShadow: CONTROL_THEME.actionShadow,
+          color: "white",
           border: "none",
           cursor: "pointer",
           display: "flex",
