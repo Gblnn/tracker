@@ -1,5 +1,4 @@
 import Back from "@/components/back";
-import BottomNav from "@/components/bottom-nav";
 import RefreshButton from "@/components/refresh-button";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
@@ -696,8 +695,6 @@ export default function Tasks() {
                     </button>
                 </div>
             </ResponsiveModal>
-
-            <BottomNav />
         </>
     );
 }

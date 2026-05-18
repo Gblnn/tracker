@@ -1,5 +1,4 @@
 import Back from "@/components/back";
-import BottomNav from "@/components/bottom-nav";
 import Directive from "@/components/directive";
 import RefreshButton from "@/components/refresh-button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -13,6 +12,17 @@ import {
 import { motion } from "framer-motion";
 import { AtSign, Building2, Notebook, PhoneIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+
+const listAvatarFallbackStyle = {
+    fontWeight: 600,
+    background: "linear-gradient(145deg, rgba(236,241,255,0.95), rgba(226,236,255,0.92))",
+    fontSize: "1.25rem",
+    boxShadow: "0 2px 8px rgba(79, 70, 229, 0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
+    borderRadius: "50%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+} as const;
 
 export default function Phonebook() {
     const [records, setRecords] = useState<PhonebookRecord[]>([]);
@@ -172,13 +182,13 @@ export default function Phonebook() {
                         setSelectedRecord(record);
                         setDrawerOpen(true);
                     }}
-                    icon={<Avatar style={{ color:"darkblue"}} className="h-12 w-12">
-                                    <AvatarFallback style={{fontWeight:"600", background:"rgba(100 100 100/ 0.1)", fontSize:"1.25rem", color:""}} className="text-lg">
-                                      {displayName
-                                        ? getInitials(displayName.split("@")[0])
-                                        : "?"}
-                                    </AvatarFallback>
-                                  </Avatar>}
+                                        icon={<Avatar className="h-12 w-12">
+                                            <AvatarFallback style={listAvatarFallbackStyle} className="text-lg">
+                                                {displayName
+                                                    ? getInitials(displayName.split("@")[0])
+                                                    : "?"}
+                                            </AvatarFallback>
+                                        </Avatar>}
                     key={record.id}
                     title={displayName}
                     
@@ -202,13 +212,35 @@ export default function Phonebook() {
                 
                 }}>
                     <div style={{display:"flex", justifyContent:"center"}}>
-                        <Avatar  className="h-20 w-20">
-                                    <AvatarFallback style={{fontWeight:"600", background:"rgba(100 100 100/ 0.1)", fontSize:"2.5rem", }} className="text-lg">
-                                      {selectedRecord
-                                        ? getInitials((selectedRecord.display_name || selectedRecord.name).split("@")[0])
-                                        : "?"}
-                                    </AvatarFallback>
-                                  </Avatar>
+                        <div style={{ position: "relative", width: "5rem", height: "5rem" }}>
+                          <Avatar className="h-20 w-20" style={{ position: "absolute", inset: 0 }}>
+                            <AvatarFallback style={{
+                              fontWeight: "700",
+                              background: "rgba(240 245 255 / 0.5)",
+                            //   backdropFilter: "blur(10px)",
+                            //   WebkitBackdropFilter: "blur(10px)",
+                              fontSize: "2.5rem",
+                           
+                              boxShadow: "0 8px 40px rgba(79, 70, 229, 0.4), inset 0 2px 0 rgba(255,255,255,1), 0 0 24px rgba(79, 70, 229, 0.3)",
+                              borderRadius: "50%",
+                            //   border: "2.5px solid rgba(79, 70, 229, 0.75)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center"
+                            }} className="text-lg">
+                              {selectedRecord
+                                ? getInitials((selectedRecord.display_name || selectedRecord.name).split("@")[0])
+                                : "?"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div style={{
+                            position: "absolute",
+                            inset: "0.1rem",
+                            borderRadius: "50%",
+                            pointerEvents: "none",
+                            background: "linear-gradient(165deg, rgba(255,255,255,0.85) 0%, rgba(220,240,255,0.35) 50%, rgba(255,255,255,0) 100%)",
+                          }} />
+                        </div>
                     </div>
                     <br/>
                     <div style={{display:"flex", justifyContent:"center", alignItems:"center", padding:"1.25rem", paddingTop:"0", flexFlow:"column", gap:""}}>
@@ -239,7 +271,6 @@ export default function Phonebook() {
                 </div>
             </DrawerContent>
         </Drawer>
-        <BottomNav />
         </>
     )
 }

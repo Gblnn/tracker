@@ -1,7 +1,6 @@
 import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import BackgroundProcessDropdown from "@/components/background-process-dropdown";
-import BottomNav from "@/components/bottom-nav";
 import GridTile from "@/components/grid-tile";
 import IndexDropDown from "@/components/index-dropdown";
 import InputDialog from "@/components/input-dialog";
@@ -714,8 +713,6 @@ export default function Index() {
         />
       </div>
       {/* <ReleaseNote /> */}
-
-      <BottomNav />
     </>
   );
 }

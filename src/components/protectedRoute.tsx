@@ -1,6 +1,7 @@
 import { LoadingOutlined } from "@ant-design/icons";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
+import BottomNav from "./bottom-nav";
 
 // Define routes that require specific clearance
 const CLEARANCE_ROUTES = {
@@ -148,5 +149,13 @@ export default function ProtectedRoutes() {
     }
   }
 
-  return <Outlet />;
+  // Only show BottomNav on specific pages
+  const showBottomNav = ["/index", "/phonebook", "/tasks", "/site-admin-workers"].includes(location.pathname);
+
+  return (
+    <>
+      <Outlet />
+      {showBottomNav && <BottomNav />}
+    </>
+  );
 }

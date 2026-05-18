@@ -1,5 +1,4 @@
 import Back from "@/components/back";
-import BottomNav from "@/components/bottom-nav";
 import IndexDropDown from "@/components/index-dropdown";
 import RefreshButton from "@/components/refresh-button";
 import DefaultDialog from "@/components/ui/default-dialog";
@@ -465,8 +464,6 @@ export default function SiteAdminWorkers() {
           }
         }}
       />
-
-      <BottomNav />
     </>
   );
 }

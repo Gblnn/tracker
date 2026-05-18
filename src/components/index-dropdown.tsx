@@ -115,7 +115,7 @@ export default function IndexDropDown(props:Props) {
               : "linear-gradient(indianred, darkred)",
             color: isOnline ? "#f2f8ff" : "white",
             borderRadius: "0.375rem",
-            border: isOnline ? "1px solid rgba(186, 218, 255, 0.48)" : "none",
+            // border: isOnline ? "1px solid rgba(186, 218, 255, 0.48)" : "none",
             // boxShadow: isOnline
             //   ? "inset 0 1px 0 rgba(255,255,255,0.62), inset 0 -10px 16px rgba(8,30,120,0.5), 0 8px 16px rgba(4,16,60,0.4), 0 0 14px rgba(52,110,255,0.2), 0 0 0 1px rgba(160,204,255,0.18)"
             //   : "none",

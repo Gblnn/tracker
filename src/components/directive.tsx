@@ -97,15 +97,28 @@ export default function Directive(props: Props) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          background: "rgba(100 100 100/ 0.05)",
-          // boxShadow:"1px 1px 5px rgba(0,0,0,0.2)",
+          background: "rgba(246 248 252 / 0.78)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
           borderRadius: "0.5rem",
-          // border: "1px solid rgba(100 100 100/ 0.2)",
+          border: "1px solid rgba(255,255,255,0.65)",
+          // boxShadow: "0 2px 10px rgba(15, 23, 42, 0.07)",
           transition: "all 0.2s ease",
           cursor: "pointer",
           paddingLeft: "1rem",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
+        <div
+          style={{
+            position: "absolute",
+            inset: "0.05rem",
+            borderRadius: "0.45rem",
+            pointerEvents: "none",
+            background: "linear-gradient(165deg, rgba(255,255,255,0.34) 0%, rgba(220,230,245,0.14) 45%, rgba(255,255,255,0) 100%)",
+          }}
+        />
         <div
           style={{
             display: "flex",
@@ -113,7 +126,8 @@ export default function Directive(props: Props) {
             alignItems: "center",
             flex: 1,
             minWidth: 0,
-            border: "",
+            position: "relative",
+            zIndex: 1,
           }}
         >
           {props.selectable ? (
@@ -245,7 +259,7 @@ export default function Directive(props: Props) {
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0, position: "relative", zIndex: 1 }}>
           {props.selectable ? null : props.notify ? (
             props.archived ? (
               ""

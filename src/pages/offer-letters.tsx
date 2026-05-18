@@ -80,6 +80,7 @@ import {
   Menu,
   MinusCircle,
   MoreVertical,
+  MoveVertical,
   Pencil,
   Plus,
   RefreshCcw,
@@ -358,6 +359,10 @@ const [searchTerm, setSearchTerm] = useState("");
           )
         )
       : 1;
+  const showPreviewSpacingControls =
+    screenWidth < FORM_PANEL_BREAKPOINT
+      ? responsiveFormDrawerOpen
+      : !hideDesktopInputSection;
   const getNextReferenceNumber = (existingLetters: Array<{refNo?: string}>) => {
     // Extract existing reference numbers and find the highest one
     const numbers = existingLetters
@@ -684,6 +689,7 @@ const [searchTerm, setSearchTerm] = useState("");
   const [firstPageFontSizeRem] = useState(0.8);
   const [firstPageTableFontSizeRem, setFirstPageTableFontSizeRem] = useState(0.7);
   const [firstPageGapPt, setFirstPageGapPt] = useState(0);
+  const [rolesPageGapPt, setRolesPageGapPt] = useState(0);
 
   const clampFirstPageTableFontRem = (value: number) => {
     if (!Number.isFinite(value)) return 0.7;
@@ -700,7 +706,16 @@ const [searchTerm, setSearchTerm] = useState("");
     );
   };
 
+  const adjustRolesPageGapPt = (deltaPt: number) => {
+    setRolesPageGapPt((prev) => Math.max(-4, Math.min(12, prev + deltaPt)));
+  };
+
+  const adjustFirstPageGapPt = (deltaPt: number) => {
+    setFirstPageGapPt((prev) => Math.max(-4, Math.min(12, prev + deltaPt)));
+  };
+
   const firstPageGap = (baseRem: number) => `calc(${baseRem}rem + ${firstPageGapPt}pt)`;
+  const rolesPageGap = (baseRem: number) => `calc(${baseRem}rem + ${rolesPageGapPt}pt)`;
   const fieldListScrollRef = useRef<HTMLDivElement>(null);
   const inputFormScrollRef = useRef<HTMLDivElement>(null);
   const inputScrollRafRef = useRef<number | null>(null);
@@ -2311,7 +2326,77 @@ const [searchTerm, setSearchTerm] = useState("");
       });
   };
 
-  const renderTableTypographyControl = () => (
+  const renderFirstPageSpacingControl = () => (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.5rem",
+        
+        padding: "0.5rem 0.75rem",
+        background: "rgba(100 100 100/ 5%)",
+        borderTopLeftRadius: "0.75rem",
+        borderTopRightRadius: "0.75rem",
+        minHeight: "3.25rem",
+      }}
+    >
+      {/* Font Size */}
+      <TextCursor width="1rem" color="darkblue" style={{ flexShrink: 0 }} />
+      <span style={{ fontSize: "0.82rem", fontWeight: "500", color: "rgba(0 0 0 / 70%)", whiteSpace: "nowrap" }}>
+        Font Size
+      </span>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+        <button
+          type="button"
+          onClick={() => adjustFirstPageTableFontPt(-0.5)}
+          style={{ width: "2rem", height: "2rem", borderRadius: "0.5rem", background: "rgba(100 100 100/ 8%)", color: "rgba(0 0 0/ 72%)", cursor: "pointer", fontSize: "1rem", lineHeight: 1 }}
+          title="Decrease by 0.5 pt"
+        >-</button>
+        <input
+          type="number" min={5} max={10} step={0.1}
+          value={(firstPageTableFontSizeRem * 10).toFixed(1)}
+          onChange={(e) => setFirstPageTableFontPt(Number(e.target.value))}
+          style={{ width: "4rem", height: "2rem", borderRadius: "0.5rem", padding: "0 0.45rem", fontSize: "0.8rem", background: "rgba(255 255 255/ 92%)", color: "rgba(0 0 0/ 80%)", textAlign: "center" }}
+        />
+        <button
+          type="button"
+          onClick={() => adjustFirstPageTableFontPt(0.5)}
+          style={{ width: "2rem", height: "2rem", borderRadius: "0.5rem", background: "rgba(100 100 100/ 8%)", color: "rgba(0 0 0/ 72%)", cursor: "pointer", fontSize: "1rem", lineHeight: 1 }}
+          title="Increase by 0.5 pt"
+        >+</button>
+      </div>
+
+      <div style={{ width: "1px", height: "1.5rem", background: "rgba(0 0 0/ 12%)", flexShrink: 0 }} />
+
+      {/* Line Spacing */}
+      <MoveVertical width="1rem" color="darkblue" />
+      <span style={{ fontSize: "0.82rem", fontWeight: "500", color: "rgba(0 0 0 / 70%)", whiteSpace: "nowrap" }}>
+        Line Spacing
+      </span>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+        <button
+          type="button"
+          onClick={() => adjustFirstPageGapPt(-1)}
+          style={{ width: "2rem", height: "2rem", borderRadius: "0.5rem", background: "rgba(100 100 100/ 8%)", color: "rgba(0 0 0/ 72%)", cursor: "pointer", fontSize: "1rem", lineHeight: 1 }}
+          title="Decrease by 1 pt"
+        >-</button>
+        <input
+          type="number" min={-4} max={12} step={0.5}
+          value={firstPageGapPt.toFixed(1)}
+          onChange={(e) => setFirstPageGapPt(Math.max(-4, Math.min(12, Number(e.target.value))))}
+          style={{ width: "4rem", height: "2rem", borderRadius: "0.5rem", padding: "0 0.45rem", fontSize: "0.8rem", background: "rgba(255 255 255/ 92%)", color: "rgba(0 0 0/ 80%)", textAlign: "center" }}
+        />
+        <button
+          type="button"
+          onClick={() => adjustFirstPageGapPt(1)}
+          style={{ width: "2rem", height: "2rem", borderRadius: "0.5rem", background: "rgba(100 100 100/ 8%)", color: "rgba(0 0 0/ 72%)", cursor: "pointer", fontSize: "1rem", lineHeight: 1 }}
+          title="Increase by 1 pt"
+        >+</button>
+      </div>
+    </div>
+  );
+
+  const renderRolesSpacingControl = () => (
     <div
       style={{
         display: "flex",
@@ -2321,19 +2406,21 @@ const [searchTerm, setSearchTerm] = useState("");
         marginTop: "0.75rem",
         padding: "0.75rem",
         background: "rgba(100 100 100/ 5%)",
-        borderRadius: "0.75rem",
+        borderTopLeftRadius: "0.75rem",
+        borderTopRightRadius: "0.75rem",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <TextCursor width="1rem" color="darkblue" />
-        <span style={{ fontSize: "0.9rem", fontWeight: "500" }}>
-          Font Size
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flex: 1 }}>
+        <MoveVertical width="1rem" color="darkblue" />
+        <span style={{ fontSize: "0.85rem", fontWeight: "500", color: "rgba(0 0 0 / 70%)" }}>
+          Line Spacing
         </span>
+       
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
         <button
           type="button"
-          onClick={() => adjustFirstPageTableFontPt(-0.5)}
+          onClick={() => adjustRolesPageGapPt(-1)}
           style={{
             width: "2rem",
             height: "2rem",
@@ -2344,17 +2431,17 @@ const [searchTerm, setSearchTerm] = useState("");
             fontSize: "1rem",
             lineHeight: 1,
           }}
-          title="Decrease by 0.5 pt"
+          title="Decrease by 1 pt"
         >
           -
         </button>
         <input
           type="number"
-          min={5}
-          max={10}
-          step={0.1}
-          value={(firstPageTableFontSizeRem * 10).toFixed(1)}
-          onChange={(e) => setFirstPageTableFontPt(Number(e.target.value))}
+          min={-4}
+          max={12}
+          step={0.5}
+          value={rolesPageGapPt.toFixed(1)}
+          onChange={(e) => setRolesPageGapPt(Math.max(-4, Math.min(12, Number(e.target.value))))}
           style={{
             width: "4.2rem",
             height: "2rem",
@@ -2366,12 +2453,9 @@ const [searchTerm, setSearchTerm] = useState("");
             textAlign: "center",
           }}
         />
-        {/* <span style={{ fontSize: "0.74rem", color: "rgba(0 0 0/ 60%)", minWidth: "1.6rem" }}>
-          pt
-        </span> */}
         <button
           type="button"
-          onClick={() => adjustFirstPageTableFontPt(0.5)}
+          onClick={() => adjustRolesPageGapPt(1)}
           style={{
             width: "2rem",
             height: "2rem",
@@ -2382,7 +2466,7 @@ const [searchTerm, setSearchTerm] = useState("");
             fontSize: "1rem",
             lineHeight: 1,
           }}
-          title="Increase by 0.5 pt"
+          title="Increase by 1 pt"
         >
           +
         </button>
@@ -2849,7 +2933,6 @@ const [searchTerm, setSearchTerm] = useState("");
           </div>
         </div>
 
-        {renderTableTypographyControl()}
               </div>
             </motion.div>
           )}
@@ -3408,6 +3491,55 @@ const [searchTerm, setSearchTerm] = useState("");
           minWidth: 0,
         }}
       >
+        {/* Info bar — letter ID + unsaved changes */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            padding: "0.4rem",
+            marginBottom: "0.5rem",
+            background: "rgba(248 250 252 / 0.92)",
+            backdropFilter: "blur(8px)",
+            borderRadius: "0.85rem",
+            border: "1px solid rgba(100 116 139 / 18%)",
+            // boxShadow: "0 1px 6px rgba(15 23 42 / 0.06)",
+          }}
+        >
+          {loadedLetterId ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "rgba(0 0 0/ 70%)", paddingLeft: "0.75rem" }}>
+              <File width="1rem" color="darkblue" />
+              <span style={{ fontWeight: 500 }}>{loadedLetterId}</span>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.78rem", color: "rgba(0 0 0/ 45%)", paddingLeft: "0.75rem" }}>
+              <File width="1rem" />
+              <span>Unsaved</span>
+            </div>
+          )}
+
+          {hasChanges && (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.72rem", color: "rgba(180 100 0 / 90%)", background: "rgba(251 191 36 / 15%)", padding: "0.2rem 0.5rem", borderRadius: "0.4rem" }}>
+              <span style={{ width: "0.45rem", height: "0.45rem", borderRadius: "50%", background: "currentColor", flexShrink: 0, display: "inline-block" }} />
+              Unsaved changes
+            </div>
+          )}
+
+          <div style={{ flex: 1 }} />
+
+          {canEditOfferLetters && (
+            <input
+              className="preview-date-input"
+              style={{ width: "fit-content", colorScheme: "light" }}
+              type="date"
+              name="date"
+              value={formData.date}
+              onChange={handleInputChange}
+              placeholder="Enter Date"
+            />
+          )}
+        </div>
+
         <div
           style={{
             position: "relative",
@@ -3426,107 +3558,6 @@ const [searchTerm, setSearchTerm] = useState("");
               transformOrigin: "top left",
             }}
           >
-      {/* Page 1: Table only */}
-      <div
-        style={{
-          border:"",
-          display: "flex",
-          gap: "0.5rem",
-          alignItems: "center",
-          marginBottom: "1rem",
-          marginLeft: "1rem",
-          justifyContent: "space-between",
-        }}
-      >
-        {
-          loadedLetterId && (
-            <div style={{display:"flex", padding:"0.5rem 0.75rem", borderRadius:"0.5rem", background:"rgba(250 250 250)", gap:"0.5rem", border:"1px solid rgba(100 100 100/ 20%)", alignItems:"center"}}>
-          <File width="1rem" color="darkblue"/>
-          {loadedLetterId}
-        </div>
-        )
-        }
-        
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          {/* <Eye />
-          <h2>Preview</h2> */}
-          {/* {loadedLetterId && (
-            <div
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-            >
-              {saving ? (
-                <LoaderCircle className="animate-spin" width={"1rem"} />
-              ) : (
-                <Database width={"1rem"} color="darkblue" />
-              )}
-              <p
-                style={{ textTransform: "uppercase", letterSpacing: "0.05rem" }}
-              >
-                {formData.candidateName}
-              </p>
-            </div>
-          )} */}
-        </div>
-
-        {canEditOfferLetters && (
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", border:"" }}>
-            <input
-              className="preview-date-input"
-              style={{ width: "fit-content", colorScheme: "light" }}
-              type="date"
-              name="date"
-              value={formData.date}
-              onChange={handleInputChange}
-              placeholder="Enter Date"
-            ></input>
-            <Select
-              value={String(firstPageGapPt)}
-              onValueChange={(value) => setFirstPageGapPt(Number(value))}
-            >
-              <SelectTrigger style={{ width: "7.25rem", height: "2rem", fontSize: "0.75rem" }}>
-                <SelectValue placeholder="Gap" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="-4">-4 pt</SelectItem>
-                <SelectItem value="-2">-2 pt</SelectItem>
-                <SelectItem value="0">0 pt</SelectItem>
-                <SelectItem value="2">+2 pt</SelectItem>
-                <SelectItem value="4">+4 pt</SelectItem>
-                <SelectItem value="6">+6 pt</SelectItem>
-                <SelectItem value="8">+8 pt</SelectItem>
-                <SelectItem value="10">+10 pt</SelectItem>
-                <SelectItem value="12">+12 pt</SelectItem>
-              </SelectContent>
-            </Select>
-            {
-              // <button
-              //   onClick={handleSave}
-              //   style={{
-              //     background: "rgba(100 100 100/ 40%)",
-              //     fontSize: "0.8rem",
-              //     padding: "0.5rem 1rem ",
-              //   }}
-              // >
-              //   {saving ? (
-              //     <LoaderCircle width={"1rem"} className="animate-spin" />
-              //   ) : !loadedLetterId ? (
-              //     <Plus width={"1rem"} color="darkblue" />
-              //   ) : (
-              //     <Plus width={"1rem"} color="darkblue" />
-              //   )}
-              //   {saving
-              //     ? "Saving"
-              //     : !loadedLetterId
-              //     ? "Add to Database"
-              //     : "Save as New"}
-              // </button>
-            }
-          </div>
-        )}
-      </div>
-
-      
-  
       {canEditOfferLetters && showPreviewJumpTip && (
         <div
           style={{
@@ -3565,6 +3596,21 @@ const [searchTerm, setSearchTerm] = useState("");
           </button>
         </div>
       )}
+
+      <AnimatePresence initial={false}>
+        {showPreviewSpacingControls && (
+          <motion.div
+            key="first-page-spacing-control"
+            initial={{ opacity: 0, y: -8, maxHeight: 0 }}
+            animate={{ opacity: 1, y: 0, maxHeight: 96 }}
+            exit={{ opacity: 0, y: -10, maxHeight: 0 }}
+            transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+            style={{ overflow: "hidden", willChange: "transform, opacity, max-height" }}
+          >
+            {renderFirstPageSpacingControl()}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div
         ref={tableRef}
@@ -3974,6 +4020,20 @@ const [searchTerm, setSearchTerm] = useState("");
           (role) => role.title.trim() || role.description.trim()
         ) && (
           <>
+            <AnimatePresence initial={false}>
+              {showPreviewSpacingControls && (
+                <motion.div
+                  key="roles-spacing-control"
+                  initial={{ opacity: 0, y: -8, maxHeight: 0 }}
+                  animate={{ opacity: 1, y: 0, maxHeight: 96 }}
+                  exit={{ opacity: 0, y: -10, maxHeight: 0 }}
+                  transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                  style={{ overflow: "hidden", willChange: "transform, opacity, max-height" }}
+                >
+                  {renderRolesSpacingControl()}
+                </motion.div>
+              )}
+            </AnimatePresence>
             {/* <div
               style={{
                 width: "100%",
@@ -4028,7 +4088,7 @@ const [searchTerm, setSearchTerm] = useState("");
                   style={{
                     display: "flex",
                     flexDirection: "column",
-                    gap: "1.5rem",
+                    gap: rolesPageGap(1.5),
                   }}
                 >
                   {formData.roles.map((role, index) =>
@@ -4937,7 +4997,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 padding: "0.6rem 2.5rem 0.6rem 1rem",
                 borderRadius: "0.5rem",
                 border: "1px solid rgba(100 100 100/ 15%)",
-                fontSize: "0.9rem",
+                fontSize: "1rem",
                 outline: "none",
                 transition: "all 0.2s ease",
               }}
