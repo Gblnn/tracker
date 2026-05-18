@@ -22,7 +22,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   showPasteStyleToggle = false,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
-  const [preservePasteStyle, setPreservePasteStyle] = useState(false);
+  const [preservePasteStyle, setPreservePasteStyle] = useState(true);
   const [activeCommands, setActiveCommands] = useState<Record<string, boolean>>({});
   const appFontFamily = "ClashGrotesk-Variable, system-ui, -apple-system, sans-serif";
 
@@ -45,12 +45,23 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     if (preservePasteStyle) {
       e.preventDefault();
       const html = e.clipboardData.getData("text/html") || e.clipboardData.getData("text/plain");
-      // Parse and strip font-family from all inline styles
+      // Parse pasted markup and normalize font family/size while retaining other formatting.
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, "text/html");
       doc.body.querySelectorAll<HTMLElement>("*").forEach((el) => {
         el.style.fontFamily = appFontFamily;
+        el.style.fontSize = "10pt";
       });
+
+      if (!doc.body.children.length && doc.body.textContent?.trim()) {
+        const span = doc.createElement("span");
+        span.style.fontFamily = appFontFamily;
+        span.style.fontSize = "10pt";
+        span.textContent = doc.body.textContent;
+        doc.body.innerHTML = "";
+        doc.body.appendChild(span);
+      }
+
       document.execCommand("insertHTML", false, doc.body.innerHTML);
       requestAnimationFrame(() => { handleInput(); });
       return;
@@ -108,7 +119,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             className={cn(
               "h-8 w-8 rounded-md transition-colors",
               isActive
-                ? "bg-primary/20 text-primary font-semibold hover:bg-primary/25"
+                ? "bg-[#00008b] text-white font-semibold hover:bg-[#00007a] hover:!text-white focus-visible:!text-white"
                 : "text-muted-foreground hover:text-foreground hover:bg-accent"
             )}
             onMouseDown={(e) => {
@@ -180,7 +191,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                     className={cn(
                       "h-8 gap-1.5 px-2.5 text-xs font-medium rounded-md transition-colors",
                       preservePasteStyle
-                        ? "bg-primary/20 text-primary font-semibold hover:bg-primary/25"
+                        ? "bg-[#00008b] text-white font-semibold hover:bg-[#00007a] hover:!text-white focus-visible:!text-white"
                         : "text-muted-foreground hover:text-foreground hover:bg-accent"
                     )}
                     onMouseDown={(e) => {

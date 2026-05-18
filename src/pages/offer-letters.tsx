@@ -2393,6 +2393,21 @@ const [searchTerm, setSearchTerm] = useState("");
           title="Increase by 1 pt"
         >+</button>
       </div>
+
+      {canEditOfferLetters && (
+        <>
+          <div style={{ width: "1px", height: "1.5rem", background: "rgba(0 0 0/ 12%)", flexShrink: 0, marginLeft: "auto" }} />
+          <input
+            className="preview-date-input"
+            style={{ width: "fit-content", colorScheme: "light" }}
+            type="date"
+            name="date"
+            value={formData.date}
+            onChange={handleInputChange}
+            placeholder="Enter Date"
+          />
+        </>
+      )}
     </div>
   );
 
@@ -2571,6 +2586,23 @@ const [searchTerm, setSearchTerm] = useState("");
                   <h2>Offer Letter </h2>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  
+                  <button
+                    onClick={handleClearForm}
+                    style={{
+                      background: "rgba(100 100 100/ 10%)",
+                      padding: "0.15rem 0.75rem",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      fontSize: "0.75rem",
+                    }}
+                  >
+                    <FileX color="indianred" width="0.9rem" />
+                    Clear Form
+                  </button>
                   {!isDrawer && screenWidth >= FORM_PANEL_BREAKPOINT && (
                     <button
                       onClick={() => setHideDesktopInputSection(true)}
@@ -2589,22 +2621,6 @@ const [searchTerm, setSearchTerm] = useState("");
                       Hide Section
                     </button>
                   )}
-                  <button
-                    onClick={handleClearForm}
-                    style={{
-                      background: "rgba(100 100 100/ 10%)",
-                      padding: "0.15rem 0.75rem",
-                      border: "none",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                      fontSize: "0.75rem",
-                    }}
-                  >
-                    <FileX color="indianred" width="0.9rem" />
-                    Clear Form
-                  </button>
                 </div>
               </div>
 
@@ -3386,7 +3402,7 @@ const [searchTerm, setSearchTerm] = useState("");
                   <RichTextEditor
                     value={role.description}
                     onChange={(value) => handleRoleChange(index, "description", value)}
-                    placeholder="Enter role description (use toolbar for formatting)"
+                    placeholder="Enter role description"
                     minHeight="150px"
                     showPasteStyleToggle
                   />
@@ -3526,18 +3542,6 @@ const [searchTerm, setSearchTerm] = useState("");
           )}
 
           <div style={{ flex: 1 }} />
-
-          {canEditOfferLetters && (
-            <input
-              className="preview-date-input"
-              style={{ width: "fit-content", colorScheme: "light" }}
-              type="date"
-              name="date"
-              value={formData.date}
-              onChange={handleInputChange}
-              placeholder="Enter Date"
-            />
-          )}
         </div>
 
         <div
@@ -5629,7 +5633,7 @@ const [searchTerm, setSearchTerm] = useState("");
             <RichTextEditor
               value={editingRoleContent}
               onChange={(value) => setEditingRoleContent(value)}
-              placeholder="Enter role description (use toolbar for formatting)"
+              placeholder="Enter role description"
               minHeight="400px"
               showPasteStyleToggle
             />
