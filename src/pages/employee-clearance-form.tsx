@@ -1589,6 +1589,7 @@ export default function EmployeeClearanceForm() {
       borderRight: "1.5px solid rgba(0 0 0/ 85%)",
       borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
       padding: "3px 7px 7px 7px",
+      paddingBottom:"1rem",
       fontSize: "0.68rem",
       fontWeight: 600,
       textTransform: "uppercase",
@@ -1607,6 +1608,7 @@ export default function EmployeeClearanceForm() {
         style={{
           width: "100%",
           marginBottom: "0.55rem",
+          
           display: "grid",
           gridTemplateColumns: "1fr 0.4fr 1.2fr 1.4fr 1.2fr",
           borderTop: "1.5px solid rgba(0 0 0/ 85%)",
@@ -2070,7 +2072,7 @@ export default function EmployeeClearanceForm() {
                     {pdfLoading ? (
                       <>
                         <LoaderCircle className="animate-spin" width="1rem" />
-                        <span>Generating ({pdfProgress}%)...</span>
+                        <span>({pdfProgress}%)</span>
                       </>
                     ) : (
                       <>
