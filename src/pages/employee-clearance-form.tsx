@@ -1599,6 +1599,7 @@ export default function EmployeeClearanceForm() {
       whiteSpace: "nowrap",
       overflow: "hidden",
       textOverflow: "ellipsis",
+      justifyContent: "center",
     };
 
     return (
@@ -1607,12 +1608,14 @@ export default function EmployeeClearanceForm() {
           width: "100%",
           marginBottom: "0.55rem",
           display: "grid",
-          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gridTemplateColumns: "1fr 0.4fr 1.2fr 1.4fr 1.2fr",
           borderTop: "1.5px solid rgba(0 0 0/ 85%)",
           borderLeft: "1.5px solid rgba(0 0 0/ 85%)",
+         
         }}
       >
-        <div style={metaCellStyle}>DOC NO: {employeeClearanceDocNo} REV: {employeeClearanceRevision}</div>
+        <div style={metaCellStyle}>DOC NO: {employeeClearanceDocNo}</div>
+        <div style={metaCellStyle}>REV: {employeeClearanceRevision}</div>
         <div style={metaCellStyle}>DOC DATE: {todayDisplayDate}</div>
         <div style={metaCellStyle}>REF NO: {previewRefNo || "[REF NO]"}</div>
         <div style={metaCellStyle}>REF DATE: {todayDisplayDate}</div>
