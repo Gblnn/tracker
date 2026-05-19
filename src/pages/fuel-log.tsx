@@ -1306,7 +1306,7 @@ export default function FuelLog() {
                   minHeight: "70vh",
                 }}
               >
-                <Empty style={{ minHeight: "70vh", width: "100%" }}>
+                <Empty>
                   <EmptyHeader>
                     <EmptyMedia variant="icon">
                       <Fuel />
@@ -1723,8 +1723,8 @@ export default function FuelLog() {
       <DefaultDialog
         open={deleteConfirmDialog}
         onCancel={() => setDeleteConfirmDialog(false)}
-        title="Delete Fuel Log"
-        desc="Are you sure you want to delete this fuel log entry? This action cannot be undone."
+        title="Delete Fuel Log?"
+        desc="This action cannot be undone."
         OkButtonText="Delete"
         CancelButtonText="Cancel"
         onOk={handleDelete}

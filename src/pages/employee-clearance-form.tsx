@@ -163,7 +163,9 @@ const FORM_TEMPLATE_OPTIONS: Array<{ id: FormTemplateId; label: string; fileName
 
 export default function EmployeeClearanceForm() {
   //   const usenavigate = useNavigate();
-  const todayDisplayDate = moment().format("DD/MM/YYYY");
+  const [todayDisplayDate] = useState(moment().format("DD/MM/YYYY"));
+  const employeeClearanceDocNo = "SSU/HR/EC";
+  const employeeClearanceRevision = 0;
   const [bugDialog, setBugDialog] = useState(false);
   const [issue, setIssue] = useState("");
   const [loading, setLoading] = useState(false);
@@ -172,19 +174,23 @@ export default function EmployeeClearanceForm() {
   const [selectedFormTemplate, setSelectedFormTemplate] = useState<FormTemplateId>("employee_clearance");
   const [printRefNoOverride, setPrintRefNoOverride] = useState<string | null>(null);
   const getNextReferenceNumber = (existingLetters: Array<{refNo?: string}>) => {
-    // Extract existing reference numbers and find the highest one
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = now.getFullYear().toString().slice(-2);
+
     const numbers = existingLetters
       .map((letter: {refNo?: string}) => {
-        const match = letter.refNo?.match(/SSU\/HO\/(\d+)\/\d+/);
-        return match ? parseInt(match[1]) : 316;  // Start from 316 if no matches found
+        const match = letter.refNo?.match(/^SSU\/HR\/(\d{2})\/(\d{2})-(\d+)$/);
+        if (!match) return 0;
+        const [, refMonth, refYear, runningNumber] = match;
+        if (refMonth !== month || refYear !== year) return 0;
+        return parseInt(runningNumber, 10);
       })
-      .filter((num: number) => !isNaN(num));
+      .filter((num: number) => !Number.isNaN(num));
 
-    const highestNumber = Math.max(316, ...numbers);
-    // Format: SSU/HO/XXX/YY where XXX is sequential and YY is last two digits of year
-    const year = new Date().getFullYear().toString().slice(-2);
-    const nextNumber = (highestNumber + 1).toString();
-    return `SSU/HO/${nextNumber}/${year}`;
+    const highestNumber = Math.max(0, ...numbers);
+    const nextNumber = highestNumber + 1;
+    return `SSU/HR/${month}/${year}-${nextNumber}`;
   };
 
   const [formData, setFormData] = useState<FormData>({
@@ -1578,14 +1584,45 @@ export default function EmployeeClearanceForm() {
     </div>
   );
 
+  const renderDocumentMetaTable = () => {
+    const metaCellStyle: React.CSSProperties = {
+      borderRight: "1.5px solid rgba(0 0 0/ 85%)",
+      borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
+      padding: "3px 7px 7px 7px",
+      fontSize: "0.68rem",
+      fontWeight: 600,
+      textTransform: "uppercase",
+      minHeight: "1.9rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.35rem",
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+    };
+
+    return (
+      <div
+        style={{
+          width: "100%",
+          marginBottom: "0.55rem",
+          display: "grid",
+          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          borderTop: "1.5px solid rgba(0 0 0/ 85%)",
+          borderLeft: "1.5px solid rgba(0 0 0/ 85%)",
+        }}
+      >
+        <div style={metaCellStyle}>DOC NO: {employeeClearanceDocNo} REV: {employeeClearanceRevision}</div>
+        <div style={metaCellStyle}>DOC DATE: {todayDisplayDate}</div>
+        <div style={metaCellStyle}>REF NO: {previewRefNo || "[REF NO]"}</div>
+        <div style={metaCellStyle}>REF DATE: {todayDisplayDate}</div>
+      </div>
+    );
+  };
+
   const renderEmployeeClearanceBody = () => (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
-        <div style={{ fontWeight: 600, textTransform: "uppercase" }}>
-          REF: {previewRefNo || "[REF NO]"}
-        </div>
-        <div style={{ fontWeight: 600 }}>{todayDisplayDate}</div>
-      </div>
+      {renderDocumentMetaTable()}
 
       <h2
         style={{
@@ -1623,7 +1660,7 @@ export default function EmployeeClearanceForm() {
           >
             <div style={cellStyle}>Name</div>
             <div style={cellStyle}></div>
-            <div style={cellStyle}>Designation</div>
+            <div style={cellStyle}>Designation & Employee Code</div>
             <div style={cellStyle}></div>
             <div style={cellStyle}>Joining Date</div>
             <div style={cellStyle}></div>
@@ -1742,10 +1779,7 @@ export default function EmployeeClearanceForm() {
 
     return (
       <>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-          <div style={{ fontWeight: 600, textTransform: "uppercase" }}>REF: {previewRefNo || "[REF NO]"}</div>
-          <div style={{ fontWeight: 600 }}>{todayDisplayDate}</div>
-        </div>
+        {renderDocumentMetaTable()}
         <h2 style={{ textAlign: "center", fontSize: "0.84rem", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: 1, fontWeight: 700 }}>
           Leave Application Form
         </h2>
@@ -1801,10 +1835,7 @@ export default function EmployeeClearanceForm() {
 
     return (
       <>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-          <div style={{ fontWeight: 600, textTransform: "uppercase" }}>REF: {previewRefNo || "[REF NO]"}</div>
-          <div style={{ fontWeight: 600 }}>{todayDisplayDate}</div>
-        </div>
+        {renderDocumentMetaTable()}
         <h2 style={{ textAlign: "center", fontSize: "0.84rem", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: 1, fontWeight: 700 }}>
           Salary Advance Form
         </h2>
