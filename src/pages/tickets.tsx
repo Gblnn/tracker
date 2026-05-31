@@ -83,6 +83,26 @@ export default function Tickets() {
     return map;
   };
 
+// Top-level composer placed above return so its props type is known at usage
+const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => Promise<void>, onCancel?: () => void }> = ({ posting, onPost, onCancel }) => {
+  const [text, setText] = useState("");
+  return (
+    <form onSubmit={async (e) => { e.preventDefault(); if (!text.trim()) return; await onPost(text); setText(''); }} style={{ display: 'flex', gap: 8, flexFlow: 'column' }}>
+      <textarea value={text} rows={5} onChange={e => setText(e.target.value)} placeholder="Reply to this thread" style={{ flex: 1, padding:"0.75 0.5rem", fontSize:"1rem" }} />
+        <div style={{ display: 'flex', justifyContent: '', gap: 8 }}>
+          {onCancel ? (
+            <>
+              <button type="button" onClick={() => { setText(''); onCancel && onCancel(); }} style={{ padding: "0.5rem 1.5rem", background: '#eee', border: 'none', borderRadius: 8, flex:1 }}>Cancel</button>
+              <button type="submit" disabled={posting || !text.trim()} style={{ padding: "0.5rem 1.5rem", background: '', color: '', border: 'none', borderRadius: 8, flex:1 }}>{posting ? 'Posting...' : 'Post'}</button>
+            </>
+          ) : (
+            <button type="submit" disabled={posting || !text.trim()} style={{ padding: "0.5rem 1.5rem", flex:1, width:"fit-content", cursor: posting || !text.trim() ? 'not-allowed' : 'pointer' }}><Reply size={15}/>{posting ? 'Posting...' : 'Reply'}</button>
+          )}
+        </div>
+    </form>
+  );
+};
+
   const playFLIP = (oldRects: Record<string, DOMRect>) => {
     try {
       const items = Array.from(document.querySelectorAll<HTMLElement>(`.ticket-item`));
@@ -188,6 +208,7 @@ export default function Tickets() {
     } catch (e) { /* ignore */ }
   };
   const [sending, setSending] = useState(false);
+  const [topComposerOpen, setTopComposerOpen] = useState<Record<string, boolean>>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
   const [closeDialogOpen, setCloseDialogOpen] = useState<string | null>(null);
   const [profileDialogEmail, setProfileDialogEmail] = useState<string | null>(null);
@@ -426,13 +447,13 @@ export default function Tickets() {
 
           
 
-          <div style={{ flex: 1,border:"", padding:"0.5rem" }}>
+          <div style={{ flex: 1 , border:"", padding:"0.5rem" }}>
 
             <div style={{display:"flex", gap: 8, alignItems:"center"}}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: avatarColor(node.createdBy), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{node.createdBy ? node.createdBy.split('@')[0].slice(0,2).toUpperCase() : 'U'}</div>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", background: avatarColor(node.createdBy), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{node.createdBy ? node.createdBy.split('@')[0].slice(0,2).toUpperCase() : 'U'}</div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ fontSize: "0.9rem", fontWeight: 600 }}>{node.createdBy}</div>
+                  <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>{node.createdBy}</div>
                   {replyIsHandler[node.createdBy] && (
                     <div style={{ fontSize: "0.8rem", padding: '0.12rem 0.5rem', borderRadius: 6, background: '#eef2ff', color: '#3730a3', fontWeight: 600 }}>Handler</div>
                   )}
@@ -691,7 +712,7 @@ export default function Tickets() {
                 
                         }}
                       >
-                        <div style={{display:"flex", border:"", flex:1, flexFlow:"column", gap:"0.25rem"}}>
+                        <div style={{display:"flex", border:"", flex:1, minWidth:0, flexFlow:"column", gap:"0.25rem"}}>
                         <div style={{display:"flex", border:"", flex:1, justifyContent:"space-between", alignItems:"center",}}>
                             <div id="header-section" style={{display:"flex", border:" "}}>
                                 <button onClick={(e) => { e.stopPropagation(); setProfileDialogEmail(t.createdBy); }} style={{ width: 62, height: 62, borderRadius: 12, background: avatarColor(t.createdBy), color: 'white', border: 'none', fontWeight: 700 }}>
@@ -753,11 +774,17 @@ export default function Tickets() {
                           </div>
                           {t.status === 'open' && (
                             <div style={{ marginTop: 12 }}>
-                              <TopLevelComposer posting={sending} onPost={async (text: string) => { await postMessage(t.id, text, null); }} />
+                              {!topComposerOpen[t.id] ? (
+                                <div style={{ display: 'flex', justifyContent: '' }}>
+                                  <button onClick={(e) => { e.stopPropagation(); setTopComposerOpen(prev => ({ ...prev, [t.id]: true })); }} style={{ padding: "0.5rem 1rem", background: '', color: '', border: 'none', borderRadius: 8, flex:1 }}><Reply size={15}/>Reply</button>
+                                </div>
+                              ) : (
+                                <TopLevelComposer posting={sending} onPost={async (text: string) => { await postMessage(t.id, text, null); setTopComposerOpen(prev => ({ ...prev, [t.id]: false })); }} onCancel={() => setTopComposerOpen(prev => ({ ...prev, [t.id]: false }))} />
+                              )}
                             </div>
                           )}
                           {t.status === 'open' && hasTicketHandler && <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-                            <button onClick={(e) => { e.stopPropagation(); setCloseDialogOpen(t.id); }} style={{ background: 'crimson', color: 'white', padding: '0.5rem 1rem', border: 'none', borderRadius: 8, flex:1 }}><Ticket/>Close Ticket</button>
+                            <button onClick={(e) => { e.stopPropagation(); setCloseDialogOpen(t.id); }} style={{ background: '', color: 'crimson', padding: '0.5rem 1rem', border: 'none', borderRadius: 8, flex:1 }}><Ticket/>Close Ticket</button>
 
                             {/* {userData?.role === 'admin' && <button onClick={async (e) => { e.stopPropagation(); setDeleteDialogOpen(t.id); }} style={{ background: '#fff', color: '#dc2626', padding: '0.5rem 1rem', border: '1px solid rgba(220,38,38,0.08)', borderRadius: 8 }}>Delete</button>} */}
 
@@ -858,18 +885,7 @@ export default function Tickets() {
   );
 }
 
-const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => Promise<void> }> = ({ posting, onPost }) => {
-  const [text, setText] = useState("");
-  return (
-    <form onSubmit={async (e) => { e.preventDefault(); if (!text.trim()) return; await onPost(text); setText(''); }} style={{ display: 'flex', gap: 8, flexFlow: 'column' }}>
-      <textarea value={text} rows={5} onChange={e => setText(e.target.value)} placeholder="Reply to this thread" style={{ flex: 1, padding:"0.75 0.5rem", fontSize:"1rem" }} />
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button type="submit" disabled={posting || !text.trim()} style={{ padding: "0.5rem 1.5rem", flex:1, width:"fit-content", cursor: posting || !text.trim() ? 'not-allowed' : 'pointer' }}><Reply size={15}/>{posting ? 'Posting...' : 'Reply'}</button>
-        </div>
-      
-    </form>
-  );
-};
+// (Moved earlier)
 
 // register time-ago locale once
 try { JavascriptTimeAgo.addDefaultLocale(en); } catch (e) { /* ignore if already added */ }
