@@ -1,15 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import JavascriptTimeAgo from 'javascript-time-ago';
-import en from 'javascript-time-ago/locale/en';
-import { auth, db } from "@/firebase";
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, getCountFromServer } from "firebase/firestore";
-import { ArrowUp, Loader2, MoreVertical, Reply, Ticket } from "lucide-react";
-import { toast } from "sonner";
-import Back from "@/components/back";
-import RefreshButton from "@/components/refresh-button";
 import AddRecordButton from "@/components/add-record-button";
+import { useAuth } from "@/components/AuthProvider";
+import Back from "@/components/back";
+import CustomDropDown from '@/components/custom-dropdown';
+import RefreshButton from "@/components/refresh-button";
 import { ResponsiveModal } from "@/components/responsive-modal";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import {
   Dialog,
   DialogClose,
@@ -19,10 +13,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useAuth } from "@/components/AuthProvider";
-import CustomDropDown from '@/components/custom-dropdown';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { auth, db } from "@/firebase";
+import { addDoc, collection, deleteDoc, doc, getCountFromServer, onSnapshot, orderBy, query, serverTimestamp, updateDoc, getDocs, where } from "firebase/firestore";
+import JavascriptTimeAgo from 'javascript-time-ago';
+import en from 'javascript-time-ago/locale/en';
+import { ArrowDown, ArrowUp, Globe, Loader2, LockKeyholeIcon, MoreVertical, Reply, Ticket } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactTimeAgo from "react-time-ago";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { toast } from "sonner";
 
 interface Ticket {
   id: string;
@@ -33,6 +33,8 @@ interface Ticket {
   createdAt: any;
   lastMessage?: string;
   lastMessageAt?: any;
+  priority?: string;
+  confidential?: boolean;
 }
 
 interface Message {
@@ -47,20 +49,150 @@ export default function Tickets() {
   const { userData } = useAuth();
   const user = auth.currentUser;
 
+  const hasTicketHandler = useMemo(() => {
+    try {
+      const c = userData?.clearance || '{}';
+      const parsed = typeof c === 'string' ? JSON.parse(c) : c;
+      return !!parsed?.tickets_handler;
+    } catch (e) { return false; }
+  }, [userData?.clearance]);
+
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [replyIsHandler, setReplyIsHandler] = useState<Record<string, boolean>>({});
   const [messageCounts, setMessageCounts] = useState<Record<string, number>>({});
-  const [newTicket, setNewTicket] = useState({ title: "", description: "" });
+  const [newTicket, setNewTicket] = useState({ title: "", description: "", priority: 'Normal', confidential: false });
   const [showNewModal, setShowNewModal] = useState(false);
   const [isCardClosing, setIsCardClosing] = useState(false);
   const newCardRef = useRef<HTMLDivElement | null>(null);
+  const newDescRef = useRef<HTMLTextAreaElement | null>(null);
+  const editCardRef = useRef<HTMLDivElement | null>(null);
+  const editDescRef = useRef<HTMLTextAreaElement | null>(null);
+  // FLIP helpers for smooth list reflow
+  const captureListRects = () => {
+    const map: Record<string, DOMRect> = {};
+    try {
+      const items = document.querySelectorAll<HTMLElement>(`.ticket-item`);
+      items.forEach((el) => {
+        const id = el.dataset.id;
+        if (id) map[id] = el.getBoundingClientRect();
+      });
+    } catch (e) { /* ignore */ }
+    return map;
+  };
+
+  const playFLIP = (oldRects: Record<string, DOMRect>) => {
+    try {
+      const items = Array.from(document.querySelectorAll<HTMLElement>(`.ticket-item`));
+      items.forEach((el) => {
+        const id = el.dataset.id;
+        if (!id) return;
+        const oldRect = oldRects[id];
+        if (!oldRect) return;
+        const newRect = el.getBoundingClientRect();
+        const deltaY = oldRect.top - newRect.top;
+        if (Math.abs(deltaY) > 0.5) {
+          // smoother FLIP: animate transform + opacity, set will-change for GPU acceleration
+          el.style.willChange = 'transform, opacity';
+          el.style.transition = 'transform 420ms cubic-bezier(.2,.85,.2,1), opacity 420ms cubic-bezier(.2,.85,.2,1)';
+          el.style.transform = `translateY(${deltaY}px)`;
+          el.style.opacity = '0.99';
+          // double rAF to ensure the browser registers the start state before we clear it
+          requestAnimationFrame(() => requestAnimationFrame(() => { el.style.transform = ''; el.style.opacity = ''; }));
+          setTimeout(() => { el.style.transition = ''; el.style.transform = ''; el.style.opacity = ''; el.style.willChange = ''; }, 460);
+        }
+      });
+    } catch (e) { /* ignore */ }
+  };
+
+  const closeCardWithAnimation = (onHidden?: () => void) => {
+    const oldRects = captureListRects();
+    // create a ghost clone of the new-card so we can remove the real element
+    // from layout immediately (triggering reflow) while still showing the
+    // exit animation visually on the ghost.
+    const cardEl = newCardRef.current;
+    let ghost: HTMLElement | null = null;
+    if (cardEl) {
+      try {
+        const rect = cardEl.getBoundingClientRect();
+        ghost = cardEl.cloneNode(true) as HTMLElement;
+        ghost.style.position = 'fixed';
+        ghost.style.left = rect.left + 'px';
+        ghost.style.top = rect.top + 'px';
+        ghost.style.width = rect.width + 'px';
+        ghost.style.height = rect.height + 'px';
+        ghost.style.margin = '0';
+        ghost.style.zIndex = '9999';
+        // ensure ghost plays exit animation
+        ghost.classList.remove('card-enter');
+        ghost.classList.add('card-exit');
+        document.body.appendChild(ghost);
+      } catch (e) { /* ignore */ }
+    }
+
+    // remove the real card from layout immediately so other items reflow
+    setIsCardClosing(true);
+    setShowNewModal(false);
+    // run FLIP immediately after DOM update so items animate from old -> new
+    requestAnimationFrame(() => playFLIP(oldRects));
+
+    // cleanup ghost after its animation completes
+    const cleanupDelay = 460; // matches CSS animation + a small buffer
+    setTimeout(() => {
+      setIsCardClosing(false);
+      if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+      if (onHidden) onHidden();
+    }, cleanupDelay);
+  };
+
+  const closeEditCardWithAnimation = (onHidden?: () => void) => {
+    const oldRects = captureListRects();
+    const cardEl = editCardRef.current;
+    let ghost: HTMLElement | null = null;
+    if (cardEl) {
+      try {
+        const rect = cardEl.getBoundingClientRect();
+        ghost = cardEl.cloneNode(true) as HTMLElement;
+        ghost.style.position = 'fixed';
+        ghost.style.left = rect.left + 'px';
+        ghost.style.top = rect.top + 'px';
+        ghost.style.width = rect.width + 'px';
+        ghost.style.height = rect.height + 'px';
+        ghost.style.margin = '0';
+        ghost.style.zIndex = '9999';
+        ghost.classList.remove('card-enter');
+        ghost.classList.add('card-exit');
+        document.body.appendChild(ghost);
+      } catch (e) { /* ignore */ }
+    }
+
+    setShowNewModal(false); // ensure new card hidden if both open
+    requestAnimationFrame(() => playFLIP(oldRects));
+    const cleanupDelay = 460;
+    setTimeout(() => {
+      if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+      if (onHidden) onHidden();
+    }, cleanupDelay);
+  };
+
+  const openOrScrollNewCard = () => {
+    if (!showNewModal) {
+      setShowNewModal(true);
+      return;
+    }
+    try {
+      newCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => { try { newDescRef.current?.focus(); } catch (e) { /* ignore */ } }, 220);
+    } catch (e) { /* ignore */ }
+  };
   const [sending, setSending] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
+  const [closeDialogOpen, setCloseDialogOpen] = useState<string | null>(null);
   const [profileDialogEmail, setProfileDialogEmail] = useState<string | null>(null);
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
-  const [editTicketData, setEditTicketData] = useState({ title: '', description: '' });
+  const [editTicketData, setEditTicketData] = useState({ title: '', description: '', priority: 'Normal', confidential: false });
   const [editingMessage, setEditingMessage] = useState<{ id: string; text: string; ticketId: string } | null>(null);
 
   
@@ -108,6 +240,38 @@ export default function Tickets() {
     return unsub;
   }, [selectedTicket]);
 
+  // fetch handler status for message authors so we can label replies
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const emails = Array.from(new Set(messages.map(m => m.createdBy).filter(Boolean)));
+        if (emails.length === 0) {
+          if (mounted) setReplyIsHandler({});
+          return;
+        }
+        const pairs = await Promise.all(emails.map(async (email) => {
+          try {
+            const q = query(collection(db, 'users'), where('email', '==', email));
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+              const data = snap.docs[0].data() as any;
+              const c = data.clearance || '{}';
+              const parsed = typeof c === 'string' ? JSON.parse(c || '{}') : c;
+              return [email, !!parsed?.tickets_handler] as [string, boolean];
+            }
+            return [email, false] as [string, boolean];
+          } catch (e) { return [email, false] as [string, boolean]; }
+        }));
+        if (!mounted) return;
+        const map: Record<string, boolean> = {};
+        pairs.forEach(([email, val]) => { map[email] = val; });
+        setReplyIsHandler(map);
+      } catch (e) { /* ignore */ }
+    })();
+    return () => { mounted = false; };
+  }, [messages]);
+
   // fetch message counts for each ticket (uses aggregation count API)
   useEffect(() => {
     if (!tickets || tickets.length === 0) return;
@@ -138,10 +302,26 @@ export default function Tickets() {
     if (!showNewModal) return;
     // slight delay to allow DOM to render
     const t = setTimeout(() => {
-      try { newCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+      try {
+        newCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // focus description after a short delay so user can type immediately
+        setTimeout(() => { try { newDescRef.current?.focus(); } catch (e) { /* ignore */ } }, 220);
+      } catch (e) { /* ignore */ }
     }, 60);
     return () => clearTimeout(t);
   }, [showNewModal]);
+
+  // focus edit description when inline edit card opens
+  useEffect(() => {
+    if (!editingTicket) return;
+    const t = setTimeout(() => {
+      try {
+        editCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => { try { editDescRef.current?.focus(); } catch (e) { /* ignore */ } }, 220);
+      } catch (e) { /* ignore */ }
+    }, 60);
+    return () => clearTimeout(t);
+  }, [editingTicket]);
 
   // helper: build message tree (roots array) from flat messages
   const messageRoots = useMemo(() => {
@@ -163,6 +343,26 @@ export default function Tickets() {
     });
     return roots;
   }, [messages]);
+
+  // filter tickets based on confidentiality and handler permission
+  const visibleTickets = useMemo(() => {
+    return (tickets || []).filter(t => !t.confidential || hasTicketHandler);
+  }, [tickets, hasTicketHandler]);
+
+  // control fade-in show class so transition always runs after loading completes
+  const [ticketsFadeShow, setTicketsFadeShow] = useState(false);
+  useEffect(() => {
+    let id: any;
+    if (!loadingTickets && visibleTickets.length > 0) {
+      // delay a tick so the class is added after mount to trigger transition
+      id = setTimeout(() => setTicketsFadeShow(true), 40);
+    } else {
+      setTicketsFadeShow(false);
+    }
+    return () => { if (id) clearTimeout(id); };
+  }, [loadingTickets, visibleTickets.length]);
+
+  // no per-item JS stagger; CSS handles stagger via --i custom property
 
   // post message with explicit string parentId (or null)
   const postMessage = async (ticketId: string, text: string, parentId?: string | null) => {
@@ -193,16 +393,17 @@ export default function Tickets() {
       await addDoc(collection(db, "tickets"), {
         title: newTicket.title,
         description: newTicket.description,
+        priority: newTicket.priority || 'Normal',
+        confidential: !!newTicket.confidential,
         status: "open",
         createdBy: user.email,
         createdAt: serverTimestamp(),
         lastMessage: newTicket.description,
         lastMessageAt: serverTimestamp(),
       });
-      setNewTicket({ title: "", description: "" });
-      // play exit animation then hide
-      setIsCardClosing(true);
-      setTimeout(() => { setShowNewModal(false); setIsCardClosing(false); }, 320);
+      setNewTicket({ title: "", description: "", priority: 'Normal', confidential: false });
+      // play exit animation then hide with FLIP
+      closeCardWithAnimation();
       toast.success("Ticket created");
     } catch (err) { console.error(err); toast.error("Failed to create ticket"); }
     finally { setSending(false); }
@@ -220,21 +421,25 @@ export default function Tickets() {
     const [text, setText] = useState("");
     const [collapsed, setCollapsed] = useState(false);
     return (
-      <div style={{ marginLeft: depth * 16, padding: "8px 0", borderBottom: "1px solid #f6f6f6" }}>
+      <div style={{ marginLeft: depth * 16, padding: "8px 0", }}>
         <div style={{ display: 'flex', gap: 8}}>
 
           
 
-          <div style={{ flex: 1, }}>
+          <div style={{ flex: 1,border:"", padding:"0.5rem" }}>
 
             <div style={{display:"flex", gap: 8, alignItems:"center"}}>
               <div style={{ width: 30, height: 30, borderRadius: 8, background: avatarColor(node.createdBy), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{node.createdBy ? node.createdBy.split('@')[0].slice(0,2).toUpperCase() : 'U'}</div>
-              <div style={{ fontSize: 13, fontWeight: 600, display:"flex", alignItems:"", gap:"", border:"", flexFlow:"column" }}>{node.createdBy} <span style={{ fontSize: 12, fontWeight: 500, color: '#666' }}> 
-
-              </span>
-              <div style={{fontSize:"0.7rem", fontWeight:"500"}}>
-                <ReactTimeAgo timeStyle={"twitter"} date={getDate(node.createdAt)} />
-              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ fontSize: "0.9rem", fontWeight: 600 }}>{node.createdBy}</div>
+                  {replyIsHandler[node.createdBy] && (
+                    <div style={{ fontSize: "0.8rem", padding: '0.12rem 0.5rem', borderRadius: 6, background: '#eef2ff', color: '#3730a3', fontWeight: 600 }}>Handler</div>
+                  )}
+                </div>
+                <div style={{fontSize:"0.7rem", fontWeight:"500", color: '#666' }}>
+                  <ReactTimeAgo timeStyle={"twitter"} date={getDate(node.createdAt)} />
+                </div>
               
             </div>
             
@@ -265,7 +470,7 @@ export default function Tickets() {
               )()}
             
             </div>
-            <div style={{ marginTop: 6, fontSize: 13 }}>{node.text}</div>
+            <div style={{ marginTop: 6, fontSize: "1rem" }}>{node.text}</div>
             
             <div style={{ marginTop: 8 }}>
               
@@ -295,9 +500,9 @@ export default function Tickets() {
 
   return (
     <>
-      <Back blurBG fixed title="Issues" extra={<div style={{ display: 'flex', gap: 8 }}><RefreshButton onClick={() => { /* rely on snapshot */ }} fetchingData={loadingTickets} refreshCompleted={false} /></div>} />
+      <Back blurBG fixed title="Tickets" extra={<div style={{ display: 'flex', gap: 8 }}><RefreshButton onClick={() => { /* rely on snapshot */ }} fetchingData={loadingTickets} refreshCompleted={false} /></div>} />
       <div style={{ maxWidth: 900, margin: '0 auto', padding: 24 }}>
-            {tickets.length === 0 && !loadingTickets ? (
+        {visibleTickets.length === 0 && !loadingTickets ? (
               <Empty style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
                   <EmptyHeader>
                   <EmptyMedia variant="icon"><Ticket size={36} /></EmptyMedia>
@@ -305,10 +510,10 @@ export default function Tickets() {
                   <EmptyDescription>Create a new ticket to start a thread.</EmptyDescription>
                 </EmptyHeader>
               </Empty>
-            ) : loadingTickets ? (
+              ) : loadingTickets ? (
               <div style={{ display: 'flex', justifyContent: 'center',border:"", position:"absolute", width: '100%', height: '100%', left:0, top:0, alignItems:"center" }}><Loader2 className="animate-spin" /></div>
             ) : (
-              <div style={{ marginTop: '4.5rem' }}>
+              <div className={`tickets-fade ${ticketsFadeShow ? 'show' : ''}`} style={{ marginTop: '4.5rem' }}>
                 {showNewModal && (
                   <div ref={newCardRef} style={{ marginBottom: 12 }}>
                     <div className={isCardClosing ? 'card-exit' : 'card-enter'} style={{
@@ -327,7 +532,7 @@ export default function Tickets() {
                           
                         </button>
                         <div style={{border:"", display:"flex", flexFlow:"column", gap:"", alignItems:""}}>
-                          <div style={{ fontSize: "1.25rem", fontWeight: 500 }}>New Ticket</div>
+                          <div style={{ fontSize: "1rem", fontWeight: 500 }}>New Ticket</div>
                         <div style={{ fontSize: 12, color: 'darkblue', fontWeight:"500" }}>{user?.email}</div>
                         </div>
                         
@@ -337,21 +542,54 @@ export default function Tickets() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height:"0.5rem" }}>
                             
                           </div>
-                          <Select value={newTicket.title} onValueChange={(v: string) => setNewTicket({ ...newTicket, title: v })}>
-                            <SelectTrigger style={{ height: 40, display: 'flex', alignItems: 'center' }}>
-                              <SelectValue placeholder="Select request type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Request for installation">Request for installation</SelectItem>
-                              <SelectItem value="Request for support">Request for support</SelectItem>
-                              <SelectItem value="Request for debugging">Request for debugging</SelectItem>
-                              <SelectItem value="Feature request">Feature request</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <textarea placeholder="Description" value={newTicket.description} onChange={e => setNewTicket({ ...newTicket, description: e.target.value })} required style={{ padding: "1rem 1rem", minHeight: 140, width: '100%' }} />
-                          <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between' }}>
-                            <button type="button" onClick={() => { setIsCardClosing(true); setTimeout(() => { setShowNewModal(false); setIsCardClosing(false); setNewTicket({ title: '', description: '' }); }, 320); }} style={{ padding: 10, background: '', border: 'none', color:"", flex:1 }}>Cancel</button>
+                          <div style={{ display: 'flex', gap: 8, alignItems: '', flexFlow:"column " }}>
+                            <div style={{ flex: 1 }}>
+                              <Select value={newTicket.title} onValueChange={(v: string) => setNewTicket({ ...newTicket, title: v })}>
+                                <SelectTrigger style={{ height: 40, display: 'flex', alignItems: 'center' }}>
+                                  <SelectValue placeholder="Select request type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Request for installation">Request for installation</SelectItem>
+                                  <SelectItem value="Request for support">Request for support</SelectItem>
+                                  <SelectItem value="Request for debugging">Request for debugging</SelectItem>
+                                  <SelectItem value="Feature request">Feature request</SelectItem>
+                                  <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div style={{display:"flex", gap:"0.5rem" }}>
+                              <Select value={newTicket.priority} onValueChange={(v: string) => setNewTicket({ ...newTicket, priority: v })}>
+                                <SelectTrigger style={{ height: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex:1 }}>
+                                  <SelectValue placeholder="Priority" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Low">Low</SelectItem>
+                                  <SelectItem value="Normal">Normal</SelectItem>
+                                  <SelectItem value="High">High</SelectItem>
+                                  <SelectItem value="Critical">Critical</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <button type="button" onClick={() => setNewTicket({ ...newTicket, confidential: !newTicket.confidential })} style={{ width: 140, flex:1, display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem', borderRadius: 8, background: newTicket.confidential ? '#f3f4f6' : '#fff', border: '1px solid rgba(0,0,0,0.04)' }}>
+                                {
+                                  newTicket.confidential ? (
+                                    <LockKeyholeIcon size={14} />):
+                                    (
+                                      <Globe size={14}/>
+                                    )
+                                }
+                                {newTicket.confidential ? 'Confidential' : 'Public'}
+                              </button>
+                            </div>
+                            
+                          </div>
+                          
+                          <textarea ref={newDescRef} placeholder="Description" value={newTicket.description} onChange={e => setNewTicket({ ...newTicket, description: e.target.value })} required style={{ padding: "1rem 1rem", minHeight: 140, width: '100%' }} />
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
+                            {/* <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <input type="checkbox" checked={!!newTicket.confidential} onChange={(e) => setNewTicket({ ...newTicket, confidential: e.target.checked })} />
+                              <span style={{ fontSize: 13 }}>Confidential request</span>
+                            </label> */}
+                            <button type="button" onClick={() => { closeCardWithAnimation(() => setNewTicket({ title: '', description: '', priority: 'Normal', confidential: false })); }} style={{ padding: 10, background: '', border: 'none', color:"", flex:1 }}>Cancel</button>
 
                             <button type="submit" disabled={sending} style={{ padding: 10, background: 'darkblue', color: 'white', flex:1 }}>{sending ? 'Creating...' : 'Create'}</button>
                             
@@ -362,10 +600,79 @@ export default function Tickets() {
                     </div>
                   </div>
                 )}
-                {tickets.map(t => {
+                {editingTicket && (
+                  <div ref={editCardRef} style={{ marginBottom: 12 }}>
+                    <div className={'card-enter'} style={{
+                      display: 'flex',
+                      gap: 12,
+                      padding: 14,
+                      borderRadius: 10,
+                      background: '#fff',
+                      border: '1px solid rgba(16,24,40,0.06)',
+                      alignItems: 'flex-start',
+                    }}>
+                      <div style={{width:"100%" }}>
+                        <div style={{border:"", display:"flex", gap:"0.75rem", alignItems:"center", }}>
+                          <button onClick={(e) => { e.stopPropagation(); }} style={{ width: 62, height: 62, borderRadius: 12, background: avatarColor(editingTicket.createdBy || ''), color: 'white', border: 'none', fontWeight: 700 }}>
+                            <Ticket />
+                          </button>
+                          <div style={{border:"", display:"flex", flexFlow:"column", gap:"", alignItems:""}}>
+                            <div style={{ fontSize: "1rem", fontWeight: 500 }}>Edit Ticket</div>
+                            <div style={{ fontSize: 12, color: 'darkblue', fontWeight:"500" }}>{editingTicket.createdBy}</div>
+                            
+                          </div>
+                          
+                        </div>
+<div style={{height: "0.5rem"}}></div>
+                        <form onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (!editingTicket) return;
+                          try {
+                            await updateDoc(doc(db, 'tickets', editingTicket.id), { title: editTicketData.title, description: editTicketData.description, priority: editTicketData.priority || 'Normal', confidential: !!editTicketData.confidential });
+                            toast.success('Ticket updated');
+                            closeEditCardWithAnimation(() => { setEditingTicket(null); setEditTicketData({ title: '', description: '', priority: 'Normal', confidential: false }); });
+                          } catch (err) { console.error(err); toast.error('Failed to update ticket'); }
+                        }} style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+                          <input value={editTicketData.title} onChange={e => setEditTicketData({ ...editTicketData, title: e.target.value })} placeholder="Title" required style={{ padding: 10 }} />
+                          <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 8 }}>
+                            <div style={{ flex: 1 }}>
+                              <Select value={editTicketData.priority} onValueChange={(v: string) => setEditTicketData({ ...editTicketData, priority: v })}>
+                                <SelectTrigger style={{ height: 40, display: 'flex', alignItems: 'center', flex:1 }}>
+                                  <SelectValue placeholder="Priority" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Low">Low</SelectItem>
+                                  <SelectItem value="Normal">Normal</SelectItem>
+                                  <SelectItem value="High">High</SelectItem>
+                                  <SelectItem value="Critical">Critical</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <button type="button" onClick={() => setEditTicketData({ ...editTicketData, confidential: !editTicketData.confidential })} style={{ width: 140, flex:1, display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem', borderRadius: 8, background: editTicketData.confidential ? '#f3f4f6' : '#fff', border: '1px solid rgba(0,0,0,0.04)' }}>
+                              {
+                                  editTicketData.confidential ? (
+                              <LockKeyholeIcon size={14} />
+                                  ):(
+                                    <Globe size={14}/>
+                                  )
+                              }
+                              {editTicketData.confidential ? 'Confidential' : 'Public'}
+                            </button>
+                          </div>
+                          <textarea ref={editDescRef} value={editTicketData.description} onChange={e => setEditTicketData({ ...editTicketData, description: e.target.value })} placeholder="Description" required style={{ padding: "1rem 1rem", minHeight: 140, width: '100%' }} />
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
+                            <button type="button" onClick={() => { closeEditCardWithAnimation(() => { setEditingTicket(null); setEditTicketData({ title: '', description: '', priority: 'Normal', confidential: false }); }); }} style={{ padding: 10, background: '', border: 'none', color:"", flex:1 }}>Cancel</button>
+                            <button type="submit" disabled={sending} style={{ padding: 10, background: 'darkblue', color: 'white', flex:1 }}>{sending ? 'Saving...' : 'Save'}</button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {visibleTickets.map((t, idx) => {
                   const expanded = selectedTicket?.id === t.id;
                   return (
-                    <div key={t.id} style={{ marginBottom: 12 }}>
+                    <div key={t.id} className="ticket-item" data-id={t.id} style={{ marginBottom: 12, ['--i' as any]: idx }}>
                       <div
                         
                         style={{
@@ -398,18 +705,31 @@ export default function Tickets() {
                                     
                                     <div style={{ fontSize: 12, color: 'darkblue', fontWeight:"500" }}>{t.createdBy} · <ReactTimeAgo timeStyle={"twitter"} date={getDate(t.createdAt)} /></div>
 
-                                    <div style={{ width:"fit-content",fontSize: 12, padding: '0.15rem 0.5rem', borderRadius: 999, background: t.status === 'open' ? '#fff1f2' : '#ecfdf5', color: t.status === 'open' ? '#dc2626' : '#059669', fontWeight: 600 }}>{t.status.toUpperCase()}</div>
+                                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                      <div style={{ width:"fit-content",fontSize: 12, padding: '0.15rem 0.5rem', borderRadius: 999, background: t.status === 'open' ? '#fff1f2' : '#ecfdf5', color: t.status === 'open' ? '#dc2626' : '#059669', fontWeight: 600 }}>{t.status.toUpperCase()}</div>
+                                      <div style={{ textTransform:"capitalize",width:"fit-content",fontSize: 12, padding: '0.15rem 0.5rem', borderRadius: 999, background: (t.priority === 'High' ? '#fff1f2' : (t.priority === 'Low' ? '#ecfdf5' : '#eef2ff')), color: (t.priority === 'High' ? '#b91c1c' : (t.priority === 'Low' ? '#059669' : '#3730a3')), fontWeight: 600 }}>{(t.priority || 'Normal')}</div>
+                                      {t.confidential && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 6 }}>
+                                          <div style={{ textTransform: 'none', width: 'fit-content', fontSize: 12, padding: '0.12rem 0.5rem', borderRadius: 999, color: '', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <LockKeyholeIcon size={15} />
+                                            
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
                                 </div>
                                 
                             </div>
-                            <CustomDropDown
-                              trigger={<MoreVertical size={15}/>}
-                              option1Text={'Edit'}
-                              onOption1={() => { setEditingTicket(t); setEditTicketData({ title: t.title, description: t.description }); }}
-                              option2Text={(userData?.role === 'admin' || t.createdBy === user?.email) ? 'Delete' : ''}
-                              onOption2={() => { if (!(userData?.role === 'admin' || t.createdBy === user?.email)) return; setDeleteDialogOpen(t.id); }}
-                              onClear={undefined}
-                            />
+                            {t.createdBy === user?.email && (
+                              <CustomDropDown
+                                trigger={<MoreVertical size={15}/>}
+                                option1Text={'Edit'}
+                                onOption1={() => { setEditingTicket(t); setEditTicketData({ title: t.title, description: t.description, priority: (t as any).priority || 'Normal', confidential: !!(t as any).confidential }); }}
+                                option2Text={'Delete'}
+                                onOption2={() => { setDeleteDialogOpen(t.id); }}
+                                onClear={undefined}
+                              />
+                            )}
                         </div>
                         
                         <div style={{ marginTop: 6, color: '#374151', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', padding:"0.5rem" }}>
@@ -417,7 +737,7 @@ export default function Tickets() {
                             <p style={{fontSize:"0.85rem", textAlign:"left"}}>{t.description}</p>
                             </div>
                             <br/>
-                            <p  onClick={() => setSelectedTicket(expanded ? null : t)} style={{cursor: 'pointer',fontWeight:"600", fontSize:"0.9rem", display:"flex", alignItems:"center", gap:"0.5rem", color:"darkblue", marginLeft:"0.5rem"}}>{expanded?<ArrowUp size={15}/>:<Reply size={15}/>} {expanded?"Hide Replies ":"Show Replies "} ({messageCounts[t.id] ?? 0})</p>
+                            <p  onClick={() => setSelectedTicket(expanded ? null : t)} style={{cursor: 'pointer',fontWeight:"600", fontSize:"0.9rem", display:"flex", alignItems:"center", gap:"0.5rem", color:"darkblue", marginLeft:"0.5rem"}}>{expanded?<ArrowUp size={15}/>:<ArrowDown size={15}/>} {expanded?"Hide Replies ":"Replies "} ({messageCounts[t.id] ?? 0})</p>
 
                             <div style={{
                         overflow: 'hidden',
@@ -426,9 +746,9 @@ export default function Tickets() {
                         opacity: expanded ? 1 : 0,
                         marginTop: 8
                       }}>
-                        <div style={{ padding: '12px 16px', background: '#fafafa', borderRadius: 8, border: '1px solid rgba(16,24,40,0.03)' }}>
+                        <div style={{ padding: '', background: '', borderRadius: 8, border: '' }}>
                           {/* <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Replies </div> */}
-                          <div>
+                          <div style={{padding:"0.5rem"}}>
                             {messageRoots.length === 0 ? <div style={{ color: '#666' }}>No messages yet.</div> : messageRoots.map(r => <RenderNode key={r.id} node={r} depth={0} ticketId={t.id} />)}
                           </div>
                           {t.status === 'open' && (
@@ -436,8 +756,8 @@ export default function Tickets() {
                               <TopLevelComposer posting={sending} onPost={async (text: string) => { await postMessage(t.id, text, null); }} />
                             </div>
                           )}
-                          {t.status === 'open' && <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-                            <button onClick={async (e) => { e.stopPropagation(); await updateDoc(doc(db, 'tickets', t.id), { status: 'closed' }); toast.success('Closed'); }} style={{ background: 'crimson', color: 'white', padding: '0.5rem 1rem', border: 'none', borderRadius: 8 }}>Close Thread</button>
+                          {t.status === 'open' && hasTicketHandler && <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                            <button onClick={(e) => { e.stopPropagation(); setCloseDialogOpen(t.id); }} style={{ background: 'crimson', color: 'white', padding: '0.5rem 1rem', border: 'none', borderRadius: 8, flex:1 }}><Ticket/>Close Ticket</button>
 
                             {/* {userData?.role === 'admin' && <button onClick={async (e) => { e.stopPropagation(); setDeleteDialogOpen(t.id); }} style={{ background: '#fff', color: '#dc2626', padding: '0.5rem 1rem', border: '1px solid rgba(220,38,38,0.08)', borderRadius: 8 }}>Delete</button>} */}
 
@@ -466,14 +786,16 @@ export default function Tickets() {
                                 </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, border:"solid blue" }}>
                           
-                          <CustomDropDown
-                            trigger={<button onClick={(e:any) => e.stopPropagation()} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 18, padding: 6 }}>⋯</button>}
-                            option1Text={'Edit'}
-                            onOption1={() => { setEditingTicket(t); setEditTicketData({ title: t.title, description: t.description }); }}
-                            option2Text={(userData?.role === 'admin' || t.createdBy === user?.email) ? 'Delete' : ''}
-                            onOption2={() => { if (!(userData?.role === 'admin' || t.createdBy === user?.email)) return; setDeleteDialogOpen(t.id); }}
-                            onClear={undefined}
-                          />
+                          {((t.createdBy === user?.email) || (userData?.role === 'admin' || t.createdBy === user?.email)) && (
+                            <CustomDropDown
+                              trigger={<button onClick={(e:any) => e.stopPropagation()} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 18, padding: 6 }}>⋯</button>}
+                              option1Text={t.createdBy === user?.email ? 'Edit' : ''}
+                              onOption1={() => { if (t.createdBy !== user?.email) return; setEditingTicket(t); setEditTicketData({ title: t.title, description: t.description, priority: (t as any).priority || 'Normal', confidential: !!(t as any).confidential }); }}
+                              option2Text={(userData?.role === 'admin' || t.createdBy === user?.email) ? 'Delete' : ''}
+                              onOption2={() => { if (!(userData?.role === 'admin' || t.createdBy === user?.email)) return; setDeleteDialogOpen(t.id); }}
+                              onClear={undefined}
+                            />
+                          )}
                         </div>
                             </div>
                          <div style={{ marginTop: 6, color: '#374151', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', border:"solid" }}>{t.description}</div>  
@@ -490,21 +812,7 @@ export default function Tickets() {
 
             
 
-            <ResponsiveModal title="Edit Ticket" open={!!editingTicket} onOpenChange={(v) => !v && setEditingTicket(null)} hideHeader>
-              <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '520px', maxHeight: '90vh' }}>
-                <div style={{ padding: 16, borderBottom: '1px solid rgba(0,0,0,0.04)' }}><h3 style={{ margin: 0 }}>Edit Ticket</h3></div>
-                <form onSubmit={async (e) => { e.preventDefault(); if (!editingTicket) return; try { await updateDoc(doc(db, 'tickets', editingTicket.id), { title: editTicketData.title, description: editTicketData.description }); toast.success('Ticket updated'); setEditingTicket(null); } catch (err) { console.error(err); toast.error('Failed to update ticket'); } }} style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8, flex: 1, overflowY: 'auto' }}>
-                  <label style={{ fontWeight: 700 }}>Title</label>
-                  <input value={editTicketData.title} onChange={e => setEditTicketData({ ...editTicketData, title: e.target.value })} required style={{ padding: 10 }} />
-                  <label style={{ fontWeight: 700 }}>Description</label>
-                  <textarea value={editTicketData.description} onChange={e => setEditTicketData({ ...editTicketData, description: e.target.value })} required style={{ padding: 10, minHeight: 160 }} />
-                  <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
-                    <button type="button" onClick={() => setEditingTicket(null)} style={{ flex: 1, padding: 10, background: '#eee', border: 'none' }}>Cancel</button>
-                    <button type="submit" disabled={sending} style={{ flex: 1, padding: 10, background: 'darkblue', color: 'white' }}>{sending ? 'Saving...' : 'Save'}</button>
-                  </div>
-                </form>
-              </div>
-            </ResponsiveModal>
+            {/* Inline edit card replaces modal; no modal fallback */}
 
             <ResponsiveModal title="Edit Reply" open={!!editingMessage} onOpenChange={(v) => !v && setEditingMessage(null)} hideHeader>
               <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 16 }}>
@@ -517,7 +825,7 @@ export default function Tickets() {
               </div>
             </ResponsiveModal>
 
-            <AddRecordButton icon={<Ticket color="darkblue" />} onClick={() => setShowNewModal(true)} title="New Issue" />
+            <AddRecordButton icon={<Ticket color="darkblue" />} onClick={openOrScrollNewCard} title="New Ticket" />
 
         <Dialog open={!!deleteDialogOpen} onOpenChange={(v) => !v && setDeleteDialogOpen(null)}>
           <DialogContent>
@@ -525,6 +833,16 @@ export default function Tickets() {
             <DialogFooter style={{ display: 'flex', gap: 8 }}>
               <DialogClose asChild><button style={{ padding: 8, background: '#eee', flex:1 }}>Cancel</button></DialogClose>
               <button onClick={async () => { if (deleteDialogOpen) await handleDelete(deleteDialogOpen); }} style={{ padding: 8, background: 'crimson', color: 'white', flex:1 }}>Delete</button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!closeDialogOpen} onOpenChange={(v) => !v && setCloseDialogOpen(null)}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Close Ticket?</DialogTitle><DialogDescription>Are you sure you want to close this ticket? This will mark the thread as closed.</DialogDescription></DialogHeader>
+            <DialogFooter style={{ display: 'flex', gap: 8 }}>
+              <DialogClose asChild><button style={{ padding: 8, background: '#eee', flex:1 }}>Cancel</button></DialogClose>
+              <button onClick={async () => { if (!closeDialogOpen) return; try { await updateDoc(doc(db, 'tickets', closeDialogOpen), { status: 'closed' }); toast.success('Closed'); } catch (err) { console.error(err); toast.error('Failed to close ticket'); } finally { setCloseDialogOpen(null); } }} style={{ padding: 8, background: 'crimson', color: 'white', flex:1 }}>Close</button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -544,9 +862,9 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
   const [text, setText] = useState("");
   return (
     <form onSubmit={async (e) => { e.preventDefault(); if (!text.trim()) return; await onPost(text); setText(''); }} style={{ display: 'flex', gap: 8, flexFlow: 'column' }}>
-      <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Reply to this thread" style={{ flex: 1, padding:"0.75 0.5rem" }} />
+      <textarea value={text} rows={5} onChange={e => setText(e.target.value)} placeholder="Reply to this thread" style={{ flex: 1, padding:"0.75 0.5rem", fontSize:"1rem" }} />
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button type="submit" disabled={posting || !text.trim()} style={{ padding: "0.5rem 1.5rem", width:"fit-content", cursor: posting || !text.trim() ? 'not-allowed' : 'pointer' }}>{posting ? 'Posting...' : 'Reply'}</button>
+          <button type="submit" disabled={posting || !text.trim()} style={{ padding: "0.5rem 1.5rem", flex:1, width:"fit-content", cursor: posting || !text.trim() ? 'not-allowed' : 'pointer' }}><Reply size={15}/>{posting ? 'Posting...' : 'Reply'}</button>
         </div>
       
     </form>

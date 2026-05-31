@@ -82,6 +82,7 @@ const MODULES = [
 ];
 
 const OFFER_LETTERS_EDIT_KEY = "offer_letters_edit";
+const TICKETS_HANDLER_KEY = "tickets_handler";
 
 const countEnabledModules = (permissions: Record<string, boolean>) =>
   MODULES.filter((module) => permissions[module.id] === true).length;
@@ -305,12 +306,16 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
   
 }) => {
   const [offerLettersOptionsOpen, setOfferLettersOptionsOpen] = useState(false);
+  const [ticketOptionsOpen, setTicketOptionsOpen] = useState(false);
 
   useEffect(() => {
     if (!modulePermissions.offer_letters) {
       setOfferLettersOptionsOpen(false);
     }
-  }, [modulePermissions.offer_letters]);
+    if (!modulePermissions.tickets) {
+      setTicketOptionsOpen(false);
+    }
+  }, [modulePermissions.offer_letters, modulePermissions.tickets]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -369,6 +374,34 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
                         title={offerLettersOptionsOpen ? "Collapse Offer Letters" : "Expand Offer Letters"}
                       >
                         {offerLettersOptionsOpen && isEnabled ? (
+                          <ChevronDown width="1.05rem" />
+                        ) : (
+                          <ChevronRight width="1.05rem" />
+                        )}
+                      </button>
+                    ) : module.id === 'tickets' ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!isEnabled) return;
+                          setTicketOptionsOpen((prev) => !prev);
+                        }}
+                        style={{
+                          width: "1.5rem",
+                          height: "1.5rem",
+                          border: "none",
+                          background: "transparent",
+                          padding: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: isEnabled ? "rgba(15, 23, 42, 0.85)" : "rgba(100, 100, 100, 0.65)",
+                          cursor: isEnabled ? "pointer" : "not-allowed",
+                        }}
+                        title={ticketOptionsOpen ? "Collapse Ticket Handler" : "Expand Ticket Handler"}
+                      >
+                        {ticketOptionsOpen && isEnabled ? (
                           <ChevronDown width="1.05rem" />
                         ) : (
                           <ChevronRight width="1.05rem" />
@@ -488,6 +521,78 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
                     )}
                   </AnimatePresence>
                 )}
+                {module.id === 'tickets' && isEnabled && (
+                  <AnimatePresence initial={false}>
+                    {ticketOptionsOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        style={{
+                          overflow: "hidden",
+                          borderTop: "1px solid rgba(100, 100, 100, 0.14)",
+                        }}
+                      >
+                        <motion.div
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => onToggleModule(TICKETS_HANDLER_KEY)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "0.75rem 1rem",
+                            margin: "0.45rem",
+                            borderRadius: "0.6rem",
+                            background: modulePermissions[TICKETS_HANDLER_KEY]
+                              ? "rgba(0, 0, 0, 0.08)"
+                              : "rgba(100, 100, 100, 0.05)",
+                            cursor: "pointer",
+                            transition: "all 0.2s",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "0.9rem",
+                              color: modulePermissions[TICKETS_HANDLER_KEY]
+                                ? "inherit"
+                                : "rgba(100, 100, 100, 0.8)",
+                            }}
+                          >
+                            Ticket Handler
+                          </span>
+                          <div
+                            style={{
+                              width: "2.25rem",
+                              height: "1.35rem",
+                              borderRadius: "0.7rem",
+                              background: modulePermissions[TICKETS_HANDLER_KEY]
+                                ? "black"
+                                : "rgba(100, 100, 100, 0.2)",
+                              position: "relative",
+                              transition: "all 0.3s",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: "1.1rem",
+                                height: "1.1rem",
+                                borderRadius: "50%",
+                                background: "white",
+                                position: "absolute",
+                                top: "0.125rem",
+                                left: modulePermissions[TICKETS_HANDLER_KEY]
+                                  ? "1.025rem"
+                                  : "0.125rem",
+                                transition: "all 0.3s",
+                              }}
+                            />
+                          </div>
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                )}
               </motion.div>
             </div>
           );
@@ -577,6 +682,9 @@ export default function Users() {
       if (moduleId === "offer_letters" && !nextValue) {
         updated[OFFER_LETTERS_EDIT_KEY] = false;
       }
+      if (moduleId === "tickets" && !nextValue) {
+        updated[TICKETS_HANDLER_KEY] = false;
+      }
 
       return updated;
     });
@@ -593,6 +701,9 @@ export default function Users() {
 
       if (moduleId === "offer_letters" && !nextValue) {
         updated[OFFER_LETTERS_EDIT_KEY] = false;
+      }
+      if (moduleId === "tickets" && !nextValue) {
+        updated[TICKETS_HANDLER_KEY] = false;
       }
 
       return updated;

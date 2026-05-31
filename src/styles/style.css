@@ -191,7 +191,9 @@ textarea:focus {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .card-enter {
-  animation: card-enter 280ms cubic-bezier(.2,.9,.2,1) both;
+  will-change: transform, opacity;
+  animation: card-enter 420ms cubic-bezier(.2,.85,.2,1) both;
+  backface-visibility: hidden;
 }
 
 @keyframes card-exit {
@@ -199,7 +201,9 @@ textarea:focus {
   to { opacity: 0; transform: translateY(-8px) scale(0.995); }
 }
 .card-exit {
-  animation: card-exit 220ms cubic-bezier(.2,.9,.2,1) both;
+  will-change: transform, opacity;
+  animation: card-exit 420ms cubic-bezier(.2,.85,.2,1) both;
+  backface-visibility: hidden;
 }
 
 .civil-id {
@@ -386,6 +390,31 @@ textarea:focus {
 
 .no-bg {
   background: none;
+}
+
+/* Tickets list fade-in after loader */
+.tickets-fade {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 360ms cubic-bezier(.2,.85,.2,1), transform 360ms cubic-bezier(.2,.85,.2,1);
+}
+.tickets-fade.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* per-ticket staggered appearance */
+.ticket-item {
+  opacity: 0;
+  transform: translateZ(0) translateY(8px);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transition: opacity 320ms cubic-bezier(.2,.85,.2,1), transform 320ms cubic-bezier(.2,.85,.2,1);
+}
+.tickets-fade.show .ticket-item {
+  opacity: 1;
+  transform: translateZ(0) translateY(0);
+  transition-delay: calc(var(--i, 0) * 40ms);
 }
 
 
