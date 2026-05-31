@@ -851,7 +851,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                             </div>
                           )}
                           {t.status === 'open' && hasTicketHandler && <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-                            <button onClick={(e) => { e.stopPropagation(); setCloseDialogOpen(t.id); }} style={{ background: '', color: 'crimson', padding: '0.5rem 1rem', border: 'none', borderRadius: 8, flex:1 }}><Ticket/>Close Ticket</button>
+                            <button onClick={(e) => { e.stopPropagation(); setCloseDialogOpen(t.id); }} style={{ background: '', color: 'crimson', padding: '0.5rem 1rem', border: 'none', borderRadius: 8, flex:1 }}><Ticket size={18}/>Close Ticket</button>
 
                             {/* {userData?.role === 'admin' && <button onClick={async (e) => { e.stopPropagation(); setDeleteDialogOpen(t.id); }} style={{ background: '#fff', color: '#dc2626', padding: '0.5rem 1rem', border: '1px solid rgba(220,38,38,0.08)', borderRadius: 8 }}>Delete</button>} */}
 
@@ -934,8 +934,8 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
         <Dialog open={!!closeDialogOpen} onOpenChange={(v) => !v && setCloseDialogOpen(null)}>
           <DialogContent>
             <DialogHeader><DialogTitle>Close Ticket?</DialogTitle><DialogDescription>Are you sure you want to close this ticket? This will mark the thread as closed.</DialogDescription></DialogHeader>
-            <DialogFooter style={{ display: 'flex', gap: 8 }}>
-              <DialogClose asChild><button style={{ padding: 8, background: '#eee', flex:1 }}>Cancel</button></DialogClose>
+            <DialogFooter style={{ display: 'flex', }}>
+              <DialogClose  asChild><button style={{ padding: 8, background: '#eee', flex:1 }}>Cancel</button></DialogClose>
               <button onClick={async () => { if (!closeDialogOpen) return; try { await updateDoc(doc(db, 'tickets', closeDialogOpen), { status: 'closed' }); toast.success('Closed'); } catch (err) { console.error(err); toast.error('Failed to close ticket'); } finally { setCloseDialogOpen(null); } }} style={{ padding: 8, background: 'crimson', color: 'white', flex:1 }}>Close</button>
             </DialogFooter>
           </DialogContent>
