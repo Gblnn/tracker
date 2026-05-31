@@ -1,6 +1,5 @@
 import { db } from "@/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { useAuth } from "@/components/AuthProvider";
 import { Inbox } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -10,7 +9,7 @@ interface Props{
 }
 
 export default function Header(props:Props){
-    const { userData } = useAuth();
+    // const { userData } = useAuth();
 
     const [pageLoad, setPageLoad] = useState(false)
     // const [count, setCount] = useState(0)
