@@ -5,9 +5,9 @@ interface GridTileProps {
   description?: string;
   icon: React.ReactNode;
   onClick: () => void;
+  badge?: number;
 }
-
-export default function GridTile({ title, description, icon, onClick }: GridTileProps) {
+export default function GridTile({ title, description, icon, onClick, badge }: GridTileProps) {
   return (
     <motion.button
       type="button"
@@ -61,7 +61,7 @@ export default function GridTile({ title, description, icon, onClick }: GridTile
           flexShrink: 0,
           transition: "all 220ms cubic-bezier(0.34, 1.56, 0.64, 1)",
           position: "relative",
-          overflow: "hidden",
+          overflow: "visible",
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 10px rgba(15, 23, 42, 0.08)",
         }}
       >
@@ -88,6 +88,9 @@ export default function GridTile({ title, description, icon, onClick }: GridTile
         >
           {icon}
         </div>
+        {badge && badge > 0 && (
+          <div style={{ position: 'absolute', top: -6, right: -6, background: 'crimson', color: 'white', borderRadius: 999, padding: '0.12rem 0.45rem', fontSize: "0.75rem", fontWeight: 500, minWidth: 18, textAlign: 'center', zIndex: 2, boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>{badge > 99 ? '99+' : badge > 0 ? badge : ""}</div>
+        )}
       </div>
       <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, gap: "0.2rem" }}>
         <p
@@ -125,6 +128,7 @@ export default function GridTile({ title, description, icon, onClick }: GridTile
           {description || "Open module"}
         </p>
       </div>
+      
     </motion.button>
   );
 }

@@ -11,7 +11,8 @@ import InputDialog from "@/components/input-dialog";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { useBackgroundProcess } from "@/context/BackgroundProcessContext";
-import { auth } from "@/firebase";
+import { auth, db } from "@/firebase";
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { fetchAndCacheFuelLogs } from "@/utils/fuelLogsCache";
 import { getPendingFuelLogsCount, syncAllPendingFuelLogs } from "@/utils/offlineFuelLogs";
 import { LoadingOutlined } from "@ant-design/icons";
@@ -58,6 +59,18 @@ export default function Index() {
   const [modulePermissions, setModulePermissions] = useState<Record<string, boolean>>({});
   const { userData, logoutUser: logOut } = useAuth();
   const { addProcess, updateProcess } = useBackgroundProcess();
+  const [openTicketsCount, setOpenTicketsCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    // listen for open tickets count
+    try {
+      const q = query(collection(db, 'tickets'), where('status', '==', 'open'));
+      const unsub = onSnapshot(q, (snap) => {
+        setOpenTicketsCount(snap.size);
+      }, (err) => { console.error(err); });
+      return () => unsub();
+    } catch (e) { /* ignore */ }
+  }, []);
 
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
@@ -261,7 +274,7 @@ export default function Index() {
           fixed
           editMode={userData?.editor===true? true : false}
             title="Starboard"
-            subtitle={"1.23"}
+            subtitle={"1.24"}
             icon={<img src="/stardox-bg.png" style={{width:"2rem"}} alt="Starboard" />}
             noback
             extra={
@@ -506,12 +519,13 @@ export default function Index() {
               )}
 
                             {hasModuleAccess('tickets') && (
-                <GridTile
-                  title="Tickets"
-                  description="Report Issues and track resolutions"
-                  icon={<Ticket width="2.5rem" />}
-                  onClick={() => authenticateModule('tickets', '/tickets', 'Tickets')}
-                />
+                              <GridTile
+                                title="Tickets"
+                                description="Report Issues and track resolutions"
+                                icon={<Ticket width="2.5rem" />}
+                                onClick={() => authenticateModule('tickets', '/tickets', 'Tickets')}
+                                badge={openTicketsCount !== null && openTicketsCount > 0 ? openTicketsCount : undefined}
+                              />
               )}
 
                {hasModuleAccess('manpower_requirements') && (
