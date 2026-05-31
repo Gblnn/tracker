@@ -25,6 +25,31 @@ input:after {
   user-select: initial;
 }
 
+/* ensure textareas are selectable/typable on older iOS where '*' user-select:none may bleed through */
+textarea,
+textarea:before,
+textarea:after {
+  -webkit-user-select: text;
+  -khtml-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* help very old iOS Safari allow typing/rendering in transformed containers
+   when a textarea is focused we remove transforms from animated elements */
+textarea:focus {
+  -webkit-user-modify: read-write-plaintext-only;
+}
+
+body.textarea-focused .tickets-fade,
+body.textarea-focused .ticket-item,
+body.textarea-focused .card-enter,
+body.textarea-focused .card-exit {
+  transform: none !important;
+  transition: none !important;
+}
+
 button {
   padding: 0.5rem;
   border-radius: 0.5rem;

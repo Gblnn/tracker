@@ -227,18 +227,85 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
   };
 
   // tickets listener
+  // request notification permission and register service worker
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+      }
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => { /* ignore */ });
+      }
+    } catch (e) { /* ignore */ }
+  }, []);
+
+  // Workaround for old iOS Safari: remove transforms while any textarea is focused
+  useEffect(() => {
+    const onFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'TEXTAREA' || (target as HTMLElement).closest && (target as HTMLElement).closest('textarea'))) {
+        document.body.classList.add('textarea-focused');
+      }
+    };
+    const onFocusOut = (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.tagName === 'TEXTAREA') {
+        // slight delay to allow focus to move to another textarea
+        setTimeout(() => { if (!document.activeElement || document.activeElement.tagName !== 'TEXTAREA') document.body.classList.remove('textarea-focused'); }, 50);
+      }
+    };
+    document.addEventListener('focusin', onFocusIn as any);
+    document.addEventListener('focusout', onFocusOut as any);
+    return () => {
+      document.removeEventListener('focusin', onFocusIn as any);
+      document.removeEventListener('focusout', onFocusOut as any);
+      document.body.classList.remove('textarea-focused');
+    };
+  }, []);
+
+  const skipInitialTickets = useRef(true);
+  const notifyNewTicket = async (t: any) => {
+    try {
+      if (!t) return;
+      if (!('Notification' in window)) return;
+      if (Notification.permission !== 'granted') return;
+      if (t.createdBy === user?.email) return; // don't notify the creator
+      const title = `New ticket: ${t.title || 'Ticket'}`;
+      const body = (t.description || '').slice(0, 140);
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+          reg.showNotification(title, { body, data: { id: t.id } });
+          return;
+        }
+      }
+      new Notification(title, { body });
+    } catch (e) { console.error('notify error', e); }
+  };
+
   useEffect(() => {
     setLoadingTickets(true);
     const q = query(collection(db, "tickets"), orderBy("createdAt", "desc"));
     const unsub = onSnapshot(q, (snap) => {
       const docs = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) } as Ticket));
+      // skip notifying on the initial snapshot load
+      if (skipInitialTickets.current) {
+        skipInitialTickets.current = false;
+      } else {
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            notifyNewTicket({ id: change.doc.id, ...(change.doc.data() as any) });
+          }
+        });
+      }
       setTickets(docs);
       setLoadingTickets(false);
     }, (err) => {
       console.error(err); setLoadingTickets(false);
     });
     return unsub;
-  }, []);
+  }, [user?.email]);
 
   // when a ticket is selected, stream its messages
   useEffect(() => {
@@ -565,11 +632,11 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                           </div>
                           <div style={{ display: 'flex', gap: 8, alignItems: '', flexFlow:"column " }}>
                             <div style={{ flex: 1 }}>
-                              <Select value={newTicket.title} onValueChange={(v: string) => setNewTicket({ ...newTicket, title: v })}>
+                              <Select  value={newTicket.title} onValueChange={(v: string) => setNewTicket({ ...newTicket, title: v })}>
                                 <SelectTrigger style={{ height: 40, display: 'flex', alignItems: 'center' }}>
                                   <SelectValue placeholder="Select request type" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent style={{fontSize:"1rem"}}>
                                   <SelectItem value="Request for installation">Request for installation</SelectItem>
                                   <SelectItem value="Request for support">Request for support</SelectItem>
                                   <SelectItem value="Request for debugging">Request for debugging</SelectItem>
