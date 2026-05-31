@@ -427,6 +427,7 @@ textarea:focus {
   opacity: 1;
   transform: translateY(0);
 }
+/* (Reverted grid layout changes — tickets are back to the original vertical flow.) */
 
 /* per-ticket staggered appearance */
 .ticket-item {

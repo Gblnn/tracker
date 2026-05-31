@@ -1,21 +1,22 @@
 
+// Push/notifications removed — no firestore notification imports here.
 import { lazy, Suspense, useEffect, useRef } from "react";
 import { Route, Routes } from "react-router-dom";
 import AuthGuard from "./components/AuthGuard";
 import { useAuth } from "./components/AuthProvider";
 import ProtectedRoutes from "./components/protectedRoute";
-import { refreshPhonebookCache } from "./utils/phonebookCache";
-import { preloadOcrWorker } from "./utils/ocrWorker";
-import { preloadMrzWorker } from "./utils/mrzWorker";
 import { useBackgroundProcess } from "./context/BackgroundProcessContext";
+import { preloadMrzWorker } from "./utils/mrzWorker";
+import { preloadOcrWorker } from "./utils/ocrWorker";
+import { refreshPhonebookCache } from "./utils/phonebookCache";
 
 // Import critical startup pages immediately (no lazy loading)
-import Login from "./pages/login";
-import UserReset from "./pages/user-reset";
-import RequestAccess from "./pages/request-access";
-import CreateAccount from "./pages/create-account";
-import PageNotFound from "./pages/page-not-found";
 import { Loader2 } from "lucide-react";
+import CreateAccount from "./pages/create-account";
+import Login from "./pages/login";
+import PageNotFound from "./pages/page-not-found";
+import RequestAccess from "./pages/request-access";
+import UserReset from "./pages/user-reset";
 
 // Lazy load protected pages only (loaded after authentication)
 const Index = lazy(() => import("./pages"));
@@ -97,6 +98,8 @@ export default function App() {
       });
     }
   }, []); // Empty dependency array ensures this only runs once
+
+  // Push/notifications feature removed — no runtime listeners or SW cleanup here.
 
   useEffect(() => {
     const isAuthenticated = Boolean((user && userData) || cachedAuthState);

@@ -16,7 +16,7 @@ import {
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { auth, db } from "@/firebase";
-import { addDoc, collection, deleteDoc, doc, getCountFromServer, onSnapshot, orderBy, query, serverTimestamp, updateDoc, getDocs, where } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getCountFromServer, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import JavascriptTimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
 import { ArrowDown, ArrowUp, Globe, Loader2, LockKeyholeIcon, MoreVertical, Reply, Ticket } from "lucide-react";
@@ -61,6 +61,7 @@ export default function Tickets() {
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [replyIsHandler, setReplyIsHandler] = useState<Record<string, boolean>>({});
   const [messageCounts, setMessageCounts] = useState<Record<string, number>>({});
   const [newTicket, setNewTicket] = useState({ title: "", description: "", priority: 'Normal', confidential: false });
@@ -226,19 +227,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
     return palette[Math.abs(h) % palette.length];
   };
 
-  // tickets listener
-  // request notification permission and register service worker
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission().catch(() => {});
-      }
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(() => { /* ignore */ });
-      }
-    } catch (e) { /* ignore */ }
-  }, []);
+  // Push notifications removed — no permission requests or SW registration here.
 
   // Workaround for old iOS Safari: remove transforms while any textarea is focused
   useEffect(() => {
@@ -264,41 +253,11 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
     };
   }, []);
 
-  const skipInitialTickets = useRef(true);
-  const notifyNewTicket = async (t: any) => {
-    try {
-      if (!t) return;
-      if (!('Notification' in window)) return;
-      if (Notification.permission !== 'granted') return;
-      if (t.createdBy === user?.email) return; // don't notify the creator
-      const title = `New ticket: ${t.title || 'Ticket'}`;
-      const body = (t.description || '').slice(0, 140);
-      if ('serviceWorker' in navigator) {
-        const reg = await navigator.serviceWorker.getRegistration();
-        if (reg) {
-          reg.showNotification(title, { body, data: { id: t.id } });
-          return;
-        }
-      }
-      new Notification(title, { body });
-    } catch (e) { console.error('notify error', e); }
-  };
-
   useEffect(() => {
     setLoadingTickets(true);
     const q = query(collection(db, "tickets"), orderBy("createdAt", "desc"));
     const unsub = onSnapshot(q, (snap) => {
       const docs = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) } as Ticket));
-      // skip notifying on the initial snapshot load
-      if (skipInitialTickets.current) {
-        skipInitialTickets.current = false;
-      } else {
-        snap.docChanges().forEach(change => {
-          if (change.type === 'added') {
-            notifyNewTicket({ id: change.doc.id, ...(change.doc.data() as any) });
-          }
-        });
-      }
       setTickets(docs);
       setLoadingTickets(false);
     }, (err) => {
@@ -310,6 +269,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
   // when a ticket is selected, stream its messages
   useEffect(() => {
     if (!selectedTicket) return;
+    setMessagesLoading(true);
     const q = query(collection(db, `tickets/${selectedTicket.id}/messages`), orderBy("createdAt", "asc"));
     const unsub = onSnapshot(q, (snap) => {
       const msgs: Message[] = snap.docs.map(d => {
@@ -324,8 +284,9 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
         return { id: d.id, ...(data as any), parentId } as Message;
       });
       setMessages(msgs);
-    }, (err) => console.error(err));
-    return unsub;
+      setMessagesLoading(false);
+    }, (err) => { console.error(err); setMessagesLoading(false); });
+    return () => { try { unsub(); } catch (e) { /* ignore */ } setMessagesLoading(false); };
   }, [selectedTicket]);
 
   // fetch handler status for message authors so we can label replies
@@ -468,6 +429,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
       await updateDoc(doc(db, "tickets", ticketId), { lastMessage: text.trim(), lastMessageAt: serverTimestamp() });
       // optimistically update message count for the ticket
       setMessageCounts(prev => ({ ...prev, [ticketId]: (prev[ticketId] || 0) + 1 }));
+      // Notifications feature removed: do not create notification documents.
     } catch (err) {
       console.error(err); toast.error("Failed to post message");
     } finally { setSending(false); }
@@ -558,7 +520,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
               )()}
             
             </div>
-            <div style={{ marginTop: 6, fontSize: "1rem" }}>{node.text}</div>
+            <div style={{ marginTop: 6, fontSize: "1rem", textAlign:"left" }}>{node.text}</div>
             
             <div style={{ marginTop: 8 }}>
               
@@ -588,7 +550,15 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
 
   return (
     <>
-      <Back blurBG fixed title="Tickets" extra={<div style={{ display: 'flex', gap: 8 }}><RefreshButton onClick={() => { /* rely on snapshot */ }} fetchingData={loadingTickets} refreshCompleted={false} /></div>} />
+      <Back
+        blurBG
+        fixed
+        title="Tickets"
+        extra={<div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <RefreshButton onClick={() => { /* rely on snapshot */ }} fetchingData={loadingTickets} refreshCompleted={false} />
+          
+        </div>}
+      />
       <div style={{ maxWidth: 900, margin: '0 auto', padding: 24 }}>
         {visibleTickets.length === 0 && !loadingTickets ? (
               <Empty style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
@@ -601,7 +571,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
               ) : loadingTickets ? (
               <div style={{ display: 'flex', justifyContent: 'center',border:"", position:"absolute", width: '100%', height: '100%', left:0, top:0, alignItems:"center" }}><Loader2 className="animate-spin" /></div>
             ) : (
-              <div className={`tickets-fade ${ticketsFadeShow ? 'show' : ''}`} style={{ marginTop: '4.5rem' }}>
+              <div className={`tickets-fade ${ticketsFadeShow ? 'show' : ''}`} style={{ marginTop: '4.5rem', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {showNewModal && (
                   <div ref={newCardRef} style={{ marginBottom: 12 }}>
                     <div className={isCardClosing ? 'card-exit' : 'card-enter'} style={{
@@ -760,7 +730,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                 {visibleTickets.map((t, idx) => {
                   const expanded = selectedTicket?.id === t.id;
                   return (
-                    <div key={t.id} className="ticket-item" data-id={t.id} style={{ marginBottom: 12, ['--i' as any]: idx }}>
+                    <div key={t.id} className="ticket-item" data-id={t.id} style={{ ['--i' as any]: idx }}>
                       <div
                         
                         style={{
@@ -837,7 +807,9 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                         <div style={{ padding: '', background: '', borderRadius: 8, border: '' }}>
                           {/* <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Replies </div> */}
                           <div style={{padding:"0.5rem"}}>
-                            {messageRoots.length === 0 ? <div style={{ color: '#666' }}>No messages yet.</div> : messageRoots.map(r => <RenderNode key={r.id} node={r} depth={0} ticketId={t.id} />)}
+                            {messagesLoading && expanded ? (
+                              <div style={{ display: 'flex', justifyContent: 'center', padding: 16 }}><Loader2 className="animate-spin" /></div>
+                            ) : (messageRoots.length === 0 ? <div style={{ color: '#666' }}>No messages yet.</div> : messageRoots.map(r => <RenderNode key={r.id} node={r} depth={0} ticketId={t.id} />))}
                           </div>
                           {t.status === 'open' && (
                             <div style={{ marginTop: 12 }}>

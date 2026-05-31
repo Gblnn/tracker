@@ -1,5 +1,6 @@
 import { db } from "@/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import { useAuth } from "@/components/AuthProvider";
 import { Inbox } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -9,6 +10,7 @@ interface Props{
 }
 
 export default function Header(props:Props){
+    const { userData } = useAuth();
 
     const [pageLoad, setPageLoad] = useState(false)
     // const [count, setCount] = useState(0)
@@ -65,8 +67,6 @@ export default function Header(props:Props){
             </div>
 
             <div style={{marginRight:"1.25rem", gap:"0.5rem", display:"flex"}}>
-                {/* <NotifyButton/> */}
-                
                 <Link to="/inbox">
                 <button onClick={()=>fetchData()} style={{display:"flex", alignItems:"center", justifyContent:"center"}}>
                     <Inbox color="crimson" width={"3rem"}/>
