@@ -24,7 +24,7 @@ export default function CustomDropDown(props: Props) {
       <DropdownMenu>
         <DropdownMenuPrimitive.Trigger
           className={props.className}
-          style={{ outline: "none" }}
+          style={{ outline: "none", background:"none" }}
         >
           {props.trigger}
         </DropdownMenuPrimitive.Trigger>
@@ -40,15 +40,12 @@ export default function CustomDropDown(props: Props) {
               {props.option1Icon}
               <span style={{ width: "100%" }}>{props.option1Text}</span>
             </DropdownMenuItem>
-
-            <DropdownMenuItem onClick={props.onOption2}>
-              {props.option2Icon}
-              <span style={{ width: "100%" }}>{props.option2Text}</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem onClick={props.onClear}>
-              <span style={{ width: "100%" }}>Show All</span>
-            </DropdownMenuItem>
+                  {props.option2Text && (
+                    <DropdownMenuItem onClick={props.onOption2}>
+                      {props.option2Icon}
+                      <span style={{ width: "100%" }}>{props.option2Text}</span>
+                    </DropdownMenuItem>
+                  )}
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>

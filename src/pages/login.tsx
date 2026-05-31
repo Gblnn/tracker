@@ -101,7 +101,7 @@ export default function Login() {
               style={{ display: "flex", alignItems: "center", gap: "0.75rem",color:"white"  }}
             >
               <p style={{ fontWeight: 400, fontSize: "2.25rem"}}>StarBoard</p>
-              <p>v1.1</p>
+              <p>v1.23</p>
             </div>
           </div>
         </div>

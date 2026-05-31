@@ -10,10 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { db } from "@/firebase";
 import { collection, deleteDoc, doc, getDocs, query } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { LoaderCircle, RefreshCw, Search, Trash2, Users } from "lucide-react";
+import { LoaderCircle, RefreshCw, Search, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -131,7 +132,7 @@ export default function Shortlist() {
         extra={
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <RefreshButton onClick={fetchData} fetchingData={fetchingData} />
-            <Button
+            {/* <Button
               variant="destructive"
               size="sm"
               onClick={() => setConfirmClearAllOpen(true)}
@@ -139,7 +140,7 @@ export default function Shortlist() {
             >
               <Trash2 width={"0.9rem"} />
               {clearingAll ? "Clearing..." : "Clear All"}
-            </Button>
+            </Button> */}
           </div>
         }
       />
@@ -193,7 +194,8 @@ export default function Shortlist() {
         <div
           style={{
             width: "100%",
-            minHeight: "80svh",
+            position:"absolute",
+            height:"100%",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -282,8 +284,10 @@ export default function Shortlist() {
       ) : (
         <div
           style={{
-            minHeight: "80svh",
+            border:"",
+            position: "absolute",
             width: "100%",
+            height:"100%",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -291,13 +295,17 @@ export default function Shortlist() {
             padding: "1rem",
           }}
         >
-          <div style={{ opacity: 0.65, display: "grid", gap: "0.4rem" }}>
-            <Users style={{ width: "2rem", margin: "0 auto", opacity: 0.4 }} />
-            <h3 style={{ fontSize: "1rem", fontWeight: 650, marginTop: "0.35rem" }}>No shortlisted candidates</h3>
-            <p style={{ fontSize: "0.83rem", opacity: 0.75 }}>
-              Add candidates from the applications list to see them here.
-            </p>
-          </div>
+          <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <Users />
+                    </EmptyMedia>
+                    <EmptyTitle>No Shortlisted Candidates</EmptyTitle>
+                    <EmptyDescription>
+                      Add candidates from the applications page to see them here.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
         </div>
       )}
 

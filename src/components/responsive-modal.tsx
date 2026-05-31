@@ -88,7 +88,7 @@ export function ResponsiveModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent style={desktopContentStyle}>
+      <DialogContent className={hideHeader ? "p-0" : ""} style={desktopContentStyle}>
         {!hideHeader && (title || description) && (
           <DialogHeader style={{ paddingBottom: "0.5rem" }}>
             {title && <DialogTitle>{title}</DialogTitle>}

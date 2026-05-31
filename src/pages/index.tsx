@@ -1,3 +1,7 @@
+
+
+             
+
 import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import BackgroundProcessDropdown from "@/components/background-process-dropdown";
@@ -19,6 +23,7 @@ import {
   Bug,
   Car,
   Clock3,
+  File,
   FileArchive,
   FileText,
 
@@ -29,6 +34,7 @@ import {
   Package,
   QrCode,
   Smartphone,
+  Ticket,
   UserCheck,
   Users,
   Wallet
@@ -255,7 +261,7 @@ export default function Index() {
           fixed
           editMode={userData?.editor===true? true : false}
             title="Starboard"
-            subtitle={"1.22"}
+            subtitle={"1.23"}
             icon={<img src="/stardox-bg.png" style={{width:"2rem"}} alt="Starboard" />}
             noback
             extra={
@@ -499,6 +505,24 @@ export default function Index() {
                 />
               )}
 
+                            {hasModuleAccess('tickets') && (
+                <GridTile
+                  title="Tickets"
+                  description="Report Issues and track resolutions"
+                  icon={<Ticket width="2.5rem" />}
+                  onClick={() => authenticateModule('tickets', '/tickets', 'Tickets')}
+                />
+              )}
+
+               {hasModuleAccess('manpower_requirements') && (
+                <GridTile
+                  title="Manpower Requirements"
+                  description="Workforce planning and requirements"
+                  icon={<Users width="2.5rem" />}
+                  onClick={() => authenticateModule('manpower_requirements', '/manpower-requirements', 'Manpower Requirements')}
+                />
+              )}
+
               {hasModuleAccess('projects') && (
                 <GridTile
                   title="Projects"
@@ -565,8 +589,8 @@ export default function Index() {
               {hasModuleAccess('employee_clearance_form') && (
                 <GridTile
                   title="Forms"
-                  description="Employee clearance forms and approvals"
-                  icon={<FileText width="2.5rem" />}
+                  description="Forms and approvals"
+                  icon={<File width="2.5rem" />}
                   onClick={() => authenticateModule('employee_clearance_form', '/employee-clearance-form', 'Forms')}
                 />
               )}
@@ -729,7 +753,7 @@ export default function Index() {
 
         <DefaultDialog
           destructive
-          title={"Logout"}
+          title={"Confirm Logout"}
           OkButtonText="Logout"
           open={logoutPrompt}
           onCancel={() => setLogoutPrompt(false)}

@@ -185,6 +185,23 @@ textarea:focus {
   background-color: rgba(100 100 100/ 15%);
 }
 
+/* Card entry animation */
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(-8px) scale(0.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.card-enter {
+  animation: card-enter 280ms cubic-bezier(.2,.9,.2,1) both;
+}
+
+@keyframes card-exit {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-8px) scale(0.995); }
+}
+.card-exit {
+  animation: card-exit 220ms cubic-bezier(.2,.9,.2,1) both;
+}
+
 .civil-id {
   border: 3px solid rgba(100 100 100/ 20%);
   transition: 0.3s;

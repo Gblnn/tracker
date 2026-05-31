@@ -459,6 +459,7 @@ const AuthProvider = ({ children }: Props) => {
     logoutUser: () => Promise<void>;
     resetPassword: (email: string) => Promise<void>;
     updateUserData: (data: Partial<FirestoreUserData>) => Promise<void>;
+    refreshCurrentUserData: () => Promise<void>;
   } = {
     user,
     userData,
@@ -469,6 +470,7 @@ const AuthProvider = ({ children }: Props) => {
     logoutUser: logOut,
     resetPassword: async () => {},
     updateUserData: async () => {},
+    refreshCurrentUserData,
   };
 
   // Always provide auth context regardless of state

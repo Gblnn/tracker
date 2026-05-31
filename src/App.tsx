@@ -1,3 +1,4 @@
+
 import { lazy, Suspense, useEffect, useRef } from "react";
 import { Route, Routes } from "react-router-dom";
 import AuthGuard from "./components/AuthGuard";
@@ -61,6 +62,10 @@ const SiteAdminWorkers = lazy(() => import("./pages/site-admin-workers"));
 const TransferRequests = lazy(() => import("./pages/transfer-requests"));
 const SimCards = lazy(() => import("./pages/sim-cards"));
 const Timetaag = lazy(() => import("@/pages/timetaag"));
+const Tickets = lazy(() => import("./pages/tickets"));
+         
+
+const ManpowerRequirements = lazy(() => import("./pages/manpower-requirements"));
 const Offboarding = lazy(() => import("./pages/offboarding"));
 
 // Loading fallback component
@@ -184,8 +189,10 @@ export default function App() {
           <Route path="/movement-register" element={<MovementRegister />} />
           <Route path="/transfer-requests" element={<TransferRequests />} />
           <Route path="/sim-cards" element={<SimCards />} />
+          <Route path="/tickets" element={<Tickets />} />
           <Route path="/timetaag" element={<Timetaag />} />
-            <Route path="/offboarding" element={<Offboarding />} />
+          <Route path="/manpower-requirements" element={<ManpowerRequirements />} />
+          <Route path="/offboarding" element={<Offboarding />} />
           <Route path="/records" element={<Records />} />
           <Route path="/record/:id" element={<RecordDetail />} />
           <Route path="/vale-records" element={<ValeRecords />} />

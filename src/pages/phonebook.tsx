@@ -2,7 +2,7 @@ import Back from "@/components/back";
 import Directive from "@/components/directive";
 import RefreshButton from "@/components/refresh-button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
+import { ResponsiveModal } from "@/components/responsive-modal";
 import {
     PhonebookRecord,
     getPhonebookData,
@@ -200,19 +200,12 @@ export default function Phonebook() {
         </div>
         </motion.div>
 
-        <Drawer 
-            open={drawerOpen} 
-            onOpenChange={setDrawerOpen}
-        >
-            <DrawerTitle></DrawerTitle>
-            <DrawerDescription></DrawerDescription>
-            <DrawerContent className="pb-safe">
+        <ResponsiveModal open={drawerOpen} onOpenChange={setDrawerOpen} title="" hideHeader>
                 <div style={{ 
                     paddingTop:0,
                     padding: "1.25rem", 
                     width:"100%",
-                    paddingBottom: "4rem",
-                
+                    paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
                 }}>
                     <div style={{display:"flex", justifyContent:"center"}}>
                         <div style={{ position: "relative", width: "5rem", height: "5rem" }}>
@@ -272,8 +265,7 @@ export default function Phonebook() {
                         
                     </div>
                 </div>
-            </DrawerContent>
-        </Drawer>
+        </ResponsiveModal>
         </>
     )
 }

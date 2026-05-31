@@ -17,6 +17,7 @@ import { getCachedProfile } from "@/utils/profileCache";
 import { fetchAndCacheVehicle, getCachedVehicle, type VehicleData } from "@/utils/vehicleCache";
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { motion } from "framer-motion";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Calendar, ChevronLeft, ChevronRight, DollarSign, EllipsisVertical, Fuel, Gauge, Loader2, WifiOff } from "lucide-react";
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
@@ -1200,85 +1201,110 @@ export default function FuelLog() {
               boxSizing: "border-box",
             }}
           >
-            {/* Charts Carousel Section */}
-            <div style={{ borderTop: "1px solid rgba(100, 100, 100, 0.1)", paddingTop: "0.5rem" }}>
-              {isMobile ? (
-                // Mobile: Horizontal scroll with dots
-                <>
-                  <div 
-                    ref={(el) => {
-                      if (el) {
-                        el.addEventListener('scroll', () => {
-                          const scrollPosition = el.scrollLeft;
-                          const chartsPerView = Math.round(scrollPosition / el.offsetWidth);
-                          setActiveChart(chartsPerView);
-                        });
-                      }
-                    }}
-                    style={{ display: "flex", overflowX: "auto", gap: "0", scrollBehavior: "smooth", scrollSnapType: "x mandatory" }}>
-                    {/* Monthly Fuel Consumption Chart */}
-                    <div style={{ minWidth: "100%", flexShrink: 0, scrollSnapAlign: "start", paddingRight: "0" }}>
-                      <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Monthly Fuel Consumed</div>
-                      <div style={{ height: "60px", width: "100%" }}>
-                        <LineCharter data={monthlyData} dataKey="fuel" lineColor="darkblue" />
-                      </div>
-                    </div>
+            {/* Charts Carousel Section (collapsible) */}
+            <Accordion type="single" collapsible>
+              <AccordionItem value="charts">
+                <AccordionTrigger
+                  style={{
+                    border: "",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    height: "2.2rem",
+                    paddingLeft: "0.75rem",
+                    fontWeight: "600",
+                    fontSize: "0.95rem",
+                    background: "none",
+                    width: "100%",
+                    boxSizing: "border-box",
+                    paddingTop: "0.5rem",
+                    paddingBottom: "0.25rem",
+                  }}
+                >
+                  Stats
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div style={{ borderTop: "1px solid rgba(100, 100, 100, 0.1)", paddingTop: "0.5rem" }}>
+                    {isMobile ? (
+                      // Mobile: Horizontal scroll with dots
+                      <>
+                        <div 
+                          ref={(el) => {
+                            if (el) {
+                              el.addEventListener('scroll', () => {
+                                const scrollPosition = el.scrollLeft;
+                                const chartsPerView = Math.round(scrollPosition / el.offsetWidth);
+                                setActiveChart(chartsPerView);
+                              });
+                            }
+                          }}
+                          style={{ display: "flex", overflowX: "auto", gap: "0", scrollBehavior: "smooth", scrollSnapType: "x mandatory" }}>
+                          {/* Monthly Fuel Consumption Chart */}
+                          <div style={{ minWidth: "100%", flexShrink: 0, scrollSnapAlign: "start", paddingRight: "0" }}>
+                            <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Monthly Fuel Consumed</div>
+                            <div style={{ height: "96px", width: "100%" }}>
+                              <LineCharter data={monthlyData} dataKey="fuel" lineColor="darkblue" />
+                            </div>
+                          </div>
 
-                    {/* Monthly Mileage Trend Chart */}
-                    <div style={{ minWidth: "100%", flexShrink: 0, scrollSnapAlign: "start", paddingRight: "0" }}>
-                      <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Mileage Trend</div>
-                      <div style={{ height: "60px", width: "100%" }}>
-                        <LineCharter data={monthlyData} dataKey="mileage" lineColor="darkblue" />
-                      </div>
-                    </div>
-                  </div>
-                  {/* Dot Indicators */}
-                  <div style={{ display: "flex", justifyContent: "center", gap: "0.4rem", marginTop: "0.5rem" }}>
-                    <div
-                      onClick={() => setActiveChart(0)}
-                      style={{
-                        width: "0.5rem",
-                        height: "0.5rem",
-                        borderRadius: "50%",
-                        background: activeChart === 0 ? "darkblue" : "rgba(100, 100, 100, 0.3)",
-                        cursor: "pointer",
-                        transition: "background 0.2s",
-                      }}
-                    />
-                    <div
-                      onClick={() => setActiveChart(1)}
-                      style={{
-                        width: "0.5rem",
-                        height: "0.5rem",
-                        borderRadius: "50%",
-                        background: activeChart === 1 ? "darkblue" : "rgba(100, 100, 100, 0.3)",
-                        cursor: "pointer",
-                        transition: "background 0.2s",
-                      }}
-                    />
-                  </div>
-                </>
-              ) : (
-                // Desktop: Side by side
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                  {/* Monthly Fuel Consumption Chart */}
-                  <div>
-                    <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Monthly Fuel Consumed</div>
-                    <div style={{ height: "60px", width: "100%" }}>
-                      <LineCharter data={monthlyData} dataKey="fuel" lineColor="darkblue" />
-                    </div>
-                  </div>
+                          {/* Monthly Mileage Trend Chart */}
+                          <div style={{ minWidth: "100%", flexShrink: 0, scrollSnapAlign: "start", paddingRight: "0" }}>
+                            <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Mileage Trend</div>
+                            <div style={{ height: "96px", width: "100%" }}>
+                              <LineCharter data={monthlyData} dataKey="mileage" lineColor="darkblue" />
+                            </div>
+                          </div>
+                        </div>
+                        {/* Dot Indicators */}
+                        <div style={{ display: "flex", justifyContent: "center", gap: "0.4rem", marginTop: "0.5rem" }}>
+                          <div
+                            onClick={() => setActiveChart(0)}
+                            style={{
+                              width: "0.5rem",
+                              height: "0.5rem",
+                              borderRadius: "50%",
+                              background: activeChart === 0 ? "darkblue" : "rgba(100, 100, 100, 0.3)",
+                              cursor: "pointer",
+                              transition: "background 0.2s",
+                            }}
+                          />
+                          <div
+                            onClick={() => setActiveChart(1)}
+                            style={{
+                              width: "0.5rem",
+                              height: "0.5rem",
+                              borderRadius: "50%",
+                              background: activeChart === 1 ? "darkblue" : "rgba(100, 100, 100, 0.3)",
+                              cursor: "pointer",
+                              transition: "background 0.2s",
+                            }}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      // Desktop: Side by side
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                        {/* Monthly Fuel Consumption Chart */}
+                        <div>
+                          <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Monthly Fuel Consumed</div>
+                          <div style={{ height: "96px", width: "100%" }}>
+                            <LineCharter data={monthlyData} dataKey="fuel" lineColor="darkblue" />
+                          </div>
+                        </div>
 
-                  {/* Monthly Mileage Trend Chart */}
-                  <div>
-                    <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Mileage Trend</div>
-                    <div style={{ height: "60px", width: "100%" }}>
-                      <LineCharter data={monthlyData} dataKey="mileage" lineColor="darkblue" />
-                    </div>
+                        {/* Monthly Mileage Trend Chart */}
+                        <div>
+                          <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Mileage Trend</div>
+                          <div style={{ height: "96px", width: "100%" }}>
+                            <LineCharter data={monthlyData} dataKey="mileage" lineColor="darkblue" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
 
           {/* Fuel Logs List */}
@@ -1301,9 +1327,17 @@ export default function FuelLog() {
                 style={{
                   gridColumn: isMobile ? undefined : "1 / -1",
                   display: "flex",
+                  position:"absolute",
+                  border:"",
+                  flex:1,
+                  top:0,
+                  left:0,
+                  width:"100%",
+                  height:"100%",
                   justifyContent: "center",
                   alignItems: "center",
-                  minHeight: "70vh",
+                  
+                  
                 }}
               >
                 <Empty>

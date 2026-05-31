@@ -8,6 +8,7 @@ import DefaultDialog from "@/components/ui/default-dialog";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { db } from "@/firebase";
 import { message } from "antd";
+import { toast } from "sonner";
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import {
   addDoc,
@@ -48,6 +49,7 @@ import {
   Users as UsersIcon,
   Wallet,
   LogOut,
+  Ticket,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -75,6 +77,8 @@ const MODULES = [
   { id: 'transfer_requests', name: 'Transfers', icon: ArrowRightLeft },
   { id: 'sim_cards', name: 'SIM Cards', icon: Smartphone },
     { id: 'offboarding', name: 'Offboarding', icon: LogOut },
+    { id: 'manpower_requirements', name: 'Manpower Requirements', icon: UsersIcon },
+    { id: 'tickets', name: 'Tickets', icon: Ticket },
 ];
 
 const OFFER_LETTERS_EDIT_KEY = "offer_letters_edit";
@@ -163,7 +167,9 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
             <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em",  }}>{display_name}</h2>
             <div style={{fontSize:"0.8rem", marginLeft:"0.25rem"}}>{display_email}</div>
           </div>
-          <button
+          {
+            display_email != "it@soharstar.com"&&
+            <button
             onClick={onDelete}
             style={{
               fontSize: "0.75rem",
@@ -183,6 +189,8 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
             <MinusCircle width={"1rem"} color="crimson" />
             Remove
           </button>
+          }
+          
         </div>
       </div>
 
@@ -209,18 +217,19 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
               noArrow
               icon={<AtSign width={"1.24rem"} color="mediumslateblue" />}
             /> */}
+            <Directive
+              onClick={onOpenClearanceDrawer}
+              title="Module Clearance"
+              icon={<Package width="1.25rem" color="mediumslateblue" />}
+              id_subtitle={`${getEnabledModulesCount()} modules enabled`}
+            />
             <RoleSelect 
               value={role.toLowerCase()} 
               onChange={(newRole) => {
                 setRole(newRole);
               }}
             />
-            <Directive
-              onClick={onOpenClearanceDrawer}
-              title="Module Clearance"
-              icon={<KeyRound width="1.25rem" color="mediumslateblue" />}
-              id_subtitle={`${getEnabledModulesCount()} modules enabled`}
-            />
+            
             <IOMenu
               title="Editing"
               placeholder="Clearance"
@@ -508,6 +517,10 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
 
 export default function Users() {
   const [addUserDialog, setAddUserDialog] = useState(false);
+  // Track hovered module id for icon highlight
+  const [hoveredModuleId, setHoveredModuleId] = useState<string | null>(null);
+  // Toggle for showing module icons
+  const [showModuleIcons, setShowModuleIcons] = useState(false);
   const [fetchingData, setfetchingData] = useState(false);
   const [users, setUsers] = useState([]);
   const [userDialog, setUserDialog] = useState(false);
@@ -617,8 +630,10 @@ export default function Users() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Function to update local cache if the updated user is the current user
-  const updateLocalCache = (email: string, updatedData: any) => {
+  // Use refreshCurrentUserData from AuthProvider context
+
+
+  const updateLocalCache = async (email: string, updatedData: any) => {
     try {
       // Only update cache if the updated user is the current logged-in user
       if (currentUserData?.email === email) {
@@ -628,8 +643,7 @@ export default function Users() {
           const updatedUser = { ...parsedUser, ...updatedData };
           localStorage.setItem(CACHED_USER_KEY, JSON.stringify(updatedUser));
 
-          // Force a page reload to update the app state with new permissions
-          window.location.reload();
+         
         }
       }
     } catch (error) {
@@ -750,7 +764,7 @@ export default function Users() {
       await updateDoc(recordDocRef, { role: filteredData.role });
 
       // Update local cache if the updated user is the current user
-      updateLocalCache(display_email, filteredData);
+      await updateLocalCache(display_email, filteredData);
 
       setLoading(false);
       setUserDialog(false);
@@ -796,12 +810,10 @@ export default function Users() {
             borderRadius: "1.1rem",
             overflow: "hidden",
             background: CONTROL_THEME.panelBg,
-            // boxShadow: CONTROL_THEME.panelGlow,
             position: "fixed",
             zIndex: 18,
             WebkitBackdropFilter: "blur(12px)",
             backdropFilter: "blur(12px)",
-            
           }}
         >
           <div
@@ -810,10 +822,9 @@ export default function Users() {
               inset: 0,
               background: "linear-gradient(160deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.06) 38%, rgba(255,255,255,0) 100%)",
               pointerEvents: "none"
-              
             }}
           />
-          <div style={{ position: "relative", padding: "1rem 1.5rem", }}>
+          <div style={{ position: "relative", padding: "1rem 1.5rem" }}>
             <div
               style={{
                 display: "flex",
@@ -827,24 +838,20 @@ export default function Users() {
                 <span style={{ fontSize: "0.65rem", letterSpacing: "0.12em", textTransform: "uppercase", color: CONTROL_THEME.mutedText }}>
                   Access Control Module
                 </span>
-                <h2 style={{ fontSize: isMobile ? "1.32rem" : "1.34rem", fontWeight: 600, color: "white", lineHeight: 1.2 }}>
-                  User Permissions
+                <h2 style={{ fontSize: isMobile ? "1.34rem" : "1.34rem", fontWeight: 500, color: "white", lineHeight: 1.2 }}>
+                  User Clearance
                 </h2>
-                {/* <p style={{ fontSize: "0.7rem", color: CONTROL_THEME.accentText }}>
-                  Manage clearance to modules and what they can modify.
-                </p> */}
               </div>
-
-              <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
-                {/* <div style={{ padding: "0.4rem 0.62rem", borderRadius: "0.66rem", background: "rgba(255,255,255,0.15)", color: "white", fontSize: "0.74rem", fontWeight: 600 }}>
-                  {users.length} users
-                </div>
-                <div style={{ padding: "0.4rem 0.62rem", borderRadius: "0.66rem", background: "rgba(255,255,255,0.15)", color: "white", fontSize: "0.74rem", fontWeight: 600 }}>
-                  {privilegedUsersCount} privileged
-                </div> */}
-                {/* <div style={{ padding: "0.4rem 0.62rem", borderRadius: "0.66rem", background: "rgba(255,255,255,0.15)", color: "white", fontSize: "0.74rem", fontWeight: 600 }}>
-                  {averageModuleClearance} avg modules
-                </div> */}
+              <div style={{ display: "flex", gap: "0.7rem", alignItems: "center" }}>
+                <label style={{ color: CONTROL_THEME.accentText, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", userSelect: "none" }}>
+                  {/* <input
+                    type="checkbox"
+                    checked={showModuleIcons}
+                    onChange={e => setShowModuleIcons(e.target.checked)}
+                    style={{ accentColor: "#1e40af", width: "1.1rem", height: "1.1rem", marginRight: "0.3rem" }}
+                  /> */}
+                  <KeyRound style={{scale:"0.8"}} onClick={() => setShowModuleIcons(!showModuleIcons)} />
+                </label>
               </div>
             </div>
           </div>
@@ -884,49 +891,115 @@ export default function Users() {
               paddingBottom: "7rem"
             }}
           >
-            {users.map((user: any) => (
-              <Directive
-                onClick={() => {
-                  setDocid(user.id);
-                  setUserDialog(true);
-                  setDisplayName(user.name || "");
-                  setDisplayEmail(user.email || "");
-                  setRole(user.role || "profile");
-                  setClearance(user.clearance || "{}");
-                  setEditor(user.editor || "false");
-                  setSensitiveData(user.sensitive_data || "false");
-                }}
-                key={user.id}
-                icon={
-                  user.role == "admin" || user.role == "site_admin" ? (
-                    <Eye width={"1.25rem"} color="darkblue" />
-                  ) : user.role == "hr" ? (
-                    <ShieldPlus width={"1.25rem"} color="darkblue" />
-                  ) : (
-                    <User width={"1.25rem"} color="darkblue" />
-                  )
-                }
-                title={user.name}
-                id_subtitle={user.email}
-                subtext={
-                  user.last_active
-                    ? (() => {
-                        const d = new Date(user.last_active);
-                        const now = new Date();
-                        const diffMs = now.getTime() - d.getTime();
-                        const diffMins = Math.floor(diffMs / 60000);
-                        const diffHours = Math.floor(diffMins / 60);
-                        const diffDays = Math.floor(diffHours / 24);
-                        if (diffMins < 1) return "Active just now";
-                        if (diffMins < 60) return `Active ${diffMins}m ago`;
-                        if (diffHours < 24) return `Active ${diffHours}h ago`;
-                        if (diffDays < 30) return `Active ${diffDays}d ago`;
-                        return `Last active ${d.toLocaleDateString()}`;
-                      })()
-                    : "No Activity Yet"
-                }
-              />
-            ))}
+            {users.map((user: any) => {
+              // Parse clearance for this user
+              let userModulePermissions: Record<string, boolean> = {};
+              try {
+                userModulePermissions = JSON.parse(user.clearance || '{}');
+              } catch {}
+               return (
+                
+                <div key={user.id} style={{ display: "flex", flexDirection: "column", height: "100%", border:"" }}>
+                  <div style={{ display: "flex", flexDirection: "column", border:"", height:"fit-content" }}>
+                   
+                    <Directive
+                    height="fit-content"
+                      onClick={() => {
+                        // Restrict viewing of special developer account to the developer only
+                        if (user.email === "it@soharstar.com" && currentUserData?.email !== "it@soharstar.com") {
+                          toast.error("Action blocked");
+                          return;
+                        }
+                        setDocid(user.id);
+                        setUserDialog(true);
+                        setDisplayName(user.name || "");
+                        setDisplayEmail(user.email || "");
+                        setRole(user.role || "profile");
+                        setClearance(user.clearance || "{}");
+                        setEditor(user.editor || "false");
+                        setSensitiveData(user.sensitive_data || "false");
+                      }}
+                      icon={
+                        user.role == "admin" || user.role == "site_admin" ? (
+                          <Eye width={"1.25rem"} color="darkblue" />
+                        ) : user.role == "hr" ? (
+                          <ShieldPlus width={"1.25rem"} color="darkblue" />
+                        ) : (
+                          <User width={"1.25rem"} color="darkblue" />
+                        )
+                      }
+                      title={user.name}
+                      tag={user.email=="it@soharstar.com"?"Developer":""}
+                      status={true}
+                      id_subtitle={user.email}
+                      subtext={
+                        user.last_active
+                          ? (() => {
+                              const d = new Date(user.last_active);
+                              const now = new Date();
+                              const diffMs = now.getTime() - d.getTime();
+                              const diffMins = Math.floor(diffMs / 60000);
+                              const diffHours = Math.floor(diffMins / 60);
+                              const diffDays = Math.floor(diffHours / 24);
+                              if (diffMins < 1) return "Active just now";
+                              if (diffMins < 60) return `Active ${diffMins}m ago`;
+                              if (diffHours < 24) return `Active ${diffHours}h ago`;
+                              if (diffDays < 30) return `Active ${diffDays}d ago`;
+                              return `Last active ${d.toLocaleDateString()}`;
+                            })()
+                          : "No Activity Yet"
+                      }
+                    />
+                  </div>
+                  {showModuleIcons && (
+                    <div style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "0.4rem",
+                      justifyContent: "flex-start",
+                      alignItems: "center",
+                      padding: "0.2rem 0.5rem",
+                      background: "rgba(246 248 252 / 0.68)",
+                      borderRadius: "0.5rem",
+                      marginTop: "0.25rem",
+                      
+                    }}>
+                      {MODULES.filter(m => userModulePermissions[m.id]).map((m) => {
+                        const Icon = m.icon;
+                        const isImageIcon = typeof Icon === "string";
+                        const isHighlighted = hoveredModuleId === m.id;
+                        return (
+                          <span
+                            key={m.id}
+                            title={m.name}
+                            style={{
+                              borderRadius: "0.5rem",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.1rem",
+                              fontSize: "0.8rem",
+                              color: isHighlighted ? "darkblue" : "darkslategrey",
+                              // background: isHighlighted ? "rgba(30,144,255,0.13)" : undefined,
+                              cursor: "pointer",
+                              transition: "color 0.15s, background 0.15s",
+                              height:"1.25rem"
+                            }}
+                            onMouseEnter={() => setHoveredModuleId(m.id)}
+                            onMouseLeave={() => setHoveredModuleId(null)}
+                          >
+                            {isImageIcon ? (
+                              <img src={Icon as string} alt={m.name} style={{ width: "1.1rem", height: "1.1rem", objectFit: "contain", marginRight: "0.2rem", filter: isHighlighted ? "drop-shadow(0 0 2px dodgerblue)" : undefined }} />
+                            ) : (
+                              <Icon width="1.1rem" style={{ scale: "0.65", color: isHighlighted ? "red" : undefined }} />
+                            )}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </motion.div>
@@ -937,6 +1010,7 @@ export default function Users() {
         onOpenChange={setUserDialog}
         title=""
         description=""
+        hideHeader={true}
       >
         <UserDetailsContent
           display_name={display_name}
@@ -991,6 +1065,7 @@ export default function Users() {
         onOpenChange={handleAddUserDialogChange}
         title=""
         description=""
+        hideHeader={true}
       >
         <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", width: "100%", boxSizing: "border-box" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem", justifyContent:"center" }}>
