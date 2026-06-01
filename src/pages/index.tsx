@@ -218,6 +218,7 @@ export default function Index() {
     const hasTimetaag = hasModuleAccess('timetaag');
     const hasPettyCash = hasModuleAccess('petty_cash');
     const hasOfferLetters = hasModuleAccess('offer_letters');
+    const hasTickets = true; // Ensure Tickets/IT Support is visible to all users
     const hasEmployeeClearanceForm = hasModuleAccess('employee_clearance_form');
     const hasShiftLogs = hasModuleAccess('shift_logs');
     const hasTransferRequests = hasModuleAccess('transfer_requests');
@@ -225,8 +226,8 @@ export default function Index() {
       const hasOffboarding = hasModuleAccess('offboarding');
 
     return hasRecordsMaster || hasUsers || hasNewHire || hasQuickLinks || 
-               hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || hasTimetaag ||
-        hasPettyCash || hasOfferLetters || hasEmployeeClearanceForm || hasShiftLogs || hasTransferRequests || hasSimCards || hasOffboarding;
+           hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || hasTimetaag ||
+      hasPettyCash || hasOfferLetters || hasEmployeeClearanceForm || hasShiftLogs || hasTransferRequests || hasSimCards || hasOffboarding || hasTickets;
   };
 
   // const getAccessibleModuleCount = () => {
@@ -282,7 +283,7 @@ export default function Index() {
           fixed
           editMode={userData?.editor===true? true : false}
             title="Starboard"
-            subtitle={"1.28"}
+            subtitle={"1.29"}
             icon={<img src="/stardox-bg.png" style={{width:"2rem"}} alt="Starboard" />}
             noback
             extra={
@@ -526,15 +527,13 @@ export default function Index() {
                 />
               )}
 
-                            {hasModuleAccess('tickets') && (
-                              <GridTile
-                                title={hasTicketHandler ? "Tickets" : "IT Support"}
-                                description="Report Issues and track resolutions"
-                                icon={<Ticket width="2.5rem" />}
-                                onClick={() => authenticateModule('tickets', '/tickets', 'Tickets')}
-                                badge={hasTicketHandler && openTicketsCount !== null && openTicketsCount > 0 ? openTicketsCount : undefined}
-                              />
-              )}
+                            <GridTile
+                              title={hasTicketHandler ? "Tickets" : "IT Support"}
+                              description="Report Issues and track resolutions"
+                              icon={<Ticket width="2.5rem" />}
+                              onClick={() => navigate('/tickets')}
+                              badge={hasTicketHandler && openTicketsCount !== null && openTicketsCount > 0 ? openTicketsCount : undefined}
+                            />
 
                {hasModuleAccess('manpower_requirements') && (
                 <GridTile
