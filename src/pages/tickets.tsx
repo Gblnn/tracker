@@ -128,42 +128,91 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
 
   // Request notification permission on mount
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().then(permission => {
-        setNotificationPermission(permission);
-        if (permission === 'granted') {
-          console.log('Notification permission granted');
-        }
-      }).catch(err => console.error('Notification permission error:', err));
-    } else if ('Notification' in window) {
-      setNotificationPermission(Notification.permission);
+    if ('Notification' in window) {
+      console.log('Current notification permission:', Notification.permission);
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+          console.log('Permission response:', permission);
+          setNotificationPermission(permission);
+          if (permission === 'granted') {
+            console.log('✅ Notification permission granted');
+          } else {
+            console.log('❌ Notification permission denied');
+          }
+        }).catch(err => console.error('Notification permission error:', err));
+      } else {
+        setNotificationPermission(Notification.permission);
+        console.log('Using existing permission:', Notification.permission);
+      }
+    } else {
+      console.warn('Notifications API not supported in this browser');
     }
   }, []);
 
   // Listen for new replies to user's tickets and show notifications
   useEffect(() => {
-    if (!user?.email || notificationPermission !== 'granted') return;
+    console.log('=== Notification Listener Effect ===');
+    console.log('User email:', user?.email);
+    console.log('Total tickets:', tickets.length);
+    console.log('Notification permission:', notificationPermission);
+    
+    if (!user?.email) {
+      console.log('No user email, skipping notification listener');
+      return;
+    }
+    
+    if (notificationPermission !== 'granted') {
+      console.log('Notification permission not granted:', notificationPermission);
+      return;
+    }
+    
+    // Log all tickets with their creators
+    tickets.forEach((t, idx) => {
+      console.log(`Ticket ${idx + 1}:`, {
+        id: t.id,
+        createdBy: t.createdBy,
+        matchesUser: t.createdBy === user.email
+      });
+    });
     
     const userTickets = tickets.filter(t => t.createdBy === user.email);
+    console.log(`Setting up notification listeners for ${userTickets.length} user tickets`);
+    console.log('⚠️ NOTE: You will NOT be notified of your own replies (by design)');
+    console.log('⚠️ To test: Have SOMEONE ELSE reply to your ticket, or use a different account');
+    
     if (userTickets.length === 0) return;
 
     const unsubscribers: (() => void)[] = [];
 
     userTickets.forEach(ticket => {
+      console.log(`📡 Attaching listener to ticket: ${ticket.id}`);
       const q = query(
         collection(db, `tickets/${ticket.id}/messages`),
         orderBy('createdAt', 'desc')
       );
 
       const unsub = onSnapshot(q, (snap) => {
+        console.log(`🔔 Snapshot event received for ticket ${ticket.id}, changes: ${snap.docChanges().length}`);
         snap.docChanges().forEach(change => {
           if (change.type === 'added') {
             const message = change.doc.data();
-            // Only notify if message is from someone else and is recent (within last 5 seconds)
+            console.log('New message detected:', {
+              from: message.createdBy,
+              currentUser: user.email,
+              text: message.text?.substring(0, 50)
+            });
+            
+            // Only notify if message is from someone else
             if (message.createdBy !== user.email) {
               const now = Date.now();
               const messageTime = message.createdAt?.toMillis?.() || 0;
-              if (now - messageTime < 5000) {
+              const timeDiff = now - messageTime;
+              
+              console.log('Message time diff:', timeDiff, 'ms');
+              
+              // Increased window to 10 seconds to handle server delays
+              if (timeDiff < 10000) {
+                console.log('Showing notification...');
                 // Show notification
                 try {
                   const notification = new Notification('New Reply to Your Ticket', {
@@ -175,6 +224,8 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                     silent: false
                   });
 
+                  console.log('✅ Notification shown successfully');
+
                   notification.onclick = () => {
                     window.focus();
                     setSelectedTicket(ticket);
@@ -184,9 +235,13 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                   // Auto-close after 6 seconds
                   setTimeout(() => notification.close(), 6000);
                 } catch (err) {
-                  console.error('Failed to show notification:', err);
+                  console.error('❌ Failed to show notification:', err);
                 }
+              } else {
+                console.log('Message too old, skipping notification');
               }
+            } else {
+              console.log('Message from current user, skipping notification');
             }
           }
         });
@@ -196,6 +251,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
     });
 
     return () => {
+      console.log('Cleaning up notification listeners');
       unsubscribers.forEach(unsub => unsub());
     };
   }, [tickets, user?.email, notificationPermission]);
@@ -570,6 +626,29 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
         fixed
         title="Tickets"
         extra={<div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button 
+            onClick={() => {
+              if (Notification.permission === 'granted') {
+                try {
+                  const notif = new Notification('Test Notification', {
+                    body: 'This is a test notification to verify the system works!',
+                    icon: '/favicon.ico'
+                  });
+                  console.log('✅ Test notification sent');
+                  setTimeout(() => notif.close(), 5000);
+                  toast.success('Test notification sent!');
+                } catch (err) {
+                  console.error('❌ Test notification failed:', err);
+                  toast.error('Failed to send test notification');
+                }
+              } else {
+                toast.error('Notification permission not granted');
+              }
+            }}
+            style={{ padding: '0.5rem', fontSize: '0.75rem', background: '#eef2ff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 6 }}
+          >
+            Test 🔔
+          </button>
           <RefreshButton onClick={() => { /* rely on snapshot */ }} fetchingData={loadingTickets} refreshCompleted={false} />
         </div>}
       />
