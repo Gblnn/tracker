@@ -385,7 +385,11 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
 
   const handleCreateTicket = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!newTicket.title || !newTicket.description || !user) return;
+    const creatorEmail = user?.email || userData?.email || null;
+    if (!newTicket.title || !newTicket.description || !creatorEmail) {
+      toast.error('Unable to determine your email address. Please refresh or check your profile.');
+      return;
+    }
     setSending(true);
     try {
       await addDoc(collection(db, "tickets"), {
@@ -394,7 +398,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
         priority: newTicket.priority || 'Normal',
         confidential: !!newTicket.confidential,
         status: "open",
-        createdBy: user.email,
+        createdBy: creatorEmail,
         createdAt: serverTimestamp(),
         lastMessage: newTicket.description,
         lastMessageAt: serverTimestamp(),
