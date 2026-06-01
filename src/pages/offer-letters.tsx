@@ -5289,38 +5289,40 @@ const [searchTerm, setSearchTerm] = useState("");
                       : ""}
                   </div>
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "0.5rem",
-                    marginLeft: "1rem",
-                  }}
-                >
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      Modal.confirm({
-                        title: "Delete Offer Letter",
-                        content:
-                          "Are you sure you want to delete this offer letter?",
-                        okText: "Yes",
-                        okType: "danger",
-                        cancelText: "No",
-                        onOk: () => handleDeleteLetter(ol.id),
-                      });
-                    }}
+                {canEditOfferLetters && (
+                  <div
                     style={{
-                      background: "rgba(150 150 150/ 10%)",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: "0.15rem 0.5rem",
-                      color: "indianred",
-                      fontSize: "0.7rem",
+                      display: "flex",
+                      gap: "0.5rem",
+                      marginLeft: "1rem",
                     }}
                   >
-                    {deleting ? <LoadingOutlined /> : "Delete"}
-                  </button>
-                </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        Modal.confirm({
+                          title: "Delete Offer Letter",
+                          content:
+                            "Are you sure you want to delete this offer letter?",
+                          okText: "Yes",
+                          okType: "danger",
+                          cancelText: "No",
+                          onOk: () => handleDeleteLetter(ol.id),
+                        });
+                      }}
+                      style={{
+                        background: "rgba(150 150 150/ 10%)",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "0.15rem 0.5rem",
+                        color: "indianred",
+                        fontSize: "0.7rem",
+                      }}
+                    >
+                      {deleting ? <LoadingOutlined /> : "Delete"}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

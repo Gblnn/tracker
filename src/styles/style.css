@@ -474,8 +474,8 @@ textarea:focus {
   padding: 8px 12px;
 }
 .back-search {
-  max-width: 900px;
-  width: 100%;
+  max-width: none;
+  width: calc(100% - 24px);
   display: flex;
   gap: 8px;
   align-items: center;
@@ -488,6 +488,19 @@ textarea:focus {
 .back-search-input { flex: 1; padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); }
 .back-search-clear { padding: 0.45rem 0.75rem; border-radius: 8px; background: #eee; border: none; }
 .back-search-override { width: 2.25rem; height: 2.25rem; border-radius: 6px; border: none; background: transparent; }
+
+/* Wider searchbar on large screens */
+@media (min-width: 1024px) {
+  .back-search-wrapper {
+    padding: 8px 8px;
+    justify-content: center;
+  }
+  .back-search {
+    /* occupy almost the full viewport width on large screens */
+    width: calc(100% - 16px) !important;
+    max-width: none !important;
+  }
+}
 
 /* Reply composer smooth animation */
 .composer-animate-in {

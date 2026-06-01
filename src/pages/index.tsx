@@ -528,7 +528,7 @@ export default function Index() {
 
                             {hasModuleAccess('tickets') && (
                               <GridTile
-                                title="Tickets"
+                                title={hasTicketHandler ? "Tickets" : "IT Support"}
                                 description="Report Issues and track resolutions"
                                 icon={<Ticket width="2.5rem" />}
                                 onClick={() => authenticateModule('tickets', '/tickets', 'Tickets')}

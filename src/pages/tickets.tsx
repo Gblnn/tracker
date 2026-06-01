@@ -2,7 +2,6 @@ import AddRecordButton from "@/components/add-record-button";
 import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import CustomDropDown from '@/components/custom-dropdown';
-import RefreshButton from "@/components/refresh-button";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import {
   Dialog,
@@ -19,7 +18,7 @@ import { auth, db } from "@/firebase";
 import { addDoc, collection, deleteDoc, doc, getCountFromServer, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import JavascriptTimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
-import { ArrowDown, ArrowUp, FileX, Globe, Loader2, LockKeyholeIcon, MoreVertical, Reply, Send, Ticket } from "lucide-react";
+import { ArrowDown, ArrowUp, FileX, Globe, Info, Loader2, Lock, LockKeyholeIcon, MoreVertical, Reply, Send, Ticket } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactTimeAgo from "react-time-ago";
 import { toast } from "sonner";
@@ -49,6 +48,8 @@ export default function Tickets() {
   const { userData } = useAuth();
   const user = auth.currentUser;
 
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
+
   const hasTicketHandler = useMemo(() => {
     try {
       const c = userData?.clearance || '{}';
@@ -56,8 +57,6 @@ export default function Tickets() {
       return !!parsed?.tickets_handler;
     } catch (e) { return false; }
   }, [userData?.clearance]);
-
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
@@ -73,12 +72,20 @@ export default function Tickets() {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [overrideDeleteEnabled, setOverrideDeleteEnabled] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setShowBackToTop(window.scrollY > 300);
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth >= 1024);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
 // Top-level composer placed above return so its props type is known at usage
@@ -125,143 +132,6 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
     for (let i = 0; i < seed.length; i++) h = (h << 5) - h + seed.charCodeAt(i);
     return palette[Math.abs(h) % palette.length];
   };
-
-  // Request notification permission on mount
-  useEffect(() => {
-    if ('Notification' in window) {
-      console.log('Current notification permission:', Notification.permission);
-      if (Notification.permission === 'default') {
-        Notification.requestPermission().then(permission => {
-          console.log('Permission response:', permission);
-          setNotificationPermission(permission);
-          if (permission === 'granted') {
-            console.log('✅ Notification permission granted');
-          } else {
-            console.log('❌ Notification permission denied');
-          }
-        }).catch(err => console.error('Notification permission error:', err));
-      } else {
-        setNotificationPermission(Notification.permission);
-        console.log('Using existing permission:', Notification.permission);
-      }
-    } else {
-      console.warn('Notifications API not supported in this browser');
-    }
-  }, []);
-
-  // Listen for new replies to user's tickets and show notifications
-  useEffect(() => {
-    console.log('=== Notification Listener Effect ===');
-    console.log('User email:', user?.email);
-    console.log('Total tickets:', tickets.length);
-    console.log('Notification permission:', notificationPermission);
-    
-    if (!user?.email) {
-      console.log('No user email, skipping notification listener');
-      return;
-    }
-    
-    if (notificationPermission !== 'granted') {
-      console.log('Notification permission not granted:', notificationPermission);
-      return;
-    }
-    
-    // Log all tickets with their creators
-    tickets.forEach((t, idx) => {
-      console.log(`Ticket ${idx + 1}:`, {
-        id: t.id,
-        createdBy: t.createdBy,
-        matchesUser: t.createdBy === user.email
-      });
-    });
-    
-    const userTickets = tickets.filter(t => t.createdBy === user.email);
-    console.log(`Setting up notification listeners for ${userTickets.length} user tickets`);
-    console.log('⚠️ NOTE: You will NOT be notified of your own replies (by design)');
-    console.log('⚠️ To test: Have SOMEONE ELSE reply to your ticket, or use a different account');
-    
-    if (userTickets.length === 0) return;
-
-    const unsubscribers: (() => void)[] = [];
-    const listenerStartTime = Date.now();
-    console.log('🕐 Listener start time:', new Date(listenerStartTime).toISOString());
-
-    userTickets.forEach(ticket => {
-      console.log(`📡 Attaching listener to ticket: ${ticket.id}`);
-      const q = query(
-        collection(db, `tickets/${ticket.id}/messages`),
-        orderBy('createdAt', 'desc')
-      );
-
-      let isFirstSnapshot = true;
-
-      const unsub = onSnapshot(q, (snap) => {
-        console.log(`🔔 Snapshot event received for ticket ${ticket.id}, changes: ${snap.docChanges().length}, isFirst: ${isFirstSnapshot}`);
-        
-        // Skip the first snapshot (contains all existing messages)
-        if (isFirstSnapshot) {
-          console.log('⏭️ Skipping first snapshot (initial load)');
-          isFirstSnapshot = false;
-          return;
-        }
-
-        snap.docChanges().forEach(change => {
-          if (change.type === 'added') {
-            const message = change.doc.data();
-            console.log('New message detected:', {
-              from: message.createdBy,
-              currentUser: user.email,
-              text: message.text?.substring(0, 50)
-            });
-            
-            // Only notify if message is from someone else
-            if (message.createdBy !== user.email) {
-              const messageTime = message.createdAt?.toMillis?.() || 0;
-              const timeSinceListenerStart = Date.now() - listenerStartTime;
-              
-              console.log('Message created:', new Date(messageTime).toISOString());
-              console.log('Time since listener started:', timeSinceListenerStart, 'ms');
-              
-              // Show notification for any message from someone else (they should all be new after first snapshot)
-              console.log('✅ Showing notification for new reply...');
-              try {
-                const notification = new Notification('New Reply to Your Ticket', {
-                  body: `${message.createdBy} replied: ${message.text.substring(0, 100)}${message.text.length > 100 ? '...' : ''}`,
-                  icon: '/favicon.ico',
-                  badge: '/favicon.ico',
-                  tag: `ticket-${ticket.id}`,
-                  requireInteraction: false,
-                  silent: false
-                });
-
-                console.log('✅ Notification shown successfully');
-
-                notification.onclick = () => {
-                  window.focus();
-                  setSelectedTicket(ticket);
-                  notification.close();
-                };
-
-                // Auto-close after 6 seconds
-                setTimeout(() => notification.close(), 6000);
-              } catch (err) {
-                console.error('❌ Failed to show notification:', err);
-              }
-            } else {
-              console.log('Message from current user, skipping notification');
-            }
-          }
-        });
-      });
-
-      unsubscribers.push(unsub);
-    });
-
-    return () => {
-      console.log('Cleaning up notification listeners');
-      unsubscribers.forEach(unsub => unsub());
-    };
-  }, [tickets, user?.email, notificationPermission]);
 
   // Workaround for old iOS Safari: remove transforms while any textarea is focused
   useEffect(() => {
@@ -543,6 +413,20 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
     finally { setDeleting(false); setDeleteDialogOpen(null); }
   };
 
+  const handleToggleConfidential = async (ticketId: string, current: boolean) => {
+    try {
+      // optimistic update
+      setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, confidential: !current } : t));
+      await updateDoc(doc(db, 'tickets', ticketId), { confidential: !current });
+      toast.success(!current ? 'Switched to private' : 'Switched to public');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update confidentiality');
+      // rollback on error
+      setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, confidential: current } : t));
+    }
+  };
+
   // UI render helpers
   const RenderNode: React.FC<{ node: Message & { children: Message[] }, depth?: number, ticketId: string }> = ({ node, depth = 0, ticketId }) => {
     const [openReply, setOpenReply] = useState(false);
@@ -631,14 +515,23 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
       <Back
         blurBG
         fixed
-        title="Tickets"
-        extra={<div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button 
+        title={""}
+        extra={<div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
+          <div className="back-search" style={{ border: "", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", width: isDesktop ? 'calc(100vw - 80px)' : 'calc(100% - 24px)', maxWidth: isDesktop ? '1400px' : undefined, margin: '0 auto', borderRadius:"1rem" }}>
+          <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search tickets..." className="back-search-input" />
+          {searchQuery ? <button className="back-search-clear" onClick={() => setSearchQuery('')}>Clear</button> : null}
+          {hasTicketHandler && (
+            <button title={overrideDeleteEnabled ? 'Override delete: ON' : 'Override delete: OFF'} onClick={() => setOverrideDeleteEnabled(v => !v)} className="back-search-override">
+              <FileX size={16} />
+            </button>
+          )}
+        </div>
+          {/* <button 
             onClick={() => {
-              if (Notification.permission === 'granted') {
+              if ('Notification' in window && Notification.permission === 'granted') {
                 try {
                   const notif = new Notification('Test Notification', {
-                    body: 'This is a test notification to verify the system works!',
+                    body: 'This is a test notification! Your notification system is working. 🎉',
                     icon: '/favicon.ico'
                   });
                   console.log('✅ Test notification sent');
@@ -652,27 +545,22 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                 toast.error('Notification permission not granted');
               }
             }}
-            style={{ padding: '0.5rem', fontSize: '0.75rem', background: '#eef2ff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 6 }}
+            style={{ padding: '0.5rem', fontSize: '0.75rem', background: '#eef2ff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 6, cursor: 'pointer' }}
+            title="Test notifications"
           >
             Test 🔔
-          </button>
-          <RefreshButton onClick={() => { /* rely on snapshot */ }} fetchingData={loadingTickets} refreshCompleted={false} />
+          </button> */}
+
+          {/* <RefreshButton onClick={() => {} } fetchingData={loadingTickets} refreshCompleted={false} /> */}
+
         </div>}
       />
 
-      <div className="back-search-wrapper" style={{paddingTop:"1rem"}}>
-        <div className="back-search" style={{border:"", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)"}}>
-          <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search tickets..." className="back-search-input" />
-          {searchQuery ? <button className="back-search-clear" onClick={() => setSearchQuery('')}>Clear</button> : null}
-          {hasTicketHandler && (
-            <button title={overrideDeleteEnabled ? 'Override delete: ON' : 'Override delete: OFF'} onClick={() => setOverrideDeleteEnabled(v => !v)} className="back-search-override">
-              <FileX size={16} />
-            </button>
-          )}
-        </div>
+      <div className="back-search-wrapper" style={{paddingTop:"0.75rem"}}>
+        
       </div>
 
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: 24, paddingTop: '10.5rem' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: 24, paddingTop: '7rem' }}>
         {
           tickets && tickets.length > 0 && (
             <>
@@ -694,7 +582,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                 </EmptyHeader>
               </Empty>
               ) : loadingTickets ? (
-              <div style={{ display: 'flex', justifyContent: 'center',border:"", position:"absolute", width: '100%', height: '100%', left:0, top:0, alignItems:"center" }}><Loader2 className="animate-spin" /></div>
+              <div style={{ display: 'flex', justifyContent: 'center', border:"", position:"absolute", width: '100%', height: '100%', left:0, top:0, alignItems:"center" }}><Loader2 className="animate-spin" /></div>
             ) : (
               <div className={`tickets-fade ${ticketsFadeShow ? 'show' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: 12, border:"", paddingBottom:"6rem" }}>
                 {visibleTickets.map((t, idx) => {
@@ -722,10 +610,10 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                         <div style={{display:"flex", border:"", flex:1, minWidth:0, flexFlow:"column", gap:"0.25rem"}}>
                         <div style={{display:"flex", border:"", flex:1, justifyContent:"space-between", alignItems:"center",}}>
                             <div id="header-section" style={{display:"flex", border:" "}}>
-                                <button onClick={(e) => { e.stopPropagation(); setProfileDialogEmail(t.createdBy); }} style={{ width: 62, height: 62, borderRadius: 12, background: avatarColor(t.createdBy), color: 'white', border: 'none', fontWeight: 700 }}>
+                                <button onClick={(e) => { e.stopPropagation(); setProfileDialogEmail(t.createdBy); }} style={{ width: 65, height: 65, borderRadius: 12, background: avatarColor(t.createdBy), color: 'white', border: 'none', fontWeight: 700 }}>
                                        {<Ticket/>}
                                 </button>
-                                <div style={{display:"flex", flexFlow:"column", border:" ", minWidth:0, marginLeft:8}}>
+                                <div style={{display:"flex", flexFlow:"column", border:" ", minWidth:0, marginLeft:8, gap:"0.15rem"}}>
                                     <p style={{display:"flex", alignItems:"center", gap:"0.5rem", fontSize:"0.85rem", fontWeight:"600"}}>
                                         {t.id}
                                         
@@ -734,16 +622,27 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                                     <div style={{ fontSize: 12, color: 'darkblue', fontWeight:"500" }}>{t.createdBy} · <ReactTimeAgo timeStyle={"twitter"} date={getDate(t.createdAt)} /></div>
 
                                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+
                                       <div style={{ width:"fit-content",fontSize: 12, padding: '0.15rem 0.5rem', borderRadius: 999, background: t.status === 'open' ? '#fff1f2' : '#ecfdf5', color: t.status === 'open' ? '#dc2626' : '#059669', fontWeight: 600 }}>{t.status.toUpperCase()}</div>
+                                      
                                       <div style={{ textTransform:"capitalize",width:"fit-content",fontSize: 12, padding: '0.15rem 0.5rem', borderRadius: 999, background: (t.priority === 'High' ? '#fff1f2' : (t.priority === 'Low' ? '#ecfdf5' : '#eef2ff')), color: (t.priority === 'High' ? '#b91c1c' : (t.priority === 'Low' ? '#059669' : '#3730a3')), fontWeight: 600 }}>{(t.priority || 'Normal')}</div>
-                                      {t.confidential && (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 6 }}>
-                                          <div style={{ textTransform: 'none', width: 'fit-content', fontSize: 12, padding: '0.12rem 0.5rem', borderRadius: 999, color: '', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                            <LockKeyholeIcon size={15} />
-                                            
-                                          </div>
-                                        </div>
+
+                                      {(t.createdBy === user?.email || hasTicketHandler) && (
+                                        <button onClick={(e) => { e.stopPropagation(); handleToggleConfidential(t.id, !!t.confidential); }} title={t.confidential ? 'Private' : 'Public'} style={{ background: 'none', border: 'none', padding: "0.25rem", cursor: 'pointer', fontSize:12, color:"" }}>
+
+                                          {t.confidential ? 
+                                            <div style={{display:"flex", alignItems:"center", gap:"0.35rem"}}>
+                                              
+                                              <Lock size={14} />
+                                            </div> 
+                                          :
+                                           <div style={{display:"flex", alignItems:"center", gap:"0.35rem"}}>
+                                              <Globe size={14} />
+                                            </div>
+                                            }
+                                        </button>
                                       )}
+                                      
                                     </div>
                                 </div>
                                 
@@ -760,9 +659,11 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                             )}
                         </div>
                         
-                        <div style={{ marginTop: 6, color: '#374151', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', padding:"0.5rem" }}>
+                        <div style={{ marginTop: 6, color: '#374151', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', padding:"0.25rem" }}>
+                          
+                                      
                             <p style={{fontWeight:"500", marginBottom:"0.5rem", lineHeight:"1.25rem", fontSize:"1rem", textAlign:"left"}}>{highlightText(t.title || '', keywords)}</p>
-                            <p style={{fontSize:"1rem", textAlign:"left"}}>{highlightText(t.description || '', keywords)}</p>
+                            <p style={{fontSize:"1rem", textAlign:"left", fontWeight:"400"}}>{highlightText(t.description || '', keywords)}</p>
                             </div>
                             <br/>
                             <p  onClick={() => setSelectedTicket(expanded ? null : t)} style={{cursor: 'pointer',fontWeight:"600", fontSize:"0.9rem", display:"flex", alignItems:"center", gap:"0.5rem", color:"darkblue", marginLeft:"0.5rem"}}>{expanded?<ArrowUp size={15}/>:<ArrowDown size={15}/>} {expanded?"Hide Replies ":"Replies "} ({messageCounts[t.id] ?? 0})</p>
@@ -895,21 +796,27 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                           <SelectValue placeholder="Priority" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Low">Low</SelectItem>
-                          <SelectItem value="Normal">Normal</SelectItem>
-                          <SelectItem value="High">High</SelectItem>
-                          <SelectItem value="Critical">Critical</SelectItem>
+                          <SelectItem value="Low">Low Priority</SelectItem>
+                          <SelectItem value="Normal">Normal Priority</SelectItem>
+                          <SelectItem value="High">High Priority</SelectItem>
+                          <SelectItem value="Critical">Critical Priority</SelectItem>
                         </SelectContent>
                       </Select>
                       <button type="button" onClick={() => setNewTicket({ ...newTicket, confidential: !newTicket.confidential })} style={{ width: 140, flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem', borderRadius: 8, background: newTicket.confidential ? '#f3f4f6' : '#fff', border: '1px solid rgba(0,0,0,0.04)' }}>
                         {newTicket.confidential ? <LockKeyholeIcon size={14} /> : <Globe size={14} />}
-                        {newTicket.confidential ? 'Confidential' : 'Public'}
+                        {newTicket.confidential ? 'Private' : 'Public'}
                       </button>
                     </div>
                   </div>
                   
                   <textarea ref={newDescRef} placeholder="Description" value={newTicket.description} onChange={e => setNewTicket({ ...newTicket, description: e.target.value })} required style={{ padding: '1rem', minHeight: 140, width: '100%' }} />
-                  
+                  <div style={{display:"flex", padding:"0.5rem 1rem", gap:"0.75rem", fontSize:"0.8rem", fontWeight:"500", alignItems:"center" }}>
+                    <Info style={{color:"darkblue"}} size={35}/>
+                    <p style={{margin:0, color:"#333"}}>
+                      Public tickets are visible to all users, while private tickets are only visible to handlers and the IT Department.
+                    </p>
+                    
+                  </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                     <button type="button" onClick={() => { setShowNewModal(false); setNewTicket({ title: '', description: '', priority: 'Normal', confidential: false }); }} style={{ padding: 10, background: '#eee', border: 'none', flex: 1 }}>Cancel</button>
                     <button type="submit" disabled={sending} style={{ padding: 10, background: 'darkblue', color: 'white', border: 'none', flex: 1 }}>{sending ? 'Creating...' : 'Create'}</button>
@@ -924,7 +831,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                     <Ticket />
                   </button>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ fontSize: '1rem', fontWeight: 500 }}>Edit Ticket</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 600 }}>Edit Ticket</div>
                     <div style={{ fontSize: 12, color: 'darkblue', fontWeight: '500' }}>{editingTicket?.createdBy}</div>
                   </div>
                 </div>
@@ -947,15 +854,15 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                         <SelectValue placeholder="Priority" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Low">Low</SelectItem>
-                        <SelectItem value="Normal">Normal</SelectItem>
-                        <SelectItem value="High">High</SelectItem>
-                        <SelectItem value="Critical">Critical</SelectItem>
+                        <SelectItem value="Low">Low Priority</SelectItem>
+                        <SelectItem value="Normal">Normal Priority</SelectItem>
+                        <SelectItem value="High">High Priority</SelectItem>
+                        <SelectItem value="Critical">Critical Priority</SelectItem>
                       </SelectContent>
                     </Select>
                     <button type="button" onClick={() => setEditTicketData({ ...editTicketData, confidential: !editTicketData.confidential })} style={{ width: 140, flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem', borderRadius: 8, background: editTicketData.confidential ? '#f3f4f6' : '#fff', border: '1px solid rgba(0,0,0,0.04)' }}>
                       {editTicketData.confidential ? <LockKeyholeIcon size={14} /> : <Globe size={14} />}
-                      {editTicketData.confidential ? 'Confidential' : 'Public'}
+                      {editTicketData.confidential ? 'Private' : 'Public'}
                     </button>
                   </div>
                   
@@ -986,16 +893,21 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
           </div>
         </ResponsiveModal>
 
-        <Dialog open={!!closeDialogOpen} onOpenChange={(v) => !v && setCloseDialogOpen(null)}>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Close Ticket?</DialogTitle><DialogDescription>This will mark the thread as closed.</DialogDescription></DialogHeader>
-            <DialogFooter style={{ display: 'flex', }}>
-              <button onClick={async () => { if (!closeDialogOpen) return; try { await updateDoc(doc(db, 'tickets', closeDialogOpen), { status: 'closed' }); toast.success('Closed'); } catch (err) { console.error(err); toast.error('Failed to close ticket'); } finally { setCloseDialogOpen(null); } }} style={{ padding: 8, background: 'crimson', color: 'white', flex:1 }}>Close Thread</button>
-              <DialogClose  asChild><button style={{ padding: 8, background: '#eee', flex:1 }}>Cancel</button></DialogClose>
-              
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <ResponsiveModal title="Close Ticket?" open={!!closeDialogOpen} onOpenChange={(v) => !v && setCloseDialogOpen(null)} hideHeader>
+          <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 16 }}>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 18, fontWeight: 500 }}>Close Ticket?</div>
+              <div style={{ fontSize: 13, color: '#555' }}>This will mark the thread as closed and prevent further replies.</div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button type="button" onClick={() => setCloseDialogOpen(null)} disabled={closing} style={{ padding: 10, background: '#eee', border: 'none', flex: 1, opacity: closing ? 0.6 : 1 }}>Cancel</button>
+              <button type="button" disabled={closing} onClick={async () => { if (!closeDialogOpen) return; setClosing(true); try { await updateDoc(doc(db, 'tickets', closeDialogOpen), { status: 'closed' }); toast.success('Ticket closed'); } catch (err) { console.error(err); toast.error('Failed to close ticket'); } finally { setClosing(false); setCloseDialogOpen(null); } }} style={{ padding: 10, background: 'crimson', color: 'white', border: 'none', flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                {closing ? <Loader2 className="animate-spin" /> : 'Close Ticket'}
+              </button>
+            </div>
+          </div>
+        </ResponsiveModal>
 
         <Dialog open={!!profileDialogEmail} onOpenChange={(v) => !v && setProfileDialogEmail(null)}>
           <DialogContent><DialogHeader><DialogTitle>User</DialogTitle><DialogDescription>User info</DialogDescription></DialogHeader>

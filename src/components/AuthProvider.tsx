@@ -384,6 +384,108 @@ const AuthProvider = ({ children }: Props) => {
     };
   }, [user?.email, userData?.email]);
 
+  // Request notification permission once on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          console.log('✅ Notification permission granted');
+        }
+      }).catch(err => console.error('Notification permission error:', err));
+    }
+  }, []);
+
+  // Global notification listener for ticket replies
+  useEffect(() => {
+    if (!user?.email || typeof window === 'undefined') return;
+    if ('Notification' in window && Notification.permission !== 'granted') return;
+
+    const unsubscribers: (() => void)[] = [];
+    let mounted = true;
+
+    const setupTicketNotifications = async () => {
+      try {
+        const { getFirebaseDb } = await import("@/firebase");
+        const { collection, query, where, getDocs, onSnapshot, orderBy } = await import("firebase/firestore");
+
+        const db = getFirebaseDb();
+        
+        // Get all tickets created by current user
+        const ticketsQuery = query(
+          collection(db, "tickets"),
+          where("createdBy", "==", user.email)
+        );
+        
+        const ticketsSnapshot = await getDocs(ticketsQuery);
+        const userTickets = ticketsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        console.log(`🔔 Global notification listener: monitoring ${userTickets.length} tickets`);
+
+        userTickets.forEach((ticket: any) => {
+          const messagesQuery = query(
+            collection(db, `tickets/${ticket.id}/messages`),
+            orderBy('createdAt', 'desc')
+          );
+
+          let isFirstSnapshot = true;
+
+          const unsub = onSnapshot(messagesQuery, (snap) => {
+            // Skip first snapshot (existing messages)
+            if (isFirstSnapshot) {
+              isFirstSnapshot = false;
+              return;
+            }
+
+            if (!mounted) return;
+
+            snap.docChanges().forEach(change => {
+              if (change.type === 'added') {
+                const message = change.doc.data();
+                
+                // Only notify if message is from someone else
+                if (message.createdBy !== user.email) {
+                  try {
+                    const notification = new Notification('New Reply to Your Ticket', {
+                      body: `${message.createdBy} replied: ${message.text?.substring(0, 100)}${message.text && message.text.length > 100 ? '...' : ''}`,
+                      icon: '/favicon.ico',
+                      tag: `ticket-${ticket.id}`,
+                      requireInteraction: false,
+                      silent: false
+                    });
+
+                    console.log('✅ Notification shown:', message.createdBy);
+
+                    notification.onclick = () => {
+                      window.focus();
+                      // Navigate to tickets page
+                      window.location.href = '/tickets';
+                      notification.close();
+                    };
+
+                    setTimeout(() => notification.close(), 6000);
+                  } catch (err) {
+                    console.error('Failed to show notification:', err);
+                  }
+                }
+              }
+            });
+          });
+
+          unsubscribers.push(unsub);
+        });
+      } catch (error) {
+        console.error('Failed to set up ticket notifications:', error);
+      }
+    };
+
+    setupTicketNotifications();
+
+    return () => {
+      mounted = false;
+      unsubscribers.forEach(unsub => unsub());
+    };
+  }, [user?.email]);
+
   // Listen for realtime changes to the current user's Firestore document
   // so that clearance/role/permissions update without requiring re-login.
   useEffect(() => {

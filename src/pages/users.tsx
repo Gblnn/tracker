@@ -1159,8 +1159,10 @@ export default function Users() {
         onOpenChange={setClearanceDrawerOpen}
         title=""
         description=""
+        hideHeader={true}
+        contentStyle={isMobile ? { padding: "1rem" } : { padding: "1.5rem" }}
       >
-        <div style={{ padding: "1.5rem", width: "100%", boxSizing: "border-box" }}>
+        <div style={{ width: "100%", boxSizing: "border-box" }}>
           <ModuleClearanceContent
             modulePermissions={modulePermissions}
             onToggleModule={toggleModulePermission}
@@ -1278,8 +1280,10 @@ export default function Users() {
         onOpenChange={setCreateUserClearanceDrawerOpen}
         title=""
         description=""
+        hideHeader={true}
+        contentStyle={isMobile ? { padding: "0.75rem" } : undefined}
       >
-        <div style={{ padding: "1.5rem", width: "100%", boxSizing: "border-box" }}>
+        <div style={{ padding: "0.25rem", width: "100%", boxSizing: "border-box" }}>
           <ModuleClearanceContent
             modulePermissions={createUserModulePermissions}
             onToggleModule={toggleCreateUserModulePermission}
