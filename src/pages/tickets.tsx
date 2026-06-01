@@ -183,6 +183,8 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
     if (userTickets.length === 0) return;
 
     const unsubscribers: (() => void)[] = [];
+    const listenerStartTime = Date.now();
+    console.log('🕐 Listener start time:', new Date(listenerStartTime).toISOString());
 
     userTickets.forEach(ticket => {
       console.log(`📡 Attaching listener to ticket: ${ticket.id}`);
@@ -191,8 +193,18 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
         orderBy('createdAt', 'desc')
       );
 
+      let isFirstSnapshot = true;
+
       const unsub = onSnapshot(q, (snap) => {
-        console.log(`🔔 Snapshot event received for ticket ${ticket.id}, changes: ${snap.docChanges().length}`);
+        console.log(`🔔 Snapshot event received for ticket ${ticket.id}, changes: ${snap.docChanges().length}, isFirst: ${isFirstSnapshot}`);
+        
+        // Skip the first snapshot (contains all existing messages)
+        if (isFirstSnapshot) {
+          console.log('⏭️ Skipping first snapshot (initial load)');
+          isFirstSnapshot = false;
+          return;
+        }
+
         snap.docChanges().forEach(change => {
           if (change.type === 'added') {
             const message = change.doc.data();
@@ -204,41 +216,36 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
             
             // Only notify if message is from someone else
             if (message.createdBy !== user.email) {
-              const now = Date.now();
               const messageTime = message.createdAt?.toMillis?.() || 0;
-              const timeDiff = now - messageTime;
+              const timeSinceListenerStart = Date.now() - listenerStartTime;
               
-              console.log('Message time diff:', timeDiff, 'ms');
+              console.log('Message created:', new Date(messageTime).toISOString());
+              console.log('Time since listener started:', timeSinceListenerStart, 'ms');
               
-              // Increased window to 10 seconds to handle server delays
-              if (timeDiff < 10000) {
-                console.log('Showing notification...');
-                // Show notification
-                try {
-                  const notification = new Notification('New Reply to Your Ticket', {
-                    body: `${message.createdBy} replied: ${message.text.substring(0, 100)}${message.text.length > 100 ? '...' : ''}`,
-                    icon: '/favicon.ico',
-                    badge: '/favicon.ico',
-                    tag: `ticket-${ticket.id}`,
-                    requireInteraction: false,
-                    silent: false
-                  });
+              // Show notification for any message from someone else (they should all be new after first snapshot)
+              console.log('✅ Showing notification for new reply...');
+              try {
+                const notification = new Notification('New Reply to Your Ticket', {
+                  body: `${message.createdBy} replied: ${message.text.substring(0, 100)}${message.text.length > 100 ? '...' : ''}`,
+                  icon: '/favicon.ico',
+                  badge: '/favicon.ico',
+                  tag: `ticket-${ticket.id}`,
+                  requireInteraction: false,
+                  silent: false
+                });
 
-                  console.log('✅ Notification shown successfully');
+                console.log('✅ Notification shown successfully');
 
-                  notification.onclick = () => {
-                    window.focus();
-                    setSelectedTicket(ticket);
-                    notification.close();
-                  };
+                notification.onclick = () => {
+                  window.focus();
+                  setSelectedTicket(ticket);
+                  notification.close();
+                };
 
-                  // Auto-close after 6 seconds
-                  setTimeout(() => notification.close(), 6000);
-                } catch (err) {
-                  console.error('❌ Failed to show notification:', err);
-                }
-              } else {
-                console.log('Message too old, skipping notification');
+                // Auto-close after 6 seconds
+                setTimeout(() => notification.close(), 6000);
+              } catch (err) {
+                console.error('❌ Failed to show notification:', err);
               }
             } else {
               console.log('Message from current user, skipping notification');
