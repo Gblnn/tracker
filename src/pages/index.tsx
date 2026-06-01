@@ -61,6 +61,14 @@ export default function Index() {
   const { addProcess, updateProcess } = useBackgroundProcess();
   const [openTicketsCount, setOpenTicketsCount] = useState<number | null>(null);
 
+  const hasTicketHandler = (() => {
+    try {
+      const c = userData?.clearance || '{}';
+      const parsed = typeof c === 'string' ? JSON.parse(c) : c;
+      return !!parsed?.tickets_handler;
+    } catch (e) { return false; }
+  })();
+
   useEffect(() => {
     // listen for open tickets count
     try {
@@ -274,7 +282,7 @@ export default function Index() {
           fixed
           editMode={userData?.editor===true? true : false}
             title="Starboard"
-            subtitle={"1.25"}
+            subtitle={"1.26"}
             icon={<img src="/stardox-bg.png" style={{width:"2rem"}} alt="Starboard" />}
             noback
             extra={
@@ -524,7 +532,7 @@ export default function Index() {
                                 description="Report Issues and track resolutions"
                                 icon={<Ticket width="2.5rem" />}
                                 onClick={() => authenticateModule('tickets', '/tickets', 'Tickets')}
-                                badge={openTicketsCount !== null && openTicketsCount > 0 ? openTicketsCount : undefined}
+                                badge={hasTicketHandler && openTicketsCount !== null && openTicketsCount > 0 ? openTicketsCount : undefined}
                               />
               )}
 

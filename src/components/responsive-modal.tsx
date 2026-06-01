@@ -74,7 +74,7 @@ export function ResponsiveModal({
         <DrawerContent style={mobileContentStyle}>
           {!hideHeader && (title || description) && (
             <div style={{ padding: "0.5rem 1rem", textAlign: "left", width: "100%", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
-              {title && <DrawerTitle style={{ padding: "0.5rem 0" }}>{title}</DrawerTitle>}
+              {title && <DrawerTitle style={{ padding: "0.5rem 0", fontWeight:"500" }}>{title}</DrawerTitle>}
               {description && <DrawerDescription style={{ padding: "0.5rem 0" }}>{description}</DrawerDescription>}
             </div>
           )}
