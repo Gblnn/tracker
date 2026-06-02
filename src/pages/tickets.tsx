@@ -615,7 +615,7 @@ export default function Tickets() {
             
             </div>
             <div style={{ height: "0.5rem" }}/>
-            <div style={{ marginTop: 6, fontSize: "0.9rem", textAlign:"left" }}>
+            <div style={{ marginTop: 6, fontSize: "0.95rem", textAlign:"left" }}>
               <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(node.text || '') }} />
             </div>
             
