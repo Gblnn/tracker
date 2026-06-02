@@ -44,6 +44,106 @@ interface Message {
   parentId?: string | null;
 }
 
+// Small rich text field using contentEditable. Keeps a minimal API: controlled HTML string.
+const RichTextField: React.FC<{ value: string; onChange: (html: string) => void; placeholder?: string; minHeight?: number; style?: React.CSSProperties }> = ({ value, onChange, placeholder, minHeight = 100, style }) => {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    // avoid moving caret when possible: only update if different
+    if ((ref.current.innerHTML || '') !== (value || '')) {
+      ref.current.innerHTML = value || '';
+    }
+  }, [value]);
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <div
+        ref={ref}
+        contentEditable
+        role="textbox"
+        suppressContentEditableWarning
+        onInput={(e) => onChange((e.target as HTMLDivElement).innerHTML)}
+        style={{
+          minHeight,
+          padding: '0.5rem',
+          outline: 'none',
+          borderRadius: 8,
+          background: 'rgba(100 100 100 / 10%)',
+          width: '100%',
+          boxSizing: 'border-box',
+          ...style,
+        }}
+      />
+      {!value && placeholder ? (
+        <div style={{ position: 'absolute', left: 12, top: 8, color: '#9ca3af', pointerEvents: 'none', fontSize: '1rem' }}>{placeholder}</div>
+      ) : null}
+    </div>
+  );
+};
+
+// Top-level composer component - defined outside to prevent recreation on every render
+const TopLevelComposer: React.FC<{ posting: boolean, text: string, onTextChange: (text: string) => void, onPost: (text: string) => Promise<boolean>, onCancel?: () => void }> = ({ posting, text, onTextChange, onPost, onCancel }) => {
+  return (
+    <form onSubmit={async (e) => { e.preventDefault(); if (!text.trim()) return; const ok = await onPost(text); if (ok) onTextChange(''); }} style={{ display: 'flex', gap: 8, flexFlow: 'column', width: '100%' }}>
+      <RichTextField value={text} onChange={onTextChange} placeholder="Reply to this thread" minHeight={120} />
+        <div style={{ display: 'flex', justifyContent: '', gap: 8 }}>
+          {onCancel ? (
+            <>
+              <button type="button" onClick={() => { onTextChange(''); onCancel && onCancel(); }} style={{ padding: "0.5rem 1.5rem", background: '#eee', border: 'none', borderRadius: 8, flex:1 }}>Cancel</button>
+              <button type="submit" disabled={posting || !text.trim()} style={{ padding: "0.5rem 1.5rem", background: '', color: '', border: 'none', borderRadius: 8, flex:1 }}>{posting ? 'Posting...' : 'Post'}{posting ? <Loader2 className="animate-spin" size={14} /> : <Send size={15}/>}</button>
+            </>
+          ) : (
+            <button type="submit" disabled={posting || !text.trim()} style={{ padding: "0.5rem 1.5rem", flex:1, width:"fit-content", cursor: posting || !text.trim() ? 'not-allowed' : 'pointer' }}>{posting ? <><Loader2 className="animate-spin" size={14} /> Posting...</> : <><Reply size={15}/> Reply</>}</button>
+          )}
+        </div>
+    </form>
+  );
+};
+
+// Minimal sanitizer: whitelist basic tags and remove attributes (except safe href on anchors).
+const sanitizeHtml = (html: string) => {
+  if (!html) return '';
+  try {
+    const doc = typeof window !== 'undefined' ? new DOMParser().parseFromString(html, 'text/html') : null;
+    if (!doc) return '';
+    const allowed = new Set(['b','strong','i','em','u','a','p','br','ul','ol','li','div','span']);
+    const walk = (root: Element) => {
+      const children = Array.from(root.children);
+      for (const child of children) {
+        const tag = child.tagName.toLowerCase();
+        if (!allowed.has(tag)) {
+          // unwrap the node
+          const parent = child.parentNode;
+          if (parent) {
+            while (child.firstChild) parent.insertBefore(child.firstChild, child);
+            parent.removeChild(child);
+          } else {
+            child.remove();
+          }
+        } else {
+          // strip attributes except safe href on anchors
+          const attrs = Array.from(child.attributes);
+          for (const attr of attrs) {
+            if (tag === 'a' && attr.name === 'href') {
+              const v = attr.value.trim();
+              if (!/^https?:\/\//.test(v) && !/^mailto:/.test(v) && !/^\//.test(v) && !/^#/.test(v)) {
+                child.removeAttribute(attr.name);
+              }
+            } else {
+              child.removeAttribute(attr.name);
+            }
+          }
+          walk(child);
+        }
+      }
+    };
+    walk(doc.body);
+    return doc.body.innerHTML;
+  } catch (e) {
+    return '';
+  }
+};
+
 export default function Tickets() {
   const { userData } = useAuth();
   const user = auth.currentUser;
@@ -88,38 +188,21 @@ export default function Tickets() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-// Top-level composer placed above return so its props type is known at usage
-const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => Promise<void>, onCancel?: () => void }> = ({ posting, onPost, onCancel }) => {
-  const [text, setText] = useState("");
-  return (
-    <form onSubmit={async (e) => { e.preventDefault(); if (!text.trim()) return; await onPost(text); setText(''); }} style={{ display: 'flex', gap: 8, flexFlow: 'column', width: '100%' }}>
-      <textarea value={text} rows={5} onChange={e => setText(e.target.value)} placeholder="Reply to this thread" style={{ display: 'block', flex: '1 1 auto', width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0.75rem 0.95rem', fontSize: '1rem', alignSelf: 'stretch', maxWidth: '100%', background:"rgba(100 100 100/ 10%)" }} />
-        <div style={{ display: 'flex', justifyContent: '', gap: 8 }}>
-          {onCancel ? (
-            <>
-              <button type="button" onClick={() => { setText(''); onCancel && onCancel(); }} style={{ padding: "0.5rem 1.5rem", background: '#eee', border: 'none', borderRadius: 8, flex:1 }}>Cancel</button>
-              <button type="submit" disabled={posting || !text.trim()} style={{ padding: "0.5rem 1.5rem", background: '', color: '', border: 'none', borderRadius: 8, flex:1 }}>{posting ? 'Posting...' : 'Post'}<Send size={15}/></button>
-            </>
-          ) : (
-            <button type="submit" disabled={posting || !text.trim()} style={{ padding: "0.5rem 1.5rem", flex:1, width:"fit-content", cursor: posting || !text.trim() ? 'not-allowed' : 'pointer' }}><Reply size={15}/>{posting ? 'Posting...' : 'Reply'}</button>
-          )}
-        </div>
-    </form>
-  );
-};
-
   const openOrScrollNewCard = () => {
     setShowNewModal(true);
   };
   const [sending, setSending] = useState(false);
   const [topComposerOpen, setTopComposerOpen] = useState<Record<string, boolean>>({});
   const [composerClosing, setComposerClosing] = useState<Record<string, boolean>>({});
+  const [draftTexts, setDraftTexts] = useState<Record<string, string>>({});
+  // removed optimistic pending messages: we will not render replies until server confirms
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
   const [closeDialogOpen, setCloseDialogOpen] = useState<string | null>(null);
   const [profileDialogEmail, setProfileDialogEmail] = useState<string | null>(null);
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
   const [editTicketData, setEditTicketData] = useState({ title: '', description: '', priority: 'Normal', confidential: false });
   const [editingMessage, setEditingMessage] = useState<{ id: string; text: string; ticketId: string } | null>(null);
+  const [ticketCreators, setTicketCreators] = useState<Record<string, string>>({});
 
   // helper: build message tree (roots array) from flat messages
 
@@ -176,17 +259,21 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
     setMessagesLoading(true);
     const q = query(collection(db, `tickets/${selectedTicket.id}/messages`), orderBy("createdAt", "asc"));
     const unsub = onSnapshot(q, (snap) => {
-      const msgs: Message[] = snap.docs.map(d => {
-        const data = d.data();
-        // normalize parentId to string or null
-        const rawParent = (data as any).parentId;
-        let parentId: string | null = null;
-        if (rawParent) {
-          if (typeof rawParent === 'string') parentId = rawParent;
-          else if ((rawParent as any).id) parentId = (rawParent as any).id;
-        }
-        return { id: d.id, ...(data as any), parentId } as Message;
-      });
+      // ignore documents that are local pending writes; this prevents local cached writes
+      // from briefly appearing out of order before the server timestamp is assigned.
+      const msgs: Message[] = snap.docs
+        .filter(d => !(d.metadata && (d.metadata as any).hasPendingWrites))
+        .map(d => {
+          const data = d.data();
+          // normalize parentId to string or null
+          const rawParent = (data as any).parentId;
+          let parentId: string | null = null;
+          if (rawParent) {
+            if (typeof rawParent === 'string') parentId = rawParent;
+            else if ((rawParent as any).id) parentId = (rawParent as any).id;
+          }
+          return { id: d.id, ...(data as any), parentId } as Message;
+        });
       setMessages(msgs);
       setMessagesLoading(false);
     }, (err) => { console.error(err); setMessagesLoading(false); });
@@ -225,6 +312,40 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
     return () => { mounted = false; };
   }, [messages]);
 
+  // fetch display names for ticket creators so we can show their name instead of email when available
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const emails = Array.from(new Set([
+          ...tickets.map(t => t.createdBy).filter(Boolean),
+          ...messages.map(m => m.createdBy).filter(Boolean),
+        ]));
+        if (emails.length === 0) {
+          if (mounted) setTicketCreators({});
+          return;
+        }
+        const map: Record<string, string> = {};
+        await Promise.all(emails.map(async (email) => {
+          try {
+            const q = query(collection(db, 'users'), where('email', '==', email));
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+              const data = snap.docs[0].data() as any;
+              map[email] = data.name || data.displayName || data.fullName || email;
+            } else {
+              map[email] = email;
+            }
+          } catch (e) {
+            map[email] = email;
+          }
+        }));
+        if (mounted) setTicketCreators(map);
+      } catch (e) { /* ignore */ }
+    })();
+    return () => { mounted = false; };
+  }, [tickets, messages]);
+
   // fetch message counts for each ticket (uses aggregation count API)
   useEffect(() => {
     if (!tickets || tickets.length === 0) return;
@@ -252,10 +373,10 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
 
   // helper: build message tree (roots array) from flat messages
   const messageRoots = useMemo(() => {
+    // Build tree only from server messages. We will not render optimistic pending messages.
     const byId = new Map<string, Message & { children: Message[] }>();
     messages.forEach(m => byId.set(m.id, { ...m, children: [] }));
     const roots: (Message & { children: Message[] })[] = [];
-    // ensure chronological order
     const sorted = Array.from(byId.values()).sort((a, b) => {
       const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (typeof a.createdAt === 'number' ? a.createdAt : new Date(a.createdAt).getTime());
       const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (typeof b.createdAt === 'number' ? b.createdAt : new Date(b.createdAt).getTime());
@@ -269,7 +390,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
       }
     });
     return roots;
-  }, [messages]);
+  }, [messages, selectedTicket]);
 
   // filter tickets based on confidentiality and handler permission
   const [searchQuery, setSearchQuery] = useState('');
@@ -361,12 +482,12 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
 
   // no per-item JS stagger; CSS handles stagger via --i custom property
 
-  // post message with explicit string parentId (or null)
-  const postMessage = async (ticketId: string, text: string, parentId?: string | null) => {
-    if (!text?.trim() || !user) return;
+  // post: do not append anything locally until server confirms. Return boolean success.
+  const postMessage = async (ticketId: string, text: string, parentId?: string | null): Promise<boolean> => {
+    if (!text?.trim() || !user) return false;
     setSending(true);
     try {
-      // always store parentId as plain string or null
+      // store on server
       await addDoc(collection(db, `tickets/${ticketId}/messages`), {
         text: text.trim(),
         createdBy: user.email,
@@ -377,9 +498,14 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
       await updateDoc(doc(db, "tickets", ticketId), { lastMessage: text.trim(), lastMessageAt: serverTimestamp() });
       // optimistically update message count for the ticket
       setMessageCounts(prev => ({ ...prev, [ticketId]: (prev[ticketId] || 0) + 1 }));
-      // Notifications feature removed: do not create notification documents.
+
+      // Do not append locally; rely on Firestore snapshot (ordered by server timestamp)
+
+      return true;
     } catch (err) {
-      console.error(err); toast.error("Failed to post message");
+      console.error(err);
+      toast.error("Failed to post message");
+      return false;
     } finally { setSending(false); }
   };
 
@@ -436,6 +562,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
     const [openReply, setOpenReply] = useState(false);
     const [text, setText] = useState("");
     const [collapsed, setCollapsed] = useState(false);
+    const [replyClosing, setReplyClosing] = useState(false);
     return (
       <div style={{ marginLeft: depth * 16, padding: "8px 0", }}>
         <div style={{ display: 'flex', gap: 8}}>
@@ -445,19 +572,20 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
           <div style={{ flex: 1 , border:"", padding:"0.5rem" }}>
 
             <div style={{display:"flex", gap: 8, alignItems:"center"}}>
-              <div style={{ width: 32, height: 32, borderRadius: "50%", background: avatarColor(node.createdBy), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{node.createdBy ? node.createdBy.split('@')[0].slice(0,2).toUpperCase() : 'U'}</div>
+              <div style={{ width: 38, height: 38, borderRadius: "50%", background: avatarColor(node.createdBy), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{(() => { const dn = ticketCreators[node.createdBy] || node.createdBy || 'U'; const parts = dn.split(/\s+/).filter(Boolean); const initials = parts.length === 1 ? parts[0].slice(0,2) : (parts[0][0] + (parts[1][0]||'')).slice(0,2); return (initials || 'U').toUpperCase(); })()}</div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>{node.createdBy}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ fontSize: "1rem", fontWeight: 600 }}>{ticketCreators[node.createdBy] || (node.createdBy && node.createdBy.split('@')[0])}</div>
                   {replyIsHandler[node.createdBy] && (
-                    <div style={{ fontSize: "0.8rem", padding: '0.12rem 0.5rem', borderRadius: 6, background: '#eef2ff', color: '#3730a3', fontWeight: 600 }}>Handler</div>
+                    <div style={{ fontSize: "0.76rem", padding: '0.06rem 0.32rem', borderRadius: 6, background: '#eef2ff', color: '#3730a3', fontWeight: 600, marginLeft: 4 }}>Handler</div>
                   )}
                 </div>
-                <div style={{fontSize:"0.7rem", fontWeight:"500", color: '#666' }}>
-                  <ReactTimeAgo timeStyle={"twitter"} date={getDate(node.createdAt)} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                  <div style={{ fontSize: '0.75rem', color: '#666' }}>{node.createdBy}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#666' }}>·</div>
+                  <div style={{ fontSize: '0.75rem', color: '#666' }}><ReactTimeAgo timeStyle={"twitter"} date={getDate(node.createdAt)} /></div>
                 </div>
-              
-            </div>
+              </div>
             
 
             {(() => {
@@ -486,7 +614,10 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
               )()}
             
             </div>
-            <div style={{ marginTop: 6, fontSize: "1rem", textAlign:"left" }}>{node.text}</div>
+            <div style={{ height: "0.5rem" }}/>
+            <div style={{ marginTop: 6, fontSize: "0.9rem", textAlign:"left" }}>
+              <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(node.text || '') }} />
+            </div>
             
             <div style={{ marginTop: 8 }}>
               
@@ -495,11 +626,11 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
               )}
             </div>
             {openReply && (
-              <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-                <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Reply..." style={{ flex: 1, minHeight: 64, padding: 8 }} />
+              <div className={replyClosing ? 'composer-animate-out' : 'composer-animate-in'} style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                <RichTextField value={text} onChange={setText} placeholder="Reply..." minHeight={64} style={{ padding: 8 }} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <button onClick={async () => { if (!text.trim()) return; await postMessage(ticketId, text, node.id); setText(''); setOpenReply(false); }} disabled={sending || !text.trim()} style={{ padding: '0.5rem 0.8rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: 8 }}>Post</button>
-                  <button onClick={() => { setOpenReply(false); setText(''); }} style={{ padding: '0.4rem 0.6rem', background: '#eee', border: 'none', borderRadius: 8 }}>Cancel</button>
+                  <button onClick={async () => { if (!text.trim()) return; const payload = text; const ok = await postMessage(ticketId, payload, node.id); if (ok) { setText(''); setReplyClosing(true); setTimeout(() => { setOpenReply(false); setReplyClosing(false); }, 180); } }} disabled={sending || !text.trim()} style={{ padding: '0.5rem 0.8rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: 8 }}>{sending ? <><Loader2 className="animate-spin" size={14} /> </> : 'Post'}</button>
+                  <button onClick={() => { setReplyClosing(true); setTimeout(() => { setOpenReply(false); setReplyClosing(false); setText(''); }, 180); }} style={{ padding: '0.4rem 0.6rem', background: '#eee', border: 'none', borderRadius: 8 }}>Cancel</button>
                 </div>
               </div>
             )}
@@ -580,7 +711,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
         {visibleTickets.length === 0 && !loadingTickets ? (
               <Empty style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
                   <EmptyHeader>
-                  <EmptyMedia variant="icon"><Ticket size={36} /></EmptyMedia>
+                  <EmptyMedia variant="icon"><Ticket color="darkblue" size={36} /></EmptyMedia>
                   <EmptyTitle>No Tickets</EmptyTitle>
                   <EmptyDescription>Create a new ticket to start a thread.</EmptyDescription>
                 </EmptyHeader>
@@ -618,12 +749,11 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                                        {<Ticket/>}
                                 </button>
                                 <div style={{display:"flex", flexFlow:"column", border:" ", minWidth:0, marginLeft:8, gap:"0.15rem"}}>
-                                    <p style={{display:"flex", alignItems:"center", gap:"0.5rem", fontSize:"0.85rem", fontWeight:"600"}}>
-                                        {t.id}
-                                        
+                                    <p style={{display:"flex", alignItems:"center", gap:"0.25rem", fontSize:"1rem", fontWeight:"600", padding:0, border:""}}>
+                                        {ticketCreators[t.createdBy]||t.id}
                                     </p>
                                     
-                                    <div style={{ fontSize: 12, color: 'darkblue', fontWeight:"500" }}>{t.createdBy} · <ReactTimeAgo timeStyle={"twitter"} date={getDate(t.createdAt)} /></div>
+                                    <div style={{ fontSize: 12, color: 'darkblue', fontWeight:"500" }}>{ t.createdBy} · <ReactTimeAgo timeStyle={"twitter"} date={getDate(t.createdAt)} /></div>
 
                                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
 
@@ -631,20 +761,22 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                                       
                                       <div style={{ textTransform:"capitalize",width:"fit-content",fontSize: 12, padding: '0.15rem 0.5rem', borderRadius: 999, background: (t.priority === 'High' ? '#fff1f2' : (t.priority === 'Low' ? '#ecfdf5' : '#eef2ff')), color: (t.priority === 'High' ? '#b91c1c' : (t.priority === 'Low' ? '#059669' : '#3730a3')), fontWeight: 600 }}>{(t.priority || 'Normal')}</div>
 
-                                      {(t.createdBy === user?.email || hasTicketHandler) && (
+                                      {(t.createdBy === user?.email || hasTicketHandler) ? (
                                         <button onClick={(e) => { e.stopPropagation(); handleToggleConfidential(t.id, !!t.confidential); }} title={t.confidential ? 'Private' : 'Public'} style={{ background: 'none', border: 'none', padding: "0.25rem", cursor: 'pointer', fontSize:12, color:"" }}>
-
-                                          {t.confidential ? 
+                                          {t.confidential ? (
                                             <div style={{display:"flex", alignItems:"center", gap:"0.35rem"}}>
-                                              
                                               <Lock size={14} />
-                                            </div> 
-                                          :
-                                           <div style={{display:"flex", alignItems:"center", gap:"0.35rem"}}>
+                                            </div>
+                                          ) : (
+                                            <div style={{display:"flex", alignItems:"center", gap:"0.35rem"}}>
                                               <Globe size={14} />
                                             </div>
-                                            }
+                                          )}
                                         </button>
+                                      ) : (
+                                        <div title={t.confidential ? 'Private' : 'Public'} style={{ padding: "0.25rem", fontSize: 12, color: "", opacity: 0.8, display: 'inline-flex', alignItems: 'center' }}>
+                                          {t.confidential ? <Lock size={14} /> : <Globe size={14} />}
+                                        </div>
                                       )}
                                       
                                     </div>
@@ -693,7 +825,31 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                                   <button onClick={(e) => { e.stopPropagation(); setTopComposerOpen(prev => ({ ...prev, [t.id]: true })); }} style={{ padding: "0.5rem 1rem", background: '', color: '', border: 'none', borderRadius: 8, flex:1 }}><Reply size={15}/>Reply</button>
                                 ) : (
                                   <div className={composerClosing[t.id] ? "composer-animate-out" : "composer-animate-in"}>
-                                    <TopLevelComposer posting={sending} onPost={async (text: string) => { await postMessage(t.id, text, null); setTopComposerOpen(prev => ({ ...prev, [t.id]: false })); }} onCancel={() => { setComposerClosing(prev => ({ ...prev, [t.id]: true })); setTimeout(() => { setTopComposerOpen(prev => ({ ...prev, [t.id]: false })); setComposerClosing(prev => ({ ...prev, [t.id]: false })); }, 180); }} />
+                                    <TopLevelComposer 
+                                      posting={sending} 
+                                      text={draftTexts[t.id] || ''}
+                                      onTextChange={(newText) => setDraftTexts(prev => ({ ...prev, [t.id]: newText }))}
+                                      onPost={async (text: string) => { 
+                                        // do not clear draft until post completes; show loader on button
+                                        const ok = await postMessage(t.id, text, null);
+                                        if (ok) {
+                                          setComposerClosing(prev => ({ ...prev, [t.id]: true }));
+                                          await new Promise(res => setTimeout(res, 180));
+                                          setComposerClosing(prev => ({ ...prev, [t.id]: false }));
+                                          setTopComposerOpen(prev => ({ ...prev, [t.id]: false }));
+                                          return true;
+                                        }
+                                        return false;
+                                      }} 
+                                      onCancel={() => { 
+                                        setDraftTexts(prev => ({ ...prev, [t.id]: '' }));
+                                        setComposerClosing(prev => ({ ...prev, [t.id]: true })); 
+                                        setTimeout(() => { 
+                                          setTopComposerOpen(prev => ({ ...prev, [t.id]: false })); 
+                                          setComposerClosing(prev => ({ ...prev, [t.id]: false })); 
+                                        }, 180); 
+                                      }} 
+                                    />
                                   </div>
                                 )}
 
@@ -722,7 +878,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                                         {t.title}
                                     </div>
 
-                                <div style={{ fontSize: 12, color: '#6b7280' }}>{t.createdBy} · <ReactTimeAgo timeStyle={"twitter"} date={getDate(t.createdAt)} /></div>
+                                <div style={{ fontSize: 12, color: '#6b7280' }}>{ticketCreators[t.createdBy] || t.createdBy} · <ReactTimeAgo timeStyle={"twitter"} date={getDate(t.createdAt)} /></div>
                                 <div style={{ width:"fit-content",fontSize: 12, padding: '0.15rem 0.5rem', borderRadius: 999, background: t.status === 'open' ? '#ecfdf5' : '#fff1f2', color: t.status === 'open' ? '#059669' : '#dc2626', fontWeight: 700 }}>{t.status}</div>
                                 </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, border:"solid blue" }}>
@@ -757,8 +913,8 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
 
             <ResponsiveModal title="Edit Reply" open={!!editingMessage} onOpenChange={(v) => !v && setEditingMessage(null)} hideHeader>
               <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 16 }}>
-                <h3 style={{ margin: 0, marginBottom: 8 }}>Edit Reply</h3>
-                <textarea value={editingMessage?.text || ''} onChange={e => setEditingMessage(editingMessage ? { ...editingMessage, text: e.target.value } : null)} style={{ minHeight: 160, padding: 8 }} />
+                <h3 style={{ margin: 0, marginBottom: 8, fontWeight: 600, display:"flex", alignItems:"center", gap:"0.25rem" }}><Reply size={18}/>Edit Reply</h3>
+                <RichTextField value={editingMessage?.text || ''} onChange={(html) => setEditingMessage(editingMessage ? { ...editingMessage, text: html } : null)} minHeight={160} style={{ padding: 8 }} />
                 <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                   <button onClick={() => setEditingMessage(null)} style={{ flex: 1, padding: 10, background: '#eee', border: 'none' }}>Cancel</button>
                   <button onClick={async () => { if (!editingMessage) return; try { await updateDoc(doc(db, 'tickets', editingMessage.ticketId, 'messages', editingMessage.id), { text: editingMessage.text, editedAt: serverTimestamp() }); toast.success('Reply updated'); setEditingMessage(null); } catch (err) { console.error(err); toast.error('Failed to update reply'); } }} style={{ flex: 1, padding: 10, background: 'darkblue', color: 'white', border: 'none' }}>Save</button>
@@ -787,6 +943,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                       <SelectContent style={{ fontSize: '1rem' }}>
                         <SelectItem value="Request for software installation">Request for software installation</SelectItem>
                         <SelectItem value="Request for Printer support">Request for Printer support</SelectItem>
+                        <SelectItem value="Request for Troubleshooting">Request for Troubleshooting</SelectItem>
                         <SelectItem value="Request for Technical support">Request for Technical support</SelectItem>
                         {/* <SelectItem value="Request for debugging">Request for debugging</SelectItem> */}
                         <SelectItem value="Feature request">Feature request</SelectItem>
@@ -814,7 +971,7 @@ const TopLevelComposer: React.FC<{ posting: boolean, onPost: (text: string) => P
                   </div>
                   
                   <textarea ref={newDescRef} placeholder="Description" value={newTicket.description} onChange={e => setNewTicket({ ...newTicket, description: e.target.value })} required style={{ padding: '1rem', minHeight: 140, width: '100%' }} />
-                  <div style={{display:"flex", padding:"0.5rem 1rem", gap:"0.75rem", fontSize:"0.8rem", fontWeight:"500", alignItems:"center" }}>
+                  <div style={{display:"flex", padding:"0.5rem 1rem", gap:"0.75rem", fontSize:"0.7rem", fontWeight:"500", alignItems:"center" }}>
                     <Info style={{color:"darkblue"}} size={35}/>
                     <p style={{margin:0, color:"#333"}}>
                       Public tickets are visible to all users, while private tickets are only visible to handlers and the IT Department.
