@@ -207,7 +207,10 @@ export default function Index() {
   useEffect(() => {
     const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('sw-update') : null;
 
-    const notifyAvailable = () => setNewVersionAvailable(true);
+    const notifyAvailable = () => {
+      try { localStorage.setItem('sw:update-available', '1'); } catch (e) {}
+      setNewVersionAvailable(true);
+    };
 
     const onWindowEvent = () => notifyAvailable();
     window.addEventListener('sw:new-version-available', onWindowEvent);
@@ -217,6 +220,11 @@ export default function Index() {
         if (ev?.data?.type === 'NEW_VERSION_AVAILABLE') notifyAvailable();
       };
     }
+
+    // Initialize from persisted flag so dismiss doesn't remove user's ability to update later
+    try {
+      if (localStorage.getItem('sw:update-available') === '1') setNewVersionAvailable(true);
+    } catch (e) {}
 
     return () => {
       window.removeEventListener('sw:new-version-available', onWindowEvent);
@@ -229,11 +237,13 @@ export default function Index() {
       const reg = await navigator.serviceWorker.getRegistration();
       if (reg?.waiting) {
         // Listen for controllerchange to reload when the new SW takes over
-        const onControllerChange = () => {
-          window.location.reload();
-        };
-        navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
-        try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
+            const onControllerChange = () => {
+              try { localStorage.removeItem('sw:update-available'); } catch (e) {}
+              window.location.reload();
+            };
+            navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+            try { localStorage.removeItem('sw:update-available'); } catch (e) {}
+            try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
       } else {
         // No waiting worker — trigger an update check
         const r = await navigator.serviceWorker.getRegistration();
@@ -242,6 +252,7 @@ export default function Index() {
       }
     } catch (e) {
       console.error('Failed to apply update', e);
+      try { localStorage.removeItem('sw:update-available'); } catch (err) {}
       window.location.reload();
     }
   };
@@ -409,8 +420,8 @@ export default function Index() {
           />
         {newVersionAvailable && (
           <div style={{ position: 'fixed', top: 64, left: '50%', transform: 'translateX(-50%)', zIndex: 99999 }}>
-            <div style={{ background: '#fff8db', border: '1px solid #ffd28a', padding: '0.5rem 1rem', borderRadius: 8, display: 'flex', gap: 8, alignItems: 'center', boxShadow: '0 6px 20px rgba(0,0,0,0.08)' }}>
-              <div style={{ fontWeight: 700, marginRight: 8 }}>New version available</div>
+            <div style={{ background: '', border: '', padding: '0.5rem 1rem', borderRadius: 8, display: 'flex', gap: 8, alignItems: 'center', boxShadow: '0 6px 20px rgba(0,0,0,0.08)' }}>
+              <div style={{ fontWeight: 600, marginRight: 8 }}>New version available</div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => applyUpdate()} style={{ padding: '0.4rem 0.8rem', background: '#0b76ef', color: 'white', border: 'none', borderRadius: 6 }}>Update</button>
                 <button onClick={() => setNewVersionAvailable(false)} style={{ padding: '0.4rem 0.8rem', background: 'transparent', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 6 }}>Dismiss</button>
