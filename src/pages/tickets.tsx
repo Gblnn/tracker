@@ -725,8 +725,8 @@ export default function Tickets() {
                   return (
                     <div key={t.id} className="ticket-item" data-id={t.id} style={{ ['--i' as any]: idx }}>
                       <div
-                        
                         style={{
+                          position: 'relative',
                           display: 'flex',
                           gap: 12,
                           padding: 14,
@@ -735,13 +735,12 @@ export default function Tickets() {
                           border: '1px solid rgba(16,24,40,0.06)',
                           boxShadow: expanded ? '0 6px 18px rgba(16,24,40,0.06)' : 'none',
                           alignItems: 'flex-start',
-                          
                           transition: 'box-shadow 180ms ease, transform 120ms ease',
                           transform: expanded ? 'translateY(-2px)' : 'none',
                           flex:1
-                
                         }}
                       >
+                        {/* confidentiality toggle moved inline with Replies row below */}
                         <div style={{display:"flex", border:"", flex:1, minWidth:0, flexFlow:"column", gap:"0.25rem"}}>
                         <div style={{display:"flex", border:"", flex:1, justifyContent:"space-between", alignItems:"center",}}>
                             <div id="header-section" style={{display:"flex", border:" "}}>
@@ -761,23 +760,7 @@ export default function Tickets() {
                                       
                                       <div style={{ textTransform:"capitalize",width:"fit-content",fontSize: 12, padding: '0.15rem 0.5rem', borderRadius: 999, background: (t.priority === 'High' ? '#fff1f2' : (t.priority === 'Low' ? '#ecfdf5' : '#eef2ff')), color: (t.priority === 'High' ? '#b91c1c' : (t.priority === 'Low' ? '#059669' : '#3730a3')), fontWeight: 600 }}>{(t.priority || 'Normal')}</div>
 
-                                      {(t.createdBy === user?.email || hasTicketHandler) ? (
-                                        <button onClick={(e) => { e.stopPropagation(); handleToggleConfidential(t.id, !!t.confidential); }} title={t.confidential ? 'Private' : 'Public'} style={{ background: 'none', border: 'none', padding: "0.25rem", cursor: 'pointer', fontSize:12, color:"" }}>
-                                          {t.confidential ? (
-                                            <div style={{display:"flex", alignItems:"center", gap:"0.35rem"}}>
-                                              <Lock size={14} />
-                                            </div>
-                                          ) : (
-                                            <div style={{display:"flex", alignItems:"center", gap:"0.35rem"}}>
-                                              <Globe size={14} />
-                                            </div>
-                                          )}
-                                        </button>
-                                      ) : (
-                                        <div title={t.confidential ? 'Private' : 'Public'} style={{ padding: "0.25rem", fontSize: 12, color: "", opacity: 0.8, display: 'inline-flex', alignItems: 'center' }}>
-                                          {t.confidential ? <Lock size={14} /> : <Globe size={14} />}
-                                        </div>
-                                      )}
+                                      
                                       
                                     </div>
                                 </div>
@@ -802,7 +785,24 @@ export default function Tickets() {
                             <p style={{fontSize:"1rem", textAlign:"left", fontWeight:"400"}}>{highlightText(t.description || '', keywords)}</p>
                             </div>
                             <br/>
-                            <p  onClick={() => setSelectedTicket(expanded ? null : t)} style={{cursor: 'pointer',fontWeight:"600", fontSize:"0.9rem", display:"flex", alignItems:"center", gap:"0.5rem", color:"darkblue", marginLeft:"0.5rem"}}>{expanded?<ArrowUp size={15}/>:<ArrowDown size={15}/>} {expanded?"Hide Replies ":"Replies "} ({messageCounts[t.id] ?? 0})</p>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <p onClick={() => setSelectedTicket(expanded ? null : t)} style={{ cursor: 'pointer', fontWeight: "600", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "darkblue", marginLeft: "0.5rem", margin: 0 }}>
+                                {expanded ? <ArrowUp size={15} /> : <ArrowDown size={15} />} {expanded ? "Hide Replies " : "Replies " } ({messageCounts[t.id] ?? 0})
+                              </p>
+
+                              {(t.createdBy === user?.email || hasTicketHandler) ? (
+                                <button onClick={(e) => { e.stopPropagation(); handleToggleConfidential(t.id, !!t.confidential); }} title={t.confidential ? 'Private' : 'Public'} style={{ background: 'rgba(100 100 100/ 0.05)', border: '', padding: "0.5rem", cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, borderRadius: 6, marginRight:"0.75rem" }}>
+                                  <p>{t.confidential ? <Lock color="darkblue" size={12} /> : <Globe color="darkblue" size={12} />}</p>
+                                  {/* <p>{t.confidential ? 'Private Thread' : 'Public Thread'}</p> */}
+                                  {/* <ChevronRight size={12} style={{ marginLeft: 4, opacity: 0.6 }} /> */}
+                                </button>
+                              ) : (
+                                <div title={t.confidential ? 'Private' : 'Public'} style={{ padding: "0.25rem", fontSize: 12, color: "", opacity: 0.8, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                  {t.confidential ? <Lock size={14} /> : <Globe size={14} />}
+                                  <span style={{ fontSize: 12 }}>{t.confidential ? 'Private' : 'Public'}</span>
+                                </div>
+                              )}
+                            </div>
 
                             <div style={{
                         overflow: 'hidden',

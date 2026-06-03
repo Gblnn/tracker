@@ -527,13 +527,15 @@ export default function Index() {
                 />
               )}
 
-                            <GridTile
+              {hasModuleAccess('tickets') && (
+              <GridTile
                               title={hasTicketHandler ? "Tickets" : "IT Support"}
                               description="Report Issues and track resolutions"
                               icon={<Ticket width="2.5rem" />}
                               onClick={() => navigate('/tickets')}
                               badge={hasTicketHandler && openTicketsCount !== null && openTicketsCount > 0 ? openTicketsCount : undefined}
                             />
+              )}
 
                {hasModuleAccess('manpower_requirements') && (
                 <GridTile
