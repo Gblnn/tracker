@@ -34,3 +34,34 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </AuthProvider>
   </BrowserRouter>
 );
+
+// Service worker registration and update checks
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+
+      // Notify when a new service worker version is installed and waiting
+      const handleUpdateFound = () => {
+        const installing = registration.installing;
+        if (!installing) return;
+        installing.addEventListener('statechange', () => {
+          if (installing.state === 'installed') {
+            if (navigator.serviceWorker.controller) {
+              window.dispatchEvent(new CustomEvent('sw:new-version-available'));
+            }
+          }
+        });
+      };
+
+      registration.addEventListener('updatefound', handleUpdateFound);
+
+      // Periodically check for updates (every 30 minutes)
+      setInterval(() => {
+        registration.update().catch(() => {});
+      }, 1000 * 60 * 30);
+    } catch (err) {
+      console.error('SW registration failed:', err);
+    }
+  });
+}

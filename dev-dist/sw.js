@@ -90,4 +90,13 @@ define(['./workbox-b5f7729d'], (function (workbox) { 'use strict';
   }));
   self.__WB_DISABLE_DEV_LOGS = true;
 
+  // Allow the page to trigger skipWaiting for a waiting worker
+  self.addEventListener('message', (event) => {
+    try {
+      if (event?.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+      }
+    } catch (e) { /* ignore */ }
+  });
+
 }));

@@ -201,6 +201,29 @@ export default function Index() {
     cacheFuelLogs();
   }, [userData?.email]);
 
+  // Prompt user when a new service worker version is available
+  useEffect(() => {
+    const onNewVersion = () => {
+      (async () => {
+        try {
+          const confirmRefresh = window.confirm('A new version of the app is available. Refresh to update now?');
+          if (!confirmRefresh) return;
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg?.waiting) {
+            try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
+          }
+        } catch (e) {
+          /* ignore */
+        } finally {
+          window.location.reload();
+        }
+      })();
+    };
+
+    window.addEventListener('sw:new-version-available', onNewVersion);
+    return () => window.removeEventListener('sw:new-version-available', onNewVersion);
+  }, []);
+
   // Helper function to check module access
   const hasModuleAccess = (moduleId: string) => {
     return modulePermissions[moduleId] === true;
