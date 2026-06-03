@@ -218,12 +218,12 @@ export default function Index() {
     const hasTimetaag = hasModuleAccess('timetaag');
     const hasPettyCash = hasModuleAccess('petty_cash');
     const hasOfferLetters = hasModuleAccess('offer_letters');
-    const hasTickets = true; // Ensure Tickets/IT Support is visible to all users
+    const hasTickets = admin || hasModuleAccess('tickets') || hasTicketHandler;
     const hasEmployeeClearanceForm = hasModuleAccess('employee_clearance_form');
     const hasShiftLogs = hasModuleAccess('shift_logs');
     const hasTransferRequests = hasModuleAccess('transfer_requests');
     const hasSimCards = hasModuleAccess('sim_cards');
-      const hasOffboarding = hasModuleAccess('offboarding');
+    const hasOffboarding = hasModuleAccess('offboarding');
 
     return hasRecordsMaster || hasUsers || hasNewHire || hasQuickLinks || 
            hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || hasTimetaag ||
@@ -275,6 +275,7 @@ export default function Index() {
       {/* <div style={{border:"", display:"flex", alignItems:"center", justifyContent:'center'}}>
         <ConfettiExplosion/>
         </div> */}
+        
         <Back
         
       //  fontFamily="'Britney', cursive"
@@ -527,7 +528,7 @@ export default function Index() {
                 />
               )}
 
-              {hasModuleAccess('tickets') && (
+             
               <GridTile
                               title={hasTicketHandler ? "Tickets" : "IT Support"}
                               description="Report Issues and track resolutions"
@@ -535,7 +536,7 @@ export default function Index() {
                               onClick={() => navigate('/tickets')}
                               badge={hasTicketHandler && openTicketsCount !== null && openTicketsCount > 0 ? openTicketsCount : undefined}
                             />
-              )}
+         
 
                {hasModuleAccess('manpower_requirements') && (
                 <GridTile
