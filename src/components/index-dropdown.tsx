@@ -255,7 +255,7 @@ export default function IndexDropDown(props:Props) {
             style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}
           >
             <RefreshCcw color="mediumslateblue" className="mr-2 h-4 w-4 text-primary" />
-            <span>Check updates</span>
+            <span>Check for updates</span>
           </DropdownMenuItem>
 
           <DropdownMenuItem
