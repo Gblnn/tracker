@@ -293,8 +293,6 @@ export default function Index() {
 
   return (
     <>
-    
-  
       {/* <div style={{border:"", display:"flex", alignItems:"center", justifyContent:'center'}}>
         <ConfettiExplosion/>
         </div> */}
@@ -372,7 +370,7 @@ export default function Index() {
 
                 <IndexDropDown
                   onLogout={() => setLogoutPrompt(true)}
-                  onProfile={() => navigate("/profile")}
+                  onProfile={() => {}}
                 />
               </div>
             }
