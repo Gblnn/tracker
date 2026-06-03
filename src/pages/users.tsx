@@ -1040,7 +1040,7 @@ export default function Users() {
                         )
                       }
                       title={user.name}
-                      tag={user.email=="it@soharstar.com"?"Developer":""}
+                      // tag={user.email=="it@soharstar.com"?"Developer":""}
                       status={true}
                       id_subtitle={user.email}
                       subtext={

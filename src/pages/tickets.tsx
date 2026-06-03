@@ -572,10 +572,15 @@ export default function Tickets() {
           <div style={{ flex: 1 , border:"", padding:"0.5rem" }}>
 
             <div style={{display:"flex", gap: 8, alignItems:"center"}}>
-              <div style={{ width: 38, height: 38, borderRadius: "50%", background: avatarColor(node.createdBy), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{(() => { const dn = ticketCreators[node.createdBy] || node.createdBy || 'U'; const parts = dn.split(/\s+/).filter(Boolean); const initials = parts.length === 1 ? parts[0].slice(0,2) : (parts[0][0] + (parts[1][0]||'')).slice(0,2); return (initials || 'U').toUpperCase(); })()}</div>
+              <div style={{ width: 38, height: 38, borderRadius: "50%", background: avatarColor(node.createdBy), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
+                {(() => { 
+                  const dn = ticketCreators[node.createdBy] || node.createdBy || 'U'; const parts = dn.split(/\s+/).filter(Boolean); 
+                  const initials = parts.length === 1 ? parts[0].slice(0,2) : (parts[0][0] + (parts[1][0]||'')).slice(0,2); return (initials || 'U').toUpperCase(); 
+                  })()}
+                </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <div style={{ fontSize: "1rem", fontWeight: 600 }}>{ticketCreators[node.createdBy] || (node.createdBy && node.createdBy.split('@')[0])}</div>
+                  <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>{ticketCreators[node.createdBy] || (node.createdBy && node.createdBy.split('@')[0])}</div>
                   {replyIsHandler[node.createdBy] && (
                     <div style={{ fontSize: "0.76rem", padding: '0.06rem 0.32rem', borderRadius: 6, background: '#eef2ff', color: '#3730a3', fontWeight: 600, marginLeft: 4 }}>Handler</div>
                   )}
@@ -740,7 +745,7 @@ export default function Tickets() {
                           flex:1
                         }}
                       >
-                        {/* confidentiality toggle moved inline with Replies row below */}
+                       
                         <div style={{display:"flex", border:"", flex:1, minWidth:0, flexFlow:"column", gap:"0.25rem"}}>
                         <div style={{display:"flex", border:"", flex:1, justifyContent:"space-between", alignItems:"center",}}>
                             <div id="header-section" style={{display:"flex", border:" "}}>
@@ -786,7 +791,8 @@ export default function Tickets() {
                             </div>
                             <br/>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <p onClick={() => setSelectedTicket(expanded ? null : t)} style={{ cursor: 'pointer', fontWeight: "600", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "darkblue", marginLeft: "0.5rem", margin: 0 }}>
+
+                              <p onClick={() => setSelectedTicket(expanded ? null : t)} style={{ cursor: 'pointer', fontWeight: "600", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "darkblue", margin: 0, border:"" }}>
                                 {expanded ? <ArrowUp size={15} /> : <ArrowDown size={15} />} {expanded ? "Hide Replies " : "Replies " } ({messageCounts[t.id] ?? 0})
                               </p>
 
@@ -797,9 +803,9 @@ export default function Tickets() {
                                   {/* <ChevronRight size={12} style={{ marginLeft: 4, opacity: 0.6 }} /> */}
                                 </button>
                               ) : (
-                                <div title={t.confidential ? 'Private' : 'Public'} style={{ padding: "0.25rem", fontSize: 12, color: "", opacity: 0.8, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                                  {t.confidential ? <Lock size={14} /> : <Globe size={14} />}
-                                  <span style={{ fontSize: 12 }}>{t.confidential ? 'Private' : 'Public'}</span>
+                                <div title={t.confidential ? 'Private' : 'Public'} style={{background: 'rgba(100 100 100/ 0.05)', border: '', padding: "0.5rem", borderRadius: 6, fontSize: 12, color: "", opacity: 0.8, display: 'inline-flex', alignItems: 'center', gap: 6, cursor:"pointer", marginRight:"0.75rem", fontWeight:"500" }}>
+                                  {t.confidential ? <Lock color="darkblue" size={12} /> : <Globe color="darkblue" size={12} />}
+                                  {/* <span style={{ fontSize: 12 }}>{t.confidential ? 'Private' : 'Public Thread'}</span> */}
                                 </div>
                               )}
                             </div>
