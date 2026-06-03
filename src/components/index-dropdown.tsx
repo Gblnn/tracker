@@ -185,12 +185,21 @@ export default function IndexDropDown(props:Props) {
           <div className="h-px bg-border my-1" />
 
           <DropdownMenuItem
-            onClick={() => window.location.reload()}
+            onClick={async () => {
+              try {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(regs.map(r => r.update()));
+                toast.success('Checked for updates');
+              } catch (e) {
+                console.error('Update check failed', e);
+                toast.error('Update check failed');
+              }
+            }}
             className="cursor-pointer"
             style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}
           >
             <RefreshCcw color="mediumslateblue" className="mr-2 h-4 w-4 text-primary" />
-            <span>Force Reload</span>
+            <span>Check updates</span>
           </DropdownMenuItem>
 
           <DropdownMenuItem

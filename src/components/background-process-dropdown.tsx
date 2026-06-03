@@ -1,7 +1,7 @@
 import { useBackgroundProcess } from "@/context/BackgroundProcessContext";
 import { getPendingFuelLogsCount } from "@/utils/offlineFuelLogs";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import { CheckCircle2, Cloud, CloudOff, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Cloud, CloudOff, Laptop2, Loader2, XCircle } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import {
@@ -91,9 +91,9 @@ export default function BackgroundProcessDropdown(props: Props) {
         {hasActiveProcesses ? (
           <Loader2 className="animate-spin" width="1.25rem" color="darkblue" />
         ) : isOnline ? (
-          <Cloud width="1.25rem" color="darkblue" />
+          <Cloud width="1.25rem"/>
         ) : (
-          <CloudOff width="1.25rem" color="rgb(239, 68, 68)" />
+          <Laptop2 width="1.25rem" />
         )}
         {/* {hasActiveProcesses && (
           <span

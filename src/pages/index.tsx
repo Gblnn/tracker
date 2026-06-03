@@ -12,11 +12,11 @@ import DefaultDialog from "@/components/ui/default-dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { useBackgroundProcess } from "@/context/BackgroundProcessContext";
 import { auth, db } from "@/firebase";
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { fetchAndCacheFuelLogs } from "@/utils/fuelLogsCache";
 import { getPendingFuelLogsCount, syncAllPendingFuelLogs } from "@/utils/offlineFuelLogs";
 import { LoadingOutlined } from "@ant-design/icons";
 import emailjs from "@emailjs/browser";
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { motion } from "framer-motion";
 import {
   ArrowRightLeft,
@@ -202,27 +202,59 @@ export default function Index() {
   }, [userData?.email]);
 
   // Prompt user when a new service worker version is available
-  useEffect(() => {
-    const onNewVersion = () => {
-      (async () => {
-        try {
-          const confirmRefresh = window.confirm('A new version of the app is available. Refresh to update now?');
-          if (!confirmRefresh) return;
-          const reg = await navigator.serviceWorker.getRegistration();
-          if (reg?.waiting) {
-            try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
-          }
-        } catch (e) {
-          /* ignore */
-        } finally {
-          window.location.reload();
-        }
-      })();
-    };
+  const [newVersionAvailable, setNewVersionAvailable] = useState(false);
 
-    window.addEventListener('sw:new-version-available', onNewVersion);
-    return () => window.removeEventListener('sw:new-version-available', onNewVersion);
+  useEffect(() => {
+    const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('sw-update') : null;
+
+    const notifyAvailable = () => setNewVersionAvailable(true);
+
+    const onWindowEvent = () => notifyAvailable();
+    window.addEventListener('sw:new-version-available', onWindowEvent);
+
+    if (bc) {
+      bc.onmessage = (ev) => {
+        if (ev?.data?.type === 'NEW_VERSION_AVAILABLE') notifyAvailable();
+      };
+    }
+
+    return () => {
+      window.removeEventListener('sw:new-version-available', onWindowEvent);
+      try { if (bc) bc.close(); } catch (e) {}
+    };
   }, []);
+
+  const applyUpdate = async () => {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg?.waiting) {
+        // Listen for controllerchange to reload when the new SW takes over
+        const onControllerChange = () => {
+          window.location.reload();
+        };
+        navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+        try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
+      } else {
+        // No waiting worker — trigger an update check
+        const r = await navigator.serviceWorker.getRegistration();
+        await r?.update();
+        window.location.reload();
+      }
+    } catch (e) {
+      console.error('Failed to apply update', e);
+      window.location.reload();
+    }
+  };
+
+  // const forceCheckForUpdate = async () => {
+  //   try {
+  //     const regs = await navigator.serviceWorker.getRegistrations();
+  //     await Promise.all(regs.map(r => r.update()));
+  //     toast.success('Checked for updates');
+  //   } catch (e) {
+  //     toast.error('Update check failed');
+  //   }
+  // };
 
   // Helper function to check module access
   const hasModuleAccess = (moduleId: string) => {
@@ -305,7 +337,7 @@ export default function Index() {
           fixed
           editMode={userData?.editor===true? true : false}
             title="Starboard"
-            subtitle={"1.26"}
+            subtitle={"1.31"}
             icon={<img src="/stardox-bg.png" style={{width:"2rem"}} alt="Starboard" />}
             noback
             extra={
@@ -375,6 +407,17 @@ export default function Index() {
               </div>
             }
           />
+        {newVersionAvailable && (
+          <div style={{ position: 'fixed', top: 64, left: '50%', transform: 'translateX(-50%)', zIndex: 99999 }}>
+            <div style={{ background: '#fff8db', border: '1px solid #ffd28a', padding: '0.5rem 1rem', borderRadius: 8, display: 'flex', gap: 8, alignItems: 'center', boxShadow: '0 6px 20px rgba(0,0,0,0.08)' }}>
+              <div style={{ fontWeight: 700, marginRight: 8 }}>New version available</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => applyUpdate()} style={{ padding: '0.4rem 0.8rem', background: '#0b76ef', color: 'white', border: 'none', borderRadius: 6 }}>Update</button>
+                <button onClick={() => setNewVersionAvailable(false)} style={{ padding: '0.4rem 0.8rem', background: 'transparent', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 6 }}>Dismiss</button>
+              </div>
+            </div>
+          </div>
+        )}
       <div
         style={{
           padding: "1.25rem",
@@ -805,6 +848,8 @@ export default function Index() {
           onOk={handleLogout}
         />
       </div>
+      {/* Force update debug button */}
+      {/* <button onClick={() => forceCheckForUpdate()} title="Force check for updates" style={{ position: 'fixed', right: 12, bottom: 12, zIndex: 99999, padding: '0.45rem 0.6rem', borderRadius: 8, background: '#111827', color: 'white', border: 'none', boxShadow: '0 8px 20px rgba(0,0,0,0.12)' }}>Check updates</button> */}
       {/* <ReleaseNote /> */}
     </>
   );

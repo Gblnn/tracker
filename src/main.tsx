@@ -42,13 +42,17 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       const registration = await navigator.serviceWorker.register('/sw.js');
 
       // Notify when a new service worker version is installed and waiting
+      const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('sw-update') : null;
       const handleUpdateFound = () => {
         const installing = registration.installing;
         if (!installing) return;
         installing.addEventListener('statechange', () => {
           if (installing.state === 'installed') {
             if (navigator.serviceWorker.controller) {
+              // window event for backward compatibility
               window.dispatchEvent(new CustomEvent('sw:new-version-available'));
+              // Broadcast to other tabs
+              try { bc?.postMessage({ type: 'NEW_VERSION_AVAILABLE' }); } catch (e) { /* ignore */ }
             }
           }
         });
