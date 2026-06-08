@@ -78,8 +78,7 @@
     "tesseract.js": "^5.1.0",
     "url": "^0.11.4",
     "use-keyboard-shortcut": "^1.1.6",
-    "vaul": "^1.1.2",
-    "vercel": "^54.9.1"
+    "vaul": "^1.1.2"
   },
   "devDependencies": {
     "@types/file-saver": "^2.0.7",
