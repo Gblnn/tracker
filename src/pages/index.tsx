@@ -233,6 +233,7 @@ export default function Index() {
   }, []);
 
   const applyUpdate = async () => {
+
     try {
       const reg = await navigator.serviceWorker.getRegistration();
       if (reg?.waiting) {
@@ -436,7 +437,7 @@ export default function Index() {
           paddingTop: "5.75rem",
           paddingBottom: "7.5rem",
           overflowY: "auto",
-          // background:"url('/clouds.jpg')",
+          // background:"url('/bg.webp')",
           // backgroundSize:"cover"
           // background:
           //   "linear-gradient(180deg, rgba(252, 252, 252, 1), rgba(244, 246, 249, 1))",
