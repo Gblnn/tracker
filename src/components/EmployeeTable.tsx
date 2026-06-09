@@ -35,8 +35,8 @@ export function EmployeeTable({ summaries }: EmployeeTableProps) {
                   <Avatar name={emp.name} index={idx} />
                   <div>
                     <div className="font-medium text-gray-900" style={{textAlign: "left"}}>{emp.name}</div>
-                    {emp.email && (
-                      <div className="text-xs text-gray-400">{emp.device_user_id}</div>
+                    {emp.emp_id && (
+                      <div className="text-xs text-gray-400">{emp.emp_id}</div>
                     )}
                   </div>
                 </div>

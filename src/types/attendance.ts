@@ -16,6 +16,7 @@ export interface Employee {
   department: string | null;
   email: string | null;
   created_at: string;
+  emp_id: string;
 }
 
 export interface EmployeeSummary extends Employee {
