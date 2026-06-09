@@ -434,8 +434,11 @@ export default function Tickets() {
   // filter tickets based on confidentiality, handler permission, and search keywords
   const visibleTickets = useMemo(() => {
     const list = (tickets || []).filter(t => {
-      if (t.confidential && !hasTicketHandler) return false;
-      if (t.confidential && !hasTicketHandler && t.createdBy !== user?.email) return false;
+      // Ensure consistent case for email comparison
+      const ticketCreatorEmail = t.createdBy?.toLowerCase();
+      const currentUserEmail = user?.email?.toLowerCase();
+
+      if (t.confidential && !hasTicketHandler && ticketCreatorEmail !== currentUserEmail) return false;
       return true;
     }).map(t => {
       const hay = `${t.title || ''} ${t.description || ''} ${t.lastMessage || ''}`.toLowerCase();
