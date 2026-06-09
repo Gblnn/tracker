@@ -24,6 +24,7 @@ import {
   Bug,
   Car,
   Clock3,
+  Clock3Icon,
   File,
   FileArchive,
   FileText,
@@ -634,10 +635,10 @@ export default function Index() {
 
               {hasModuleAccess('timetaag') && (
                 <GridTile
-                  title="Timetaag"
+                  title="Attendance"
                   description="Attendance and workforce time tracking"
-                  icon={<img src="/timetaag.png" alt="Timetaag" style={{ width: "2.5rem", height: "2.5rem", objectFit: "contain", filter: "grayscale(1) brightness(0.7) contrast(1.2)" }} />}
-                  onClick={() => authenticateModule('timetaag', '/timetaag', 'Timetaag')}
+                  icon={<Clock3Icon width="2.5rem" />}
+                  onClick={() => authenticateModule('timetaag', '/attendance', 'Attendance')}
                 />
               )}
 

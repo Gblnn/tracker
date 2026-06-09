@@ -435,6 +435,7 @@ export default function Tickets() {
   const visibleTickets = useMemo(() => {
     const list = (tickets || []).filter(t => {
       if (t.confidential && !hasTicketHandler) return false;
+      if (t.confidential && !hasTicketHandler && t.createdBy !== user?.email) return false;
       return true;
     }).map(t => {
       const hay = `${t.title || ''} ${t.description || ''} ${t.lastMessage || ''}`.toLowerCase();

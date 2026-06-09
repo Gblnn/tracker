@@ -18,6 +18,7 @@ import PageNotFound from "./pages/page-not-found";
 import RequestAccess from "./pages/request-access";
 import UserReset from "./pages/user-reset";
 
+
 // Lazy load protected pages only (loaded after authentication)
 const Index = lazy(() => import("./pages"));
 const AccessControl = lazy(() => import("./pages/access-control"));
@@ -62,7 +63,7 @@ const ShiftLogs = lazy(() => import("./pages/shift-logs"));
 const SiteAdminWorkers = lazy(() => import("./pages/site-admin-workers"));
 const TransferRequests = lazy(() => import("./pages/transfer-requests"));
 const SimCards = lazy(() => import("./pages/sim-cards"));
-const Timetaag = lazy(() => import("@/pages/timetaag"));
+const AttendanceDashboard = lazy(() => import("./pages/AttendanceDashboard"));
 const Tickets = lazy(() => import("./pages/tickets"));
          
 
@@ -193,7 +194,7 @@ export default function App() {
           <Route path="/transfer-requests" element={<TransferRequests />} />
           <Route path="/sim-cards" element={<SimCards />} />
           <Route path="/tickets" element={<Tickets />} />
-          <Route path="/timetaag" element={<Timetaag />} />
+          <Route path="/attendance" element={<AttendanceDashboard />} />
           <Route path="/manpower-requirements" element={<ManpowerRequirements />} />
           <Route path="/offboarding" element={<Offboarding />} />
           <Route path="/records" element={<Records />} />
