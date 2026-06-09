@@ -46,8 +46,9 @@ export function avatarColor(idx: number) {
 
 export const VERIFY_LABELS: Record  <number, string> = {
   
- 0: 'Password',
+ 0: 'Face',
   1: 'Fingerprint',
+  3:'Password',
   4: 'Card',
   15: 'Face',
 

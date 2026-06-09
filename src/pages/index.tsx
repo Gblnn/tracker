@@ -283,7 +283,7 @@ export default function Index() {
     const hasQRGenerator = hasModuleAccess('qr_generator');
     const hasVehicleMaster = hasModuleAccess('asset_master');
     const hasVehicleLogBook = hasModuleAccess('vehicle_log_book');
-    const hasTimetaag = hasModuleAccess('timetaag');
+    const hasAttendance = hasModuleAccess('attendance');
     const hasPettyCash = hasModuleAccess('petty_cash');
     const hasOfferLetters = hasModuleAccess('offer_letters');
     const hasTickets = admin || hasModuleAccess('tickets') || hasTicketHandler;
@@ -294,7 +294,7 @@ export default function Index() {
     const hasOffboarding = hasModuleAccess('offboarding');
 
     return hasRecordsMaster || hasUsers || hasNewHire || hasQuickLinks || 
-           hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || hasTimetaag ||
+           hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || hasAttendance ||
       hasPettyCash || hasOfferLetters || hasEmployeeClearanceForm || hasShiftLogs || hasTransferRequests || hasSimCards || hasOffboarding || hasTickets;
   };
 
@@ -633,12 +633,12 @@ export default function Index() {
                 />
               )}
 
-              {hasModuleAccess('timetaag') && (
+              {hasModuleAccess('attendance') && (
                 <GridTile
                   title="Attendance"
                   description="Attendance and workforce time tracking"
                   icon={<Clock3Icon width="2.5rem" />}
-                  onClick={() => authenticateModule('timetaag', '/attendance', 'Attendance')}
+                  onClick={() => authenticateModule('attendance', '/attendance', 'Attendance')}
                 />
               )}
 

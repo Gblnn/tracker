@@ -12,6 +12,7 @@ type Tab = 'summary' | 'log';
 export default function AttendanceDashboard() {
   const [date, setDate] = useState<string>(todayISO());
   const [tab, setTab] = useState<Tab>('summary');
+  const [showStats, setShowStats] = useState(false);
 
   const { punches, employees, employeeSummaries, stats, loading, error } = useAttendance(date);
 
@@ -38,6 +39,7 @@ export default function AttendanceDashboard() {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Live
               </span>
+              <button style={{fontSize:"0.8rem", padding:"0.15rem 0.5rem"}} onClick={() => setShowStats(!showStats)}>Stats</button>
               </div>
               
               <input
@@ -69,6 +71,7 @@ export default function AttendanceDashboard() {
         )}
 
         {/* Stats */}
+        {showStats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
           <StatCard label="Total employees" value={stats.total || <Loader2 className="animate-spin" />} icon="ti-users" />
           <StatCard
@@ -80,9 +83,10 @@ export default function AttendanceDashboard() {
           <StatCard label="Check-ins" value={stats.checkIns || <Loader2 className="animate-spin" />} icon="ti-login" />
           <StatCard label="Check-outs" value={stats.checkOuts || <Loader2 className="animate-spin" />} icon="ti-logout" />
         </div>
+        )}
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit mb-6">
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit mb-6" style={{border:""}}>
           {(['summary', 'log'] as Tab[]).map((t) => (
             <button
               key={t}
