@@ -801,13 +801,13 @@ export default function Tickets() {
                               </p>
 
                               {(t.createdBy === user?.email || hasTicketHandler) ? (
-                                <button onClick={(e) => { e.stopPropagation(); handleToggleConfidential(t.id, !!t.confidential); }} title={t.confidential ? 'Private' : 'Public'} style={{ background: 'rgba(100 100 100/ 0.05)', border: '', padding: "0.5rem", cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, borderRadius: 6, marginRight:"0.75rem" }}>
+                                <button onClick={(e) => { e.stopPropagation(); handleToggleConfidential(t.id, !!t.confidential); }} title={t.confidential ? 'Private' : 'Public'} style={{ background:t.createdBy===user?.email ?"#eef2ff":"none", border: '', padding: "0.5rem", cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, borderRadius: 6, marginRight:"0.75rem" }}>
                                   <p>{t.confidential ? <Lock color="darkblue" size={12} /> : <Globe color="darkblue" size={12} />}</p>
                                   {/* <p>{t.confidential ? 'Private Thread' : 'Public Thread'}</p> */}
                                   {/* <ChevronRight size={12} style={{ marginLeft: 4, opacity: 0.6 }} /> */}
                                 </button>
                               ) : (
-                                <div title={t.confidential ? 'Private' : 'Public'} style={{background: 'rgba(100 100 100/ 0.05)', border: '', padding: "0.5rem", borderRadius: 6, fontSize: 12, color: "", opacity: 0.8, display: 'inline-flex', alignItems: 'center', gap: 6, cursor:"pointer", marginRight:"0.75rem", fontWeight:"500" }}>
+                                <div title={t.confidential ? 'Private' : 'Public'} style={{background:t.createdBy===user?.email ?"#eef2ff":"none", border: '', padding: "0.5rem", borderRadius: 6, fontSize: 12, color: "", opacity: 0.8, display: 'inline-flex', alignItems: 'center', gap: 6, cursor:t.createdBy===user?.email ? 'pointer':"", marginRight:"0.75rem", fontWeight:"500", }}>
                                   {t.confidential ? <Lock color="darkblue" size={12} /> : <Globe color="darkblue" size={12} />}
                                   {/* <span style={{ fontSize: 12 }}>{t.confidential ? 'Private' : 'Public Thread'}</span> */}
                                 </div>
