@@ -19,7 +19,7 @@ export function useAttendance(date: string) {
       const [{ data: punchData, error: punchError }, { data: empData, error: empError }] =
         await Promise.all([
           supabase
-            .from('punches')
+            .from('punch_details')
             .select('*')
             .gte('punch_time', start)
             .lte('punch_time', end)
@@ -85,6 +85,7 @@ export function useAttendance(date: string) {
   const stats = {
     total: employees.length,
     present: employeeSummaries.filter((e) => e.isPresent).length,
+    absent: employees.length - employeeSummaries.filter((e) => e.isPresent).length,
     checkIns: punches.filter((p) => p.punch_type === 0).length,
     checkOuts: punches.filter((p) => p.punch_type === 1).length,
   };

@@ -7,6 +7,7 @@ export interface Punch {
   device_serial: string;
   raw: string;
   created_at: string;
+  location:string;
 }
 
 export interface Employee {

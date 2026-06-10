@@ -32,17 +32,17 @@ export default function AttendanceDashboard() {
     <div style={{height:"100svh", border:"", display:"flex", flexFlow:"column"}}>
       <Back
       fixed 
-      blurBG
-      customTitle={
-        <div style={{display:"flex", justifyContent:"center", alignItems:"center", gap:"0.5rem"}}>
-         <h1 className="text-xl font-semibold text-gray-900">Attendance</h1>
-         <span className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          Live
-         </span>
-      {/* <button style={{fontSize:"0.8rem", padding:"0.15rem 0.5rem"}} onClick={() => setShowStats(!showStats)}>Stats</button> */}
-      </div>
-      }
+      
+      // customTitle={
+      //   <div style={{display:"flex", justifyContent:"center", alignItems:"center", gap:"0.5rem"}}>
+      //    <h1 className="text-xl font-semibold text-gray-900">Attendance</h1>
+      //    <span className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+      //     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+      //     Live
+      //    </span>
+      // {/* <button style={{fontSize:"0.8rem", padding:"0.15rem 0.5rem"}} onClick={() => setShowStats(!showStats)}>Stats</button> */}
+      // </div>
+      // }
       extra={<RefreshButton/>}
       />
       <div id='content-body' style={{display:"flex", border:'1px solid rgba(100 100 100/ 0.1)',borderRadius:"1rem", height:"100%", flexFlow:"", margin:"1rem", marginTop:"5rem", padding:"0.5rem", gap:"0.75rem", width:""}}>
@@ -51,15 +51,15 @@ export default function AttendanceDashboard() {
 
       <div style={{display:"flex", flexFlow:"column", gap:"0.25rem"}}>
 
-        <Directive titleSize='0.9rem' onClick={() => setTab('summary')} title={"Summary"} icon={<LayoutGrid  size={16} />} />
+        <Directive titleSize='0.9rem' onClick={() => setTab('summary')} title={"Summary"} icon={<LayoutGrid color='darkblue' size={16} />} />
 
-        <Directive titleSize='0.9rem' onClick={() => setTab('log')} title={"Punch Log"} icon={<List  size={16} />} />
+        <Directive titleSize='0.9rem' onClick={() => setTab('log')} title={"Punch Log"} icon={<List color='darkblue' size={16} />} />
 
-        <Directive titleSize='0.9rem' onClick={() => setTab('reports')} title={"Reports"} icon={<TrendingUp  size={16} />} />
+        <Directive titleSize='0.9rem' onClick={() => setTab('reports')} title={"Reports"} icon={<TrendingUp color="darkblue" size={16} />} />
 
         
 
-        <Directive titleSize='0.9rem' onClick={() => setTab('devices')} title={"Devices"} icon={<Laptop2  size={16} />} />
+        <Directive titleSize='0.9rem' onClick={() => setTab('devices')} title={"Devices"} icon={<Laptop2 color="darkblue" size={16} />} />
 
       </div>
 
@@ -86,22 +86,29 @@ export default function AttendanceDashboard() {
 
       {tab==="summary" && (
          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 " style={{marginBottom:"0.5rem"}}>
-           <StatCard label="Total employees" value={loading?<Loader2 className="animate-spin" />:stats.total?stats.total:0} icon="ti-users" />
+           <StatCard label="Total" value={loading?<Loader2 className="animate-spin" />:stats.total?stats.total:0} icon="ti-users" />
            <StatCard
              label="Present today"
              value={loading?<Loader2 className="animate-spin" />:stats.present?stats.present:0}
              // sub={`${attendancePct}% attendance`}
              icon="ti-circle-check"
            />
-           <StatCard label="Check-ins" value={loading?<Loader2 className="animate-spin" />:stats.checkIns?stats.checkIns:0} icon="ti-login" />
-           <StatCard label="Check-outs" value={loading?<Loader2 className="animate-spin" />:stats.checkOuts?stats.checkOuts:0} icon="ti-logout" />
+           <StatCard label="Absent Today" value={loading?<Loader2 className="animate-spin" />:stats.absent?stats.absent:0} icon="ti-circle-x" />
+           
          </div>
          )}
+         {
+          tab==="log" &&
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 " style={{marginBottom:"0.5rem"}}>
+          <StatCard label="Check-ins" value={loading?<Loader2 className="animate-spin" />:stats.checkIns?stats.checkIns:0} icon="ti-login" />
+           <StatCard label="Check-outs" value={loading?<Loader2 className="animate-spin" />:stats.checkOuts?stats.checkOuts:0} icon="ti-logout" />
+           </div>
+         }
 
       
 
       
-      <div className="border border-gray-100 rounded-2xl overflow-y-auto shadow-sm" style={{display:"flex", flexFlow:'column', flex:1 }}>
+      <div className="border border-gray-100 rounded-2xl overflow-y-auto shadow-sm" style={{display:"flex", flexFlow:'column', flex:1, maxHeight:"70vh" }}>
            {loading ? (
             <div className="flex items-center justify-center gap-2 py-16 text-gray-400 text-sm">
               <i className="ti ti-loader-2 animate-spin text-base" aria-hidden="true" />
