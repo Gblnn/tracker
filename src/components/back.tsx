@@ -17,6 +17,7 @@ interface Props {
   blurBG?: boolean;
   fontFamily?: string;
   shadow?:boolean;
+  customTitle?: any;
 }
 
 export default function Back(props: Props) {
@@ -102,6 +103,7 @@ export default function Back(props: Props) {
               onClick={props.onTap}
             >
               {props.title}
+              {props.customTitle}
             </h2>
             {props.subtitle ? (
               <motion.div

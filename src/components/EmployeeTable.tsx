@@ -7,6 +7,9 @@ interface EmployeeTableProps {
 }
 
 export function EmployeeTable({ summaries }: EmployeeTableProps) {
+
+
+  
   if (summaries.length === 0) {
     return (
       <div className="text-center py-12 text-gray-400 text-sm">
@@ -17,22 +20,23 @@ export function EmployeeTable({ summaries }: EmployeeTableProps) {
 
   return (
     <div className="overflow-x-auto">
+      
       <table className="w-full text-sm">
-        <thead>
+        <thead >
           <tr className="bg-gray-50 border-b border-gray-100">
             <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Employee</th>
-            <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Department</th>
+            <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide ">Department</th>
             <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">First in</th>
             <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Last out</th>
             <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Status</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50">
+        <tbody className="divide-y divide-gray-50 overflow-y-auto">
           {summaries.map((emp, idx) => (
             <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-4 py-3">
                 <div className="flex gap-2.5" style={{border:'', display:"flex", justifyContent:"flex-start", alignItems:"center"}}>
-                  <Avatar name={emp.name} index={idx} />
+                  <Avatar size={"md"} name={emp.name} index={idx} />
                   <div>
                     <div className="font-medium text-gray-900" style={{textAlign: "left"}}>{emp.name}</div>
                     {emp.emp_id && (
