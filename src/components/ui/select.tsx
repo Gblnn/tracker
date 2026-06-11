@@ -7,9 +7,7 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const Select = SelectPrimitive.Root
-
 const SelectGroup = SelectPrimitive.Group
-
 const SelectValue = SelectPrimitive.Value
 
 const SelectTrigger = React.forwardRef<
@@ -25,8 +23,10 @@ const SelectTrigger = React.forwardRef<
     {...props}
   >
     {children}
+
+    {/* FIXED: Proper icon usage */}
     <SelectPrimitive.Icon asChild>
-      
+      <ChevronDown className="h-4 w-4 opacity-50" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ))
@@ -84,6 +84,7 @@ const SelectContent = React.forwardRef<
       {...props}
     >
       <SelectScrollUpButton />
+
       <SelectPrimitive.Viewport
         className={cn(
           "p-1",
@@ -91,16 +92,9 @@ const SelectContent = React.forwardRef<
             "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
         )}
       >
-        <div
-            ref={(ref) => {
-              if (!ref) return;
-              ref.ontouchstart = (e) => e.preventDefault();
-            }}
-          >
-            {children}
-          </div>
-    
+        {children}
       </SelectPrimitive.Viewport>
+
       <SelectScrollDownButton />
     </SelectPrimitive.Content>
   </SelectPrimitive.Portal>
@@ -129,8 +123,6 @@ const SelectItem = React.forwardRef<
       "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
-    onPointerDown={(e) => e.stopPropagation()}
-    onClick={(e) => e.stopPropagation()}
     {...props}
   >
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">

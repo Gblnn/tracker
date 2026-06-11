@@ -1,4 +1,5 @@
 import Back from '@/components/back';
+import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { Laptop2, LayoutGrid, List, Loader2, TrendingUp } from 'lucide-react';
@@ -72,16 +73,10 @@ export default function AttendanceDashboard() {
            
           <h2 style={{display:"flex", gap:"0.5rem", alignItems:"center", border:""}} className="">
             {viewOptions.find(opt => opt.value === tab)?.icon}
-            {activeViewLabel}</h2>
+            {activeViewLabel}
+          </h2>
 
-            <input
-            style={{width:"fit-content", border:"1px solid rgba(100 100 100/ 0.2)"}}
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="outline-none bg-transparent text-sm text-gray-700 cursor-pointer font-medium"
-            />
-  
+            <DatePicker value={date} onChange={setDate} />
       </div>
 
       {tab==="summary" && (

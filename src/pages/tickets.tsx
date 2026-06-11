@@ -144,10 +144,21 @@ const sanitizeHtml = (html: string) => {
   }
 };
 
+// New helper function to extract plain text from HTML
+const getPlainTextFromHtml = (html: string) => {
+  if (!html) return '';
+  try {
+    const doc = typeof window !== 'undefined' ? new DOMParser().parseFromString(html, 'text/html') : null;
+    if (!doc) return '';
+    return doc.body.textContent || '';
+  } catch (e) {
+    return '';
+  }
+};
+
 export default function Tickets() {
   const { userData } = useAuth();
   const user = auth.currentUser;
-
   const [isDesktop, setIsDesktop] = useState<boolean>(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
 
   const hasTicketHandler = useMemo(() => {
@@ -488,12 +499,13 @@ export default function Tickets() {
 
   // post: do not append anything locally until server confirms. Return boolean success.
   const postMessage = async (ticketId: string, text: string, parentId?: string | null): Promise<boolean> => {
-    if (!text?.trim() || !user) return false;
+    const plainText = getPlainTextFromHtml(text).trim();
+    if (!plainText || !user) return false;
     setSending(true);
     try {
       // store on server
       await addDoc(collection(db, `tickets/${ticketId}/messages`), {
-        text: text.trim(),
+        text: plainText,
         createdBy: user.email,
         createdAt: serverTimestamp(),
         parentId: parentId || null,
@@ -638,7 +650,7 @@ export default function Tickets() {
               <div className={replyClosing ? 'composer-animate-out' : 'composer-animate-in'} style={{ marginTop: 8, display: 'flex', gap: 8 }}>
                 <RichTextField value={text} onChange={setText} placeholder="Reply..." minHeight={64} style={{ padding: 8 }} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <button onClick={async () => { if (!text.trim()) return; const payload = text; const ok = await postMessage(ticketId, payload, node.id); if (ok) { setText(''); setReplyClosing(true); setTimeout(() => { setOpenReply(false); setReplyClosing(false); }, 180); } }} disabled={sending || !text.trim()} style={{ padding: '0.5rem 0.8rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: 8 }}>{sending ? <><Loader2 className="animate-spin" size={14} /> </> : 'Post'}</button>
+                  <button onClick={async () => { const plainText = getPlainTextFromHtml(text).trim(); if (!plainText) return; const payload = text; const ok = await postMessage(ticketId, payload, node.id); if (ok) { setText(''); setReplyClosing(true); setTimeout(() => { setOpenReply(false); setReplyClosing(false); }, 180); } }} disabled={sending || !getPlainTextFromHtml(text).trim()} style={{ padding: '0.5rem 0.8rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: 8 }}>{sending ? <><Loader2 className="animate-spin" size={14} /> </> : 'Post'}</button>
                   <button onClick={() => { setReplyClosing(true); setTimeout(() => { setOpenReply(false); setReplyClosing(false); setText(''); }, 180); }} style={{ padding: '0.4rem 0.6rem', background: '#eee', border: 'none', borderRadius: 8 }}>Cancel</button>
                 </div>
               </div>
@@ -837,7 +849,7 @@ export default function Tickets() {
                                   <div className={composerClosing[t.id] ? "composer-animate-out" : "composer-animate-in"}>
                                     <TopLevelComposer 
                                       posting={sending} 
-                                      text={draftTexts[t.id] || ''}
+                                      text={draftTexts[t.id] || ''} // Pass the HTML string
                                       onTextChange={(newText) => setDraftTexts(prev => ({ ...prev, [t.id]: newText }))}
                                       onPost={async (text: string) => { 
                                         // do not clear draft until post completes; show loader on button
