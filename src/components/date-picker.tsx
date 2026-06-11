@@ -8,59 +8,151 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
-type DatePickerProps = {
-    value?: string
-    onChange: React.Dispatch<React.SetStateAction<string>>
-    placeholder?: string
-    className?: string
+type SingleValue = string
+export type RangeValue = {
+  from?: string
+  to?: string
+}
+
+type DatePickerProps =
+  | {
+      mode?: "single"
+      value?: SingleValue
+      onChange: React.Dispatch<React.SetStateAction<string>>
+      placeholder?: string
+      className?: string
+    }
+  | {
+      mode: "range"
+      value?: RangeValue
+      onChange: React.Dispatch<React.SetStateAction<RangeValue>>
+      placeholder?: string
+      className?: string
+    }
+
+export function DatePicker(props: DatePickerProps) {
+  const {
+    mode = "single",
+    placeholder = "Pick a date",
+    className,
+  } = props as any
+
+  const [open, setOpen] = React.useState(false)
+
+  // -----------------------------
+  // SINGLE MODE
+  // -----------------------------
+  if (mode === "single") {
+    const { value, onChange } = props as Extract<
+      DatePickerProps,
+      { mode?: "single" }
+    >
+
+    const selectedDate = React.useMemo(() => {
+      if (!value) return undefined
+      const d = new Date(value)
+      return isNaN(d.getTime()) ? undefined : d
+    }, [value])
+
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "w-[180px] justify-start text-left font-normal",
+              !value && "text-muted-foreground",
+              className
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {selectedDate ? format(selectedDate, "PPP") : placeholder}
+          </Button>
+        </DialogTrigger>
+
+        <DialogContent className="w-auto p-0 border-none bg-transparent shadow-none">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={(date) => {
+              onChange(date ? format(date, "yyyy-MM-dd") : "")
+              setOpen(false)
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    )
   }
 
-export function DatePicker({
-  value,
-  onChange,
-  placeholder = "Pick a date",
-  className,
-}: DatePickerProps) {
-  const selectedDate = React.useMemo(() => {
-    if (!value) return undefined
-    const d = new Date(value)
-    return isNaN(d.getTime()) ? undefined : d
+  // -----------------------------
+  // RANGE MODE
+  // -----------------------------
+  const { value, onChange } = props as Extract<
+    DatePickerProps,
+    { mode: "range" }
+  >
+
+  const selectedRange = React.useMemo(() => {
+    return {
+      from: value?.from ? new Date(value.from) : undefined,
+      to: value?.to ? new Date(value.to) : undefined,
+    }
   }, [value])
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
         <Button
           variant="outline"
+          style={{border:"", width:"fit-content"}}
           className={cn(
-            "w-[180px] justify-start text-left font-normal",
-            !value && "text-muted-foreground",
+            " justify-start text-left font-normal",
+            !value?.from && "text-muted-foreground",
             className
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {selectedDate ? (
-            format(selectedDate, "PPP")
+          {value?.from ? (
+            value?.to ? (
+              `${format(new Date(value.from), "PPP")} - ${format(
+                new Date(value.to),
+                "PPP"
+              )}`
+            ) : (
+              format(new Date(value.from), "PPP")
+            )
           ) : (
-            <span>{placeholder}</span>
+            placeholder
           )}
         </Button>
-      </PopoverTrigger>
+      </DialogTrigger>
 
-      <PopoverContent className="w-auto p-0">
-  <Calendar
-    mode="single"
-    selected={selectedDate}
-    onSelect={(date) => {
-      onChange(date ? format(date, "yyyy-MM-dd") : "")
-    }}
-  />
-</PopoverContent>
-    </Popover>
+      <DialogContent className="w-auto p-0 border-none bg-transparent shadow-none">
+        <Calendar
+          mode="range"
+          selected={selectedRange}
+          onSelect={(range: any) => {
+            onChange({
+              from: range?.from
+                ? format(range.from, "yyyy-MM-dd")
+                : undefined,
+              to: range?.to
+                ? format(range.to, "yyyy-MM-dd")
+                : undefined,
+            })
+
+            // optional: close when full range selected
+            if (range?.from && range?.to) {
+              setOpen(false)
+            }
+          }}
+        />
+      </DialogContent>
+    </Dialog>
   )
 }

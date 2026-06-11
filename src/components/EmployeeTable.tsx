@@ -14,14 +14,16 @@ export function EmployeeTable({ summaries }: EmployeeTableProps) {
   const [locationFilter, setLocationFilter] = useState('all');
 
   const uniqueLocations = useMemo(() => {
-    const locations = new Set<string>();
-    summaries.forEach((emp: any) => {
-      // Deriving locations from available metadata
-      const loc = emp.location || emp.department;
-      if (loc) locations.add(loc);
-    });
-    return Array.from(locations).sort();
-  }, [summaries]);
+  const locations = new Set<string>();
+
+  summaries.forEach((emp) => {
+    if (emp.location) {
+      locations.add(emp.location);
+    }
+  });
+
+  return Array.from(locations).sort();
+}, [summaries]);
 
   const filteredSummaries = useMemo(() => {
     return summaries.filter((emp) => {
@@ -29,8 +31,9 @@ export function EmployeeTable({ summaries }: EmployeeTableProps) {
         emp.name.toLowerCase().includes(search.toLowerCase()) ||
         (emp.emp_id && emp.emp_id.toLowerCase().includes(search.toLowerCase()));
       
-      const empLoc = (emp as any).location || emp.department || '';
-      const matchesLocation = locationFilter === 'all' || empLoc === locationFilter;
+     const matchesLocation =
+  locationFilter === 'all' ||
+  emp.location === locationFilter;
       
       return matchesSearch && matchesLocation;
     });
@@ -46,7 +49,7 @@ export function EmployeeTable({ summaries }: EmployeeTableProps) {
   }
 
   return (
-    <div className="flex flex-col h-auto overflow-hidden" style={{border:""}}>
+    <div className="flex flex-col h-auto overflow-hidden" style={{border:"", width:"100%"}}>
       {/* Toolbar: Search and Location Filter */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white sticky top-0 z-20" style={{border:'', width:"100%"}}>
         <div className="relative flex-1 group">
@@ -85,6 +88,7 @@ export function EmployeeTable({ summaries }: EmployeeTableProps) {
             <tr className="border-b border-gray-100">
             <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Employee</th>
             <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide ">Department</th>
+            <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide ">Location</th>
             <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">First in</th>
             <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Last out</th>
             <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Status</th>
@@ -112,6 +116,7 @@ export function EmployeeTable({ summaries }: EmployeeTableProps) {
                 </div>
               </td>
               <td className="px-4 py-3 text-gray-500">{emp.department ?? '—'}</td>
+              <td className="px-4 py-3 text-gray-500">{emp.location ?? '—'}</td>
               <td className="px-4 py-3 tabular-nums text-gray-700">{formatTime(emp.firstIn)}</td>
               <td className="px-4 py-3 tabular-nums text-gray-700">{formatTime(emp.lastOut)}</td>
               <td className="px-4 py-3">

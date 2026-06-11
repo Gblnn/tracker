@@ -38,7 +38,7 @@ export function PunchLog({ punches, employees }: PunchLogProps) {
   });
 
   return (
-    <div className="flex flex-col h-full overflow-hidden"> {/* Make PunchLog itself a flex container that takes full height and hides overflow */}
+    <div className="flex flex-col h-full overflow-hidden" style={{width:"100%"}}> {/* Make PunchLog itself a flex container that takes full height and hides overflow */}
       <div className="flex items-center gap-5 px-2 py-3 border-b border-gray-100 bg-white sticky top-0 z-20" style={{border:"", width:"100%"}}> {/* Search bar is sticky relative to this parent */}
         <i className="ti ti-search text-gray-400 text-base" aria-hidden="true" />
         <input

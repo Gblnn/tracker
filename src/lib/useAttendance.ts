@@ -90,5 +90,12 @@ export function useAttendance(date: string) {
     checkOuts: punches.filter((p) => p.punch_type === 1).length,
   };
 
-  return { punches, employees, employeeSummaries, stats, loading, error, refetch: fetchData };
+  const latestPunch = punches
+  .sort(
+    (a, b) =>
+      new Date(b.punch_time).getTime() -
+      new Date(a.punch_time).getTime()
+  )[0]
+
+  return { punches, employees, employeeSummaries, stats, location:latestPunch?.location ?? null, loading, error, refetch: fetchData };
 }

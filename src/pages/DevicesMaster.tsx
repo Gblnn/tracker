@@ -107,8 +107,8 @@ export default function DevicesMaster() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+    <div className="min-h-screen bg-white" style={{width:"100%"}}>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8" style={{width:"100%"}}>
 
         {/* Header */}
         <div className="flex items-center gap-2.5 mb-8">

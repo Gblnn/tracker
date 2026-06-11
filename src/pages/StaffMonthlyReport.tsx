@@ -12,7 +12,6 @@ interface Employee {
   department: string | null;
   emp_type: string | null;
   emp_id: string | null;
-  location?: string | null;
 }
 
 interface PunchDetail {
@@ -57,8 +56,7 @@ function monthLabel(month: number, year: number): string {
 
 // Shared row height so both tables stay in sync
 const ROW_H = 34;
-const HEAD_R1 = 33;
-const HEAD_R2 = 22;
+const HEAD_H = 52; // two header rows combined approx height
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -89,7 +87,7 @@ export default function StaffMonthlyReport() {
     const [{ data: empData, error: eErr }, { data: pData, error: pErr }] = await Promise.all([
       supabase.from('employees')
         .select('id, device_user_id, name, department, emp_type, emp_id')
-        .eq('emp_type', 'Staff')
+        .eq('emp_type', 'staff')
         .order('name', { ascending: true }),
       supabase.from('punch_details')
         .select('user_id, punch_time, punch_type')
@@ -134,12 +132,8 @@ export default function StaffMonthlyReport() {
     dayList.filter(d => !isWeekend(year, month, d)).length,
   [dayList, year, month]);
 
-  const pastWorkDays = useMemo(() =>
-    dayList.filter(d => !isWeekend(year, month, d) && new Date(year, month, d) <= today).length,
-  [dayList, year, month]);
-
   const presenceDays = (uid: string) => Object.values(matrix[uid] ?? {}).filter(d => d.isPresent).length;
-  const absentDays   = (uid: string) => Math.max(0, pastWorkDays - presenceDays(uid));
+  const absentDays   = (uid: string) => workDays - presenceDays(uid);
 
   // ── Scroll sync ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -180,7 +174,6 @@ export default function StaffMonthlyReport() {
         const c = matrix[emp.device_user_id]?.[d];
         if (isWeekend(year, month, d))  { row.push('OFF', ''); }
         else if (c?.isPresent)          { row.push(formatTime(c.firstIn) || '✓', formatTime(c.lastOut) || ''); }
-        else if (new Date(year, month, d) > today) { row.push('—', ''); }
         else                            { row.push('A', ''); }
       }
       row.push(presenceDays(emp.device_user_id), absentDays(emp.device_user_id));
@@ -202,10 +195,6 @@ export default function StaffMonthlyReport() {
     const c = matrix[uid]?.[d];
     if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[10px]" style={{ height: ROW_H }}>—</td>;
     if (c?.isPresent) return <td className="text-center text-emerald-700 font-medium tabular-nums text-[10px] whitespace-nowrap" style={{ height: ROW_H }}>{formatTime(c.firstIn) || '✓'}</td>;
-
-    const isFuture = new Date(year, month, d) > today;
-    if (isFuture) return <td className="text-center text-gray-300 text-[10px]" style={{ height: ROW_H }}>—</td>;
-
     return <td className="text-center text-red-400 font-bold text-[10px]" style={{ height: ROW_H }}>A</td>;
   }
 
@@ -280,13 +269,13 @@ export default function StaffMonthlyReport() {
 
       {/* ── Table area ── */}
       {loading ? (
-        <div className="flex items-center justify-center gap-2 flex-1 text-gray-400 text-sm" style={{border:"", width:"100%"}}>
+        <div className="flex items-center justify-center gap-2 flex-1 text-gray-400 text-sm">
           <Loader2 className="w-4 h-4 animate-spin" />
           Loading…
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex items-center justify-center flex-1 text-gray-400 text-sm">
-          No staff found.
+          No staff found. Set emp_type = 'staff' in Supabase.
         </div>
       ) : (
         /*
@@ -308,32 +297,27 @@ export default function StaffMonthlyReport() {
               zIndex: 10,
             }}
           >
-            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: 454 }}>
+            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: 320 }}>
               <colgroup>
                 <col style={{ width: 28 }} />
-                <col style={{ width: 180 }} />
-                <col style={{ width: 130 }} />
-                <col style={{ width: 52 }} />
-                <col style={{ width: 52 }} />
+                <col style={{ width: 170 }} />
+                <col style={{ width: 110 }} />
                 <col style={{ width: 12 }} />
               </colgroup>
               <thead>
                 {/* Row 1: day number */}
-                <tr style={{ background: '#111827', color: '#fff', position: 'sticky', top: 0, zIndex: 5, paddingBottom:"1rem" }}>
+                <tr style={{ background: '#111827', color: '#fff', position: 'sticky', top: 0, zIndex: 5 }}>
                   <th className="text-[11px] font-medium text-center px-1 py-2">#</th>
                   <th className="text-[11px] font-medium text-left px-3 py-2">Name</th>
-                  <th className="text-[11px] font-medium text-left px-2 py-2">Location</th>
-                  <th className="text-[11px] font-medium text-center py-2" style={{ background: '#065f46' }}>P</th>
-                  <th className="text-[11px] font-medium text-center py-2" style={{ background: '#7f1d1d' }}>A</th>
+                  <th className="text-[11px] font-medium text-left px-2 py-2">Department</th>
                   <th style={{ background: '#111827' }} />
                 </tr>
                 {/* Row 2: In/Out sub-label spacer */}
-                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 33, zIndex: 5, border:"", height:23 }}>
+                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 33, zIndex: 5 }}>
                   <th style={{ padding: '4px 0' }} />
                   <th style={{ padding: '4px 0' }} />
                   <th style={{ padding: '4px 0' }} />
-                  <th style={{ background: '#ecfdf5' }} />
-                  <th style={{ background: '#fef2f2' }} />
+                  <th style={{ padding: '4px 0' }} />
                 </tr>
               </thead>
               <tbody>
@@ -347,13 +331,7 @@ export default function StaffMonthlyReport() {
                       {emp.name}
                       {emp.emp_id && <div className="text-[9px] text-gray-400 font-normal">{emp.emp_id}</div>}
                     </td>
-                    <td className="text-[11px] text-gray-500 bg-white px-2 whitespace-nowrap">{emp.location ?? '—'}</td>
-                    <td className="text-center text-[11px] font-semibold text-emerald-700" style={{ background: '#ecfdf5', height: ROW_H }}>
-                      {presenceDays(emp.device_user_id)}
-                    </td>
-                    <td className="text-center text-[11px] font-semibold text-red-600" style={{ background: '#fef2f2', height: ROW_H }}>
-                      {absentDays(emp.device_user_id)}
-                    </td>
+                    <td className="text-[11px] text-gray-500 bg-white px-2 whitespace-nowrap">{emp.department ?? '—'}</td>
                     <td className="bg-white" />
                   </tr>
                 ))}
@@ -366,37 +344,43 @@ export default function StaffMonthlyReport() {
             ref={rightRef}
             style={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}
           >
-            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: `${dayList.length * 84}px`, borderSpacing: 0 }}>
+            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: `${dayList.length * 84 + 110}px` }}>
               <colgroup>
                 {dayList.map(d => <col key={`ci-${d}`} style={{ width: 42 }} />)}
                 {dayList.map(d => <col key={`co-${d}`} style={{ width: 42 }} />)}
+                <col style={{ width: 52 }} />
+                <col style={{ width: 52 }} />
               </colgroup>
               <thead>
                 {/* Row 1: day number + weekday */}
-                <tr style={{ background: '#111827', color: '#fff', position: 'sticky', top: 0, zIndex: 5, height: HEAD_R1 }}>
+                <tr style={{ background: '#111827', color: '#fff', position: 'sticky', top: 0, zIndex: 5 }}>
                   {dayList.map(d => (
                     <th
                       key={d}
-                      className="text-center text-[11px] font-medium"
+                      className="text-center text-[11px] font-medium py-1.5"
                       style={{ background: isWeekend(year, month, d) ? '#374151' : '#111827' }}
                     >
                       <div className="leading-tight">{d}</div>
-                      <div className="text-[8px] font-normal opacity-60 leading-tight">{getDayName(year, month, d)}</div>
+                      <div className="text-[9px] font-normal opacity-60 leading-tight">{getDayName(year, month, d)}</div>
                     </th>
                   ))}
                   {/* spacer cols (out times — shown in row 2) */}
                   {dayList.map(d => (
                     <th key={`sp-${d}`} style={{ background: isWeekend(year, month, d) ? '#374151' : '#111827' }} />
                   ))}
+                  <th className="text-[11px] font-medium text-center py-2" style={{ background: '#065f46' }}>P</th>
+                  <th className="text-[11px] font-medium text-center py-2" style={{ background: '#7f1d1d' }}>A</th>
                 </tr>
                 {/* Row 2: In / Out labels */}
-                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: HEAD_R1, zIndex: 5, height: HEAD_R2 }}>
+                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 33, zIndex: 5 }}>
                   {dayList.map(d => (
-                    <th key={`li-${d}`} className="text-[9px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>In</th>
+                    <th key={`li-${d}`} className="text-[9px] text-gray-400 font-medium text-center py-1" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>In</th>
                   ))}
                   {dayList.map(d => (
-                    <th key={`lo-${d}`} className="text-[9px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>Out</th>
+                    <th key={`lo-${d}`} className="text-[9px] text-gray-400 font-medium text-center py-1" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>Out</th>
                   ))}
+                  <th style={{ background: '#ecfdf5' }} />
+                  <th style={{ background: '#fef2f2' }} />
                 </tr>
               </thead>
               <tbody>
@@ -404,6 +388,12 @@ export default function StaffMonthlyReport() {
                   <tr key={emp.id} style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }} className="hover:bg-blue-50/20">
                     {dayList.map(d => <InCell  key={`in-${d}`}  uid={emp.device_user_id} d={d} />)}
                     {dayList.map(d => <OutCell key={`out-${d}`} uid={emp.device_user_id} d={d} />)}
+                    <td className="text-center text-[11px] font-semibold text-emerald-700" style={{ background: '#ecfdf5', height: ROW_H }}>
+                      {presenceDays(emp.device_user_id)}
+                    </td>
+                    <td className="text-center text-[11px] font-semibold text-red-600" style={{ background: '#fef2f2', height: ROW_H }}>
+                      {absentDays(emp.device_user_id)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

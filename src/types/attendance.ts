@@ -25,6 +25,7 @@ export interface EmployeeSummary extends Employee {
   firstIn: string | null;
   lastOut: string | null;
   isPresent: boolean;
+  location?: string | null;
 }
 
 export type VerifyType = 0 | 1 | 4 | 15;
