@@ -2,7 +2,8 @@ import Back from '@/components/back';
 import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
-import { Laptop2, LayoutGrid, List, Loader2, TrendingUp } from 'lucide-react';
+import { Laptop2, LayoutGrid, List, Loader2, Sidebar, TrendingUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
@@ -18,6 +19,7 @@ export default function AttendanceDashboard() {
   const [tab, setTab] = useState<Tab>('summary');
 
   const { punches, employees, employeeSummaries, loading } = useAttendance(date);
+  const [navVisible, setNavVisible] = useState(true);
 
   const viewOptions = [
     { value: 'summary', label: 'Summary', icon: <LayoutGrid color="darkblue" className="w-4 h-4" /> },
@@ -56,26 +58,37 @@ export default function AttendanceDashboard() {
           margin: "1rem",
           marginTop: "5rem",
           padding: "0.5rem",
-          gap: "0.75rem",
         }}
       >
         {/* LEFT NAV */}
-        <div
-          style={{
-            border: "1px solid rgba(100 100 100 / 0.1)",
-            borderRadius: "0.5rem",
-            width: "25ch",
-            padding: "0.5rem",
-            flexShrink: 0,
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-            <Directive titleSize="0.9rem" onClick={() => setTab('summary')} title="Summary" icon={<LayoutGrid color="darkblue" size={16} />} />
-            <Directive titleSize="0.9rem" onClick={() => setTab('log')} title="Punch Log" icon={<List color="darkblue" size={16} />} />
-            <Directive titleSize="0.9rem" onClick={() => setTab('reports')} title="Reports" icon={<TrendingUp color="darkblue" size={16} />} />
-            <Directive titleSize="0.9rem" onClick={() => setTab('devices')} title="Devices" icon={<Laptop2 color="darkblue" size={16} />} />
-          </div>
-        </div>
+        <AnimatePresence initial={false}>
+          {navVisible && (
+            <motion.div
+              initial={{ width: 0, opacity: 0, x: -20, paddingLeft: 0, paddingRight: 0, marginRight: 0, borderWidth: 0 }}
+              animate={{ width: "25ch", opacity: 1, x: 0, paddingLeft: "0.5rem", paddingRight: "0.5rem", marginRight: "0.75rem", borderWidth: 1 }}
+              exit={{ width: 0, opacity: 0, x: -20, paddingLeft: 0, paddingRight: 0, marginRight: 0, borderWidth: 0 }}
+              transition={{ type: "spring", stiffness: 350, damping: 35 }}
+              style={{
+                borderStyle: "solid",
+                borderColor: "rgba(100 100 100 / 0.1)",
+                borderRadius: "0.5rem",
+                paddingTop: "0.5rem",
+                paddingBottom: "0.5rem",
+                flexShrink: 0,
+                overflow: "hidden",
+                whiteSpace: "nowrap"
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                <Directive titleSize="0.9rem" onClick={() => setTab('summary')} title="Summary" icon={<LayoutGrid color="darkblue" size={16} />} />
+                <Directive titleSize="0.9rem" onClick={() => setTab('log')} title="Punch Log" icon={<List color="darkblue" size={16} />} />
+                <Directive titleSize="0.9rem" onClick={() => setTab('reports')} title="Reports" icon={<TrendingUp color="darkblue" size={16} />} />
+                <Directive titleSize="0.9rem" onClick={() => setTab('devices')} title="Devices" icon={<Laptop2 color="darkblue" size={16} />} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
 
         {/* RIGHT PANEL */}
         <div
@@ -89,12 +102,24 @@ export default function AttendanceDashboard() {
         >
           {/* HEADER */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginLeft:"0.75rem", fontSize:"1.35rem" }}>
-              {viewOptions.find(opt => opt.value === tab)?.icon}
+            <div style={{display:"flex", alignItems:"center", gap:"0.5rem", marginLeft: "0.25rem"}}>
+              <button style={{background:"rgba(100 100 100/ 0.05)"}} onClick={() => setNavVisible(v => !v)}>
+                <Sidebar color="darkblue" size={14}/>
+              </button>
+              
+              <h3 style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginLeft:"", fontSize:"1.25rem", fontWeight:500 }}>
+              {/* {viewOptions.find(opt => opt.value === tab)?.icon} */}
               {activeViewLabel}
-            </h2>
+            </h3>
+            </div>
+            
 
-            <DatePicker value={date} onChange={setDate} />
+            {
+              tab==='summary' || tab === 'log' ? (
+                <DatePicker value={date} onChange={setDate} />
+              ) : null
+            }
+            
           </div>
 
           {/* CONTENT */}

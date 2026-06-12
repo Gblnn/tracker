@@ -61,7 +61,7 @@ button_next: cn(
 ),
 
 month_caption: cn(
-  "w-full text-center text-sm font-medium",
+  "w-full text-center text-sm font-medium ",
   defaultClassNames.month_caption
 ),
 

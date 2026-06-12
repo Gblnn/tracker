@@ -219,7 +219,7 @@ export default function StaffMonthlyReport() {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     // Fill the parent panel entirely — no own padding or min-h
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', width:"100%" }}>
 
       {/* ── Toolbar ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', padding: '0.5rem 0.75rem', flexShrink: 0 }}>
