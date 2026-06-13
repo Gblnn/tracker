@@ -1,6 +1,6 @@
 
 
-             
+
 
 import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
@@ -109,7 +109,7 @@ export default function Index() {
         setModulePermissions(permissions);
       } catch {
         // Fallback for old clearance system
-        
+
         setModulePermissions({});
       }
       setAdmin(userData.role === "admin" || userData.role === "site_admin");
@@ -137,7 +137,7 @@ export default function Index() {
   useEffect(() => {
     const syncPendingLogs = async () => {
       if (!navigator.onLine) return;
-      
+
       const count = getPendingFuelLogsCount();
       if (count === 0) return;
 
@@ -148,32 +148,32 @@ export default function Index() {
       try {
         const result = await syncAllPendingFuelLogs((current, total) => {
           const progress = Math.round((current / total) * 100);
-          updateProcess(processId, { 
-            progress, 
-            message: `Uploaded ${current} of ${total}...` 
+          updateProcess(processId, {
+            progress,
+            message: `Uploaded ${current} of ${total}...`
           });
         });
 
         // If sync was skipped (already in progress), silently complete
         if (result.skipped) {
-          updateProcess(processId, { 
-            status: "completed", 
-            message: "Sync already running" 
+          updateProcess(processId, {
+            status: "completed",
+            message: "Sync already running"
           });
           return;
         }
 
         if (result.success > 0) {
-          updateProcess(processId, { 
-            status: "completed", 
-            message: `${result.success} fuel log${result.success > 1 ? 's' : ''} synced successfully` 
+          updateProcess(processId, {
+            status: "completed",
+            message: `${result.success} fuel log${result.success > 1 ? 's' : ''} synced successfully`
           });
         }
 
         if (result.failed > 0) {
-          updateProcess(processId, { 
-            status: "error", 
-            message: `${result.failed} fuel log${result.failed > 1 ? 's' : ''} failed to sync` 
+          updateProcess(processId, {
+            status: "error",
+            message: `${result.failed} fuel log${result.failed > 1 ? 's' : ''} failed to sync`
           });
         }
       } catch (error) {
@@ -189,7 +189,7 @@ export default function Index() {
   useEffect(() => {
     const cacheFuelLogs = async () => {
       if (!navigator.onLine || !userData?.email) return;
-      
+
       try {
         console.log("🔄 Caching fuel logs on app launch...");
         await fetchAndCacheFuelLogs(userData.email);
@@ -209,7 +209,7 @@ export default function Index() {
     const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('sw-update') : null;
 
     const notifyAvailable = () => {
-      try { localStorage.setItem('sw:update-available', '1'); } catch (e) {}
+      try { localStorage.setItem('sw:update-available', '1'); } catch (e) { }
       setNewVersionAvailable(true);
     };
 
@@ -225,11 +225,11 @@ export default function Index() {
     // Initialize from persisted flag so dismiss doesn't remove user's ability to update later
     try {
       if (localStorage.getItem('sw:update-available') === '1') setNewVersionAvailable(true);
-    } catch (e) {}
+    } catch (e) { }
 
     return () => {
       window.removeEventListener('sw:new-version-available', onWindowEvent);
-      try { if (bc) bc.close(); } catch (e) {}
+      try { if (bc) bc.close(); } catch (e) { }
     };
   }, []);
 
@@ -239,13 +239,13 @@ export default function Index() {
       const reg = await navigator.serviceWorker.getRegistration();
       if (reg?.waiting) {
         // Listen for controllerchange to reload when the new SW takes over
-            const onControllerChange = () => {
-              try { localStorage.removeItem('sw:update-available'); } catch (e) {}
-              window.location.reload();
-            };
-            navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
-            try { localStorage.removeItem('sw:update-available'); } catch (e) {}
-            try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
+        const onControllerChange = () => {
+          try { localStorage.removeItem('sw:update-available'); } catch (e) { }
+          window.location.reload();
+        };
+        navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+        try { localStorage.removeItem('sw:update-available'); } catch (e) { }
+        try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
       } else {
         // No waiting worker — trigger an update check
         const r = await navigator.serviceWorker.getRegistration();
@@ -254,7 +254,7 @@ export default function Index() {
       }
     } catch (e) {
       console.error('Failed to apply update', e);
-      try { localStorage.removeItem('sw:update-available'); } catch (err) {}
+      try { localStorage.removeItem('sw:update-available'); } catch (err) { }
       window.location.reload();
     }
   };
@@ -293,8 +293,8 @@ export default function Index() {
     const hasSimCards = hasModuleAccess('sim_cards');
     const hasOffboarding = hasModuleAccess('offboarding');
 
-    return hasRecordsMaster || hasUsers || hasNewHire || hasQuickLinks || 
-           hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || hasAttendance ||
+    return hasRecordsMaster || hasUsers || hasNewHire || hasQuickLinks ||
+      hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || hasAttendance ||
       hasPettyCash || hasOfferLetters || hasEmployeeClearanceForm || hasShiftLogs || hasTransferRequests || hasSimCards || hasOffboarding || hasTickets;
   };
 
@@ -341,23 +341,23 @@ export default function Index() {
       {/* <div style={{border:"", display:"flex", alignItems:"center", justifyContent:'center'}}>
         <ConfettiExplosion/>
         </div> */}
-        
-        <Back
-        
-      //  fontFamily="'Britney', cursive"
-      //  fontSize="1.5rem"
+
+      <Back
+
+        //  fontFamily="'Britney', cursive"
+        //  fontSize="1.5rem"
         blurBG
-          fixed
-          editMode={userData?.editor===true? true : false}
-            title="Starboard"
-            subtitle={"1.37"}
-            icon={<img src="/stardox-bg.png" style={{width:"2rem"}} alt="Starboard" />}
-            noback
-            extra={
-              <div
-                style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
-              >
-                {/* <button
+        fixed
+        editMode={userData?.editor === true ? true : false}
+        title="Starboard"
+        subtitle={"1.38"}
+        icon={<img src="/stardox-bg.png" style={{ width: "2rem" }} alt="Starboard" />}
+        noback
+        extra={
+          <div
+            style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
+          >
+            {/* <button
                   onClick={() => window.location.reload()}
                   style={{
                     paddingLeft: "1rem",
@@ -372,11 +372,11 @@ export default function Index() {
                   </p>
                 </button> */}
 
-                {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
+            {/* <button onClick={()=>usenavigate("/inbox")} style={{ width:"3rem", background:"rgba(220 20 60/ 20%)"}}>
                             <Inbox className="" color="crimson"/>
                         </button> */}
 
-                {/* <button
+            {/* <button
                   onClick={() => {
                     setLogoutPrompt(true);
                   }}
@@ -385,7 +385,7 @@ export default function Index() {
                   <LogOut width={"1rem"} color="lightcoral" />
                 </button> */}
 
-                {/* {admin && (
+            {/* {admin && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
@@ -411,26 +411,26 @@ export default function Index() {
                 
                 } */}
 
-                <BackgroundProcessDropdown/>
+            <BackgroundProcessDropdown />
 
-                <IndexDropDown
-                  onLogout={() => setLogoutPrompt(true)}
-                  onProfile={() => {}}
-                />
-              </div>
-            }
-          />
-        {newVersionAvailable && (
-          <div style={{ position: 'fixed', top: 64, left: '50%', transform: 'translateX(-50%)', zIndex: 99999 }}>
-            <div style={{ background: '', border: '', padding: '0.5rem 1rem', borderRadius: 8, display: 'flex', gap: 8, alignItems: 'center', boxShadow: '0 6px 20px rgba(0,0,0,0.08)' }}>
-              <div style={{ fontWeight: 600, marginRight: 8 }}>New version available</div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => applyUpdate()} style={{ padding: '0.4rem 0.8rem', background: '#0b76ef', color: 'white', border: 'none', borderRadius: 6 }}>Update</button>
-                <button onClick={() => setNewVersionAvailable(false)} style={{ padding: '0.4rem 0.8rem', background: 'transparent', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 6 }}>Dismiss</button>
-              </div>
+            <IndexDropDown
+              onLogout={() => setLogoutPrompt(true)}
+              onProfile={() => { }}
+            />
+          </div>
+        }
+      />
+      {newVersionAvailable && (
+        <div style={{ position: 'fixed', top: 64, left: '50%', transform: 'translateX(-50%)', zIndex: 99999 }}>
+          <div style={{ background: '', border: '', padding: '0.5rem 1rem', borderRadius: 8, display: 'flex', gap: 8, alignItems: 'center', boxShadow: '0 6px 20px rgba(0,0,0,0.08)' }}>
+            <div style={{ fontWeight: 600, marginRight: 8 }}>New version available</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => applyUpdate()} style={{ padding: '0.4rem 0.8rem', background: '#0b76ef', color: 'white', border: 'none', borderRadius: 6 }}>Update</button>
+              <button onClick={() => setNewVersionAvailable(false)} style={{ padding: '0.4rem 0.8rem', background: 'transparent', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 6 }}>Dismiss</button>
             </div>
           </div>
-        )}
+        </div>
+      )}
       <div
         style={{
           padding: "1.25rem",
@@ -444,7 +444,7 @@ export default function Index() {
           //   "linear-gradient(180deg, rgba(252, 252, 252, 1), rgba(244, 246, 249, 1))",
         }}
       >
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{paddingBottom:"2rem"}}>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ paddingBottom: "2rem" }}>
           {/* <div
             style={{
               borderRadius: "1rem",
@@ -534,216 +534,216 @@ export default function Index() {
             </div>
           ) : (
             hasAnyModules() ? (
-            <>
-            <div style={{ marginBottom: "0.65rem", paddingTop: "0.15rem" }}>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "0.82rem",
-                  letterSpacing: "0.12rem",
-                  textTransform: "uppercase",
-                  opacity: 0.72,
-                  fontWeight: 600,
-                  marginLeft: "0.75rem"
-                }}
-              >
-                Modules
-              </p>
-            </div>
-            <div
-              style={{ 
-                display: "grid", 
-                gridTemplateColumns: getGridColumns(),
-                columnGap: "0.6rem",
-                rowGap: "0.6rem",
-                paddingBottom: "1rem",
-                paddingTop:"0.5rem"
-              }}
-            >
-              {hasModuleAccess('records_master') && (
-                <GridTile
-                  title="Records"
-                  description="Employee records and profile updates"
-                  icon={<FileArchive width="2.5rem" />}
-                  onClick={() => navigate('/records')}
-                />
-              )}
+              <>
+                <div style={{ marginBottom: "0.65rem", paddingTop: "0.15rem" }}>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "0.82rem",
+                      letterSpacing: "0.12rem",
+                      textTransform: "uppercase",
+                      opacity: 0.72,
+                      fontWeight: 600,
+                      marginLeft: "0.75rem"
+                    }}
+                  >
+                    Modules
+                  </p>
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: getGridColumns(),
+                    columnGap: "0.6rem",
+                    rowGap: "0.6rem",
+                    paddingBottom: "1rem",
+                    paddingTop: "0.5rem"
+                  }}
+                >
+                  {hasModuleAccess('records_master') && (
+                    <GridTile
+                      title="Records"
+                      description="Employee records and profile updates"
+                      icon={<FileArchive width="2.5rem" />}
+                      onClick={() => navigate('/records')}
+                    />
+                  )}
 
-              {(admin || hasModuleAccess('user_management')) && (
-                <GridTile
-                  title="Users"
-                  description="Roles, clearances and access controls"
-                  icon={<Users width="2.5rem" />}
-                  onClick={() => navigate('/users')}
-                />
-              )}
+                  {(admin || hasModuleAccess('user_management')) && (
+                    <GridTile
+                      title="Users"
+                      description="Roles, clearances and access controls"
+                      icon={<Users width="2.5rem" />}
+                      onClick={() => navigate('/users')}
+                    />
+                  )}
 
-              {hasModuleAccess('new_hire') && (
-                <GridTile
-                  title="New Hire"
-                  description="Onboarding and new joiner workflow"
-                  icon={<UserCheck width="2.5rem" />}
-                  onClick={() => authenticateModule('new_hire', '/new-hire', 'New Hire')}
-                />
-              )}
+                  {hasModuleAccess('new_hire') && (
+                    <GridTile
+                      title="New Hire"
+                      description="Onboarding and new joiner workflow"
+                      icon={<UserCheck width="2.5rem" />}
+                      onClick={() => authenticateModule('new_hire', '/new-hire', 'New Hire')}
+                    />
+                  )}
 
-              {hasModuleAccess('quick_links') && (
-                <GridTile
-                  title="Links"
-                  description="Frequently used operational shortcuts"
-                  icon={<Link width="2.5rem" />}
-                  onClick={() => authenticateModule('quick_links', '/quick-links', 'Links')}
-                />
-              )}
+                  {hasModuleAccess('quick_links') && (
+                    <GridTile
+                      title="Links"
+                      description="Frequently used operational shortcuts"
+                      icon={<Link width="2.5rem" />}
+                      onClick={() => authenticateModule('quick_links', '/quick-links', 'Links')}
+                    />
+                  )}
 
-              {hasModuleAccess('qr_generator') && (
-                <GridTile
-                  title="QR"
-                  description="Generate QR codes for assets and docs"
-                  icon={<QrCode width="2.5rem" />}
-                  onClick={() => authenticateModule('qr_generator', '/qr-code-generator', 'QR Generator')}
-                />
-              )}
+                  {hasModuleAccess('qr_generator') && (
+                    <GridTile
+                      title="QR"
+                      description="Generate QR codes for assets and docs"
+                      icon={<QrCode width="2.5rem" />}
+                      onClick={() => authenticateModule('qr_generator', '/qr-code-generator', 'QR Generator')}
+                    />
+                  )}
 
-             
-              <GridTile
-                              title={hasTicketHandler ? "Tickets" : "IT Support"}
-                              description="Report Issues and track resolutions"
-                              icon={<Ticket width="2.5rem" />}
-                              onClick={() => navigate('/tickets')}
-                              badge={hasTicketHandler && openTicketsCount !== null && openTicketsCount > 0 ? openTicketsCount : undefined}
-                            />
-         
 
-               {hasModuleAccess('manpower_requirements') && (
-                <GridTile
-                  title="Manpower Requirements"
-                  description="Workforce planning and requirements"
-                  icon={<Users width="2.5rem" />}
-                  onClick={() => authenticateModule('manpower_requirements', '/manpower-requirements', 'Manpower Requirements')}
-                />
-              )}
+                  <GridTile
+                    title={hasTicketHandler ? "Tickets" : "IT Support"}
+                    description="Report Issues and track resolutions"
+                    icon={<Ticket width="2.5rem" />}
+                    onClick={() => navigate('/tickets')}
+                    badge={hasTicketHandler && openTicketsCount !== null && openTicketsCount > 0 ? openTicketsCount : undefined}
+                  />
 
-              {hasModuleAccess('projects') && (
-                <GridTile
-                  title="Projects"
-                  description="Project planning and status overview"
-                  icon={<Package width="2.5rem" />}
-                  onClick={() => authenticateModule('projects', '/projects', 'Projects')}
-                />
-              )}
 
-              {hasModuleAccess('attendance') && (
-                <GridTile
-                  title="Attendance"
-                  description="Attendance and workforce time tracking"
-                  icon={<Clock3Icon width="2.5rem" />}
-                  onClick={() => authenticateModule('attendance', '/attendance', 'Attendance')}
-                />
-              )}
+                  {hasModuleAccess('manpower_requirements') && (
+                    <GridTile
+                      title="Manpower Requirements"
+                      description="Workforce planning and requirements"
+                      icon={<Users width="2.5rem" />}
+                      onClick={() => authenticateModule('manpower_requirements', '/manpower-requirements', 'Manpower Requirements')}
+                    />
+                  )}
 
-              {hasModuleAccess('asset_master') && (
-                <GridTile
-                  title="Asset Master"
-                  description="Asset register, assignment and lifecycle"
-                  icon={<Car width="2.5rem" />}
-                  onClick={() => authenticateModule('asset_master', '/asset-master', 'Asset Master')}
-                />
-              )}
+                  {hasModuleAccess('projects') && (
+                    <GridTile
+                      title="Projects"
+                      description="Project planning and status overview"
+                      icon={<Package width="2.5rem" />}
+                      onClick={() => authenticateModule('projects', '/projects', 'Projects')}
+                    />
+                  )}
 
-              {hasModuleAccess('vehicle_log_book') && (
-                <GridTile
-                  title="Vehicles"
-                  description="Vehicle records, logs and movement"
-                  icon={<Car width="2.5rem" />}
-                  onClick={() => authenticateModule('vehicle_log_book', '/vehicles', 'Vehicles')}
-                />
-              )}
+                  {hasModuleAccess('attendance') && (
+                    <GridTile
+                      title="Attendance"
+                      description="Attendance and workforce time tracking"
+                      icon={<Clock3Icon width="2.5rem" />}
+                      onClick={() => authenticateModule('attendance', '/attendance', 'Attendance')}
+                    />
+                  )}
 
-              {hasModuleAccess('passports') && (
-                <GridTile
-                  title="Passports"
-                  description="Passport tracking and renewals"
-                  icon={<BookMarked width="2.5rem" />}
-                  onClick={() => authenticateModule('passports', '/passports', 'Passports')}
-                />
-              )}
+                  {hasModuleAccess('asset_master') && (
+                    <GridTile
+                      title="Asset Master"
+                      description="Asset register, assignment and lifecycle"
+                      icon={<Car width="2.5rem" />}
+                      onClick={() => authenticateModule('asset_master', '/asset-master', 'Asset Master')}
+                    />
+                  )}
 
-              {hasModuleAccess('petty_cash') && (
-                <GridTile
-                  title="Petty Cash"
-                  description="Expense logging and petty cash control"
-                  icon={<Wallet width="2.5rem" />}
-                  onClick={() => authenticateModule('petty_cash', '/petty-cash', 'Petty Cash')}
-                />
-              )}
+                  {hasModuleAccess('vehicle_log_book') && (
+                    <GridTile
+                      title="Vehicles"
+                      description="Vehicle records, logs and movement"
+                      icon={<Car width="2.5rem" />}
+                      onClick={() => authenticateModule('vehicle_log_book', '/vehicles', 'Vehicles')}
+                    />
+                  )}
 
-              {hasModuleAccess('offer_letters') && (
-                <GridTile
-                  title="Offer Letters"
-                  description="Compose, format and export offers"
-                  icon={<FileText width="2.5rem" />}
-                  onClick={() => authenticateModule('offer_letters', '/offer-letters', 'Offer Letters')}
-                />
-              )}
+                  {hasModuleAccess('passports') && (
+                    <GridTile
+                      title="Passports"
+                      description="Passport tracking and renewals"
+                      icon={<BookMarked width="2.5rem" />}
+                      onClick={() => authenticateModule('passports', '/passports', 'Passports')}
+                    />
+                  )}
 
-              {hasModuleAccess('employee_clearance_form') && (
-                <GridTile
-                  title="Forms"
-                  description="Forms and approvals"
-                  icon={<File width="2.5rem" />}
-                  onClick={() => authenticateModule('employee_clearance_form', '/employee-clearance-form', 'Forms')}
-                />
-              )}
+                  {hasModuleAccess('petty_cash') && (
+                    <GridTile
+                      title="Petty Cash"
+                      description="Expense logging and petty cash control"
+                      icon={<Wallet width="2.5rem" />}
+                      onClick={() => authenticateModule('petty_cash', '/petty-cash', 'Petty Cash')}
+                    />
+                  )}
 
-              {hasModuleAccess('shift_logs') && (
-                <GridTile
-                  title="Shift Logs"
-                  description="Daily shifts and duty entries"
-                  icon={<Clock3 width="2.5rem" />}
-                  onClick={() => authenticateModule('shift_logs', '/shift-logs', 'Shift Logs')}
-                />
-              )}
+                  {hasModuleAccess('offer_letters') && (
+                    <GridTile
+                      title="Offer Letters"
+                      description="Compose, format and export offers"
+                      icon={<FileText width="2.5rem" />}
+                      onClick={() => authenticateModule('offer_letters', '/offer-letters', 'Offer Letters')}
+                    />
+                  )}
 
-              {hasModuleAccess('transfer_requests') && (
-                <GridTile
-                  title="Transfers"
-                  description="Staff movement and transfer requests"
-                  icon={<ArrowRightLeft width="2.5rem" />}
-                  onClick={() => authenticateModule('transfer_requests', '/transfer-requests', 'Transfers')}
-                />
-              )}
+                  {hasModuleAccess('employee_clearance_form') && (
+                    <GridTile
+                      title="Forms"
+                      description="Forms and approvals"
+                      icon={<File width="2.5rem" />}
+                      onClick={() => authenticateModule('employee_clearance_form', '/employee-clearance-form', 'Forms')}
+                    />
+                  )}
 
-              {hasModuleAccess('sim_cards') && (
-                <GridTile
-                  title="SIM Cards"
-                  description="SIM allocation and status management"
-                  icon={<Smartphone width="2.5rem" />}
-                  onClick={() => authenticateModule('sim_cards', '/sim-cards', 'SIM Cards')}
-                />
-              )}
+                  {hasModuleAccess('shift_logs') && (
+                    <GridTile
+                      title="Shift Logs"
+                      description="Daily shifts and duty entries"
+                      icon={<Clock3 width="2.5rem" />}
+                      onClick={() => authenticateModule('shift_logs', '/shift-logs', 'Shift Logs')}
+                    />
+                  )}
 
-              {hasModuleAccess('offboarding') && (
-                <GridTile
-                  title="Offboarding"
-                  description="Exit process and clearance closure"
-                  icon={<LogOut width="2.5rem" />}
-                  onClick={() => authenticateModule('offboarding', '/offboarding', 'Offboarding')}
-                />
-              )}
-            </div>
-            </>
+                  {hasModuleAccess('transfer_requests') && (
+                    <GridTile
+                      title="Transfers"
+                      description="Staff movement and transfer requests"
+                      icon={<ArrowRightLeft width="2.5rem" />}
+                      onClick={() => authenticateModule('transfer_requests', '/transfer-requests', 'Transfers')}
+                    />
+                  )}
+
+                  {hasModuleAccess('sim_cards') && (
+                    <GridTile
+                      title="SIM Cards"
+                      description="SIM allocation and status management"
+                      icon={<Smartphone width="2.5rem" />}
+                      onClick={() => authenticateModule('sim_cards', '/sim-cards', 'SIM Cards')}
+                    />
+                  )}
+
+                  {hasModuleAccess('offboarding') && (
+                    <GridTile
+                      title="Offboarding"
+                      description="Exit process and clearance closure"
+                      icon={<LogOut width="2.5rem" />}
+                      onClick={() => authenticateModule('offboarding', '/offboarding', 'Offboarding')}
+                    />
+                  )}
+                </div>
+              </>
             ) : (
-              <div style={{ 
-                display: "flex", 
-                justifyContent: "center", 
-                alignItems: "center", 
-                height: "70vh" 
+              <div style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "70vh"
               }}>
                 <Empty>
                   <EmptyHeader>
                     <EmptyMedia>
-                      <Package/>
+                      <Package />
                     </EmptyMedia>
                     <EmptyTitle>No Modules Allocated</EmptyTitle>
                     <EmptyDescription>You don't have access to any modules yet. Please contact your administrator to request module access.</EmptyDescription>

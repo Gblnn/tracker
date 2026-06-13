@@ -21,19 +21,19 @@ export type RangeValue = {
 
 type DatePickerProps =
   | {
-      mode?: "single"
-      value?: SingleValue
-      onChange: React.Dispatch<React.SetStateAction<string>>
-      placeholder?: string
-      className?: string
-    }
+    mode?: "single"
+    value?: SingleValue
+    onChange: React.Dispatch<React.SetStateAction<string>>
+    placeholder?: string
+    className?: string
+  }
   | {
-      mode: "range"
-      value?: RangeValue
-      onChange: React.Dispatch<React.SetStateAction<RangeValue>>
-      placeholder?: string
-      className?: string
-    }
+    mode: "range"
+    value?: RangeValue
+    onChange: React.Dispatch<React.SetStateAction<RangeValue>>
+    placeholder?: string
+    className?: string
+  }
 
 export function DatePicker(props: DatePickerProps) {
   const {
@@ -63,6 +63,7 @@ export function DatePicker(props: DatePickerProps) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button
+            style={{ width: "fit-content", height: "1.9rem" }}
             variant="outline"
             className={cn(
               "w-[180px] justify-start text-left font-normal",
@@ -70,7 +71,7 @@ export function DatePicker(props: DatePickerProps) {
               className
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
+            {/* <CalendarIcon className="mr-2 h-2 w-2" /> */}
             {selectedDate ? format(selectedDate, "PPP") : placeholder}
           </Button>
         </DialogTrigger>
@@ -109,7 +110,7 @@ export function DatePicker(props: DatePickerProps) {
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          style={{border:"", width:"fit-content"}}
+          style={{ border: "", width: "fit-content" }}
           className={cn(
             " justify-start text-left font-normal",
             !value?.from && "text-muted-foreground",

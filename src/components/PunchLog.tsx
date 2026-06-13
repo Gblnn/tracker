@@ -38,8 +38,8 @@ export function PunchLog({ punches, employees }: PunchLogProps) {
   });
 
   return (
-    <div className="flex flex-col h-full overflow-hidden" style={{width:"100%"}}> {/* Make PunchLog itself a flex container that takes full height and hides overflow */}
-      <div className="flex items-center gap-5 px-2 py-3 border-b border-gray-100 bg-white sticky top-0 z-20" style={{border:"", width:"100%"}}> {/* Search bar is sticky relative to this parent */}
+    <div className="flex flex-col h-full overflow-hidden" style={{ width: "100%", height: '100%', border: "", display: "flex", flexFlow: "column", justifyContent: "flex-start" }}> {/* Make PunchLog itself a flex container that takes full height and hides overflow */}
+      <div className="flex items-center gap-5 px-2 py-3 border-b border-gray-100 bg-white sticky top-0 z-20" style={{ border: "", width: "100%" }}> {/* Search bar is sticky relative to this parent */}
         <i className="ti ti-search text-gray-400 text-base" aria-hidden="true" />
         <input
           type="text"
@@ -92,7 +92,7 @@ export function PunchLog({ punches, employees }: PunchLogProps) {
           {search ? 'No results found.' : 'No punches recorded for this date.'}
         </div>
       ) : (
-        <div className="overflow-auto flex-1" style={{border:"", width:"100%"}}> {/* This div now handles both vertical and horizontal scrolling, taking remaining height */}
+        <div className="overflow-auto flex-1" style={{ border: "", width: "100%" }}> {/* This div now handles both vertical and horizontal scrolling, taking remaining height */}
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-gray-50 z-10"> {/* Sticky relative to its new scrollable parent */}
               <tr className="bg-gray-50 border-b border-gray-100">
@@ -113,17 +113,17 @@ export function PunchLog({ punches, employees }: PunchLogProps) {
                 return (
                   <tr key={punch.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5" style={{display:"flex", justifyContent:"flex-start", alignItems:"center"}}>
+                      <div className="flex items-center gap-2.5" style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
                         <Avatar size={"md"} name={name} index={idx} />
                         <div>
-                        <span className="font-medium text-gray-900">{name}</span>
-                        {emp.emp_id ? (
-                      <div className="text-xs text-gray-400">{emp.emp_id}</div>
-                        ) : (
-                          ""
-                        )}
+                          <span className="font-medium text-gray-900">{name}</span>
+                          {emp.emp_id ? (
+                            <div className="text-xs text-gray-400">{emp.emp_id}</div>
+                          ) : (
+                            ""
+                          )}
                         </div>
-                        
+
                       </div>
                     </td>
                     <td className="px-4 py-3 tabular-nums text-gray-700">
@@ -131,11 +131,10 @@ export function PunchLog({ punches, employees }: PunchLogProps) {
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                          isIn
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : 'bg-red-50 text-red-600'
-                        }`}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${isIn
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'bg-red-50 text-red-600'
+                          }`}
                       >
                         <i
                           className={`ti ${isIn ? 'ti-login' : 'ti-logout'} text-[11px]`}
@@ -145,7 +144,7 @@ export function PunchLog({ punches, employees }: PunchLogProps) {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-500">
-                      
+
                       {VERIFY_LABELS[punch.verify_type] ?? punch.verify_type}
                     </td>
                     <td className="px-4 py-3 text-gray-400 ">

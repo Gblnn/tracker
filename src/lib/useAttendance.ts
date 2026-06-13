@@ -19,7 +19,7 @@ export function useAttendance(date: string) {
       const [{ data: punchData, error: punchError }, { data: empData, error: empError }] =
         await Promise.all([
           supabase
-            .from('punch_details')
+            .from('punches')
             .select('*')
             .gte('punch_time', start)
             .lte('punch_time', end)
@@ -91,11 +91,11 @@ export function useAttendance(date: string) {
   };
 
   const latestPunch = punches
-  .sort(
-    (a, b) =>
-      new Date(b.punch_time).getTime() -
-      new Date(a.punch_time).getTime()
-  )[0]
+    .sort(
+      (a, b) =>
+        new Date(b.punch_time).getTime() -
+        new Date(a.punch_time).getTime()
+    )[0]
 
-  return { punches, employees, employeeSummaries, stats, location:latestPunch?.location ?? null, loading, error, refetch: fetchData };
+  return { punches, employees, employeeSummaries, stats, location: latestPunch?.location ?? null, loading, error, refetch: fetchData };
 }
