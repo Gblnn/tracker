@@ -2,8 +2,8 @@ import Back from '@/components/back';
 import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Laptop2, LayoutGrid, List, Loader2, Sidebar, TrendingUp } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
@@ -131,9 +131,53 @@ export default function AttendanceDashboard() {
               borderRadius: "0.75rem",
               overflow: "hidden",
               display: "flex",
-
+              flexFlow: "column",
             }}
           >
+            {
+              tab === "summary" ? (
+                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", padding: "0.75rem", gap: "0.75rem" }}>
+
+                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Total</p>
+                    <h1 style={{ fontWeight: 600, fontSize: "2rem" }}>{employeeSummaries.length}</h1>
+                  </div>
+
+                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Present</p>
+                    <h1 style={{ fontWeight: 600, fontSize: "2rem" }}>{employeeSummaries.filter((emp) => emp.isPresent).length}</h1>
+                  </div>
+
+                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Absent</p>
+                    <h1 style={{ fontWeight: 600, fontSize: "2rem" }}>{employeeSummaries.filter((emp) => !emp.isPresent).length}</h1>
+                  </div>
+                </div>)
+                : null
+            }
+
+            {
+              tab === "log" ? (
+                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", padding: "0.75rem", gap: "0.75rem" }}>
+
+                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Check Ins</p>
+                    <h1 style={{ fontWeight: 600, fontSize: "2rem" }}>{punches.filter((p) => p.punch_type === 0).length}</h1>
+                  </div>
+
+                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Check Outs</p>
+                    <h1 style={{ fontWeight: 600, fontSize: "2rem" }}>{punches.filter((p) => p.punch_type === 1).length}</h1>
+                  </div>
+
+                  {/* <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Total</p>
+                    <h1 style={{ fontWeight: 600, fontSize: "2rem" }}>{punches.length}</h1>
+                  </div> */}
+                </div>)
+                : null
+            }
+
             {loading ? (
               <div style={{ margin: "auto" }}>
                 <Loader2 className="animate-spin" />

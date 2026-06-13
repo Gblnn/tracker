@@ -378,7 +378,7 @@ export default function StaffMonthlyReport() {
           <button
             onClick={exportPDF}
             disabled={loading || filtered.length === 0 || pdfLoading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-black text-white rounded-lg hover:bg-[#7f1d1d] transition-colors disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-black text-white rounded-lg hover:bg-grey transition-colors disabled:opacity-40"
           >
             {pdfLoading ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

@@ -11,9 +11,9 @@ const CLEARANCE_ROUTES = {
 // Define system-role-restricted routes
 const ROLE_RESTRICTED_ROUTES = {
   admin: ["*"], // Admins can access all routes
-  site_admin: ["/site-admin-workers", "/index", "/tasks", "/phonebook", "/profile", "/timetaag"],
-  user: ["/index", "/tasks", "/records", "/record-list", "/vale-records", "/profile", "/phonebook", "/qr-code-generator", "/offer-letters", "/new-hire", "/fuel-log", "/asset-master", "/projects", "/timetaag"], // Regular users can access records master
-  profile: ["/profile", "/records", "/phonebook"] // Basic profile access
+  site_admin: ["/site-admin-workers", "/index", "/tasks", "/phonebook", "/profile", "/timetaag", "/attendance"],
+  user: ["/index", "/tasks", "/records", "/record-list", "/vale-records", "/profile", "/phonebook", "/qr-code-generator", "/offer-letters", "/new-hire", "/fuel-log", "/asset-master", "/projects", "/attendance"], // Regular users can access records master
+  profile: ["/profile", "/records", "/phonebook", "/attendance"] // Basic profile access
 };
 
 // Module-level clearance can explicitly grant route access regardless of role list.
@@ -35,7 +35,8 @@ const MODULE_ROUTE_PERMISSIONS: Record<string, string[]> = {
   employee_clearance_form: ["/employee-clearance-form"],
   transfer_requests: ["/transfer-requests"],
   manpower_requirements: ["/manpower-requirements"],
-  tickets: ["/tickets"]
+  tickets: ["/tickets"],
+  attendance: ["/attendance"]
 };
 
 const routeMatchesPath = (route: string, path: string): boolean => {
@@ -106,15 +107,15 @@ export default function ProtectedRoutes() {
   // Check role-based route restrictions
   const allowedRoutes = ROLE_RESTRICTED_ROUTES[userData.role as keyof typeof ROLE_RESTRICTED_ROUTES];
   const hasModuleRouteAccess = hasRoutePermissionFromModules(currentPath, modulePermissions);
-  
+
   // Helper function to check if a path matches allowed routes (including dynamic routes)
   const isPathAllowed = (path: string, allowedRoutes: string[]): boolean => {
     // Check for wildcard access
     if (allowedRoutes.includes("*")) return true;
-    
+
     // Check exact match
     if (allowedRoutes.includes(path)) return true;
-    
+
     // Check if path starts with any allowed route (for dynamic routes like /record/:id)
     return allowedRoutes.some(() => {
       // Special handling for dynamic routes
@@ -124,7 +125,7 @@ export default function ProtectedRoutes() {
       return false;
     });
   };
-  
+
   // If route is module-protected, allow access if EITHER role-based or module clearance is present
   const isModuleProtected = Object.values(MODULE_ROUTE_PERMISSIONS).some(routes => routes.includes(currentPath));
   if (isModuleProtected) {

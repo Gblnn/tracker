@@ -16,21 +16,35 @@ export function useAttendance(date: string) {
       const start = `${date}T00:00:00`;
       const end = `${date}T23:59:59`;
 
-      const [{ data: punchData, error: punchError }, { data: empData, error: empError }] =
-        await Promise.all([
-          supabase
-            .from('punches')
-            .select('*')
-            .gte('punch_time', start)
-            .lte('punch_time', end)
-            .order('punch_time', { ascending: false }),
-          supabase.from('employees').select('*').order('name', { ascending: true }),
-        ]);
+      const [
+        { data: punchData, error: punchError },
+        { data: empData, error: empError },
+        { data: devData, error: devError }
+      ] = await Promise.all([
+        supabase
+          .from('punches')
+          .select('*')
+          .gte('punch_time', start)
+          .lte('punch_time', end)
+          .order('punch_time', { ascending: false }),
+        supabase.from('employees').select('*').order('name', { ascending: true }),
+        supabase.from('devices').select('serial_no, location')
+      ]);
 
       if (punchError) throw punchError;
       if (empError) throw empError;
+      if (devError) throw devError;
 
-      setPunches(punchData ?? []);
+      const deviceMap = Object.fromEntries(
+        (devData ?? []).map(d => [d.serial_no, d.location])
+      );
+
+      const punchesWithLocation = (punchData ?? []).map(p => ({
+        ...p,
+        location: deviceMap[p.device_serial] ?? '—'
+      }));
+
+      setPunches(punchesWithLocation);
       setEmployees(empData ?? []);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load data');
@@ -51,13 +65,23 @@ export function useAttendance(date: string) {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'punches' },
-        (payload) => {
+        async (payload) => {
           const newPunch = payload.new as Punch;
           // Only add if punch is for the currently viewed date
           const punchDate = new Date(newPunch.punch_time)
             .toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' });
           if (punchDate === date) {
-            setPunches((prev) => [newPunch, ...prev]);
+            const { data: dev } = await supabase
+              .from('devices')
+              .select('location')
+              .eq('serial_no', newPunch.device_serial)
+              .maybeSingle();
+
+            const punchWithLoc = {
+              ...newPunch,
+              location: dev?.location ?? '—'
+            };
+            setPunches((prev) => [punchWithLoc, ...prev]);
           }
         }
       )
@@ -73,12 +97,19 @@ export function useAttendance(date: string) {
     const empPunches = punches.filter((p) => p.user_id === emp.device_user_id);
     const checkIns = empPunches.filter((p) => p.punch_type === 0);
     const checkOuts = empPunches.filter((p) => p.punch_type === 1);
+
+    const sortedEmpPunches = [...empPunches].sort(
+      (a, b) => new Date(b.punch_time).getTime() - new Date(a.punch_time).getTime()
+    );
+    const latestLocation = sortedEmpPunches[0]?.location ?? null;
+
     return {
       ...emp,
       totalPunches: empPunches.length,
       firstIn: checkIns.at(-1)?.punch_time ?? null,
       lastOut: checkOuts.at(0)?.punch_time ?? null,
       isPresent: empPunches.length > 0,
+      location: latestLocation,
     };
   });
 
