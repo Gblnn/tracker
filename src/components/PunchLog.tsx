@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Avatar } from './Avatar';
 import type { Punch, Employee } from '../types/attendance';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,9 +7,10 @@ import { formatTime, VERIFY_LABELS, PUNCH_TYPE_LABELS } from '../lib/utilis';
 interface PunchLogProps {
   punches: Punch[];
   employees: Employee[];
+  onFilteredPunchesChange?: (punches: Punch[]) => void;
 }
 
-export function PunchLog({ punches, employees }: PunchLogProps) {
+export function PunchLog({ punches, employees, onFilteredPunchesChange }: PunchLogProps) {
   const [search, setSearch] = useState('');
   const [punchTypeFilter, setPunchTypeFilter] = useState<'all' | 0 | 1>('all');
   const [punchLocationFilter, setPunchLocationFilter] = useState('all');
@@ -37,6 +38,13 @@ export function PunchLog({ punches, employees }: PunchLogProps) {
     return matchesSearch && matchesPunchType && matchesLocation;
   });
 
+  // Call the callback whenever filtered punches change
+  useEffect(() => {
+    if (onFilteredPunchesChange) {
+      onFilteredPunchesChange(filtered);
+    }
+  });
+
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ width: "100%", height: '100%', border: "", display: "flex", flexFlow: "column", justifyContent: "flex-start" }}> {/* Make PunchLog itself a flex container that takes full height and hides overflow */}
       <div className="flex items-center gap-5 px-2 py-3 border-b border-gray-100 bg-white sticky top-0 z-20" style={{ border: "", width: "100%" }}> {/* Search bar is sticky relative to this parent */}
@@ -55,7 +63,7 @@ export function PunchLog({ punches, employees }: PunchLogProps) {
         )}
 
         <Select value={punchTypeFilter.toString()} onValueChange={(value) => setPunchTypeFilter(value === 'all' ? 'all' : parseInt(value) as 0 | 1)}>
-          <SelectTrigger className="w-[150px] h-9 text-sm bg-gray-50 border-gray-100 rounded-lg focus:ring-offset-0 focus:ring-gray-200">
+          <SelectTrigger style={{ width: "fit-content" }} className=" h-9 text-sm bg-gray-50 border-gray-100 rounded-lg focus:ring-offset-0 focus:ring-gray-200">
             <SelectValue placeholder="Punch Type" />
           </SelectTrigger>
           <SelectContent className="rounded-lg border-gray-100 shadow-xl">
@@ -72,7 +80,7 @@ export function PunchLog({ punches, employees }: PunchLogProps) {
         </Select>
 
         <Select value={punchLocationFilter} onValueChange={setPunchLocationFilter}>
-          <SelectTrigger className="w-[150px] h-9 text-sm bg-gray-50 border-gray-100 rounded-lg focus:ring-offset-0 focus:ring-gray-200">
+          <SelectTrigger style={{ width: "fit-content" }} className=" h-9 text-sm bg-gray-50 border-gray-100 rounded-lg focus:ring-offset-0 focus:ring-gray-200">
             <SelectValue placeholder="Location" />
           </SelectTrigger>
           <SelectContent className="rounded-lg border-gray-100 shadow-xl">

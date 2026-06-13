@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Avatar } from './Avatar';
 import type { EmployeeSummary } from '../types/attendance';
 import { formatTime } from '../lib/utilis';
@@ -8,9 +8,10 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from './
 
 interface EmployeeTableProps {
   summaries: EmployeeSummary[];
+  onFilteredSummariesChange?: (summaries: EmployeeSummary[]) => void;
 }
 
-export function EmployeeTable({ summaries }: EmployeeTableProps) {
+export function EmployeeTable({ summaries, onFilteredSummariesChange }: EmployeeTableProps) {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
 
@@ -38,6 +39,13 @@ export function EmployeeTable({ summaries }: EmployeeTableProps) {
 
       return matchesSearch && matchesLocation;
     });
+  }, [summaries, search, locationFilter]);
+
+  // Call the callback whenever filteredSummaries changes
+  useEffect(() => {
+    if (onFilteredSummariesChange) {
+      onFilteredSummariesChange(filteredSummaries);
+    }
   }, [summaries, search, locationFilter]);
 
 
@@ -80,8 +88,8 @@ export function EmployeeTable({ summaries }: EmployeeTableProps) {
         </div>
 
         <Select value={locationFilter} onValueChange={setLocationFilter}>
-          <SelectTrigger className="w-[160px] h-10 bg-gray-50 border-none rounded-xl text-xs font-medium focus:ring-1 focus:ring-gray-200">
-            <SelectValue placeholder="All Locations" />
+          <SelectTrigger style={{ width: "fit-content" }} className=" h-10 bg-gray-50 border-none rounded-xl text-xs font-medium focus:ring-1 focus:ring-gray-200">
+            <SelectValue placeholder="All" />
           </SelectTrigger>
           <SelectContent className="rounded-xl border-gray-100 shadow-xl">
             <SelectItem value="all">All Locations</SelectItem>

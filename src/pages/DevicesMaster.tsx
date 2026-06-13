@@ -107,17 +107,17 @@ export default function DevicesMaster() {
   }
 
   return (
-    <div className="min-h-screen bg-white" style={{width:"100%"}}>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8" style={{width:"100%"}}>
+    <div className="min-h-screen bg-white" style={{ width: "100%" }}>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8" style={{ width: "100%" }}>
 
         {/* Header */}
-        <div className="flex items-center gap-2.5 mb-8">
+        {/* <div className="flex items-center gap-2.5 mb-8">
           <Laptop2 className="w-5 h-5 text-gray-400" />
           <h1 className="text-xl font-semibold text-gray-900">Devices</h1>
           <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
             {devices.length} registered
           </span>
-        </div>
+        </div> */}
 
         {/* Error */}
         {error && (
@@ -151,7 +151,7 @@ export default function DevicesMaster() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {devices.map((device) => {
-                 
+
                   return (
                     <tr key={device.id} className="hover:bg-gray-50 transition-colors group">
                       <td className="px-4 py-3">

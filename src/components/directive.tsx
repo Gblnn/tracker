@@ -47,6 +47,7 @@ interface Props {
   width?: any;
   expiring?: boolean;
   href?: string;
+  bg?: string;
 }
 
 export default function Directive(props: Props) {
@@ -97,7 +98,7 @@ export default function Directive(props: Props) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          background: "rgba(246 248 252 / 0.78)",
+          background: props.bg ? props.bg : "rgba(246 248 252 / 0.78)",
           backdropFilter: "blur(10px)",
           WebkitBackdropFilter: "blur(10px)",
           borderRadius: "0.5rem",
@@ -116,7 +117,7 @@ export default function Directive(props: Props) {
             inset: "0.05rem",
             borderRadius: "0.45rem",
             pointerEvents: "none",
-            background: "linear-gradient(165deg, rgba(255,255,255,0.34) 0%, rgba(220,230,245,0.14) 45%, rgba(255,255,255,0) 100%)",
+            // background: "linear-gradient(165deg, rgba(255,255,255,0.34) 0%, rgba(220,230,245,0.14) 45%, rgba(255,255,255,0) 100%)",
           }}
         />
         <div
@@ -223,8 +224,8 @@ export default function Directive(props: Props) {
                     </span>
                     {props.expiring && (
                       <Circle
-                      
-                      className="animate-pulse"
+
+                        className="animate-pulse"
                         color="red"
                         width={"0.5rem"}
                         height={"0.5rem"}
@@ -282,10 +283,10 @@ export default function Directive(props: Props) {
                   props.tag === "Expiring"
                     ? "goldenrod"
                     : props.tag === "Available"
-                    ? "lightgreen"
-                    : props.status
-                    ? "mediumslateblue"
-                    : "",
+                      ? "lightgreen"
+                      : props.status
+                        ? "mediumslateblue"
+                        : "",
                 fontWeight: 600,
                 display: "flex",
                 alignItems: "center",

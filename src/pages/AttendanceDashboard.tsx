@@ -3,7 +3,7 @@ import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Laptop2, LayoutGrid, List, Loader2, Sidebar, TrendingUp } from 'lucide-react';
+import { Laptop2, LayoutGrid, List, Loader2, Sidebar, TrendingUp, UserPlus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
@@ -11,8 +11,9 @@ import { useAttendance } from '../lib/useAttendance';
 import { todayISO } from '../lib/utilis';
 import DevicesMaster from './DevicesMaster';
 import ReportsPage from './ReportsPage';
+import AddEmployee from './AddEmployee';
 
-type Tab = 'summary' | 'log' | 'reports' | 'devices';
+type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add';
 
 export default function AttendanceDashboard() {
   const [date, setDate] = useState<string>(todayISO());
@@ -23,6 +24,7 @@ export default function AttendanceDashboard() {
 
   const viewOptions = [
     { value: 'summary', label: 'Summary', icon: <LayoutGrid color="darkblue" className="w-4 h-4" /> },
+    { value: 'add', label: 'Add Employee', icon: <UserPlus color="darkblue" className="w-4 h-4" /> },
     { value: 'log', label: 'Punch Log', icon: <List color="darkblue" className="w-4 h-4" /> },
     { value: 'reports', label: 'Reports', icon: <TrendingUp color="darkblue" className="w-4 h-4" /> },
     { value: 'devices', label: 'Devices', icon: <Laptop2 color="darkblue" className="w-4 h-4" /> },
@@ -80,10 +82,16 @@ export default function AttendanceDashboard() {
               }}
             >
               <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                <Directive height='3rem' titleSize="0.9rem" onClick={() => setTab('summary')} title="Summary" icon={<LayoutGrid color="darkblue" size={16} />} />
-                <Directive height='3rem' titleSize="0.9rem" onClick={() => setTab('log')} title="Punch Log" icon={<List color="darkblue" size={16} />} />
-                <Directive height='3rem' titleSize="0.9rem" onClick={() => setTab('reports')} title="Reports" icon={<TrendingUp color="darkblue" size={16} />} />
-                <Directive height='3rem' titleSize="0.9rem" onClick={() => setTab('devices')} title="Devices" icon={<Laptop2 color="darkblue" size={16} />} />
+
+                <Directive bg={tab === 'summary' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('summary')} title="Summary" icon={<LayoutGrid size={16} />} />
+
+                {/* <Directive bg={tab === 'add' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize='0.9rem' onClick={() => { setTab('add') }} title={"Add Employee"} icon={<UserPlus size={16} />} /> */}
+
+                <Directive bg={tab === 'log' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('log')} title="Punch Log" icon={<List size={16} />} />
+
+                <Directive bg={tab === 'reports' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('reports')} title="Reports" icon={<TrendingUp size={16} />} />
+
+                <Directive bg={tab === 'devices' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('devices')} title="Devices" icon={<Laptop2 size={16} />} />
               </div>
             </motion.div>
           )}
@@ -134,38 +142,45 @@ export default function AttendanceDashboard() {
               flexFlow: "column",
             }}
           >
+            {/* Stat Card */}
             {
               tab === "summary" ? (
                 <div style={{ width: "100%", display: "flex", justifyContent: "space-between", padding: "0.75rem", gap: "0.75rem" }}>
 
-                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
+                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center", height: "6rem" }}>
                     <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Total</p>
-                    <h1 style={{ fontWeight: 600, fontSize: "2rem" }}>{employeeSummaries.length}</h1>
+                    <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : employeeSummaries.length}</h1>
                   </div>
 
                   <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
                     <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Present</p>
-                    <h1 style={{ fontWeight: 600, fontSize: "2rem" }}>{employeeSummaries.filter((emp) => emp.isPresent).length}</h1>
+                    <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : employeeSummaries.filter((emp) => emp.isPresent).length}</h1>
                   </div>
 
                   <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
                     <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Absent</p>
-                    <h1 style={{ fontWeight: 600, fontSize: "2rem" }}>{employeeSummaries.filter((emp) => !emp.isPresent).length}</h1>
+                    <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : employeeSummaries.filter((emp) => !emp.isPresent).length}</h1>
+                  </div>
+
+                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Total Logs</p>
+                    <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : employeeSummaries.length}</h1>
                   </div>
                 </div>)
                 : null
             }
 
+            {/* Stat Card */}
             {
               tab === "log" ? (
-                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", padding: "0.75rem", gap: "0.75rem" }}>
+                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", padding: "0.75rem", gap: "0.75rem",  }}>
 
-                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
+                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center", height:"6rem" }}>
                     <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Check Ins</p>
                     <h1 style={{ fontWeight: 600, fontSize: "2rem" }}>{punches.filter((p) => p.punch_type === 0).length}</h1>
                   </div>
 
-                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
+                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center", height:"6rem" }}>
                     <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Check Outs</p>
                     <h1 style={{ fontWeight: 600, fontSize: "2rem" }}>{punches.filter((p) => p.punch_type === 1).length}</h1>
                   </div>
@@ -188,9 +203,12 @@ export default function AttendanceDashboard() {
               <PunchLog punches={punches} employees={employees} />
             ) : tab === 'devices' ? (
               <DevicesMaster />
-            ) : (
-              <ReportsPage />
-            )}
+            ) :
+              tab === 'add' ? (
+                <AddEmployee />
+              ) : (
+                <ReportsPage />
+              )}
           </div>
         </div>
       </div>
