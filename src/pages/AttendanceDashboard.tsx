@@ -112,7 +112,7 @@ export default function AttendanceDashboard() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", border: "", padding: "0.5rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginLeft: "0.25rem" }}>
               <button style={{ background: "rgba(100 100 100/ 0.05)" }} onClick={() => setNavVisible(v => !v)}>
-                <Sidebar color="darkblue" size={14} />
+                <Sidebar  size={14} />
               </button>
 
               <h3 style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginLeft: "", fontSize: "1.25rem", fontWeight: 500 }}>
@@ -162,10 +162,7 @@ export default function AttendanceDashboard() {
                     <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : employeeSummaries.filter((emp) => !emp.isPresent).length}</h1>
                   </div>
 
-                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
-                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Total Logs</p>
-                    <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : employeeSummaries.length}</h1>
-                  </div>
+                  
                 </div>)
                 : null
             }

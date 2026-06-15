@@ -125,11 +125,11 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange }: PunchL
                         <Avatar size={"md"} name={name} index={idx} />
                         <div>
                           <span className="font-medium text-gray-900">{name}</span>
-                          {emp.emp_id ? (
+                          {/* {emp.emp_id ? (
                             <div className="text-xs text-gray-400">{emp.emp_id}</div>
                           ) : (
                             ""
-                          )}
+                          )} */}
                         </div>
 
                       </div>

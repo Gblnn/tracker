@@ -1,9 +1,16 @@
-import { useEffect, useState, useCallback, useMemo, useRef, Fragment } from 'react';
-import { Loader2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { ChevronLeft, ChevronRight, Download, Loader2, Search } from 'lucide-react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import * as XLSX from 'xlsx';
+import { supabase } from '../lib/supabase';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,10 +33,14 @@ interface PunchDetail {
 interface DaySummary {
   firstIn: string | null;
   lastOut: string | null;
+  firstPunch: string | null;
+  lastPunch: string | null;
   isPresent: boolean;
 }
 
 type AttendanceMatrix = Record<string, Record<number, DaySummary>>;
+
+type ReportType = 'inout' | 'pa' | 'hourly';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -57,6 +68,13 @@ function monthLabel(month: number, year: number): string {
   return new Date(year, month, 1).toLocaleDateString('en-OM', { month: 'long', year: 'numeric' });
 }
 
+function getDayHours(summary: DaySummary | undefined): string {
+  if (!summary || !summary.firstPunch || !summary.lastPunch || summary.firstPunch === summary.lastPunch) return '—';
+  const start = new Date(summary.firstPunch).getTime();
+  const end = new Date(summary.lastPunch).getTime();
+  return ((end - start) / (1000 * 60 * 60)).toFixed(1);
+}
+
 // Shared row height so both tables stay in sync
 const ROW_H = 44;
 const HEAD_R1 = 40;
@@ -72,7 +90,10 @@ export default function StaffMonthlyReport() {
   const [punches, setPunches] = useState<PunchDetail[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [deptFilter, setDeptFilter] = useState('all');
+  const [deptFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [reportType, setReportType] = useState<ReportType>('inout');
+  const [useFirstLast, setUseFirstLast] = useState(true);
   const [pdfLoading, setPdfLoading] = useState(false);
 
   const rightRef = useRef<HTMLDivElement>(null);
@@ -93,7 +114,7 @@ export default function StaffMonthlyReport() {
     const [{ data: empData, error: eErr }, { data: pData, error: pErr }] = await Promise.all([
       supabase.from('employees')
         .select('id, device_user_id, name, department, emp_type, emp_id')
-        .eq('emp_type', 'Staff')
+        // .eq('emp_type', 'Staff')
         .order('name', { ascending: true }),
       supabase.from('punch_details')
         .select('user_id, punch_time, punch_type')
@@ -116,23 +137,34 @@ export default function StaffMonthlyReport() {
       const ds = new Date(p.punch_time).toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' });
       const dn = parseInt(ds.split('-')[2]);
       if (!r[p.user_id]) r[p.user_id] = {};
-      if (!r[p.user_id][dn]) r[p.user_id][dn] = { firstIn: null, lastOut: null, isPresent: false };
+      if (!r[p.user_id][dn]) r[p.user_id][dn] = { firstIn: null, lastOut: null, firstPunch: null, lastPunch: null, isPresent: false };
       const c = r[p.user_id][dn];
       c.isPresent = true;
       if (p.punch_type === 0) { if (!c.firstIn || p.punch_time < c.firstIn) c.firstIn = p.punch_time; }
       else { if (!c.lastOut || p.punch_time > c.lastOut) c.lastOut = p.punch_time; }
+
+      if (!c.firstPunch || p.punch_time < c.firstPunch) c.firstPunch = p.punch_time;
+      if (!c.lastPunch || p.punch_time > c.lastPunch) c.lastPunch = p.punch_time;
     }
     return r;
   }, [punches]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
-  const departments = useMemo(() =>
-    [...new Set(employees.map(e => e.department).filter(Boolean) as string[])].sort(),
-    [employees]);
+  // const departments = useMemo(() =>
+  //   [...new Set(employees.map(e => e.department).filter(Boolean) as string[])].sort(),
+  //   [employees]);
 
-  const filtered = useMemo(() =>
-    deptFilter === 'all' ? employees : employees.filter(e => e.department === deptFilter),
-    [employees, deptFilter]);
+  const filtered = useMemo(() => {
+    let list = deptFilter === 'all' ? employees : employees.filter(e => e.department === deptFilter);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(e =>
+        e.name.toLowerCase().includes(q) ||
+        (e.emp_id && e.emp_id.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  }, [employees, deptFilter, searchQuery]);
 
   const workDays = useMemo(() =>
     dayList.filter(d => !isWeekend(year, month, d)).length,
@@ -170,10 +202,18 @@ export default function StaffMonthlyReport() {
     const r1: string[] = ['#', 'Name', 'Emp ID', 'Department'];
     const r2: string[] = ['', '', '', ''];
     const r3: string[] = ['', '', '', ''];
+    const colCount = reportType === 'hourly' ? 1 : 2;
+
     for (let d = 1; d <= days; d++) {
-      r1.push(String(d)); r1.push('');
-      r2.push(getDayName(year, month, d)); r2.push('');
-      r3.push('In'); r3.push('Out');
+      r1.push(String(d));
+      if (colCount === 2) r1.push('');
+      r2.push(getDayName(year, month, d));
+      if (colCount === 2) r2.push('');
+      if (reportType === 'hourly') {
+        r3.push('hours');
+      } else {
+        r3.push('In', 'Out');
+      }
     }
     r1.push('P', 'A'); r2.push('', ''); r3.push('', '');
     rows.push(r1, r2, r3);
@@ -182,10 +222,20 @@ export default function StaffMonthlyReport() {
       const row: (string | number)[] = [idx + 1, emp.name, emp.emp_id ?? '', emp.department ?? ''];
       for (let d = 1; d <= days; d++) {
         const c = matrix[emp.device_user_id]?.[d];
-        if (isWeekend(year, month, d)) { row.push('OFF', ''); }
-        else if (c?.isPresent) { row.push(formatTime(c.firstIn) || '✓', formatTime(c.lastOut) || ''); }
-        else if (new Date(year, month, d) > today) { row.push('—', ''); }
-        else { row.push('A', ''); }
+        if (reportType === 'hourly') {
+          row.push(isWeekend(year, month, d) ? 'OFF' : getDayHours(c));
+        } else {
+          if (isWeekend(year, month, d)) { row.push('OFF', ''); }
+          else if (c?.isPresent) {
+            if (useFirstLast) {
+              row.push(formatTime(c.firstPunch), c.firstPunch === c.lastPunch ? '' : formatTime(c.lastPunch));
+            } else {
+              row.push(formatTime(c.firstIn) || '✓', formatTime(c.lastOut) || '');
+            }
+          }
+          else if (new Date(year, month, d) > today) { row.push('—', ''); }
+          else { row.push('A', ''); }
+        }
       }
       row.push(presenceDays(emp.device_user_id), absentDays(emp.device_user_id));
       rows.push(row);
@@ -193,7 +243,9 @@ export default function StaffMonthlyReport() {
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
     const cols = [{ wch: 4 }, { wch: 22 }, { wch: 9 }, { wch: 14 }];
-    for (let i = 0; i < days; i++) cols.push({ wch: 7 }, { wch: 7 });
+    for (let i = 0; i < days; i++) {
+      cols.push({ wch: 7 }); if (colCount === 2) cols.push({ wch: 7 });
+    }
     cols.push({ wch: 6 }, { wch: 6 });
     ws['!cols'] = cols;
     ws['!freeze'] = { xSplit: 4, ySplit: 5, topLeftCell: 'E6', activeCell: 'E6', sqref: 'E6' };
@@ -211,7 +263,7 @@ export default function StaffMonthlyReport() {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
 
-    const totalWidth = 454 + (days * 92);
+    const totalWidth = 454 + (days * (reportType === 'hourly' ? 46 : 92));
     const offscreen = document.createElement("div");
     offscreen.style.cssText =
       `position:fixed;top:0;left:-${totalWidth + 1000}px;` +
@@ -258,7 +310,7 @@ export default function StaffMonthlyReport() {
       rightPanelClone.style.overflowY = "visible";
       rightPanelClone.style.height = "auto";
       rightPanelClone.style.flex = "none";
-      rightPanelClone.style.width = `${days * 92}px`;
+      rightPanelClone.style.width = `${days * (reportType === 'hourly' ? 46 : 92)}px`;
     }
 
     // Convert all sticky header rows to static so they render in standard flow
@@ -300,13 +352,20 @@ export default function StaffMonthlyReport() {
       }
       setPdfLoading(false);
     }
-  }, [days, month, year, filtered, workDays, deptFilter]);
+  }, [days, month, year, filtered, workDays, reportType, useFirstLast, deptFilter]);
 
   // ── Cell renderers ─────────────────────────────────────────────────────────
   function InCell({ uid, d }: { uid: string; d: number }) {
     const c = matrix[uid]?.[d];
     if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
-    if (c?.isPresent) return <td className="text-center text-emerald-700 font-medium tabular-nums text-[12px] whitespace-nowrap" style={{ height: ROW_H }}>{formatTime(c.firstIn) || '✓'}</td>;
+    if (c?.isPresent) {
+      const displayTime = useFirstLast ? formatTime(c.firstPunch) : (formatTime(c.firstIn) || '✓');
+      return (
+        <td className="text-center text-emerald-700 font-medium tabular-nums text-[12px] whitespace-nowrap" style={{ height: ROW_H }}>
+          {displayTime}
+        </td>
+      );
+    }
 
     const isFuture = new Date(year, month, d) > today;
     if (isFuture) return <td className="text-center text-gray-300 text-[12px]" style={{ height: ROW_H }}>—</td>;
@@ -317,7 +376,16 @@ export default function StaffMonthlyReport() {
   function OutCell({ uid, d }: { uid: string; d: number }) {
     const c = matrix[uid]?.[d];
     if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
-    if (c?.isPresent) return <td className="text-center text-orange-500 font-medium tabular-nums text-[12px] whitespace-nowrap" style={{ height: ROW_H }}>{formatTime(c.lastOut) || '—'}</td>;
+    if (c?.isPresent) {
+      const displayTime = useFirstLast 
+        ? (c.firstPunch === c.lastPunch ? '' : formatTime(c.lastPunch))
+        : (formatTime(c.lastOut) || '—');
+      return (
+        <td className="text-center text-orange-500 font-medium tabular-nums text-[12px] whitespace-nowrap" style={{ height: ROW_H }}>
+          {displayTime}
+        </td>
+      );
+    }
     return <td className="text-center text-[12px]" style={{ height: ROW_H }} />;
   }
 
@@ -330,15 +398,43 @@ export default function StaffMonthlyReport() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', padding: '0.5rem 0.75rem', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
 
-          {/* Dept filter */}
-          <select
-            value={deptFilter}
-            onChange={e => setDeptFilter(e.target.value)}
-            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none bg-white"
+            {/* Search bar */}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search name or ID..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="text-xs border border-gray-200 rounded-lg pl-8 pr-2 py-1.5 outline-none bg-white min-w-[180px] focus:border-gray-400 transition-colors"
+              />
+            </div>
+
+          <Select
+            value={reportType}
+            onValueChange={(val: ReportType) => setReportType(val)}
           >
-            <option value="all">All Departments</option>
-            {departments.map(d => <option key={d} value={d}>{d}</option>)}
-          </select>
+            <SelectTrigger className="h-8 text-xs w-[140px] bg-white border-gray-200 rounded-lg">
+              <SelectValue placeholder="Report Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="inout">In/Out Report</SelectItem>
+              <SelectItem value="hourly">Hourly Report</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Toggle for In/Out Logic */}
+          {reportType === 'inout' && (
+            <label className="flex items-center gap-2 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 cursor-pointer hover:bg-gray-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={useFirstLast}
+                onChange={e => setUseFirstLast(e.target.checked)}
+                className="w-3.5 h-3.5 accent-gray-900 rounded"
+              />
+              <span>First In / Last Out</span>
+            </label>
+          )}
 
           {/* Month nav */}
           <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
@@ -485,13 +581,17 @@ export default function StaffMonthlyReport() {
             ref={rightRef}
             style={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}
           >
-            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: `${dayList.length * 92}px`, borderSpacing: 0 }}>
+              <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: `${dayList.length * (reportType === 'hourly' ? 46 : 92)}px`, borderSpacing: 0 }}>
               <colgroup>
                 {dayList.map(d => (
-                  <Fragment key={`col-${d}`}>
-                    <col style={{ width: 46 }} />
-                    <col style={{ width: 46 }} />
-                  </Fragment>
+                    reportType === 'hourly' ? (
+                      <col key={`col-${d}`} style={{ width: 46 }} />
+                    ) : (
+                      <Fragment key={`col-${d}`}>
+                        <col style={{ width: 46 }} />
+                        <col style={{ width: 46 }} />
+                      </Fragment>
+                    )
                 ))}
               </colgroup>
               <thead>
@@ -500,7 +600,7 @@ export default function StaffMonthlyReport() {
                   {dayList.map(d => (
                     <th
                       key={d}
-                      colSpan={2}
+                        colSpan={reportType === 'hourly' ? 1 : 2}
                       className="text-center text-[13px] font-medium"
                       style={{ background: isWeekend(year, month, d) ? '#374151' : '#111827' }}
                     >
@@ -512,10 +612,14 @@ export default function StaffMonthlyReport() {
                 {/* Row 2: In / Out labels */}
                 <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: HEAD_R1, zIndex: 5, height: HEAD_R2 }}>
                   {dayList.map(d => (
-                    <Fragment key={`lbl-${d}`}>
-                      <th className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>In</th>
-                      <th className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>Out</th>
-                    </Fragment>
+                      reportType === 'hourly' ? (
+                        <th key={`lbl-${d}`} className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>Hrs</th>
+                      ) : (
+                        <Fragment key={`lbl-${d}`}>
+                          <th className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>In</th>
+                          <th className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>Out</th>
+                        </Fragment>
+                      )
                   ))}
                 </tr>
               </thead>
@@ -523,10 +627,16 @@ export default function StaffMonthlyReport() {
                 {filtered.map(emp => (
                   <tr key={emp.id} style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }} className="hover:bg-blue-50/20">
                     {dayList.map(d => (
-                      <Fragment key={`day-${d}`}>
-                        <InCell uid={emp.device_user_id} d={d} />
-                        <OutCell uid={emp.device_user_id} d={d} />
-                      </Fragment>
+                        reportType === 'hourly' ? (
+                          <td key={`day-${d}`} className="text-center text-[12px] font-medium text-gray-400" style={{ height: ROW_H, background: isWeekend(year, month, d) ? '#f9fafb' : 'white' }}>
+                            {getDayHours(matrix[emp.device_user_id]?.[d])}
+                          </td>
+                        ) : (
+                          <Fragment key={`day-${d}`}>
+                            <InCell uid={emp.device_user_id} d={d} />
+                            <OutCell uid={emp.device_user_id} d={d} />
+                          </Fragment>
+                        )
                     ))}
                   </tr>
                 ))}
