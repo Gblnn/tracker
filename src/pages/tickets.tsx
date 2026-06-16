@@ -965,8 +965,8 @@ export default function Tickets() {
                       <SelectContent style={{ fontSize: '1rem' }}>
                         <SelectItem value="Request for software installation">Request for software installation</SelectItem>
                         <SelectItem value="Request for Printer support">Request for Printer support</SelectItem>
-                        <SelectItem value="Request for Troubleshooting">Request for Troubleshooting</SelectItem>
-                        <SelectItem value="Request for Technical support">Request for Technical support</SelectItem>
+                        <SelectItem value="Request for Troubleshooting">Autocad License Issue</SelectItem>
+                        {/* <SelectItem value="Request for Technical support">Request for Technical support</SelectItem> */}
                         {/* <SelectItem value="Request for debugging">Request for debugging</SelectItem> */}
                         <SelectItem value="Feature request">Feature request</SelectItem>
                         <SelectItem value="Other">Other</SelectItem>
