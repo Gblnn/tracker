@@ -3,17 +3,18 @@ import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Laptop2, LayoutGrid, List, Loader2, Sidebar, TrendingUp, UserPlus } from 'lucide-react';
+import { Laptop2, LayoutGrid, List, Loader2, Sidebar, TrendingUp, UserCog, UserPlus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
 import { useAttendance } from '../lib/useAttendance';
 import { todayISO } from '../lib/utilis';
+import AddEmployee from './AddEmployee';
 import DevicesMaster from './DevicesMaster';
 import ReportsPage from './ReportsPage';
-import AddEmployee from './AddEmployee';
+import EmployeeManage from './employee-manage';
 
-type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add';
+type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage';
 
 export default function AttendanceDashboard() {
   const [date, setDate] = useState<string>(todayISO());
@@ -24,7 +25,7 @@ export default function AttendanceDashboard() {
 
   const viewOptions = [
     { value: 'summary', label: 'Summary', icon: <LayoutGrid color="darkblue" className="w-4 h-4" /> },
-    { value: 'add', label: 'Add Employee', icon: <UserPlus color="darkblue" className="w-4 h-4" /> },
+    { value: 'manage', label: 'Manage', icon: <UserPlus color="darkblue" className="w-4 h-4" /> },
     { value: 'log', label: 'Punch Log', icon: <List color="darkblue" className="w-4 h-4" /> },
     { value: 'reports', label: 'Reports', icon: <TrendingUp color="darkblue" className="w-4 h-4" /> },
     { value: 'devices', label: 'Devices', icon: <Laptop2 color="darkblue" className="w-4 h-4" /> },
@@ -84,6 +85,8 @@ export default function AttendanceDashboard() {
               <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
 
                 <Directive bg={tab === 'summary' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('summary')} title="Summary" icon={<LayoutGrid size={16} />} />
+
+                <Directive bg={tab === 'manage' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('manage')} title="Manage" icon={<UserCog size={16} />} />
 
                 {/* <Directive bg={tab === 'add' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize='0.9rem' onClick={() => { setTab('add') }} title={"Add Employee"} icon={<UserPlus size={16} />} /> */}
 
@@ -203,7 +206,12 @@ export default function AttendanceDashboard() {
             ) :
               tab === 'add' ? (
                 <AddEmployee />
-              ) : (
+              ) 
+              :
+              tab === 'manage' ? (
+                <EmployeeManage/>
+              ) :
+              (
                 <ReportsPage />
               )}
           </div>

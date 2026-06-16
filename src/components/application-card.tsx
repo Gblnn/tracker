@@ -11,6 +11,7 @@ export interface ApplicationCardData {
   created_at?: any;
   cv?: string;
   cvLink?: string;
+  designation?: string;
 }
 
 interface ApplicationCardProps {
@@ -56,6 +57,13 @@ function ApplicationCardBase({
           <div style={{ fontSize: "0.76rem", opacity: 0.58, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "0.15rem" }}>
             {app.jobTitle || "Unknown Role"}
           </div>
+          {
+            app.designation &&
+            <div style={{ fontSize: "0.76rem", opacity: 0.58, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "0.15rem" }}>
+            {app.designation || "Not Specified"}
+          </div>
+          }
+          
         </div>
         {shortlisted && (
           <span style={{ flexShrink: 0, fontSize: "0.65rem", fontWeight: 600, padding: "0.2rem 0.5rem", borderRadius: "999px", background: "rgba(34,197,94,0.12)", color: "rgb(21,128,61)" }}>
