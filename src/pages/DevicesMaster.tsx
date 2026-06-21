@@ -1,4 +1,4 @@
-import { Laptop2, Loader2, MapPin, Monitor, Pencil, X } from 'lucide-react';
+import { Laptop2, Loader2, MapPin, Monitor, Pencil, Plus, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
@@ -45,6 +45,52 @@ export default function DevicesMaster() {
   const [form, setForm] = useState<EditForm>({ serial_no: '', location: '', item_code: '', start_time: '', end_time: '' });
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+
+  // Add Device state
+  const [isAdding, setIsAdding] = useState(false);
+  const [addForm, setAddForm] = useState<EditForm>({ serial_no: '', location: '', item_code: '', start_time: '', end_time: '' });
+  const [addError, setAddError] = useState<string | null>(null);
+
+  function openAdd() {
+    setIsAdding(true);
+    setAddForm({ serial_no: '', location: '', item_code: '', start_time: '', end_time: '' });
+    setAddError(null);
+  }
+
+  function closeAdd() {
+    setIsAdding(false);
+    setAddError(null);
+  }
+
+  async function handleAdd() {
+    if (!addForm.serial_no.trim()) {
+      setAddError('Serial number is required.');
+      return;
+    }
+
+    setSaving(true);
+    setAddError(null);
+
+    const { error: err } = await supabase
+      .from('devices')
+      .insert({
+        serial_no: addForm.serial_no.trim(),
+        location: addForm.location.trim() || null,
+        item_code: addForm.item_code.trim() || null,
+        start_time: addForm.start_time.trim() || null,
+        end_time: addForm.end_time.trim() || null,
+      });
+
+    setSaving(false);
+
+    if (err) {
+      setAddError(err.message);
+      return;
+    }
+
+    closeAdd();
+    fetchDevices();
+  }
 
   const fetchDevices = useCallback(async () => {
     setLoading(true);
@@ -119,14 +165,19 @@ export default function DevicesMaster() {
     <div className="min-h-screen bg-white" style={{ width: "100%" }}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8" style={{ width: "100%" }}>
 
-        {/* Header */}
-        {/* <div className="flex items-center gap-2.5 mb-8">
-          <Laptop2 className="w-5 h-5 text-gray-400" />
-          <h1 className="text-xl font-semibold text-gray-900">Devices</h1>
-          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-            {devices.length} registered
+        {/* Toolbar */}
+        <div className="flex justify-between items-center mb-4">
+          <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
+            {devices.length} registered device(s)
           </span>
-        </div> */}
+          <button
+            onClick={openAdd}
+            className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Device
+          </button>
+        </div>
 
         {/* Error */}
         {error && (
@@ -346,6 +397,123 @@ export default function DevicesMaster() {
               >
                 {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Add Modal */}
+      {isAdding && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) closeAdd(); }}
+        >
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Monitor className="w-4 h-4 text-gray-400" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-900">Add Device</h2>
+                  <p className="text-xs text-gray-400">Register a new device in the system</p>
+                </div>
+              </div>
+              <button onClick={closeAdd} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal body */}
+            <div className="px-6 py-5 space-y-4">
+              {addError && (
+                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                  {addError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Serial Number <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={addForm.serial_no}
+                  onChange={(e) => setAddForm(f => ({ ...f, serial_no: e.target.value }))}
+                  placeholder="e.g. ZK-123456"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  value={addForm.location}
+                  onChange={(e) => setAddForm(f => ({ ...f, location: e.target.value }))}
+                  placeholder="e.g. Main Entrance, Office Floor 2"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Item Code
+                </label>
+                <input
+                  type="text"
+                  value={addForm.item_code}
+                  onChange={(e) => setAddForm(f => ({ ...f, item_code: e.target.value }))}
+                  placeholder="e.g. ZK-001"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    value={addForm.start_time}
+                    onChange={(e) => setAddForm(f => ({ ...f, start_time: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    value={addForm.end_time}
+                    onChange={(e) => setAddForm(f => ({ ...f, end_time: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Modal footer */}
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50">
+              <button
+                onClick={closeAdd}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAdd}
+                disabled={saving}
+                className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {saving ? 'Saving…' : 'Add Device'}
               </button>
             </div>
           </div>
