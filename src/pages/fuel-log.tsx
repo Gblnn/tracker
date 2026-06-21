@@ -77,7 +77,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
         const response = await fetch('https://api.api-ninjas.com/v1/fuelprices?city=muscat&country=om', {
           headers: { 'X-Api-Key': 'YOUR_API_KEY' }, // Replace with actual API key if needed
         }).catch(() => null);
-        
+
         if (response?.ok) {
           const data = await response.json();
           if (data && data[0]?.diesel) {
@@ -89,7 +89,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
         console.log('Using default fuel price for Oman');
       }
     };
-    
+
     // Fetch on component mount
     fetchFuelPrice();
   }, []);
@@ -108,19 +108,19 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", maxHeight: "82vh", width: "100%" }}>
       {/* Fixed Header */}
       <div style={{
-        border:"",
-        display:"flex",
-        justifyContent:"space-between",
+        border: "",
+        display: "flex",
+        justifyContent: "space-between",
         padding: "1rem",
-        paddingBottom:"0.5rem",
+        paddingBottom: "0.5rem",
         borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
         background: "var(--background)",
         boxSizing: "border-box",
-        alignItems:"center"
+        alignItems: "center"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          
-          <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em", paddingLeft:"1rem" }}>{editingLog ? "Edit Log" : "Log Fuel"}</h2>
+
+          <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em", paddingLeft: "1rem" }}>{editingLog ? "Edit Log" : "Log Fuel"}</h2>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
           {vehicleNumber && vehicleCount > 1 && (
@@ -146,7 +146,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
       </div>
 
       {/* Scrollable Content */}
-      <div style={{ 
+      <div style={{
         flex: 1,
         padding: "1.5rem",
         paddingTop: "1.5rem",
@@ -173,7 +173,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <Calendar width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }}  />
+                <Calendar width="1.125rem" height="1.125rem" style={{ opacity: 0.7 }} />
                 <label
                   htmlFor="date"
                   style={{
@@ -185,10 +185,10 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
                   Date
                 </label>
               </div>
-              
-              <div onClick={() => setShowDatePicker(true)} style={{ 
-                display: "flex", 
-                alignItems: "center", 
+
+              <div onClick={() => setShowDatePicker(true)} style={{
+                display: "flex",
+                alignItems: "center",
                 gap: "0.75rem",
                 padding: "0.875rem 1rem",
                 borderRadius: "0.75rem",
@@ -333,7 +333,7 @@ const FuelLogFormContent: React.FC<FuelLogFormContentProps> = ({
               alignItems: "center",
               fontSize: "0.85rem",
             }}>
-              <span style={{ fontWeight: 500, fontSize:"1rem", paddingLeft:"0.5rem" }}>Fuel Price / Litre</span>
+              <span style={{ fontWeight: 500, fontSize: "1rem", paddingLeft: "0.5rem" }}>Fuel Price / Litre</span>
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                 <input
                   type="number"
@@ -745,7 +745,7 @@ export default function FuelLog() {
       const currentLog = sortedLogs[i + 1];
       const previousLog = sortedLogs[i];
       const currentDate = new Date(currentLog.date);
-      
+
       if (currentDate.getFullYear() === currentYear) {
         const distance = Number(currentLog.odometer_reading) - Number(previousLog.odometer_reading);
         const litres = Number(currentLog.litres);
@@ -829,7 +829,7 @@ export default function FuelLog() {
     if (cachedVehicle?.registration_type) {
       setVehicleRegistrationType(cachedVehicle.registration_type);
     }
-    
+
     // Load cached fuel logs immediately
     if (userData?.email) {
       const cachedLogs = getCachedFuelLogs(userData.email);
@@ -842,28 +842,28 @@ export default function FuelLog() {
         fetchFuelLogs(false);
       }
     }
-    
+
     // Detect mobile/desktop
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     // Monitor online/offline status
     const handleOnline = () => {
       setIsOnline(true);
       syncPendingLogs();
     };
     const handleOffline = () => setIsOnline(false);
-    
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
+
     // Check for pending logs
     updatePendingCount();
-    
+
     return () => {
       window.removeEventListener('resize', checkMobile);
       window.removeEventListener('online', handleOnline);
@@ -873,7 +873,7 @@ export default function FuelLog() {
 
   const fetchFuelLogs = async (silent = false) => {
     if (!userData?.email) return;
-    
+
     // Don't fetch when offline, just use cached/pending data
     if (!navigator.onLine) {
       console.log("📴 Offline: Using local data only");
@@ -889,21 +889,21 @@ export default function FuelLog() {
         created_at: new Date(log.createdAt),
         isPending: true,
       }));
-      
+
       const allLogs = [...pendingAsFuelLogs, ...cachedLogs].sort((a, b) => {
         return new Date(b.date).getTime() - new Date(a.date).getTime();
       });
-      
+
       setFuelLogs(allLogs);
       return;
     }
-    
+
     try {
       if (!silent) setLoading(true);
       else setRefreshing(true);
-      
+
       const logs = await fetchAndCacheFuelLogs(userData.email);
-      
+
       // Merge with pending logs
       const pendingLogs = getPendingFuelLogs();
       const pendingAsFuelLogs: FuelLogType[] = pendingLogs.map(log => ({
@@ -916,14 +916,14 @@ export default function FuelLog() {
         created_at: new Date(log.createdAt),
         isPending: true,
       }));
-      
+
       // Combine and sort by date (newest first)
       const allLogs = [...pendingAsFuelLogs, ...logs].sort((a, b) => {
         return new Date(b.date).getTime() - new Date(a.date).getTime();
       });
-      
+
       setFuelLogs(allLogs);
-      
+
       if (silent) {
         setRefreshCompleted(true);
         setTimeout(() => {
@@ -954,33 +954,33 @@ export default function FuelLog() {
     try {
       const result = await syncAllPendingFuelLogs((current, total) => {
         const progress = Math.round((current / total) * 100);
-        updateProcess(processId, { 
-          progress, 
-          message: `Uploaded ${current} of ${total}...` 
+        updateProcess(processId, {
+          progress,
+          message: `Uploaded ${current} of ${total}...`
         });
       });
 
       // If sync was skipped (already in progress), don't show notifications
       if (result.skipped) {
-        updateProcess(processId, { 
-          status: "completed", 
-          message: "Sync already in progress" 
+        updateProcess(processId, {
+          status: "completed",
+          message: "Sync already in progress"
         });
         return;
       }
 
       if (result.success > 0) {
-        updateProcess(processId, { 
-          status: "completed", 
-          message: `${result.success} fuel log${result.success > 1 ? 's' : ''} synced successfully` 
+        updateProcess(processId, {
+          status: "completed",
+          message: `${result.success} fuel log${result.success > 1 ? 's' : ''} synced successfully`
         });
         fetchFuelLogs(true); // Refresh the list
       }
 
       if (result.failed > 0) {
-        updateProcess(processId, { 
-          status: "error", 
-          message: `${result.failed} fuel log${result.failed > 1 ? 's' : ''} failed to sync` 
+        updateProcess(processId, {
+          status: "error",
+          message: `${result.failed} fuel log${result.failed > 1 ? 's' : ''} failed to sync`
         });
       }
 
@@ -1012,7 +1012,7 @@ export default function FuelLog() {
 
     const vehicleNumber = allocatedVehicles[selectedVehicleIndex]?.vehicle_number
       || userProfile?.allocated_vehicle;
-    
+
     if (!vehicleNumber || !amountSpent) {
       toast.error("Please fill in all required fields");
       return;
@@ -1065,7 +1065,7 @@ export default function FuelLog() {
             created_at: new Date(),
           });
           toast.success("Fuel log submitted successfully!");
-          
+
           // Refresh logs from Firestore
           fetchFuelLogs();
         } else {
@@ -1075,7 +1075,7 @@ export default function FuelLog() {
             icon: <WifiOff width="1rem" />,
           });
           updatePendingCount();
-          
+
           // Add to local state immediately without refetching
           const newLog: FuelLogType = {
             id: pendingId,
@@ -1087,11 +1087,11 @@ export default function FuelLog() {
             created_at: new Date(),
             isPending: true,
           };
-          
+
           setFuelLogs(prevLogs => [newLog, ...prevLogs]);
         }
       }
-      
+
       // Reset form
       setDate(moment().format("YYYY-MM-DD"));
       setOdometerReading("");
@@ -1133,14 +1133,14 @@ export default function FuelLog() {
 
   const handleEdit = () => {
     if (!selectedLog) return;
-    
+
     // Populate form with selected log data
     setDate(selectedLog.date);
     setOdometerReading(selectedLog.odometer_reading ? String(selectedLog.odometer_reading) : "");
     setAmountSpent(String(selectedLog.amount_spent));
     setLitres(selectedLog.litres ? String(selectedLog.litres) : "");
     setEditingLog(selectedLog);
-    
+
     // Close detail drawer and open edit drawer
     setDrawerDetailOpen(false);
     setDrawerOpen(true);
@@ -1152,11 +1152,11 @@ export default function FuelLog() {
         <Back
           fixed
           blurBG
-            title="Fuel Log"
-            subtitle={fuelLogs.length}
-            extra={
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                {/* {!isOnline && (
+          title="Fuel Log"
+          subtitle={fuelLogs.length}
+          extra={
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              {/* {!isOnline && (
                   <div style={{
                     padding: "0.5rem 1rem",
                    
@@ -1172,15 +1172,15 @@ export default function FuelLog() {
                     Offline
                   </div>
                 )} */}
-                <RefreshButton
-                  onClick={() => fetchFuelLogs(true)}
-                  refreshCompleted={refreshCompleted}
-                  fetchingData={refreshing}
-                />
-              </div>
-            }
-            // icon={<Fuel color="orange" width="1.75rem" />}
-          />
+              <RefreshButton
+                onClick={() => fetchFuelLogs(true)}
+                refreshCompleted={refreshCompleted}
+                fetchingData={refreshing}
+              />
+            </div>
+          }
+        // icon={<Fuel color="orange" width="1.75rem" />}
+        />
         <div style={{ padding: "1.25rem", paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}>
           <div style={{ height: "0.75rem" }} />
 
@@ -1228,7 +1228,7 @@ export default function FuelLog() {
                     {isMobile ? (
                       // Mobile: Horizontal scroll with dots
                       <>
-                        <div 
+                        <div
                           ref={(el) => {
                             if (el) {
                               el.addEventListener('scroll', () => {
@@ -1308,108 +1308,109 @@ export default function FuelLog() {
           </div>
 
           {/* Fuel Logs List */}
-          <div style={{ display: isMobile ? "flex" : "grid", flexDirection: isMobile ? "column" : undefined, gridTemplateColumns: isMobile ? undefined : "repeat(4, 1fr)", gap: "0.75rem", paddingBottom: "5.5rem", paddingTop:"2.5rem" }}>
-                      
-            {loading ? 
-            (
-  
-              <div style={{ 
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                minHeight: "70vh",
-                opacity: 0.5
-              }}>
-                <Loader2 className="animate-spin"/>
-              </div>
-            ) : fuelLogs.length === 0 ? (
-              <div
-                style={{
-                  gridColumn: isMobile ? undefined : "1 / -1",
+          <div style={{ display: isMobile ? "flex" : "grid", flexDirection: isMobile ? "column" : undefined, gridTemplateColumns: isMobile ? undefined : "repeat(4, 1fr)", gap: "0.75rem", paddingBottom: "5.5rem", paddingTop: "2.5rem" }}>
+
+            {loading ?
+              (
+
+                <div style={{
                   display: "flex",
-                  position:"absolute",
-                  border:"",
-                  flex:1,
-                  top:0,
-                  left:0,
-                  width:"100%",
-                  height:"100%",
                   justifyContent: "center",
                   alignItems: "center",
-                  
-                  
-                }}
-              >
-                <Empty>
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <Fuel />
-                    </EmptyMedia>
-                    <EmptyTitle>No fuel logs yet</EmptyTitle>
-                    <EmptyDescription>
-                      Click the + button to add your first fuel log
-                    </EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
-              </div>
-            ) : (
-              fuelLogs.map((log) => (
-                <Directive 
-                  subtext={"Vehicle - "+log.vehicle_number} 
-                  noArrow 
-                  tag={log.amount_spent.toFixed(3)} 
-                  key={log.id} 
-                  icon={<Fuel color={log.isPending ? "gray" : "darkblue"}/>} 
-                  title={moment(log.date).format("DD MMM YYYY")}
-                  onClick={() => {
-                    if (!log.isPending) {
-                      setSelectedLog(log);
-                      setDrawerDetailOpen(true);
-                    }
-                    else{
-                      toast.info("Log will be updated when online")
-                    }
+                  minHeight: "70vh",
+                  opacity: 0.5
+                }}>
+                  <Loader2 className="animate-spin" />
+                </div>
+              ) : fuelLogs.length === 0 ? (
+                <div
+                  style={{
+                    gridColumn: isMobile ? undefined : "1 / -1",
+                    display: "flex",
+                    position: "absolute",
+                    border: "",
+                    flex: 1,
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    justifyContent: "center",
+                    alignItems: "center",
+
+
                   }}
-                  className={log.isPending ? "pending-log" : ""}
-                />
-                // <div
-                //   key={log.id}
-                //   style={{
-                //     background: "rgba(100, 100, 100, 0.1)",
-                //     padding: "1rem",
-                //     borderRadius: "0.75rem",
-                //     border: "1px solid rgba(100, 100, 100, 0.2)",
-                //   }}
-                // >
-                //   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-                //     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                //       <Fuel width="1.25rem" color="orange" />
-                //       <span style={{ fontWeight: "600", fontSize: "1rem" }}>
-                //         {moment(log.date).format("DD MMM YYYY")}
-                //       </span>
-                //     </div>
-                //     <span style={{ 
-                //       fontSize: "1rem", 
-                //       fontWeight: "700",
-                //       color: "orange"
-                //     }}>
-                //       {log.amount_spent.toFixed(3)} OMR
-                //     </span>
-                //   </div>
-                  
-                //   <div style={{ display: "flex", gap: "1.5rem", fontSize: "0.9rem" }}>
-                //     <div>
-                //       <span style={{ opacity: 0.6 }}>Odometer: </span>
-                //       <span style={{ fontWeight: "600" }}>{log.odometer_reading.toLocaleString()} km</span>
-                //     </div>
-                //     <div>
-                //       <span style={{ opacity: 0.6 }}>Vehicle: </span>
-                //       <span style={{ fontWeight: "600" }}>{log.vehicle_number}</span>
-                //     </div>
-                //   </div>
-                // </div>
-              ))
-            )}
+                >
+                  <Empty>
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <Fuel />
+                      </EmptyMedia>
+                      <EmptyTitle>No fuel logs yet</EmptyTitle>
+                      <EmptyDescription>
+                        Click the + button to add your first fuel log
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
+                </div>
+              ) : (
+                fuelLogs.map((log) => (
+                  <Directive
+                    subtext={"Vehicle - " + log.vehicle_number}
+                    id_subtitle={moment(log.created_at.todayISO).format("LL")}
+                    noArrow
+                    tag={log.amount_spent.toFixed(3)}
+                    key={log.id}
+                    icon={<Fuel color={log.isPending ? "gray" : "darkblue"} />}
+                    title={moment(log.date).format("DD MMM YYYY")}
+                    onClick={() => {
+                      if (!log.isPending) {
+                        setSelectedLog(log);
+                        setDrawerDetailOpen(true);
+                      }
+                      else {
+                        toast.info("Log will be updated when online")
+                      }
+                    }}
+                    className={log.isPending ? "pending-log" : ""}
+                  />
+                  // <div
+                  //   key={log.id}
+                  //   style={{
+                  //     background: "rgba(100, 100, 100, 0.1)",
+                  //     padding: "1rem",
+                  //     borderRadius: "0.75rem",
+                  //     border: "1px solid rgba(100, 100, 100, 0.2)",
+                  //   }}
+                  // >
+                  //   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                  //     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  //       <Fuel width="1.25rem" color="orange" />
+                  //       <span style={{ fontWeight: "600", fontSize: "1rem" }}>
+                  //         {moment(log.date).format("DD MMM YYYY")}
+                  //       </span>
+                  //     </div>
+                  //     <span style={{ 
+                  //       fontSize: "1rem", 
+                  //       fontWeight: "700",
+                  //       color: "orange"
+                  //     }}>
+                  //       {log.amount_spent.toFixed(3)} OMR
+                  //     </span>
+                  //   </div>
+
+                  //   <div style={{ display: "flex", gap: "1.5rem", fontSize: "0.9rem" }}>
+                  //     <div>
+                  //       <span style={{ opacity: 0.6 }}>Odometer: </span>
+                  //       <span style={{ fontWeight: "600" }}>{log.odometer_reading.toLocaleString()} km</span>
+                  //     </div>
+                  //     <div>
+                  //       <span style={{ opacity: 0.6 }}>Vehicle: </span>
+                  //       <span style={{ fontWeight: "600" }}>{log.vehicle_number}</span>
+                  //     </div>
+                  //   </div>
+                  // </div>
+                ))
+              )}
           </div>
         </div>
 
@@ -1433,7 +1434,7 @@ export default function FuelLog() {
             setDrawerOpen(true);
           }}
           style={{
-            transition:"none",
+            transition: "none",
             position: "fixed",
             bottom: isMobile ? "calc(1rem + env(safe-area-inset-bottom, 0px))" : "calc(2rem + env(safe-area-inset-bottom, 0px))",
             right: isMobile ? "1rem" : "1.5rem",
@@ -1454,13 +1455,13 @@ export default function FuelLog() {
             fontWeight: isMobile ? "500" : "normal",
             zIndex: 50,
             boxShadow: isMobile ? "0 4px 12px rgba(0, 0, 0, 0.15)" : "none",
-            marginBottom:"1rem"
+            marginBottom: "1rem"
           }}
         >
           <Fuel width="1.25rem" height="1.75rem" strokeWidth={2.5} />
           {isMobile && <span>Log Fuel</span>}
         </motion.button>
-        
+
       </motion.div>
 
       {/* No Vehicle Modal */}
@@ -1583,7 +1584,7 @@ export default function FuelLog() {
         <DialogContent style={{ maxWidth: "400px", padding: "1.5rem" }}>
           <DialogHeader>
             <DialogTitle style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <Calendar/>
+              <Calendar />
               Select Date
             </DialogTitle>
             <DialogDescription></DialogDescription>
@@ -1682,7 +1683,7 @@ export default function FuelLog() {
                 <ChevronRight width="1.25rem" height="1.25rem" />
               </motion.button>
             </div>
-            
+
             {/* Weekday Headers */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "0.25rem", marginBottom: "0.5rem" }}>
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
@@ -1691,7 +1692,7 @@ export default function FuelLog() {
                 </div>
               ))}
             </div>
-            
+
             {/* Calendar Days */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "0.25rem" }}>
               {(() => {
@@ -1700,12 +1701,12 @@ export default function FuelLog() {
                 const startDay = startOfMonth.day();
                 const daysInMonth = endOfMonth.date();
                 const days = [];
-                
+
                 // Empty cells before month starts
                 for (let i = 0; i < startDay; i++) {
                   days.push(<div key={`empty-${i}`} />);
                 }
-                
+
                 // Days of the month
                 for (let day = 1; day <= daysInMonth; day++) {
                   const currentDate = viewingMonth.clone().date(day);
@@ -1713,7 +1714,7 @@ export default function FuelLog() {
                   const isSelected = dateString === date;
                   const isToday = currentDate.isSame(moment(), 'day');
                   const isFuture = currentDate.isAfter(moment(), 'day');
-                  
+
                   days.push(
                     <motion.button
                       key={day}
@@ -1732,8 +1733,8 @@ export default function FuelLog() {
                         background: isSelected
                           ? "orange"
                           : isToday
-                          ? "rgba(255, 140, 0, 0.15)"
-                          : "rgba(100, 100, 100, 0.05)",
+                            ? "rgba(255, 140, 0, 0.15)"
+                            : "rgba(100, 100, 100, 0.05)",
                         color: isSelected ? "white" : isFuture ? "rgba(100, 100, 100, 0.3)" : "inherit",
                         // border: isToday && !isSelected ? "1px solid rgba(255, 140, 0, 0.5)" : "1px solid transparent",
                         cursor: isFuture ? "not-allowed" : "pointer",
@@ -1746,7 +1747,7 @@ export default function FuelLog() {
                     </motion.button>
                   );
                 }
-                
+
                 return days;
               })()}
             </div>

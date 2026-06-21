@@ -31,7 +31,7 @@ interface Props {
   extraOnDelete?: any;
   extraOnEdit?: any;
   notify?: boolean;
-  id_subtitle?: string;
+  id_subtitle?: any;
   loading?: boolean;
   archived?: boolean;
   protected?: boolean;
