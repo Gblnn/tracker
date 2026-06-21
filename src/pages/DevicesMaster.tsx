@@ -9,13 +9,18 @@ interface Device {
   item_code: string | null;
   last_stamp: number | null;
   last_seen: string | null;
+  start_time: string | null; // Added for timing range
+  end_time: string | null;   // Added for timing range
 }
 
 interface EditForm {
   serial_no: string;
   location: string;
   item_code: string;
+  start_time: string; // Added for timing range
+  end_time: string;   // Added for timing range
 }
+
 
 function formatLastSeen(iso: string | null): string {
   if (!iso) return '—';
@@ -37,7 +42,7 @@ export default function DevicesMaster() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
-  const [form, setForm] = useState<EditForm>({ serial_no: '', location: '', item_code: '' });
+  const [form, setForm] = useState<EditForm>({ serial_no: '', location: '', item_code: '', start_time: '', end_time: '' });
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
@@ -45,7 +50,7 @@ export default function DevicesMaster() {
     setLoading(true);
     setError(null);
     const { data, error: err } = await supabase
-      .from('devices')
+      .from('devices') // Assuming 'timing' column exists in 'devices' table
       .select('*')
       .order('id', { ascending: true });
     if (err) setError(err.message);
@@ -67,6 +72,8 @@ export default function DevicesMaster() {
       serial_no: device.serial_no,
       location: device.location ?? '',
       item_code: device.item_code ?? '',
+      start_time: device.start_time ?? '', // Populate start_time field
+      end_time: device.end_time ?? '',     // Populate end_time field
     });
     setEditError(null);
   }
@@ -92,6 +99,8 @@ export default function DevicesMaster() {
         serial_no: form.serial_no.trim(),
         location: form.location.trim() || null,
         item_code: form.item_code.trim() || null,
+        start_time: form.start_time.trim() || null, // Update start_time field
+        end_time: form.end_time.trim() || null,     // Update end_time field
       })
       .eq('id', editingDevice.id);
 
@@ -145,6 +154,8 @@ export default function DevicesMaster() {
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Location</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Item Code</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Last Log</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Start Time</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">End Time</th>
                   {/* <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Status</th> */}
                   <th className="px-4 py-3" />
                 </tr>
@@ -184,6 +195,12 @@ export default function DevicesMaster() {
                       </td>
                       <td className="px-4 py-3 text-gray-500 text-xs">
                         {formatLastSeen(device.last_seen)}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">
+                        {device.start_time ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">
+                        {device.end_time ?? '—'}
                       </td>
                       {/* <td className="px-4 py-3">
                         {online ? (
@@ -288,6 +305,29 @@ export default function DevicesMaster() {
                   placeholder="e.g. ZK-001"
                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors font-mono"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    value={form.start_time}
+                    onChange={(e) => setForm(f => ({ ...f, start_time: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                    End Time
+                  </label>
+                  <input type="time"
+                    value={form.end_time}
+                    onChange={(e) => setForm(f => ({ ...f, end_time: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors" />
+                </div>
               </div>
             </div>
 

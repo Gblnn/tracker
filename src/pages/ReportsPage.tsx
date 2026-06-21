@@ -202,7 +202,7 @@ export default function StaffMonthlyReport() {
     const r1: string[] = ['#', 'Name', 'Emp ID', 'Department'];
     const r2: string[] = ['', '', '', ''];
     const r3: string[] = ['', '', '', ''];
-    const colCount = reportType === 'hourly' ? 1 : 2;
+    const colCount = reportType === 'inout' ? 2 : 1;
 
     for (let d = 1; d <= days; d++) {
       r1.push(String(d));
@@ -211,6 +211,8 @@ export default function StaffMonthlyReport() {
       if (colCount === 2) r2.push('');
       if (reportType === 'hourly') {
         r3.push('hours');
+      } else if (reportType === 'pa') {
+        r3.push('status');
       } else {
         r3.push('In', 'Out');
       }
@@ -224,6 +226,11 @@ export default function StaffMonthlyReport() {
         const c = matrix[emp.device_user_id]?.[d];
         if (reportType === 'hourly') {
           row.push(isWeekend(year, month, d) ? 'OFF' : getDayHours(c));
+        } else if (reportType === 'pa') {
+          if (isWeekend(year, month, d)) { row.push('OFF'); }
+          else if (c?.isPresent) { row.push('P'); }
+          else if (new Date(year, month, d) > today) { row.push('—'); }
+          else { row.push('A'); }
         } else {
           if (isWeekend(year, month, d)) { row.push('OFF', ''); }
           else if (c?.isPresent) {
@@ -263,7 +270,8 @@ export default function StaffMonthlyReport() {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
 
-    const totalWidth = 454 + (days * (reportType === 'hourly' ? 46 : 92));
+    const colWidth = reportType === 'inout' ? 92 : 46;
+    const totalWidth = 454 + (days * colWidth);
     const offscreen = document.createElement("div");
     offscreen.style.cssText =
       `position:fixed;top:0;left:-${totalWidth + 1000}px;` +
@@ -310,7 +318,7 @@ export default function StaffMonthlyReport() {
       rightPanelClone.style.overflowY = "visible";
       rightPanelClone.style.height = "auto";
       rightPanelClone.style.flex = "none";
-      rightPanelClone.style.width = `${days * (reportType === 'hourly' ? 46 : 92)}px`;
+      rightPanelClone.style.width = `${days * colWidth}px`;
     }
 
     // Convert all sticky header rows to static so they render in standard flow
@@ -419,6 +427,7 @@ export default function StaffMonthlyReport() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="inout">In/Out Report</SelectItem>
+              <SelectItem value="pa">P/A Matrix</SelectItem>
               <SelectItem value="hourly">Hourly Report</SelectItem>
             </SelectContent>
           </Select>
@@ -581,16 +590,16 @@ export default function StaffMonthlyReport() {
             ref={rightRef}
             style={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}
           >
-              <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: `${dayList.length * (reportType === 'hourly' ? 46 : 92)}px`, borderSpacing: 0 }}>
+              <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: `${dayList.length * (reportType === 'inout' ? 92 : 46)}px`, borderSpacing: 0 }}>
               <colgroup>
                 {dayList.map(d => (
-                    reportType === 'hourly' ? (
-                      <col key={`col-${d}`} style={{ width: 46 }} />
-                    ) : (
+                    reportType === 'inout' ? (
                       <Fragment key={`col-${d}`}>
                         <col style={{ width: 46 }} />
                         <col style={{ width: 46 }} />
                       </Fragment>
+                    ) : (
+                      <col key={`col-${d}`} style={{ width: 46 }} />
                     )
                 ))}
               </colgroup>
@@ -600,7 +609,7 @@ export default function StaffMonthlyReport() {
                   {dayList.map(d => (
                     <th
                       key={d}
-                        colSpan={reportType === 'hourly' ? 1 : 2}
+                        colSpan={reportType === 'inout' ? 2 : 1}
                       className="text-center text-[13px] font-medium"
                       style={{ background: isWeekend(year, month, d) ? '#374151' : '#111827' }}
                     >
@@ -611,33 +620,54 @@ export default function StaffMonthlyReport() {
                 </tr>
                 {/* Row 2: In / Out labels */}
                 <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: HEAD_R1, zIndex: 5, height: HEAD_R2 }}>
-                  {dayList.map(d => (
-                      reportType === 'hourly' ? (
-                        <th key={`lbl-${d}`} className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>Hrs</th>
-                      ) : (
-                        <Fragment key={`lbl-${d}`}>
-                          <th className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>In</th>
-                          <th className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>Out</th>
-                        </Fragment>
-                      )
-                  ))}
+                  {dayList.map(d => {
+                    if (reportType === 'hourly') {
+                      return <th key={`lbl-${d}`} className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>Hrs</th>;
+                    }
+                    if (reportType === 'pa') {
+                      return <th key={`lbl-${d}`} className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}></th>;
+                    }
+                    return (
+                      <Fragment key={`lbl-${d}`}>
+                        <th className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>In</th>
+                        <th className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>Out</th>
+                      </Fragment>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(emp => (
                   <tr key={emp.id} style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }} className="hover:bg-blue-50/20">
-                    {dayList.map(d => (
-                        reportType === 'hourly' ? (
+                    {dayList.map(d => {
+                      if (reportType === 'hourly') {
+                        return (
                           <td key={`day-${d}`} className="text-center text-[12px] font-medium text-gray-400" style={{ height: ROW_H, background: isWeekend(year, month, d) ? '#f9fafb' : 'white' }}>
                             {getDayHours(matrix[emp.device_user_id]?.[d])}
                           </td>
-                        ) : (
-                          <Fragment key={`day-${d}`}>
-                            <InCell uid={emp.device_user_id} d={d} />
-                            <OutCell uid={emp.device_user_id} d={d} />
-                          </Fragment>
-                        )
-                    ))}
+                        );
+                      }
+                      if (reportType === 'pa') {
+                        const c = matrix[emp.device_user_id]?.[d];
+                        let content = '';
+                        let color = '';
+                        if (isWeekend(year, month, d)) { content = '—'; color = 'text-gray-300'; }
+                        else if (c?.isPresent) { content = 'P'; color = 'text-emerald-500 font-bold'; }
+                        else if (new Date(year, month, d) > today) { content = '—'; color = 'text-gray-300'; }
+                        else { content = 'A'; color = 'text-red-400 font-bold'; }
+                        return (
+                          <td key={`day-${d}`} className={`text-center text-[12px] ${color}`} style={{ height: ROW_H, background: isWeekend(year, month, d) ? '#f9fafb' : 'white' }}>
+                            {content}
+                          </td>
+                        );
+                      }
+                      return (
+                        <Fragment key={`day-${d}`}>
+                          <InCell uid={emp.device_user_id} d={d} />
+                          <OutCell uid={emp.device_user_id} d={d} />
+                        </Fragment>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>

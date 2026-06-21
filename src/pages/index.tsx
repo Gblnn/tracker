@@ -203,61 +203,61 @@ export default function Index() {
   }, [userData?.email]);
 
   // Prompt user when a new service worker version is available
-  const [newVersionAvailable, setNewVersionAvailable] = useState(false);
+  // const [ setNewVersionAvailable] = useState(false);
 
-  useEffect(() => {
-    const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('sw-update') : null;
+  // useEffect(() => {
+  //   const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('sw-update') : null;
 
-    const notifyAvailable = () => {
-      try { localStorage.setItem('sw:update-available', '1'); } catch (e) { }
-      setNewVersionAvailable(true);
-    };
+  //   // const notifyAvailable = () => {
+  //   //   try { localStorage.setItem('sw:update-available', '1'); } catch (e) { }
+  //   //   setNewVersionAvailable(true);
+  //   // };
 
-    const onWindowEvent = () => notifyAvailable();
-    window.addEventListener('sw:new-version-available', onWindowEvent);
+  //   // const onWindowEvent = () => notifyAvailable();
+  //   window.addEventListener('sw:new-version-available', onWindowEvent);
 
-    if (bc) {
-      bc.onmessage = (ev) => {
-        if (ev?.data?.type === 'NEW_VERSION_AVAILABLE') notifyAvailable();
-      };
-    }
+  //   if (bc) {
+  //     bc.onmessage = (ev) => {
+  //       if (ev?.data?.type === 'NEW_VERSION_AVAILABLE') notifyAvailable();
+  //     };
+  //   }
 
-    // Initialize from persisted flag so dismiss doesn't remove user's ability to update later
-    try {
-      if (localStorage.getItem('sw:update-available') === '1') setNewVersionAvailable(true);
-    } catch (e) { }
+  //   // Initialize from persisted flag so dismiss doesn't remove user's ability to update later
+  //   try {
+  //     if (localStorage.getItem('sw:update-available') === '1') setNewVersionAvailable(true);
+  //   } catch (e) { }
 
-    return () => {
-      window.removeEventListener('sw:new-version-available', onWindowEvent);
-      try { if (bc) bc.close(); } catch (e) { }
-    };
-  }, []);
+  //   return () => {
+  //     window.removeEventListener('sw:new-version-available', onWindowEvent);
+  //     try { if (bc) bc.close(); } catch (e) { }
+  //   };
+  // }, []);
 
-  const applyUpdate = async () => {
+  // const applyUpdate = async () => {
 
-    try {
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (reg?.waiting) {
-        // Listen for controllerchange to reload when the new SW takes over
-        const onControllerChange = () => {
-          try { localStorage.removeItem('sw:update-available'); } catch (e) { }
-          window.location.reload();
-        };
-        navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
-        try { localStorage.removeItem('sw:update-available'); } catch (e) { }
-        try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
-      } else {
-        // No waiting worker — trigger an update check
-        const r = await navigator.serviceWorker.getRegistration();
-        await r?.update();
-        window.location.reload();
-      }
-    } catch (e) {
-      console.error('Failed to apply update', e);
-      try { localStorage.removeItem('sw:update-available'); } catch (err) { }
-      window.location.reload();
-    }
-  };
+  //   try {
+  //     const reg = await navigator.serviceWorker.getRegistration();
+  //     if (reg?.waiting) {
+  //       // Listen for controllerchange to reload when the new SW takes over
+  //       const onControllerChange = () => {
+  //         try { localStorage.removeItem('sw:update-available'); } catch (e) { }
+  //         window.location.reload();
+  //       };
+  //       navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+  //       try { localStorage.removeItem('sw:update-available'); } catch (e) { }
+  //       try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
+  //     } else {
+  //       // No waiting worker — trigger an update check
+  //       const r = await navigator.serviceWorker.getRegistration();
+  //       await r?.update();
+  //       window.location.reload();
+  //     }
+  //   } catch (e) {
+  //     console.error('Failed to apply update', e);
+  //     try { localStorage.removeItem('sw:update-available'); } catch (err) { }
+  //     window.location.reload();
+  //   }
+  // };
 
   // const forceCheckForUpdate = async () => {
   //   try {
@@ -420,7 +420,7 @@ export default function Index() {
           </div>
         }
       />
-      {newVersionAvailable && (
+      {/* {newVersionAvailable && (
         <div style={{ position: 'fixed', top: 64, left: '50%', transform: 'translateX(-50%)', zIndex: 99999 }}>
           <div style={{ background: '', border: '', padding: '0.5rem 1rem', borderRadius: 8, display: 'flex', gap: 8, alignItems: 'center', boxShadow: '0 6px 20px rgba(0,0,0,0.08)' }}>
             <div style={{ fontWeight: 600, marginRight: 8 }}>New version available</div>
@@ -430,7 +430,7 @@ export default function Index() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
       <div
         style={{
           padding: "1.25rem",

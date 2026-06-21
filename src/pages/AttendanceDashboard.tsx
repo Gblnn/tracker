@@ -20,7 +20,7 @@ export default function AttendanceDashboard() {
   const [date, setDate] = useState<string>(todayISO());
   const [tab, setTab] = useState<Tab>('summary');
 
-  const { punches, employees, employeeSummaries, loading } = useAttendance(date);
+  const { punches, employees, employeeSummaries, loading, refetch } = useAttendance(date);
   const [navVisible, setNavVisible] = useState(true);
 
   const viewOptions = [
@@ -146,29 +146,7 @@ export default function AttendanceDashboard() {
             }}
           >
             {/* Stat Card */}
-            {
-              tab === "summary" ? (
-                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", padding: "0.75rem", gap: "0.75rem" }}>
-
-                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center", height: "6rem" }}>
-                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Total</p>
-                    <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : employeeSummaries.length}</h1>
-                  </div>
-
-                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
-                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Present</p>
-                    <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : employeeSummaries.filter((emp) => emp.isPresent).length}</h1>
-                  </div>
-
-                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
-                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Absent</p>
-                    <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : employeeSummaries.filter((emp) => !emp.isPresent).length}</h1>
-                  </div>
-
-                  
-                </div>)
-                : null
-            }
+            
 
             {/* Stat Card */}
             {
@@ -200,7 +178,7 @@ export default function AttendanceDashboard() {
             ) : tab === 'summary' ? (
               <EmployeeTable summaries={employeeSummaries} />
             ) : tab === 'log' ? (
-              <PunchLog punches={punches} employees={employees} />
+              <PunchLog punches={punches} employees={employees} onEmployeeAdded={refetch} />
             ) : tab === 'devices' ? (
               <DevicesMaster />
             ) :

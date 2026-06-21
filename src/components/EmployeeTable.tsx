@@ -3,7 +3,7 @@ import { Avatar } from './Avatar';
 import type { EmployeeSummary } from '../types/attendance';
 import { formatTime } from '../lib/utilis';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, User, X } from 'lucide-react';
+import { Loader2, Search, User, X } from 'lucide-react';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from './ui/empty';
 
 interface EmployeeTableProps {
@@ -14,6 +14,8 @@ interface EmployeeTableProps {
 export function EmployeeTable({ summaries, onFilteredSummariesChange }: EmployeeTableProps) {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
+  const [loading] = useState(false);
+
 
   const uniqueLocations = useMemo(() => {
     const locations = new Set<string>();
@@ -48,6 +50,12 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange }: Employee
     }
   }, [summaries, search, locationFilter]);
 
+  const stats = useMemo(() => {
+    const total = filteredSummaries.length;
+    const present = filteredSummaries.filter(emp => emp.isPresent).length;
+    const absent = total - present;
+    return { total, present, absent };
+  }, [filteredSummaries]);
 
   if (summaries.length === 0) {
     return (
@@ -69,8 +77,32 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange }: Employee
 
   return (
     <div className="flex flex-col h-auto overflow-hidden" style={{ border: "", width: "100%" }}>
+      {
+              (
+                // Stat Cards
+                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", padding: "0.75rem", gap: "0.75rem", borderBottom:"1px solid rgba(100 100 100/ 0.1)" }}>
+
+                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center", height: "6rem" }}>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Total</p>
+                    <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : stats.total}</h1>
+                  </div>
+
+                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Present</p>
+                    <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : stats.present}</h1>
+                  </div>
+
+                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Absent</p>
+                    <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : stats.absent}</h1>
+                  </div>
+
+                  
+                </div>)
+                
+            }
       {/* Toolbar: Search and Location Filter */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white sticky top-0 z-20" style={{ border: '', width: "100%" }}>
+      <div className="flex items-center gap-3 px-3 py-3 border-b border-gray-100 bg-white sticky top-0 z-20" style={{ border: '', width: "100%" }}>
         <div className="relative flex-1 group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-darkblue transition-colors" />
           <input
