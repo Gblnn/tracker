@@ -21,26 +21,26 @@ function buildAddUserCommand(cmdId: number, pin: string, name: string): string {
 }
 
 const NATIONALITIES = [
-    'OMANI',
-    'INDIAN',
-    'PAKISTANI',
-    'BANGLADESHI',
-    'NEPALESE',
-    'SRI LANKAN',
-    'FILIPINO',
-    'EGYPTIAN',
-    'SUDANESE',
-    'YEMENI',
-    'JORDANIAN',
-    'SYRIAN',
-    'IRAQI',
-    'AMERICAN',
-    'BRITISH',
-    'SAUDI',
-    'EMIRATI',
-    'KUWAITI',
-    'QATARI',
-    'BAHRAINI',
+    'omani',
+    'indian',
+    'pakistani',
+    'bangladeshi',
+    'nepalese',
+    'sri lankan',
+    'filipino',
+    'egyptian',
+    'sudanese',
+    'yemeni',
+    'jordanian',
+    'syrian',
+    'iraqi',
+    'american',
+    'british',
+    'saudi',
+    'emirati',
+    'kuwaiti',
+    'qatari',
+    'bahraini',
 ];
 
 interface ManageEmployee {
@@ -563,7 +563,7 @@ export default function EmployeeManage() {
                                     <SelectContent>
                                         {NATIONALITIES.map((nat) => (
                                             <SelectItem key={nat} value={nat}>
-                                                {nat}
+                                                {nat.toUpperCase()}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -681,7 +681,7 @@ export default function EmployeeManage() {
                                     <SelectContent>
                                         {NATIONALITIES.map((nat) => (
                                             <SelectItem key={nat} value={nat}>
-                                                {nat}
+                                                {nat.toUpperCase()}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>

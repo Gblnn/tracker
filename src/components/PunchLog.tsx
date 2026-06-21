@@ -11,26 +11,27 @@ import { Button } from "@/components/ui/button";
 import { UserPlus } from 'lucide-react';
 
 const NATIONALITIES = [
-  'OMANI',
-  'INDIAN',
-  'PAKISTANI',
-  'BANGLADESHI',
-  'NEPALESE',
-  'SRI LANKAN',
-  'FILIPINO',
-  'EGYPTIAN',
-  'SUDANESE',
-  'YEMENI',
-  'JORDANIAN',
-  'SYRIAN',
-  'IRAQI',
-  'AMERICAN',
-  'BRITISH',
-  'SAUDI',
-  'EMIRATI',
-  'KUWAITI',
-  'QATARI',
-  'BAHRAINI',
+  'nigerian',
+  'omani',
+  'indian',
+  'pakistani',
+  'bangladeshi',
+  'nepalese',
+  'sri lankan',
+  'filipino',
+  'egyptian',
+  'sudanese',
+  'yemeni',
+  'jordanian',
+  'syrian',
+  'iraqi',
+  'american',
+  'british',
+  'saudi',
+  'emirati',
+  'kuwaiti',
+  'qatari',
+  'bahraini',
 ];
 
 interface PunchLogProps {
@@ -293,7 +294,7 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
               <Input
                 type="text"
                 required
-                value={registerName}
+                value={registerName.toLowerCase()}
                 onChange={(e) => setRegisterName(e.target.value)}
                 placeholder="e.g. John Smith"
               />
@@ -339,8 +340,8 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
                 >
                   <option value="">Select Nationality</option>
                   {NATIONALITIES.map((nat) => (
-                    <option key={nat} value={nat}>
-                      {nat}
+                    <option key={nat} value={nat.toLowerCase()}>
+                      {nat.toUpperCase()}
                     </option>
                   ))}
                 </select>
