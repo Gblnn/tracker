@@ -1,4 +1,4 @@
-import { Laptop2, Loader2, MapPin, Monitor, Pencil, Plus, X } from 'lucide-react';
+import { Laptop2, Loader2, MapPin, Monitor, Pencil, Plus, RotateCw, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
@@ -93,8 +93,14 @@ export default function DevicesMaster() {
     fetchDevices();
   }
 
-  const fetchDevices = useCallback(async () => {
-    setLoading(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchDevices = useCallback(async (silent = false) => {
+    if (silent) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
     try {
       const { data: devicesData, error: devicesErr } = await supabase
@@ -125,14 +131,17 @@ export default function DevicesMaster() {
       setError(err.message || 'Failed to load devices');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchDevices();
+    fetchDevices(false);
 
-    // Refresh every 30s to update last_seen status
-    const interval = setInterval(fetchDevices, 30000);
+    // Refresh every 30s silently to update last_seen status in the background
+    const interval = setInterval(() => {
+      fetchDevices(true);
+    }, 30000);
     return () => clearInterval(interval);
   }, [fetchDevices]);
 
@@ -191,9 +200,19 @@ export default function DevicesMaster() {
 
         {/* Toolbar */}
         <div className="flex justify-between items-center mb-4">
-          <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
-            {devices.length} registered device(s)
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
+              {devices.length} registered device(s)
+            </span>
+            <button
+              onClick={() => fetchDevices(true)}
+              disabled={loading || refreshing}
+              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
+              title="Refresh Status"
+            >
+              <RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
           <button
             onClick={openAdd}
             className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1.5"
@@ -244,8 +263,8 @@ export default function DevicesMaster() {
 
                   return (
                     <tr key={device.id} className="hover:bg-gray-50 transition-colors group">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
+                      <td className="px-4 py-3" >
+                        <div className="flex gap-2.5" style={{ border: "", justifyContent: "flex-start" }}>
                           <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
                             <Laptop2 className="w-4 h-4 text-gray-400" />
                           </div>
@@ -261,7 +280,7 @@ export default function DevicesMaster() {
                       </td>
                       <td className="px-4 py-3">
                         {device.location ? (
-                          <div className="flex items-center gap-1.5 text-gray-700">
+                          <div className="flex gap-1.5 text-gray-700" style={{ justifyContent: "flex-start" }}>
                             <MapPin className="w-3.5 h-3.5 text-gray-400" />
                             {device.location}
                           </div>
