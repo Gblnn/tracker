@@ -211,8 +211,8 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
               </div>
               <div style={{ width: "100%", flex: 1, minHeight: 0 }}>
                 {loadingChart ? (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af" }}>
-                    <Loader2 className="animate-spin w-4 h-4" />
+                  <div style={{ display: "flex", alignItems: "", justifyContent: "center", height: "100%", color: "", border: "", paddingTop: "1rem" }}>
+                    <Loader2 size={25} className="animate-spin" />
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
@@ -255,8 +255,8 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
               </div>
               <div style={{ width: "100%", flex: 1, minHeight: 0 }}>
                 {loadingChart ? (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af" }}>
-                    <Loader2 className="animate-spin w-4 h-4" />
+                  <div style={{ display: "flex", alignItems: "", justifyContent: "center", height: "100%", color: "", border: "", paddingTop: "1rem" }}>
+                    <Loader2 size={25} className="animate-spin" />
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">

@@ -1,6 +1,6 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { ChevronLeft, ChevronRight, Download, Loader2, Search } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Download, Loader2, Search } from 'lucide-react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
@@ -11,6 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -92,7 +99,7 @@ export default function StaffMonthlyReport() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deptFilter] = useState('all');
-  const [locationFilter, setLocationFilter] = useState('all');
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [reportType, setReportType] = useState<ReportType>('inout');
   const [useFirstLast, setUseFirstLast] = useState(true);
@@ -213,10 +220,12 @@ export default function StaffMonthlyReport() {
 
   const filtered = useMemo(() => {
     let list = deptFilter === 'all' ? employees : employees.filter(e => e.department === deptFilter);
-    if (locationFilter !== 'all') {
+    if (selectedLocations.length > 0) {
       list = list.filter(e => {
         const locs = employeeLocations[e.device_user_id];
-        return locs ? locs.split(', ').includes(locationFilter) : false;
+        if (!locs) return false;
+        const employeeLocArray = locs.split(', ');
+        return employeeLocArray.some(loc => selectedLocations.includes(loc));
       });
     }
     if (searchQuery.trim()) {
@@ -227,7 +236,7 @@ export default function StaffMonthlyReport() {
       );
     }
     return list;
-  }, [employees, deptFilter, locationFilter, searchQuery, employeeLocations]);
+  }, [employees, deptFilter, selectedLocations, searchQuery, employeeLocations]);
 
   const workDays = useMemo(() =>
     dayList.filter(d => !isWeekend(year, month, d)).length,
@@ -334,7 +343,7 @@ export default function StaffMonthlyReport() {
     });
 
     const colWidth = reportType === 'inout' ? 92 : 46;
-    const totalWidth = 474 + (days * colWidth);
+    const totalWidth = 584 + (days * colWidth);
     const offscreen = document.createElement("div");
     offscreen.style.cssText =
       `position:fixed;top:0;left:-${totalWidth + 1000}px;` +
@@ -349,7 +358,8 @@ export default function StaffMonthlyReport() {
     title.style.cssText = `margin: 0; font-size: 22px; font-weight: 600; color: #111827;`;
 
     const subtitle = document.createElement("div");
-    subtitle.innerText = `${filtered.length} staff  ·  ${workDays} working days  ·  Location: ${locationFilter === 'all' ? 'All Locations' : locationFilter}`;
+    const locText = selectedLocations.length === 0 ? 'All Locations' : selectedLocations.join(', ');
+    subtitle.innerText = `${filtered.length} staff  ·  ${workDays} working days  ·  Location: ${locText}`;
     subtitle.style.cssText = `margin-top: 6px; font-size: 13px; color: #4b5563;`;
 
     header.appendChild(title);
@@ -423,7 +433,7 @@ export default function StaffMonthlyReport() {
       }
       setPdfLoading(false);
     }
-  }, [days, month, year, filtered, workDays, reportType, useFirstLast, deptFilter, locationFilter]);
+  }, [days, month, year, filtered, workDays, reportType, useFirstLast, deptFilter, selectedLocations]);
 
   // ── Cell renderers ─────────────────────────────────────────────────────────
   function InCell({ uid, d }: { uid: string; d: number }) {
@@ -595,7 +605,7 @@ export default function StaffMonthlyReport() {
               zIndex: 10,
             }}
           >
-            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: 474 }}>
+            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: 584 }}>
               <colgroup>
                 <col style={{ width: 28 }} />
                 <col style={{ width: 270 }} />
@@ -609,21 +619,48 @@ export default function StaffMonthlyReport() {
                 <tr style={{ background: '#111827', color: '#fff', position: 'sticky', top: 0, zIndex: 5, paddingBottom: "1rem", height: "2.5rem" }}>
                   <th className="text-[13px] font-medium text-center px-1 py-2">#</th>
                   <th className="text-[13px] font-medium text-left px-3 py-2">Name</th>
-                  <th className="text-[13px] font-medium text-left px-1 py-1" style={{ width: 150 }}>
-                    <Select
-                      value={locationFilter}
-                      onValueChange={setLocationFilter}
-                    >
-                      <SelectTrigger className="h-8 text-xs bg-transparent border-0 text-white hover:bg-white/10 focus:ring-0 focus:ring-offset-0 focus:outline-none shadow-none px-2 rounded-md transition-colors font-medium [&>svg]:text-white [&>svg]:opacity-80 w-full justify-between flex">
-                        <SelectValue placeholder="Location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Locations</SelectItem>
-                        {locations.map(loc => (
-                          <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <th className="text-[13px] font-medium text-left px-1 py-1" style={{ width: 170 }}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-white hover:bg-white/10 focus:ring-0 focus:ring-offset-0 focus:outline-none shadow-none px-2 rounded-md transition-colors font-medium w-full justify-between flex items-center outline-none">
+                        <span className="truncate">
+                          {selectedLocations.length === 0
+                            ? 'Location (All)'
+                            : selectedLocations.length === 1
+                            ? selectedLocations[0]
+                            : `Location (${selectedLocations.length})`}
+                        </span>
+                        <ChevronDown className="h-4 w-4 opacity-80 shrink-0" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[180px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50 max-h-[300px] overflow-y-auto">
+                        <DropdownMenuCheckboxItem
+                          checked={selectedLocations.length === 0}
+                          onCheckedChange={() => setSelectedLocations([])}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          All Locations
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuSeparator className="my-1 border-gray-100" />
+                        {locations.map(loc => {
+                          const isChecked = selectedLocations.includes(loc);
+                          return (
+                            <DropdownMenuCheckboxItem
+                              key={loc}
+                              checked={isChecked}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedLocations([...selectedLocations, loc]);
+                                } else {
+                                  setSelectedLocations(selectedLocations.filter(item => item !== loc));
+                                }
+                              }}
+                              className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                            >
+                              {loc}
+                            </DropdownMenuCheckboxItem>
+                          );
+                        })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </th>
                   <th className="text-[13px] font-medium text-center py-2" style={{ background: '#065f46' }}>P</th>
                   <th className="text-[13px] font-medium text-center py-2" style={{ background: '#7f1d1d' }}>A</th>
@@ -651,7 +688,7 @@ export default function StaffMonthlyReport() {
                     </td>
                     <td
                       className="text-[13px] text-gray-500 bg-white px-2 truncate"
-                      style={{ maxWidth: 150 }}
+                      style={{ maxWidth: 170 }}
                       title={employeeLocations[emp.device_user_id] || '—'}
                     >
                       {employeeLocations[emp.device_user_id] || '—'}
