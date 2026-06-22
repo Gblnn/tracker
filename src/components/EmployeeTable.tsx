@@ -505,7 +505,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
                   <td className="px-4 py-3 text-gray-500">{emp.location ?? '—'}</td>
                   <td className="px-4 py-3 tabular-nums text-gray-700">{formatTime(emp.firstIn)}</td>
                   <td className="px-4 py-3 tabular-nums text-gray-700">{formatTime(emp.lastOut)}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-4" style={{ border: "", display: "flex", justifyContent: "center", alignItems: "center", }}>
                     {emp.isPresent ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />

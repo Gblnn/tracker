@@ -251,7 +251,7 @@ export default function DevicesMaster() {
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Last Log</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Start Time</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">End Time</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ display: 'flex', justifyContent: "center" }}>Status</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -303,7 +303,7 @@ export default function DevicesMaster() {
                       <td className="px-4 py-3 text-gray-500 text-xs">
                         {device.end_time ?? '—'}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-4" style={{ border: '', display: "flex", justifyContent: "center" }}>
                         {online ? (
                           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
