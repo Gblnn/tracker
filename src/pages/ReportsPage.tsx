@@ -28,6 +28,7 @@ interface PunchDetail {
   user_id: string;
   punch_time: string;
   punch_type: number;
+  location?: string | null;
 }
 
 interface DaySummary {
@@ -91,6 +92,7 @@ export default function StaffMonthlyReport() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deptFilter] = useState('all');
+  const [locationFilter, setLocationFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [reportType, setReportType] = useState<ReportType>('inout');
   const [useFirstLast, setUseFirstLast] = useState(true);
@@ -117,7 +119,7 @@ export default function StaffMonthlyReport() {
         // .eq('emp_type', 'Staff')
         .order('name', { ascending: true }),
       supabase.from('punch_details')
-        .select('user_id, punch_time, punch_type')
+        .select('user_id, punch_time, punch_type, location')
         .gte('punch_time', start)
         .lte('punch_time', end),
     ]);
@@ -154,8 +156,34 @@ export default function StaffMonthlyReport() {
   //   [...new Set(employees.map(e => e.department).filter(Boolean) as string[])].sort(),
   //   [employees]);
 
+  const locations = useMemo(() =>
+    [...new Set(punches.map(p => p.location).filter(Boolean) as string[])].sort(),
+    [punches]);
+
+  const employeeLocations = useMemo(() => {
+    const map: Record<string, Set<string>> = {};
+    for (const p of punches) {
+      if (!p.location) continue;
+      if (!map[p.user_id]) {
+        map[p.user_id] = new Set();
+      }
+      map[p.user_id].add(p.location);
+    }
+    const result: Record<string, string> = {};
+    for (const [uid, locSet] of Object.entries(map)) {
+      result[uid] = Array.from(locSet).sort().join(', ');
+    }
+    return result;
+  }, [punches]);
+
   const filtered = useMemo(() => {
     let list = deptFilter === 'all' ? employees : employees.filter(e => e.department === deptFilter);
+    if (locationFilter !== 'all') {
+      list = list.filter(e => {
+        const locs = employeeLocations[e.device_user_id];
+        return locs ? locs.split(', ').includes(locationFilter) : false;
+      });
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(e =>
@@ -164,7 +192,7 @@ export default function StaffMonthlyReport() {
       );
     }
     return list;
-  }, [employees, deptFilter, searchQuery]);
+  }, [employees, deptFilter, locationFilter, searchQuery, employeeLocations]);
 
   const workDays = useMemo(() =>
     dayList.filter(d => !isWeekend(year, month, d)).length,
@@ -199,7 +227,7 @@ export default function StaffMonthlyReport() {
     rows.push([`Staff Attendance — ${monthLabel(month, year)}`]);
     rows.push([]);
 
-    const r1: string[] = ['#', 'Name', 'Emp ID', 'Department'];
+    const r1: string[] = ['#', 'Name', 'Emp ID', 'Location'];
     const r2: string[] = ['', '', '', ''];
     const r3: string[] = ['', '', '', ''];
     const colCount = reportType === 'inout' ? 2 : 1;
@@ -221,7 +249,7 @@ export default function StaffMonthlyReport() {
     rows.push(r1, r2, r3);
 
     filtered.forEach((emp, idx) => {
-      const row: (string | number)[] = [idx + 1, emp.name, emp.emp_id ?? '', emp.department ?? ''];
+      const row: (string | number)[] = [idx + 1, emp.name, emp.emp_id ?? '', employeeLocations[emp.device_user_id] || '—'];
       for (let d = 1; d <= days; d++) {
         const c = matrix[emp.device_user_id]?.[d];
         if (reportType === 'hourly') {
@@ -271,7 +299,7 @@ export default function StaffMonthlyReport() {
     });
 
     const colWidth = reportType === 'inout' ? 92 : 46;
-    const totalWidth = 454 + (days * colWidth);
+    const totalWidth = 474 + (days * colWidth);
     const offscreen = document.createElement("div");
     offscreen.style.cssText =
       `position:fixed;top:0;left:-${totalWidth + 1000}px;` +
@@ -286,7 +314,7 @@ export default function StaffMonthlyReport() {
     title.style.cssText = `margin: 0; font-size: 22px; font-weight: 600; color: #111827;`;
 
     const subtitle = document.createElement("div");
-    subtitle.innerText = `${filtered.length} staff  ·  ${workDays} working days  ·  Department: ${deptFilter === 'all' ? 'All Departments' : deptFilter}`;
+    subtitle.innerText = `${filtered.length} staff  ·  ${workDays} working days  ·  Location: ${locationFilter === 'all' ? 'All Locations' : locationFilter}`;
     subtitle.style.cssText = `margin-top: 6px; font-size: 13px; color: #4b5563;`;
 
     header.appendChild(title);
@@ -360,7 +388,7 @@ export default function StaffMonthlyReport() {
       }
       setPdfLoading(false);
     }
-  }, [days, month, year, filtered, workDays, reportType, useFirstLast, deptFilter]);
+  }, [days, month, year, filtered, workDays, reportType, useFirstLast, deptFilter, locationFilter]);
 
   // ── Cell renderers ─────────────────────────────────────────────────────────
   function InCell({ uid, d }: { uid: string; d: number }) {
@@ -385,7 +413,7 @@ export default function StaffMonthlyReport() {
     const c = matrix[uid]?.[d];
     if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
     if (c?.isPresent) {
-      const displayTime = useFirstLast 
+      const displayTime = useFirstLast
         ? (c.firstPunch === c.lastPunch ? '' : formatTime(c.lastPunch))
         : (formatTime(c.lastOut) || '—');
       return (
@@ -406,17 +434,17 @@ export default function StaffMonthlyReport() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', padding: '0.5rem 0.75rem', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
 
-            {/* Search bar */}
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search name or ID..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="text-xs border border-gray-200 rounded-lg pl-8 pr-2 py-1.5 outline-none bg-white min-w-[180px] focus:border-gray-400 transition-colors"
-              />
-            </div>
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search name or ID..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="text-xs border border-gray-200 rounded-lg pl-8 pr-2 py-1.5 outline-none bg-white min-w-[180px] focus:border-gray-400 transition-colors"
+            />
+          </div>
 
           <Select
             value={reportType}
@@ -532,11 +560,11 @@ export default function StaffMonthlyReport() {
               zIndex: 10,
             }}
           >
-            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: 454 }}>
+            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: 474 }}>
               <colgroup>
                 <col style={{ width: 28 }} />
-                <col style={{ width: 180 }} />
-                <col style={{ width: 130 }} />
+                <col style={{ width: 270 }} />
+                <col style={{ width: 170 }} />
                 <col style={{ width: 52 }} />
                 <col style={{ width: 52 }} />
                 <col style={{ width: 12 }} />
@@ -546,7 +574,22 @@ export default function StaffMonthlyReport() {
                 <tr style={{ background: '#111827', color: '#fff', position: 'sticky', top: 0, zIndex: 5, paddingBottom: "1rem", height: "2.5rem" }}>
                   <th className="text-[13px] font-medium text-center px-1 py-2">#</th>
                   <th className="text-[13px] font-medium text-left px-3 py-2">Name</th>
-                  <th className="text-[13px] font-medium text-left px-2 py-2">Location</th>
+                  <th className="text-[13px] font-medium text-left px-1 py-1" style={{ width: 150 }}>
+                    <Select
+                      value={locationFilter}
+                      onValueChange={setLocationFilter}
+                    >
+                      <SelectTrigger className="h-8 text-xs bg-transparent border-0 text-white hover:bg-white/10 focus:ring-0 focus:ring-offset-0 focus:outline-none shadow-none px-2 rounded-md transition-colors font-medium [&>svg]:text-white [&>svg]:opacity-80 w-full justify-between flex">
+                        <SelectValue placeholder="Location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Locations</SelectItem>
+                        {locations.map(loc => (
+                          <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </th>
                   <th className="text-[13px] font-medium text-center py-2" style={{ background: '#065f46' }}>P</th>
                   <th className="text-[13px] font-medium text-center py-2" style={{ background: '#7f1d1d' }}>A</th>
                   <th style={{ background: '#111827' }} />
@@ -571,7 +614,13 @@ export default function StaffMonthlyReport() {
                       {emp.name}
                       {emp.emp_id && <div className="text-[11px] text-gray-400 font-normal">{emp.emp_id}</div>}
                     </td>
-                    <td className="text-[13px] text-gray-500 bg-white px-2 whitespace-nowrap">{emp.location ?? '—'}</td>
+                    <td
+                      className="text-[13px] text-gray-500 bg-white px-2 truncate"
+                      style={{ maxWidth: 150 }}
+                      title={employeeLocations[emp.device_user_id] || '—'}
+                    >
+                      {employeeLocations[emp.device_user_id] || '—'}
+                    </td>
                     <td className="text-center text-[13px] font-semibold text-emerald-700" style={{ background: '#ecfdf5', height: ROW_H }}>
                       {presenceDays(emp.device_user_id)}
                     </td>
@@ -590,17 +639,17 @@ export default function StaffMonthlyReport() {
             ref={rightRef}
             style={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}
           >
-              <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: `${dayList.length * (reportType === 'inout' ? 92 : 46)}px`, borderSpacing: 0 }}>
+            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: `${dayList.length * (reportType === 'inout' ? 92 : 46)}px`, borderSpacing: 0 }}>
               <colgroup>
                 {dayList.map(d => (
-                    reportType === 'inout' ? (
-                      <Fragment key={`col-${d}`}>
-                        <col style={{ width: 46 }} />
-                        <col style={{ width: 46 }} />
-                      </Fragment>
-                    ) : (
-                      <col key={`col-${d}`} style={{ width: 46 }} />
-                    )
+                  reportType === 'inout' ? (
+                    <Fragment key={`col-${d}`}>
+                      <col style={{ width: 46 }} />
+                      <col style={{ width: 46 }} />
+                    </Fragment>
+                  ) : (
+                    <col key={`col-${d}`} style={{ width: 46 }} />
+                  )
                 ))}
               </colgroup>
               <thead>
@@ -609,7 +658,7 @@ export default function StaffMonthlyReport() {
                   {dayList.map(d => (
                     <th
                       key={d}
-                        colSpan={reportType === 'inout' ? 2 : 1}
+                      colSpan={reportType === 'inout' ? 2 : 1}
                       className="text-center text-[13px] font-medium"
                       style={{ background: isWeekend(year, month, d) ? '#374151' : '#111827' }}
                     >
