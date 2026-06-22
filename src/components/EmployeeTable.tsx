@@ -1,12 +1,18 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Avatar } from './Avatar';
-import type { EmployeeSummary } from '../types/attendance';
-import { formatTime } from '../lib/utilis';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, User, X } from 'lucide-react';
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from './ui/empty';
-import { supabase } from '../lib/supabase';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ChevronDown, Loader2, Search, User, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { supabase } from '../lib/supabase';
+import { formatTime } from '../lib/utilis';
+import type { EmployeeSummary } from '../types/attendance';
+import { Avatar } from './Avatar';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from './ui/empty';
 
 interface EmployeeTableProps {
   summaries: EmployeeSummary[];
@@ -16,7 +22,9 @@ interface EmployeeTableProps {
 
 export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: EmployeeTableProps) {
   const [search, setSearch] = useState('');
-  const [locationFilter, setLocationFilter] = useState('all');
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [loading] = useState(false);
 
 
@@ -32,6 +40,14 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
     return Array.from(locations).sort();
   }, [summaries]);
 
+  const uniqueDepartments = useMemo(() => {
+    const depts = new Set<string>();
+    summaries.forEach((emp) => {
+      if (emp.department) depts.add(emp.department);
+    });
+    return Array.from(depts).sort();
+  }, [summaries]);
+
   const filteredSummaries = useMemo(() => {
     return summaries.filter((emp) => {
       const matchesSearch =
@@ -39,19 +55,28 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
         (emp.emp_id && emp.emp_id.toLowerCase().includes(search.toLowerCase()));
 
       const matchesLocation =
-        locationFilter === 'all' ||
-        emp.location === locationFilter;
+        selectedLocations.length === 0 ||
+        (emp.location && selectedLocations.includes(emp.location));
 
-      return matchesSearch && matchesLocation;
+      const matchesDepartment =
+        selectedDepartments.length === 0 ||
+        (emp.department && selectedDepartments.includes(emp.department));
+
+      const matchesStatus =
+        selectedStatuses.length === 0 ||
+        (selectedStatuses.includes('Present') && emp.isPresent) ||
+        (selectedStatuses.includes('Absent') && !emp.isPresent);
+
+      return matchesSearch && matchesLocation && matchesDepartment && matchesStatus;
     });
-  }, [summaries, search, locationFilter]);
+  }, [summaries, search, selectedLocations, selectedDepartments, selectedStatuses]);
 
   // Call the callback whenever filteredSummaries changes
   useEffect(() => {
     if (onFilteredSummariesChange) {
       onFilteredSummariesChange(filteredSummaries);
     }
-  }, [summaries, search, locationFilter]);
+  }, [filteredSummaries, onFilteredSummariesChange]);
 
   const stats = useMemo(() => {
     const total = filteredSummaries.length;
@@ -292,54 +317,173 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
 
           </div>)
       }
-      {/* Toolbar: Search and Location Filter */}
-      <div className="flex items-center gap-3 px-3 py-3 border-b border-gray-100 bg-white sticky top-0 z-20" style={{ border: '', width: "100%" }}>
-        <div className="relative flex-1 group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-darkblue transition-colors" />
-          <input
-            type="text"
-            placeholder="Search name or ID..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 text-sm bg-gray-50 border-none rounded-xl outline-none focus:ring-1 focus:ring-gray-200 transition-all"
-          />
-          {search && (
-            <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-
-        <Select value={locationFilter} onValueChange={setLocationFilter}>
-          <SelectTrigger style={{ width: "fit-content" }} className=" h-10 bg-gray-50 border-none rounded-xl text-xs font-medium focus:ring-1 focus:ring-gray-200">
-            <SelectValue placeholder="All" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-gray-100 shadow-xl">
-            <SelectItem value="all">All Locations</SelectItem>
-            {uniqueLocations.map(loc => (
-              <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Table Section */}
       <div className="overflow-auto flex-1" style={{ border: "", width: "100%" }}>
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-gray-50 z-10 shadow-[0_1px_0_rgba(0,0,0,0.05)]">
             <tr className="border-b border-gray-100">
-              <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Employee</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide ">Department</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide ">Location</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">First in</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Last out</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Status</th>
+              <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "370px" }}>
+                <div className="relative flex items-center group w-full">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-darkblue transition-colors" />
+                  <input
+                    type="text"
+                    placeholder="Search Employee..."
+                    value={search}
+                    style={{ fontSize: "0.8rem", fontWeight: "400" }}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-8 pr-6 py-1.5 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors tracking-wide text-gray-700"
+                  />
+                  {search && (
+                    <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600">
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </th>
+              <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "160px" }}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                    <span className="truncate">
+                      {selectedDepartments.length === 0
+                        ? 'Department (All)'
+                        : selectedDepartments.length === 1
+                          ? selectedDepartments[0]
+                          : `Dept (${selectedDepartments.length})`}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[180px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50 max-h-[300px] overflow-y-auto">
+                    <DropdownMenuCheckboxItem
+                      checked={selectedDepartments.length === 0}
+                      onCheckedChange={() => setSelectedDepartments([])}
+                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                    >
+                      All Departments
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuSeparator className="my-1 border-gray-100" />
+                    {uniqueDepartments.map(dept => {
+                      const isChecked = selectedDepartments.includes(dept);
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={dept}
+                          checked={isChecked}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedDepartments([...selectedDepartments, dept]);
+                            } else {
+                              setSelectedDepartments(selectedDepartments.filter(item => item !== dept));
+                            }
+                          }}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          {dept}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </th>
+              <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "160px" }}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                    <span className="truncate">
+                      {selectedLocations.length === 0
+                        ? 'Location (All)'
+                        : selectedLocations.length === 1
+                          ? selectedLocations[0]
+                          : `Loc (${selectedLocations.length})`}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[180px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50 max-h-[300px] overflow-y-auto">
+                    <DropdownMenuCheckboxItem
+                      checked={selectedLocations.length === 0}
+                      onCheckedChange={() => setSelectedLocations([])}
+                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                    >
+                      All Locations
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuSeparator className="my-1 border-gray-100" />
+                    {uniqueLocations.map(loc => {
+                      const isChecked = selectedLocations.includes(loc);
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={loc}
+                          checked={isChecked}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedLocations([...selectedLocations, loc]);
+                            } else {
+                              setSelectedLocations(selectedLocations.filter(item => item !== loc));
+                            }
+                          }}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          {loc}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </th>
+              <th style={{ width: "200px" }} className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">First in</th>
+              <th style={{ width: "200px" }} className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Last out</th>
+              <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "200px" }}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                    <span className="truncate">
+                      {selectedStatuses.length === 0
+                        ? 'Status (All)'
+                        : selectedStatuses.length === 1
+                          ? selectedStatuses[0]
+                          : `Status (${selectedStatuses.length})`}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[140px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50">
+                    <DropdownMenuCheckboxItem
+                      checked={selectedStatuses.length === 0}
+                      onCheckedChange={() => setSelectedStatuses([])}
+                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                    >
+                      All Statuses
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuSeparator className="my-1 border-gray-100" />
+                    <DropdownMenuCheckboxItem
+                      checked={selectedStatuses.includes('Present')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedStatuses([...selectedStatuses, 'Present']);
+                        } else {
+                          setSelectedStatuses(selectedStatuses.filter(s => s !== 'Present'));
+                        }
+                      }}
+                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                    >
+                      Present
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={selectedStatuses.includes('Absent')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedStatuses([...selectedStatuses, 'Absent']);
+                        } else {
+                          setSelectedStatuses(selectedStatuses.filter(s => s !== 'Absent'));
+                        }
+                      }}
+                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                    >
+                      Absent
+                    </DropdownMenuCheckboxItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {filteredSummaries.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-20 text-center text-gray-400 font-medium">
+                <td colSpan={6} className="py-20 text-center text-gray-400 font-medium">
                   {search ? `No results found for "${search}"` : 'No matching employees found.'}
                 </td>
               </tr>

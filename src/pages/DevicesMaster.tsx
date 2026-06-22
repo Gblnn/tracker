@@ -39,6 +39,7 @@ function formatLastSeen(iso: string | null): string {
 
 export default function DevicesMaster() {
   const [devices, setDevices] = useState<Device[]>([]);
+  const [lastPunchMap, setLastPunchMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
@@ -95,13 +96,36 @@ export default function DevicesMaster() {
   const fetchDevices = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const { data, error: err } = await supabase
-      .from('devices') // Assuming 'timing' column exists in 'devices' table
-      .select('*')
-      .order('id', { ascending: true });
-    if (err) setError(err.message);
-    else setDevices(data ?? []);
-    setLoading(false);
+    try {
+      const { data: devicesData, error: devicesErr } = await supabase
+        .from('devices')
+        .select('*')
+        .order('id', { ascending: true });
+      if (devicesErr) throw devicesErr;
+
+      const { data: punchesData, error: punchesErr } = await supabase
+        .from('punches')
+        .select('device_serial, punch_time')
+        .order('punch_time', { ascending: false })
+        .limit(1000);
+      if (punchesErr) throw punchesErr;
+
+      const map: Record<string, string> = {};
+      if (punchesData) {
+        punchesData.forEach((p) => {
+          if (p.device_serial && !map[p.device_serial]) {
+            map[p.device_serial] = p.punch_time;
+          }
+        });
+      }
+
+      setLastPunchMap(map);
+      setDevices(devicesData ?? []);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load devices');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -163,7 +187,7 @@ export default function DevicesMaster() {
 
   return (
     <div className="min-h-screen bg-white" style={{ width: "100%" }}>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8" style={{ width: "100%" }}>
+      <div className="w-full px-4 sm:px-6 py-8">
 
         {/* Toolbar */}
         <div className="flex justify-between items-center mb-4">
@@ -204,15 +228,19 @@ export default function DevicesMaster() {
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Device</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Location</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Item Code</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Last Ping</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Last Log</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Start Time</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">End Time</th>
-                  {/* <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Status</th> */}
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Status</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {devices.map((device) => {
+                  const online = device.last_seen
+                    ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
+                    : false;
 
                   return (
                     <tr key={device.id} className="hover:bg-gray-50 transition-colors group">
@@ -248,12 +276,15 @@ export default function DevicesMaster() {
                         {formatLastSeen(device.last_seen)}
                       </td>
                       <td className="px-4 py-3 text-gray-500 text-xs">
+                        {formatLastSeen(lastPunchMap[device.serial_no] || null)}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">
                         {device.start_time ?? '—'}
                       </td>
                       <td className="px-4 py-3 text-gray-500 text-xs">
                         {device.end_time ?? '—'}
                       </td>
-                      {/* <td className="px-4 py-3">
+                      <td className="px-4 py-3">
                         {online ? (
                           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -265,7 +296,7 @@ export default function DevicesMaster() {
                             Offline
                           </span>
                         )}
-                      </td> */}
+                      </td>
                       <td className="px-4 py-3">
                         <button
                           onClick={() => openEdit(device)}

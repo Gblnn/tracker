@@ -2,12 +2,20 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Monitor, Plus, Search, Users, X } from 'lucide-react';
+import { ChevronDown, Loader2, Monitor, Plus, Search, SquareCheck, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Avatar } from '../components/Avatar';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '../components/ui/empty';
 import { supabase } from '../lib/supabase';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface Device {
     id: number;
@@ -61,8 +69,30 @@ export default function EmployeeManage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
-    const [deptFilter, setDeptFilter] = useState('all');
-    const [typeFilter, setTypeFilter] = useState('all');
+    const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+    const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+    const [selectedNationalities, setSelectedNationalities] = useState<string[]>([]);
+
+    // Selection and bulk states
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<number>>(new Set());
+    const [isBulkDeptOpen, setIsBulkDeptOpen] = useState(false);
+    const [bulkDeptValue, setBulkDeptValue] = useState('');
+    const [isBulkTypeOpen, setIsBulkTypeOpen] = useState(false);
+    const [bulkTypeValue, setBulkTypeValue] = useState<'staff' | 'worker'>('staff');
+    const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+
+    const toggleSelectEmployee = (id: number) => {
+        setSelectedEmployeeIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
 
     // Edit states
     const [editingEmployee, setEditingEmployee] = useState<ManageEmployee | null>(null);
@@ -256,6 +286,88 @@ export default function EmployeeManage() {
             setIsSubmitting(false);
         }
     };
+
+    const handleBulkDeptSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (selectedEmployeeIds.size === 0) return;
+        setIsSubmitting(true);
+        try {
+            const { error: err } = await supabase
+                .from('employees')
+                .update({ department: bulkDeptValue.trim() || null })
+                .in('id', Array.from(selectedEmployeeIds));
+
+            if (err) throw err;
+
+            toast.success(`Successfully updated department for ${selectedEmployeeIds.size} employee(s)`);
+            setIsBulkDeptOpen(false);
+            setBulkDeptValue('');
+            setSelectedEmployeeIds(new Set());
+            setIsSelectionMode(false);
+            fetchEmployees();
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to bulk update department');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleBulkTypeSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (selectedEmployeeIds.size === 0) return;
+        setIsSubmitting(true);
+        try {
+            const { error: err } = await supabase
+                .from('employees')
+                .update({ emp_type: bulkTypeValue })
+                .in('id', Array.from(selectedEmployeeIds));
+
+            if (err) throw err;
+
+            toast.success(`Successfully updated employee type for ${selectedEmployeeIds.size} employee(s)`);
+            setIsBulkTypeOpen(false);
+            setSelectedEmployeeIds(new Set());
+            setIsSelectionMode(false);
+            fetchEmployees();
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to bulk update employee type');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleBulkDeleteSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (selectedEmployeeIds.size === 0) return;
+        setIsSubmitting(true);
+        try {
+            const { error: err } = await supabase
+                .from('employees')
+                .delete()
+                .in('id', Array.from(selectedEmployeeIds));
+
+            if (err) throw err;
+
+            toast.success(`Successfully deleted ${selectedEmployeeIds.size} employee(s)`);
+            setIsBulkDeleteOpen(false);
+            setSelectedEmployeeIds(new Set());
+            setIsSelectionMode(false);
+            fetchEmployees();
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to bulk delete employees');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    // Compile unique nationalities for filtering
+    const uniqueNationalities = useMemo(() => {
+        const nats = new Set<string>();
+        employees.forEach((emp) => {
+            if (emp.nationality) nats.add(emp.nationality.toLowerCase());
+        });
+        return Array.from(nats).sort();
+    }, [employees]);
+
     // Filtered employees logic
     const filteredEmployees = useMemo(() => {
         return employees.filter((emp) => {
@@ -266,12 +378,21 @@ export default function EmployeeManage() {
 
             const matchesSearch = nameMatch || hrIdMatch || deviceIdMatch || designationMatch;
 
-            const matchesDept = deptFilter === 'all' || emp.department === deptFilter;
-            const matchesType = typeFilter === 'all' || emp.emp_type === typeFilter;
+            const matchesDept =
+                selectedDepartments.length === 0 ||
+                (emp.department && selectedDepartments.includes(emp.department));
 
-            return matchesSearch && matchesDept && matchesType;
+            const matchesType =
+                selectedTypes.length === 0 ||
+                (emp.emp_type && selectedTypes.includes(emp.emp_type));
+
+            const matchesNationality =
+                selectedNationalities.length === 0 ||
+                (emp.nationality && selectedNationalities.includes(emp.nationality.toLowerCase()));
+
+            return matchesSearch && matchesDept && matchesType && matchesNationality;
         });
-    }, [employees, search, deptFilter, typeFilter]);
+    }, [employees, search, selectedDepartments, selectedTypes, selectedNationalities]);
 
     // Stats calculation commented out because cards are disabled
     /*
@@ -283,12 +404,49 @@ export default function EmployeeManage() {
     }, [filteredEmployees]);
     */
 
+    const allFilteredSelected = useMemo(() => {
+        return filteredEmployees.length > 0 && filteredEmployees.every(emp => selectedEmployeeIds.has(emp.id));
+    }, [filteredEmployees, selectedEmployeeIds]);
+
+    const someFilteredSelected = useMemo(() => {
+        return filteredEmployees.some(emp => selectedEmployeeIds.has(emp.id)) && !allFilteredSelected;
+    }, [filteredEmployees, selectedEmployeeIds, allFilteredSelected]);
+
+    const handleSelectAllToggle = () => {
+        if (allFilteredSelected) {
+            setSelectedEmployeeIds(prev => {
+                const next = new Set(prev);
+                filteredEmployees.forEach(emp => next.delete(emp.id));
+                return next;
+            });
+        } else {
+            setSelectedEmployeeIds(prev => {
+                const next = new Set(prev);
+                filteredEmployees.forEach(emp => next.add(emp.id));
+                return next;
+            });
+        }
+    };
+
     return (
         <div className="flex flex-col h-full overflow-hidden bg-white" style={{ width: "100%" }}>
 
 
             {/* Toolbar: Search and Filters */}
             <div className="flex items-center gap-3 px-3 py-3 border-b border-gray-100 bg-white sticky top-0 z-20" style={{ width: "100%" }}>
+                {/* Selection toggle button on the left */}
+                <Button
+                    variant="outline"
+                    onClick={() => {
+                        setIsSelectionMode(!isSelectionMode);
+                        setSelectedEmployeeIds(new Set());
+                    }}
+                    className={`h-10 w-10 p-0 rounded-xl transition-colors shrink-0 ${isSelectionMode ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border-none'}`}
+                    title="Toggle Selection Mode"
+                >
+                    <SquareCheck className="w-4 h-4" />
+                </Button>
+
                 <div className="relative flex-1 group">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-darkblue transition-colors" />
                     <input
@@ -305,30 +463,42 @@ export default function EmployeeManage() {
                     )}
                 </div>
 
-                {/* Department Filter */}
-                <Select value={deptFilter} onValueChange={setDeptFilter}>
-                    <SelectTrigger style={{ width: "fit-content" }} className="h-10 bg-gray-50 border-none rounded-xl text-xs font-medium focus:ring-1 focus:ring-gray-200">
-                        <SelectValue placeholder="Department" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-gray-100 shadow-xl">
-                        <SelectItem value="all">All Departments</SelectItem>
-                        {uniqueDepartments.map(dept => (
-                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                {/* "With Selected" bulk actions button on the right */}
+                {isSelectionMode && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                disabled={selectedEmployeeIds.size === 0}
+                                className="h-10 px-4 rounded-xl text-xs font-medium bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50 transition-colors shrink-0 flex items-center gap-1.5"
+                            >
+                                With Selected ({selectedEmployeeIds.size})
+                                <ChevronDown className="w-3.5 h-3.5" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[180px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50">
+                            <DropdownMenuItem
+                                onClick={() => setIsBulkDeptOpen(true)}
+                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                            >
+                                Change Department
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => setIsBulkTypeOpen(true)}
+                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                            >
+                                Change Employee Type
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="my-1 border-gray-100" />
+                            <DropdownMenuItem
+                                onClick={() => setIsBulkDeleteOpen(true)}
+                                className="rounded-md focus:bg-gray-50 text-red-600 focus:text-red-700 cursor-pointer text-xs"
+                            >
+                                Delete Selected
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
 
-                {/* Employee Type Filter */}
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger style={{ width: "fit-content" }} className="h-10 bg-gray-50 border-none rounded-xl text-xs font-medium focus:ring-1 focus:ring-gray-200">
-                        <SelectValue placeholder="Employee Type" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-gray-100 shadow-xl">
-                        <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="staff">Staff</SelectItem>
-                        <SelectItem value="worker">Worker</SelectItem>
-                    </SelectContent>
-                </Select>
 
                 <Button
                     onClick={() => {
@@ -373,7 +543,7 @@ export default function EmployeeManage() {
                                 </EmptyMedia>
                                 <EmptyTitle>No employees found</EmptyTitle>
                                 <EmptyDescription>
-                                    {search || deptFilter !== 'all' || typeFilter !== 'all'
+                                    {search || selectedDepartments.length > 0 || selectedTypes.length > 0 || selectedNationalities.length > 0
                                         ? 'No matching employees found with current filters.'
                                         : 'Get started by adding employee records.'}
                                 </EmptyDescription>
@@ -384,10 +554,164 @@ export default function EmployeeManage() {
                     <table className="w-full text-sm">
                         <thead className="sticky top-0 bg-gray-50 z-10 shadow-[0_1px_0_rgba(0,0,0,0.05)]">
                             <tr className="border-b border-gray-100">
-                                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Employee</th>
-                                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">IDs</th>
-                                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Department & Title</th>
-                                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Type & Nationality</th>
+                                {isSelectionMode && (
+                                    <th className="px-4 py-3 text-left w-12">
+                                        <input
+                                            type="checkbox"
+                                            checked={allFilteredSelected}
+                                            ref={el => {
+                                                if (el) {
+                                                    el.indeterminate = someFilteredSelected;
+                                                }
+                                            }}
+                                            onChange={handleSelectAllToggle}
+                                            className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                                        />
+                                    </th>
+                                )}
+                                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "240px" }}>Employee</th>
+                                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "160px" }}>IDs</th>
+                                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "200px" }}>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                                            <span className="truncate">
+                                                {selectedDepartments.length === 0
+                                                    ? 'Department (All)'
+                                                    : selectedDepartments.length === 1
+                                                    ? selectedDepartments[0]
+                                                    : `Dept (${selectedDepartments.length})`}
+                                            </span>
+                                            <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-[180px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50 max-h-[300px] overflow-y-auto">
+                                            <DropdownMenuCheckboxItem
+                                                checked={selectedDepartments.length === 0}
+                                                onCheckedChange={() => setSelectedDepartments([])}
+                                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                            >
+                                                All Departments
+                                            </DropdownMenuCheckboxItem>
+                                            <DropdownMenuSeparator className="my-1 border-gray-100" />
+                                            {uniqueDepartments.map(dept => {
+                                                const isChecked = selectedDepartments.includes(dept);
+                                                return (
+                                                    <DropdownMenuCheckboxItem
+                                                        key={dept}
+                                                        checked={isChecked}
+                                                        onCheckedChange={(checked) => {
+                                                            if (checked) {
+                                                                setSelectedDepartments([...selectedDepartments, dept]);
+                                                            } else {
+                                                                setSelectedDepartments(selectedDepartments.filter(item => item !== dept));
+                                                            }
+                                                        }}
+                                                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                    >
+                                                        {dept}
+                                                    </DropdownMenuCheckboxItem>
+                                                );
+                                            })}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </th>
+                                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "280px" }}>
+                                    <div className="flex gap-1 items-center w-full">
+                                        <div className="flex-1 min-w-0">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                                                    <span className="truncate">
+                                                        {selectedTypes.length === 0
+                                                            ? 'Type (All)'
+                                                            : selectedTypes.length === 1
+                                                            ? selectedTypes[0].toUpperCase()
+                                                            : `Type (${selectedTypes.length})`}
+                                                    </span>
+                                                    <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent className="w-[130px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50">
+                                                    <DropdownMenuCheckboxItem
+                                                        checked={selectedTypes.length === 0}
+                                                        onCheckedChange={() => setSelectedTypes([])}
+                                                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                    >
+                                                        All Types
+                                                    </DropdownMenuCheckboxItem>
+                                                    <DropdownMenuSeparator className="my-1 border-gray-100" />
+                                                    <DropdownMenuCheckboxItem
+                                                        checked={selectedTypes.includes('staff')}
+                                                        onCheckedChange={(checked) => {
+                                                            if (checked) {
+                                                                setSelectedTypes([...selectedTypes, 'staff']);
+                                                            } else {
+                                                                setSelectedTypes(selectedTypes.filter(t => t !== 'staff'));
+                                                            }
+                                                        }}
+                                                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                    >
+                                                        STAFF
+                                                    </DropdownMenuCheckboxItem>
+                                                    <DropdownMenuCheckboxItem
+                                                        checked={selectedTypes.includes('worker')}
+                                                        onCheckedChange={(checked) => {
+                                                            if (checked) {
+                                                                setSelectedTypes([...selectedTypes, 'worker']);
+                                                            } else {
+                                                                setSelectedTypes(selectedTypes.filter(t => t !== 'worker'));
+                                                            }
+                                                        }}
+                                                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                    >
+                                                        WORKER
+                                                    </DropdownMenuCheckboxItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                                                    <span className="truncate">
+                                                        {selectedNationalities.length === 0
+                                                            ? 'Nationality (All)'
+                                                            : selectedNationalities.length === 1
+                                                            ? selectedNationalities[0].toUpperCase()
+                                                            : `Nat (${selectedNationalities.length})`}
+                                                    </span>
+                                                    <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent className="w-[180px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50 max-h-[300px] overflow-y-auto">
+                                                    <DropdownMenuCheckboxItem
+                                                        checked={selectedNationalities.length === 0}
+                                                        onCheckedChange={() => setSelectedNationalities([])}
+                                                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                    >
+                                                        All Nationalities
+                                                    </DropdownMenuCheckboxItem>
+                                                    <DropdownMenuSeparator className="my-1 border-gray-100" />
+                                                    {uniqueNationalities.map(nat => {
+                                                        const isChecked = selectedNationalities.includes(nat);
+                                                        return (
+                                                            <DropdownMenuCheckboxItem
+                                                                key={nat}
+                                                                checked={isChecked}
+                                                                onCheckedChange={(checked) => {
+                                                                    if (checked) {
+                                                                        setSelectedNationalities([...selectedNationalities, nat]);
+                                                                    } else {
+                                                                        setSelectedNationalities(selectedNationalities.filter(item => item !== nat));
+                                                                    }
+                                                                }}
+                                                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs uppercase"
+                                                            >
+                                                                {nat}
+                                                            </DropdownMenuCheckboxItem>
+                                                        );
+                                                    })}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </div>
+                                </th>
                                 {/* <th className="text-right px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Actions</th> */}
                             </tr>
                         </thead>
@@ -395,17 +719,31 @@ export default function EmployeeManage() {
                             {filteredEmployees.map((emp, idx) => (
                                 <tr
                                     onClick={() => {
-                                        setEditingEmployee(emp);
-                                        setEditName(emp.name);
-                                        setEditDeviceUserId(emp.device_user_id);
-                                        setEditDept(emp.department || '');
-                                        setEditEmail(emp.email || '');
-                                        setEditEmpId(emp.emp_id || '');
-                                        setEditEmpType(emp.emp_type || 'staff');
-                                        setEditNationality(emp.nationality || '');
-                                        setEditDesignation(emp.designation || '');
+                                        if (isSelectionMode) {
+                                            toggleSelectEmployee(emp.id);
+                                        } else {
+                                            setEditingEmployee(emp);
+                                            setEditName(emp.name);
+                                            setEditDeviceUserId(emp.device_user_id);
+                                            setEditDept(emp.department || '');
+                                            setEditEmail(emp.email || '');
+                                            setEditEmpId(emp.emp_id || '');
+                                            setEditEmpType(emp.emp_type || 'staff');
+                                            setEditNationality(emp.nationality || '');
+                                            setEditDesignation(emp.designation || '');
+                                        }
                                     }}
                                     key={emp.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
+                                    {isSelectionMode && (
+                                        <td className="px-4 py-3 w-12" onClick={(e) => e.stopPropagation()}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedEmployeeIds.has(emp.id)}
+                                                onChange={() => toggleSelectEmployee(emp.id)}
+                                                className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                                            />
+                                        </td>
+                                    )}
                                     {/* Name and Email */}
                                     <td className="px-4 py-3">
                                         <div className="flex gap-2.5" style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
@@ -778,6 +1116,111 @@ export default function EmployeeManage() {
                                     {isSubmitting ? 'Saving...' : `Save & Push (${selectedDevices.size})`}
                                 </Button>
                             </div>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bulk Change Department Dialog */}
+            <Dialog open={isBulkDeptOpen} onOpenChange={(open) => { if (!open) setIsBulkDeptOpen(false); }}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Bulk Update Department</DialogTitle>
+                        <DialogDescription>
+                            Enter a new department for the {selectedEmployeeIds.size} selected employee(s).
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleBulkDeptSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-gray-600 block">New Department</label>
+                            <Input
+                                type="text"
+                                value={bulkDeptValue}
+                                onChange={(e) => setBulkDeptValue(e.target.value)}
+                                placeholder="e.g. Sales, Operations"
+                            />
+                        </div>
+                        <DialogFooter className="pt-4">
+                            <Button
+                                style={{ flex: 1 }}
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsBulkDeptOpen(false)}
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button style={{ flex: 1 }} type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? 'Updating...' : 'Update Department'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bulk Change Employee Type Dialog */}
+            <Dialog open={isBulkTypeOpen} onOpenChange={(open) => { if (!open) setIsBulkTypeOpen(false); }}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Bulk Update Employee Type</DialogTitle>
+                        <DialogDescription>
+                            Select the new employee type for the {selectedEmployeeIds.size} selected employee(s).
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleBulkTypeSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-gray-600 block">Employee Type</label>
+                            <Select value={bulkTypeValue} onValueChange={(e) => setBulkTypeValue(e as 'staff' | 'worker')}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select Employee Type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="staff">Staff</SelectItem>
+                                    <SelectItem value="worker">Worker</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <DialogFooter className="pt-4">
+                            <Button
+                                style={{ flex: 1 }}
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsBulkTypeOpen(false)}
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button style={{ flex: 1 }} type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? 'Updating...' : 'Update Type'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bulk Delete Dialog */}
+            <Dialog open={isBulkDeleteOpen} onOpenChange={(open) => { if (!open) setIsBulkDeleteOpen(false); }}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle className="text-red-600">Delete Employees in Bulk</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete the {selectedEmployeeIds.size} selected employee(s)? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleBulkDeleteSubmit} className="space-y-4">
+                        <DialogFooter className="pt-4">
+                            <Button
+                                style={{ flex: 1 }}
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsBulkDeleteOpen(false)}
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button style={{ flex: 1 }} variant="destructive" type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? 'Deleting...' : `Yes, Delete ${selectedEmployeeIds.size} Employees`}
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>

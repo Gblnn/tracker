@@ -1,14 +1,20 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Avatar } from './Avatar';
 import type { Punch, Employee } from '../types/attendance';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatTime, VERIFY_LABELS, PUNCH_TYPE_LABELS } from '../lib/utilis';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { UserPlus } from 'lucide-react';
+import { ChevronDown, Search, UserPlus, X } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const NATIONALITIES = [
   'nigerian',
@@ -43,8 +49,8 @@ interface PunchLogProps {
 
 export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmployeeAdded }: PunchLogProps) {
   const [search, setSearch] = useState('');
-  const [punchTypeFilter, setPunchTypeFilter] = useState<'all' | 0 | 1>('all');
-  const [punchLocationFilter, setPunchLocationFilter] = useState('all');
+  const [selectedPunchTypes, setSelectedPunchTypes] = useState<number[]>([]);
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
 
   // Registration Dialog state
   const [registerUserId, setRegisterUserId] = useState<string | null>(null);
@@ -57,8 +63,8 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
   const [registerDesignation, setRegisterDesignation] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const empMap = Object.fromEntries(employees.map((e) => [e.device_user_id, e]));
-  const empIndex = Object.fromEntries(employees.map((e, i) => [e.device_user_id, i]));
+  const empMap = useMemo(() => Object.fromEntries(employees.map((e) => [e.device_user_id, e])), [employees]);
+  const empIndex = useMemo(() => Object.fromEntries(employees.map((e, i) => [e.device_user_id, i])), [employees]);
 
   const uniqueLocations = useMemo(() => {
     const locations = new Set<string>();
@@ -68,24 +74,27 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
     return Array.from(locations).sort();
   }, [punches]);
 
-  const filtered = punches.filter((p) => {
-    const emp = empMap[p.user_id];
-    const name = emp?.name ?? p.user_id; // Fallback to user_id if name is not available
+  const filtered = useMemo(() => {
+    return punches.filter((p) => {
+      const emp = empMap[p.user_id];
+      const name = emp?.name ?? p.user_id; // Fallback to user_id if name is not available
 
-    const matchesSearch = name.toLowerCase().includes(search.toLowerCase());
-    const matchesPunchType = punchTypeFilter === 'all' || p.punch_type === punchTypeFilter;
-    const matchesLocation = punchLocationFilter === 'all' || p.location === punchLocationFilter;
+      const matchesSearch = name.toLowerCase().includes(search.toLowerCase());
+      const matchesPunchType =
+        selectedPunchTypes.length === 0 || selectedPunchTypes.includes(p.punch_type);
+      const matchesLocation =
+        selectedLocations.length === 0 || (p.location && selectedLocations.includes(p.location));
 
-
-    return matchesSearch && matchesPunchType && matchesLocation;
-  });
+      return matchesSearch && matchesPunchType && matchesLocation;
+    });
+  }, [punches, search, selectedPunchTypes, selectedLocations, empMap]);
 
   // Call the callback whenever filtered punches change
   useEffect(() => {
     if (onFilteredPunchesChange) {
       onFilteredPunchesChange(filtered);
     }
-  });
+  }, [filtered, onFilteredPunchesChange]);
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,72 +135,140 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ width: "100%", height: '100%', border: "", display: "flex", flexFlow: "column", justifyContent: "flex-start" }}> {/* Make PunchLog itself a flex container that takes full height and hides overflow */}
-      <div className="flex items-center gap-5 px-2 py-3 border-b border-gray-100 bg-white sticky top-0 z-20" style={{ border: "", width: "100%" }}> {/* Search bar is sticky relative to this parent */}
-        <i className="ti ti-search text-gray-400 text-base" aria-hidden="true" />
-        <input
-          type="text"
-          placeholder="Search employee…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 text-sm outline-none text-gray-700 bg-gray-50 placeholder-gray-400"
-        />
-        {search && (
-          <button onClick={() => setSearch('')} className="text-gray-400 hover:text-gray-600">
-            <i className="ti ti-x text-sm" aria-hidden="true" />
-          </button>
-        )}
-
-        <Select value={punchTypeFilter.toString()} onValueChange={(value) => setPunchTypeFilter(value === 'all' ? 'all' : parseInt(value) as 0 | 1)}>
-          <SelectTrigger style={{ width: "fit-content" }} className=" h-9 text-sm bg-gray-50 border-gray-100 rounded-lg focus:ring-offset-0 focus:ring-gray-200">
-            <SelectValue placeholder="Punch Type" />
-          </SelectTrigger>
-          <SelectContent className="rounded-lg border-gray-100 shadow-xl">
-            <SelectItem value="all" className="rounded-md focus:bg-gray-50">
-              All Types
-            </SelectItem>
-            <SelectItem value="0" className="rounded-md focus:bg-gray-50">
-              Check-in
-            </SelectItem>
-            <SelectItem value="1" className="rounded-md focus:bg-gray-50">
-              Check-out
-            </SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={punchLocationFilter} onValueChange={setPunchLocationFilter}>
-          <SelectTrigger style={{ width: "fit-content" }} className=" h-9 text-sm bg-gray-50 border-gray-100 rounded-lg focus:ring-offset-0 focus:ring-gray-200">
-            <SelectValue placeholder="Location" />
-          </SelectTrigger>
-          <SelectContent className="rounded-lg border-gray-100 shadow-xl">
-            <SelectItem value="all" className="rounded-md focus:bg-gray-50">
-              All Locations
-            </SelectItem>
-            {uniqueLocations.map(loc => (
-              <SelectItem key={loc} value={loc} className="rounded-md focus:bg-gray-50">{loc}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-      </div>
-
-      {filtered.length === 0 ? (
-        <div className="text-center py-12 text-gray-400 text-sm">
-          {search ? 'No results found.' : 'No punches recorded for this date.'}
-        </div>
-      ) : (
-        <div className="overflow-auto flex-1" style={{ border: "", width: "100%" }}> {/* This div now handles both vertical and horizontal scrolling, taking remaining height */}
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-gray-50 z-10"> {/* Sticky relative to its new scrollable parent */}
-              <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Employee</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Time</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Type</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Verify</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Location</th>
+      <div className="overflow-auto flex-1" style={{ border: "", width: "100%" }}> {/* This div now handles both vertical and horizontal scrolling, taking remaining height */}
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-gray-50 z-10 shadow-[0_1px_0_rgba(0,0,0,0.05)]"> {/* Sticky relative to its new scrollable parent */}
+            <tr className="border-b border-gray-100">
+              <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "320px" }}>
+                <div className="relative flex items-center group w-full">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-darkblue transition-colors" />
+                  <input
+                    type="text"
+                    placeholder="Search Employee..."
+                    value={search}
+                    style={{ fontSize: "0.8rem", fontWeight: "400" }}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-8 pr-6 py-1.5 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors tracking-wide text-gray-700"
+                  />
+                  {search && (
+                    <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600">
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </th>
+              <th style={{ width: "120px" }} className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">
+                Time
+              </th>
+              <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "160px" }}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                    <span className="truncate">
+                      {selectedPunchTypes.length === 0
+                        ? 'Type (All)'
+                        : selectedPunchTypes.length === 1
+                          ? (selectedPunchTypes[0] === 0 ? 'Check-in' : 'Check-out')
+                          : `Type (${selectedPunchTypes.length})`}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[140px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50">
+                    <DropdownMenuCheckboxItem
+                      checked={selectedPunchTypes.length === 0}
+                      onCheckedChange={() => setSelectedPunchTypes([])}
+                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                    >
+                      All Types
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuSeparator className="my-1 border-gray-100" />
+                    <DropdownMenuCheckboxItem
+                      checked={selectedPunchTypes.includes(0)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedPunchTypes([...selectedPunchTypes, 0]);
+                        } else {
+                          setSelectedPunchTypes(selectedPunchTypes.filter(t => t !== 0));
+                        }
+                      }}
+                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                    >
+                      Check-in
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={selectedPunchTypes.includes(1)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedPunchTypes([...selectedPunchTypes, 1]);
+                        } else {
+                          setSelectedPunchTypes(selectedPunchTypes.filter(t => t !== 1));
+                        }
+                      }}
+                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                    >
+                      Check-out
+                    </DropdownMenuCheckboxItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </th>
+              <th style={{ width: "120px" }} className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">
+                Verify
+              </th>
+              <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "180px" }}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                    <span className="truncate">
+                      {selectedLocations.length === 0
+                        ? 'Location (All)'
+                        : selectedLocations.length === 1
+                          ? selectedLocations[0]
+                          : `Loc (${selectedLocations.length})`}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[180px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50 max-h-[300px] overflow-y-auto">
+                    <DropdownMenuCheckboxItem
+                      checked={selectedLocations.length === 0}
+                      onCheckedChange={() => setSelectedLocations([])}
+                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                    >
+                      All Locations
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuSeparator className="my-1 border-gray-100" />
+                    {uniqueLocations.map(loc => {
+                      const isChecked = selectedLocations.includes(loc);
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={loc}
+                          checked={isChecked}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedLocations([...selectedLocations, loc]);
+                            } else {
+                              setSelectedLocations(selectedLocations.filter(item => item !== loc));
+                            }
+                          }}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          {loc}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-20 text-center text-gray-400 font-medium">
+                  {search || selectedPunchTypes.length > 0 || selectedLocations.length > 0
+                    ? 'No matching punches found.'
+                    : 'No punches recorded for this date.'}
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filtered.map((punch) => {
+            ) : (
+              filtered.map((punch) => {
                 const emp = empMap[punch.user_id];
                 const name = emp?.name ?? punch.user_id;
                 const idx = empIndex[punch.user_id] ?? 0;
@@ -224,7 +301,6 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
                               </button>
                             )}
                           </div>
-
                         </div>
                       </div>
                     </td>
@@ -246,19 +322,18 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-500">
-
                       {VERIFY_LABELS[punch.verify_type] ?? punch.verify_type}
                     </td>
-                    <td className="px-4 py-3 text-gray-400 ">
+                    <td className="px-4 py-3 text-gray-400">
                       {punch.location ?? '—'}
                     </td>
                   </tr>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <Dialog open={registerUserId !== null} onOpenChange={(open) => { if (!open) setRegisterUserId(null); }}>
         <DialogContent className="">
