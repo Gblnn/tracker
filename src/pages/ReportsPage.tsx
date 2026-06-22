@@ -113,21 +113,56 @@ export default function StaffMonthlyReport() {
     const start = `${year}-${pad(month + 1)}-01T00:00:00`;
     const end = `${year}-${pad(month + 1)}-${pad(days)}T23:59:59`;
 
-    const [{ data: empData, error: eErr }, { data: pData, error: pErr }] = await Promise.all([
-      supabase.from('employees')
+    try {
+      const { data: empData, error: eErr } = await supabase.from('employees')
         .select('id, device_user_id, name, department, emp_type, emp_id')
-        // .eq('emp_type', 'Staff')
-        .order('name', { ascending: true }),
-      supabase.from('punch_details')
-        .select('user_id, punch_time, punch_type, location')
-        .gte('punch_time', start)
-        .lte('punch_time', end),
-    ]);
+        .order('name', { ascending: true });
 
-    if (eErr) setError(eErr.message);
-    else if (pErr) setError(pErr.message);
-    else { setEmployees(empData ?? []); setPunches(pData ?? []); }
-    setLoading(false);
+      if (eErr) {
+        setError(eErr.message);
+        setLoading(false);
+        return;
+      }
+
+      let allPunches: any[] = [];
+      let from = 0;
+      let to = 999;
+      let finished = false;
+
+      while (!finished) {
+        const { data, error: pErr } = await supabase.from('punch_details')
+          .select('user_id, punch_time, punch_type, location')
+          .gte('punch_time', start)
+          .lte('punch_time', end)
+          .order('punch_time', { ascending: true })
+          .range(from, to);
+
+        if (pErr) {
+          setError(pErr.message);
+          setLoading(false);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          allPunches = [...allPunches, ...data];
+          if (data.length < 1000) {
+            finished = true;
+          } else {
+            from += 1000;
+            to += 1000;
+          }
+        } else {
+          finished = true;
+        }
+      }
+
+      setEmployees(empData ?? []);
+      setPunches(allPunches);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while fetching data');
+    } finally {
+      setLoading(false);
+    }
   }, [year, month, days]);
 
   useEffect(() => { fetchData(); }, [fetchData]);

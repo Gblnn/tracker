@@ -176,7 +176,7 @@ export default function AttendanceDashboard() {
                 <Loader2 className="animate-spin" />
               </div>
             ) : tab === 'summary' ? (
-              <EmployeeTable summaries={employeeSummaries} />
+              <EmployeeTable summaries={employeeSummaries} date={date} />
             ) : tab === 'log' ? (
               <PunchLog punches={punches} employees={employees} onEmployeeAdded={refetch} />
             ) : tab === 'devices' ? (

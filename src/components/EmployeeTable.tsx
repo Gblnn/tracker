@@ -5,13 +5,16 @@ import { formatTime } from '../lib/utilis';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Search, User, X } from 'lucide-react';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from './ui/empty';
+import { supabase } from '../lib/supabase';
+import { Line, LineChart, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface EmployeeTableProps {
   summaries: EmployeeSummary[];
   onFilteredSummariesChange?: (summaries: EmployeeSummary[]) => void;
+  date?: string;
 }
 
-export function EmployeeTable({ summaries, onFilteredSummariesChange }: EmployeeTableProps) {
+export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: EmployeeTableProps) {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [loading] = useState(false);
@@ -57,6 +60,116 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange }: Employee
     return { total, present, absent };
   }, [filteredSummaries]);
 
+  const activeDate = date || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' });
+  const yearMonth = useMemo(() => activeDate.substring(0, 7), [activeDate]);
+  const lastDay = useMemo(() => {
+    const parts = activeDate.split('-');
+    return new Date(parseInt(parts[0]), parseInt(parts[1]), 0).getDate();
+  }, [activeDate]);
+
+  const [monthlyPunches, setMonthlyPunches] = useState<any[]>([]);
+  const [loadingChart, setLoadingChart] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchMonthlyData = async () => {
+      setLoadingChart(true);
+      try {
+        const startOfMonth = `${yearMonth}-01T00:00:00`;
+        const endOfMonth = `${yearMonth}-${String(lastDay).padStart(2, '0')}T23:59:59`;
+
+        let allData: any[] = [];
+        let from = 0;
+        let to = 999;
+        let finished = false;
+
+        while (!finished) {
+          const { data, error } = await supabase
+            .from('punches')
+            .select('user_id, punch_time')
+            .gte('punch_time', startOfMonth)
+            .lte('punch_time', endOfMonth)
+            .order('punch_time', { ascending: true })
+            .range(from, to);
+
+          if (error) throw error;
+
+          if (data && data.length > 0) {
+            allData = [...allData, ...data];
+            if (data.length < 1000) {
+              finished = true;
+            } else {
+              from += 1000;
+              to += 1000;
+            }
+          } else {
+            finished = true;
+          }
+        }
+
+        if (isMounted) {
+          setMonthlyPunches(allData);
+        }
+      } catch (err) {
+        console.error('Failed to fetch monthly punches for chart:', err);
+      } finally {
+        if (isMounted) {
+          setLoadingChart(false);
+        }
+      }
+    };
+
+    fetchMonthlyData();
+    return () => {
+      isMounted = false;
+    };
+  }, [yearMonth, lastDay]);
+
+  const monthlyStats = useMemo(() => {
+    if (!filteredSummaries.length) return [];
+
+    const filteredUserIds = new Set(filteredSummaries.map(emp => emp.device_user_id));
+
+    const daysData: Record<number, Set<string>> = {};
+    for (let d = 1; d <= lastDay; d++) {
+      daysData[d] = new Set<string>();
+    }
+
+    for (const p of monthlyPunches) {
+      if (!filteredUserIds.has(p.user_id)) continue;
+      const pDate = new Date(p.punch_time);
+      const ds = pDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' });
+      if (ds.startsWith(yearMonth)) {
+        const dayNum = parseInt(ds.split('-')[2]);
+        if (daysData[dayNum]) {
+          daysData[dayNum].add(p.user_id);
+        }
+      }
+    }
+
+    const dataList = [];
+    const totalStaff = filteredSummaries.length;
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' });
+    const currentYearMonth = todayStr.substring(0, 7);
+
+    for (let d = 1; d <= lastDay; d++) {
+      const isFuture = (yearMonth > currentYearMonth) ||
+        (yearMonth === currentYearMonth && d > parseInt(todayStr.split('-')[2]));
+
+      const presentCount = daysData[d].size;
+      const absentCount = totalStaff - presentCount;
+
+      dataList.push({
+        day: d,
+        name: `Day ${d}`,
+        present: isFuture ? null : presentCount,
+        absent: isFuture ? null : absentCount,
+        total: totalStaff,
+      });
+    }
+    return dataList;
+  }, [monthlyPunches, filteredSummaries, lastDay, yearMonth]);
+
   if (summaries.length === 0) {
     return (
       <div className="text-center py-12 text-sm" style={{ border: "", width: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
@@ -78,29 +191,107 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange }: Employee
   return (
     <div className="flex flex-col h-auto overflow-hidden" style={{ border: "", width: "100%" }}>
       {
-              (
-                // Stat Cards
-                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", padding: "0.75rem", gap: "0.75rem", borderBottom:"1px solid rgba(100 100 100/ 0.1)" }}>
+        (
+          // Stat Cards
+          <div style={{ width: "100%", display: "flex", justifyContent: "space-between", padding: "0.75rem", gap: "0.75rem", borderBottom: "1px solid rgba(100 100 100/ 0.1)" }}>
 
-                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center", height: "6rem" }}>
-                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Total</p>
-                    <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : stats.total}</h1>
+            <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.75rem", flexFlow: "column", height: "9.5rem", minWidth: 0, justifyContent: "center", alignItems: "center" }}>
+              <p style={{ fontSize: "0.85rem", fontWeight: 500, color: "grey", marginBottom: "0.25rem" }}>Total Staff</p>
+              <h1 style={{ fontWeight: 600, fontSize: "2.5rem" }}>
+                {loading ? <Loader2 className='animate-spin w-10 h-10' /> : stats.total}
+              </h1>
+            </div>
+
+            <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.75rem", flexFlow: "column", height: "9.5rem", minWidth: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "0.25rem" }}>
+                <p style={{ fontSize: "0.8rem", fontWeight: 500, color: "grey" }}>Present</p>
+                <h1 style={{ fontWeight: 600, fontSize: "1.75rem", color: "#10b981" }}>
+                  {loading ? <Loader2 className='animate-spin w-4 h-4' /> : stats.present}
+                </h1>
+              </div>
+              <div style={{ width: "100%", flex: 1, minHeight: 0 }}>
+                {loadingChart ? (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af" }}>
+                    <Loader2 className="animate-spin w-4 h-4" />
                   </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={monthlyStats} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                      <Line
+                        type="monotone"
+                        dataKey="present"
+                        stroke="#10b981"
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div style={{ background: "white", padding: "0.25rem 0.5rem", border: "1px solid #e5e7eb", borderRadius: "0.25rem", fontSize: "0.75rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+                                <p style={{ fontWeight: 600, margin: 0 }}>Day {data.day}</p>
+                                <p style={{ color: "#10b981", margin: 0 }}>Present: {data.present}</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                        wrapperStyle={{ outline: 'none' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
 
-                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
-                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Present</p>
-                    <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : stats.present}</h1>
+            <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.75rem", flexFlow: "column", height: "9.5rem", minWidth: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "0.25rem" }}>
+                <p style={{ fontSize: "0.8rem", fontWeight: 500, color: "grey" }}>Absent</p>
+                <h1 style={{ fontWeight: 600, fontSize: "1.75rem", color: "#ef4444" }}>
+                  {loading ? <Loader2 className='animate-spin w-4 h-4' /> : stats.absent}
+                </h1>
+              </div>
+              <div style={{ width: "100%", flex: 1, minHeight: 0 }}>
+                {loadingChart ? (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af" }}>
+                    <Loader2 className="animate-spin w-4 h-4" />
                   </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={monthlyStats} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                      <Line
+                        type="monotone"
+                        dataKey="absent"
+                        stroke="#ef4444"
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div style={{ background: "white", padding: "0.25rem 0.5rem", border: "1px solid #e5e7eb", borderRadius: "0.25rem", fontSize: "0.75rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+                                <p style={{ fontWeight: 600, margin: 0 }}>Day {data.day}</p>
+                                <p style={{ color: "#ef4444", margin: 0 }}>Absent: {data.absent}</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                        wrapperStyle={{ outline: 'none' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
 
-                  <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.5rem", justifyContent: "center", flexFlow: "column", alignItems: "center" }}>
-                    <p style={{ fontSize: "0.8rem", fontWeight: 400, color: "grey" }}>Absent</p>
-                    <h1 style={{ fontWeight: 600, fontSize: "2rem", height: "3rem", display: "flex", alignItems: "center" }}>{loading ? <Loader2 className='animate-spin' /> : stats.absent}</h1>
-                  </div>
-
-                  
-                </div>)
-                
-            }
+          </div>)
+      }
       {/* Toolbar: Search and Location Filter */}
       <div className="flex items-center gap-3 px-3 py-3 border-b border-gray-100 bg-white sticky top-0 z-20" style={{ border: '', width: "100%" }}>
         <div className="relative flex-1 group">
