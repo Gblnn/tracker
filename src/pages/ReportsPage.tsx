@@ -626,8 +626,8 @@ export default function StaffMonthlyReport() {
                           {selectedLocations.length === 0
                             ? 'Location (All)'
                             : selectedLocations.length === 1
-                            ? selectedLocations[0]
-                            : `Location (${selectedLocations.length})`}
+                              ? selectedLocations[0]
+                              : `Location (${selectedLocations.length})`}
                         </span>
                         <ChevronDown className="h-4 w-4 opacity-80 shrink-0" />
                       </DropdownMenuTrigger>
@@ -682,8 +682,8 @@ export default function StaffMonthlyReport() {
                     style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }}
                   >
                     <td className="text-[13px] text-gray-400 text-center bg-white px-1">{idx + 1}</td>
-                    <td className="text-[13px] font-medium text-gray-900 bg-white px-3 whitespace-nowrap">
-                      {emp.name}
+                    <td style={{ textTransform: "capitalize" }} className="text-[13px] font-medium text-gray-900 bg-white px-3 whitespace-nowrap">
+                      {emp.name.toLowerCase()}
                       {emp.emp_id && <div className="text-[11px] text-gray-400 font-normal">{emp.emp_id}</div>}
                     </td>
                     <td

@@ -2,25 +2,26 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, Loader2, Monitor, Plus, Search, SquareCheck, Users, X } from 'lucide-react';
+import { ChevronDown, Loader2, Monitor, Plus, Search, SquareCheck, Users, X, Fingerprint, Scan } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Avatar } from '../components/Avatar';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '../components/ui/empty';
 import { supabase } from '../lib/supabase';
 import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
 interface Device {
     id: number;
     serial_no: string;
     location: string | null;
+    last_seen?: string | null;
 }
 
 function buildAddUserCommand(cmdId: number, pin: string, name: string): string {
@@ -61,6 +62,8 @@ interface ManageEmployee {
     emp_type: 'staff' | 'worker' | null;
     nationality: string | null;
     designation: string | null;
+    fingerprint_templates?: Record<string, any> | null;
+    face_templates?: Record<string, any> | null;
     created_at?: string;
 }
 
@@ -73,6 +76,10 @@ export default function EmployeeManage() {
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
     const [selectedNationalities, setSelectedNationalities] = useState<string[]>([]);
 
+    // Biometric availability states
+    const [fingerAvailable, setFingerAvailable] = useState<Record<number, boolean>>({});
+    const [faceAvailable, setFaceAvailable] = useState<Record<number, boolean>>({});
+
     // Selection and bulk states
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<number>>(new Set());
@@ -81,6 +88,17 @@ export default function EmployeeManage() {
     const [isBulkTypeOpen, setIsBulkTypeOpen] = useState(false);
     const [bulkTypeValue, setBulkTypeValue] = useState<'staff' | 'worker'>('staff');
     const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+
+    // Bulk push states
+    const [isBulkPushOpen, setIsBulkPushOpen] = useState(false);
+    const [selectedBulkPushDevices, setSelectedBulkPushDevices] = useState<Set<string>>(new Set());
+    const [isBulkPushing, setIsBulkPushing] = useState(false);
+
+    useEffect(() => {
+        if (isBulkPushOpen) {
+            setSelectedBulkPushDevices(new Set());
+        }
+    }, [isBulkPushOpen]);
 
     const toggleSelectEmployee = (id: number) => {
         setSelectedEmployeeIds(prev => {
@@ -96,6 +114,7 @@ export default function EmployeeManage() {
 
     // Edit states
     const [editingEmployee, setEditingEmployee] = useState<ManageEmployee | null>(null);
+    const [activeTab, setActiveTab] = useState<'profile' | 'sync'>('profile');
     const [editName, setEditName] = useState('');
     const [editDeviceUserId, setEditDeviceUserId] = useState('');
     const [editDept, setEditDept] = useState('');
@@ -105,6 +124,101 @@ export default function EmployeeManage() {
     const [editNationality, setEditNationality] = useState('');
     const [editDesignation, setEditDesignation] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Selective individual push states and handler
+    const [selectedPushDevices, setSelectedPushDevices] = useState<Set<string>>(new Set());
+    const [isPushing, setIsPushing] = useState(false);
+
+    useEffect(() => {
+        if (editingEmployee) {
+            setSelectedPushDevices(new Set());
+            setActiveTab('profile');
+        }
+    }, [editingEmployee]);
+
+    const handleIndividualPush = async () => {
+        if (!editingEmployee || selectedPushDevices.size === 0) {
+            toast.error('Please select at least one device');
+            return;
+        }
+
+        setIsPushing(true);
+        try {
+            const empId = editingEmployee.id;
+            const pin = editDeviceUserId.trim() || editingEmployee.device_user_id;
+            const name = editName.trim() || editingEmployee.name;
+
+            // Construct user update command text
+            const userCmd = `DATA UPDATE USERINFO PIN=${pin}\tName=${name.replace(/\t/g, ' ').slice(0, 24)}\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000`;
+
+            const commandsToInsert: any[] = [];
+
+            const fingerTemplates = editingEmployee.fingerprint_templates || {};
+            const faceTemplates = editingEmployee.face_templates || {};
+
+            [...selectedPushDevices].forEach(serial => {
+                // User info update command
+                commandsToInsert.push({
+                    device_serial: serial,
+                    command: userCmd,
+                    command_type: 'ADD_USER',
+                    employee_id: empId,
+                    status: 'pending'
+                });
+
+                // Fingerprints
+                Object.entries(fingerTemplates).forEach(([fid, val]: [string, any]) => {
+                    if (val && val.template) {
+                        commandsToInsert.push({
+                            device_serial: serial,
+                            command: `DATA UPDATE FINGERTMP PIN=${pin}\tFID=${fid}\tSize=${val.size ?? 0}\tValid=${val.valid ?? 1}\tTMP=${val.template}`,
+                            command_type: 'UPDATE_FINGERTMP',
+                            employee_id: empId,
+                            status: 'pending'
+                        });
+                    }
+                });
+
+                // Faces
+                Object.entries(faceTemplates).forEach(([key, val]: [string, any]) => {
+                    if (val && val.template) {
+                        if (key.startsWith('face-')) {
+                            const fid = key.replace('face-', '');
+                            commandsToInsert.push({
+                                device_serial: serial,
+                                command: `DATA UPDATE FACE PIN=${pin}\tFID=${fid}\tSize=${val.size ?? val.template.length}\tValid=${val.valid ?? 1}\tTMP=${val.template}`,
+                                command_type: 'UPDATE_FACE',
+                                employee_id: empId,
+                                status: 'pending'
+                            });
+                        } else {
+                            const [type, no] = key.split('-');
+                            commandsToInsert.push({
+                                device_serial: serial,
+                                command: `DATA UPDATE BIODATA Pin=${pin}\tType=${type || 9}\tNo=${no || 0}\tIndex=${val.index ?? 0}\tFormat=${val.format ?? 0}\tMajorVer=${val.major_ver ?? 10}\tMinorVer=${val.minor_ver ?? 0}\tTmp=${val.template}`,
+                                command_type: 'UPDATE_BIODATA',
+                                employee_id: empId,
+                                status: 'pending'
+                            });
+                        }
+                    }
+                });
+            });
+
+            const { error: insertErr } = await supabase
+                .from('device_commands')
+                .insert(commandsToInsert);
+
+            if (insertErr) throw insertErr;
+
+            toast.success(`Successfully queued profile and biometrics sync for ${name} to ${selectedPushDevices.size} device(s).`);
+            setSelectedPushDevices(new Set());
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to queue push commands.');
+        } finally {
+            setIsPushing(false);
+        }
+    };
 
     // Add states
     const [isAdding, setIsAdding] = useState(false);
@@ -130,6 +244,23 @@ export default function EmployeeManage() {
                 .order('name', { ascending: true });
 
             if (err) throw err;
+
+            const fingerMap: Record<number, boolean> = {};
+            const faceMap: Record<number, boolean> = {};
+
+            if (data) {
+                data.forEach(emp => {
+                    if (emp.fingerprint_templates && Object.keys(emp.fingerprint_templates).length > 0) {
+                        fingerMap[emp.id] = true;
+                    }
+                    if (emp.face_templates && Object.keys(emp.face_templates).length > 0) {
+                        faceMap[emp.id] = true;
+                    }
+                });
+            }
+
+            setFingerAvailable(fingerMap);
+            setFaceAvailable(faceMap);
             setEmployees(data || []);
         } catch (e: any) {
             setError(e.message || 'Failed to load employees');
@@ -142,7 +273,7 @@ export default function EmployeeManage() {
         setLoadingDevices(true);
         const { data, error: err } = await supabase
             .from('devices')
-            .select('id, serial_no, location')
+            .select('id, serial_no, location, last_seen')
             .order('id', { ascending: true });
         if (!err) setDevices(data ?? []);
         setLoadingDevices(false);
@@ -359,6 +490,104 @@ export default function EmployeeManage() {
             setIsSubmitting(false);
         }
     };
+
+    const handleBulkPushSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (selectedEmployeeIds.size === 0) {
+            toast.error('No employees selected');
+            return;
+        }
+        if (selectedBulkPushDevices.size === 0) {
+            toast.error('Please select at least one device');
+            return;
+        }
+
+        setIsBulkPushing(true);
+        try {
+            const empIds = Array.from(selectedEmployeeIds);
+
+            // Construct insert batch
+            const commandsToInsert: any[] = [];
+
+            for (const empId of empIds) {
+                const emp = employees.find(e => e.id === empId);
+                if (!emp) continue;
+
+                const pin = emp.device_user_id;
+                const name = emp.name;
+
+                const userCmd = `DATA UPDATE USERINFO PIN=${pin}\tName=${name.replace(/\t/g, ' ').slice(0, 24)}\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000`;
+
+                [...selectedBulkPushDevices].forEach(serial => {
+                    // USERINFO update command
+                    commandsToInsert.push({
+                        device_serial: serial,
+                        command: userCmd,
+                        command_type: 'ADD_USER',
+                        employee_id: empId,
+                        status: 'pending'
+                    });
+
+                    // Fingerprint templates from JSONB
+                    const fingerTemplates = emp.fingerprint_templates || {};
+                    Object.entries(fingerTemplates).forEach(([fid, val]: [string, any]) => {
+                        if (val && val.template) {
+                            commandsToInsert.push({
+                                device_serial: serial,
+                                command: `DATA UPDATE FINGERTMP PIN=${pin}\tFID=${fid}\tSize=${val.size ?? 0}\tValid=${val.valid ?? 1}\tTMP=${val.template}`,
+                                command_type: 'UPDATE_FINGERTMP',
+                                employee_id: empId,
+                                status: 'pending'
+                            });
+                        }
+                    });
+
+                    // Face templates from JSONB
+                    const faceTemplates = emp.face_templates || {};
+                    Object.entries(faceTemplates).forEach(([key, val]: [string, any]) => {
+                        if (val && val.template) {
+                            if (key.startsWith('face-')) {
+                                const fid = key.replace('face-', '');
+                                commandsToInsert.push({
+                                    device_serial: serial,
+                                    command: `DATA UPDATE FACE PIN=${pin}\tFID=${fid}\tSize=${val.size ?? val.template.length}\tValid=${val.valid ?? 1}\tTMP=${val.template}`,
+                                    command_type: 'UPDATE_FACE',
+                                    employee_id: empId,
+                                    status: 'pending'
+                                });
+                            } else {
+                                const [type, no] = key.split('-');
+                                commandsToInsert.push({
+                                    device_serial: serial,
+                                    command: `DATA UPDATE BIODATA Pin=${pin}\tType=${type || 9}\tNo=${no || 0}\tIndex=${val.index ?? 0}\tFormat=${val.format ?? 0}\tMajorVer=${val.major_ver ?? 10}\tMinorVer=${val.minor_ver ?? 0}\tTmp=${val.template}`,
+                                    command_type: 'UPDATE_BIODATA',
+                                    employee_id: empId,
+                                    status: 'pending'
+                                });
+                            }
+                        }
+                    });
+                });
+            }
+
+            if (commandsToInsert.length > 0) {
+                const { error: insertErr } = await supabase
+                    .from('device_commands')
+                    .insert(commandsToInsert);
+
+                if (insertErr) throw insertErr;
+            }
+
+            toast.success(`Successfully queued profile and biometrics sync for ${selectedEmployeeIds.size} employee(s) to ${selectedBulkPushDevices.size} device(s).`);
+            setIsBulkPushOpen(false);
+            setSelectedEmployeeIds(new Set());
+            setIsSelectionMode(false);
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to bulk push to devices.');
+        } finally {
+            setIsBulkPushing(false);
+        }
+    };
     // Compile unique nationalities for filtering
     const uniqueNationalities = useMemo(() => {
         const nats = new Set<string>();
@@ -488,6 +717,12 @@ export default function EmployeeManage() {
                             >
                                 Change Employee Type
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => setIsBulkPushOpen(true)}
+                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs text-indigo-600 focus:text-indigo-700 font-semibold"
+                            >
+                                Push to Devices
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1 border-gray-100" />
                             <DropdownMenuItem
                                 onClick={() => setIsBulkDeleteOpen(true)}
@@ -571,6 +806,7 @@ export default function EmployeeManage() {
                                 )}
                                 <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "240px" }}>Employee</th>
                                 <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "160px" }}>IDs</th>
+                                <th className=" px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "180px", border: "" }}>Biometrics</th>
                                 <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "200px" }}>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
@@ -578,8 +814,8 @@ export default function EmployeeManage() {
                                                 {selectedDepartments.length === 0
                                                     ? 'Department (All)'
                                                     : selectedDepartments.length === 1
-                                                    ? selectedDepartments[0]
-                                                    : `Dept (${selectedDepartments.length})`}
+                                                        ? selectedDepartments[0]
+                                                        : `Dept (${selectedDepartments.length})`}
                                             </span>
                                             <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                                         </DropdownMenuTrigger>
@@ -623,8 +859,8 @@ export default function EmployeeManage() {
                                                         {selectedTypes.length === 0
                                                             ? 'Type (All)'
                                                             : selectedTypes.length === 1
-                                                            ? selectedTypes[0].toUpperCase()
-                                                            : `Type (${selectedTypes.length})`}
+                                                                ? selectedTypes[0].toUpperCase()
+                                                                : `Type (${selectedTypes.length})`}
                                                     </span>
                                                     <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                                                 </DropdownMenuTrigger>
@@ -674,8 +910,8 @@ export default function EmployeeManage() {
                                                         {selectedNationalities.length === 0
                                                             ? 'Nationality (All)'
                                                             : selectedNationalities.length === 1
-                                                            ? selectedNationalities[0].toUpperCase()
-                                                            : `Nat (${selectedNationalities.length})`}
+                                                                ? selectedNationalities[0].toUpperCase()
+                                                                : `Nat (${selectedNationalities.length})`}
                                                     </span>
                                                     <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                                                 </DropdownMenuTrigger>
@@ -749,7 +985,7 @@ export default function EmployeeManage() {
                                         <div className="flex gap-2.5" style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
                                             <Avatar size={"md"} name={emp.name} index={idx} />
                                             <div style={{ display: "flex", flexFlow: "column" }}>
-                                                <div className="font-medium text-gray-900" style={{ textAlign: "left" }}>{emp.name}</div>
+                                                <div className="font-medium text-gray-900" style={{ textAlign: "left", textTransform: "capitalize" }}>{emp.name.toLowerCase()}</div>
                                                 {emp.email && (
                                                     <div className="text-xs text-gray-400">{emp.email}</div>
                                                 )}
@@ -761,6 +997,17 @@ export default function EmployeeManage() {
                                         <div style={{ display: "flex", flexFlow: "column", gap: "2px" }}>
                                             <div className="text-xs text-gray-500">HR ID: <span className="font-medium text-gray-800">{emp.emp_id ?? '—'}</span></div>
                                             <div className="text-xs text-gray-400">Device ID: <span className="font-mono text-gray-700">{emp.device_user_id}</span></div>
+                                        </div>
+                                    </td>
+                                    {/* Biometrics */}
+                                    <td className="px-4 py-3">
+                                        <div className="flex gap-1.5 items-center">
+                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${fingerAvailable[emp.id] ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
+                                                <Fingerprint className="w-3.5 h-3.5" /> Finger
+                                            </span>
+                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${faceAvailable[emp.id] ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
+                                                <Scan className="w-3.5 h-3.5" /> Face
+                                            </span>
                                         </div>
                                     </td>
                                     {/* Dept and Designation */}
@@ -812,126 +1059,254 @@ export default function EmployeeManage() {
             </div>
 
             <Dialog open={editingEmployee !== null} onOpenChange={(open) => { if (!open) setEditingEmployee(null); }}>
-                <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                        <DialogTitle>Edit Employee</DialogTitle>
-                        <DialogDescription>
-                            Modify the employee's details and save them to the system.
+                <DialogContent className="sm:max-w-[500px] max-h-[92vh] overflow-hidden flex flex-col p-0 bg-white rounded-2xl border border-gray-100 shadow-2xl">
+                    <DialogHeader className="p-6 pb-4 border-b border-gray-50">
+                        <DialogTitle className="text-lg font-bold text-gray-900">Edit Employee</DialogTitle>
+                        <DialogDescription className="text-xs text-gray-400 mt-1">
+                            Modify employee details or synchronize templates to biometric terminals.
                         </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleEditSubmit} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-gray-600 block">Device User ID</label>
-                                <Input
-                                    type="text"
-                                    value={editDeviceUserId}
-                                    onChange={(e) => setEditDeviceUserId(e.target.value)}
-                                    className="font-mono"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-gray-600 block">Employee ID (HR)</label>
-                                <Input
-                                    type="text"
-                                    value={editEmpId}
-                                    onChange={(e) => setEditEmpId(e.target.value)}
-                                    placeholder="SS0001"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-medium text-gray-600 block">Full Name <span className="text-red-500">*</span></label>
-                            <Input
-                                type="text"
-                                required
-                                value={editName}
-                                onChange={(e) => setEditName(e.target.value)}
-                                placeholder="e.g. John Smith"
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-gray-600 block">Department</label>
-                                <Input
-                                    type="text"
-                                    value={editDept}
-                                    onChange={(e) => setEditDept(e.target.value)}
-                                    placeholder="e.g. Operations"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-gray-600 block">Designation</label>
-                                <Input
-                                    type="text"
-                                    value={editDesignation}
-                                    onChange={(e) => setEditDesignation(e.target.value)}
-                                    placeholder="e.g. Engineer"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-gray-600 block">Employee Type</label>
-                                {/* <select
-                                    value={editEmpType}
-                                    onChange={(e) => setEditEmpType(e.target.value as 'staff' | 'worker')}
-                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-white"
-                                >
-                                    <option value="staff">Staff</option>
-                                    <option value="worker">Worker</option>
-                                </select> */}
-                                <Select value={editEmpType} onValueChange={(e) => setEditEmpType(e as 'staff' | 'worker')}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select Employee Type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="staff">Staff</SelectItem>
-                                        <SelectItem value="worker">Worker</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-gray-600 block">Nationality</label>
 
-                                <Select value={editNationality} onValueChange={(e) => setEditNationality(e)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select Nationality" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {NATIONALITIES.map((nat) => (
-                                            <SelectItem key={nat} value={nat}>
-                                                {nat.toUpperCase()}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                    {/* Tabs Header */}
+                    <div className="flex px-6 bg-gray-50/50 border-b border-gray-100">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('profile')}
+                            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider text-center border-b-2 transition-all duration-200 ${
+                                activeTab === 'profile'
+                                    ? 'border-indigo-600 text-indigo-600'
+                                    : 'border-transparent text-gray-400 hover:text-gray-600'
+                            }`}
+                        >
+                            Profile Details
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('sync')}
+                            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider text-center border-b-2 transition-all duration-200 ${
+                                activeTab === 'sync'
+                                    ? 'border-indigo-600 text-indigo-600'
+                                    : 'border-transparent text-gray-400 hover:text-gray-600'
+                            }`}
+                        >
+                            Device Sync
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-6">
+                        {activeTab === 'profile' ? (
+                            <form onSubmit={handleEditSubmit} className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-500 block">Device User ID</label>
+                                        <Input
+                                            type="text"
+                                            value={editDeviceUserId}
+                                            onChange={(e) => setEditDeviceUserId(e.target.value)}
+                                            className="font-mono text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-500 block">Employee ID (HR)</label>
+                                        <Input
+                                            type="text"
+                                            value={editEmpId}
+                                            onChange={(e) => setEditEmpId(e.target.value)}
+                                            placeholder="SS0001"
+                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-gray-500 block">Full Name <span className="text-red-500">*</span></label>
+                                    <Input
+                                        type="text"
+                                        required
+                                        value={editName}
+                                        onChange={(e) => setEditName(e.target.value)}
+                                        placeholder="e.g. John Smith"
+                                        className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-500 block">Department</label>
+                                        <Input
+                                            type="text"
+                                            value={editDept}
+                                            onChange={(e) => setEditDept(e.target.value)}
+                                            placeholder="e.g. Operations"
+                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-500 block">Designation</label>
+                                        <Input
+                                            type="text"
+                                            value={editDesignation}
+                                            onChange={(e) => setEditDesignation(e.target.value)}
+                                            placeholder="e.g. Engineer"
+                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-500 block">Employee Type</label>
+                                        <Select value={editEmpType} onValueChange={(e) => setEditEmpType(e as 'staff' | 'worker')}>
+                                            <SelectTrigger className="text-sm bg-gray-50 border-gray-100 rounded-xl">
+                                                <SelectValue placeholder="Select Employee Type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="staff">Staff</SelectItem>
+                                                <SelectItem value="worker">Worker</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-500 block">Nationality</label>
+                                        <Select value={editNationality} onValueChange={(e) => setEditNationality(e)}>
+                                            <SelectTrigger className="text-sm bg-gray-50 border-gray-100 rounded-xl">
+                                                <SelectValue placeholder="Select Nationality" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {NATIONALITIES.map((nat) => (
+                                                    <SelectItem key={nat} value={nat}>
+                                                        {nat.toUpperCase()}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-gray-500 block">Email</label>
+                                    <Input
+                                        type="email"
+                                        value={editEmail}
+                                        onChange={(e) => setEditEmail(e.target.value)}
+                                        placeholder="john@company.com"
+                                        className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
+                                    />
+                                </div>
+
+                                <div className="flex gap-3 pt-6 border-t border-gray-50">
+                                    <Button
+                                        className="flex-1 h-10 text-xs font-bold rounded-xl"
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setEditingEmployee(null)}
+                                        disabled={isSubmitting}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button className="flex-1 h-10 text-xs font-bold rounded-xl" type="submit" disabled={isSubmitting}>
+                                        {isSubmitting ? 'Saving...' : 'Save Changes'}
+                                    </Button>
+                                </div>
+                            </form>
+                        ) : (
+                            <div className="space-y-5">
+                                <div className="space-y-1">
+                                    <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                                        <Monitor className="w-4 h-4 text-indigo-600" /> Push Biometrics to Devices
+                                    </h4>
+                                    <p className="text-xs text-gray-500 leading-relaxed">
+                                        Queue profile and template transfers (fingerprints, faces) to the selected terminal locations.
+                                    </p>
+                                </div>
+
+                                {loadingDevices ? (
+                                    <div className="text-xs text-gray-400 flex items-center gap-2 py-4 justify-center">
+                                        <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> Loading devices...
+                                    </div>
+                                ) : devices.length === 0 ? (
+                                    <div className="text-xs text-gray-400 py-4 text-center">No registered devices found.</div>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[260px] overflow-y-auto pr-1">
+                                        {devices.map(device => {
+                                            const isChecked = selectedPushDevices.has(device.serial_no);
+                                            const isOnline = device.last_seen
+                                                ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
+                                                : false;
+                                            return (
+                                                <div
+                                                    key={device.id}
+                                                    onClick={() => {
+                                                        setSelectedPushDevices(prev => {
+                                                            const next = new Set(prev);
+                                                            if (next.has(device.serial_no)) next.delete(device.serial_no);
+                                                            else next.add(device.serial_no);
+                                                            return next;
+                                                        });
+                                                    }}
+                                                    className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all ${
+                                                        isChecked
+                                                            ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
+                                                            : 'border-gray-100 hover:border-gray-200 bg-white'
+                                                    }`}
+                                                >
+                                                    <div className="pt-0.5">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            readOnly
+                                                            className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                                            <span className="font-mono text-[11px] font-semibold text-gray-800 truncate">
+                                                                {device.serial_no}
+                                                            </span>
+                                                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+                                                        </div>
+                                                        {device.location && (
+                                                            <div className="text-[11px] text-gray-500 font-sans truncate">
+                                                                {device.location}
+                                                            </div>
+                                                        )}
+                                                        <span className="text-[9px] text-gray-400 font-sans block mt-0.5">
+                                                            {isOnline ? 'Online' : 'Offline'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                <div className="flex gap-3 pt-6 border-t border-gray-50">
+                                    <Button
+                                        className="flex-1 h-10 text-xs font-bold rounded-xl"
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setEditingEmployee(null)}
+                                        disabled={isPushing}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        disabled={isPushing || selectedPushDevices.size === 0 || !editingEmployee}
+                                        onClick={handleIndividualPush}
+                                        className="flex-1 h-10 text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                                    >
+                                        {isPushing ? (
+                                            <>
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                Pushing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Push to Devices ({selectedPushDevices.size})
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-medium text-gray-600 block">Email</label>
-                            <Input
-                                type="email"
-                                value={editEmail}
-                                onChange={(e) => setEditEmail(e.target.value)}
-                                placeholder="john@company.com"
-                            />
-                        </div>
-                        <DialogFooter className="pt-4">
-                            <Button
-                                style={{ flex: 1 }}
-                                type="button"
-                                variant="outline"
-                                onClick={() => setEditingEmployee(null)}
-                                disabled={isSubmitting}
-                            >
-                                Cancel
-                            </Button>
-                            <Button style={{ flex: 1 }} type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? 'Saving...' : 'Save Changes'}
-                            </Button>
-                        </DialogFooter>
-                    </form>
+                        )}
+                    </div>
                 </DialogContent>
             </Dialog>
 
@@ -1037,14 +1412,14 @@ export default function EmployeeManage() {
                         </div>
 
                         {/* Device Selection Checklist */}
-                        <div className="space-y-2 pt-2 border-t border-gray-100">
+                        <div className="space-y-3 pt-3 border-t border-gray-100">
                             <div className="flex items-center justify-between">
                                 <label className="text-xs font-medium text-gray-600 block">Push to biometric devices</label>
                                 {devices.length > 0 && (
                                     <button
                                         type="button"
                                         onClick={toggleAllDevices}
-                                        className="text-xs text-gray-400 hover:text-gray-700 font-medium"
+                                        className="text-xs text-indigo-600 hover:text-indigo-700 font-medium animate-fade-in"
                                     >
                                         {selectedDevices.size === devices.length ? 'Deselect all' : 'Select all'}
                                     </button>
@@ -1052,37 +1427,56 @@ export default function EmployeeManage() {
                             </div>
 
                             {loadingDevices ? (
-                                <div className="flex items-center gap-2 text-xs text-gray-400 py-2">
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <div className="flex items-center gap-2 text-xs text-gray-400 py-2 justify-center">
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
                                     Loading devices…
                                 </div>
                             ) : devices.length === 0 ? (
-                                <div className="text-xs text-gray-400 py-1">No devices registered in the system.</div>
+                                <div className="text-xs text-gray-400 py-1 text-center">No devices registered in the system.</div>
                             ) : (
-                                <div className="space-y-1.5 max-h-[150px] overflow-y-auto pr-1">
-                                    {devices.map((d) => (
-                                        <label
-                                            key={d.id}
-                                            className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer transition-colors text-xs ${selectedDevices.has(d.serial_no)
-                                                ? 'border-gray-900 bg-gray-50'
-                                                : 'border-gray-100 hover:border-gray-200'
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[180px] overflow-y-auto pr-1">
+                                    {devices.map((device) => {
+                                        const isChecked = selectedDevices.has(device.serial_no);
+                                        const isOnline = device.last_seen
+                                            ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
+                                            : false;
+                                        return (
+                                            <div
+                                                key={device.id}
+                                                onClick={() => toggleDevice(device.serial_no)}
+                                                className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all duration-200 ${
+                                                    isChecked
+                                                        ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
+                                                        : 'border-gray-100 hover:border-gray-200 bg-white'
                                                 }`}
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedDevices.has(d.serial_no)}
-                                                onChange={() => toggleDevice(d.serial_no)}
-                                                className="w-3.5 h-3.5 accent-gray-900"
-                                            />
-                                            <div className="w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center shrink-0">
-                                                <Monitor className="w-3 h-3 text-gray-400" />
+                                            >
+                                                <div className="pt-0.5">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        readOnly
+                                                        className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+                                                    />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        <span className="font-mono text-[11px] font-semibold text-gray-800 truncate">
+                                                            {device.serial_no}
+                                                        </span>
+                                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+                                                    </div>
+                                                    {device.location && (
+                                                        <div className="text-[11px] text-gray-500 font-sans truncate">
+                                                            {device.location}
+                                                        </div>
+                                                    )}
+                                                    <span className="text-[9px] text-gray-400 font-sans block mt-0.5">
+                                                        {isOnline ? 'Online' : 'Offline'}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-gray-900 truncate">{d.location ?? 'Unnamed location'}</div>
-                                                <div className="text-[10px] text-gray-400 font-mono truncate">{d.serial_no}</div>
-                                            </div>
-                                        </label>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -1220,6 +1614,120 @@ export default function EmployeeManage() {
                             </Button>
                             <Button style={{ flex: 1 }} variant="destructive" type="submit" disabled={isSubmitting}>
                                 {isSubmitting ? 'Deleting...' : `Yes, Delete ${selectedEmployeeIds.size} Employees`}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bulk Push to Devices Dialog */}
+            <Dialog open={isBulkPushOpen} onOpenChange={(open) => { if (!open) setIsBulkPushOpen(false); }}>
+                <DialogContent className="sm:max-w-[480px]">
+                    <DialogHeader>
+                        <DialogTitle>Push Selected Employees to Devices</DialogTitle>
+                        <DialogDescription>
+                            You have selected {selectedEmployeeIds.size} employee(s). Choose target biometric devices to queue user profile and templates sync.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleBulkPushSubmit} className="space-y-4">
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-semibold text-gray-500 block">Select target devices</label>
+                                {devices.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (selectedBulkPushDevices.size === devices.length) {
+                                                setSelectedBulkPushDevices(new Set());
+                                            } else {
+                                                setSelectedBulkPushDevices(new Set(devices.map(d => d.serial_no)));
+                                            }
+                                        }}
+                                        className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                                    >
+                                        {selectedBulkPushDevices.size === devices.length ? 'Deselect all' : 'Select all'}
+                                    </button>
+                                )}
+                            </div>
+
+                            {loadingDevices ? (
+                                <div className="text-xs text-gray-400 flex items-center justify-center gap-1.5 py-4">
+                                    <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> Loading devices...
+                                </div>
+                            ) : devices.length === 0 ? (
+                                <div className="text-xs text-gray-400 py-4 text-center">No registered devices found.</div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[250px] overflow-y-auto pr-1">
+                                    {devices.map(device => {
+                                        const isChecked = selectedBulkPushDevices.has(device.serial_no);
+                                        const isOnline = device.last_seen
+                                            ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
+                                            : false;
+                                        return (
+                                            <div
+                                                key={device.id}
+                                                onClick={() => {
+                                                    setSelectedBulkPushDevices(prev => {
+                                                        const next = new Set(prev);
+                                                        if (next.has(device.serial_no)) next.delete(device.serial_no);
+                                                        else next.add(device.serial_no);
+                                                        return next;
+                                                    });
+                                                }}
+                                                className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all duration-200 ${
+                                                    isChecked
+                                                        ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
+                                                        : 'border-gray-100 hover:border-gray-200 bg-white'
+                                                }`}
+                                            >
+                                                <div className="pt-0.5">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        readOnly
+                                                        className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+                                                    />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        <span className="font-mono text-[11px] font-semibold text-gray-800 truncate">
+                                                            {device.serial_no}
+                                                        </span>
+                                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+                                                    </div>
+                                                    {device.location && (
+                                                        <div className="text-[11px] text-gray-500 font-sans truncate">
+                                                            {device.location}
+                                                        </div>
+                                                    )}
+                                                    <span className="text-[9px] text-gray-400 font-sans block mt-0.5">
+                                                        {isOnline ? 'Online' : 'Offline'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        <DialogFooter className="pt-4 border-t border-gray-100">
+                            <Button
+                                style={{ flex: 1 }}
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsBulkPushOpen(false)}
+                                disabled={isBulkPushing}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                style={{ flex: 1 }}
+                                type="submit"
+                                disabled={isBulkPushing || selectedBulkPushDevices.size === 0}
+                                className="bg-indigo-600 text-white hover:bg-indigo-700"
+                            >
+                                {isBulkPushing ? 'Queuing...' : `Push to ${selectedBulkPushDevices.size} Device(s)`}
                             </Button>
                         </DialogFooter>
                     </form>

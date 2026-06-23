@@ -1,6 +1,7 @@
-import { Laptop2, Loader2, MapPin, Monitor, Pencil, Plus, RotateCw, X } from 'lucide-react';
+import { Laptop2, Loader2, MapPin, Monitor, Pencil, Plus, RotateCw, X, Download } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { toast } from 'sonner';
 
 interface Device {
   id: number;
@@ -51,6 +52,60 @@ export default function DevicesMaster() {
   const [isAdding, setIsAdding] = useState(false);
   const [addForm, setAddForm] = useState<EditForm>({ serial_no: '', location: '', item_code: '', start_time: '', end_time: '' });
   const [addError, setAddError] = useState<string | null>(null);
+
+  const [importing, setImporting] = useState(false);
+
+  async function handleImportDeviceData() {
+    if (devices.length === 0) {
+      toast.error('No devices registered.');
+      return;
+    }
+    setImporting(true);
+    try {
+      const commandsToInsert = devices.flatMap(device => [
+        {
+          device_serial: device.serial_no,
+          command: 'DATA QUERY USERINFO',
+          command_type: 'QUERY_USERINFO',
+          status: 'pending',
+          employee_id: null
+        },
+        {
+          device_serial: device.serial_no,
+          command: 'DATA QUERY FINGERTMP',
+          command_type: 'QUERY_FINGERTMP',
+          status: 'pending',
+          employee_id: null
+        },
+        {
+          device_serial: device.serial_no,
+          command: 'DATA QUERY BIODATA\tType=9',
+          command_type: 'QUERY_BIODATA',
+          status: 'pending',
+          employee_id: null
+        },
+        {
+          device_serial: device.serial_no,
+          command: 'DATA QUERY FACE',
+          command_type: 'QUERY_FACE',
+          status: 'pending',
+          employee_id: null
+        }
+      ]);
+
+      const { error: err } = await supabase
+        .from('device_commands')
+        .insert(commandsToInsert);
+
+      if (err) throw err;
+
+      toast.success(`Queued user and biometric templates queries for ${devices.length} device(s).`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to queue import commands.');
+    } finally {
+      setImporting(false);
+    }
+  }
 
   function openAdd() {
     setIsAdding(true);
@@ -199,27 +254,55 @@ export default function DevicesMaster() {
       <div className="w-full px-4 sm:px-6 py-8">
 
         {/* Toolbar */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4" style={{ justifyContent: "space-between", padding: "0 1.25rem" }}>
           <div className="flex items-center gap-2">
+            <h2>All Devices</h2>
             <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
               {devices.length} registered device(s)
             </span>
+
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "0.5rem" }}>
+
+            <button
+              onClick={handleImportDeviceData}
+              disabled={importing || devices.length === 0}
+              className="px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              title="Import user and biometric templates from all registered devices"
+            >
+              {importing ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5" />
+                  Import Device Data
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={openAdd}
+              className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Device
+            </button>
+
             <button
               onClick={() => fetchDevices(true)}
               disabled={loading || refreshing}
-              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
               title="Refresh Status"
             >
               <RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
+
           </div>
-          <button
-            onClick={openAdd}
-            className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1.5"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add Device
-          </button>
+
         </div>
 
         {/* Error */}
@@ -316,14 +399,16 @@ export default function DevicesMaster() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => openEdit(device)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 px-2 py-1 rounded-md hover:bg-gray-100"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                          Edit
-                        </button>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => openEdit(device)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded-md hover:bg-gray-100"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            Edit
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

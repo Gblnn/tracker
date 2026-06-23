@@ -60,10 +60,10 @@ button_next: cn(
   defaultClassNames.button_next
 ),
 
-month_caption: cn(
-  "w-full text-center text-sm font-medium ",
-  defaultClassNames.month_caption
-),
+        month_caption: cn(
+          "w-full text-center text-sm font-medium mb-4",
+          defaultClassNames.month_caption
+        ),
 
         /* weekdays */
         weekdays: cn("flex", defaultClassNames.weekdays),

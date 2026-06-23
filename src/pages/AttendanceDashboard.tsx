@@ -3,7 +3,7 @@ import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Gauge, Laptop2, LayoutGrid, List, Loader2, Sidebar, TrendingUp, UserCog, UserPlus } from 'lucide-react';
+import { Gauge, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
@@ -13,8 +13,9 @@ import AddEmployee from './AddEmployee';
 import DevicesMaster from './DevicesMaster';
 import ReportsPage from './ReportsPage';
 import EmployeeManage from './employee-manage';
+import Terminal from './Terminal';
 
-type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage';
+type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal';
 
 export default function AttendanceDashboard() {
   const [date, setDate] = useState<string>(todayISO());
@@ -29,6 +30,7 @@ export default function AttendanceDashboard() {
     { value: 'log', label: 'Punch Log', icon: <List color="darkblue" className="w-4 h-4" /> },
     { value: 'reports', label: 'Reports', icon: <TrendingUp color="darkblue" className="w-4 h-4" /> },
     { value: 'devices', label: 'Devices', icon: <Laptop2 color="darkblue" className="w-4 h-4" /> },
+    { value: 'terminal', label: 'Terminal', icon: <TerminalIcon color="darkblue" className="w-4 h-4" /> },
   ];
 
   const activeViewLabel = useMemo(
@@ -95,6 +97,8 @@ export default function AttendanceDashboard() {
                 <Directive bg={tab === 'reports' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('reports')} title="Reports" icon={<TrendingUp size={16} />} />
 
                 <Directive bg={tab === 'devices' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('devices')} title="Devices" icon={<Laptop2 size={16} />} />
+
+                <Directive bg={tab === 'terminal' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('terminal')} title="Terminal" icon={<TerminalIcon size={16} />} />
               </div>
             </motion.div>
           )}
@@ -181,6 +185,8 @@ export default function AttendanceDashboard() {
               <PunchLog punches={punches} employees={employees} onEmployeeAdded={refetch} />
             ) : tab === 'devices' ? (
               <DevicesMaster />
+            ) : tab === 'terminal' ? (
+              <Terminal />
             ) :
               tab === 'add' ? (
                 <AddEmployee />

@@ -494,7 +494,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
                     <div className="flex gap-2.5" style={{ border: '', display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
                       <Avatar size={"md"} name={emp.name} index={idx} />
                       <div style={{ display: "flex", flexFlow: "column" }}>
-                        <div className="font-medium text-gray-900" style={{ textAlign: "left" }}>{emp.name}</div>
+                        <div className="font-medium text-gray-900" style={{ textAlign: "left", textTransform: "capitalize" }}>{emp.name.toLowerCase()}</div>
                         {emp.emp_id && (
                           <div className="text-xs text-gray-400">{emp.emp_id}</div>
                         )}
