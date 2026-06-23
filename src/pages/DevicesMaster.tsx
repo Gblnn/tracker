@@ -1,7 +1,6 @@
-import { Laptop2, Loader2, MapPin, Monitor, Pencil, Plus, RotateCw, X, Download } from 'lucide-react';
+import { Laptop2, Loader2, MapPin, Monitor, Pencil, Plus, RotateCw, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { toast } from 'sonner';
 
 interface Device {
   id: number;
@@ -53,59 +52,58 @@ export default function DevicesMaster() {
   const [addForm, setAddForm] = useState<EditForm>({ serial_no: '', location: '', item_code: '', start_time: '', end_time: '' });
   const [addError, setAddError] = useState<string | null>(null);
 
-  const [importing, setImporting] = useState(false);
 
-  async function handleImportDeviceData() {
-    if (devices.length === 0) {
-      toast.error('No devices registered.');
-      return;
-    }
-    setImporting(true);
-    try {
-      const commandsToInsert = devices.flatMap(device => [
-        {
-          device_serial: device.serial_no,
-          command: 'DATA QUERY USERINFO',
-          command_type: 'QUERY_USERINFO',
-          status: 'pending',
-          employee_id: null
-        },
-        {
-          device_serial: device.serial_no,
-          command: 'DATA QUERY FINGERTMP',
-          command_type: 'QUERY_FINGERTMP',
-          status: 'pending',
-          employee_id: null
-        },
-        {
-          device_serial: device.serial_no,
-          command: 'DATA QUERY BIODATA\tType=9',
-          command_type: 'QUERY_BIODATA',
-          status: 'pending',
-          employee_id: null
-        },
-        {
-          device_serial: device.serial_no,
-          command: 'DATA QUERY FACE',
-          command_type: 'QUERY_FACE',
-          status: 'pending',
-          employee_id: null
-        }
-      ]);
+  // async function handleImportDeviceData() {
+  //   if (devices.length === 0) {
+  //     toast.error('No devices registered.');
+  //     return;
+  //   }
+  //   setImporting(true);
+  //   try {
+  //     const commandsToInsert = devices.flatMap(device => [
+  //       {
+  //         device_serial: device.serial_no,
+  //         command: 'DATA QUERY USERINFO',
+  //         command_type: 'QUERY_USERINFO',
+  //         status: 'pending',
+  //         employee_id: null
+  //       },
+  //       {
+  //         device_serial: device.serial_no,
+  //         command: 'DATA QUERY FINGERTMP',
+  //         command_type: 'QUERY_FINGERTMP',
+  //         status: 'pending',
+  //         employee_id: null
+  //       },
+  //       {
+  //         device_serial: device.serial_no,
+  //         command: 'DATA QUERY BIODATA\tType=9',
+  //         command_type: 'QUERY_BIODATA',
+  //         status: 'pending',
+  //         employee_id: null
+  //       },
+  //       {
+  //         device_serial: device.serial_no,
+  //         command: 'DATA QUERY FACE',
+  //         command_type: 'QUERY_FACE',
+  //         status: 'pending',
+  //         employee_id: null
+  //       }
+  //     ]);
 
-      const { error: err } = await supabase
-        .from('device_commands')
-        .insert(commandsToInsert);
+  //     const { error: err } = await supabase
+  //       .from('device_commands')
+  //       .insert(commandsToInsert);
 
-      if (err) throw err;
+  //     if (err) throw err;
 
-      toast.success(`Queued user and biometric templates queries for ${devices.length} device(s).`);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to queue import commands.');
-    } finally {
-      setImporting(false);
-    }
-  }
+  //     toast.success(`Queued user and biometric templates queries for ${devices.length} device(s).`);
+  //   } catch (err: any) {
+  //     toast.error(err.message || 'Failed to queue import commands.');
+  //   } finally {
+  //     setImporting(false);
+  //   }
+  // }
 
   function openAdd() {
     setIsAdding(true);
@@ -265,7 +263,7 @@ export default function DevicesMaster() {
 
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "0.5rem" }}>
 
-            <button
+            {/* <button
               onClick={handleImportDeviceData}
               disabled={importing || devices.length === 0}
               className="px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
@@ -282,7 +280,7 @@ export default function DevicesMaster() {
                   Import Device Data
                 </>
               )}
-            </button>
+            </button> */}
 
             <button
               onClick={openAdd}
