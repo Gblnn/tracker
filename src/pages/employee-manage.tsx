@@ -1,13 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, Loader2, Monitor, Plus, Search, SquareCheck, Users, X, Fingerprint, Scan } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
-import { Avatar } from '../components/Avatar';
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '../components/ui/empty';
-import { supabase } from '../lib/supabase';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -16,6 +8,14 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowUp, ChevronDown, Fingerprint, Loader2, Plus, Scan, Search, SquareCheck, Users, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { Avatar } from '../components/Avatar';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '../components/ui/empty';
+import { supabase } from '../lib/supabase';
 
 interface Device {
     id: number;
@@ -670,7 +670,7 @@ export default function EmployeeManage() {
                         setIsSelectionMode(!isSelectionMode);
                         setSelectedEmployeeIds(new Set());
                     }}
-                    className={`h-10 w-10 p-0 rounded-xl transition-colors shrink-0 ${isSelectionMode ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border-none'}`}
+                    className={`h-10 w-10 p-0 rounded-xl shrink-0 ${isSelectionMode ? 'bg-gray-900 text-white border-gray-900' : 'bg-gray-50 text-gray-500 border-none'}`}
                     title="Toggle Selection Mode"
                 >
                     <SquareCheck className="w-4 h-4" />
@@ -1070,24 +1070,23 @@ export default function EmployeeManage() {
                     {/* Tabs Header */}
                     <div className="flex px-6 bg-gray-50/50 border-b border-gray-100">
                         <button
+                            style={{ width: "200px" }}
                             type="button"
                             onClick={() => setActiveTab('profile')}
-                            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider text-center border-b-2 transition-all duration-200 ${
-                                activeTab === 'profile'
-                                    ? 'border-indigo-600 text-indigo-600'
-                                    : 'border-transparent text-gray-400 hover:text-gray-600'
-                            }`}
+                            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider text-center border-b-2 transition-all duration-200 ${activeTab === 'profile'
+                                ? 'border-indigo-600 text-indigo-600'
+                                : 'border-transparent text-gray-400 hover:text-gray-600'
+                                }`}
                         >
                             Profile Details
                         </button>
                         <button
                             type="button"
                             onClick={() => setActiveTab('sync')}
-                            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider text-center border-b-2 transition-all duration-200 ${
-                                activeTab === 'sync'
-                                    ? 'border-indigo-600 text-indigo-600'
-                                    : 'border-transparent text-gray-400 hover:text-gray-600'
-                            }`}
+                            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider text-center border-b-2 transition-all duration-200 ${activeTab === 'sync'
+                                ? 'border-indigo-600 text-indigo-600'
+                                : 'border-transparent text-gray-400 hover:text-gray-600'
+                                }`}
                         >
                             Device Sync
                         </button>
@@ -1209,11 +1208,9 @@ export default function EmployeeManage() {
                             <div className="space-y-5">
                                 <div className="space-y-1">
                                     <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
-                                        <Monitor className="w-4 h-4 text-indigo-600" /> Push Biometrics to Devices
+                                        <ArrowUp className="w-4 h-4 text-indigo-600" /> Push to Devices
                                     </h4>
-                                    <p className="text-xs text-gray-500 leading-relaxed">
-                                        Queue profile and template transfers (fingerprints, faces) to the selected terminal locations.
-                                    </p>
+
                                 </div>
 
                                 {loadingDevices ? (
@@ -1240,11 +1237,10 @@ export default function EmployeeManage() {
                                                             return next;
                                                         });
                                                     }}
-                                                    className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all ${
-                                                        isChecked
-                                                            ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
-                                                            : 'border-gray-100 hover:border-gray-200 bg-white'
-                                                    }`}
+                                                    className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all ${isChecked
+                                                        ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
+                                                        : 'border-gray-100 hover:border-gray-200 bg-white'
+                                                        }`}
                                                 >
                                                     <div className="pt-0.5">
                                                         <input
@@ -1444,11 +1440,10 @@ export default function EmployeeManage() {
                                             <div
                                                 key={device.id}
                                                 onClick={() => toggleDevice(device.serial_no)}
-                                                className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all duration-200 ${
-                                                    isChecked
-                                                        ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
-                                                        : 'border-gray-100 hover:border-gray-200 bg-white'
-                                                }`}
+                                                className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all duration-200 ${isChecked
+                                                    ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
+                                                    : 'border-gray-100 hover:border-gray-200 bg-white'
+                                                    }`}
                                             >
                                                 <div className="pt-0.5">
                                                     <input
@@ -1631,10 +1626,14 @@ export default function EmployeeManage() {
                     </DialogHeader>
                     <form onSubmit={handleBulkPushSubmit} className="space-y-4">
                         <div className="space-y-3">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between" style={{ justifyContent: "space-between", padding: "0 0.5rem" }}>
                                 <label className="text-xs font-semibold text-gray-500 block">Select target devices</label>
                                 {devices.length > 0 && (
                                     <button
+                                        style={{
+                                            cursor: "pointer",
+                                            padding: "0.1rem 0.45rem"
+                                        }}
                                         type="button"
                                         onClick={() => {
                                             if (selectedBulkPushDevices.size === devices.length) {
@@ -1674,11 +1673,10 @@ export default function EmployeeManage() {
                                                         return next;
                                                     });
                                                 }}
-                                                className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all duration-200 ${
-                                                    isChecked
-                                                        ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
-                                                        : 'border-gray-100 hover:border-gray-200 bg-white'
-                                                }`}
+                                                className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all duration-200 ${isChecked
+                                                    ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
+                                                    : 'border-gray-100 hover:border-gray-200 bg-white'
+                                                    }`}
                                             >
                                                 <div className="pt-0.5">
                                                     <input
