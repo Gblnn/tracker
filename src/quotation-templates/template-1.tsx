@@ -6,7 +6,7 @@ const parseQuantity = (unit: string | number | undefined | null): number => {
   const cleaned = String(unit).trim();
   if (!cleaned) return 0;
   const num = parseFloat(cleaned);
-  return isNaN(num) ? 0 : num;
+  return isNaN(num) ? 1 : num;
 };
 
 interface QuotationItem {
@@ -42,7 +42,6 @@ interface PageProps extends Props {
 const QuotationPage = ({
   items,
   startIndex,
-  isFirstPage,
   isLastPage,
   ...props
 }: PageProps) => {
@@ -250,7 +249,7 @@ const QuotationPage = ({
                     border: "1px solid black",
                     padding: "0 0.5rem",
                     fontWeight: "500",
-                    width: "12%",
+                    width: "22%",
                     paddingBottom: "1rem",
                   }}
                 >
@@ -401,16 +400,21 @@ const QuotationPage = ({
               <p style={{ fontWeight: "600", marginBottom: "1rem" }}>
                 Terms and Conditions:
               </p>
-              <ol style={{ listStyle: "none", paddingLeft: "1.5rem" }}>
+              <ol style={{ listStyle: "none", paddingLeft: "1.5rem", fontSize: "0.85rem" }}>
                 {props.terms.map((term, index) => (
                   <li
                     key={index}
-                    style={{ marginBottom: "  ", fontSize: "0.8rem" }}
+                    style={{ marginBottom: "0.5rem" }}
                   >
-                    <span style={{ marginRight: "0.75rem", fontSize: "0.8rem" }}>
-                      •
-                    </span>
-                    {term}
+                    <div style={{ display: "flex", alignItems: "flex-start" }}>
+                      <span style={{ marginRight: "0.75rem", flexShrink: 0 }}>
+                        •
+                      </span>
+                      <div
+                        style={{ wordBreak: "break-word" }}
+                        dangerouslySetInnerHTML={{ __html: term }}
+                      />
+                    </div>
                   </li>
                 ))}
               </ol>

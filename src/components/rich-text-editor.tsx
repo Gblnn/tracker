@@ -12,6 +12,7 @@ interface RichTextEditorProps {
   placeholder?: string;
   minHeight?: string;
   showPasteStyleToggle?: boolean;
+  hideToolbar?: boolean;
 }
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
@@ -20,6 +21,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   placeholder = "Enter text...",
   minHeight = "150px",
   showPasteStyleToggle = false,
+  hideToolbar = false,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [preservePasteStyle, setPreservePasteStyle] = useState(true);
@@ -141,77 +143,79 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     <TooltipProvider delayDuration={300}>
       <div className="w-full rounded-md border border-input bg-background shadow-sm overflow-hidden transition-shadow">
         {/* Toolbar */}
-        <div className="flex gap-0.5 px-2 py-1.5 border-b border-border bg-muted/40 flex-nowrap overflow-x-auto">
-          <ToolbarButton icon={<Bold size={14} />} command="bold" title="Bold (Ctrl+B)" />
-          <ToolbarButton icon={<Italic size={14} />} command="italic" title="Italic (Ctrl+I)" />
+        {!hideToolbar && (
+          <div className="flex gap-0.5 px-2 py-1.5 border-b border-border bg-muted/40 flex-nowrap overflow-x-auto">
+            <ToolbarButton icon={<Bold size={14} />} command="bold" title="Bold (Ctrl+B)" />
+            <ToolbarButton icon={<Italic size={14} />} command="italic" title="Italic (Ctrl+I)" />
 
-          <Separator orientation="vertical" className="mx-1 h-5" />
+            <Separator orientation="vertical" className="mx-1 h-5" />
 
-          <ToolbarButton icon={<List size={14} />} command="insertUnorderedList" title="Bullet List" />
-          <ToolbarButton icon={<ListOrdered size={14} />} command="insertOrderedList" title="Numbered List" />
+            <ToolbarButton icon={<List size={14} />} command="insertUnorderedList" title="Bullet List" />
+            <ToolbarButton icon={<ListOrdered size={14} />} command="insertOrderedList" title="Numbered List" />
 
-          <Separator orientation="vertical" className="mx-1 h-5" />
+            <Separator orientation="vertical" className="mx-1 h-5" />
 
-          {/* Font size selector */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Select
-                  onValueChange={(size) => {
-                    if (size) execCommand("fontSize", size);
-                  }}
-                >
-                  <SelectTrigger className="h-8 w-[90px] rounded-md text-xs border-input bg-background focus:ring-1">
-                    <SelectValue placeholder="Size" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">8 pt</SelectItem>
-                    <SelectItem value="2">10 pt</SelectItem>
-                    <SelectItem value="3">12 pt</SelectItem>
-                    <SelectItem value="4">14 pt</SelectItem>
-                    <SelectItem value="5">18 pt</SelectItem>
-                    <SelectItem value="6">24 pt</SelectItem>
-                    <SelectItem value="7">36 pt</SelectItem>
-                  </SelectContent>
-                </Select>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">Font Size</TooltipContent>
-          </Tooltip>
-
-          {showPasteStyleToggle && (
-            <>
-              <Separator orientation="vertical" className="mx-1 h-5" />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      "h-8 gap-1.5 px-2.5 text-xs font-medium rounded-md transition-colors",
-                      preservePasteStyle
-                        ? "bg-[#00008b] text-white font-semibold hover:bg-[#00007a] hover:!text-white focus-visible:!text-white"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                    )}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      setPreservePasteStyle((prev) => !prev);
+            {/* Font size selector */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Select
+                    onValueChange={(size) => {
+                      if (size) execCommand("fontSize", size);
                     }}
                   >
-                    <ClipboardList size={13} />
-                    
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
-                  {preservePasteStyle
-                    ? "Paste original styling"
-                    : "Paste plain text"}
-                </TooltipContent>
-              </Tooltip>
-            </>
-          )}
-        </div>
+                    <SelectTrigger className="h-8 w-[90px] rounded-md text-xs border-input bg-background focus:ring-1">
+                      <SelectValue placeholder="Size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">8 pt</SelectItem>
+                      <SelectItem value="2">10 pt</SelectItem>
+                      <SelectItem value="3">12 pt</SelectItem>
+                      <SelectItem value="4">14 pt</SelectItem>
+                      <SelectItem value="5">18 pt</SelectItem>
+                      <SelectItem value="6">24 pt</SelectItem>
+                      <SelectItem value="7">36 pt</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">Font Size</TooltipContent>
+            </Tooltip>
+
+            {showPasteStyleToggle && (
+              <>
+                <Separator orientation="vertical" className="mx-1 h-5" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className={cn(
+                        "h-8 gap-1.5 px-2.5 text-xs font-medium rounded-md transition-colors",
+                        preservePasteStyle
+                          ? "bg-[#00008b] text-white font-semibold hover:bg-[#00007a] hover:!text-white focus-visible:!text-white"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                      )}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setPreservePasteStyle((prev) => !prev);
+                      }}
+                    >
+                      <ClipboardList size={13} />
+                      
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    {preservePasteStyle
+                      ? "Paste original styling"
+                      : "Paste plain text"}
+                  </TooltipContent>
+                </Tooltip>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Editor */}
         <div

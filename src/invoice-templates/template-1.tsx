@@ -6,7 +6,7 @@ const parseQuantity = (unit: string | number | undefined | null): number => {
   const cleaned = String(unit).trim();
   if (!cleaned) return 0;
   const num = parseFloat(cleaned);
-  return isNaN(num) ? 0 : num;
+  return isNaN(num) ? 1 : num;
 };
 
 interface InvoiceItem {
@@ -55,7 +55,6 @@ interface PageProps {
 const InvoicePage = ({
   items,
   startIndex,
-  isFirstPage,
   isLastPage,
   ...props
 }: PageProps) => {

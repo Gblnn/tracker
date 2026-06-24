@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { db } from "@/firebase";
 import InvoiceTemplate from "@/invoice-templates/template-1";
 import QuotationTemplate from "@/quotation-templates/template-1";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import { LoadingOutlined } from "@ant-design/icons";
 import {
   closestCenter,
@@ -74,13 +75,13 @@ interface DocumentItem {
   amount: number;
 }
 
-export const parseQuantity = (unit: string | number | undefined | null): number => {
+const parseQuantity = (unit: string | number | undefined | null): number => {
   if (unit === undefined || unit === null) return 0;
   if (typeof unit === 'number') return unit;
   const cleaned = String(unit).trim();
   if (!cleaned) return 0;
   const num = parseFloat(cleaned);
-  return isNaN(num) ? 0 : num;
+  return isNaN(num) ? 1 : num;
 };
 
 type DocumentType = "invoice" | "quotation";
@@ -191,18 +192,15 @@ const SortableTermItem = ({ id, value, onChange, onRemove }: SortableTermItemPro
       >
         <GripVertical size={14} />
       </div>
-      <textarea
-        style={{
-          ...inputStyle,
-          resize: "vertical",
-          minHeight: "2.8rem",
-          fontFamily: "inherit",
-        }}
-        rows={2}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Enter term..."
-      />
+      <div style={{ flex: 1 }}>
+        <RichTextEditor
+          value={value}
+          onChange={onChange}
+          placeholder="Enter term..."
+          minHeight="80px"
+          hideToolbar={true}
+        />
+      </div>
       <button
         onClick={onRemove}
         style={{
