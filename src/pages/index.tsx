@@ -292,10 +292,12 @@ export default function Index() {
     const hasTransferRequests = hasModuleAccess('transfer_requests');
     const hasSimCards = hasModuleAccess('sim_cards');
     const hasOffboarding = hasModuleAccess('offboarding');
+    const hasDocumentEditor = hasModuleAccess('document_editor');
 
     return hasRecordsMaster || hasUsers || hasNewHire || hasQuickLinks ||
       hasQRGenerator || hasVehicleMaster || hasVehicleLogBook || hasAttendance ||
-      hasPettyCash || hasOfferLetters || hasEmployeeClearanceForm || hasShiftLogs || hasTransferRequests || hasSimCards || hasOffboarding || hasTickets;
+      hasPettyCash || hasOfferLetters || hasEmployeeClearanceForm || hasShiftLogs || 
+      hasTransferRequests || hasSimCards || hasOffboarding || hasTickets || hasDocumentEditor;
   };
 
   // const getAccessibleModuleCount = () => {
@@ -729,6 +731,15 @@ export default function Index() {
                       description="Exit process and clearance closure"
                       icon={<LogOut width="2.5rem" />}
                       onClick={() => authenticateModule('offboarding', '/offboarding', 'Offboarding')}
+                    />
+                  )}
+
+                  {hasModuleAccess('document_editor') && (
+                    <GridTile
+                      title="Document Editor"
+                      description="Create, format and manage rich documents"
+                      icon={<FileText width="2.5rem" />}
+                      onClick={() => authenticateModule('document_editor', '/document-editor', 'Document Editor')}
                     />
                   )}
                 </div>

@@ -115,6 +115,7 @@ export default function EmployeeManage() {
     // Edit states
     const [editingEmployee, setEditingEmployee] = useState<ManageEmployee | null>(null);
     const [activeTab, setActiveTab] = useState<'profile' | 'sync'>('profile');
+    const [syncAction, setSyncAction] = useState<'push' | 'fetch'>('push');
     const [editName, setEditName] = useState('');
     const [editDeviceUserId, setEditDeviceUserId] = useState('');
     const [editDept, setEditDept] = useState('');
@@ -128,13 +129,73 @@ export default function EmployeeManage() {
     // Selective individual push states and handler
     const [selectedPushDevices, setSelectedPushDevices] = useState<Set<string>>(new Set());
     const [isPushing, setIsPushing] = useState(false);
+    const [selectedFetchDevice, setSelectedFetchDevice] = useState<string>('');
+    const [isFetching, setIsFetching] = useState(false);
 
     useEffect(() => {
         if (editingEmployee) {
             setSelectedPushDevices(new Set());
+            setSelectedFetchDevice('');
+            setSyncAction('push');
             setActiveTab('profile');
         }
     }, [editingEmployee]);
+
+    const handleFetchBiometrics = async () => {
+        if (!editingEmployee || !selectedFetchDevice) {
+            toast.error('Please select a device to fetch from');
+            return;
+        }
+
+        setIsFetching(true);
+        try {
+            const empId = editingEmployee.id;
+
+            const commandsToInsert = [
+                {
+                    device_serial: selectedFetchDevice,
+                    command: 'DATA QUERY USERINFO',
+                    command_type: 'QUERY_USERINFO',
+                    employee_id: empId,
+                    status: 'pending'
+                },
+                {
+                    device_serial: selectedFetchDevice,
+                    command: 'DATA QUERY FINGERTMP',
+                    command_type: 'QUERY_FINGERTMP',
+                    employee_id: empId,
+                    status: 'pending'
+                },
+                {
+                    device_serial: selectedFetchDevice,
+                    command: 'DATA QUERY BIODATA\tType=9',
+                    command_type: 'QUERY_BIODATA',
+                    employee_id: empId,
+                    status: 'pending'
+                },
+                {
+                    device_serial: selectedFetchDevice,
+                    command: 'DATA QUERY FACE',
+                    command_type: 'QUERY_FACE',
+                    employee_id: empId,
+                    status: 'pending'
+                }
+            ];
+
+            const { error: insertErr } = await supabase
+                .from('device_commands')
+                .insert(commandsToInsert);
+
+            if (insertErr) throw insertErr;
+
+            toast.success(`Successfully queued biometrics query from device ${selectedFetchDevice}. Templates will sync automatically when the device processes the commands.`);
+            setSelectedFetchDevice('');
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to queue fetch commands.');
+        } finally {
+            setIsFetching(false);
+        }
+    };
 
     const handleIndividualPush = async () => {
         if (!editingEmployee || selectedPushDevices.size === 0) {
@@ -1001,7 +1062,7 @@ export default function EmployeeManage() {
                                     </td>
                                     {/* Biometrics */}
                                     <td className="px-4 py-3">
-                                        <div className="flex gap-1.5 items-center">
+                                        <div className="flex gap-1.5" style={{ border: "", justifyContent: "flex-start" }}>
                                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${fingerAvailable[emp.id] ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
                                                 <Fingerprint className="w-3.5 h-3.5" /> Finger
                                             </span>
@@ -1061,7 +1122,7 @@ export default function EmployeeManage() {
             <Dialog open={editingEmployee !== null} onOpenChange={(open) => { if (!open) setEditingEmployee(null); }}>
                 <DialogContent className="sm:max-w-[500px] max-h-[92vh] overflow-hidden flex flex-col p-0 bg-white rounded-2xl border border-gray-100 shadow-2xl">
                     <DialogHeader className="p-6 pb-4 border-b border-gray-50">
-                        <DialogTitle className="text-lg font-bold text-gray-900">Edit Employee</DialogTitle>
+                        <DialogTitle style={{ fontWeight: "600" }} className="text-lg font-bold text-gray-900">Edit Employee</DialogTitle>
                         <DialogDescription className="text-xs text-gray-400 mt-1">
                             Modify employee details or synchronize templates to biometric terminals.
                         </DialogDescription>
@@ -1206,100 +1267,215 @@ export default function EmployeeManage() {
                             </form>
                         ) : (
                             <div className="space-y-5">
-                                <div className="space-y-1">
-                                    <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
-                                        <ArrowUp className="w-4 h-4 text-indigo-600" /> Push to Devices
-                                    </h4>
-
+                                <div className="flex bg-gray-100 p-0.5 rounded-lg mb-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSyncAction('push')}
+                                        className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${syncAction === 'push' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                                    >
+                                        Push to Devices
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSyncAction('fetch')}
+                                        className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${syncAction === 'fetch' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                                    >
+                                        Fetch from Device
+                                    </button>
                                 </div>
 
-                                {loadingDevices ? (
-                                    <div className="text-xs text-gray-400 flex items-center gap-2 py-4 justify-center">
-                                        <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> Loading devices...
-                                    </div>
-                                ) : devices.length === 0 ? (
-                                    <div className="text-xs text-gray-400 py-4 text-center">No registered devices found.</div>
-                                ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[260px] overflow-y-auto pr-1">
-                                        {devices.map(device => {
-                                            const isChecked = selectedPushDevices.has(device.serial_no);
-                                            const isOnline = device.last_seen
-                                                ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
-                                                : false;
-                                            return (
-                                                <div
-                                                    key={device.id}
-                                                    onClick={() => {
-                                                        setSelectedPushDevices(prev => {
-                                                            const next = new Set(prev);
-                                                            if (next.has(device.serial_no)) next.delete(device.serial_no);
-                                                            else next.add(device.serial_no);
-                                                            return next;
-                                                        });
-                                                    }}
-                                                    className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all ${isChecked
-                                                        ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
-                                                        : 'border-gray-100 hover:border-gray-200 bg-white'
-                                                        }`}
-                                                >
-                                                    <div className="pt-0.5">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isChecked}
-                                                            readOnly
-                                                            className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
-                                                        />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-1.5 mb-0.5">
-                                                            <span className="font-mono text-[11px] font-semibold text-gray-800 truncate">
-                                                                {device.serial_no}
-                                                            </span>
-                                                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
-                                                        </div>
-                                                        {device.location && (
-                                                            <div className="text-[11px] text-gray-500 font-sans truncate">
-                                                                {device.location}
-                                                            </div>
-                                                        )}
-                                                        <span className="text-[9px] text-gray-400 font-sans block mt-0.5">
-                                                            {isOnline ? 'Online' : 'Offline'}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
+                                {syncAction === 'push' ? (
+                                    <>
+                                        <div className="space-y-1">
+                                            <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                                                <ArrowUp className="w-4 h-4 text-indigo-600" /> Push to Devices
+                                            </h4>
+                                        </div>
 
-                                <div className="flex gap-3 pt-6 border-t border-gray-50">
-                                    <Button
-                                        className="flex-1 h-10 text-xs font-bold rounded-xl"
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setEditingEmployee(null)}
-                                        disabled={isPushing}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        disabled={isPushing || selectedPushDevices.size === 0 || !editingEmployee}
-                                        onClick={handleIndividualPush}
-                                        className="flex-1 h-10 text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 rounded-xl transition-all flex items-center justify-center gap-1.5"
-                                    >
-                                        {isPushing ? (
-                                            <>
-                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                Pushing...
-                                            </>
+                                        {loadingDevices ? (
+                                            <div className="text-xs text-gray-400 flex items-center gap-2 py-4 justify-center">
+                                                <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> Loading devices...
+                                            </div>
+                                        ) : devices.length === 0 ? (
+                                            <div className="text-xs text-gray-400 py-4 text-center">No registered devices found.</div>
                                         ) : (
-                                            <>
-                                                Push to Devices ({selectedPushDevices.size})
-                                            </>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[260px] overflow-y-auto pr-1">
+                                                {devices.map(device => {
+                                                    const isChecked = selectedPushDevices.has(device.serial_no);
+                                                    const isOnline = device.last_seen
+                                                        ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
+                                                        : false;
+                                                    return (
+                                                        <div
+                                                            key={device.id}
+                                                            onClick={() => {
+                                                                setSelectedPushDevices(prev => {
+                                                                    const next = new Set(prev);
+                                                                    if (next.has(device.serial_no)) next.delete(device.serial_no);
+                                                                    else next.add(device.serial_no);
+                                                                    return next;
+                                                                });
+                                                            }}
+                                                            className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all ${isChecked
+                                                                ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
+                                                                : 'border-gray-100 hover:border-gray-200 bg-white'
+                                                                }`}
+                                                        >
+                                                            <div className="pt-0.5">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isChecked}
+                                                                    readOnly
+                                                                    className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+                                                                />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-1.5 mb-0.5">
+                                                                    <span className="font-mono text-[11px] font-semibold text-gray-800 truncate">
+                                                                        {device.serial_no}
+                                                                    </span>
+                                                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+                                                                </div>
+                                                                {device.location && (
+                                                                    <div className="text-[11px] text-gray-500 font-sans truncate">
+                                                                        {device.location}
+                                                                    </div>
+                                                                )}
+                                                                <span className="text-[9px] text-gray-400 font-sans block mt-0.5">
+                                                                    {isOnline ? 'Online' : 'Offline'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         )}
-                                    </Button>
-                                </div>
+
+                                        <div className="flex gap-3 pt-6 border-t border-gray-50">
+                                            <Button
+                                                className="flex-1 h-10 text-xs font-bold rounded-xl"
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => setEditingEmployee(null)}
+                                                disabled={isPushing}
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                disabled={isPushing || selectedPushDevices.size === 0 || !editingEmployee}
+                                                onClick={handleIndividualPush}
+                                                className="flex-1 h-10 text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                                            >
+                                                {isPushing ? (
+                                                    <>
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                        Pushing...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Push to Devices ({selectedPushDevices.size})
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="space-y-1.5">
+                                            <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                                                <ArrowUp className="w-4 h-4 text-indigo-600 rotate-180" /> Fetch from Device
+                                            </h4>
+                                            <p className="text-[11px] text-gray-500 leading-relaxed bg-indigo-50/50 p-2.5 rounded-lg border border-indigo-100/50">
+                                                Select the specific terminal where this employee registered their fingerprint/face. The system will query the device for the templates, save them to the server, and automatically sync them to all other active devices.
+                                            </p>
+                                        </div>
+
+                                        {loadingDevices ? (
+                                            <div className="text-xs text-gray-400 flex items-center gap-2 py-4 justify-center">
+                                                <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> Loading devices...
+                                            </div>
+                                        ) : devices.length === 0 ? (
+                                            <div className="text-xs text-gray-400 py-4 text-center">No registered devices found.</div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[200px] overflow-y-auto pr-1">
+                                                {devices.map(device => {
+                                                    const isChecked = selectedFetchDevice === device.serial_no;
+                                                    const isOnline = device.last_seen
+                                                        ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
+                                                        : false;
+                                                    return (
+                                                        <div
+                                                            key={device.id}
+                                                            onClick={() => {
+                                                                setSelectedFetchDevice(device.serial_no);
+                                                            }}
+                                                            className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all ${isChecked
+                                                                ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
+                                                                : 'border-gray-100 hover:border-gray-200 bg-white'
+                                                                }`}
+                                                        >
+                                                            <div className="pt-0.5">
+                                                                <input
+                                                                    type="radio"
+                                                                    name="fetch_source_device"
+                                                                    checked={isChecked}
+                                                                    readOnly
+                                                                    className="w-4 h-4 rounded-full border-gray-300 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+                                                                />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-1.5 mb-0.5">
+                                                                    <span className="font-mono text-[11px] font-semibold text-gray-800 truncate">
+                                                                        {device.serial_no}
+                                                                    </span>
+                                                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+                                                                </div>
+                                                                {device.location && (
+                                                                    <div className="text-[11px] text-gray-500 font-sans truncate">
+                                                                        {device.location}
+                                                                    </div>
+                                                                )}
+                                                                <span className="text-[9px] text-gray-400 font-sans block mt-0.5">
+                                                                    {isOnline ? 'Online' : 'Offline'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        <div className="flex gap-3 pt-6 border-t border-gray-50">
+                                            <Button
+                                                className="flex-1 h-10 text-xs font-bold rounded-xl"
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => setEditingEmployee(null)}
+                                                disabled={isFetching}
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                disabled={isFetching || !selectedFetchDevice || !editingEmployee}
+                                                onClick={handleFetchBiometrics}
+                                                className="flex-1 h-10 text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                                            >
+                                                {isFetching ? (
+                                                    <>
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                        Requesting Fetch...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Fetch Biometrics
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>

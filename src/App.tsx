@@ -69,6 +69,7 @@ const Tickets = lazy(() => import("./pages/tickets"));
 
 const ManpowerRequirements = lazy(() => import("./pages/manpower-requirements"));
 const Offboarding = lazy(() => import("./pages/offboarding"));
+const DocumentEditor = lazy(() => import("./pages/document-editor"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -197,6 +198,7 @@ export default function App() {
           <Route path="/attendance" element={<AttendanceDashboard />} />
           <Route path="/manpower-requirements" element={<ManpowerRequirements />} />
           <Route path="/offboarding" element={<Offboarding />} />
+          <Route path="/document-editor" element={<DocumentEditor />} />
           <Route path="/records" element={<Records />} />
           <Route path="/record/:id" element={<RecordDetail />} />
           <Route path="/vale-records" element={<ValeRecords />} />

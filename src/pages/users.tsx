@@ -76,9 +76,10 @@ const MODULES = [
   { id: 'employee_clearance_form', name: 'Employee Clearance', icon: FileText },
   { id: 'transfer_requests', name: 'Transfers', icon: ArrowRightLeft },
   { id: 'sim_cards', name: 'SIM Cards', icon: Smartphone },
-    { id: 'offboarding', name: 'Offboarding', icon: LogOut },
-    { id: 'manpower_requirements', name: 'Manpower Requirements', icon: UsersIcon },
-    { id: 'tickets', name: 'Tickets', icon: Ticket },
+  { id: 'offboarding', name: 'Offboarding', icon: LogOut },
+  { id: 'manpower_requirements', name: 'Manpower Requirements', icon: UsersIcon },
+  { id: 'tickets', name: 'Tickets', icon: Ticket },
+  { id: 'document_editor', name: 'Document Editor', icon: FileText },
 ];
 
 const OFFER_LETTERS_EDIT_KEY = "offer_letters_edit";

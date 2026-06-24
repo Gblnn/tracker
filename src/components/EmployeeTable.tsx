@@ -221,7 +221,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
           <div style={{ width: "100%", display: "flex", justifyContent: "space-between", padding: "0.75rem", gap: "0.75rem", borderBottom: "1px solid rgba(100 100 100/ 0.1)" }}>
 
             <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.75rem", flexFlow: "column", height: "9.5rem", minWidth: 0, justifyContent: "center", alignItems: "center" }}>
-              <p style={{ fontSize: "0.85rem", fontWeight: 500, color: "grey", marginBottom: "0.25rem" }}>Total Staff</p>
+              <p style={{ fontSize: "0.85rem", fontWeight: 500, color: "grey", marginBottom: "0.25rem" }}>Total</p>
               <h1 style={{ fontWeight: 600, fontSize: "2.5rem" }}>
                 {loading ? <Loader2 className='animate-spin w-10 h-10' /> : stats.total}
               </h1>
