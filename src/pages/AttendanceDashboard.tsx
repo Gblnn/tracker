@@ -16,6 +16,18 @@ import EmployeeManage from './employee-manage';
 import Terminal from './Terminal';
 import DataManagement from './DataManagement';
 import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '../lib/supabase';
+
+const ROW_SIZE_BYTES = 185;
+const FREE_TIER_QUOTA_BYTES = 500 * 1024 * 1024; // 500 MB
+
+const formatSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
 type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management';
 
@@ -26,6 +38,19 @@ export default function AttendanceDashboard() {
   const { punches, employees, employeeSummaries, loading, refetch } = useAttendance(date);
   const [navVisible, setNavVisible] = useState(true);
   const { userData } = useAuth();
+
+  const [dbCount, setDbCount] = useState<number | null>(null);
+
+  const fetchDbCount = () => {
+    supabase
+      .from('punch_details')
+      .select('*', { count: 'exact', head: true })
+      .then(({ count, error }) => {
+        if (!error && count !== null) {
+          setDbCount(count);
+        }
+      });
+  };
 
   const canEditAttendance = useMemo(() => {
     try {
@@ -58,6 +83,24 @@ export default function AttendanceDashboard() {
       setTab('summary');
     }
   }, [canEditAttendance, tab]);
+
+  useEffect(() => {
+    if (canEditAttendance) {
+      fetchDbCount();
+    }
+  }, [canEditAttendance]);
+
+  useEffect(() => {
+    if (canEditAttendance && tab === 'data-management') {
+      fetchDbCount();
+    }
+  }, [tab, canEditAttendance]);
+
+  useEffect(() => {
+    if (canEditAttendance && !loading) {
+      fetchDbCount();
+    }
+  }, [loading, canEditAttendance]);
 
   const viewOptions = useMemo(() => {
     const options = [
@@ -123,28 +166,106 @@ export default function AttendanceDashboard() {
                 paddingBottom: "0.5rem",
                 flexShrink: 0,
                 overflow: "hidden",
-                whiteSpace: "nowrap"
+                whiteSpace: "nowrap",
+                display: "flex",
+                flexDirection: "column",
+                height: "100%"
               }}
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", flex: 1 }}>
 
-                <Directive bg={tab === 'summary' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('summary')} title="Dashboard" icon={<Gauge size={16} />} />
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                  <Directive bg={tab === 'summary' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('summary')} title="Dashboard" icon={<Gauge size={16} />} />
+
+                  {canEditAttendance && (
+                    <Directive bg={tab === 'manage' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('manage')} title="Manage" icon={<UserCog size={16} />} />
+                  )}
+
+                  {/* <Directive bg={tab === 'add' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize='0.9rem' onClick={() => { setTab('add') }} title={"Add Employee"} icon={<UserPlus size={16} />} /> */}
+
+                  <Directive bg={tab === 'log' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('log')} title="Punch Log" icon={<List size={16} />} />
+
+                  <Directive bg={tab === 'reports' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('reports')} title="Reports" icon={<TrendingUp size={16} />} />
+
+                  <Directive bg={tab === 'devices' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('devices')} title="Devices" icon={<Laptop2 size={16} />} />
+
+                  <Directive bg={tab === 'terminal' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('terminal')} title="Terminal" icon={<TerminalIcon size={16} />} />
+                </div>
 
                 {canEditAttendance && (
-                  <Directive bg={tab === 'manage' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('manage')} title="Manage" icon={<UserCog size={16} />} />
+                  <div style={{ marginTop: "auto", width: "100%" }}>
+                    <motion.div
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setTab('data-management')}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        padding: "0.75rem",
+                        gap: "0.5rem",
+                        background: tab === 'data-management' ? "#E0F2F1" : "rgba(246, 248, 252, 0.78)",
+                        backdropFilter: "blur(10px)",
+                        WebkitBackdropFilter: "blur(10px)",
+                        borderRadius: "0.5rem",
+
+                        transition: "all 0.2s ease",
+                        cursor: "pointer",
+                        position: "relative",
+                        overflow: "hidden",
+                        boxShadow: tab === 'data-management' ? "0 2px 10px rgba(0, 150, 136, 0.08)" : "0 2px 10px rgba(15, 23, 42, 0.04)",
+                      }}
+                    >
+                      {/* Top row: Icon & Title */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+                        <div style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
+                          <Zap size={16} className={"text-teal-600"} />
+                        </div>
+                        <span
+                          style={{
+                            fontWeight: tab === 'data-management' ? 500 : 400,
+                            fontSize: "0.85rem",
+                            color: tab === 'data-management' ? "#004D40" : "#1F2937",
+                            flex: 1,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          Usage
+                        </span>
+                        {dbCount === null && (
+                          <Loader2 size={12} className="animate-spin text-gray-400" />
+                        )}
+                      </div>
+
+                      {/* Middle row: Progress bar */}
+                      {dbCount !== null && (
+                        <div style={{ width: "100%", height: "5px", backgroundColor: tab === 'data-management' ? "#B2DFDB" : "#E5E7EB", borderRadius: "9999px", overflow: "hidden" }}>
+                          <div
+                            style={{
+                              width: `${Math.min(100, (dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100)}%`,
+                              height: "100%",
+                              background: ((dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100) > 85
+                                ? "linear-gradient(to right, #EF4444, #F43F5E)"
+                                : ((dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100) > 50
+                                  ? "linear-gradient(to right, #F59E0B, #F97316)"
+                                  : "linear-gradient(to right, #10B981, #14B8A6)",
+                              borderRadius: "9999px",
+                              transition: "width 0.5s ease-out"
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Bottom row: Usage labels */}
+                      {dbCount !== null && (
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", color: tab === 'data-management' ? "#00695C" : "#6B7280", fontWeight: 500 }}>
+                          <span>{formatSize(dbCount * ROW_SIZE_BYTES)} / 500 MB</span>
+                          <span>{Math.min(100, parseFloat(((dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100).toFixed(2)))}%</span>
+                        </div>
+                      )}
+                    </motion.div>
+                  </div>
                 )}
-
-                {/* <Directive bg={tab === 'add' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize='0.9rem' onClick={() => { setTab('add') }} title={"Add Employee"} icon={<UserPlus size={16} />} /> */}
-
-                <Directive bg={tab === 'log' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('log')} title="Punch Log" icon={<List size={16} />} />
-
-                <Directive bg={tab === 'reports' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('reports')} title="Reports" icon={<TrendingUp size={16} />} />
-
-                <Directive bg={tab === 'devices' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('devices')} title="Devices" icon={<Laptop2 size={16} />} />
-
-                <Directive bg={tab === 'terminal' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('terminal')} title="Terminal" icon={<TerminalIcon size={16} />} />
-
-                <Directive bg={tab === 'data-management' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('data-management')} title="Data Management" icon={<Zap size={16} />} />
               </div>
             </motion.div>
           )}

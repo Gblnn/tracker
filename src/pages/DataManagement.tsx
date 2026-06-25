@@ -222,9 +222,9 @@ export default function DataManagement() {
         <div style={{ alignItems: "center" }} className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-teal-500" />
-            <span style={{ fontSize: "1rem", fontWeight: 500 }} className="font-semibold text-gray-755">Supabase Free Plan Usage Limit</span>
+            <span style={{ fontSize: "1rem", fontWeight: 500 }} className="font-semibold text-gray-755">Supabase Free Plan Usage</span>
           </div>
-          <span style={{ fontSize: "0.9rem" }} className=" font-bold text-gray-900">
+          <span style={{ fontSize: "0.9rem", fontWeight: 600 }} className="text-gray-900">
             {formatSize(totalSpaceUsed)} / 500 MB ({quotaPercent}%)
           </span>
         </div>
@@ -252,8 +252,8 @@ export default function DataManagement() {
           </div>
           <div>
             <p style={{ fontWeight: 500 }} className="text-[11px] uppercase text-gray-400 leading-tight">Total Punch Rows</p>
-            <h3 className="text-base font-bold text-gray-905 mt-0.5">
-              {statsLoading ? <Loader2 className="w-4 h-4 animate-spin text-gray-300" /> : totalCount.toLocaleString()}
+            <h3 style={{ fontWeight: "500", fontSize: "1.25rem" }} className="text-base text-gray-905 mt-0.5">
+              {statsLoading ? <Loader2 className="w-6 h-6 animate-spin text-gray-300" /> : totalCount.toLocaleString()}
             </h3>
           </div>
         </div>
@@ -265,8 +265,8 @@ export default function DataManagement() {
           </div>
           <div>
             <p style={{ fontWeight: 500 }} className="text-[11px] uppercase font-bold text-gray-400 leading-tight">Total Space (Est.)</p>
-            <h3 className="text-base font-bold text-gray-905 mt-0.5">
-              {statsLoading ? <Loader2 className="w-4 h-4 animate-spin text-gray-300" /> : formatSize(totalSpaceUsed)}
+            <h3 style={{ fontWeight: "500", fontSize: "1.25rem" }} className="text-base text-gray-905 mt-0.5">
+              {statsLoading ? <Loader2 className="w-6 h-6 animate-spin text-gray-300" /> : formatSize(totalSpaceUsed)}
             </h3>
           </div>
         </div>
@@ -278,8 +278,8 @@ export default function DataManagement() {
           </div>
           <div>
             <p style={{ fontWeight: 500 }} className="text-[11px] uppercase font-bold text-gray-400 leading-tight">Active Employees</p>
-            <h3 className="text-base font-bold text-gray-905 mt-0.5">
-              {recordsLoading ? <Loader2 className="w-4 h-4 animate-spin text-gray-300" /> : totalFilteredCount.toLocaleString()}
+            <h3 style={{ fontWeight: "500", fontSize: "1.25rem" }} className="text-base text-gray-905 mt-0.5">
+              {recordsLoading ? <Loader2 className="w-6 h-6 animate-spin text-gray-300" /> : totalFilteredCount.toLocaleString()}
             </h3>
           </div>
         </div>
@@ -291,8 +291,8 @@ export default function DataManagement() {
           </div>
           <div>
             <p style={{ fontWeight: 505 }} className="text-[11px] uppercase font-bold text-gray-400 leading-tight">Selection Usage</p>
-            <h3 className="text-base font-bold text-gray-905 mt-0.5">
-              {recordsLoading ? <Loader2 className="w-4 h-4 animate-spin text-gray-300" /> : formatSize(selectionSpace)}
+            <h3 style={{ fontWeight: "500", fontSize: "1.25rem" }} className="text-base text-gray-905 mt-0.5">
+              {recordsLoading ? <Loader2 className="w-6 h-6 animate-spin text-gray-300" /> : formatSize(selectionSpace)}
             </h3>
           </div>
         </div>
