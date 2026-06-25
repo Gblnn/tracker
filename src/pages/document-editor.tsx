@@ -289,8 +289,11 @@ export default function DocumentEditor() {
 
   // Invoice-specific state
   const [invoiceNo, setInvoiceNo] = useState("");
-  const [isTaxInvoice, setIsTaxInvoice] = useState(true);
+  const [isTaxInvoice, setIsTaxInvoice] = useState(false);
   const [vatinNo, setVatinNo] = useState("");
+  const [bankDetails, setBankDetails] = useState<string>(
+    "<p>Bank Name: BANK MUSCAT </p><p>Branch: SOHAR</p><p>Account Number: 0423 0614 8250 0019</p><p>Swift Code: BMUSOMRX</p>"
+  );
 
   // Quotation-specific state
   const [quotationNo, setQuotationNo] = useState("");
@@ -388,6 +391,7 @@ export default function DocumentEditor() {
         unitTitle,
         letterhead,
         subject,
+        bankDetails,
       };
       setHasChanges(JSON.stringify(currentState) !== JSON.stringify(originalDocState));
     } else {
@@ -410,6 +414,7 @@ export default function DocumentEditor() {
     unitTitle,
     letterhead,
     subject,
+    bankDetails,
     originalDocState,
   ]);
 
@@ -525,6 +530,7 @@ export default function DocumentEditor() {
         subject,
         items,
         terms,
+        bankDetails,
         created_at: Timestamp.now(),
       };
       await addDoc(collection(db, "document_editor_presets"), newPreset);
@@ -552,6 +558,7 @@ export default function DocumentEditor() {
       setSubject(preset.subject || "");
       setItems(preset.items || [{ description: "", unit: "0", quantity: 0, amount: 0 }]);
       setTerms(preset.terms || []);
+      setBankDetails(preset.bankDetails || "");
       setSelectedPreset(presetId);
     }
   };
@@ -702,6 +709,7 @@ export default function DocumentEditor() {
       setUnitTitle(documentObj.unitTitle || "Duration");
       setLetterhead(documentObj.letterhead || "ARC");
       setSubject(documentObj.subject || "");
+      setBankDetails(documentObj.bankDetails || "");
 
       const compareState = {
         documentType: documentObj.documentType || "invoice",
@@ -720,6 +728,7 @@ export default function DocumentEditor() {
         unitTitle: documentObj.unitTitle || "Qty",
         letterhead: documentObj.letterhead || "ARC",
         subject: documentObj.subject || "",
+        bankDetails: documentObj.bankDetails || "",
       };
       setOriginalDocState(compareState);
       setDocumentsDrawerVisible(false);
@@ -751,6 +760,9 @@ export default function DocumentEditor() {
     setUnitTitle("Duration");
     setLetterhead("ARC");
     setSubject("");
+    setBankDetails(
+      "<p>Bank Name: BANK MUSCAT </p><p>Account Number: 0423 0614 8250 0019</p><p>Swift Code: BMUSOMRX</p>"
+    );
   };
 
   const handlePrintPDF = async () => {
@@ -1369,6 +1381,17 @@ export default function DocumentEditor() {
             </div>
           </div>
         )}
+        {documentType === "invoice" && (
+          <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", paddingTop: "0.8rem" }}>
+            <label style={{ fontWeight: "600", marginBottom: "0.5rem", display: "block" }}>Bank Details</label>
+            <RichTextEditor
+              value={bankDetails}
+              onChange={setBankDetails}
+              minHeight="120px"
+              hideToolbar
+            />
+          </div>
+        )}
       </div>
     );
   };
@@ -1467,6 +1490,7 @@ export default function DocumentEditor() {
                   contactNo={contactNo}
                   unitTitle={unitTitle}
                   letterhead={letterhead}
+                  bankDetails={bankDetails}
                 />
               ) : (
                 <QuotationTemplate

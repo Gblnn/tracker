@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAuth } from './AuthProvider';
 
 const NATIONALITIES = [
   'nigerian',
@@ -51,6 +52,33 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
   const [search, setSearch] = useState('');
   const [selectedPunchTypes, setSelectedPunchTypes] = useState<number[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const { userData } = useAuth();
+
+  const canEditAttendance = useMemo(() => {
+    try {
+      const permissions = JSON.parse(userData?.clearance || "{}") as Record<string, boolean>;
+      const hasStructuredClearance = Object.keys(permissions).length > 0;
+      const hasAttendanceModule = permissions.attendance === true;
+      const hasAttendanceEdit = permissions.attendance_edit === true;
+      const hasExplicitEditBlock = permissions.attendance_edit === false;
+
+      if (hasAttendanceModule) {
+        return hasAttendanceEdit;
+      }
+
+      if (permissions.attendance === false || hasExplicitEditBlock) {
+        return false;
+      }
+
+      if (userData?.role === "admin" || userData?.role === "site_admin") {
+        return !hasStructuredClearance;
+      }
+
+      return false;
+    } catch {
+      return userData?.role === "admin" || userData?.role === "site_admin";
+    }
+  }, [userData]);
 
   // Registration Dialog state
   const [registerUserId, setRegisterUserId] = useState<string | null>(null);
@@ -281,8 +309,8 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
                         <Avatar size={"md"} name={name} index={idx} />
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-900">{name}</span>
-                            {!emp && (
+                            <span className="font-medium text-gray-900" style={{ textTransform: "capitalize" }}>{name.toLowerCase()}</span>
+                            {!emp && canEditAttendance && (
                               <button
                                 style={{ padding: "0.25rem" }}
                                 onClick={() => {

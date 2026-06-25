@@ -29,6 +29,7 @@ interface Props {
   contactNo: string;
   unitTitle: string;
   letterhead?: string;
+  bankDetails?: string;
 }
 
 interface PageProps {
@@ -50,6 +51,7 @@ interface PageProps {
   netPayable: number;
   unitTitle: string;
   letterhead?: string;
+  bankDetails?: string;
 }
 
 const InvoicePage = ({
@@ -403,6 +405,30 @@ const InvoicePage = ({
                 </b>
               </p>
             </div>
+            {props.bankDetails && (
+              <div
+                style={{
+                  paddingLeft: "2.5rem",
+                  paddingRight: "2.5rem",
+                  marginTop: "1.5rem",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.85rem",
+                    lineHeight: "1.3",
+                    // border: "1px solid rgba(0,0,0,0.08)",
+                    borderRadius: "4px",
+                    // padding: "0.5rem 1rem",
+                    // background: "rgba(0,0,0,0.01)",
+                  }}
+                  className="bank-details-display"
+                >
+                  <div style={{ fontWeight: "600", marginBottom: "0.15rem", color: "#374151" }}>Bank Details</div>
+                  <div dangerouslySetInnerHTML={{ __html: props.bankDetails }} />
+                </div>
+              </div>
+            )}
             <div
               style={{
                 display: "flex",
@@ -412,7 +438,33 @@ const InvoicePage = ({
               }}
             >
               <p>Prepared By</p>
-              <p>Checked By</p>
+              <div style={{ position: "relative", display: "flex", flexFlow: "column", alignItems: "center" }}>
+                {(() => {
+                  const stampSrc = props.letterhead === "Sohar Star United"
+                    ? "/ssu_stamp.png"
+                    : (!props.letterhead || props.letterhead === "ARC")
+                      ? "/arc_stamp.png"
+                      : null;
+                  return stampSrc ? (
+                    <img
+                      src={stampSrc}
+                      style={{
+                        position: "absolute",
+                        bottom: "-20px",
+                        left: "50%",
+                        transform: "translate(-50%, -20%)",
+                        width: "6.5rem",
+                        maxWidth: "none",
+                        height: "auto",
+                        opacity: 0.85,
+                        pointerEvents: "none",
+                      }}
+                      alt="Stamp"
+                    />
+                  ) : null;
+                })()}
+                <p style={{ position: "relative", zIndex: 1 }}>Checked By</p>
+              </div>
               <p>Approved By</p>
             </div>
           </>

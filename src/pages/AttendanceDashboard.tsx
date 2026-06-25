@@ -4,7 +4,7 @@ import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Gauge, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
 import { useAttendance } from '../lib/useAttendance';
@@ -14,6 +14,7 @@ import DevicesMaster from './DevicesMaster';
 import ReportsPage from './ReportsPage';
 import EmployeeManage from './employee-manage';
 import Terminal from './Terminal';
+import { useAuth } from '@/components/AuthProvider';
 
 type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal';
 
@@ -23,19 +24,58 @@ export default function AttendanceDashboard() {
 
   const { punches, employees, employeeSummaries, loading, refetch } = useAttendance(date);
   const [navVisible, setNavVisible] = useState(true);
+  const { userData } = useAuth();
 
-  const viewOptions = [
-    { value: 'summary', label: 'Dashboard', icon: <LayoutGrid color="darkblue" className="w-4 h-4" /> },
-    { value: 'manage', label: 'Manage', icon: <UserPlus color="darkblue" className="w-4 h-4" /> },
-    { value: 'log', label: 'Punch Log', icon: <List color="darkblue" className="w-4 h-4" /> },
-    { value: 'reports', label: 'Reports', icon: <TrendingUp color="darkblue" className="w-4 h-4" /> },
-    { value: 'devices', label: 'Devices', icon: <Laptop2 color="darkblue" className="w-4 h-4" /> },
-    { value: 'terminal', label: 'Terminal', icon: <TerminalIcon color="darkblue" className="w-4 h-4" /> },
-  ];
+  const canEditAttendance = useMemo(() => {
+    try {
+      const permissions = JSON.parse(userData?.clearance || "{}") as Record<string, boolean>;
+      const hasStructuredClearance = Object.keys(permissions).length > 0;
+      const hasAttendanceModule = permissions.attendance === true;
+      const hasAttendanceEdit = permissions.attendance_edit === true;
+      const hasExplicitEditBlock = permissions.attendance_edit === false;
+
+      if (hasAttendanceModule) {
+        return hasAttendanceEdit;
+      }
+
+      if (permissions.attendance === false || hasExplicitEditBlock) {
+        return false;
+      }
+
+      if (userData?.role === "admin" || userData?.role === "site_admin") {
+        return !hasStructuredClearance;
+      }
+
+      return false;
+    } catch {
+      return userData?.role === "admin" || userData?.role === "site_admin";
+    }
+  }, [userData]);
+
+  useEffect(() => {
+    if (!canEditAttendance && tab === 'manage') {
+      setTab('summary');
+    }
+  }, [canEditAttendance, tab]);
+
+  const viewOptions = useMemo(() => {
+    const options = [
+      { value: 'summary', label: 'Dashboard', icon: <LayoutGrid color="darkblue" className="w-4 h-4" /> },
+      { value: 'manage', label: 'Manage', icon: <UserPlus color="darkblue" className="w-4 h-4" /> },
+      { value: 'log', label: 'Punch Log', icon: <List color="darkblue" className="w-4 h-4" /> },
+      { value: 'reports', label: 'Reports', icon: <TrendingUp color="darkblue" className="w-4 h-4" /> },
+      { value: 'devices', label: 'Devices', icon: <Laptop2 color="darkblue" className="w-4 h-4" /> },
+      { value: 'terminal', label: 'Terminal', icon: <TerminalIcon color="darkblue" className="w-4 h-4" /> },
+    ];
+    if (!canEditAttendance) {
+      return options.filter(opt => opt.value !== 'manage');
+    }
+    return options;
+  }, [canEditAttendance]);
 
   const activeViewLabel = useMemo(
     () => viewOptions.find(opt => opt.value === tab)?.label,
-    [tab]
+    [tab, viewOptions]
   );
 
   return (
@@ -88,7 +128,9 @@ export default function AttendanceDashboard() {
 
                 <Directive bg={tab === 'summary' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('summary')} title="Dashboard" icon={<Gauge size={16} />} />
 
-                <Directive bg={tab === 'manage' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('manage')} title="Manage" icon={<UserCog size={16} />} />
+                {canEditAttendance && (
+                  <Directive bg={tab === 'manage' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('manage')} title="Manage" icon={<UserCog size={16} />} />
+                )}
 
                 {/* <Directive bg={tab === 'add' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize='0.9rem' onClick={() => { setTab('add') }} title={"Add Employee"} icon={<UserPlus size={16} />} /> */}
 

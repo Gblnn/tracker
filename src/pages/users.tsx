@@ -50,7 +50,7 @@ import {
   Users as UsersIcon,
   Wallet,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 
 // Constants for localStorage keys
@@ -84,6 +84,7 @@ const MODULES = [
 
 const OFFER_LETTERS_EDIT_KEY = "offer_letters_edit";
 const TICKETS_HANDLER_KEY = "tickets_handler";
+const ATTENDANCE_EDIT_KEY = "attendance_edit";
 
 const countEnabledModules = (permissions: Record<string, boolean>) =>
   MODULES.filter((module) => permissions[module.id] === true).length;
@@ -308,15 +309,33 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
 }) => {
   const [offerLettersOptionsOpen, setOfferLettersOptionsOpen] = useState(false);
   const [ticketOptionsOpen, setTicketOptionsOpen] = useState(false);
+  const [attendanceOptionsOpen, setAttendanceOptionsOpen] = useState(false);
+
+  const prevPermissionsRef = useRef(modulePermissions);
 
   useEffect(() => {
-    if (!modulePermissions.offer_letters) {
+    const prev = prevPermissionsRef.current;
+    
+    if (modulePermissions.offer_letters && !prev.offer_letters) {
+      setOfferLettersOptionsOpen(true);
+    } else if (!modulePermissions.offer_letters && prev.offer_letters) {
       setOfferLettersOptionsOpen(false);
     }
-    if (!modulePermissions.tickets) {
+
+    if (modulePermissions.tickets && !prev.tickets) {
+      setTicketOptionsOpen(true);
+    } else if (!modulePermissions.tickets && prev.tickets) {
       setTicketOptionsOpen(false);
     }
-  }, [modulePermissions.offer_letters, modulePermissions.tickets]);
+
+    if (modulePermissions.attendance && !prev.attendance) {
+      setAttendanceOptionsOpen(true);
+    } else if (!modulePermissions.attendance && prev.attendance) {
+      setAttendanceOptionsOpen(false);
+    }
+
+    prevPermissionsRef.current = modulePermissions;
+  }, [modulePermissions]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -380,6 +399,34 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
                           <ChevronRight width="1.05rem" />
                         )}
                       </button>
+                    ) : module.id === 'attendance' ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!isEnabled) return;
+                          setAttendanceOptionsOpen((prev) => !prev);
+                        }}
+                        style={{
+                          width: "1.5rem",
+                          height: "1.5rem",
+                          border: "none",
+                          background: "transparent",
+                          padding: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: isEnabled ? "rgba(15, 23, 42, 0.85)" : "rgba(100, 100, 100, 0.65)",
+                          cursor: isEnabled ? "pointer" : "not-allowed",
+                        }}
+                        title={attendanceOptionsOpen ? "Collapse Attendance Options" : "Expand Attendance Options"}
+                      >
+                        {attendanceOptionsOpen && isEnabled ? (
+                          <ChevronDown width="1.05rem" />
+                        ) : (
+                          <ChevronRight width="1.05rem" />
+                        )}
+                      </button>
                     ) : module.id === 'tickets' ? (
                       <button
                         type="button"
@@ -408,7 +455,10 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
                           <ChevronRight width="1.05rem" />
                         )}
                       </button>
-                    ) : isImageIcon ? (
+                    ) : (
+                      <div style={{ width: "1.5rem", height: "1.5rem" }} />
+                    )}
+                    {isImageIcon ? ( 
                       <img
                         src={Icon as string}
                         alt={module.name}
@@ -522,6 +572,80 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
                     )}
                   </AnimatePresence>
                 )}
+
+                {module.id === 'attendance' && isEnabled && (
+                  <AnimatePresence initial={false}>
+                    {attendanceOptionsOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        style={{
+                          overflow: "hidden",
+                          borderTop: "1px solid rgba(100, 100, 100, 0.14)",
+                        }}
+                      >
+                        <motion.div
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => onToggleModule(ATTENDANCE_EDIT_KEY)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "0.75rem 1rem",
+                            margin: "0.45rem",
+                            borderRadius: "0.6rem",
+                            background: modulePermissions[ATTENDANCE_EDIT_KEY]
+                              ? "rgba(0, 0, 0, 0.08)"
+                              : "rgba(100, 100, 100, 0.05)",
+                            cursor: "pointer",
+                            transition: "all 0.2s",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "0.9rem",
+                              color: modulePermissions[ATTENDANCE_EDIT_KEY]
+                                ? "inherit"
+                                : "rgba(100, 100, 100, 0.8)",
+                            }}
+                          >
+                            Editing Privileges
+                          </span>
+                          <div
+                            style={{
+                              width: "2.25rem",
+                              height: "1.35rem",
+                              borderRadius: "0.7rem",
+                              background: modulePermissions[ATTENDANCE_EDIT_KEY]
+                                ? "black"
+                                : "rgba(100, 100, 100, 0.2)",
+                              position: "relative",
+                              transition: "all 0.3s",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: "1.1rem",
+                                height: "1.1rem",
+                                borderRadius: "50%",
+                                background: "white",
+                                position: "absolute",
+                                top: "0.125rem",
+                                left: modulePermissions[ATTENDANCE_EDIT_KEY]
+                                  ? "1.025rem"
+                                  : "0.125rem",
+                                transition: "all 0.3s",
+                              }}
+                            />
+                          </div>
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                )}
+
                 {module.id === 'tickets' && isEnabled && (
                   <AnimatePresence initial={false}>
                     {ticketOptionsOpen && (
@@ -686,6 +810,9 @@ export default function Users() {
       if (moduleId === "tickets" && !nextValue) {
         updated[TICKETS_HANDLER_KEY] = false;
       }
+      if (moduleId === "attendance" && !nextValue) {
+        updated[ATTENDANCE_EDIT_KEY] = false;
+      }
 
       return updated;
     });
@@ -705,6 +832,9 @@ export default function Users() {
       }
       if (moduleId === "tickets" && !nextValue) {
         updated[TICKETS_HANDLER_KEY] = false;
+      }
+      if (moduleId === "attendance" && !nextValue) {
+        updated[ATTENDANCE_EDIT_KEY] = false;
       }
 
       return updated;

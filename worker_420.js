@@ -273,29 +273,128 @@ async function upsertEmployee(pin, name) {
 // Async logic to process and propagate USERINFO to other devices
 async function handleUserInfoUpload(body, sn) {
   const lines = body.split('\n').filter(l => l.trim());
-  const otherDevices = await getOtherDevices(sn);
-  if (otherDevices.length === 0) return;
+  if (lines.length === 0) return;
 
-  const commands = [];
+  const otherDevices = await getOtherDevices(sn);
+
+  // 1. Extract all pin/name pairs
+  const pinToNameMap = [];
   for (const line of lines) {
     const params = parseTabParams(line);
     const pin = params.PIN || params.Pin || params.pin;
     const name = params.Name || params.name;
-    if (!pin || !name) continue;
-
-    const employeeDbId = await upsertEmployee(pin, name);
-
-    for (const otherSn of otherDevices) {
-      commands.push({
-        device_serial: otherSn,
-        command: `DATA UPDATE USERINFO PIN=${pin}\tName=${name}\tPri=${params.Pri || 0}\tPasswd=${params.Passwd || ''}\tCard=${params.Card || ''}\tGrp=${params.Grp || 1}\tTZ=${params.TZ || '0000000100000000'}`,
-        command_type: 'ADD_USER',
-        employee_id: employeeDbId,
-        status: 'pending'
-      });
+    if (pin && name) {
+      pinToNameMap.push({ pin, name, params });
     }
   }
-  await insertDeviceCommands(commands);
+
+  if (pinToNameMap.length === 0) return;
+
+  const uniquePins = Array.from(new Set(pinToNameMap.map(item => item.pin)));
+
+  // 2. Fetch existing employees matching these pins in one query
+  const employeesMap = new Map();
+  try {
+    const queryPins = uniquePins.map(p => encodeURIComponent(p)).join(',');
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/employees?device_user_id=in.(${queryPins})&select=id,device_user_id,name`, {
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+      }
+    });
+    if (res.ok) {
+      const emps = await res.json();
+      for (const emp of emps) {
+        employeesMap.set(emp.device_user_id, {
+          id: emp.id,
+          name: emp.name
+        });
+      }
+    } else {
+      console.error('Failed to fetch employees for userinfo upload:', await res.text());
+    }
+  } catch (err) {
+    console.error('Error fetching employees for userinfo upload:', err);
+  }
+
+  const commands = [];
+  
+  // 3. Process each employee
+  for (const { pin, name, params } of pinToNameMap) {
+    let employeeDbId = null;
+    const existing = employeesMap.get(pin);
+
+    if (existing) {
+      employeeDbId = existing.id;
+      // If name changed, update it in Supabase
+      if (existing.name !== name) {
+        try {
+          await fetch(`${SUPABASE_URL}/rest/v1/employees?id=eq.${employeeDbId}`, {
+            method: 'PATCH',
+            headers: {
+              'apikey': SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name })
+          });
+          console.log(`Updated name for employee ${pin} to ${name}`);
+        } catch (err) {
+          console.error(`Error updating name for employee ID ${employeeDbId}:`, err);
+        }
+      }
+    } else {
+      // Create new employee
+      try {
+        const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/employees`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            device_user_id: pin,
+            name: name,
+            emp_type: 'staff'
+          })
+        });
+        if (insertRes.ok) {
+          const data = await insertRes.json();
+          if (data && data.length > 0) {
+            employeeDbId = data[0].id;
+            console.log(`Created employee for PIN ${pin}: ${name} with ID ${employeeDbId}`);
+            // Add to map in case there are duplicates in the payload
+            employeesMap.set(pin, { id: employeeDbId, name });
+          }
+        } else {
+          console.error(`Failed to insert employee ${pin}:`, await insertRes.text());
+        }
+      } catch (err) {
+        console.error(`Error creating employee for PIN ${pin}:`, err);
+      }
+    }
+
+    if (!employeeDbId) continue;
+
+    // Propagate to other devices
+    if (otherDevices.length > 0) {
+      for (const otherSn of otherDevices) {
+        commands.push({
+          device_serial: otherSn,
+          command: `DATA UPDATE USERINFO PIN=${pin}\tName=${name}\tPri=${params.Pri || 0}\tPasswd=${params.Passwd || ''}\tCard=${params.Card || ''}\tGrp=${params.Grp || 1}\tTZ=${params.TZ || '0000000100000000'}`,
+          command_type: 'ADD_USER',
+          employee_id: employeeDbId,
+          status: 'pending'
+        });
+      }
+    }
+  }
+
+  if (commands.length > 0) {
+    await insertDeviceCommands(commands);
+  }
 }
 
 // Helper to get employee's existing biometrics JSON data
@@ -341,36 +440,79 @@ async function updateEmployeeBiometrics(id, updates) {
 async function handleTemplateUpload(body, sn) {
   console.log(`Received TEMPLATE/FINGERTMP upload from SN ${sn}. Length: ${body.length}`);
   const lines = body.split('\n').filter(l => l.trim());
+  if (lines.length === 0) return;
+
   const otherDevices = await getOtherDevices(sn);
 
-  const commands = [];
+  // 1. Extract all unique PINs
+  const pinToLineMap = [];
   for (const line of lines) {
     const params = parseTabParams(line);
     const pin = params.PIN || params.Pin || params.pin;
     const tmp = params.TMP || params.Tmp || params.tmp;
-    if (!pin || !tmp) {
+    if (pin && tmp) {
+      pinToLineMap.push({ pin, tmp, params });
+    } else {
       console.log(`Skipping template line due to missing PIN or TMP. Line: ${line}`);
-      continue;
     }
+  }
 
-    const employeeDbId = await findEmployeeId(pin);
-    if (!employeeDbId) {
+  if (pinToLineMap.length === 0) return;
+
+  const uniquePins = Array.from(new Set(pinToLineMap.map(item => item.pin)));
+
+  // 2. Fetch all matching employees in a single request
+  const employeesMap = new Map();
+  try {
+    const queryPins = uniquePins.map(p => encodeURIComponent(p)).join(',');
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/employees?device_user_id=in.(${queryPins})&select=id,device_user_id,fingerprint_templates`, {
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+      }
+    });
+    if (res.ok) {
+      const emps = await res.json();
+      for (const emp of emps) {
+        employeesMap.set(emp.device_user_id, {
+          id: emp.id,
+          fingerprint_templates: emp.fingerprint_templates || {},
+          original_templates_str: JSON.stringify(emp.fingerprint_templates || {})
+        });
+      }
+    } else {
+      console.error('Failed to fetch employees for template upload:', await res.text());
+      return;
+    }
+  } catch (err) {
+    console.error('Error fetching employees for template upload:', err);
+    return;
+  }
+
+  const commands = [];
+  const updatedEmployees = new Map(); // employeeDbId -> new fingerprint_templates
+
+  // 3. Process each line using cached employees
+  for (const { pin, tmp, params } of pinToLineMap) {
+    const empData = employeesMap.get(pin);
+    if (!empData) {
       console.log(`Employee not found for PIN/Pin: ${pin} in database.`);
       continue;
     }
 
-    console.log(`Saving fingerprint template for Employee ID ${employeeDbId} (PIN: ${pin}), FID: ${params.FID || '0'}`);
-    // Persist fingerprint template in employees table
-    const empBiometrics = await getEmployeeBiometrics(employeeDbId);
-    const fingerTemplates = (empBiometrics && empBiometrics.fingerprint_templates) || {};
+    const employeeDbId = empData.id;
     const fid = params.FID || '0';
-    fingerTemplates[fid] = {
+    
+    // Get currently accumulated/updated templates for this employee
+    const accumulated = updatedEmployees.get(employeeDbId) || { ...empData.fingerprint_templates };
+    
+    accumulated[fid] = {
       template: tmp,
       size: parseInt(params.Size) || 0,
       valid: parseInt(params.Valid) || 1
     };
-    await updateEmployeeBiometrics(employeeDbId, { fingerprint_templates: fingerTemplates });
-    console.log(`Successfully updated fingerprint template in employees table for Employee ID ${employeeDbId}.`);
+
+    updatedEmployees.set(employeeDbId, accumulated);
 
     // Propagate command to other devices if any exist
     if (otherDevices.length > 0) {
@@ -385,6 +527,25 @@ async function handleTemplateUpload(body, sn) {
       }
     }
   }
+
+  // 4. Batch patch updated biometrics to Supabase
+  for (const [employeeDbId, fingerTemplates] of updatedEmployees.entries()) {
+    let originalStr = '';
+    for (const empVal of employeesMap.values()) {
+      if (empVal.id === employeeDbId) {
+        originalStr = empVal.original_templates_str;
+        break;
+      }
+    }
+    if (originalStr === JSON.stringify(fingerTemplates)) {
+      continue; // no changes, skip patch
+    }
+
+    console.log(`Saving fingerprint template updates for Employee ID ${employeeDbId}`);
+    await updateEmployeeBiometrics(employeeDbId, { fingerprint_templates: fingerTemplates });
+  }
+
+  // 5. Bulk insert propagation commands
   if (commands.length > 0) {
     await insertDeviceCommands(commands);
   }
@@ -394,40 +555,83 @@ async function handleTemplateUpload(body, sn) {
 async function handleBiodataUpload(body, sn) {
   console.log(`Received BIODATA upload from SN ${sn}. Length: ${body.length}`);
   const lines = body.split('\n').filter(l => l.trim());
+  if (lines.length === 0) return;
+
   const otherDevices = await getOtherDevices(sn);
 
-  const commands = [];
+  // 1. Extract all unique PINs
+  const pinToLineMap = [];
   for (const line of lines) {
     const params = parseTabParams(line);
     const pin = params.PIN || params.Pin || params.pin;
     const tmp = params.TMP || params.Tmp || params.tmp;
-    if (!pin || !tmp) {
+    if (pin && tmp) {
+      pinToLineMap.push({ pin, tmp, params });
+    } else {
       console.log(`Skipping biodata line due to missing PIN or TMP. Line: ${line}`);
-      continue;
     }
+  }
 
-    const employeeDbId = await findEmployeeId(pin);
-    if (!employeeDbId) {
+  if (pinToLineMap.length === 0) return;
+
+  const uniquePins = Array.from(new Set(pinToLineMap.map(item => item.pin)));
+
+  // 2. Fetch all matching employees in a single request
+  const employeesMap = new Map();
+  try {
+    const queryPins = uniquePins.map(p => encodeURIComponent(p)).join(',');
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/employees?device_user_id=in.(${queryPins})&select=id,device_user_id,face_templates`, {
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+      }
+    });
+    if (res.ok) {
+      const emps = await res.json();
+      for (const emp of emps) {
+        employeesMap.set(emp.device_user_id, {
+          id: emp.id,
+          face_templates: emp.face_templates || {},
+          original_templates_str: JSON.stringify(emp.face_templates || {})
+        });
+      }
+    } else {
+      console.error('Failed to fetch employees for biodata upload:', await res.text());
+      return;
+    }
+  } catch (err) {
+    console.error('Error fetching employees for biodata upload:', err);
+    return;
+  }
+
+  const commands = [];
+  const updatedEmployees = new Map(); // employeeDbId -> new face_templates
+
+  // 3. Process each line using cached employees
+  for (const { pin, tmp, params } of pinToLineMap) {
+    const empData = employeesMap.get(pin);
+    if (!empData) {
       console.log(`Employee not found for PIN/Pin: ${pin} in database.`);
       continue;
     }
 
-    console.log(`Saving face template for Employee ID ${employeeDbId} (PIN: ${pin}), Type: ${params.Type || '9'}`);
-    // Persist face template in employees table
-    const empBiometrics = await getEmployeeBiometrics(employeeDbId);
-    const faceTemplates = (empBiometrics && empBiometrics.face_templates) || {};
+    const employeeDbId = empData.id;
     const type = params.Type || '9';
     const no = params.No || '0';
     const key = `${type}-${no}`;
-    faceTemplates[key] = {
+
+    // Get currently accumulated/updated templates for this employee
+    const accumulated = updatedEmployees.get(employeeDbId) || { ...empData.face_templates };
+
+    accumulated[key] = {
       template: tmp,
       index: parseInt(params.Index) || 0,
       format: parseInt(params.Format) || 0,
       major_ver: parseInt(params.MajorVer) || 10,
       minor_ver: parseInt(params.MinorVer) || 0
     };
-    await updateEmployeeBiometrics(employeeDbId, { face_templates: faceTemplates });
-    console.log(`Successfully updated face template in employees table for Employee ID ${employeeDbId}.`);
+
+    updatedEmployees.set(employeeDbId, accumulated);
 
     // Propagate command to other devices if any exist
     if (otherDevices.length > 0) {
@@ -442,6 +646,25 @@ async function handleBiodataUpload(body, sn) {
       }
     }
   }
+
+  // 4. Batch patch updated biometrics to Supabase
+  for (const [employeeDbId, faceTemplates] of updatedEmployees.entries()) {
+    let originalStr = '';
+    for (const empVal of employeesMap.values()) {
+      if (empVal.id === employeeDbId) {
+        originalStr = empVal.original_templates_str;
+        break;
+      }
+    }
+    if (originalStr === JSON.stringify(faceTemplates)) {
+      continue; // no changes, skip patch
+    }
+
+    console.log(`Saving face template updates (biodata) for Employee ID ${employeeDbId}`);
+    await updateEmployeeBiometrics(employeeDbId, { face_templates: faceTemplates });
+  }
+
+  // 5. Bulk insert propagation commands
   if (commands.length > 0) {
     await insertDeviceCommands(commands);
   }
@@ -451,40 +674,80 @@ async function handleBiodataUpload(body, sn) {
 async function handleFaceUpload(body, sn) {
   console.log(`Received FACE upload from SN ${sn}. Length: ${body.length}`);
   const lines = body.split('\n').filter(l => l.trim());
+  if (lines.length === 0) return;
+
   const otherDevices = await getOtherDevices(sn);
 
-  const commands = [];
+  // 1. Extract all unique PINs
+  const pinToLineMap = [];
   for (const line of lines) {
     const params = parseTabParams(line);
     const pin = params.PIN || params.Pin || params.pin;
     const tmp = params.TMP || params.Template || params.Tmp || params.tmp;
-    if (!pin || !tmp) {
+    if (pin && tmp) {
+      pinToLineMap.push({ pin, tmp, params });
+    } else {
       console.log(`Skipping face line due to missing PIN or TMP/Template. Line: ${line}`);
-      continue;
     }
+  }
 
-    const employeeDbId = await findEmployeeId(pin);
-    if (!employeeDbId) {
+  if (pinToLineMap.length === 0) return;
+
+  const uniquePins = Array.from(new Set(pinToLineMap.map(item => item.pin)));
+
+  // 2. Fetch all matching employees in a single request
+  const employeesMap = new Map();
+  try {
+    const queryPins = uniquePins.map(p => encodeURIComponent(p)).join(',');
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/employees?device_user_id=in.(${queryPins})&select=id,device_user_id,face_templates`, {
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+      }
+    });
+    if (res.ok) {
+      const emps = await res.json();
+      for (const emp of emps) {
+        employeesMap.set(emp.device_user_id, {
+          id: emp.id,
+          face_templates: emp.face_templates || {},
+          original_templates_str: JSON.stringify(emp.face_templates || {})
+        });
+      }
+    } else {
+      console.error('Failed to fetch employees for face upload:', await res.text());
+      return;
+    }
+  } catch (err) {
+    console.error('Error fetching employees for face upload:', err);
+    return;
+  }
+
+  const commands = [];
+  const updatedEmployees = new Map(); // employeeDbId -> new face_templates
+
+  // 3. Process each line using cached employees
+  for (const { pin, tmp, params } of pinToLineMap) {
+    const empData = employeesMap.get(pin);
+    if (!empData) {
       console.log(`Employee not found for PIN/Pin: ${pin} in database.`);
       continue;
     }
 
+    const employeeDbId = empData.id;
     const fid = params.FID || params.Fid || params.fid || '0';
-    console.log(`Saving face template for Employee ID ${employeeDbId} (PIN: ${pin}), FID: ${fid}`);
-
-    // Persist face template in employees table
-    const empBiometrics = await getEmployeeBiometrics(employeeDbId);
-    const faceTemplates = (empBiometrics && empBiometrics.face_templates) || {};
-
     const key = `face-${fid}`;
-    faceTemplates[key] = {
+
+    // Get currently accumulated/updated templates for this employee
+    const accumulated = updatedEmployees.get(employeeDbId) || { ...empData.face_templates };
+
+    accumulated[key] = {
       template: tmp,
       size: parseInt(params.Size) || tmp.length,
       valid: parseInt(params.Valid || params.Active) || 1
     };
 
-    await updateEmployeeBiometrics(employeeDbId, { face_templates: faceTemplates });
-    console.log(`Successfully updated face template in employees table for Employee ID ${employeeDbId}.`);
+    updatedEmployees.set(employeeDbId, accumulated);
 
     // Propagate command to other devices if any exist
     if (otherDevices.length > 0) {
@@ -499,6 +762,25 @@ async function handleFaceUpload(body, sn) {
       }
     }
   }
+
+  // 4. Batch patch updated biometrics to Supabase
+  for (const [employeeDbId, faceTemplates] of updatedEmployees.entries()) {
+    let originalStr = '';
+    for (const empVal of employeesMap.values()) {
+      if (empVal.id === employeeDbId) {
+        originalStr = empVal.original_templates_str;
+        break;
+      }
+    }
+    if (originalStr === JSON.stringify(faceTemplates)) {
+      continue; // no changes, skip patch
+    }
+
+    console.log(`Saving face template updates for Employee ID ${employeeDbId}`);
+    await updateEmployeeBiometrics(employeeDbId, { face_templates: faceTemplates });
+  }
+
+  // 5. Bulk insert propagation commands
   if (commands.length > 0) {
     await insertDeviceCommands(commands);
   }
@@ -657,7 +939,7 @@ export default {
     ) {
       performDeviceHeartbeat(sn, ctx);
 
-      const table = url.searchParams.get('table');
+      const table = (url.searchParams.get('table') || '').toUpperCase();
       const body = await request.text();
       console.log(`POST /iclock/cdata from SN ${sn}, table: ${table}. Body length: ${body.length}`);
 

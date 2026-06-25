@@ -1044,6 +1044,7 @@ export default function FuelLog() {
 
         await updateDoc(doc(db, "fuel log", editingLog.id), fuelLogData);
         toast.success("Fuel log updated successfully!");
+        fetchFuelLogs();
       } else {
         // Create new log
         const fuelLogData = {

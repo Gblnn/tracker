@@ -447,7 +447,33 @@ const QuotationPage = ({
               }}
             >
               <p>Prepared By</p>
-              <p>Checked By</p>
+              <div style={{ position: "relative", display: "flex", flexFlow: "column", alignItems: "center" }}>
+                {(() => {
+                  const stampSrc = props.letterhead === "Sohar Star United"
+                    ? "/ssu_stamp.png"
+                    : (!props.letterhead || props.letterhead === "ARC")
+                      ? "/arc_stamp.png"
+                      : null;
+                  return stampSrc ? (
+                    <img
+                      src={stampSrc}
+                      style={{
+                        position: "absolute",
+                        bottom: "-20px",
+                        left: "50%",
+                        transform: "translate(-50%, -20%)",
+                        width: "6.5rem",
+                        maxWidth: "none",
+                        height: "auto",
+                        opacity: 0.85,
+                        pointerEvents: "none",
+                      }}
+                      alt="Stamp"
+                    />
+                  ) : null;
+                })()}
+                <p style={{ position: "relative", zIndex: 1 }}>Checked By</p>
+              </div>
               <p>Approved By</p>
             </div>
           </>

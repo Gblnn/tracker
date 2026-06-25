@@ -1,6 +1,7 @@
 import { Laptop2, Loader2, MapPin, Monitor, Pencil, Plus, RotateCw, X } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '@/components/AuthProvider';
 
 interface Device {
   id: number;
@@ -51,6 +52,34 @@ export default function DevicesMaster() {
   const [isAdding, setIsAdding] = useState(false);
   const [addForm, setAddForm] = useState<EditForm>({ serial_no: '', location: '', item_code: '', start_time: '', end_time: '' });
   const [addError, setAddError] = useState<string | null>(null);
+
+  const { userData } = useAuth();
+
+  const canEditAttendance = useMemo(() => {
+    try {
+      const permissions = JSON.parse(userData?.clearance || "{}") as Record<string, boolean>;
+      const hasStructuredClearance = Object.keys(permissions).length > 0;
+      const hasAttendanceModule = permissions.attendance === true;
+      const hasAttendanceEdit = permissions.attendance_edit === true;
+      const hasExplicitEditBlock = permissions.attendance_edit === false;
+
+      if (hasAttendanceModule) {
+        return hasAttendanceEdit;
+      }
+
+      if (permissions.attendance === false || hasExplicitEditBlock) {
+        return false;
+      }
+
+      if (userData?.role === "admin" || userData?.role === "site_admin") {
+        return !hasStructuredClearance;
+      }
+
+      return false;
+    } catch {
+      return userData?.role === "admin" || userData?.role === "site_admin";
+    }
+  }, [userData]);
 
 
   // async function handleImportDeviceData() {
@@ -282,13 +311,15 @@ export default function DevicesMaster() {
               )}
             </button> */}
 
-            <button
-              onClick={openAdd}
-              className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add Device
-            </button>
+            {canEditAttendance && (
+              <button
+                onClick={openAdd}
+                className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Device
+              </button>
+            )}
 
             <button
               onClick={() => fetchDevices(true)}
@@ -399,13 +430,15 @@ export default function DevicesMaster() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => openEdit(device)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded-md hover:bg-gray-100"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                            Edit
-                          </button>
+                          {canEditAttendance && (
+                            <button
+                              onClick={() => openEdit(device)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded-md hover:bg-gray-100"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                              Edit
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

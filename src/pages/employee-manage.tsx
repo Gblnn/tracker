@@ -65,10 +65,12 @@ interface ManageEmployee {
     fingerprint_templates?: Record<string, any> | null;
     face_templates?: Record<string, any> | null;
     created_at?: string;
+    location?: string | null;
 }
 
 export default function EmployeeManage() {
     const [employees, setEmployees] = useState<ManageEmployee[]>([]);
+    const [employeeLocations, setEmployeeLocations] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
@@ -168,7 +170,7 @@ export default function EmployeeManage() {
                 },
                 {
                     device_serial: selectedFetchDevice,
-                    command: 'DATA QUERY BIODATA\tType=9',
+                    command: 'DATA QUERY BIODATA',
                     command_type: 'QUERY_BIODATA',
                     employee_id: empId,
                     status: 'pending'
@@ -299,18 +301,90 @@ export default function EmployeeManage() {
         setLoading(true);
         setError(null);
         try {
-            const { data, error: err } = await supabase
-                .from('employees')
-                .select('*')
-                .order('name', { ascending: true });
+            const today = new Date();
+            const past30Days = new Date();
+            past30Days.setDate(today.getDate() - 30);
+            const startOf30DaysStr = past30Days.toISOString().split('T')[0] + 'T00:00:00';
 
-            if (err) throw err;
+            const [empRes, devRes] = await Promise.all([
+                supabase.from('employees').select('*').order('name', { ascending: true }),
+                supabase.from('devices').select('serial_no, location')
+            ]);
+
+            if (empRes.error) throw empRes.error;
+            if (devRes.error) throw devRes.error;
+
+            const devData = devRes.data || [];
+            const deviceMap = Object.fromEntries(
+                devData.map(d => [d.serial_no, d.location])
+            );
+
+            // Fetch all punches of the last 30 days with pagination (capped at max 10 pages / 10000 records)
+            let allPunches: any[] = [];
+            let from = 0;
+            let to = 999;
+            let finished = false;
+            let page = 0;
+
+            while (!finished && page < 10) {
+                const { data: punchData, error: punchError } = await supabase
+                    .from('punches')
+                    .select('user_id, device_serial')
+                    .gte('punch_time', startOf30DaysStr)
+                    .order('punch_time', { ascending: false })
+                    .range(from, to);
+
+                if (punchError) throw punchError;
+
+                if (punchData && punchData.length > 0) {
+                    allPunches = [...allPunches, ...punchData];
+                    if (punchData.length < 1000) {
+                        finished = true;
+                    } else {
+                        from += 1000;
+                        to += 1000;
+                        page++;
+                    }
+                } else {
+                    finished = true;
+                }
+            }
+
+            // Group counts by employee PIN (user_id)
+            const userLocCounts: Record<string, Record<string, number>> = {};
+            allPunches.forEach(p => {
+                const loc = deviceMap[p.device_serial];
+                if (loc) {
+                    if (!userLocCounts[p.user_id]) {
+                        userLocCounts[p.user_id] = {};
+                    }
+                    userLocCounts[p.user_id][loc] = (userLocCounts[p.user_id][loc] || 0) + 1;
+                }
+            });
+
+            // Find primary location for each employee
+            const empLocs: Record<string, string> = {};
+            Object.entries(userLocCounts).forEach(([pin, counts]) => {
+                let primaryLoc = '';
+                let maxCount = 0;
+                Object.entries(counts).forEach(([loc, count]) => {
+                    if (count > maxCount) {
+                        maxCount = count;
+                        primaryLoc = loc;
+                    }
+                });
+                if (primaryLoc) {
+                    empLocs[pin] = primaryLoc;
+                }
+            });
+
+            setEmployeeLocations(empLocs);
 
             const fingerMap: Record<number, boolean> = {};
             const faceMap: Record<number, boolean> = {};
 
-            if (data) {
-                data.forEach(emp => {
+            if (empRes.data) {
+                empRes.data.forEach(emp => {
                     if (emp.fingerprint_templates && Object.keys(emp.fingerprint_templates).length > 0) {
                         fingerMap[emp.id] = true;
                     }
@@ -322,7 +396,7 @@ export default function EmployeeManage() {
 
             setFingerAvailable(fingerMap);
             setFaceAvailable(faceMap);
-            setEmployees(data || []);
+            setEmployees(empRes.data || []);
         } catch (e: any) {
             setError(e.message || 'Failed to load employees');
         } finally {
@@ -868,6 +942,7 @@ export default function EmployeeManage() {
                                 <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "240px" }}>Employee</th>
                                 <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "160px" }}>IDs</th>
                                 <th className=" px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "180px", border: "" }}>Biometrics</th>
+                                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "180px" }}>Location</th>
                                 <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "200px" }}>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
@@ -1070,6 +1145,10 @@ export default function EmployeeManage() {
                                                 <Scan className="w-3.5 h-3.5" /> Face
                                             </span>
                                         </div>
+                                    </td>
+                                    {/* Location */}
+                                    <td className="px-4 py-3 text-gray-500 font-medium">
+                                        {employeeLocations[emp.device_user_id] ?? emp.location ?? '—'}
                                     </td>
                                     {/* Dept and Designation */}
                                     <td className="px-4 py-3">
