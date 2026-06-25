@@ -463,7 +463,7 @@ export default function DevicesMaster() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
 
             {/* Modal header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div style={{ justifyContent: "space-between" }} className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
                   <Monitor className="w-4 h-4 text-gray-400" />
@@ -551,12 +551,14 @@ export default function DevicesMaster() {
             {/* Modal footer */}
             <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50">
               <button
+                style={{ flex: 1 }}
                 onClick={closeEdit}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
+                style={{ flex: 1 }}
                 onClick={handleSave}
                 disabled={saving}
                 className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
@@ -577,7 +579,7 @@ export default function DevicesMaster() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
 
             {/* Modal header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div style={{ justifyContent: "space-between" }} className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
                   <Monitor className="w-4 h-4 text-gray-400" />
@@ -668,12 +670,14 @@ export default function DevicesMaster() {
             {/* Modal footer */}
             <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50">
               <button
+                style={{ flex: 1 }}
                 onClick={closeAdd}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
+                style={{ flex: 1 }}
                 onClick={handleAdd}
                 disabled={saving}
                 className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"

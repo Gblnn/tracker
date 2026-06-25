@@ -1,7 +1,7 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { ChevronDown, ChevronLeft, ChevronRight, Download, Loader2, Search } from 'lucide-react';
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
 import {
@@ -40,15 +40,19 @@ interface PunchDetail {
 
 interface DaySummary {
   firstIn: string | null;
+  firstInLocation: string | null;
   lastOut: string | null;
+  lastOutLocation: string | null;
   firstPunch: string | null;
+  firstPunchLocation: string | null;
   lastPunch: string | null;
+  lastPunchLocation: string | null;
   isPresent: boolean;
 }
 
 type AttendanceMatrix = Record<string, Record<number, DaySummary>>;
 
-type ReportType = 'inout' | 'pa' | 'hourly';
+type ReportType = 'inout' | 'pa' | 'hourly' | 'location_inout';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -87,6 +91,217 @@ function getDayHours(summary: DaySummary | undefined): string {
 const ROW_H = 44;
 const HEAD_R1 = 40;
 const HEAD_R2 = 26;
+
+// ─── Memoized Subcomponents ───────────────────────────────────────────────────
+
+const InCell = memo(({ daySummary, year, month, d, today, useFirstLast }: {
+  daySummary: DaySummary | undefined;
+  year: number;
+  month: number;
+  d: number;
+  today: Date;
+  useFirstLast: boolean;
+}) => {
+  if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
+  if (daySummary?.isPresent) {
+    const displayTime = useFirstLast ? formatTime(daySummary.firstPunch) : (formatTime(daySummary.firstIn) || '✓');
+    return (
+      <td className="text-center text-emerald-700 font-medium tabular-nums text-[12px] whitespace-nowrap" style={{ height: ROW_H }}>
+        {displayTime}
+      </td>
+    );
+  }
+
+  const isFuture = new Date(year, month, d) > today;
+  if (isFuture) return <td className="text-center text-gray-300 text-[12px]" style={{ height: ROW_H }}>—</td>;
+
+  return <td className="text-center text-red-400 font-bold text-[12px]" style={{ height: ROW_H }}>A</td>;
+});
+InCell.displayName = 'InCell';
+
+const OutCell = memo(({ daySummary, year, month, d, useFirstLast }: {
+  daySummary: DaySummary | undefined;
+  year: number;
+  month: number;
+  d: number;
+  useFirstLast: boolean;
+}) => {
+  if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
+  if (daySummary?.isPresent) {
+    const displayTime = useFirstLast
+      ? (daySummary.firstPunch === daySummary.lastPunch ? '' : formatTime(daySummary.lastPunch))
+      : (formatTime(daySummary.lastOut) || '—');
+    return (
+      <td className="text-center text-orange-500 font-medium tabular-nums text-[12px] whitespace-nowrap" style={{ height: ROW_H }}>
+        {displayTime}
+      </td>
+    );
+  }
+  return <td className="text-center text-[12px]" style={{ height: ROW_H }} />;
+});
+OutCell.displayName = 'OutCell';
+
+const LocationInCell = memo(({ daySummary, year, month, d, today, useFirstLast }: {
+  daySummary: DaySummary | undefined;
+  year: number;
+  month: number;
+  d: number;
+  today: Date;
+  useFirstLast: boolean;
+}) => {
+  if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[11px]" style={{ height: ROW_H }}>—</td>;
+  if (daySummary?.isPresent) {
+    const displayTime = useFirstLast ? formatTime(daySummary.firstPunch) : (formatTime(daySummary.firstIn) || '✓');
+    const displayLoc = useFirstLast ? daySummary.firstPunchLocation : (daySummary.firstInLocation || '—');
+    return (
+      <td className="text-center bg-white" style={{ height: ROW_H, verticalAlign: 'middle', padding: '2px' }}>
+        <div className="flex flex-col items-center justify-center leading-tight">
+          <span className="text-emerald-700 font-semibold tabular-nums text-[12px]">{displayTime}</span>
+          <span className="text-gray-400 text-[10px] truncate max-w-[110px]" title={displayLoc || ''}>{displayLoc || '—'}</span>
+        </div>
+      </td>
+    );
+  }
+
+  const isFuture = new Date(year, month, d) > today;
+  if (isFuture) return <td className="text-center text-gray-300 text-[12px]" style={{ height: ROW_H }}>—</td>;
+
+  return <td className="text-center text-red-400 font-bold text-[12px]" style={{ height: ROW_H }}>A</td>;
+});
+LocationInCell.displayName = 'LocationInCell';
+
+const LocationOutCell = memo(({ daySummary, year, month, d, useFirstLast }: {
+  daySummary: DaySummary | undefined;
+  year: number;
+  month: number;
+  d: number;
+  useFirstLast: boolean;
+}) => {
+  if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[11px]" style={{ height: ROW_H }}>—</td>;
+  if (daySummary?.isPresent) {
+    const displayTime = useFirstLast
+      ? (daySummary.firstPunch === daySummary.lastPunch ? '' : formatTime(daySummary.lastPunch))
+      : (formatTime(daySummary.lastOut) || '—');
+    const displayLoc = useFirstLast
+      ? (daySummary.firstPunch === daySummary.lastPunch ? '' : (daySummary.lastPunchLocation || '—'))
+      : (daySummary.lastOutLocation || '—');
+
+    if (!displayTime && !displayLoc) {
+      return <td className="text-center text-[12px]" style={{ height: ROW_H }} />;
+    }
+
+    return (
+      <td className="text-center bg-white" style={{ height: ROW_H, verticalAlign: 'middle', padding: '2px' }}>
+        <div className="flex flex-col items-center justify-center leading-tight">
+          <span className="text-orange-500 font-semibold tabular-nums text-[12px]">{displayTime || '—'}</span>
+          <span className="text-gray-400 text-[10px] truncate max-w-[110px]" title={displayLoc || ''}>{displayLoc || '—'}</span>
+        </div>
+      </td>
+    );
+  }
+  return <td className="text-center text-[12px]" style={{ height: ROW_H }} />;
+});
+LocationOutCell.displayName = 'LocationOutCell';
+
+interface FrozenRowProps {
+  emp: Employee;
+  index: number;
+  locationList: string;
+  presenceCount: number;
+  absentCount: number;
+}
+
+const FrozenRow = memo(({ emp, index, locationList, presenceCount, absentCount }: FrozenRowProps) => {
+  return (
+    <tr style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }}>
+      <td className="text-[13px] text-gray-400 text-center bg-white px-1">{index + 1}</td>
+      <td style={{ textTransform: "capitalize" }} className="text-[13px] font-medium text-gray-900 bg-white px-3 whitespace-nowrap">
+        {emp.name.toLowerCase()}
+        {emp.emp_id && <div className="text-[11px] text-gray-400 font-normal">{emp.emp_id}</div>}
+      </td>
+      <td
+        className="text-[13px] text-gray-500 bg-white px-2 truncate"
+        style={{ maxWidth: 170 }}
+        title={locationList}
+      >
+        {locationList}
+      </td>
+      <td className="text-center text-[13px] font-semibold text-emerald-700" style={{ background: '#ecfdf5', height: ROW_H }}>
+        {presenceCount}
+      </td>
+      <td className="text-center text-[13px] font-semibold text-red-600" style={{ background: '#fef2f2', height: ROW_H }}>
+        {absentCount}
+      </td>
+      <td className="bg-white" />
+    </tr>
+  );
+});
+FrozenRow.displayName = 'FrozenRow';
+
+interface ScrollableRowProps {
+  emp: Employee;
+  dayList: number[];
+  reportType: ReportType;
+  useFirstLast: boolean;
+  matrixForEmployee: Record<number, DaySummary> | undefined;
+  year: number;
+  month: number;
+  today: Date;
+}
+
+const ScrollableRow = memo(({
+  emp,
+  dayList,
+  reportType,
+  useFirstLast,
+  matrixForEmployee,
+  year,
+  month,
+  today
+}: ScrollableRowProps) => {
+  return (
+    <tr style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }} className="hover:bg-blue-50/20">
+      {dayList.map(d => {
+        const c = matrixForEmployee?.[d];
+        if (reportType === 'hourly') {
+          return (
+            <td key={`day-${d}`} className="text-center text-[12px] font-medium text-gray-400" style={{ height: ROW_H, background: isWeekend(year, month, d) ? '#f9fafb' : 'white' }}>
+              {getDayHours(c)}
+            </td>
+          );
+        }
+        if (reportType === 'pa') {
+          let content = '';
+          let color = '';
+          if (isWeekend(year, month, d)) { content = '—'; color = 'text-gray-300'; }
+          else if (c?.isPresent) { content = 'P'; color = 'text-emerald-500 font-bold'; }
+          else if (new Date(year, month, d) > today) { content = '—'; color = 'text-gray-300'; }
+          else { content = 'A'; color = 'text-red-400 font-bold'; }
+          return (
+            <td key={`day-${d}`} className={`text-center text-[12px] ${color}`} style={{ height: ROW_H, background: isWeekend(year, month, d) ? '#f9fafb' : 'white' }}>
+              {content}
+            </td>
+          );
+        }
+        if (reportType === 'location_inout') {
+          return (
+            <Fragment key={`day-${d}`}>
+              <LocationInCell daySummary={c} year={year} month={month} d={d} today={today} useFirstLast={useFirstLast} />
+              <LocationOutCell daySummary={c} year={year} month={month} d={d} useFirstLast={useFirstLast} />
+            </Fragment>
+          );
+        }
+        return (
+          <Fragment key={`day-${d}`}>
+            <InCell daySummary={c} year={year} month={month} d={d} today={today} useFirstLast={useFirstLast} />
+            <OutCell daySummary={c} year={year} month={month} d={d} useFirstLast={useFirstLast} />
+          </Fragment>
+        );
+      })}
+    </tr>
+  );
+});
+ScrollableRow.displayName = 'ScrollableRow';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -181,14 +396,41 @@ export default function StaffMonthlyReport() {
       const ds = new Date(p.punch_time).toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' });
       const dn = parseInt(ds.split('-')[2]);
       if (!r[p.user_id]) r[p.user_id] = {};
-      if (!r[p.user_id][dn]) r[p.user_id][dn] = { firstIn: null, lastOut: null, firstPunch: null, lastPunch: null, isPresent: false };
+      if (!r[p.user_id][dn]) {
+        r[p.user_id][dn] = {
+          firstIn: null,
+          firstInLocation: null,
+          lastOut: null,
+          lastOutLocation: null,
+          firstPunch: null,
+          firstPunchLocation: null,
+          lastPunch: null,
+          lastPunchLocation: null,
+          isPresent: false
+        };
+      }
       const c = r[p.user_id][dn];
       c.isPresent = true;
-      if (p.punch_type === 0) { if (!c.firstIn || p.punch_time < c.firstIn) c.firstIn = p.punch_time; }
-      else { if (!c.lastOut || p.punch_time > c.lastOut) c.lastOut = p.punch_time; }
+      if (p.punch_type === 0) {
+        if (!c.firstIn || p.punch_time < c.firstIn) {
+          c.firstIn = p.punch_time;
+          c.firstInLocation = p.location || null;
+        }
+      } else {
+        if (!c.lastOut || p.punch_time > c.lastOut) {
+          c.lastOut = p.punch_time;
+          c.lastOutLocation = p.location || null;
+        }
+      }
 
-      if (!c.firstPunch || p.punch_time < c.firstPunch) c.firstPunch = p.punch_time;
-      if (!c.lastPunch || p.punch_time > c.lastPunch) c.lastPunch = p.punch_time;
+      if (!c.firstPunch || p.punch_time < c.firstPunch) {
+        c.firstPunch = p.punch_time;
+        c.firstPunchLocation = p.location || null;
+      }
+      if (!c.lastPunch || p.punch_time > c.lastPunch) {
+        c.lastPunch = p.punch_time;
+        c.lastPunchLocation = p.location || null;
+      }
     }
     return r;
   }, [punches]);
@@ -271,13 +513,14 @@ export default function StaffMonthlyReport() {
     rows.push([`Staff Attendance — ${monthLabel(month, year)}`]);
     rows.push([]);
 
+    const monthName = new Date(year, month, 1).toLocaleDateString('en-OM', { month: 'long' });
     const r1: string[] = ['#', 'Name', 'Emp ID', 'Location'];
     const r2: string[] = ['', '', '', ''];
     const r3: string[] = ['', '', '', ''];
-    const colCount = reportType === 'inout' ? 2 : 1;
+    const colCount = reportType === 'inout' || reportType === 'location_inout' ? 2 : 1;
 
     for (let d = 1; d <= days; d++) {
-      r1.push(String(d));
+      r1.push(`${d} ${monthName} ${year}`);
       if (colCount === 2) r1.push('');
       r2.push(getDayName(year, month, d));
       if (colCount === 2) r2.push('');
@@ -285,6 +528,8 @@ export default function StaffMonthlyReport() {
         r3.push('hours');
       } else if (reportType === 'pa') {
         r3.push('status');
+      } else if (reportType === 'location_inout') {
+        r3.push('In (Time - Loc)', 'Out (Time - Loc)');
       } else {
         r3.push('In', 'Out');
       }
@@ -303,6 +548,25 @@ export default function StaffMonthlyReport() {
           else if (c?.isPresent) { row.push('P'); }
           else if (new Date(year, month, d) > today) { row.push('—'); }
           else { row.push('A'); }
+        } else if (reportType === 'location_inout') {
+          if (isWeekend(year, month, d)) { row.push('OFF', ''); }
+          else if (c?.isPresent) {
+            if (useFirstLast) {
+              const inTime = formatTime(c.firstPunch);
+              const inLoc = c.firstPunchLocation || '—';
+              const outTime = c.firstPunch === c.lastPunch ? '' : formatTime(c.lastPunch);
+              const outLoc = c.firstPunch === c.lastPunch ? '' : (c.lastPunchLocation || '—');
+              row.push(inTime ? `${inTime} (${inLoc})` : '', outTime ? `${outTime} (${outLoc})` : '');
+            } else {
+              const inTime = formatTime(c.firstIn) || '✓';
+              const inLoc = c.firstInLocation || '—';
+              const outTime = formatTime(c.lastOut) || '';
+              const outLoc = c.lastOutLocation || '—';
+              row.push(`${inTime} (${inLoc})`, outTime ? `${outTime} (${outLoc})` : '');
+            }
+          }
+          else if (new Date(year, month, d) > today) { row.push('—', ''); }
+          else { row.push('A', ''); }
         } else {
           if (isWeekend(year, month, d)) { row.push('OFF', ''); }
           else if (c?.isPresent) {
@@ -323,7 +587,12 @@ export default function StaffMonthlyReport() {
     const ws = XLSX.utils.aoa_to_sheet(rows);
     const cols = [{ wch: 4 }, { wch: 22 }, { wch: 9 }, { wch: 14 }];
     for (let i = 0; i < days; i++) {
-      cols.push({ wch: 7 }); if (colCount === 2) cols.push({ wch: 7 });
+      if (reportType === 'location_inout') {
+        cols.push({ wch: 18 }); cols.push({ wch: 18 });
+      } else {
+        const width = colCount === 2 ? 8 : 12;
+        cols.push({ wch: width }); if (colCount === 2) cols.push({ wch: width });
+      }
     }
     cols.push({ wch: 6 }, { wch: 6 });
     ws['!cols'] = cols;
@@ -342,7 +611,7 @@ export default function StaffMonthlyReport() {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
 
-    const colWidth = reportType === 'inout' ? 92 : 46;
+    const colWidth = reportType === 'location_inout' ? 240 : reportType === 'inout' ? 92 : 46;
     const totalWidth = 584 + (days * colWidth);
     const offscreen = document.createElement("div");
     offscreen.style.cssText =
@@ -435,40 +704,7 @@ export default function StaffMonthlyReport() {
     }
   }, [days, month, year, filtered, workDays, reportType, useFirstLast, deptFilter, selectedLocations]);
 
-  // ── Cell renderers ─────────────────────────────────────────────────────────
-  function InCell({ uid, d }: { uid: string; d: number }) {
-    const c = matrix[uid]?.[d];
-    if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
-    if (c?.isPresent) {
-      const displayTime = useFirstLast ? formatTime(c.firstPunch) : (formatTime(c.firstIn) || '✓');
-      return (
-        <td className="text-center text-emerald-700 font-medium tabular-nums text-[12px] whitespace-nowrap" style={{ height: ROW_H }}>
-          {displayTime}
-        </td>
-      );
-    }
-
-    const isFuture = new Date(year, month, d) > today;
-    if (isFuture) return <td className="text-center text-gray-300 text-[12px]" style={{ height: ROW_H }}>—</td>;
-
-    return <td className="text-center text-red-400 font-bold text-[12px]" style={{ height: ROW_H }}>A</td>;
-  }
-
-  function OutCell({ uid, d }: { uid: string; d: number }) {
-    const c = matrix[uid]?.[d];
-    if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
-    if (c?.isPresent) {
-      const displayTime = useFirstLast
-        ? (c.firstPunch === c.lastPunch ? '' : formatTime(c.lastPunch))
-        : (formatTime(c.lastOut) || '—');
-      return (
-        <td className="text-center text-orange-500 font-medium tabular-nums text-[12px] whitespace-nowrap" style={{ height: ROW_H }}>
-          {displayTime}
-        </td>
-      );
-    }
-    return <td className="text-center text-[12px]" style={{ height: ROW_H }} />;
-  }
+  // Render loops updated to use external memoized subcomponents
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -500,13 +736,15 @@ export default function StaffMonthlyReport() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="inout">In/Out Report</SelectItem>
+              <SelectItem value="location_inout">Location In/Out Report</SelectItem>
               <SelectItem value="pa">P/A Matrix</SelectItem>
               <SelectItem value="hourly">Hourly Report</SelectItem>
+
             </SelectContent>
           </Select>
 
           {/* Toggle for In/Out Logic */}
-          {reportType === 'inout' && (
+          {(reportType === 'inout' || reportType === 'location_inout') && (
             <label className="flex items-center gap-2 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 cursor-pointer hover:bg-gray-100 transition-colors">
               <input
                 type="checkbox"
@@ -677,30 +915,14 @@ export default function StaffMonthlyReport() {
               </thead>
               <tbody>
                 {filtered.map((emp, idx) => (
-                  <tr
+                  <FrozenRow
                     key={emp.id}
-                    style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }}
-                  >
-                    <td className="text-[13px] text-gray-400 text-center bg-white px-1">{idx + 1}</td>
-                    <td style={{ textTransform: "capitalize" }} className="text-[13px] font-medium text-gray-900 bg-white px-3 whitespace-nowrap">
-                      {emp.name.toLowerCase()}
-                      {emp.emp_id && <div className="text-[11px] text-gray-400 font-normal">{emp.emp_id}</div>}
-                    </td>
-                    <td
-                      className="text-[13px] text-gray-500 bg-white px-2 truncate"
-                      style={{ maxWidth: 170 }}
-                      title={employeeLocations[emp.device_user_id] || '—'}
-                    >
-                      {employeeLocations[emp.device_user_id] || '—'}
-                    </td>
-                    <td className="text-center text-[13px] font-semibold text-emerald-700" style={{ background: '#ecfdf5', height: ROW_H }}>
-                      {presenceDays(emp.device_user_id)}
-                    </td>
-                    <td className="text-center text-[13px] font-semibold text-red-600" style={{ background: '#fef2f2', height: ROW_H }}>
-                      {absentDays(emp.device_user_id)}
-                    </td>
-                    <td className="bg-white" />
-                  </tr>
+                    emp={emp}
+                    index={idx}
+                    locationList={employeeLocations[emp.device_user_id] || '—'}
+                    presenceCount={presenceDays(emp.device_user_id)}
+                    absentCount={absentDays(emp.device_user_id)}
+                  />
                 ))}
               </tbody>
             </table>
@@ -711,13 +933,13 @@ export default function StaffMonthlyReport() {
             ref={rightRef}
             style={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}
           >
-            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: `${dayList.length * (reportType === 'inout' ? 92 : 46)}px`, borderSpacing: 0 }}>
+            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: `${dayList.length * (reportType === 'location_inout' ? 240 : reportType === 'inout' ? 92 : 46)}px`, borderSpacing: 0 }}>
               <colgroup>
                 {dayList.map(d => (
-                  reportType === 'inout' ? (
+                  reportType === 'inout' || reportType === 'location_inout' ? (
                     <Fragment key={`col-${d}`}>
-                      <col style={{ width: 46 }} />
-                      <col style={{ width: 46 }} />
+                      <col style={{ width: reportType === 'location_inout' ? 120 : 46 }} />
+                      <col style={{ width: reportType === 'location_inout' ? 120 : 46 }} />
                     </Fragment>
                   ) : (
                     <col key={`col-${d}`} style={{ width: 46 }} />
@@ -730,7 +952,7 @@ export default function StaffMonthlyReport() {
                   {dayList.map(d => (
                     <th
                       key={d}
-                      colSpan={reportType === 'inout' ? 2 : 1}
+                      colSpan={reportType === 'inout' || reportType === 'location_inout' ? 2 : 1}
                       className="text-center text-[13px] font-medium"
                       style={{ background: isWeekend(year, month, d) ? '#374151' : '#111827' }}
                     >
@@ -759,37 +981,17 @@ export default function StaffMonthlyReport() {
               </thead>
               <tbody>
                 {filtered.map(emp => (
-                  <tr key={emp.id} style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }} className="hover:bg-blue-50/20">
-                    {dayList.map(d => {
-                      if (reportType === 'hourly') {
-                        return (
-                          <td key={`day-${d}`} className="text-center text-[12px] font-medium text-gray-400" style={{ height: ROW_H, background: isWeekend(year, month, d) ? '#f9fafb' : 'white' }}>
-                            {getDayHours(matrix[emp.device_user_id]?.[d])}
-                          </td>
-                        );
-                      }
-                      if (reportType === 'pa') {
-                        const c = matrix[emp.device_user_id]?.[d];
-                        let content = '';
-                        let color = '';
-                        if (isWeekend(year, month, d)) { content = '—'; color = 'text-gray-300'; }
-                        else if (c?.isPresent) { content = 'P'; color = 'text-emerald-500 font-bold'; }
-                        else if (new Date(year, month, d) > today) { content = '—'; color = 'text-gray-300'; }
-                        else { content = 'A'; color = 'text-red-400 font-bold'; }
-                        return (
-                          <td key={`day-${d}`} className={`text-center text-[12px] ${color}`} style={{ height: ROW_H, background: isWeekend(year, month, d) ? '#f9fafb' : 'white' }}>
-                            {content}
-                          </td>
-                        );
-                      }
-                      return (
-                        <Fragment key={`day-${d}`}>
-                          <InCell uid={emp.device_user_id} d={d} />
-                          <OutCell uid={emp.device_user_id} d={d} />
-                        </Fragment>
-                      );
-                    })}
-                  </tr>
+                  <ScrollableRow
+                    key={emp.id}
+                    emp={emp}
+                    dayList={dayList}
+                    reportType={reportType}
+                    useFirstLast={useFirstLast}
+                    matrixForEmployee={matrix[emp.device_user_id]}
+                    year={year}
+                    month={month}
+                    today={today}
+                  />
                 ))}
               </tbody>
             </table>
