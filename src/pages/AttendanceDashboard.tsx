@@ -3,7 +3,7 @@ import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Gauge, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus } from 'lucide-react';
+import { Database, Gauge, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
@@ -14,9 +14,10 @@ import DevicesMaster from './DevicesMaster';
 import ReportsPage from './ReportsPage';
 import EmployeeManage from './employee-manage';
 import Terminal from './Terminal';
+import DataManagement from './DataManagement';
 import { useAuth } from '@/components/AuthProvider';
 
-type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal';
+type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management';
 
 export default function AttendanceDashboard() {
   const [date, setDate] = useState<string>(todayISO());
@@ -66,6 +67,7 @@ export default function AttendanceDashboard() {
       { value: 'reports', label: 'Reports', icon: <TrendingUp color="darkblue" className="w-4 h-4" /> },
       { value: 'devices', label: 'Devices', icon: <Laptop2 color="darkblue" className="w-4 h-4" /> },
       { value: 'terminal', label: 'Terminal', icon: <TerminalIcon color="darkblue" className="w-4 h-4" /> },
+      { value: 'data-management', label: 'Data Management', icon: <Database color="darkblue" className="w-4 h-4" /> },
     ];
     if (!canEditAttendance) {
       return options.filter(opt => opt.value !== 'manage');
@@ -141,6 +143,8 @@ export default function AttendanceDashboard() {
                 <Directive bg={tab === 'devices' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('devices')} title="Devices" icon={<Laptop2 size={16} />} />
 
                 <Directive bg={tab === 'terminal' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('terminal')} title="Terminal" icon={<TerminalIcon size={16} />} />
+
+                <Directive bg={tab === 'data-management' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('data-management')} title="Data Management" icon={<Zap size={16} />} />
               </div>
             </motion.div>
           )}
@@ -229,6 +233,8 @@ export default function AttendanceDashboard() {
               <DevicesMaster />
             ) : tab === 'terminal' ? (
               <Terminal />
+            ) : tab === 'data-management' ? (
+              <DataManagement />
             ) :
               tab === 'add' ? (
                 <AddEmployee />

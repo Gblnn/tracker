@@ -250,7 +250,7 @@ interface ScrollableRowProps {
 }
 
 const ScrollableRow = memo(({
-  emp,
+
   dayList,
   reportType,
   useFirstLast,

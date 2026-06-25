@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ChevronDown, Loader2, Search, User, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Line, LineChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Area, AreaChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { supabase } from '../lib/supabase';
 import { formatTime } from '../lib/utilis';
 import type { EmployeeSummary } from '../types/attendance';
@@ -221,7 +221,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
           <div style={{ width: "100%", display: "flex", justifyContent: "space-between", padding: "0.75rem", gap: "0.75rem", borderBottom: "1px solid rgba(100 100 100/ 0.1)" }}>
 
             <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.75rem", flexFlow: "column", height: "9.5rem", minWidth: 0, justifyContent: "center", alignItems: "center" }}>
-              <p style={{ fontSize: "0.85rem", fontWeight: 500, color: "grey", marginBottom: "0.25rem" }}>Total</p>
+              <p style={{ fontSize: "1rem", fontWeight: 500, color: "grey", marginBottom: "0.25rem" }}>Total</p>
               <h1 style={{ fontWeight: 600, fontSize: "2.5rem" }}>
                 {loading ? <Loader2 className='animate-spin w-10 h-10' /> : stats.total}
               </h1>
@@ -229,8 +229,8 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
 
             <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.75rem", flexFlow: "column", height: "9.5rem", minWidth: 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "0.25rem" }}>
-                <p style={{ fontSize: "0.8rem", fontWeight: 500, color: "grey" }}>Present</p>
-                <h1 style={{ fontWeight: 600, fontSize: "1.75rem", color: "#10b981" }}>
+                <p className='text-gray-500' style={{ fontSize: "1rem", fontWeight: 500, marginLeft: "0.5rem" }}>Present</p>
+                <h1 className='text-teal-500' style={{ fontWeight: 600, fontSize: "1.75rem", marginRight: "0.5rem" }}>
                   {loading ? <Loader2 className='animate-spin w-4 h-4' /> : stats.present}
                 </h1>
               </div>
@@ -241,13 +241,19 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={monthlyStats} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                      <Line
+                    <AreaChart data={monthlyStats} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                      <defs>
+                        <linearGradient id="colorPresent" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#009688" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#009688" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <Area
                         type="monotone"
                         dataKey="present"
-                        stroke="#10b981"
+                        stroke="#009688"
                         strokeWidth={2}
-                        dot={false}
+                        fill="url(#colorPresent)"
                         connectNulls
                       />
                       <Tooltip
@@ -257,7 +263,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
                             return (
                               <div style={{ background: "white", padding: "0.25rem 0.5rem", border: "1px solid #e5e7eb", borderRadius: "0.25rem", fontSize: "0.75rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
                                 <p style={{ fontWeight: 600, margin: 0 }}>Day {data.day}</p>
-                                <p style={{ color: "#10b981", margin: 0 }}>Present: {data.present}</p>
+                                <p style={{ color: "#009688", margin: 0 }}>Present: {data.present}</p>
                               </div>
                             );
                           }
@@ -265,16 +271,16 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
                         }}
                         wrapperStyle={{ outline: 'none' }}
                       />
-                    </LineChart>
+                    </AreaChart>
                   </ResponsiveContainer>
                 )}
               </div>
             </div>
 
-            <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.75rem", flexFlow: "column", height: "9.5rem", minWidth: 0 }}>
+            <div className='' style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.75rem", flexFlow: "column", height: "9.5rem", minWidth: 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "0.25rem" }}>
-                <p style={{ fontSize: "0.8rem", fontWeight: 500, color: "grey" }}>Absent</p>
-                <h1 style={{ fontWeight: 600, fontSize: "1.75rem", color: "#ef4444" }}>
+                <p className='text-gray-500' style={{ fontSize: "1rem", fontWeight: 500, marginLeft: "0.5rem" }}>Absent</p>
+                <h1 style={{ fontWeight: 600, fontSize: "1.75rem", color: "#F43F5E", marginRight: "0.5rem" }}>
                   {loading ? <Loader2 className='animate-spin w-4 h-4' /> : stats.absent}
                 </h1>
               </div>
@@ -285,13 +291,19 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={monthlyStats} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                      <Line
+                    <AreaChart data={monthlyStats} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                      <defs>
+                        <linearGradient id="colorAbsent" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#F43F5E" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#F43F5E" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <Area
                         type="monotone"
                         dataKey="absent"
-                        stroke="#ef4444"
+                        stroke="#F43F5E"
                         strokeWidth={2}
-                        dot={false}
+                        fill="url(#colorAbsent)"
                         connectNulls
                       />
                       <Tooltip
@@ -301,7 +313,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
                             return (
                               <div style={{ background: "white", padding: "0.25rem 0.5rem", border: "1px solid #e5e7eb", borderRadius: "0.25rem", fontSize: "0.75rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
                                 <p style={{ fontWeight: 600, margin: 0 }}>Day {data.day}</p>
-                                <p style={{ color: "#ef4444", margin: 0 }}>Absent: {data.absent}</p>
+                                <p style={{ color: "#F43F5E", margin: 0 }}>Absent: {data.absent}</p>
                               </div>
                             );
                           }
@@ -309,7 +321,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
                         }}
                         wrapperStyle={{ outline: 'none' }}
                       />
-                    </LineChart>
+                    </AreaChart>
                   </ResponsiveContainer>
                 )}
               </div>
