@@ -1122,9 +1122,9 @@ export default function EmployeeManage() {
                                             <Avatar size={"md"} name={emp.name} index={idx} />
                                             <div style={{ display: "flex", flexFlow: "column" }}>
                                                 <div className="font-medium text-gray-900" style={{ textAlign: "left", textTransform: "capitalize" }}>{emp.name.toLowerCase()}</div>
-                                                {emp.email && (
+                                                {/* {emp.email && (
                                                     <div className="text-xs text-gray-400">{emp.email}</div>
-                                                )}
+                                                )} */}
                                             </div>
                                         </div>
                                     </td>
