@@ -1,4 +1,4 @@
-import { Laptop2, Loader2, MapPin, Monitor, Pencil, Plus, RotateCw, X } from 'lucide-react';
+import { Dot, Laptop2, Loader2, MapPin, Monitor, Pencil, Plus, RotateCw, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
@@ -359,7 +359,7 @@ export default function DevicesMaster() {
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Device</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Location</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Item Code</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Last Ping</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Ping</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Last Log</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Start Time</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">End Time</th>
@@ -403,7 +403,16 @@ export default function DevicesMaster() {
                       <td className="px-4 py-3 text-gray-500 font-mono text-xs">
                         {device.item_code ?? '—'}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">
+                      <td style={{ gap: "0.025rem", justifyContent: "flex-start" }} className="flex px-4 py-3 text-gray-500 text-xs">
+                        {/* {
+                          online &&
+                          <>
+                            <Dot style={{ opacity: 0.4 }} className='animate-ping relative z-10' />
+                            <Dot style={{ opacity: 0.6 }} className='absolute' />
+                          </>
+
+                        } */}
+
                         {formatLastSeen(device.last_seen)}
                       </td>
                       <td className="px-4 py-3 text-gray-500 text-xs">

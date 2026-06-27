@@ -17,7 +17,7 @@ import { db } from '@/firebase';
 import { addDoc, collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { ChevronDown, ChevronLeft, ChevronRight, Download, Loader2, PartyPopper, Plus, Search, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, CircleMinus, Download, Loader2, PartyPopper, Plus, Search } from 'lucide-react';
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
@@ -113,13 +113,13 @@ const InCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayM
     if (daySummary?.isPresent) {
       const displayTime = useFirstLast ? formatTime(daySummary.firstPunch) : (formatTime(daySummary.firstIn) || '✓');
       return (
-        <td className="text-center text-teal-700 bg-teal-50/20 font-medium tabular-nums text-[11px] whitespace-nowrap" style={{ height: ROW_H }} title={`Holiday Worked: ${holiday.name}`}>
+        <td className="text-center text-teal-700 font-medium tabular-nums text-[11px] whitespace-nowrap" style={{ height: ROW_H, backgroundColor: '#f4f7ff' }} title={`Holiday Worked: ${holiday.name}`}>
           {displayTime} (H)
         </td>
       );
     }
     return (
-      <td className="text-center text-indigo-500 bg-indigo-50/20 font-bold text-[12px]" style={{ height: ROW_H }} title={holiday.name}>
+      <td className="text-center text-indigo-600 font-bold text-[12px]" style={{ height: ROW_H, backgroundColor: '#f4f7ff' }} title={holiday.name}>
         H
       </td>
     );
@@ -156,12 +156,12 @@ const OutCell = memo(({ daySummary, year, month, d, useFirstLast, holidayMap }: 
         ? (daySummary.firstPunch === daySummary.lastPunch ? '' : formatTime(daySummary.lastPunch))
         : (formatTime(daySummary.lastOut) || '—');
       return (
-        <td className="text-center text-orange-500 bg-teal-50/20 font-medium tabular-nums text-[11px] whitespace-nowrap" style={{ height: ROW_H }} title={`Holiday Worked: ${holiday.name}`}>
+        <td className="text-center text-orange-500 font-medium tabular-nums text-[11px] whitespace-nowrap" style={{ height: ROW_H, backgroundColor: '#f4f7ff' }} title={`Holiday Worked: ${holiday.name}`}>
           {displayTime}
         </td>
       );
     }
-    return <td className="text-center bg-indigo-50/20 text-[12px]" style={{ height: ROW_H }} />;
+    return <td className="text-center text-[12px]" style={{ height: ROW_H, backgroundColor: '#f4f7ff' }} title={holiday.name} />;
   }
   if (daySummary?.isPresent) {
     const displayTime = useFirstLast
@@ -193,7 +193,7 @@ const LocationInCell = memo(({ daySummary, year, month, d, today, useFirstLast, 
       const displayTime = useFirstLast ? formatTime(daySummary.firstPunch) : (formatTime(daySummary.firstIn) || '✓');
       const displayLoc = useFirstLast ? daySummary.firstPunchLocation : (daySummary.firstInLocation || '—');
       return (
-        <td className="text-center bg-teal-50/20" style={{ height: ROW_H, verticalAlign: 'middle', padding: '2px' }} title={`Holiday Worked: ${holiday.name}`}>
+        <td className="text-center" style={{ height: ROW_H, verticalAlign: 'middle', padding: '2px', backgroundColor: '#f4f7ff' }} title={`Holiday Worked: ${holiday.name}`}>
           <div className="flex flex-col items-center justify-center leading-tight">
             <span className="text-teal-700 font-semibold tabular-nums text-[11px]">{displayTime} (H)</span>
             <span className="text-gray-400 text-[10px] truncate max-w-[110px]" title={displayLoc || ''}>{displayLoc || '—'}</span>
@@ -202,7 +202,7 @@ const LocationInCell = memo(({ daySummary, year, month, d, today, useFirstLast, 
       );
     }
     return (
-      <td className="text-center text-indigo-500 bg-indigo-50/20 font-bold text-[12px]" style={{ height: ROW_H }} title={holiday.name}>
+      <td className="text-center text-indigo-600 font-bold text-[12px]" style={{ height: ROW_H, backgroundColor: '#f4f7ff' }} title={holiday.name}>
         H
       </td>
     );
@@ -247,11 +247,11 @@ const LocationOutCell = memo(({ daySummary, year, month, d, useFirstLast, holida
         : (daySummary.lastOutLocation || '—');
 
       if (!displayTime && !displayLoc) {
-        return <td className="text-center bg-teal-50/20 text-[12px]" style={{ height: ROW_H }} />;
+        return <td className="text-center text-[12px]" style={{ height: ROW_H, backgroundColor: '#f4f7ff' }} />;
       }
 
       return (
-        <td className="text-center bg-teal-50/20" style={{ height: ROW_H, verticalAlign: 'middle', padding: '2px' }} title={`Holiday Worked: ${holiday.name}`}>
+        <td className="text-center" style={{ height: ROW_H, verticalAlign: 'middle', padding: '2px', backgroundColor: '#f4f7ff' }} title={`Holiday Worked: ${holiday.name}`}>
           <div className="flex flex-col items-center justify-center leading-tight">
             <span className="text-orange-500 font-semibold tabular-nums text-[11px]">{displayTime || '—'}</span>
             <span className="text-gray-400 text-[10px] truncate max-w-[110px]" title={displayLoc || ''}>{displayLoc || '—'}</span>
@@ -259,7 +259,7 @@ const LocationOutCell = memo(({ daySummary, year, month, d, useFirstLast, holida
         </td>
       );
     }
-    return <td className="text-center bg-indigo-50/20 text-[12px]" style={{ height: ROW_H }} />;
+    return <td className="text-center text-[12px]" style={{ height: ROW_H, backgroundColor: '#f4f7ff' }} title={holiday.name} />;
   }
   if (daySummary?.isPresent) {
     const displayTime = useFirstLast
@@ -1289,7 +1289,7 @@ export default function StaffMonthlyReport() {
                     style={{ color: '#ef4444' }}
                     className="p-1 hover:bg-red-50 rounded transition-colors bg-transparent border-0 cursor-pointer"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <CircleMinus className="w-4 h-4" />
                   </button>
                 </div>
               ))}

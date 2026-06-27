@@ -143,6 +143,7 @@ export default function DataManagement() {
   // Space calculations
   const totalSpaceUsed = totalCount * ROW_SIZE_BYTES;
   const quotaPercent = parseFloat(((totalSpaceUsed / FREE_TIER_QUOTA_BYTES) * 100).toFixed(3));
+  const remainingSpace = Math.max(0, FREE_TIER_QUOTA_BYTES - totalSpaceUsed);
 
   // Gradient selection based on quota utilization
   const getProgressGradient = () => {
@@ -219,14 +220,19 @@ export default function DataManagement() {
 
       {/* ── QUOTA PROGRESS BAR ── */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm flex-shrink-0">
-        <div style={{ alignItems: "center" }} className="flex justify-between items-center mb-2">
+        <div style={{ alignItems: "center", border: "", justifyContent: "space-between" }} className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-teal-500" />
             <span style={{ fontSize: "1rem", fontWeight: 500 }} className="font-semibold text-gray-755">Supabase Free Plan Usage</span>
+            <span style={{ fontSize: "0.9rem", fontWeight: 600 }} className="text-gray-900">
+              {formatSize(totalSpaceUsed)} / 500 MB ({quotaPercent}%)
+            </span>
           </div>
-          <span style={{ fontSize: "0.9rem", fontWeight: 600 }} className="text-gray-900">
-            {formatSize(totalSpaceUsed)} / 500 MB ({quotaPercent}%)
-          </span>
+
+          <div style={{ marginRight: "0.75rem" }} className="flex justify-between items-center text-[11px] text-gray-500 font-normal">
+            <span className="font-semibold text-teal-500">{formatSize(remainingSpace)} remaining </span>
+
+          </div>
         </div>
 
         {/* Progress Bar Container */}
@@ -237,10 +243,7 @@ export default function DataManagement() {
           />
         </div>
 
-        {/* <div className="flex justify-between items-center text-[11px] text-gray-500 font-normal">
-          <span className="font-semibold text-teal-500">{formatSize(remainingSpace)} remaining until quota is full</span>
-          <span>500 MB (Free Quota)</span>
-        </div> */}
+
       </div>
 
       {/* ── STATISTICS GRID ── */}
