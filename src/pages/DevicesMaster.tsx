@@ -1,7 +1,7 @@
-import { Dot, Laptop2, Loader2, MapPin, Monitor, Pencil, Plus, RotateCw, X } from 'lucide-react';
+import { useAuth } from '@/components/AuthProvider';
+import { Laptop2, Loader2, MapPin, Monitor, Pencil, Plus, RotateCw, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '@/components/AuthProvider';
 
 interface Device {
   id: number;
