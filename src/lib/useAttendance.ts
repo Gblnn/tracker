@@ -3,9 +3,11 @@ import { supabase } from '../lib/supabase';
 import type { Punch, Employee, EmployeeSummary } from '../types/attendance';
 
 export function useAttendance(date: string) {
+  const [useFirstLast, setUseFirstLast] = useState<boolean>(true);
   const [punches, setPunches] = useState<Punch[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [primaryLocations, setPrimaryLocations] = useState<Record<string, string>>({});
+  const [devicesMap, setDevicesMap] = useState<Record<string, { serial_no?: string; start_time: string | null; end_time: string | null; location: string | null }>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +34,7 @@ export function useAttendance(date: string) {
           .lte('punch_time', end)
           .order('punch_time', { ascending: false }),
         supabase.from('employees').select('*').order('name', { ascending: true }),
-        supabase.from('devices').select('serial_no, location')
+        supabase.from('devices').select('serial_no, location, start_time, end_time')
       ]);
 
       if (punchError) throw punchError;
@@ -70,19 +72,20 @@ export function useAttendance(date: string) {
         }
       }
 
-      const deviceMap = Object.fromEntries(
-        (devData ?? []).map(d => [d.serial_no, d.location])
+      const devMap = Object.fromEntries(
+        (devData ?? []).map(d => [d.serial_no, d])
       );
+      setDevicesMap(devMap);
 
       const punchesWithLocation = (punchData ?? []).map(p => ({
         ...p,
-        location: deviceMap[p.device_serial] ?? '—'
+        location: devMap[p.device_serial]?.location ?? '—'
       }));
 
       // Count location frequencies for the current month
       const userLocationCounts: Record<string, Record<string, number>> = {};
       (historicalPunchData ?? []).forEach(p => {
-        const loc = deviceMap[p.device_serial];
+        const loc = devMap[p.device_serial]?.location;
         if (loc) {
           if (!userLocationCounts[p.user_id]) {
             userLocationCounts[p.user_id] = {};
@@ -136,9 +139,21 @@ export function useAttendance(date: string) {
           if (punchDate === date) {
             const { data: dev } = await supabase
               .from('devices')
-              .select('location')
+              .select('location, start_time, end_time')
               .eq('serial_no', newPunch.device_serial)
               .maybeSingle();
+
+            if (dev) {
+              setDevicesMap(prev => ({
+                ...prev,
+                [newPunch.device_serial]: {
+                  serial_no: newPunch.device_serial,
+                  location: dev.location,
+                  start_time: dev.start_time,
+                  end_time: dev.end_time
+                }
+              }));
+            }
 
             const punchWithLoc = {
               ...newPunch,
@@ -158,22 +173,71 @@ export function useAttendance(date: string) {
   // Derived: employee summaries
   const employeeSummaries: EmployeeSummary[] = employees.map((emp) => {
     const empPunches = punches.filter((p) => p.user_id === emp.device_user_id);
-    const checkIns = empPunches.filter((p) => p.punch_type === 0);
-    const checkOuts = empPunches.filter((p) => p.punch_type === 1);
 
-    const sortedEmpPunches = [...empPunches].sort(
-      (a, b) => new Date(b.punch_time).getTime() - new Date(a.punch_time).getTime()
+    // Sort oldest to newest
+    const chronologicalPunches = [...empPunches].sort(
+      (a, b) => new Date(a.punch_time).getTime() - new Date(b.punch_time).getTime()
     );
-    const latestLocation = sortedEmpPunches[0]?.location ?? null;
+
+    let firstInPunch: Punch | undefined = undefined;
+    let lastOutPunch: Punch | undefined = undefined;
+
+    if (useFirstLast) {
+      if (chronologicalPunches.length > 0) {
+        firstInPunch = chronologicalPunches[0];
+        if (chronologicalPunches.length > 1) {
+          lastOutPunch = chronologicalPunches[chronologicalPunches.length - 1];
+        }
+      }
+    } else {
+      const checkIns = chronologicalPunches.filter((p) => p.punch_type === 0);
+      const checkOuts = chronologicalPunches.filter((p) => p.punch_type === 1);
+      firstInPunch = checkIns[0];
+      lastOutPunch = checkOuts[checkOuts.length - 1];
+    }
+
+    const latestLocation = chronologicalPunches[chronologicalPunches.length - 1]?.location ?? null;
     const primaryLocation = primaryLocations[emp.device_user_id] ?? null;
+
+    const firstInDevice = firstInPunch ? devicesMap[firstInPunch.device_serial] : null;
+    const lastOutDevice = lastOutPunch ? devicesMap[lastOutPunch.device_serial] : null;
+
+    const remarks: string[] = [];
+
+    if (firstInPunch && firstInDevice?.start_time && firstInDevice.start_time.includes(':')) {
+      const punchTimeParts = getLocalTimeParts(firstInPunch.punch_time);
+      const [startHour, startMin] = firstInDevice.start_time.split(':').map(Number);
+      if (punchTimeParts) {
+        const punchMins = punchTimeParts.hour * 60 + punchTimeParts.minute;
+        const startMins = startHour * 60 + startMin;
+        const diff = punchMins - startMins;
+        if (diff > 20) {
+          remarks.push(`Late in by ${formatDuration(diff)}`);
+        }
+      }
+    }
+
+    if (lastOutPunch && lastOutDevice?.end_time && lastOutDevice.end_time.includes(':')) {
+      const punchTimeParts = getLocalTimeParts(lastOutPunch.punch_time);
+      const [endHour, endMin] = lastOutDevice.end_time.split(':').map(Number);
+      if (punchTimeParts) {
+        const punchMins = punchTimeParts.hour * 60 + punchTimeParts.minute;
+        const endMins = endHour * 60 + endMin;
+        const diff = endMins - punchMins;
+        if (diff > 0) {
+          remarks.push(`Early out by ${formatDuration(diff)}`);
+        }
+      }
+    }
 
     return {
       ...emp,
       totalPunches: empPunches.length,
-      firstIn: checkIns.at(-1)?.punch_time ?? null,
-      lastOut: checkOuts.at(0)?.punch_time ?? null,
+      firstIn: firstInPunch?.punch_time ?? null,
+      lastOut: lastOutPunch?.punch_time ?? null,
       isPresent: empPunches.length > 0,
       location: latestLocation || primaryLocation || emp.location || null,
+      remarks,
     };
   });
 
@@ -192,5 +256,37 @@ export function useAttendance(date: string) {
         new Date(a.punch_time).getTime()
     )[0]
 
-  return { punches, employees, employeeSummaries, stats, location: latestPunch?.location ?? null, loading, error, refetch: fetchData };
+  return { punches, employees, employeeSummaries, stats, location: latestPunch?.location ?? null, loading, error, refetch: fetchData, useFirstLast, setUseFirstLast };
+}
+
+function getLocalTimeParts(iso: string): { hour: number; minute: number } | null {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+      timeZone: 'Asia/Muscat'
+    });
+    const parts = formatter.formatToParts(new Date(iso));
+    const hourPart = parts.find(p => p.type === 'hour')?.value;
+    const minutePart = parts.find(p => p.type === 'minute')?.value;
+    if (hourPart && minutePart) {
+      return {
+        hour: parseInt(hourPart, 10),
+        minute: parseInt(minutePart, 10)
+      };
+    }
+  } catch (e) {
+    console.error('Error parsing local time parts:', e);
+  }
+  return null;
+}
+
+function formatDuration(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+  return remainingMins > 0 ? `${hours}h ${remainingMins}m` : `${hours}h`;
 }

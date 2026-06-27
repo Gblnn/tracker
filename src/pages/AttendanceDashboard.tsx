@@ -3,7 +3,7 @@ import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Database, Gauge, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
+import { Database, Gauge, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap, BarChart3 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
@@ -15,6 +15,7 @@ import ReportsPage from './ReportsPage';
 import EmployeeManage from './employee-manage';
 import Terminal from './Terminal';
 import DataManagement from './DataManagement';
+
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '../lib/supabase';
 
@@ -29,13 +30,13 @@ const formatSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management';
+type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management' | 'analytics';
 
 export default function AttendanceDashboard() {
   const [date, setDate] = useState<string>(todayISO());
   const [tab, setTab] = useState<Tab>('summary');
 
-  const { punches, employees, employeeSummaries, loading, refetch } = useAttendance(date);
+  const { punches, employees, employeeSummaries, loading, refetch, useFirstLast, setUseFirstLast } = useAttendance(date);
   const [navVisible, setNavVisible] = useState(true);
   const { userData } = useAuth();
 
@@ -105,6 +106,7 @@ export default function AttendanceDashboard() {
   const viewOptions = useMemo(() => {
     const options = [
       { value: 'summary', label: 'Dashboard', icon: <LayoutGrid color="darkblue" className="w-4 h-4" /> },
+      { value: 'analytics', label: 'Analytics', icon: <BarChart3 color="darkblue" className="w-4 h-4" /> },
       { value: 'manage', label: 'Manage', icon: <UserPlus color="darkblue" className="w-4 h-4" /> },
       { value: 'log', label: 'Punch Log', icon: <List color="darkblue" className="w-4 h-4" /> },
       { value: 'reports', label: 'Reports', icon: <TrendingUp color="darkblue" className="w-4 h-4" /> },
@@ -129,7 +131,7 @@ export default function AttendanceDashboard() {
         customTitle={
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginLeft: "0.25rem" }}>
             <h1>Attendance</h1>
-            <p style={{ fontSize: "0.8rem", color: "green", background: "rgba(0 255 0/ 0.1)", padding: "0.05rem 0.5rem", borderRadius: "0.5rem", fontWeight: 500 }}>LIVE</p>
+            {/* <p style={{ fontSize: "0.8rem", color: "green", background: "rgba(0 255 0/ 0.1)", padding: "0.05rem 0.5rem", borderRadius: "0.5rem", fontWeight: 500 }}>LIVE</p> */}
           </div>
         }
         fixed
@@ -298,7 +300,20 @@ export default function AttendanceDashboard() {
 
             {
               tab === 'summary' || tab === 'log' ? (
-                <DatePicker value={date} onChange={setDate} />
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  {tab === 'summary' && (
+                    <button
+                      onClick={() => setUseFirstLast(!useFirstLast)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white border border-gray-200 hover:bg-gray-50 rounded-lg shadow-sm transition-colors text-gray-700 h-8"
+                    >
+                      <span className="text-gray-400 font-normal">Mode </span>
+                      <span className="text-teal-600 font-medium">
+                        {useFirstLast ? "First In / Last Out" : "Check-in/out"}
+                      </span>
+                    </button>
+                  )}
+                  <DatePicker value={date} onChange={setDate} />
+                </div>
               ) : null
             }
 
@@ -347,7 +362,8 @@ export default function AttendanceDashboard() {
                 <Loader2 className="animate-spin" />
               </div>
             ) : tab === 'summary' ? (
-              <EmployeeTable summaries={employeeSummaries} date={date} />
+              <EmployeeTable summaries={employeeSummaries} date={date} useFirstLast={useFirstLast} />
+
             ) : tab === 'log' ? (
               <PunchLog punches={punches} employees={employees} onEmployeeAdded={refetch} />
             ) : tab === 'devices' ? (

@@ -18,9 +18,10 @@ interface EmployeeTableProps {
   summaries: EmployeeSummary[];
   onFilteredSummariesChange?: (summaries: EmployeeSummary[]) => void;
   date?: string;
+  useFirstLast?: boolean;
 }
 
-export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: EmployeeTableProps) {
+export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useFirstLast = true }: EmployeeTableProps) {
   const [search, setSearch] = useState('');
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
@@ -237,7 +238,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
               <div style={{ width: "100%", flex: 1, minHeight: 0 }}>
                 {loadingChart ? (
                   <div style={{ display: "flex", alignItems: "", justifyContent: "center", height: "100%", color: "", border: "", paddingTop: "1rem" }}>
-                    <Loader2 size={25} className="animate-spin" />
+                    <Loader2 size={25} className="animate-spin text-teal-600" />
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
@@ -287,7 +288,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
               <div style={{ width: "100%", flex: 1, minHeight: 0 }}>
                 {loadingChart ? (
                   <div style={{ display: "flex", alignItems: "", justifyContent: "center", height: "100%", color: "", border: "", paddingTop: "1rem" }}>
-                    <Loader2 size={25} className="animate-spin" />
+                    <Loader2 size={25} className="animate-spin text-rose-600" />
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
@@ -438,8 +439,12 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
                   </DropdownMenuContent>
                 </DropdownMenu>
               </th>
-              <th style={{ width: "200px" }} className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">First in</th>
-              <th style={{ width: "200px" }} className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Last out</th>
+              <th style={{ width: "200px" }} className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">
+                {useFirstLast ? "First In" : "Check In"}
+              </th>
+              <th style={{ width: "200px" }} className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">
+                {useFirstLast ? "Last Out" : "Check Out"}
+              </th>
               <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "200px" }}>
                 <DropdownMenu>
                   <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
@@ -490,12 +495,13 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
                   </DropdownMenuContent>
                 </DropdownMenu>
               </th>
+              <th style={{ width: "220px" }} className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Remarks</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {filteredSummaries.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-20 text-center text-gray-400 font-medium">
+                <td colSpan={7} className="py-20 text-center text-gray-400 font-medium">
                   {search ? `No results found for "${search}"` : 'No matching employees found.'}
                 </td>
               </tr>
@@ -528,6 +534,31 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date }: Em
                         Absent
                       </span>
                     )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {emp.remarks && emp.remarks.length > 0 ? (
+                        emp.remarks.map((remark, rIdx) => {
+                          const isLate = remark.toLowerCase().includes('late');
+                          const isEarly = remark.toLowerCase().includes('early');
+                          return (
+                            <span
+                              key={rIdx}
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${isLate
+                                ? 'bg-rose-50 text-rose-700 border-rose-100'
+                                : isEarly
+                                  ? 'bg-amber-50 text-amber-700 border-amber-100'
+                                  : 'bg-gray-50 text-gray-600 border-gray-100'
+                                }`}
+                            >
+                              {remark}
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ),

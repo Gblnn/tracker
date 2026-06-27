@@ -1,9 +1,11 @@
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { ChevronDown, ChevronLeft, ChevronRight, Download, Loader2, Search } from 'lucide-react';
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
-import * as XLSX from 'xlsx';
-import { supabase } from '../lib/supabase';
+import { ResponsiveModal } from '@/components/responsive-modal';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
@@ -11,13 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+import { db } from '@/firebase';
+import { addDoc, collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { ChevronDown, ChevronLeft, ChevronRight, Download, Loader2, PartyPopper, Plus, Search, Trash2 } from 'lucide-react';
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
+import { supabase } from '../lib/supabase';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -94,15 +98,32 @@ const HEAD_R2 = 26;
 
 // ─── Memoized Subcomponents ───────────────────────────────────────────────────
 
-const InCell = memo(({ daySummary, year, month, d, today, useFirstLast }: {
+const InCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayMap }: {
   daySummary: DaySummary | undefined;
   year: number;
   month: number;
   d: number;
   today: Date;
   useFirstLast: boolean;
+  holidayMap: Record<number, { id: string; name: string }>;
 }) => {
   if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
+  const holiday = holidayMap?.[d];
+  if (holiday) {
+    if (daySummary?.isPresent) {
+      const displayTime = useFirstLast ? formatTime(daySummary.firstPunch) : (formatTime(daySummary.firstIn) || '✓');
+      return (
+        <td className="text-center text-teal-700 bg-teal-50/20 font-medium tabular-nums text-[11px] whitespace-nowrap" style={{ height: ROW_H }} title={`Holiday Worked: ${holiday.name}`}>
+          {displayTime} (H)
+        </td>
+      );
+    }
+    return (
+      <td className="text-center text-indigo-500 bg-indigo-50/20 font-bold text-[12px]" style={{ height: ROW_H }} title={holiday.name}>
+        H
+      </td>
+    );
+  }
   if (daySummary?.isPresent) {
     const displayTime = useFirstLast ? formatTime(daySummary.firstPunch) : (formatTime(daySummary.firstIn) || '✓');
     return (
@@ -119,14 +140,29 @@ const InCell = memo(({ daySummary, year, month, d, today, useFirstLast }: {
 });
 InCell.displayName = 'InCell';
 
-const OutCell = memo(({ daySummary, year, month, d, useFirstLast }: {
+const OutCell = memo(({ daySummary, year, month, d, useFirstLast, holidayMap }: {
   daySummary: DaySummary | undefined;
   year: number;
   month: number;
   d: number;
   useFirstLast: boolean;
+  holidayMap: Record<number, { id: string; name: string }>;
 }) => {
   if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
+  const holiday = holidayMap?.[d];
+  if (holiday) {
+    if (daySummary?.isPresent) {
+      const displayTime = useFirstLast
+        ? (daySummary.firstPunch === daySummary.lastPunch ? '' : formatTime(daySummary.lastPunch))
+        : (formatTime(daySummary.lastOut) || '—');
+      return (
+        <td className="text-center text-orange-500 bg-teal-50/20 font-medium tabular-nums text-[11px] whitespace-nowrap" style={{ height: ROW_H }} title={`Holiday Worked: ${holiday.name}`}>
+          {displayTime}
+        </td>
+      );
+    }
+    return <td className="text-center bg-indigo-50/20 text-[12px]" style={{ height: ROW_H }} />;
+  }
   if (daySummary?.isPresent) {
     const displayTime = useFirstLast
       ? (daySummary.firstPunch === daySummary.lastPunch ? '' : formatTime(daySummary.lastPunch))
@@ -141,15 +177,36 @@ const OutCell = memo(({ daySummary, year, month, d, useFirstLast }: {
 });
 OutCell.displayName = 'OutCell';
 
-const LocationInCell = memo(({ daySummary, year, month, d, today, useFirstLast }: {
+const LocationInCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayMap }: {
   daySummary: DaySummary | undefined;
   year: number;
   month: number;
   d: number;
   today: Date;
   useFirstLast: boolean;
+  holidayMap: Record<number, { id: string; name: string }>;
 }) => {
   if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[11px]" style={{ height: ROW_H }}>—</td>;
+  const holiday = holidayMap?.[d];
+  if (holiday) {
+    if (daySummary?.isPresent) {
+      const displayTime = useFirstLast ? formatTime(daySummary.firstPunch) : (formatTime(daySummary.firstIn) || '✓');
+      const displayLoc = useFirstLast ? daySummary.firstPunchLocation : (daySummary.firstInLocation || '—');
+      return (
+        <td className="text-center bg-teal-50/20" style={{ height: ROW_H, verticalAlign: 'middle', padding: '2px' }} title={`Holiday Worked: ${holiday.name}`}>
+          <div className="flex flex-col items-center justify-center leading-tight">
+            <span className="text-teal-700 font-semibold tabular-nums text-[11px]">{displayTime} (H)</span>
+            <span className="text-gray-400 text-[10px] truncate max-w-[110px]" title={displayLoc || ''}>{displayLoc || '—'}</span>
+          </div>
+        </td>
+      );
+    }
+    return (
+      <td className="text-center text-indigo-500 bg-indigo-50/20 font-bold text-[12px]" style={{ height: ROW_H }} title={holiday.name}>
+        H
+      </td>
+    );
+  }
   if (daySummary?.isPresent) {
     const displayTime = useFirstLast ? formatTime(daySummary.firstPunch) : (formatTime(daySummary.firstIn) || '✓');
     const displayLoc = useFirstLast ? daySummary.firstPunchLocation : (daySummary.firstInLocation || '—');
@@ -170,14 +227,40 @@ const LocationInCell = memo(({ daySummary, year, month, d, today, useFirstLast }
 });
 LocationInCell.displayName = 'LocationInCell';
 
-const LocationOutCell = memo(({ daySummary, year, month, d, useFirstLast }: {
+const LocationOutCell = memo(({ daySummary, year, month, d, useFirstLast, holidayMap }: {
   daySummary: DaySummary | undefined;
   year: number;
   month: number;
   d: number;
   useFirstLast: boolean;
+  holidayMap: Record<number, { id: string; name: string }>;
 }) => {
   if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[11px]" style={{ height: ROW_H }}>—</td>;
+  const holiday = holidayMap?.[d];
+  if (holiday) {
+    if (daySummary?.isPresent) {
+      const displayTime = useFirstLast
+        ? (daySummary.firstPunch === daySummary.lastPunch ? '' : formatTime(daySummary.lastPunch))
+        : (formatTime(daySummary.lastOut) || '—');
+      const displayLoc = useFirstLast
+        ? (daySummary.firstPunch === daySummary.lastPunch ? '' : (daySummary.lastPunchLocation || '—'))
+        : (daySummary.lastOutLocation || '—');
+
+      if (!displayTime && !displayLoc) {
+        return <td className="text-center bg-teal-50/20 text-[12px]" style={{ height: ROW_H }} />;
+      }
+
+      return (
+        <td className="text-center bg-teal-50/20" style={{ height: ROW_H, verticalAlign: 'middle', padding: '2px' }} title={`Holiday Worked: ${holiday.name}`}>
+          <div className="flex flex-col items-center justify-center leading-tight">
+            <span className="text-orange-500 font-semibold tabular-nums text-[11px]">{displayTime || '—'}</span>
+            <span className="text-gray-400 text-[10px] truncate max-w-[110px]" title={displayLoc || ''}>{displayLoc || '—'}</span>
+          </div>
+        </td>
+      );
+    }
+    return <td className="text-center bg-indigo-50/20 text-[12px]" style={{ height: ROW_H }} />;
+  }
   if (daySummary?.isPresent) {
     const displayTime = useFirstLast
       ? (daySummary.firstPunch === daySummary.lastPunch ? '' : formatTime(daySummary.lastPunch))
@@ -247,38 +330,49 @@ interface ScrollableRowProps {
   year: number;
   month: number;
   today: Date;
+  holidayMap: Record<number, { id: string; name: string }>;
 }
 
 const ScrollableRow = memo(({
-
   dayList,
   reportType,
   useFirstLast,
   matrixForEmployee,
   year,
   month,
-  today
+  today,
+  holidayMap
 }: ScrollableRowProps) => {
   return (
     <tr style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }} className="hover:bg-blue-50/20">
       {dayList.map(d => {
         const c = matrixForEmployee?.[d];
         if (reportType === 'hourly') {
+          const holiday = holidayMap?.[d];
+          const bg = isWeekend(year, month, d) ? '#f9fafb' : holiday ? '#eef2ff' : 'white';
           return (
-            <td key={`day-${d}`} className="text-center text-[12px] font-medium text-gray-400" style={{ height: ROW_H, background: isWeekend(year, month, d) ? '#f9fafb' : 'white' }}>
-              {getDayHours(c)}
+            <td key={`day-${d}`} className="text-center text-[12px] font-medium text-gray-400" style={{ height: ROW_H, background: bg }} title={holiday ? `Holiday: ${holiday.name}` : undefined}>
+              {holiday && !c?.isPresent ? 'HOL' : getDayHours(c)}
             </td>
           );
         }
         if (reportType === 'pa') {
           let content = '';
           let color = '';
+          const holiday = holidayMap?.[d];
+          const bg = isWeekend(year, month, d) ? '#f9fafb' : holiday ? '#eef2ff' : 'white';
+
           if (isWeekend(year, month, d)) { content = '—'; color = 'text-gray-300'; }
+          else if (holiday) {
+            if (c?.isPresent) { content = 'P(H)'; color = 'text-teal-600 font-bold'; }
+            else { content = 'H'; color = 'text-indigo-500 font-bold'; }
+          }
           else if (c?.isPresent) { content = 'P'; color = 'text-emerald-500 font-bold'; }
           else if (new Date(year, month, d) > today) { content = '—'; color = 'text-gray-300'; }
           else { content = 'A'; color = 'text-red-400 font-bold'; }
+
           return (
-            <td key={`day-${d}`} className={`text-center text-[12px] ${color}`} style={{ height: ROW_H, background: isWeekend(year, month, d) ? '#f9fafb' : 'white' }}>
+            <td key={`day-${d}`} className={`text-center text-[12px] ${color}`} style={{ height: ROW_H, background: bg }} title={holiday ? `Holiday: ${holiday.name}` : undefined}>
               {content}
             </td>
           );
@@ -286,15 +380,15 @@ const ScrollableRow = memo(({
         if (reportType === 'location_inout') {
           return (
             <Fragment key={`day-${d}`}>
-              <LocationInCell daySummary={c} year={year} month={month} d={d} today={today} useFirstLast={useFirstLast} />
-              <LocationOutCell daySummary={c} year={year} month={month} d={d} useFirstLast={useFirstLast} />
+              <LocationInCell daySummary={c} year={year} month={month} d={d} today={today} useFirstLast={useFirstLast} holidayMap={holidayMap} />
+              <LocationOutCell daySummary={c} year={year} month={month} d={d} useFirstLast={useFirstLast} holidayMap={holidayMap} />
             </Fragment>
           );
         }
         return (
           <Fragment key={`day-${d}`}>
-            <InCell daySummary={c} year={year} month={month} d={d} today={today} useFirstLast={useFirstLast} />
-            <OutCell daySummary={c} year={year} month={month} d={d} useFirstLast={useFirstLast} />
+            <InCell daySummary={c} year={year} month={month} d={d} today={today} useFirstLast={useFirstLast} holidayMap={holidayMap} />
+            <OutCell daySummary={c} year={year} month={month} d={d} useFirstLast={useFirstLast} holidayMap={holidayMap} />
           </Fragment>
         );
       })}
@@ -319,6 +413,57 @@ export default function StaffMonthlyReport() {
   const [reportType, setReportType] = useState<ReportType>('inout');
   const [useFirstLast, setUseFirstLast] = useState(true);
   const [pdfLoading, setPdfLoading] = useState(false);
+
+  // Holidays State
+  interface Holiday {
+    id: string;
+    day: number;
+    name: string;
+  }
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
+  const [newHolidayDay, setNewHolidayDay] = useState(1);
+  const [newHolidayName, setNewHolidayName] = useState('');
+  const [holidaySubmitting, setHolidaySubmitting] = useState(false);
+
+  // Realtime holidays fetch from Firestore
+  useEffect(() => {
+    const q = query(
+      collection(db, 'attendance_holidays'),
+      where('year', '==', year),
+      where('month', '==', month)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list: Holiday[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        list.push({
+          id: doc.id,
+          day: data.day,
+          name: data.name
+        });
+      });
+      list.sort((a, b) => a.day - b.day);
+      setHolidays(list);
+    }, (err) => {
+      console.error('Error fetching holidays:', err);
+    });
+
+    return () => unsubscribe();
+  }, [year, month]);
+
+  const holidayMap = useMemo(() => {
+    const map: Record<number, { id: string; name: string }> = {};
+    holidays.forEach(h => {
+      map[h.day] = { id: h.id, name: h.name };
+    });
+    return map;
+  }, [holidays]);
+
+  const isHoliday = useCallback((d: number) => {
+    return !!holidayMap[d];
+  }, [holidayMap]);
 
   const rightRef = useRef<HTMLDivElement>(null);
   const leftRef = useRef<HTMLDivElement>(null);
@@ -481,15 +626,22 @@ export default function StaffMonthlyReport() {
   }, [employees, deptFilter, selectedLocations, searchQuery, employeeLocations]);
 
   const workDays = useMemo(() =>
-    dayList.filter(d => !isWeekend(year, month, d)).length,
-    [dayList, year, month]);
+    dayList.filter(d => !isWeekend(year, month, d) && !isHoliday(d)).length,
+    [dayList, year, month, isHoliday]);
 
-  const pastWorkDays = useMemo(() =>
-    dayList.filter(d => !isWeekend(year, month, d) && new Date(year, month, d) <= today).length,
-    [dayList, year, month]);
+  // const pastWorkDays = useMemo(() =>
+  //   dayList.filter(d => !isWeekend(year, month, d) && !isHoliday(d) && new Date(year, month, d) <= today).length,
+  //   [dayList, year, month, isHoliday, today]);
 
   const presenceDays = (uid: string) => Object.values(matrix[uid] ?? {}).filter(d => d.isPresent).length;
-  const absentDays = (uid: string) => Math.max(0, pastWorkDays - presenceDays(uid));
+  const absentDays = (uid: string) => {
+    return dayList.filter(d =>
+      new Date(year, month, d) <= today &&
+      !isWeekend(year, month, d) &&
+      !isHoliday(d) &&
+      !matrix[uid]?.[d]?.isPresent
+    ).length;
+  };
 
   // ── Scroll sync ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -541,39 +693,59 @@ export default function StaffMonthlyReport() {
       const row: (string | number)[] = [idx + 1, emp.name, emp.emp_id ?? '', employeeLocations[emp.device_user_id] || '—'];
       for (let d = 1; d <= days; d++) {
         const c = matrix[emp.device_user_id]?.[d];
+        const isHolidayDay = isHoliday(d);
+        const holiday = holidayMap[d];
+
         if (reportType === 'hourly') {
-          row.push(isWeekend(year, month, d) ? 'OFF' : getDayHours(c));
+          if (isWeekend(year, month, d)) { row.push('OFF'); }
+          else if (isHolidayDay) { row.push(c?.isPresent ? getDayHours(c) : 'HOL'); }
+          else { row.push(getDayHours(c)); }
         } else if (reportType === 'pa') {
           if (isWeekend(year, month, d)) { row.push('OFF'); }
+          else if (isHolidayDay) { row.push(c?.isPresent ? 'P(H)' : 'H'); }
           else if (c?.isPresent) { row.push('P'); }
           else if (new Date(year, month, d) > today) { row.push('—'); }
           else { row.push('A'); }
         } else if (reportType === 'location_inout') {
           if (isWeekend(year, month, d)) { row.push('OFF', ''); }
+          else if (isHolidayDay && !c?.isPresent) { row.push(`HOL (${holiday?.name || 'Holiday'})`, ''); }
           else if (c?.isPresent) {
             if (useFirstLast) {
               const inTime = formatTime(c.firstPunch);
               const inLoc = c.firstPunchLocation || '—';
               const outTime = c.firstPunch === c.lastPunch ? '' : formatTime(c.lastPunch);
               const outLoc = c.firstPunch === c.lastPunch ? '' : (c.lastPunchLocation || '—');
-              row.push(inTime ? `${inTime} (${inLoc})` : '', outTime ? `${outTime} (${outLoc})` : '');
+              row.push(
+                inTime ? `${inTime} (${inLoc})${isHolidayDay ? ' (H)' : ''}` : '',
+                outTime ? `${outTime} (${outLoc})${isHolidayDay ? ' (H)' : ''}` : ''
+              );
             } else {
               const inTime = formatTime(c.firstIn) || '✓';
               const inLoc = c.firstInLocation || '—';
               const outTime = formatTime(c.lastOut) || '';
               const outLoc = c.lastOutLocation || '—';
-              row.push(`${inTime} (${inLoc})`, outTime ? `${outTime} (${outLoc})` : '');
+              row.push(
+                `${inTime} (${inLoc})${isHolidayDay ? ' (H)' : ''}`,
+                outTime ? `${outTime} (${outLoc})${isHolidayDay ? ' (H)' : ''}` : ''
+              );
             }
           }
           else if (new Date(year, month, d) > today) { row.push('—', ''); }
           else { row.push('A', ''); }
         } else {
           if (isWeekend(year, month, d)) { row.push('OFF', ''); }
+          else if (isHolidayDay && !c?.isPresent) { row.push('HOL', ''); }
           else if (c?.isPresent) {
             if (useFirstLast) {
-              row.push(formatTime(c.firstPunch), c.firstPunch === c.lastPunch ? '' : formatTime(c.lastPunch));
+              row.push(
+                (formatTime(c.firstPunch) || '') + (isHolidayDay ? ' (H)' : ''),
+                (c.firstPunch === c.lastPunch ? '' : formatTime(c.lastPunch)) + (isHolidayDay && c.firstPunch !== c.lastPunch ? ' (H)' : '')
+              );
             } else {
-              row.push(formatTime(c.firstIn) || '✓', formatTime(c.lastOut) || '');
+              row.push(
+                (formatTime(c.firstIn) || '✓') + (isHolidayDay ? ' (H)' : ''),
+                (formatTime(c.lastOut) || '') + (isHolidayDay && c.lastOut ? ' (H)' : '')
+              );
             }
           }
           else if (new Date(year, month, d) > today) { row.push('—', ''); }
@@ -784,6 +956,13 @@ export default function StaffMonthlyReport() {
 
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
+            onClick={() => setIsHolidayModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <PartyPopper className="w-4 h-4" />
+            Holidays ({holidays.length})
+          </button>
+          <button
             onClick={exportExcel}
             disabled={loading || filtered.length === 0}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-40"
@@ -949,31 +1128,42 @@ export default function StaffMonthlyReport() {
               <thead>
                 {/* Row 1: day number + weekday */}
                 <tr style={{ background: '#111827', color: '#fff', position: 'sticky', top: 0, zIndex: 5, height: HEAD_R1 }}>
-                  {dayList.map(d => (
-                    <th
-                      key={d}
-                      colSpan={reportType === 'inout' || reportType === 'location_inout' ? 2 : 1}
-                      className="text-center text-[13px] font-medium"
-                      style={{ background: isWeekend(year, month, d) ? '#374151' : '#111827' }}
-                    >
-                      <div className="leading-tight">{d}</div>
-                      <div className="text-[10px] font-normal opacity-60 leading-tight">{getDayName(year, month, d)}</div>
-                    </th>
-                  ))}
+                  {dayList.map(d => {
+                    const holiday = holidayMap[d];
+                    const bg = isWeekend(year, month, d)
+                      ? '#374151'
+                      : holiday
+                        ? '#3b82f6'
+                        : '#111827';
+                    return (
+                      <th
+                        key={d}
+                        colSpan={reportType === 'inout' || reportType === 'location_inout' ? 2 : 1}
+                        className="text-center text-[13px] font-medium"
+                        style={{ background: bg }}
+                        title={holiday ? `Holiday: ${holiday.name}` : undefined}
+                      >
+                        <div className="leading-tight">{d}</div>
+                        <div className="text-[10px] font-normal opacity-60 leading-tight">{getDayName(year, month, d)}</div>
+                      </th>
+                    );
+                  })}
                 </tr>
                 {/* Row 2: In / Out labels */}
                 <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: HEAD_R1, zIndex: 5, height: HEAD_R2 }}>
                   {dayList.map(d => {
+                    const holiday = holidayMap[d];
+                    const bg = isWeekend(year, month, d) ? '#f3f4f6' : holiday ? '#eef2ff' : '#f9fafb';
                     if (reportType === 'hourly') {
-                      return <th key={`lbl-${d}`} className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>Hrs</th>;
+                      return <th key={`lbl-${d}`} className="text-[11px] text-gray-400 font-medium text-center" style={{ background: bg }}>Hrs</th>;
                     }
                     if (reportType === 'pa') {
-                      return <th key={`lbl-${d}`} className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}></th>;
+                      return <th key={`lbl-${d}`} className="text-[11px] text-gray-400 font-medium text-center" style={{ background: bg }}></th>;
                     }
                     return (
                       <Fragment key={`lbl-${d}`}>
-                        <th className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>In</th>
-                        <th className="text-[11px] text-gray-400 font-medium text-center" style={{ background: isWeekend(year, month, d) ? '#f3f4f6' : '#f9fafb' }}>Out</th>
+                        <th className="text-[11px] text-gray-400 font-medium text-center" style={{ background: bg }}>In</th>
+                        <th className="text-[11px] text-gray-400 font-medium text-center" style={{ background: bg }}>Out</th>
                       </Fragment>
                     );
                   })}
@@ -991,6 +1181,7 @@ export default function StaffMonthlyReport() {
                     year={year}
                     month={month}
                     today={today}
+                    holidayMap={holidayMap}
                   />
                 ))}
               </tbody>
@@ -1001,8 +1192,115 @@ export default function StaffMonthlyReport() {
 
       {/* ── Legend ── */}
       <div className="text-center text-[10px] text-gray-300 py-1 flex-shrink-0">
-        — = Friday off · A = Absent · Green = In · Orange = Out · All times GMT+4
+        — = Friday off · A = Absent · H = Holiday · Green = In · Orange = Out · All times GMT+4
       </div>
+
+      {/* Holiday Dialog */}
+      <ResponsiveModal
+        open={isHolidayModalOpen}
+        onOpenChange={setIsHolidayModalOpen}
+        title={`Declare Holidays for ${monthLabel(month, year)}`}
+        description=""
+      >
+        <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }} className="border-b border-gray-100 pb-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#4b5563' }}>Day of Month</label>
+              <select
+                value={newHolidayDay}
+                onChange={e => setNewHolidayDay(parseInt(e.target.value))}
+                style={{ height: '2.25rem', width: '80px', fontSize: '0.85rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', padding: '0 0.5rem', background: 'white' }}
+              >
+                {dayList.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1, minWidth: '150px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#4b5563' }}>Holiday Name</label>
+              <input
+                type="text"
+                placeholder="e.g. National Day"
+                value={newHolidayName}
+                onChange={e => setNewHolidayName(e.target.value)}
+                style={{ height: '2.25rem', fontSize: '0.85rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', padding: '0 0.75rem', outline: 'none' }}
+              />
+            </div>
+
+            <button
+              onClick={async () => {
+                if (!newHolidayName.trim()) {
+                  toast.error("Please enter a holiday name");
+                  return;
+                }
+                setHolidaySubmitting(true);
+                try {
+                  await addDoc(collection(db, 'attendance_holidays'), {
+                    year,
+                    month,
+                    day: newHolidayDay,
+                    name: newHolidayName.trim(),
+                    created_at: new Date().toISOString()
+                  });
+                  setNewHolidayName('');
+                  toast.success("Holiday declared successfully");
+                } catch (err) {
+                  console.error("Error adding holiday:", err);
+                  toast.error("Failed to declare holiday");
+                } finally {
+                  setHolidaySubmitting(false);
+                }
+              }}
+              disabled={holidaySubmitting}
+              className="inline-flex items-center justify-center gap-1.5 h-9 px-4 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
+            >
+              {holidaySubmitting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Plus className="w-3.5 h-3.5" />
+              )}
+              Add
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <h5 style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>Declared Holidays ({holidays.length})</h5>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '200px', overflowY: 'auto' }}>
+              {holidays.map((h) => (
+                <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f9fafb', border: '1px solid #e5e7eb', padding: '0.4rem 0.75rem', borderRadius: '0.375rem' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#1f2937' }}>
+                    <strong style={{ marginRight: '0.5rem' }}>Day {h.day}:</strong> {h.name}
+                  </span>
+                  <button
+                    onClick={async () => {
+                      if (confirm(`Are you sure you want to delete the holiday on day ${h.day}?`)) {
+                        try {
+                          await deleteDoc(doc(db, 'attendance_holidays', h.id));
+                          toast.success("Holiday deleted");
+                        } catch (err) {
+                          console.error("Error deleting holiday:", err);
+                          toast.error("Failed to delete holiday");
+                        }
+                      }
+                    }}
+                    style={{ color: '#ef4444' }}
+                    className="p-1 hover:bg-red-50 rounded transition-colors bg-transparent border-0 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              {holidays.length === 0 && (
+                <p style={{ fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center', padding: '1rem 0' }}>No public holidays declared for this month.</p>
+              )}
+            </div>
+          </div>
+
+        </div>
+      </ResponsiveModal>
     </div>
   );
 }
