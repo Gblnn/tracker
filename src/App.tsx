@@ -65,6 +65,7 @@ const TransferRequests = lazy(() => import("./pages/transfer-requests"));
 const SimCards = lazy(() => import("./pages/sim-cards"));
 const AttendanceDashboard = lazy(() => import("./pages/AttendanceDashboard"));
 const Tickets = lazy(() => import("./pages/tickets"));
+const MobilePunch = lazy(() => import("./pages/mobile-punch"));
          
 
 const ManpowerRequirements = lazy(() => import("./pages/manpower-requirements"));
@@ -196,6 +197,7 @@ export default function App() {
           <Route path="/sim-cards" element={<SimCards />} />
           <Route path="/tickets" element={<Tickets />} />
           <Route path="/attendance" element={<AttendanceDashboard />} />
+          <Route path="/mobile-punch" element={<MobilePunch />} />
           <Route path="/manpower-requirements" element={<ManpowerRequirements />} />
           <Route path="/offboarding" element={<Offboarding />} />
           <Route path="/document-editor" element={<DocumentEditor />} />

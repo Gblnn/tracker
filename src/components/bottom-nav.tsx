@@ -1,4 +1,4 @@
-import { Fuel, HardHat, Notebook, Package } from "lucide-react";
+import { Fuel, HardHat, Fingerprint, Notebook, Package } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ interface NavItemProps {
   isMobile?: boolean;
 }
 
-type NavItemId = "modules" | "workers" | "phonebook" | "fuel-log";
+type NavItemId = "modules" | "workers" | "phonebook" | "fuel-log" | "mobile-punch";
 
 interface NavItemConfig {
   id: NavItemId;
@@ -467,6 +467,7 @@ export default function BottomNav() {
   };
 
   const hasFuelLogModule = hasModuleAccess('fuel_log');
+  const hasMobilePunchModule = hasModuleAccess('mobile_punch');
 
   const navItems: NavItemConfig[] = [
     {
@@ -476,6 +477,7 @@ export default function BottomNav() {
       path: isSiteAdmin ? "/site-admin-workers" : "/index",
     },
     { id: "phonebook" as const, icon: <Notebook />, label: "Phonebook", path: "/phonebook" },
+    ...(hasMobilePunchModule ? [{ id: "mobile-punch" as const, icon: <Fingerprint />, label: "Clock In", path: "/mobile-punch" }] : []),
     ...(hasFuelLogModule ? [{ id: "fuel-log" as const, icon: <Fuel />, label: "Fuel Log", path: "/fuel-log" }] : []),
   ];
 
@@ -485,6 +487,7 @@ export default function BottomNav() {
     if (currentPath === "/site-admin-workers") return "workers";
     if (currentPath === "/phonebook") return "phonebook";
     if (currentPath === "/fuel-log") return "fuel-log";
+    if (currentPath === "/mobile-punch") return "mobile-punch";
     return null;
   };
 
@@ -533,6 +536,8 @@ export default function BottomNav() {
     } else if (item.id === "modules") {
       navigateWithSlide();
     } else if (item.id === "workers") {
+      navigateWithSlide();
+    } else if (item.id === "mobile-punch") {
       navigateWithSlide();
     }
   };

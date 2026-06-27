@@ -3,18 +3,18 @@ import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Database, Gauge, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap, BarChart3 } from 'lucide-react';
+import { BarChart3, ChartLine, Database, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
 import { useAttendance } from '../lib/useAttendance';
 import { todayISO } from '../lib/utilis';
 import AddEmployee from './AddEmployee';
-import DevicesMaster from './DevicesMaster';
-import ReportsPage from './ReportsPage';
-import EmployeeManage from './employee-manage';
-import Terminal from './Terminal';
 import DataManagement from './DataManagement';
+import DevicesMaster from './DevicesMaster';
+import EmployeeManage from './employee-manage';
+import ReportsPage from './ReportsPage';
+import Terminal from './Terminal';
 
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '../lib/supabase';
@@ -177,7 +177,7 @@ export default function AttendanceDashboard() {
               <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", flex: 1 }}>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                  <Directive bg={tab === 'summary' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('summary')} title="Dashboard" icon={<Gauge size={16} />} />
+                  <Directive bg={tab === 'summary' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('summary')} title="Dashboard" icon={<ChartLine size={16} />} />
 
                   {canEditAttendance && (
                     <Directive bg={tab === 'manage' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('manage')} title="Manage" icon={<UserCog size={16} />} />

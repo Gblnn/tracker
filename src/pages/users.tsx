@@ -31,6 +31,7 @@ import {
   Eye,
   FileArchive,
   FileText,
+  Fingerprint,
   Fuel,
   KeyRound,
   Link,
@@ -80,6 +81,7 @@ const MODULES = [
   { id: 'manpower_requirements', name: 'Manpower Requirements', icon: UsersIcon },
   { id: 'tickets', name: 'Tickets', icon: Ticket },
   { id: 'document_editor', name: 'Document Editor', icon: FileText },
+  { id: 'mobile_punch', name: 'Mobile Punch', icon: Fingerprint },
 ];
 
 const OFFER_LETTERS_EDIT_KEY = "offer_letters_edit";

@@ -224,7 +224,7 @@ export function useAttendance(date: string) {
         const punchMins = punchTimeParts.hour * 60 + punchTimeParts.minute;
         const endMins = endHour * 60 + endMin;
         const diff = endMins - punchMins;
-        if (diff > 0) {
+        if (diff > 10) {
           remarks.push(`Early out by ${formatDuration(diff)}`);
         }
       }

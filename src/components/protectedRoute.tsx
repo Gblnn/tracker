@@ -37,7 +37,8 @@ const MODULE_ROUTE_PERMISSIONS: Record<string, string[]> = {
   manpower_requirements: ["/manpower-requirements"],
   tickets: ["/tickets"],
   attendance: ["/attendance"],
-  document_editor: ["/document-editor"]
+  document_editor: ["/document-editor"],
+  mobile_punch: ["/mobile-punch"]
 };
 
 const routeMatchesPath = (route: string, path: string): boolean => {
@@ -169,7 +170,7 @@ export default function ProtectedRoutes() {
   }
 
   // Only show BottomNav on specific pages
-  const showBottomNav = ["/index", "/phonebook", "/tasks", "/site-admin-workers"].includes(location.pathname);
+  const showBottomNav = ["/index", "/phonebook", "/tasks", "/site-admin-workers", "/mobile-punch"].includes(location.pathname);
 
   return (
     <>
