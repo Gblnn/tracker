@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
+  CircleStar,
   Fingerprint,
   Loader2
 } from "lucide-react";
@@ -267,13 +268,14 @@ export default function MobilePunch() {
               padding: "0.3rem 0.35rem",
               boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)"
             }}>
-              <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#4b5563", marginLeft: "0.45rem" }}>
+              <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#4b5563", marginLeft: "", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <CircleStar className="text-amber-500" />
                 Points
               </span>
-              <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#1e3a8a" }}>
+              <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1e3a8a" }}>
                 {monthlyPoints}
               </span>
-              <span style={{ fontSize: "0.6rem", fontWeight: 600, color: "#047857", backgroundColor: "#d1fae5", padding: "0.1rem 0.35rem", borderRadius: "9999px" }}>
+              <span style={{ fontSize: "0.6rem", fontWeight: 600, color: "#047857", backgroundColor: "#d1fae5", padding: "0.1rem 0.5rem", borderRadius: "9999px", marginRight: "0.25rem" }}>
                 {getTierName(monthlyPoints)}
               </span>
             </div>
