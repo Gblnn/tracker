@@ -541,15 +541,30 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                         emp.remarks.map((remark, rIdx) => {
                           const isLate = remark.toLowerCase().includes('late');
                           const isEarly = remark.toLowerCase().includes('early');
+                          
+                          let badgeColorClass = 'bg-gray-50 text-gray-600 border-gray-100';
+                          if (isLate) {
+                            let isWarning = false;
+                            const match = remark.match(/Late in by (?:(\d+)h\s*)?(?:(\d+)m)?/i);
+                            if (match) {
+                              const hours = match[1] ? parseInt(match[1], 10) : 0;
+                              const minutes = match[2] ? parseInt(match[2], 10) : 0;
+                              const totalMinutes = hours * 60 + minutes;
+                              if (totalMinutes < 45) {
+                                isWarning = true;
+                              }
+                            }
+                            badgeColorClass = isWarning 
+                              ? 'bg-amber-50 text-amber-700 border-amber-100' 
+                              : 'bg-rose-50 text-rose-700 border-rose-100';
+                          } else if (isEarly) {
+                            badgeColorClass = 'bg-amber-50 text-amber-700 border-amber-100';
+                          }
+
                           return (
                             <span
                               key={rIdx}
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${isLate
-                                ? 'bg-rose-50 text-rose-700 border-rose-100'
-                                : isEarly
-                                  ? 'bg-amber-50 text-amber-700 border-amber-100'
-                                  : 'bg-gray-50 text-gray-600 border-gray-100'
-                                }`}
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${badgeColorClass}`}
                             >
                               {remark}
                             </span>

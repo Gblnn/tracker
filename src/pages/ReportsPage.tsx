@@ -577,6 +577,27 @@ export default function StaffMonthlyReport() {
         c.lastPunchLocation = p.location || null;
       }
     }
+
+    // Clean up duplicate punches within 5 minutes
+    Object.values(r).forEach(userDates => {
+      Object.values(userDates).forEach(c => {
+        if (c.firstPunch && c.lastPunch && c.firstPunch !== c.lastPunch) {
+          const diffMs = new Date(c.lastPunch).getTime() - new Date(c.firstPunch).getTime();
+          if (diffMs <= 5 * 60 * 1000) { // 5 minutes threshold
+            c.lastPunch = c.firstPunch;
+            c.lastPunchLocation = c.firstPunchLocation;
+          }
+        }
+        if (c.firstIn && c.lastOut) {
+          const diffMs = Math.abs(new Date(c.lastOut).getTime() - new Date(c.firstIn).getTime());
+          if (diffMs <= 5 * 60 * 1000) { // 5 minutes threshold
+            c.lastOut = null;
+            c.lastOutLocation = null;
+          }
+        }
+      });
+    });
+
     return r;
   }, [punches]);
 

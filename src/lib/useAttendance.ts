@@ -186,14 +186,26 @@ export function useAttendance(date: string) {
       if (chronologicalPunches.length > 0) {
         firstInPunch = chronologicalPunches[0];
         if (chronologicalPunches.length > 1) {
-          lastOutPunch = chronologicalPunches[chronologicalPunches.length - 1];
+          const last = chronologicalPunches[chronologicalPunches.length - 1];
+          const diffMs = new Date(last.punch_time).getTime() - new Date(firstInPunch.punch_time).getTime();
+          if (diffMs > 5 * 60 * 1000) { // 5 minutes threshold
+            lastOutPunch = last;
+          }
         }
       }
     } else {
       const checkIns = chronologicalPunches.filter((p) => p.punch_type === 0);
       const checkOuts = chronologicalPunches.filter((p) => p.punch_type === 1);
       firstInPunch = checkIns[0];
-      lastOutPunch = checkOuts[checkOuts.length - 1];
+      const last = checkOuts[checkOuts.length - 1];
+      if (firstInPunch && last) {
+        const diffMs = Math.abs(new Date(last.punch_time).getTime() - new Date(firstInPunch.punch_time).getTime());
+        if (diffMs > 5 * 60 * 1000) { // 5 minutes threshold
+          lastOutPunch = last;
+        }
+      } else {
+        lastOutPunch = last;
+      }
     }
 
     const latestLocation = chronologicalPunches[chronologicalPunches.length - 1]?.location ?? null;

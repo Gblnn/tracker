@@ -203,8 +203,8 @@ export default function MobilePunch() {
   };
 
   // SVG Circumference calculation for larger button
-  // Radius = 104, Circumference = 2 * PI * R = 653.45
-  const strokeRadius = 104;
+  // Radius = 130, Circumference = 2 * PI * R = 816.81
+  const strokeRadius = 130;
   const strokeCircumference = 2 * Math.PI * strokeRadius;
   const strokeDashoffset = strokeCircumference - (holdPercent / 100) * strokeCircumference;
 
@@ -246,8 +246,8 @@ export default function MobilePunch() {
           <div
             style={{
               position: "relative",
-              width: "240px",
-              height: "240px",
+              width: "300px",
+              height: "300px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center"
@@ -255,8 +255,8 @@ export default function MobilePunch() {
           >
             {/* Circular SVG Progress Ring */}
             <svg
-              width="240"
-              height="240"
+              width="300"
+              height="300"
               style={{
                 position: "absolute",
                 transform: "rotate(-90deg)",
@@ -265,8 +265,8 @@ export default function MobilePunch() {
             >
               {/* Background Ring */}
               <circle
-                cx="120"
-                cy="120"
+                cx="150"
+                cy="150"
                 r={strokeRadius}
                 stroke="#e5e7eb"
                 strokeWidth="8"
@@ -274,8 +274,8 @@ export default function MobilePunch() {
               />
               {/* Active Progress Ring */}
               <motion.circle
-                cx="120"
-                cy="120"
+                cx="150"
+                cy="150"
                 r={strokeRadius}
                 stroke={checkingStatus || loadingProfile ? "#d1d5db" : activeColor}
                 strokeWidth="8"
@@ -305,8 +305,8 @@ export default function MobilePunch() {
               }}
               disabled={submitting || checkingStatus || loadingProfile}
               style={{
-                width: "190px",
-                height: "190px",
+                width: "240px",
+                height: "240px",
                 borderRadius: "50%",
                 backgroundColor: isPressing ? activeBg : "#ffffff",
                 border: `2px solid ${isPressing ? activeColor : "#e5e7eb"}`,
@@ -314,7 +314,7 @@ export default function MobilePunch() {
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "0.6rem",
+                gap: "0.8rem",
                 cursor: (submitting || checkingStatus || loadingProfile) ? "not-allowed" : "pointer",
                 userSelect: "none",
                 WebkitUserSelect: "none",
@@ -323,24 +323,24 @@ export default function MobilePunch() {
               }}
             >
               {submitting || checkingStatus || loadingProfile ? (
-                <Loader2 className="w-10 h-10 animate-spin text-[#1e3a8a]" />
+                <Loader2 className="w-12 h-12 animate-spin text-[#1e3a8a]" />
               ) : (
                 <>
                   <Fingerprint
-                    className="w-12 h-12"
+                    className="w-16 h-16"
                     style={{
                       color: activeColor,
                       transition: "color 0.2s"
                     }}
                   />
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1f2937", letterSpacing: "0.02em" }}>
+                    <span style={{ fontSize: "0.95rem", fontWeight: 600, color: "#1f2937", letterSpacing: "0.02em" }}>
                       {isPressing
                         ? (punchType === 0 ? "CHECKING IN..." : "CHECKING OUT...")
                         : (punchType === 0 ? "CHECK IN" : "CHECK OUT")
                       }
                     </span>
-                    <span style={{ fontSize: "0.65rem", color: "#6b7280", marginTop: "0.15rem" }}>
+                    <span style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.15rem" }}>
                       {/* {isPressing
                         ? `${((3000 - (holdPercent * 30)) / 1000).toFixed(1)}s left`
                         : "for 3 seconds"

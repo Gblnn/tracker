@@ -1,7 +1,14 @@
 import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import DefaultDialog from "@/components/ui/default-dialog";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -12,10 +19,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { db } from "@/firebase";
+import { auth, db } from "@/firebase";
 import InvoiceTemplate from "@/invoice-templates/template-1";
 import QuotationTemplate from "@/quotation-templates/template-1";
-import { RichTextEditor } from "@/components/rich-text-editor";
 import { LoadingOutlined } from "@ant-design/icons";
 import {
   closestCenter,
@@ -44,24 +50,28 @@ import {
   orderBy,
   query,
   Timestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bug,
+  ChevronDown,
+  Database,
   Dot,
   Eye,
   File,
   FilePlus,
+  FilePlus2,
   FileText,
   FileX,
   GripVertical,
   LoaderCircle,
   Menu,
+  MinusCircle,
   Pencil,
   Plus,
   Save,
   Sidebar,
-  Trash2,
   Zap
 } from "lucide-react";
 import moment from "moment";
@@ -204,6 +214,9 @@ const SortableTermItem = ({ id, value, onChange, onRemove }: SortableTermItemPro
       <button
         onClick={onRemove}
         style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           background: "rgba(220 38 38/ 8%)",
           border: "none",
           color: "#dc2626",
@@ -211,10 +224,10 @@ const SortableTermItem = ({ id, value, onChange, onRemove }: SortableTermItemPro
           padding: "0.45rem",
           borderRadius: "0.35rem",
           flexShrink: 0,
-          marginTop: "0.2rem",
+          height: "2rem"
         }}
       >
-        <Trash2 width="0.85rem" />
+        <MinusCircle width="0.85rem" />
       </button>
     </div>
   );
@@ -313,6 +326,7 @@ export default function DocumentEditor() {
   const [unitTitle, setUnitTitle] = useState("Duration");
   const [letterhead, setLetterhead] = useState("Sohar Star United");
   const [subject, setSubject] = useState("");
+  const [hideTotal, setHideTotal] = useState(false);
 
   // Autofill lists loaded from Firestore
   const [clients, setClients] = useState<ClientDetails[]>([]);
@@ -392,6 +406,7 @@ export default function DocumentEditor() {
         letterhead,
         subject,
         bankDetails,
+        hideTotal,
       };
       setHasChanges(JSON.stringify(currentState) !== JSON.stringify(originalDocState));
     } else {
@@ -415,6 +430,7 @@ export default function DocumentEditor() {
     letterhead,
     subject,
     bankDetails,
+    hideTotal,
     originalDocState,
   ]);
 
@@ -531,6 +547,7 @@ export default function DocumentEditor() {
         items,
         terms,
         bankDetails,
+        hideTotal,
         created_at: Timestamp.now(),
       };
       await addDoc(collection(db, "document_editor_presets"), newPreset);
@@ -559,6 +576,7 @@ export default function DocumentEditor() {
       setItems(preset.items || [{ description: "", unit: "0", quantity: 0, amount: 0 }]);
       setTerms(preset.terms || []);
       setBankDetails(preset.bankDetails || "");
+      setHideTotal(preset.hideTotal ?? false);
       setSelectedPreset(presetId);
     }
   };
@@ -591,87 +609,91 @@ export default function DocumentEditor() {
     }
   };
 
-  // const handleSave = async () => {
-  //   if (!canEditDocumentEditor) {
-  //     message.error("Editing privileges are disabled");
-  //     return;
-  //   }
-  //   if (!clientName.trim()) {
-  //     message.error("Please fill in Client Name");
-  //     return;
-  //   }
-  //   setSaving(true);
-  //   try {
-  //     const docPayload = {
-  //       documentType,
-  //       clientName,
-  //       clientAddress,
-  //       refNo,
-  //       date,
-  //       contactNo,
-  //       items,
-  //       invoiceNo,
-  //       isTaxInvoice,
-  //       vatinNo,
-  //       quotationNo,
-  //       validityPeriod,
-  //       terms,
-  //       unitTitle,
-  //       letterhead,
-  //       subject,
-  //       generated_at: Timestamp.now(),
-  //       generated_by: auth.currentUser?.email || null,
-  //     };
+  const handleSave = async () => {
+    if (!canEditDocumentEditor) {
+      message.error("Editing privileges are disabled");
+      return;
+    }
+    if (!clientName.trim()) {
+      message.error("Please fill in Client Name");
+      return;
+    }
+    setSaving(true);
+    try {
+      const docPayload = {
+        documentType,
+        clientName,
+        clientAddress,
+        refNo,
+        date,
+        contactNo,
+        items,
+        invoiceNo,
+        isTaxInvoice,
+        vatinNo,
+        quotationNo,
+        validityPeriod,
+        terms,
+        unitTitle,
+        letterhead,
+        subject,
+        bankDetails,
+        hideTotal,
+        generated_at: Timestamp.now(),
+        generated_by: auth.currentUser?.email || null,
+      };
 
-  //     const docRef = await addDoc(collection(db, "document_editor_docs"), docPayload);
-  //     setLoadedDocId(docRef.id);
-  //     setOriginalDocState(JSON.parse(JSON.stringify(docPayload)));
-  //     await saveClientDetails();
-  //     await saveDocumentDetails();
-  //     await fetchSavedDocuments();
-  //     message.success("Document saved successfully");
-  //   } catch (e) {
-  //     message.error("Failed to save document");
-  //   } finally {
-  //     setSaving(false);
-  //   }
-  // };
+      const docRef = await addDoc(collection(db, "document_editor_docs"), docPayload);
+      setLoadedDocId(docRef.id);
+      setOriginalDocState(JSON.parse(JSON.stringify(docPayload)));
+      await saveClientDetails();
+      await saveDocumentDetails();
+      await fetchSavedDocuments();
+      message.success("Document saved successfully");
+    } catch (e) {
+      message.error("Failed to save document");
+    } finally {
+      setSaving(false);
+    }
+  };
 
-  // const handleSaveChanges = async () => {
-  //   if (!loadedDocId) return;
-  //   setSaving(true);
-  //   try {
-  //     const docPayload = {
-  //       documentType,
-  //       clientName,
-  //       clientAddress,
-  //       refNo,
-  //       date,
-  //       contactNo,
-  //       items,
-  //       invoiceNo,
-  //       isTaxInvoice,
-  //       vatinNo,
-  //       quotationNo,
-  //       validityPeriod,
-  //       terms,
-  //       unitTitle,
-  //       letterhead,
-  //       subject,
-  //       updated_at: Timestamp.now(),
-  //     };
-  //     await updateDoc(doc(db, "document_editor_docs", loadedDocId), docPayload);
-  //     setOriginalDocState(JSON.parse(JSON.stringify(docPayload)));
-  //     await saveClientDetails();
-  //     await saveDocumentDetails();
-  //     await fetchSavedDocuments();
-  //     message.success("Document updated successfully");
-  //   } catch (e) {
-  //     message.error("Failed to save changes");
-  //   } finally {
-  //     setSaving(false);
-  //   }
-  // };
+  const handleSaveChanges = async () => {
+    if (!loadedDocId) return;
+    setSaving(true);
+    try {
+      const docPayload = {
+        documentType,
+        clientName,
+        clientAddress,
+        refNo,
+        date,
+        contactNo,
+        items,
+        invoiceNo,
+        isTaxInvoice,
+        vatinNo,
+        quotationNo,
+        validityPeriod,
+        terms,
+        unitTitle,
+        letterhead,
+        subject,
+        bankDetails,
+        hideTotal,
+        updated_at: Timestamp.now(),
+      };
+      await updateDoc(doc(db, "document_editor_docs", loadedDocId), docPayload);
+      setOriginalDocState(JSON.parse(JSON.stringify(docPayload)));
+      await saveClientDetails();
+      await saveDocumentDetails();
+      await fetchSavedDocuments();
+      message.success("Document updated successfully");
+    } catch (e) {
+      message.error("Failed to save changes");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleDeleteDoc = async (id: string) => {
     setDeleting(true);
@@ -710,6 +732,7 @@ export default function DocumentEditor() {
       setLetterhead(documentObj.letterhead || "ARC");
       setSubject(documentObj.subject || "");
       setBankDetails(documentObj.bankDetails || "");
+      setHideTotal(documentObj.hideTotal ?? false);
 
       const compareState = {
         documentType: documentObj.documentType || "invoice",
@@ -729,6 +752,7 @@ export default function DocumentEditor() {
         letterhead: documentObj.letterhead || "ARC",
         subject: documentObj.subject || "",
         bankDetails: documentObj.bankDetails || "",
+        hideTotal: documentObj.hideTotal ?? false,
       };
       setOriginalDocState(compareState);
       setDocumentsDrawerVisible(false);
@@ -760,6 +784,7 @@ export default function DocumentEditor() {
     setUnitTitle("Duration");
     setLetterhead("ARC");
     setSubject("");
+    setHideTotal(false);
     setBankDetails(
       "<p>Bank Name: BANK MUSCAT </p><p>Account Number: 0423 0614 8250 0019</p><p>Swift Code: BMUSOMRX</p>"
     );
@@ -1006,7 +1031,7 @@ export default function DocumentEditor() {
                   color: "#dc2626",
                 }}
               >
-                <Trash2 width="1rem" />
+                <MinusCircle width="1rem" />
               </button>
             )}
           </div>
@@ -1122,13 +1147,16 @@ export default function DocumentEditor() {
             onChange={(e) => setClientName(e.target.value)}
             placeholder="Client Name"
           />
-          <input
-            type="text"
-            style={inputStyle}
-            value={clientAddress}
-            onChange={(e) => setClientAddress(e.target.value)}
-            placeholder="Client Address"
-          />
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <label style={{ fontSize: "0.75rem", fontWeight: "600", color: "rgba(17, 24, 39, 0.7)", marginLeft: "0.1rem" }}>Client Address</label>
+            <RichTextEditor
+              value={clientAddress}
+              onChange={setClientAddress}
+              placeholder="Client Address"
+              minHeight="100px"
+              hideToolbar
+            />
+          </div>
           {documentType === "invoice" && isTaxInvoice && (
             <input
               type="text"
@@ -1250,6 +1278,18 @@ export default function DocumentEditor() {
                 onChange={(e) => setValidityPeriod(moment(e.target.value).format("DD.MM.YYYY"))}
                 placeholder="Valid Until"
               />
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.2rem 0.1rem" }}>
+                <input
+                  type="checkbox"
+                  id="hideTotal"
+                  checked={hideTotal}
+                  onChange={(e) => setHideTotal(e.target.checked)}
+                  style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                />
+                <label htmlFor="hideTotal" style={{ fontSize: "0.85rem", color: "rgba(17, 24, 39, 0.8)", cursor: "pointer", userSelect: "none" }}>
+                  Hide total section in quotation template
+                </label>
+              </div>
             </>
           )}
         </div>
@@ -1285,9 +1325,10 @@ export default function DocumentEditor() {
                         cursor: "pointer",
                         padding: "0.2rem",
                         borderRadius: "0.25rem",
+                        width: "1.75rem"
                       }}
                     >
-                      <Trash2 width="0.8rem" />
+                      <MinusCircle width="0.8rem" />
                     </button>
                   )}
                 </div>
@@ -1506,6 +1547,7 @@ export default function DocumentEditor() {
                   unitTitle={unitTitle}
                   letterhead={letterhead}
                   subject={subject}
+                  hideTotal={hideTotal}
                 />
               )}
             </div>
@@ -1516,7 +1558,7 @@ export default function DocumentEditor() {
   };
 
   const [deleting, setDeleting] = useState(false);
-  // const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   return (
     <>
@@ -1602,7 +1644,7 @@ export default function DocumentEditor() {
                     </div>
                   </button>
 
-                  {/* {canEditDocumentEditor &&
+                  {canEditDocumentEditor &&
                     (!loadedDocId ? (
                       <motion.button
                         onClick={handleSave}
@@ -1653,9 +1695,9 @@ export default function DocumentEditor() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    ))} */}
+                    ))}
 
-                  {/* <motion.button
+                  <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     style={{
@@ -1671,7 +1713,7 @@ export default function DocumentEditor() {
                     }}
                   >
                     <Database color="darkblue" width={"1.25rem"} />
-                  </motion.button> */}
+                  </motion.button>
                 </div>
               }
             />
@@ -1879,7 +1921,7 @@ export default function DocumentEditor() {
                     <span>Loading saved docs</span>
                   </>
                 ) : (
-                  <span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
                     <Dot color="darkblue" /> Loaded {savedDocuments.length} Documents
                   </span>
                 )}
@@ -1940,7 +1982,7 @@ export default function DocumentEditor() {
                             color: "red",
                           }}
                         >
-                          {deleting ? <LoaderCircle className="animate-spin" width="1rem" /> : <Trash2 width="1rem" />}
+                          {deleting ? <LoaderCircle className="animate-spin" width="1rem" /> : <MinusCircle width="1rem" />}
                         </button>
                       </div>
                     ))}

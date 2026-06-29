@@ -208,9 +208,10 @@ const InvoicePage = ({
               <p>
                 <b>{props.clientName}</b>
               </p>
-              <p style={{ border: "", width: "20ch" }}>
-                <b>{props.clientAddress}</b>
-              </p>
+              <div
+                style={{ border: "", width: "20ch", fontWeight: "bold" }}
+                dangerouslySetInnerHTML={{ __html: props.clientAddress }}
+              />
               <p>
                 <b>SULTANATE OF OMAN</b>
               </p>

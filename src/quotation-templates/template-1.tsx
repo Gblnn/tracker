@@ -29,6 +29,7 @@ interface Props {
   unitTitle: string;
   letterhead?: string;
   subject?: string;
+  hideTotal?: boolean;
 }
 
 interface PageProps extends Props {
@@ -181,9 +182,10 @@ const QuotationPage = ({
                 </p>
               )}
 
-              <p style={{ border: "", width: "20ch" }}>
-                <b>{props.clientAddress}</b>
-              </p>
+              <div
+                style={{ border: "", width: "20ch", fontWeight: "bold" }}
+                dangerouslySetInnerHTML={{ __html: props.clientAddress }}
+              />
               <p>
                 <b>SULTANATE OF OMAN</b>
               </p>
@@ -332,7 +334,7 @@ const QuotationPage = ({
                 </tr>
               ))}
             </tbody>
-            {isLastPage && (
+            {isLastPage && !props.hideTotal && (
               <tfoot>
                 <tr>
                   <td
@@ -364,37 +366,39 @@ const QuotationPage = ({
 
         {isLastPage && (
           <>
-            <div
-              style={{
-                display: "flex",
-                paddingTop: "1rem",
-                paddingLeft: "2.5rem",
-                paddingRight: "2.5rem",
-              }}
-            >
-              <p style={{ textTransform: "capitalize", fontSize: "0.8rem" }}>
-                <b>
-                  Riyal Omani{" "}
-                  {(() => {
-                    const wholePart = Math.floor(props.subtotal);
-                    const decimalPart = Math.round(
-                      (props.subtotal - wholePart) * 1000
-                    );
+            {!props.hideTotal && (
+              <div
+                style={{
+                  display: "flex",
+                  paddingTop: "1rem",
+                  paddingLeft: "2.5rem",
+                  paddingRight: "2.5rem",
+                }}
+              >
+                <p style={{ textTransform: "capitalize", fontSize: "0.8rem" }}>
+                  <b>
+                    Riyal Omani{" "}
+                    {(() => {
+                      const wholePart = Math.floor(props.subtotal);
+                      const decimalPart = Math.round(
+                        (props.subtotal - wholePart) * 1000
+                      );
 
-                    let result = converter.toWords(String(wholePart));
+                      let result = converter.toWords(String(wholePart));
 
-                    if (decimalPart > 0) {
-                      result += ` and ${converter.toWords(
-                        String(decimalPart)
-                      )} baiza`;
-                    }
+                      if (decimalPart > 0) {
+                        result += ` and ${converter.toWords(
+                          String(decimalPart)
+                        )} baiza`;
+                      }
 
-                    return result;
-                  })()}{" "}
-                  Only
-                </b>
-              </p>
-            </div>
+                      return result;
+                    })()}{" "}
+                    Only
+                  </b>
+                </p>
+              </div>
+            )}
 
             <div style={{ padding: "2rem", fontSize: "0.9rem" }}>
               <p style={{ fontWeight: "600", marginBottom: "1rem" }}>
