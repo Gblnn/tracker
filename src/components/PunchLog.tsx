@@ -1,21 +1,20 @@
-import { useMemo, useState, useEffect } from 'react';
-import { Avatar } from './Avatar';
-import type { Punch, Employee } from '../types/attendance';
-import { formatTime, VERIFY_LABELS, PUNCH_TYPE_LABELS } from '../lib/utilis';
-import { supabase } from '../lib/supabase';
-import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Search, UserPlus, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { Input } from "@/components/ui/input";
+import { ChevronDown, Search, UserPlus, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { supabase } from '../lib/supabase';
+import { formatTime, PUNCH_TYPE_LABELS, VERIFY_LABELS } from '../lib/utilis';
+import type { Employee, Punch } from '../types/attendance';
 import { useAuth } from './AuthProvider';
+import { Avatar } from './Avatar';
 
 const NATIONALITIES = [
   'nigerian',

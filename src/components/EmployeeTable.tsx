@@ -2,8 +2,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { ChevronDown, Loader2, Search, User, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -614,7 +613,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                         emp.remarks.map((remark, rIdx) => {
                           const isLate = remark.toLowerCase().includes('late');
                           const isEarly = remark.toLowerCase().includes('early');
-                          
+
                           let badgeColorClass = 'bg-gray-50 text-gray-600 border-gray-100';
                           if (isLate) {
                             let isWarning = false;
@@ -627,8 +626,8 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                                 isWarning = true;
                               }
                             }
-                            badgeColorClass = isWarning 
-                              ? 'bg-amber-50 text-amber-700 border-amber-100' 
+                            badgeColorClass = isWarning
+                              ? 'bg-amber-50 text-amber-700 border-amber-100'
                               : 'bg-rose-50 text-rose-700 border-rose-100';
                           } else if (isEarly) {
                             badgeColorClass = 'bg-amber-50 text-amber-700 border-amber-100';
