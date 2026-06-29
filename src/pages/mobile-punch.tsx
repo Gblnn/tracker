@@ -18,11 +18,35 @@ export default function MobilePunch() {
   const [submitting, setSubmitting] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [checkingStatus, setCheckingStatus] = useState(true);
+  const [monthlyPoints, setMonthlyPoints] = useState<number>(0);
 
   // Press & Hold states
   const [holdPercent, setHoldPercent] = useState(0);
   const [isPressing, setIsPressing] = useState(false);
   const startTimeRef = useRef<number>(0);
+
+  const fetchMonthlyPoints = async (empUserId: string, devsList: any[]) => {
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const startOfMonthStr = `${year}-${month}-01T00:00:00`;
+
+      const { data: monthPunches, error } = await supabase
+        .from("punches")
+        .select("punch_time, device_serial")
+        .eq("user_id", empUserId)
+        .gte("punch_time", startOfMonthStr)
+        .order("punch_time", { ascending: true });
+
+      if (error) throw error;
+
+      const points = calculatePoints(monthPunches || [], devsList || []);
+      setMonthlyPoints(points);
+    } catch (err) {
+      console.error("Error fetching monthly points:", err);
+    }
+  };
 
   // Fetch employee, devices, and initial punch status
   useEffect(() => {
@@ -44,7 +68,7 @@ export default function MobilePunch() {
         // Fetch devices to match locations
         const { data: devs, error: devsErr } = await supabase
           .from("devices")
-          .select("serial_no, location")
+          .select("serial_no, location, start_time, end_time")
           .not("location", "is", null);
 
         if (devsErr) throw devsErr;
@@ -52,6 +76,7 @@ export default function MobilePunch() {
 
         if (emp) {
           await checkLastPunch(emp.device_user_id);
+          await fetchMonthlyPoints(emp.device_user_id, devs || []);
         }
       } catch (err: any) {
         console.error("Error loading mobile punch data:", err);
@@ -153,6 +178,7 @@ export default function MobilePunch() {
 
       // Re-check status to swap state automatically
       await checkLastPunch(employee.device_user_id);
+      await fetchMonthlyPoints(employee.device_user_id, devices);
     } catch (err: any) {
       console.error("Error inserting punch:", err);
       toast.error(err.message || "Failed to submit punch.");
@@ -228,6 +254,31 @@ export default function MobilePunch() {
         fixed
         blurBG
         title="Punch"
+        extra={
+          employee && !loadingProfile && (
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.45rem",
+              background: "rgba(255, 255, 255, 0.8)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(229, 231, 235, 0.6)",
+              borderRadius: "9999px",
+              padding: "0.3rem 0.35rem",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)"
+            }}>
+              <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#4b5563", marginLeft: "0.45rem" }}>
+                Points
+              </span>
+              <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#1e3a8a" }}>
+                {monthlyPoints}
+              </span>
+              <span style={{ fontSize: "0.6rem", fontWeight: 600, color: "#047857", backgroundColor: "#d1fae5", padding: "0.1rem 0.35rem", borderRadius: "9999px" }}>
+                {getTierName(monthlyPoints)}
+              </span>
+            </div>
+          )
+        }
       />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", width: "100%", maxWidth: "450px", margin: "0 auto", justifyContent: "center", alignItems: "center", border: "" }}>
@@ -356,4 +407,83 @@ export default function MobilePunch() {
       </div>
     </div>
   );
+}
+
+function getTierName(points: number): string {
+  if (points >= 300) return "Platinum";
+  if (points >= 200) return "Gold";
+  if (points >= 100) return "Silver";
+  if (points >= 50) return "Bronze";
+  return "New";
+}
+
+function getLocalTimeParts(iso: string): { hour: number; minute: number } | null {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+      timeZone: 'Asia/Muscat'
+    });
+    const parts = formatter.formatToParts(new Date(iso));
+    const hourPart = parts.find(p => p.type === 'hour')?.value;
+    const minutePart = parts.find(p => p.type === 'minute')?.value;
+    if (hourPart && minutePart) {
+      return {
+        hour: parseInt(hourPart, 10),
+        minute: parseInt(minutePart, 10)
+      };
+    }
+  } catch (e) {
+    console.error('Error parsing local time parts:', e);
+  }
+  return null;
+}
+
+function calculatePoints(punches: any[], devices: any[]): number {
+  const devicesMap = Object.fromEntries(
+    devices.map(d => [d.serial_no, d])
+  );
+
+  const punchesByDate: Record<string, any[]> = {};
+  punches.forEach(p => {
+    try {
+      const dateStr = new Date(p.punch_time).toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' });
+      if (!punchesByDate[dateStr]) {
+        punchesByDate[dateStr] = [];
+      }
+      punchesByDate[dateStr].push(p);
+    } catch (e) {
+      console.error("Error grouping punch by date:", e);
+    }
+  });
+
+  let totalPoints = 0;
+
+  Object.values(punchesByDate).forEach(dayPunches => {
+    const sorted = [...dayPunches].sort((a, b) => new Date(a.punch_time).getTime() - new Date(b.punch_time).getTime());
+    if (sorted.length > 0) {
+      const firstPunch = sorted[0];
+      const dev = devicesMap[firstPunch.device_serial];
+      const startTime = dev?.start_time || "08:00";
+
+      const punchTimeParts = getLocalTimeParts(firstPunch.punch_time);
+      if (punchTimeParts && startTime.includes(':')) {
+        const [startHour, startMin] = startTime.split(':').map(Number);
+        const punchMins = punchTimeParts.hour * 60 + punchTimeParts.minute;
+        const startMins = startHour * 60 + startMin;
+        const diff = punchMins - startMins;
+
+        if (diff <= 5) {
+          totalPoints += 15;
+        } else if (diff <= 15) {
+          totalPoints += 10;
+        } else if (diff <= 30) {
+          totalPoints += 5;
+        }
+      }
+    }
+  });
+
+  return totalPoints;
 }
