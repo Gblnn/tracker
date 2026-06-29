@@ -258,7 +258,7 @@ export default function MobilePunch() {
         blurBG
         title=""
         extra={
-          employee && !loadingProfile && (
+          employee && (
             <div
               onClick={() => setPointsModalOpen(true)}
               style={{
@@ -274,13 +274,13 @@ export default function MobilePunch() {
                 cursor: "pointer"
               }}>
               <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#4b5563", marginLeft: "", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <CircleStar className="text-amber-500" />
+                <CircleStar className="text-indigo-500" />
                 Points
               </span>
               <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1e3a8a" }}>
                 {monthlyPoints}
               </span>
-              <span style={{ fontSize: "0.6rem", fontWeight: 500, color: "white", backgroundColor: "orange", padding: "0.1rem 0.5rem", borderRadius: "9999px", marginRight: "0.25rem" }}>
+              <span style={{ fontSize: "0.6rem", fontWeight: 500, color: "white", background: "linear-gradient(90deg, darkblue, darkslateblue)", padding: "0.1rem 0.5rem", borderRadius: "9999px", marginRight: "0.25rem" }}>
                 {getTierName(monthlyPoints)}
               </span>
             </div>
@@ -416,11 +416,11 @@ export default function MobilePunch() {
         open={pointsModalOpen}
         onOpenChange={setPointsModalOpen}
         title=""
-        description="Earn points based on your check-in punctuality."
+        description=""
       >
         <div style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem", color: "#374151" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <h4 style={{ fontWeight: 600, fontSize: "0.95rem", color: "#1f2937" }}>Points Tiers</h4>
+            <h4 style={{ fontWeight: 600, fontSize: "1rem", color: "#1f2937", border: '', textAlign: "center" }}>Points</h4>
 
             <div style={{
               display: "grid",
@@ -436,17 +436,17 @@ export default function MobilePunch() {
                 justifyContent: "center",
                 padding: "1.25rem 0.75rem",
                 background: "",
-                border: "1px solid #d1fae5",
+                border: "1px solid #e5e7eb",
                 borderRadius: "1rem",
                 textAlign: "center",
                 gap: "0.35rem"
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#047857" }}>
-                  <CircleStar className="w-8 h-8 text-amber-500" />
-                  <span style={{ fontSize: "2rem", fontWeight: 600 }}>15</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "" }}>
+                  <CircleStar className="w-8 h-8 text-indigo-500" />
+                  <span style={{ fontSize: "2.25rem", fontWeight: 600 }}>15</span>
                 </div>
-                <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#065f46" }}>Within 5m</span>
-                <span style={{ fontSize: "0.8rem", color: "#059669", fontWeight: 500 }}>On-time arrival</span>
+                <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "" }}>Within 5m</span>
+                <span style={{ fontSize: "0.8rem", color: "", fontWeight: 500 }}>On-time arrival</span>
               </div>
 
               {/* Tile 2 */}
@@ -457,17 +457,17 @@ export default function MobilePunch() {
                 justifyContent: "center",
                 padding: "1.25rem 0.75rem",
                 background: "",
-                border: "1px solid #d1e9ff",
+                border: "1px solid #e5e7eb",
                 borderRadius: "1rem",
                 textAlign: "center",
                 gap: "0.35rem"
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#1d4ed8" }}>
-                  <CircleStar className="w-8 h-8 text-amber-500" />
-                  <span style={{ fontSize: "2rem", fontWeight: 600 }}>10</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "" }}>
+                  <CircleStar className="w-8 h-8 text-indigo-500" />
+                  <span style={{ fontSize: "2.25rem", fontWeight: 600 }}>10</span>
                 </div>
-                <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1e40af" }}>Within 15m</span>
-                <span style={{ fontSize: "0.8rem", color: "#2563eb", fontWeight: 500 }}>Up to 15 mins late</span>
+                <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "" }}>Within 15m</span>
+                <span style={{ fontSize: "0.8rem", color: "", fontWeight: 500 }}>Up to 15 mins late</span>
               </div>
 
               {/* Tile 3 */}
@@ -483,12 +483,12 @@ export default function MobilePunch() {
                 textAlign: "center",
                 gap: "0.35rem"
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#b45309" }}>
-                  <CircleStar className="w-8 h-8 text-amber-500" />
-                  <span style={{ fontSize: "2rem", fontWeight: 600 }}>5</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "" }}>
+                  <CircleStar className="w-8 h-8 text-indigo-500" />
+                  <span style={{ fontSize: "2.25rem", fontWeight: 600 }}>5</span>
                 </div>
-                <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#92400e" }}>Within 30m</span>
-                <span style={{ fontSize: "0.8rem", color: "#d97706", fontWeight: 500 }}>Up to 30 mins late</span>
+                <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "" }}>Within 30m</span>
+                <span style={{ fontSize: "0.8rem", color: "", fontWeight: 500 }}>Up to 30 mins late</span>
               </div>
 
               {/* Tile 4 */}
@@ -504,12 +504,12 @@ export default function MobilePunch() {
                 textAlign: "center",
                 gap: "0.35rem"
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#4b5563" }}>
-                  <CircleStar className="w-8 h-8 text-amber-400" />
-                  <span style={{ fontSize: "2rem", fontWeight: 600 }}>0</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "" }}>
+                  <CircleStar className="w-8 h-8 text-indigo-500" />
+                  <span style={{ fontSize: "2.25rem", fontWeight: 600 }}>0</span>
                 </div>
                 <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#374151" }}>Beyond 30m</span>
-                <span style={{ fontSize: "0.8rem", color: "#6b7280", fontWeight: 500 }}>Over 30 mins late</span>
+                <span style={{ fontSize: "0.8rem", color: "", fontWeight: 500 }}>Over 30 mins late</span>
               </div>
             </div>
           </div>
