@@ -478,7 +478,7 @@ export default function MobilePunch() {
                 justifyContent: "center",
                 padding: "1.25rem 0.75rem",
                 background: "",
-                border: "2px solid #fef3c7",
+                border: "1px solid #e5e7eb",
                 borderRadius: "1rem",
                 textAlign: "center",
                 gap: "0.35rem"
@@ -498,7 +498,7 @@ export default function MobilePunch() {
                 alignItems: "center",
                 justifyContent: "center",
                 padding: "1.25rem 0.75rem",
-                background: "#f9fafb",
+                background: "",
                 border: "1px solid #e5e7eb",
                 borderRadius: "1rem",
                 textAlign: "center",
@@ -517,7 +517,7 @@ export default function MobilePunch() {
 
 
           <p style={{ fontSize: "0.75rem", color: "#9ca3af", textAlign: "center", marginTop: "0.5rem" }}>
-            Points reset on the first day of every month. Keep clocking in on time to maintain your rank!
+            Points reset on the first day of every month.
           </p>
         </div>
       </ResponsiveModal>
