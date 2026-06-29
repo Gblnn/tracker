@@ -256,7 +256,7 @@ export default function MobilePunch() {
       <Back
         fixed
         blurBG
-        title="Punch"
+        title=""
         extra={
           employee && !loadingProfile && (
             <div
@@ -280,7 +280,7 @@ export default function MobilePunch() {
               <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1e3a8a" }}>
                 {monthlyPoints}
               </span>
-              <span style={{ fontSize: "0.6rem", fontWeight: 600, color: "#047857", backgroundColor: "#d1fae5", padding: "0.1rem 0.5rem", borderRadius: "9999px", marginRight: "0.25rem" }}>
+              <span style={{ fontSize: "0.6rem", fontWeight: 500, color: "white", backgroundColor: "orange", padding: "0.1rem 0.5rem", borderRadius: "9999px", marginRight: "0.25rem" }}>
                 {getTierName(monthlyPoints)}
               </span>
             </div>
@@ -415,7 +415,7 @@ export default function MobilePunch() {
       <ResponsiveModal
         open={pointsModalOpen}
         onOpenChange={setPointsModalOpen}
-        // title="Attendance Points System"
+        title=""
         description="Earn points based on your check-in punctuality."
       >
         <div style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem", color: "#374151" }}>
@@ -435,14 +435,14 @@ export default function MobilePunch() {
                 alignItems: "center",
                 justifyContent: "center",
                 padding: "1.25rem 0.75rem",
-                background: "#f0fdf4",
+                background: "",
                 border: "1px solid #d1fae5",
                 borderRadius: "1rem",
                 textAlign: "center",
                 gap: "0.35rem"
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#047857" }}>
-                  <CircleStar className="w-8 h-8 text-emerald-500" />
+                  <CircleStar className="w-8 h-8 text-amber-500" />
                   <span style={{ fontSize: "2rem", fontWeight: 600 }}>15</span>
                 </div>
                 <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#065f46" }}>Within 5m</span>
@@ -456,14 +456,14 @@ export default function MobilePunch() {
                 alignItems: "center",
                 justifyContent: "center",
                 padding: "1.25rem 0.75rem",
-                background: "#eff6ff",
+                background: "",
                 border: "1px solid #d1e9ff",
                 borderRadius: "1rem",
                 textAlign: "center",
                 gap: "0.35rem"
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#1d4ed8" }}>
-                  <CircleStar className="w-8 h-8 text-blue-500" />
+                  <CircleStar className="w-8 h-8 text-amber-500" />
                   <span style={{ fontSize: "2rem", fontWeight: 600 }}>10</span>
                 </div>
                 <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1e40af" }}>Within 15m</span>
@@ -477,7 +477,7 @@ export default function MobilePunch() {
                 alignItems: "center",
                 justifyContent: "center",
                 padding: "1.25rem 0.75rem",
-                background: "#fffbeb",
+                background: "",
                 border: "2px solid #fef3c7",
                 borderRadius: "1rem",
                 textAlign: "center",
@@ -505,7 +505,7 @@ export default function MobilePunch() {
                 gap: "0.35rem"
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#4b5563" }}>
-                  <CircleStar className="w-8 h-8 text-gray-400" />
+                  <CircleStar className="w-8 h-8 text-amber-400" />
                   <span style={{ fontSize: "2rem", fontWeight: 600 }}>0</span>
                 </div>
                 <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#374151" }}>Beyond 30m</span>
