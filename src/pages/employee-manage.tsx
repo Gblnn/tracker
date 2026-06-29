@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ResponsiveModal } from "@/components/responsive-modal";
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -955,34 +956,58 @@ export default function EmployeeManage() {
                                             </span>
                                             <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent className="w-[180px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50 max-h-[300px] overflow-y-auto">
-                                            <DropdownMenuCheckboxItem
-                                                checked={selectedDepartments.length === 0}
-                                                onCheckedChange={() => setSelectedDepartments([])}
-                                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                        <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
+                                            <div
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
                                             >
-                                                All Departments
-                                            </DropdownMenuCheckboxItem>
-                                            <DropdownMenuSeparator className="my-1 border-gray-100" />
-                                            {uniqueDepartments.map(dept => {
-                                                const isChecked = selectedDepartments.includes(dept);
-                                                return (
-                                                    <DropdownMenuCheckboxItem
-                                                        key={dept}
-                                                        checked={isChecked}
-                                                        onCheckedChange={(checked) => {
-                                                            if (checked) {
-                                                                setSelectedDepartments([...selectedDepartments, dept]);
-                                                            } else {
-                                                                setSelectedDepartments(selectedDepartments.filter(item => item !== dept));
-                                                            }
-                                                        }}
-                                                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                                                    >
-                                                        {dept}
-                                                    </DropdownMenuCheckboxItem>
-                                                );
-                                            })}
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedDepartments(uniqueDepartments);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-left"
+                                                    style={{ background: "none", flex: 1 }}
+                                                >
+                                                    Select All
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedDepartments([]);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-right"
+                                                    style={{ background: "none", flex: 1 }}
+                                                >
+                                                    Clear All
+                                                </button>
+                                            </div>
+                                            <div className="py-1">
+                                                {uniqueDepartments.map(dept => {
+                                                    const isChecked = selectedDepartments.includes(dept);
+                                                    return (
+                                                        <DropdownMenuCheckboxItem
+                                                            key={dept}
+                                                            checked={isChecked}
+                                                            onCheckedChange={(checked) => {
+                                                                if (checked) {
+                                                                    setSelectedDepartments([...selectedDepartments, dept]);
+                                                                } else {
+                                                                    setSelectedDepartments(selectedDepartments.filter(item => item !== dept));
+                                                                }
+                                                            }}
+                                                            onSelect={(e) => e.preventDefault()}
+                                                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                        >
+                                                            {dept}
+                                                        </DropdownMenuCheckboxItem>
+                                                    );
+                                                })}
+                                            </div>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </th>
@@ -1000,41 +1025,66 @@ export default function EmployeeManage() {
                                                     </span>
                                                     <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-[130px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50">
-                                                    <DropdownMenuCheckboxItem
-                                                        checked={selectedTypes.length === 0}
-                                                        onCheckedChange={() => setSelectedTypes([])}
-                                                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                <DropdownMenuContent className="w-[140px] max-h-[300px] overflow-y-auto p-0 z-50">
+                                                    <div
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
                                                     >
-                                                        All Types
-                                                    </DropdownMenuCheckboxItem>
-                                                    <DropdownMenuSeparator className="my-1 border-gray-100" />
-                                                    <DropdownMenuCheckboxItem
-                                                        checked={selectedTypes.includes('staff')}
-                                                        onCheckedChange={(checked) => {
-                                                            if (checked) {
-                                                                setSelectedTypes([...selectedTypes, 'staff']);
-                                                            } else {
-                                                                setSelectedTypes(selectedTypes.filter(t => t !== 'staff'));
-                                                            }
-                                                        }}
-                                                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                                                    >
-                                                        STAFF
-                                                    </DropdownMenuCheckboxItem>
-                                                    <DropdownMenuCheckboxItem
-                                                        checked={selectedTypes.includes('worker')}
-                                                        onCheckedChange={(checked) => {
-                                                            if (checked) {
-                                                                setSelectedTypes([...selectedTypes, 'worker']);
-                                                            } else {
-                                                                setSelectedTypes(selectedTypes.filter(t => t !== 'worker'));
-                                                            }
-                                                        }}
-                                                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                                                    >
-                                                        WORKER
-                                                    </DropdownMenuCheckboxItem>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setSelectedTypes(['staff', 'worker']);
+                                                            }}
+                                                            className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-left"
+                                                            style={{ background: "none", flex: 1 }}
+                                                        >
+                                                            All
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setSelectedTypes([]);
+                                                            }}
+                                                            className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-right"
+                                                            style={{ background: "none", flex: 1 }}
+                                                        >
+                                                            Clear
+                                                        </button>
+                                                    </div>
+                                                    <div className="py-1">
+                                                        <DropdownMenuCheckboxItem
+                                                            checked={selectedTypes.includes('staff')}
+                                                            onCheckedChange={(checked) => {
+                                                                if (checked) {
+                                                                    setSelectedTypes([...selectedTypes, 'staff']);
+                                                                } else {
+                                                                    setSelectedTypes(selectedTypes.filter(t => t !== 'staff'));
+                                                                }
+                                                            }}
+                                                            onSelect={(e) => e.preventDefault()}
+                                                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                        >
+                                                            STAFF
+                                                        </DropdownMenuCheckboxItem>
+                                                        <DropdownMenuCheckboxItem
+                                                            checked={selectedTypes.includes('worker')}
+                                                            onCheckedChange={(checked) => {
+                                                                if (checked) {
+                                                                    setSelectedTypes([...selectedTypes, 'worker']);
+                                                                } else {
+                                                                    setSelectedTypes(selectedTypes.filter(t => t !== 'worker'));
+                                                                }
+                                                            }}
+                                                            onSelect={(e) => e.preventDefault()}
+                                                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                        >
+                                                            WORKER
+                                                        </DropdownMenuCheckboxItem>
+                                                    </div>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
@@ -1051,34 +1101,58 @@ export default function EmployeeManage() {
                                                     </span>
                                                     <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-[180px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50 max-h-[300px] overflow-y-auto">
-                                                    <DropdownMenuCheckboxItem
-                                                        checked={selectedNationalities.length === 0}
-                                                        onCheckedChange={() => setSelectedNationalities([])}
-                                                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
+                                                    <div
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
                                                     >
-                                                        All Nationalities
-                                                    </DropdownMenuCheckboxItem>
-                                                    <DropdownMenuSeparator className="my-1 border-gray-100" />
-                                                    {uniqueNationalities.map(nat => {
-                                                        const isChecked = selectedNationalities.includes(nat);
-                                                        return (
-                                                            <DropdownMenuCheckboxItem
-                                                                key={nat}
-                                                                checked={isChecked}
-                                                                onCheckedChange={(checked) => {
-                                                                    if (checked) {
-                                                                        setSelectedNationalities([...selectedNationalities, nat]);
-                                                                    } else {
-                                                                        setSelectedNationalities(selectedNationalities.filter(item => item !== nat));
-                                                                    }
-                                                                }}
-                                                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs uppercase"
-                                                            >
-                                                                {nat}
-                                                            </DropdownMenuCheckboxItem>
-                                                        );
-                                                    })}
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setSelectedNationalities(uniqueNationalities);
+                                                            }}
+                                                            className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-left"
+                                                            style={{ background: "none", flex: 1 }}
+                                                        >
+                                                            Select All
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setSelectedNationalities([]);
+                                                            }}
+                                                            className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-right"
+                                                            style={{ background: "none", flex: 1 }}
+                                                        >
+                                                            Clear All
+                                                        </button>
+                                                    </div>
+                                                    <div className="py-1">
+                                                        {uniqueNationalities.map(nat => {
+                                                            const isChecked = selectedNationalities.includes(nat);
+                                                            return (
+                                                                <DropdownMenuCheckboxItem
+                                                                    key={nat}
+                                                                    checked={isChecked}
+                                                                    onCheckedChange={(checked) => {
+                                                                        if (checked) {
+                                                                            setSelectedNationalities([...selectedNationalities, nat]);
+                                                                        } else {
+                                                                            setSelectedNationalities(selectedNationalities.filter(item => item !== nat));
+                                                                        }
+                                                                    }}
+                                                                    onSelect={(e) => e.preventDefault()}
+                                                                    className="rounded-md focus:bg-gray-50 cursor-pointer text-xs uppercase"
+                                                                >
+                                                                    {nat}
+                                                                </DropdownMenuCheckboxItem>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
@@ -1562,38 +1636,38 @@ export default function EmployeeManage() {
             </Dialog>
 
             {/* Add Employee Dialog */}
-            <Dialog open={isAdding} onOpenChange={(open) => { if (!open) setIsAdding(false); }}>
-                <DialogContent className="sm:max-w-[450px] max-h-[85vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Add Employee</DialogTitle>
-                        <DialogDescription>
-                            Create a new employee record and optionally push it to biometric devices.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-gray-600 block">Device User ID <span className="text-red-500">*</span></label>
-                                <Input
-                                    type="text"
-                                    required
-                                    value={addDeviceUserId}
-                                    onChange={(e) => setAddDeviceUserId(e.target.value)}
-                                    placeholder="e.g. 110525"
-                                    className="font-mono"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-gray-600 block">Employee ID (HR)</label>
-                                <Input
-                                    type="text"
-                                    value={addEmpId}
-                                    onChange={(e) => setAddEmpId(e.target.value)}
-                                    placeholder="e.g. EMP-045"
-                                />
-                            </div>
+            <ResponsiveModal
+                open={isAdding}
+                onOpenChange={setIsAdding}
+                title="Add Employee"
+                description="Create a new employee record and optionally push it to biometric devices."
+            >
+                <form onSubmit={(e) => e.preventDefault()} className="space-y-3 p-4 md:p-0">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-600 block">Device User ID <span className="text-red-500">*</span></label>
+                            <Input
+                                type="text"
+                                required
+                                value={addDeviceUserId}
+                                onChange={(e) => setAddDeviceUserId(e.target.value)}
+                                placeholder="e.g. 110525"
+                                className="font-mono h-9 text-xs"
+                            />
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-600 block">Employee ID (HR)</label>
+                            <Input
+                                type="text"
+                                value={addEmpId}
+                                onChange={(e) => setAddEmpId(e.target.value)}
+                                placeholder="e.g. EMP-045"
+                                className="h-9 text-xs"
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
                             <label className="text-xs font-medium text-gray-600 block">Full Name <span className="text-red-500">*</span></label>
                             <Input
                                 type="text"
@@ -1601,169 +1675,199 @@ export default function EmployeeManage() {
                                 value={addName}
                                 onChange={(e) => setAddName(e.target.value)}
                                 placeholder="e.g. John Smith"
+                                className="h-9 text-xs"
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-gray-600 block">Department</label>
-                                <Input
-                                    type="text"
-                                    value={addDept}
-                                    onChange={(e) => setAddDept(e.target.value)}
-                                    placeholder="e.g. Operations"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-gray-600 block">Designation</label>
-                                <Input
-                                    type="text"
-                                    value={addDesignation}
-                                    onChange={(e) => setAddDesignation(e.target.value)}
-                                    placeholder="e.g. Engineer"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-gray-600 block">Employee Type</label>
-                                <Select value={addEmpType} onValueChange={(e) => setAddEmpType(e as 'staff' | 'worker')}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select Employee Type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="staff">Staff</SelectItem>
-                                        <SelectItem value="worker">Worker</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-gray-600 block">Nationality</label>
-                                <Select value={addNationality} onValueChange={(e) => setAddNationality(e)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select Nationality" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {NATIONALITIES.map((nat) => (
-                                            <SelectItem key={nat} value={nat}>
-                                                {nat.toUpperCase()}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                             <label className="text-xs font-medium text-gray-600 block">Email</label>
                             <Input
                                 type="email"
                                 value={addEmail}
                                 onChange={(e) => setAddEmail(e.target.value)}
                                 placeholder="john@company.com"
+                                className="h-9 text-xs"
                             />
                         </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-600 block">Department</label>
+                            <Input
+                                type="text"
+                                value={addDept}
+                                onChange={(e) => setAddDept(e.target.value)}
+                                placeholder="e.g. Operations"
+                                className="h-9 text-xs"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-600 block">Designation</label>
+                            <Input
+                                type="text"
+                                value={addDesignation}
+                                onChange={(e) => setAddDesignation(e.target.value)}
+                                placeholder="e.g. Engineer"
+                                className="h-9 text-xs"
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-600 block">Employee Type</label>
+                            <Select value={addEmpType} onValueChange={(e) => setAddEmpType(e as 'staff' | 'worker')}>
+                                <SelectTrigger className="h-9 text-xs">
+                                    <SelectValue placeholder="Select Employee Type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="staff">Staff</SelectItem>
+                                    <SelectItem value="worker">Worker</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-600 block">Nationality</label>
+                            <Select value={addNationality} onValueChange={(e) => setAddNationality(e)}>
+                                <SelectTrigger className="h-9 text-xs">
+                                    <SelectValue placeholder="Select Nationality" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {NATIONALITIES.map((nat) => (
+                                        <SelectItem key={nat} value={nat}>
+                                            {nat.toUpperCase()}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
 
-                        {/* Device Selection Checklist */}
-                        <div className="space-y-3 pt-3 border-t border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <label className="text-xs font-medium text-gray-600 block">Push to biometric devices</label>
-                                {devices.length > 0 && (
-                                    <button
-                                        type="button"
-                                        onClick={toggleAllDevices}
-                                        className="text-xs text-indigo-600 hover:text-indigo-700 font-medium animate-fade-in"
-                                    >
-                                        {selectedDevices.size === devices.length ? 'Deselect all' : 'Select all'}
-                                    </button>
-                                )}
+                    {/* Device Selection Dropdown */}
+                    <div className="space-y-1 pt-2 border-t border-gray-100">
+                        <label className="text-xs font-medium text-gray-600 block">Push to biometric devices</label>
+
+                        {loadingDevices ? (
+                            <div className="flex items-center gap-2 text-xs text-gray-400 py-2 justify-center">
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+                                Loading devices…
                             </div>
-
-                            {loadingDevices ? (
-                                <div className="flex items-center gap-2 text-xs text-gray-400 py-2 justify-center">
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
-                                    Loading devices…
-                                </div>
-                            ) : devices.length === 0 ? (
-                                <div className="text-xs text-gray-400 py-1 text-center">No devices registered in the system.</div>
-                            ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[180px] overflow-y-auto pr-1">
-                                    {devices.map((device) => {
-                                        const isChecked = selectedDevices.has(device.serial_no);
-                                        const isOnline = device.last_seen
-                                            ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
-                                            : false;
-                                        return (
-                                            <div
-                                                key={device.id}
-                                                onClick={() => toggleDevice(device.serial_no)}
-                                                className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all duration-200 ${isChecked
-                                                    ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
-                                                    : 'border-gray-100 hover:border-gray-200 bg-white'
-                                                    }`}
-                                            >
-                                                <div className="pt-0.5">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isChecked}
-                                                        readOnly
-                                                        className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
-                                                    />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-1.5 mb-0.5">
-                                                        <span className="font-mono text-[11px] font-semibold text-gray-800 truncate">
-                                                            {device.serial_no}
-                                                        </span>
+                        ) : devices.length === 0 ? (
+                            <div className="text-xs text-gray-400 py-1 text-center">No devices registered in the system.</div>
+                        ) : (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="w-full justify-between h-9 text-xs font-normal border-gray-200"
+                                    >
+                                        <span className="truncate">
+                                            {selectedDevices.size === 0
+                                                ? "Select devices..."
+                                                : selectedDevices.size === devices.length
+                                                    ? "All devices selected"
+                                                    : `${selectedDevices.size} device(s) selected`}
+                                        </span>
+                                        <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-[300px] max-h-[220px] overflow-y-auto p-0">
+                                    <div
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="sticky top-0 z-10 flex items-center justify-between px-3 py-1.5 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs shrink-0"
+                                    >
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                toggleAllDevices();
+                                            }}
+                                            className="text-[11px] cursor-pointer text-left"
+                                            style={{ background: "none", flex: 1 }}
+                                        >
+                                            Select All
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setSelectedDevices(new Set());
+                                            }}
+                                            className="text-[11px] cursor-pointer text-right"
+                                            style={{ background: "none", flex: 1 }}
+                                        >
+                                            Clear All
+                                        </button>
+                                    </div>
+                                    <div className="py-1">
+                                        {devices.map((device) => {
+                                            const isChecked = selectedDevices.has(device.serial_no);
+                                            const isOnline = device.last_seen
+                                                ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
+                                                : false;
+                                            return (
+                                                <DropdownMenuCheckboxItem
+                                                    key={device.id}
+                                                    checked={isChecked}
+                                                    onCheckedChange={() => toggleDevice(device.serial_no)}
+                                                    onSelect={(e) => e.preventDefault()}
+                                                    className="text-xs"
+                                                >
+                                                    <div style={{ justifyContent: "space-between" }} className="flex items-center w-full gap-2">
+                                                        <div style={{ border: "" }} className="flex gap-1.5 truncate">
+                                                            <span className="font-mono text-[11px] font-semibold text-gray-800">
+                                                                {device.serial_no}
+                                                            </span>
+                                                            {device.location && (
+                                                                <span className="text-gray-500 font-sans truncate max-w-[120px] text-[10px]">
+                                                                    ({device.location})
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
                                                     </div>
-                                                    {device.location && (
-                                                        <div className="text-[11px] text-gray-500 font-sans truncate">
-                                                            {device.location}
-                                                        </div>
-                                                    )}
-                                                    <span className="text-[9px] text-gray-400 font-sans block mt-0.5">
-                                                        {isOnline ? 'Online' : 'Offline'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
+                                                </DropdownMenuCheckboxItem>
+                                            );
+                                        })}
+                                    </div>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+                    </div>
 
-                        <DialogFooter className="pt-4 gap-2 sm:gap-0">
+                    <DialogFooter className="pt-4 gap-2 sm:gap-0">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsAdding(false)}
+                            disabled={isSubmitting}
+                            className="w-full sm:w-auto"
+                        >
+                            Cancel
+                        </Button>
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                             <Button
                                 type="button"
-                                variant="outline"
-                                onClick={() => setIsAdding(false)}
+                                variant="secondary"
+                                onClick={(e) => handleAddSubmit(e, false)}
                                 disabled={isSubmitting}
                                 className="w-full sm:w-auto"
                             >
-                                Cancel
+                                {isSubmitting ? 'Saving...' : 'Save only'}
                             </Button>
-                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                                <Button
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={(e) => handleAddSubmit(e, false)}
-                                    disabled={isSubmitting}
-                                    className="w-full sm:w-auto"
-                                >
-                                    {isSubmitting ? 'Saving...' : 'Save only'}
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={(e) => handleAddSubmit(e, true)}
-                                    disabled={isSubmitting || selectedDevices.size === 0}
-                                    className="w-full sm:w-auto"
-                                >
-                                    {isSubmitting ? 'Saving...' : `Save & Push (${selectedDevices.size})`}
-                                </Button>
-                            </div>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                            <Button
+                                type="button"
+                                onClick={(e) => handleAddSubmit(e, true)}
+                                disabled={isSubmitting || selectedDevices.size === 0}
+                                className="w-full sm:w-auto"
+                            >
+                                {isSubmitting ? 'Saving...' : `Save & Push (${selectedDevices.size})`}
+                            </Button>
+                        </div>
+                    </DialogFooter>
+                </form>
+            </ResponsiveModal>
 
             {/* Bulk Change Department Dialog */}
             <Dialog open={isBulkDeptOpen} onOpenChange={(open) => { if (!open) setIsBulkDeptOpen(false); }}>

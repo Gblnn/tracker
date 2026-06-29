@@ -3,7 +3,7 @@ import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BarChart3, ChartLine, Database, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
+import { ArrowRightLeft, BarChart3, ChartLine, Database, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
@@ -15,6 +15,7 @@ import DevicesMaster from './DevicesMaster';
 import EmployeeManage from './employee-manage';
 import ReportsPage from './ReportsPage';
 import Terminal from './Terminal';
+import TransferRequests from './transfer-requests';
 
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '../lib/supabase';
@@ -30,7 +31,7 @@ const formatSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management' | 'analytics';
+type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management' | 'analytics' | 'transfers';
 
 export default function AttendanceDashboard() {
   const [date, setDate] = useState<string>(todayISO());
@@ -106,6 +107,7 @@ export default function AttendanceDashboard() {
   const viewOptions = useMemo(() => {
     const options = [
       { value: 'summary', label: 'Dashboard', icon: <LayoutGrid color="darkblue" className="w-4 h-4" /> },
+      { value: 'transfers', label: 'Transfers', icon: <ArrowRightLeft color="darkblue" className="w-4 h-4" /> },
       { value: 'analytics', label: 'Analytics', icon: <BarChart3 color="darkblue" className="w-4 h-4" /> },
       { value: 'manage', label: 'Manage', icon: <UserPlus color="darkblue" className="w-4 h-4" /> },
       { value: 'log', label: 'Punch Log', icon: <List color="darkblue" className="w-4 h-4" /> },
@@ -178,6 +180,8 @@ export default function AttendanceDashboard() {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                   <Directive bg={tab === 'summary' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('summary')} title="Dashboard" icon={<ChartLine size={16} />} />
+
+                  <Directive bg={tab === 'transfers' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('transfers')} title="Transfers" icon={<ArrowRightLeft size={16} />} />
 
                   {canEditAttendance && (
                     <Directive bg={tab === 'manage' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('manage')} title="Manage" icon={<UserCog size={16} />} />
@@ -364,6 +368,8 @@ export default function AttendanceDashboard() {
             ) : tab === 'summary' ? (
               <EmployeeTable summaries={employeeSummaries} date={date} useFirstLast={useFirstLast} />
 
+            ) : tab === 'transfers' ? (
+              <TransferRequests embedMode={true} />
             ) : tab === 'log' ? (
               <PunchLog punches={punches} employees={employees} onEmployeeAdded={refetch} />
             ) : tab === 'devices' ? (

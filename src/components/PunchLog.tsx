@@ -200,41 +200,66 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
                     </span>
                     <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-[140px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50">
-                    <DropdownMenuCheckboxItem
-                      checked={selectedPunchTypes.length === 0}
-                      onCheckedChange={() => setSelectedPunchTypes([])}
-                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                  <DropdownMenuContent className="w-[140px] max-h-[300px] overflow-y-auto p-0 z-50">
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
                     >
-                      All Types
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuSeparator className="my-1 border-gray-100" />
-                    <DropdownMenuCheckboxItem
-                      checked={selectedPunchTypes.includes(0)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedPunchTypes([...selectedPunchTypes, 0]);
-                        } else {
-                          setSelectedPunchTypes(selectedPunchTypes.filter(t => t !== 0));
-                        }
-                      }}
-                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                    >
-                      Check-in
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={selectedPunchTypes.includes(1)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedPunchTypes([...selectedPunchTypes, 1]);
-                        } else {
-                          setSelectedPunchTypes(selectedPunchTypes.filter(t => t !== 1));
-                        }
-                      }}
-                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                    >
-                      Check-out
-                    </DropdownMenuCheckboxItem>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedPunchTypes([0, 1]);
+                        }}
+                        className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left"
+                        style={{ background: "none", flex: 1 }}
+                      >
+                        All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedPunchTypes([]);
+                        }}
+                        className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right"
+                        style={{ background: "none", flex: 1 }}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="py-1">
+                      <DropdownMenuCheckboxItem
+                        checked={selectedPunchTypes.includes(0)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedPunchTypes([...selectedPunchTypes, 0]);
+                          } else {
+                            setSelectedPunchTypes(selectedPunchTypes.filter(t => t !== 0));
+                          }
+                        }}
+                        onSelect={(e) => e.preventDefault()}
+                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                      >
+                        Check-in
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem
+                        checked={selectedPunchTypes.includes(1)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedPunchTypes([...selectedPunchTypes, 1]);
+                          } else {
+                            setSelectedPunchTypes(selectedPunchTypes.filter(t => t !== 1));
+                          }
+                        }}
+                        onSelect={(e) => e.preventDefault()}
+                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                      >
+                        Check-out
+                      </DropdownMenuCheckboxItem>
+                    </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </th>
@@ -253,34 +278,58 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
                     </span>
                     <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-[180px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50 max-h-[300px] overflow-y-auto">
-                    <DropdownMenuCheckboxItem
-                      checked={selectedLocations.length === 0}
-                      onCheckedChange={() => setSelectedLocations([])}
-                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                  <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
                     >
-                      All Locations
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuSeparator className="my-1 border-gray-100" />
-                    {uniqueLocations.map(loc => {
-                      const isChecked = selectedLocations.includes(loc);
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={loc}
-                          checked={isChecked}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedLocations([...selectedLocations, loc]);
-                            } else {
-                              setSelectedLocations(selectedLocations.filter(item => item !== loc));
-                            }
-                          }}
-                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                        >
-                          {loc}
-                        </DropdownMenuCheckboxItem>
-                      );
-                    })}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedLocations(uniqueLocations);
+                        }}
+                        className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left"
+                        style={{ background: "none", flex: 1 }}
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedLocations([]);
+                        }}
+                        className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right"
+                        style={{ background: "none", flex: 1 }}
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                    <div className="py-1">
+                      {uniqueLocations.map(loc => {
+                        const isChecked = selectedLocations.includes(loc);
+                        return (
+                          <DropdownMenuCheckboxItem
+                            key={loc}
+                            checked={isChecked}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedLocations([...selectedLocations, loc]);
+                              } else {
+                                setSelectedLocations(selectedLocations.filter(item => item !== loc));
+                              }
+                            }}
+                            onSelect={(e) => e.preventDefault()}
+                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                          >
+                            {loc}
+                          </DropdownMenuCheckboxItem>
+                        );
+                      })}
+                    </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </th>

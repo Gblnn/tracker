@@ -254,6 +254,7 @@ export default function MobilePunch() {
       }}
     >
       <Back
+        noback
         fixed
         blurBG
         title=""

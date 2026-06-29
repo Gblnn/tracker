@@ -365,34 +365,58 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                     </span>
                     <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-[180px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50 max-h-[300px] overflow-y-auto">
-                    <DropdownMenuCheckboxItem
-                      checked={selectedDepartments.length === 0}
-                      onCheckedChange={() => setSelectedDepartments([])}
-                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                  <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
                     >
-                      All Departments
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuSeparator className="my-1 border-gray-100" />
-                    {uniqueDepartments.map(dept => {
-                      const isChecked = selectedDepartments.includes(dept);
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={dept}
-                          checked={isChecked}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedDepartments([...selectedDepartments, dept]);
-                            } else {
-                              setSelectedDepartments(selectedDepartments.filter(item => item !== dept));
-                            }
-                          }}
-                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                        >
-                          {dept}
-                        </DropdownMenuCheckboxItem>
-                      );
-                    })}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedDepartments(uniqueDepartments);
+                        }}
+                        className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left"
+                        style={{ background: "none", flex: 1 }}
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedDepartments([]);
+                        }}
+                        className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right"
+                        style={{ background: "none", flex: 1 }}
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                    <div className="py-1">
+                      {uniqueDepartments.map(dept => {
+                        const isChecked = selectedDepartments.includes(dept);
+                        return (
+                          <DropdownMenuCheckboxItem
+                            key={dept}
+                            checked={isChecked}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedDepartments([...selectedDepartments, dept]);
+                              } else {
+                                setSelectedDepartments(selectedDepartments.filter(item => item !== dept));
+                              }
+                            }}
+                            onSelect={(e) => e.preventDefault()}
+                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                          >
+                            {dept}
+                          </DropdownMenuCheckboxItem>
+                        );
+                      })}
+                    </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </th>
@@ -408,34 +432,58 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                     </span>
                     <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-[180px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50 max-h-[300px] overflow-y-auto">
-                    <DropdownMenuCheckboxItem
-                      checked={selectedLocations.length === 0}
-                      onCheckedChange={() => setSelectedLocations([])}
-                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                  <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
                     >
-                      All Locations
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuSeparator className="my-1 border-gray-100" />
-                    {uniqueLocations.map(loc => {
-                      const isChecked = selectedLocations.includes(loc);
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={loc}
-                          checked={isChecked}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedLocations([...selectedLocations, loc]);
-                            } else {
-                              setSelectedLocations(selectedLocations.filter(item => item !== loc));
-                            }
-                          }}
-                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                        >
-                          {loc}
-                        </DropdownMenuCheckboxItem>
-                      );
-                    })}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedLocations(uniqueLocations);
+                        }}
+                        className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left"
+                        style={{ background: "none", flex: 1 }}
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedLocations([]);
+                        }}
+                        className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right"
+                        style={{ background: "none", flex: 1 }}
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                    <div className="py-1">
+                      {uniqueLocations.map(loc => {
+                        const isChecked = selectedLocations.includes(loc);
+                        return (
+                          <DropdownMenuCheckboxItem
+                            key={loc}
+                            checked={isChecked}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedLocations([...selectedLocations, loc]);
+                              } else {
+                                setSelectedLocations(selectedLocations.filter(item => item !== loc));
+                              }
+                            }}
+                            onSelect={(e) => e.preventDefault()}
+                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                          >
+                            {loc}
+                          </DropdownMenuCheckboxItem>
+                        );
+                      })}
+                    </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </th>
@@ -457,41 +505,66 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                     </span>
                     <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-[140px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50">
-                    <DropdownMenuCheckboxItem
-                      checked={selectedStatuses.length === 0}
-                      onCheckedChange={() => setSelectedStatuses([])}
-                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                  <DropdownMenuContent className="w-[140px] max-h-[300px] overflow-y-auto p-0 z-50">
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
                     >
-                      All Statuses
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuSeparator className="my-1 border-gray-100" />
-                    <DropdownMenuCheckboxItem
-                      checked={selectedStatuses.includes('Present')}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedStatuses([...selectedStatuses, 'Present']);
-                        } else {
-                          setSelectedStatuses(selectedStatuses.filter(s => s !== 'Present'));
-                        }
-                      }}
-                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                    >
-                      Present
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={selectedStatuses.includes('Absent')}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedStatuses([...selectedStatuses, 'Absent']);
-                        } else {
-                          setSelectedStatuses(selectedStatuses.filter(s => s !== 'Absent'));
-                        }
-                      }}
-                      className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                    >
-                      Absent
-                    </DropdownMenuCheckboxItem>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedStatuses(['Present', 'Absent']);
+                        }}
+                        className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left"
+                        style={{ background: "none", flex: 1 }}
+                      >
+                        All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedStatuses([]);
+                        }}
+                        className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right"
+                        style={{ background: "none", flex: 1 }}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="py-1">
+                      <DropdownMenuCheckboxItem
+                        checked={selectedStatuses.includes('Present')}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedStatuses([...selectedStatuses, 'Present']);
+                          } else {
+                            setSelectedStatuses(selectedStatuses.filter(s => s !== 'Present'));
+                          }
+                        }}
+                        onSelect={(e) => e.preventDefault()}
+                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                      >
+                        Present
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem
+                        checked={selectedStatuses.includes('Absent')}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedStatuses([...selectedStatuses, 'Absent']);
+                          } else {
+                            setSelectedStatuses(selectedStatuses.filter(s => s !== 'Absent'));
+                          }
+                        }}
+                        onSelect={(e) => e.preventDefault()}
+                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                      >
+                        Absent
+                      </DropdownMenuCheckboxItem>
+                    </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </th>

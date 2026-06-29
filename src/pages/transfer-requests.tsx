@@ -1,96 +1,60 @@
+import { useState, useEffect } from "react";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/lib/supabase";
 import Back from "@/components/back";
 import RefreshButton from "@/components/refresh-button";
 import { ResponsiveModal } from "@/components/responsive-modal";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { useAuth } from "@/components/AuthProvider";
-import { db } from "@/firebase";
-import {
-  collection,
-  getDocs,
-  orderBy,
-  query,
-  Timestamp,
-  updateDoc,
-  doc,
-} from "firebase/firestore";
-import { ArrowRight, ArrowRightLeft, CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ArrowRight, ArrowRightLeft, CalendarDays, Loader2, Plus, Search, User } from "lucide-react";
 import { toast } from "sonner";
 
-type TransferStatus = "pending" | "approved" | "rejected";
+interface Props {
+  embedMode?: boolean;
+}
 
-type TransferRequest = {
+interface Transfer {
   id: string;
-  recordId: string;
-  recordName: string;
-  recordDesignation?: string;
-  fromProject: string;
-  fromSite: string;
-  toProject: string;
-  toSite: string;
-  requestedBy: string;
-  requestedByName?: string;
-  status: TransferStatus;
-  notes?: string;
-  createdAt: Timestamp;
-  resolvedAt?: Timestamp;
-  resolvedBy?: string;
-  resolverNotes?: string;
-};
+  created_at: string;
+  transfer_date: string;
+  from_project: string;
+  to_project: string;
+  initiator: string;
+  acceptor: string;
+}
 
-const statusColor: Record<TransferStatus, string> = {
-  pending: "rgba(234, 179, 8, 0.15)",
-  approved: "rgba(34, 197, 94, 0.12)",
-  rejected: "rgba(239, 68, 68, 0.12)",
-};
-
-const statusTextColor: Record<TransferStatus, string> = {
-  pending: "#ca8a04",
-  approved: "#16a34a",
-  rejected: "#dc2626",
-};
-
-const statusLabel: Record<TransferStatus, string> = {
-  pending: "Pending",
-  approved: "Approved",
-  rejected: "Rejected",
-};
-
-export default function TransferRequests() {
+export default function TransferRequests({ embedMode = false }: Props) {
   const { userData } = useAuth();
-  const [requests, setRequests] = useState<TransferRequest[]>([]);
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [tab, setTab] = useState<"pending" | "history">("pending");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Resolve dialog
-  const [resolveTarget, setResolveTarget] = useState<TransferRequest | null>(null);
-  const [resolveAction, setResolveAction] = useState<"approved" | "rejected" | null>(null);
-  const [resolverNotes, setResolverNotes] = useState("");
-  const [resolving, setResolving] = useState(false);
+  // New Transfer Form Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [transferDate, setTransferDate] = useState("");
+  const [fromProject, setFromProject] = useState("");
+  const [toProject, setToProject] = useState("");
+  const [initiator, setInitiator] = useState("");
+  const [acceptor, setAcceptor] = useState("");
 
-  const isApprover =
-    userData?.role === "admin" ||
-    userData?.role === "site_admin" ||
-    userData?.role === "management";
-
-  const fetchRequests = async (isManualRefresh = false) => {
+  const fetchTransfers = async (isManual = false) => {
     try {
-      if (isManualRefresh) setRefreshing(true);
+      if (isManual) setRefreshing(true);
       else setLoading(true);
 
-      const q = query(collection(db, "transfer_requests"), orderBy("createdAt", "desc"));
-      const snap = await getDocs(q);
-      const fetched: TransferRequest[] = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as Omit<TransferRequest, "id">),
-      }));
-      setRequests(fetched);
+      const { data, error } = await supabase
+        .from("transfers")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      if (isManualRefresh) setRefreshing(false);
-    } catch (err) {
-      console.error("Error fetching transfer requests:", err);
-      toast.error("Failed to load transfer requests");
+      if (error) throw error;
+      setTransfers(data || []);
+    } catch (err: any) {
+      console.error("Error fetching transfers:", err);
+      toast.error("Failed to load transfers list.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -98,448 +62,281 @@ export default function TransferRequests() {
   };
 
   useEffect(() => {
-    fetchRequests();
+    fetchTransfers();
   }, []);
 
-  const openResolve = (req: TransferRequest, action: "approved" | "rejected") => {
-    setResolveTarget(req);
-    setResolveAction(action);
-    setResolverNotes("");
-  };
+  // Pre-fill fields when modal opens
+  useEffect(() => {
+    if (modalOpen) {
+      const today = new Date().toISOString().split("T")[0];
+      setTransferDate(today);
+      setFromProject("");
+      setToProject("");
+      setInitiator(userData?.name || userData?.email || "");
+      setAcceptor("");
+    }
+  }, [modalOpen, userData]);
 
-  const confirmResolve = async () => {
-    if (!resolveTarget || !resolveAction) return;
-    setResolving(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transferDate || !fromProject || !toProject || !initiator) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      const now = Timestamp.now();
-
-      // Update the transfer request
-      await updateDoc(doc(db, "transfer_requests", resolveTarget.id), {
-        status: resolveAction,
-        resolvedAt: now,
-        resolvedBy: userData?.email || "",
-        resolverNotes: resolverNotes.trim(),
-      });
-
-      // If approved, update the record's project and site
-      if (resolveAction === "approved") {
-        await updateDoc(doc(db, "records", resolveTarget.recordId), {
-          project: resolveTarget.toProject,
-          site: resolveTarget.toSite,
-          updatedAt: now,
+      const { error } = await supabase
+        .from("transfers")
+        .insert({
+          transfer_date: transferDate,
+          from_project: fromProject,
+          to_project: toProject,
+          initiator: initiator,
+          acceptor: acceptor
         });
-      }
 
-      toast.success(
-        resolveAction === "approved"
-          ? `Transfer approved — ${resolveTarget.recordName} moved to ${resolveTarget.toProject}`
-          : `Transfer request rejected`
-      );
+      if (error) throw error;
 
-      setResolveTarget(null);
-      setResolveAction(null);
-      fetchRequests();
-    } catch (err) {
-      console.error("Error resolving transfer:", err);
-      toast.error("Failed to process request");
+      toast.success("Transfer recorded successfully!");
+      setModalOpen(false);
+      fetchTransfers();
+    } catch (err: any) {
+      console.error("Error creating transfer:", err);
+      toast.error(err.message || "Failed to submit transfer.");
     } finally {
-      setResolving(false);
+      setSubmitting(false);
     }
   };
 
-  const pendingRequests = requests.filter((r) => r.status === "pending");
-  const historyRequests = requests.filter((r) => r.status !== "pending");
-  const visible = tab === "pending" ? pendingRequests : historyRequests;
+  const filteredTransfers = transfers.filter((t) => {
+    const q = searchQuery.toLowerCase();
+    return (
+      (t.from_project || "").toLowerCase().includes(q) ||
+      (t.to_project || "").toLowerCase().includes(q) ||
+      (t.initiator || "").toLowerCase().includes(q) ||
+      (t.acceptor || "").toLowerCase().includes(q)
+    );
+  });
 
   return (
-    <>
-      <Back
-        blurBG
-        fixed
-        title="Transfers"
-        subtitle={pendingRequests.length > 0 ? pendingRequests.length : undefined}
-        extra={
-          <RefreshButton
-            fetchingData={refreshing}
-            onClick={() => fetchRequests(true)}
-          />
-        }
-      />
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", overflow: "hidden" }}>
+      {!embedMode && (
+        <Back
+          blurBG
+          fixed
+          title="Transfers"
+          extra={
+            <RefreshButton
+              fetchingData={refreshing}
+              onClick={() => fetchTransfers(true)}
+            />
+          }
+        />
+      )}
 
-      {/* Tab bar */}
+      {/* Control bar */}
       <div
         style={{
-          position: "fixed",
-          top: "4.5rem",
-          left: 0,
-          right: 0,
-          zIndex: 15,
           display: "flex",
-          gap: "0.5rem",
-          padding: "0.5rem 1.25rem",
-          background: "rgba(250,250,250,0.95)",
-          backdropFilter: "blur(8px)",
-          borderBottom: "1px solid rgba(100,100,100,0.1)",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "1rem",
+          padding: "1rem",
+          borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
+          background: "#fafafa"
         }}
       >
-        {(["pending", "history"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            style={{
-              padding: "0.45rem 1rem",
-              borderRadius: "2rem",
-              border: "none",
-              fontWeight: 500,
-              fontSize: "0.85rem",
-              background:
-                tab === t ? "black" : "rgba(100,100,100,0.08)",
-              color: tab === t ? "white" : "inherit",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.4rem",
-            }}
-          >
-            {t === "pending" ? "Pending" : "History"}
-            {t === "pending" && pendingRequests.length > 0 && (
-              <span
-                style={{
-                  background: "rgba(255,255,255,0.3)",
-                  borderRadius: "1rem",
-                  padding: "0.1rem 0.45rem",
-                  fontSize: "0.75rem",
-                  fontWeight: 700,
-                  minWidth: "1.25rem",
-                  textAlign: "center",
-                }}
-              >
-                {pendingRequests.length}
-              </span>
-            )}
-          </button>
-        ))}
+        <div style={{ position: "relative", flex: 1, maxWidth: "320px" }}>
+          <Search style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", width: "1rem", height: "1rem", color: "#9ca3af" }} />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search transfers..."
+            style={{ paddingLeft: "2.25rem", height: "2.25rem", fontSize: "0.85rem" }}
+          />
+        </div>
+
+        <Button
+          onClick={() => setModalOpen(true)}
+          style={{
+            height: "2.25rem",
+            fontSize: "0.85rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.35rem",
+            backgroundColor: "#1e3a8a",
+            color: "white"
+          }}
+        >
+          <Plus className="w-4 h-4" />
+          New Transfer
+        </Button>
       </div>
 
-      <div
-        style={{
-          paddingTop: "9rem",
-          paddingLeft: "1.25rem",
-          paddingRight: "1.25rem",
-          paddingBottom: "3rem",
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.75rem",
-       
-          margin: "0 auto",
-        }}
-      >
+      {/* Main content grid/table */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "1rem" }}>
         {loading ? (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "60vh",
-            }}
-          >
-            <Loader2 className="animate-spin" />
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "50vh" }}>
+            <Loader2 className="animate-spin w-8 h-8 text-blue-900" />
           </div>
-        ) : visible.length === 0 ? (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "60vh",
-            }}
-          >
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia>
-                  <ArrowRightLeft />
-                </EmptyMedia>
-                <EmptyTitle>
-                  {tab === "pending" ? "No Pending Requests" : "No History"}
-                </EmptyTitle>
-                <EmptyDescription>
-                  {tab === "pending"
-                    ? "No transfer requests awaiting approval."
-                    : "Resolved transfer requests will appear here."}
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
+        ) : filteredTransfers.length === 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "50vh", gap: "0.5rem", color: "#6b7280" }}>
+            <ArrowRightLeft className="w-12 h-12 text-gray-300" />
+            <h4 style={{ fontWeight: 600, color: "#374151" }}>No transfers found</h4>
+            <p style={{ fontSize: "0.8rem" }}>Create a new transfer request to get started.</p>
           </div>
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-              gap: "1rem",
-              paddingTop: "0.25rem",
-            }}
-          >
-            {visible.map((req) => (
-              <div
-                key={req.id}
-                // onMouseEnter={(e) => {
-                //   e.currentTarget.style.background = "rgba(100,100,100,0.08)";
-                //   e.currentTarget.style.borderColor = "rgba(100,100,100,0.2)";
-                // }}
-                // onMouseLeave={(e) => {
-                //   e.currentTarget.style.background = "rgba(100,100,100,0.04)";
-                //   e.currentTarget.style.borderColor = "rgba(100,100,100,0.1)";
-                // }}
-                style={{
-                  padding: "1rem",
-                  borderRadius: "0.75rem",
-                  background: "rgba(100,100,100,0.04)",
-                  border: "1px solid rgba(100,100,100,0.1)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.6rem",
-                  transition: "all 0.15s ease",
-                  
-                }}
-              >
-              {/* Worker info + status */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  gap: "0.5rem",
-                  
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: "0.95rem", textTransform: "capitalize" }}>
-                    {req.recordName?.toLowerCase() || "Unknown Worker"}
-                  </div>
-                  {req.recordDesignation && (
-                    <div style={{ fontSize: "0.8rem", opacity: 0.6, textTransform: "capitalize" }}>
-                      {req.recordDesignation.toLowerCase()}
-                    </div>
-                  )}
-                </div>
-                <span
-                  style={{
-                    
-                    padding: "0.25rem 0.65rem",
-                    borderRadius: "2rem",
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    background: statusColor[req.status],
-                    color: statusTextColor[req.status],
-                    flexShrink: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.3rem",
-                  }}
-                >
-                  {req.status === "pending" && <Clock width="0.75rem" />}
-                  {req.status === "approved" && <CheckCircle2 width="0.75rem" />}
-                  {req.status === "rejected" && <XCircle width="0.75rem" />}
-                  {statusLabel[req.status]}
-                </span>
-              </div>
-
-              {/* Transfer route */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  fontSize: "0.82rem",
-                  flexWrap: "wrap",
-                }}
-              >
-                <span
-                  style={{
-                    padding: "0.2rem 0.6rem",
-                    borderRadius: "0.35rem",
-                    background: "rgba(100,100,100,0.08)",
-                    fontWeight: 500,
-                  }}
-                >
-                  {req.fromProject || "—"}
-                  {/* {req.fromSite ? ` · ${req.fromSite}` : ""} */}
-                </span>
-                <ArrowRight width="0.85rem" style={{ opacity: 0.5, flexShrink: 0 }} />
-                <span
-                  style={{
-                    padding: "0.2rem 0.6rem",
-                    borderRadius: "0.35rem",
-                    background: "rgba(100,100,100,0.1)",
-                  
-                    fontWeight: 500,
-                  }}
-                >
-                  {req.toProject || "—"}{req.toSite ? ` · ${req.toSite}` : ""}
-                </span>
-              </div>
-
-              {/* Meta */}
-              <div style={{ fontSize: "0.78rem", opacity: 0.55 }}>
-                Requested by {req.requestedByName || req.requestedBy}
-                {req.createdAt?.toDate
-                  ? ` · ${req.createdAt.toDate().toLocaleDateString()}`
-                  : ""}
-              </div>
-
-              {req.notes && (
-                <div
-                  style={{
-                    fontSize: "0.82rem",
-                    padding: "0.5rem 0.75rem",
-                    background: "rgba(100,100,100,0.05)",
-                    borderRadius: "0.5rem",
-                    fontStyle: "italic",
-                    opacity: 0.75,
-                  }}
-                >
-                  "{req.notes}"
-                </div>
-              )}
-
-              {req.resolverNotes && req.status !== "pending" && (
-                <div
-                  style={{
-                    fontSize: "0.82rem",
-                    padding: "0.5rem 0.75rem",
-                    background: statusColor[req.status],
-                    borderRadius: "0.5rem",
-                    fontStyle: "italic",
-                    color: statusTextColor[req.status],
-                  }}
-                >
-                  Review note: "{req.resolverNotes}"
-                </div>
-              )}
-
-              {/* Actions — only approvers see on pending requests */}
-              {req.status === "pending" && isApprover && (
-                <div style={{ display: "flex", gap: "0.5rem", paddingTop: "0.25rem" }}>
-                  <button
-                    onClick={() => openResolve(req, "rejected")}
-                    style={{
-                      flex: 1,
-                      padding: "0.6rem",
-                      borderRadius: "0.6rem",
-           
-                      background: "rgba(239,68,68,0.07)",
-                      color: "#dc2626",
-                      fontWeight: 600,
-                      fontSize: "0.85rem",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Reject
-                  </button>
-                  <button
-                    onClick={() => openResolve(req, "approved")}
-                    style={{
-                      flex: 1,
-                      padding: "0.6rem",
-                      borderRadius: "0.6rem",
-                      border: "none",
-                      background: "darkslateblue",
-                      color: "white",
-                      fontWeight: 600,
-                      fontSize: "0.85rem",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Approve
-                  </button>
-                </div>
-              )}
-              </div>
-            ))}
+          <div style={{ border: "1px solid #e5e7eb", borderRadius: "0.75rem", overflow: "hidden", background: "white" }}>
+            <Table>
+              <TableHeader>
+                <TableRow style={{ backgroundColor: "#f9fafb" }}>
+                  <TableHead style={{ fontWeight: 600, color: "#374151" }}>Transfer Date</TableHead>
+                  <TableHead style={{ fontWeight: 600, color: "#374151" }}>Route</TableHead>
+                  <TableHead style={{ fontWeight: 600, color: "#374151" }}>Initiator</TableHead>
+                  <TableHead style={{ fontWeight: 600, color: "#374151" }}>Acceptor</TableHead>
+                  <TableHead style={{ fontWeight: 600, color: "#374151" }}>Created At</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredTransfers.map((t) => (
+                  <TableRow key={t.id} style={{ transition: "background 0.2s" }}>
+                    <TableCell style={{ fontWeight: 500, color: "#1f2937" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                        <CalendarDays className="w-4 h-4 text-gray-400" />
+                        {new Date(t.transfer_date).toLocaleDateString()}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 500 }}>
+                        <span style={{ color: "#4b5563" }}>{t.from_project}</span>
+                        <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
+                        <span style={{ color: "#1e3a8a" }}>{t.to_project}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem" }}>
+                        <User className="w-3.5 h-3.5 text-gray-400" />
+                        <span>{t.initiator}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {t.acceptor ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem" }}>
+                          <User className="w-3.5 h-3.5 text-indigo-400" />
+                          <span style={{ color: "#4f46e5", fontWeight: 500 }}>{t.acceptor}</span>
+                        </div>
+                      ) : (
+                        <span style={{ color: "#9ca3af", fontStyle: "italic", fontSize: "0.8rem" }}>Pending acceptance</span>
+                      )}
+                    </TableCell>
+                    <TableCell style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                      {new Date(t.created_at).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>
 
-      {/* Resolve confirmation modal */}
+      {/* New Transfer Modal */}
       <ResponsiveModal
-        open={!!resolveTarget && !!resolveAction}
-        onOpenChange={(open) => {
-          if (!open) {
-            setResolveTarget(null);
-            setResolveAction(null);
-          }
-        }}
-        title={resolveAction === "approved" ? "Approve Transfer" : "Reject Transfer"}
-        description={
-          resolveTarget
-            ? resolveAction === "approved"
-              ? `${resolveTarget.recordName} will be moved to ${resolveTarget.toProject}${resolveTarget.toSite ? ` · ${resolveTarget.toSite}` : ""}.`
-              : `The transfer request for ${resolveTarget.recordName} will be rejected.`
-            : ""
-        }
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        title=""
+        description=""
       >
-        <div style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-          <textarea
-            value={resolverNotes}
-            onChange={(e) => setResolverNotes(e.target.value)}
-            placeholder="Add a note (optional)"
-            rows={3}
-            style={{
-              width: "100%",
-              padding: "0.75rem",
-              borderRadius: "0.5rem",
-              border: "1px solid rgba(100,100,100,0.2)",
-              background: "rgba(100,100,100,0.04)",
-              fontSize: "0.9rem",
-              resize: "vertical",
-              boxSizing: "border-box",
-            }}
-          />
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button
-              onClick={() => {
-                setResolveTarget(null);
-                setResolveAction(null);
-              }}
-              style={{
-                flex: 1,
-                padding: "0.75rem",
-                borderRadius: "0.6rem",
-                border: "none",
-                background: "rgba(100,100,100,0.08)",
-                cursor: "pointer",
-                fontWeight: 500,
-              }}
+        <form onSubmit={handleSubmit} style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderBottom: "1px solid #f3f4f6", paddingBottom: "0.75rem" }}>
+            <ArrowRightLeft className="w-5 h-5 text-blue-900" />
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#111827" }}>Record New Transfer</h3>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+            <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Transfer Date *</label>
+            <Input
+              type="date"
+              required
+              value={transferDate}
+              onChange={(e) => setTransferDate(e.target.value)}
+              style={{ fontSize: "0.85rem" }}
+            />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>From Project *</label>
+              <Input
+                type="text"
+                required
+                placeholder="e.g. Project A"
+                value={fromProject}
+                onChange={(e) => setFromProject(e.target.value)}
+                style={{ fontSize: "0.85rem" }}
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>To Project *</label>
+              <Input
+                type="text"
+                required
+                placeholder="e.g. Project B"
+                value={toProject}
+                onChange={(e) => setToProject(e.target.value)}
+                style={{ fontSize: "0.85rem" }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+            <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Initiator *</label>
+            <Input
+              type="text"
+              required
+              placeholder="Who initiated the transfer"
+              value={initiator}
+              onChange={(e) => setInitiator(e.target.value)}
+              style={{ fontSize: "0.85rem" }}
+            />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+            <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Acceptor (Optional)</label>
+            <Input
+              type="text"
+              placeholder="Who accepted/approved the transfer"
+              value={acceptor}
+              onChange={(e) => setAcceptor(e.target.value)}
+              style={{ fontSize: "0.85rem" }}
+            />
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginTop: "0.5rem" }}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setModalOpen(false)}
+              style={{ height: "2.25rem", fontSize: "0.85rem" }}
             >
               Cancel
-            </button>
-            <button
-              onClick={confirmResolve}
-              disabled={resolving}
+            </Button>
+            <Button
+              type="submit"
+              disabled={submitting}
               style={{
-                flex: 2,
-                padding: "0.75rem",
-                borderRadius: "0.6rem",
-                border: "none",
-                background:
-                  resolveAction === "approved" ? "darkslateblue" : "#dc2626",
-                color: "white",
-                fontWeight: 600,
-                cursor: resolving ? "not-allowed" : "pointer",
-                opacity: resolving ? 0.65 : 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.4rem",
+                height: "2.25rem",
+                fontSize: "0.85rem",
+                backgroundColor: "#1e3a8a",
+                color: "white"
               }}
             >
-              {resolving && <Loader2 className="animate-spin" width="1rem" />}
-              {resolveAction === "approved" ? "Confirm Approval" : "Confirm Rejection"}
-            </button>
+              {submitting ? "Saving..." : "Save Record"}
+            </Button>
           </div>
-        </div>
+        </form>
       </ResponsiveModal>
-
-    </>
+    </div>
   );
 }
