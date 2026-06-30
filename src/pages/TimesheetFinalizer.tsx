@@ -21,7 +21,8 @@ import {
   Lock,
   Search,
   Unlock,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -33,6 +34,7 @@ interface Employee {
   name: string;
   department: string | null;
   emp_id: string;
+  emp_type: 'staff' | 'worker' | null;
 }
 
 interface Punch {
@@ -120,6 +122,7 @@ export default function TimesheetFinalizer() {
   const [search, setSearch] = useState('');
   const [punchFilter, setPunchFilter] = useState<'ALL' | 'NO_IN' | 'NO_OUT' | 'BOTH'>('ALL');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [roundOT, setRoundOT] = useState(false);
 
   const { userData } = useAuth();
 
@@ -159,7 +162,7 @@ export default function TimesheetFinalizer() {
         { data: projData, error: projErr },
         { data: devData, error: devErr }
       ] = await Promise.all([
-        supabase.from('employees').select('id, device_user_id, name, department, emp_id').order('name'),
+        supabase.from('employees').select('id, device_user_id, name, department, emp_id, emp_type').order('name'),
         supabase.from('projects').select('project_code, project_name').order('project_code'),
         supabase.from('devices').select('serial_no, project_code')
       ]);
@@ -276,7 +279,7 @@ export default function TimesheetFinalizer() {
 
           // Auto overtime check (shift hours > 8)
           let autoOvertime = 0;
-          if (inTime && outTime) {
+          if (inTime && outTime && emp.emp_type !== 'staff') {
             const [inH, inM] = inTime.split(':').map(Number);
             const [outH, outM] = outTime.split(':').map(Number);
             let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
@@ -333,14 +336,20 @@ export default function TimesheetFinalizer() {
         const inTime = key === 'punch_in' ? value : current.punch_in;
         const outTime = key === 'punch_out' ? value : current.punch_out;
 
-        if (inTime && outTime) {
+        const emp = employees.find(e => e.device_user_id === userId);
+        const isStaff = emp?.emp_type === 'staff';
+
+        if (inTime && outTime && !isStaff) {
           const [inH, inM] = inTime.split(':').map(Number);
           const [outH, outM] = outTime.split(':').map(Number);
           let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
           if (diffMin < 0) diffMin += 24 * 60;
           const hours = diffMin / 60;
           if (hours > 8) {
-            updated.overtime = parseFloat((hours - 8).toFixed(1));
+            const rawOT = hours - 8;
+            updated.overtime = roundOT
+              ? Math.round(rawOT * 2) / 2
+              : parseFloat(rawOT.toFixed(1));
           } else {
             updated.overtime = 0;
           }
@@ -682,10 +691,58 @@ export default function TimesheetFinalizer() {
                 Unlock Timesheet
               </button>
             ) : (
-              <button disabled={loading || saving} style={{ fontSize: "0.8rem", fontWeight: 500 }} className="btn-finalize" onClick={handleFinalize}>
-                {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                Approve & Finalize Day
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetState = !roundOT;
+                    setRoundOT(targetState);
+                    if (targetState) {
+                      setRows(prev => {
+                        const updated = { ...prev };
+                        Object.keys(updated).forEach(userId => {
+                          const emp = employees.find(e => e.device_user_id === userId);
+                          if (emp?.emp_type !== 'staff') {
+                            updated[userId] = {
+                              ...updated[userId],
+                              overtime: Math.round(updated[userId].overtime * 2) / 2
+                            };
+                          } else {
+                            updated[userId] = {
+                              ...updated[userId],
+                              overtime: 0
+                            };
+                          }
+                        });
+                        return updated;
+                      });
+                      toast.success("Overtime rounded to nearest 0.5 hours.");
+                    }
+                  }}
+                  disabled={loading || saving || isLocked}
+                  className="btn-round-ot"
+                  style={{
+                    background: roundOT ? 'rgba(100 100 100/ 0.1)' : '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    fontWeight: 500,
+                    fontSize: '0.8rem',
+                    padding: '5px 16px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <RefreshCw size={13} />
+                  Round OT
+                </button>
+                <button disabled={loading || saving} style={{ fontSize: "0.8rem", fontWeight: 500 }} className="btn-finalize" onClick={handleFinalize}>
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                  Approve & Finalize Day
+                </button>
+              </div>
             )
           )}
         </div>
@@ -958,17 +1015,21 @@ export default function TimesheetFinalizer() {
 
                         {/* Overtime Input */}
                         <td>
-                          <input
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            max="24"
-                            value={row.overtime}
-                            onChange={(e) => updateRow(emp.device_user_id, 'overtime', parseFloat(e.target.value) || 0)}
-                            className="table-input"
-                            disabled={isLocked || !canEditAttendance}
-                            style={{ width: '70px', fontFamily: 'monospace' }}
-                          />
+                          {emp.emp_type === 'staff' ? (
+                            <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', paddingLeft: '12px' }}>—</span>
+                          ) : (
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="24"
+                              value={row.overtime}
+                              onChange={(e) => updateRow(emp.device_user_id, 'overtime', parseFloat(e.target.value) || 0)}
+                              className="table-input"
+                              disabled={isLocked || !canEditAttendance}
+                              style={{ width: '70px', fontFamily: 'monospace' }}
+                            />
+                          )}
                         </td>
 
                         {/* Source/Attestation Badge */}
