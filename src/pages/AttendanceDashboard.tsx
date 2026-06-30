@@ -3,7 +3,7 @@ import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRightLeft, BarChart3, ChartLine, Database, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
+import { ArrowRightLeft, BarChart3, ChartLine, Database, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap, FolderKanban, FileCheck, Check } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
@@ -16,6 +16,8 @@ import EmployeeManage from './employee-manage';
 import ReportsPage from './ReportsPage';
 import Terminal from './Terminal';
 import TransferRequests from './transfer-requests';
+import ProjectsMaster from './ProjectsMaster';
+import TimesheetFinalizer from './TimesheetFinalizer';
 
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '../lib/supabase';
@@ -31,7 +33,7 @@ const formatSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management' | 'analytics' | 'transfers';
+type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management' | 'analytics' | 'transfers' | 'projects' | 'finalize';
 
 export default function AttendanceDashboard() {
   const [date, setDate] = useState<string>(todayISO());
@@ -113,11 +115,13 @@ export default function AttendanceDashboard() {
       { value: 'log', label: 'Punch Log', icon: <List color="darkblue" className="w-4 h-4" /> },
       { value: 'reports', label: 'Reports', icon: <TrendingUp color="darkblue" className="w-4 h-4" /> },
       { value: 'devices', label: 'Devices', icon: <Laptop2 color="darkblue" className="w-4 h-4" /> },
+      { value: 'projects', label: 'Projects', icon: <FolderKanban color="darkblue" className="w-4 h-4" /> },
+      { value: 'finalize', label: 'Finalize Timesheets', icon: <FileCheck color="darkblue" className="w-4 h-4" /> },
       { value: 'terminal', label: 'Terminal', icon: <TerminalIcon color="darkblue" className="w-4 h-4" /> },
       { value: 'data-management', label: 'Data Management', icon: <Database color="darkblue" className="w-4 h-4" /> },
     ];
     if (!canEditAttendance) {
-      return options.filter(opt => opt.value !== 'manage');
+      return options.filter(opt => opt.value !== 'manage' && opt.value !== 'finalize');
     }
     return options;
   }, [canEditAttendance]);
@@ -195,7 +199,17 @@ export default function AttendanceDashboard() {
 
                   <Directive bg={tab === 'devices' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('devices')} title="Devices" icon={<Laptop2 size={16} />} />
 
+                  {canEditAttendance && (
+                    <Directive bg={tab === 'projects' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('projects')} title="Projects" icon={<FolderKanban size={16} />} />
+                  )}
+
+
+
                   <Directive bg={tab === 'terminal' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('terminal')} title="Terminal" icon={<TerminalIcon size={16} />} />
+
+                  {canEditAttendance && (
+                    <Directive bg={tab === 'finalize' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('finalize')} title="Finalize Timesheets" icon={<Check size={16} />} />
+                  )}
                 </div>
 
                 {canEditAttendance && (
@@ -374,6 +388,10 @@ export default function AttendanceDashboard() {
               <PunchLog punches={punches} employees={employees} onEmployeeAdded={refetch} />
             ) : tab === 'devices' ? (
               <DevicesMaster />
+            ) : tab === 'projects' ? (
+              <ProjectsMaster />
+            ) : tab === 'finalize' ? (
+              <TimesheetFinalizer />
             ) : tab === 'terminal' ? (
               <Terminal />
             ) : tab === 'data-management' ? (

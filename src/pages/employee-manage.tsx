@@ -1205,17 +1205,17 @@ export default function EmployeeManage() {
                                     {/* IDs */}
                                     <td className="px-4 py-3">
                                         <div style={{ display: "flex", flexFlow: "column", gap: "2px" }}>
-                                            <div className="text-xs text-gray-500">HR ID: <span className="font-medium text-gray-800">{emp.emp_id ?? '—'}</span></div>
+                                            <div className="text-xs text-gray-500">ID: <span className="font-medium text-gray-800">{emp.emp_id ?? '—'}</span></div>
                                             <div className="text-xs text-gray-400">Device ID: <span className="font-mono text-gray-700">{emp.device_user_id}</span></div>
                                         </div>
                                     </td>
                                     {/* Biometrics */}
                                     <td className="px-4 py-3">
                                         <div className="flex gap-1.5" style={{ border: "", justifyContent: "flex-start" }}>
-                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${fingerAvailable[emp.id] ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
+                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium  ${fingerAvailable[emp.id] ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
                                                 <Fingerprint className="w-3.5 h-3.5" /> Finger
                                             </span>
-                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${faceAvailable[emp.id] ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
+                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium  ${faceAvailable[emp.id] ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
                                                 <Scan className="w-3.5 h-3.5" /> Face
                                             </span>
                                         </div>

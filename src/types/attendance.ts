@@ -8,6 +8,7 @@ export interface Punch {
   raw: string;
   created_at: string;
   location:string;
+  mobile_location?: string;
 }
 
 export interface Employee {

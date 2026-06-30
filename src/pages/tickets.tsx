@@ -86,16 +86,16 @@ const TopLevelComposer: React.FC<{ posting: boolean, text: string, onTextChange:
   return (
     <form onSubmit={async (e) => { e.preventDefault(); if (!text.trim()) return; const ok = await onPost(text); if (ok) onTextChange(''); }} style={{ display: 'flex', gap: 8, flexFlow: 'column', width: '100%' }}>
       <RichTextField value={text} onChange={onTextChange} placeholder="Reply to this thread" minHeight={120} />
-        <div style={{ display: 'flex', justifyContent: '', gap: 8 }}>
-          {onCancel ? (
-            <>
-              <button type="button" onClick={() => { onTextChange(''); onCancel && onCancel(); }} style={{ padding: "0.5rem 1.5rem", background: '#eee', border: 'none', borderRadius: 8, flex:1 }}>Cancel</button>
-              <button type="submit" disabled={posting || !text.trim()} style={{ padding: "0.5rem 1.5rem", background: '', color: '', border: 'none', borderRadius: 8, flex:1 }}>{posting ? 'Posting...' : 'Post'}{posting ? <Loader2 className="animate-spin" size={14} /> : <Send size={15}/>}</button>
-            </>
-          ) : (
-            <button type="submit" disabled={posting || !text.trim()} style={{ padding: "0.5rem 1.5rem", flex:1, width:"fit-content", cursor: posting || !text.trim() ? 'not-allowed' : 'pointer' }}>{posting ? <><Loader2 className="animate-spin" size={14} /> Posting...</> : <><Reply size={15}/> Reply</>}</button>
-          )}
-        </div>
+      <div style={{ display: 'flex', justifyContent: '', gap: 8 }}>
+        {onCancel ? (
+          <>
+            <button type="button" onClick={() => { onTextChange(''); onCancel && onCancel(); }} style={{ padding: "0.5rem 1.5rem", background: '#eee', border: 'none', borderRadius: 8, flex: 1 }}>Cancel</button>
+            <button type="submit" disabled={posting || !text.trim()} style={{ padding: "0.5rem 1.5rem", background: '', color: '', border: 'none', borderRadius: 8, flex: 1 }}>{posting ? 'Posting...' : 'Post'}{posting ? <Loader2 className="animate-spin" size={14} /> : <Send size={15} />}</button>
+          </>
+        ) : (
+          <button type="submit" disabled={posting || !text.trim()} style={{ padding: "0.5rem 1.5rem", flex: 1, width: "fit-content", cursor: posting || !text.trim() ? 'not-allowed' : 'pointer' }}>{posting ? <><Loader2 className="animate-spin" size={14} /> Posting...</> : <><Reply size={15} /> Reply</>}</button>
+        )}
+      </div>
     </form>
   );
 };
@@ -106,7 +106,7 @@ const sanitizeHtml = (html: string) => {
   try {
     const doc = typeof window !== 'undefined' ? new DOMParser().parseFromString(html, 'text/html') : null;
     if (!doc) return '';
-    const allowed = new Set(['b','strong','i','em','u','a','p','br','ul','ol','li','div','span']);
+    const allowed = new Set(['b', 'strong', 'i', 'em', 'u', 'a', 'p', 'br', 'ul', 'ol', 'li', 'div', 'span']);
     const walk = (root: Element) => {
       const children = Array.from(root.children);
       for (const child of children) {
@@ -217,7 +217,7 @@ export default function Tickets() {
 
   // helper: build message tree (roots array) from flat messages
 
-  
+
 
   const avatarColor = (seed?: string) => {
     const palette = ["#6b73ff", "#34d399", "#f59e0b", "#fb7185", "#60a5fa", "#a78bfa"];
@@ -413,10 +413,10 @@ export default function Tickets() {
   const getKeywordsFromQuery = (q: string) => {
     if (!q) return [] as string[];
     const stopwords = new Set([
-      'the','is','at','which','on','and','a','an','for','to','in','of','with','that','this','it','by','from','as','are','be','was','were','or','but','have','has','had',
-      'i','you','we','they','he','she','my','your',
+      'the', 'is', 'at', 'which', 'on', 'and', 'a', 'an', 'for', 'to', 'in', 'of', 'with', 'that', 'this', 'it', 'by', 'from', 'as', 'are', 'be', 'was', 'were', 'or', 'but', 'have', 'has', 'had',
+      'i', 'you', 'we', 'they', 'he', 'she', 'my', 'your',
       // common verbs/fillers often not useful as keywords
-      'want','wants','wanted','need','needs','needed','like','likes','liked','get','gets','got','make','makes','made','using','use','used','trying','try','tried','help','please','how','can','could','would','should'
+      'want', 'wants', 'wanted', 'need', 'needs', 'needed', 'like', 'likes', 'liked', 'get', 'gets', 'got', 'make', 'makes', 'made', 'using', 'use', 'used', 'trying', 'try', 'tried', 'help', 'please', 'how', 'can', 'could', 'would', 'should'
     ]);
     return q
       .toLowerCase()
@@ -581,19 +581,19 @@ export default function Tickets() {
     const [replyClosing, setReplyClosing] = useState(false);
     return (
       <div style={{ marginLeft: depth * 16, padding: "8px 0", }}>
-        <div style={{ display: 'flex', gap: 8}}>
+        <div style={{ display: 'flex', gap: 8 }}>
 
-          
 
-          <div style={{ flex: 1 , border:"", padding:"0.5rem" }}>
 
-            <div style={{display:"flex", gap: 8, alignItems:"center"}}>
+          <div style={{ flex: 1, border: "", padding: "0.5rem" }}>
+
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <div style={{ width: 38, height: 38, borderRadius: "50%", background: avatarColor(node.createdBy), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
-                {(() => { 
-                  const dn = ticketCreators[node.createdBy] || node.createdBy || 'U'; const parts = dn.split(/\s+/).filter(Boolean); 
-                  const initials = parts.length === 1 ? parts[0].slice(0,2) : (parts[0][0] + (parts[1][0]||'')).slice(0,2); return (initials || 'U').toUpperCase(); 
-                  })()}
-                </div>
+                {(() => {
+                  const dn = ticketCreators[node.createdBy] || node.createdBy || 'U'; const parts = dn.split(/\s+/).filter(Boolean);
+                  const initials = parts.length === 1 ? parts[0].slice(0, 2) : (parts[0][0] + (parts[1][0] || '')).slice(0, 2); return (initials || 'U').toUpperCase();
+                })()}
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>{ticketCreators[node.createdBy] || (node.createdBy && node.createdBy.split('@')[0])}</div>
@@ -607,14 +607,14 @@ export default function Tickets() {
                   <div style={{ fontSize: '0.75rem', color: '#666' }}><ReactTimeAgo timeStyle={"twitter"} date={getDate(node.createdAt)} /></div>
                 </div>
               </div>
-            
 
-            {(() => {
+
+              {(() => {
                 const canEdit = !!(userData?.role === 'admin' || (user && node.createdBy === user.email));
                 return (
                   <CustomDropDown
                     className=""
-                    trigger={<MoreVertical onClick={(e:any) => e.stopPropagation()} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 18, padding: 6, borderRadius: 6 }}/>}
+                    trigger={<MoreVertical onClick={(e: any) => e.stopPropagation()} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 18, padding: 6, borderRadius: 6 }} />}
                     option1Text={canEdit ? 'Edit' : (selectedTicket?.status === 'open' ? 'Reply' : 'View')}
                     onOption1={() => { if (canEdit) { setEditingMessage({ id: node.id, text: node.text, ticketId }); } else if (selectedTicket?.status === 'open') { setOpenReply(v => !v); } }}
                     option2Text={canEdit ? 'Delete' : ''}
@@ -633,15 +633,15 @@ export default function Tickets() {
                 );
               }
               )()}
-            
+
             </div>
-            <div style={{ height: "0.5rem" }}/>
-            <div style={{ marginTop: 6, fontSize: "0.95rem", textAlign:"left" }}>
+            <div style={{ height: "0.5rem" }} />
+            <div style={{ marginTop: 6, fontSize: "0.95rem", textAlign: "left" }}>
               <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(node.text || '') }} />
             </div>
-            
+
             <div style={{ marginTop: 8 }}>
-              
+
               {node.children && node.children.length > 0 && (
                 <button onClick={() => setCollapsed(c => !c)} style={{ background: 'none', border: 'none', color: '#666', marginLeft: 8 }}>{collapsed ? `Show ${node.children.length} replies` : `Hide ${node.children.length} replies`}</button>
               )}
@@ -657,7 +657,7 @@ export default function Tickets() {
             )}
             {node.children && node.children.length > 0 && !collapsed && (
               <div style={{ marginTop: 8 }}>
-                {node.children.map((c:any) => <RenderNode key={c.id} node={c} depth={(depth||0)+1} ticketId={ticketId} />)}
+                {node.children.map((c: any) => <RenderNode key={c.id} node={c} depth={(depth || 0) + 1} ticketId={ticketId} />)}
               </div>
             )}
           </div>
@@ -673,15 +673,15 @@ export default function Tickets() {
         fixed
         title={""}
         extra={<div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
-          <div className="back-search" style={{ border: "", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", width: isDesktop ? 'calc(100vw - 80px)' : 'calc(100% - 24px)', maxWidth: isDesktop ? '1400px' : undefined, margin: '0 auto', borderRadius:"1rem" }}>
-          <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search tickets..." className="back-search-input" />
-          {searchQuery ? <button className="back-search-clear" onClick={() => setSearchQuery('')}>Clear</button> : null}
-          {hasTicketHandler && (
-            <button title={overrideDeleteEnabled ? 'Override delete: ON' : 'Override delete: OFF'} onClick={() => setOverrideDeleteEnabled(v => !v)} className="back-search-override">
-              <FileX size={16} />
-            </button>
-          )}
-        </div>
+          <div className="back-search" style={{ border: "", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", width: isDesktop ? 'calc(100vw - 80px)' : 'calc(100% - 24px)', maxWidth: isDesktop ? '1400px' : undefined, margin: '0 auto', borderRadius: "1rem" }}>
+            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search tickets..." className="back-search-input" />
+            {searchQuery ? <button className="back-search-clear" onClick={() => setSearchQuery('')}>Clear</button> : null}
+            {hasTicketHandler && (
+              <button title={overrideDeleteEnabled ? 'Override delete: ON' : 'Override delete: OFF'} onClick={() => setOverrideDeleteEnabled(v => !v)} className="back-search-override">
+                <FileX size={16} />
+              </button>
+            )}
+          </div>
           {/* <button 
             onClick={() => {
               if ('Notification' in window && Notification.permission === 'granted') {
@@ -712,121 +712,121 @@ export default function Tickets() {
         </div>}
       />
 
-      <div className="back-search-wrapper" style={{paddingTop:"0.75rem"}}>
-        
+      <div className="back-search-wrapper" style={{ paddingTop: "0.75rem" }}>
+
       </div>
 
       <div style={{ maxWidth: 900, margin: '0 auto', padding: 24, paddingTop: '7rem' }}>
         {
           tickets && tickets.length > 0 && (
             <>
-            {/* <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding:"0.5rem", justifyContent: 'space-between' }}>
+              {/* <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding:"0.5rem", justifyContent: 'space-between' }}>
                 <div style={{ fontSize: 13, padding: '0.25rem 0.6rem', borderRadius: "0.5rem",  fontWeight: 600, background: '#fff1f2', color: '#dc2626' }}>OPEN {(tickets || []).filter(t => !t.confidential || hasTicketHandler).filter(t => t.status === 'open').length}</div>
                 <div style={{ fontSize: 13, padding: '0.25rem 0.6rem', borderRadius: "0.5rem",
                   background: '#ecfdf5', color: '#059669', fontWeight: 600 }}>CLOSED {(tickets || []).filter(t => !t.confidential || hasTicketHandler).filter(t => t.status !== 'open').length}</div>
             </div> */}
-            
+
             </>)
         }
-        
+
         {visibleTickets.length === 0 && !loadingTickets ? (
-              <Empty style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
-                  <EmptyHeader>
-                  <EmptyMedia variant="icon"><Ticket color="darkblue" size={36} /></EmptyMedia>
-                  <EmptyTitle>No Tickets</EmptyTitle>
-                  <EmptyDescription>Create a new ticket to start a thread.</EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-              ) : loadingTickets ? (
-              <div style={{ display: 'flex', justifyContent: 'center', border:"", position:"absolute", width: '100%', height: '100%', left:0, top:0, alignItems:"center" }}><Loader2 className="animate-spin" /></div>
-            ) : (
-              <div className={`tickets-fade ${ticketsFadeShow ? 'show' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: 12, border:"", paddingBottom:"6rem" }}>
-                {visibleTickets.map((t, idx) => {
-                  const expanded = selectedTicket?.id === t.id;
-                  return (
-                    <div key={t.id} className="ticket-item" data-id={t.id} style={{ ['--i' as any]: idx }}>
-                      <div
-                        style={{
-                          position: 'relative',
-                          display: 'flex',
-                          gap: 12,
-                          padding: 14,
-                          borderRadius: 10,
-                          background: '#fff',
-                          border: '1px solid rgba(16,24,40,0.06)',
-                          boxShadow: expanded ? '0 6px 18px rgba(16,24,40,0.06)' : 'none',
-                          alignItems: 'flex-start',
-                          transition: 'box-shadow 180ms ease, transform 120ms ease',
-                          transform: expanded ? 'translateY(-2px)' : 'none',
-                          flex:1
-                        }}
-                      >
-                       
-                        <div style={{display:"flex", border:"", flex:1, minWidth:0, flexFlow:"column", gap:"0.25rem"}}>
-                        <div style={{display:"flex", border:"", flex:1, justifyContent:"space-between", alignItems:"center",}}>
-                            <div id="header-section" style={{display:"flex", border:" "}}>
-                                <button onClick={(e) => { e.stopPropagation(); setProfileDialogEmail(t.createdBy); }} style={{ width: 65, height: 65, borderRadius: 12, background: avatarColor(t.createdBy), color: 'white', border: 'none', fontWeight: 700 }}>
-                                       {<Ticket/>}
-                                </button>
-                                <div style={{display:"flex", flexFlow:"column", border:" ", minWidth:0, marginLeft:8, gap:"0.15rem"}}>
-                                    <p style={{display:"flex", alignItems:"center", gap:"0.25rem", fontSize:"1rem", fontWeight:"600", padding:0, border:""}}>
-                                        {ticketCreators[t.createdBy]||t.id}
-                                    </p>
-                                    
-                                    <div style={{ fontSize: 12, color: 'darkblue', fontWeight:"500" }}>{ t.createdBy} · <ReactTimeAgo timeStyle={"twitter"} date={getDate(t.createdAt)} /></div>
+          <Empty style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
+            <EmptyHeader>
+              <EmptyMedia variant="icon"><Ticket color="darkblue" size={36} /></EmptyMedia>
+              <EmptyTitle>No Tickets</EmptyTitle>
+              <EmptyDescription>Create a new ticket to start a thread.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : loadingTickets ? (
+          <div style={{ display: 'flex', justifyContent: 'center', border: "", position: "absolute", width: '100%', height: '100%', left: 0, top: 0, alignItems: "center" }}><Loader2 className="animate-spin" /></div>
+        ) : (
+          <div className={`tickets-fade ${ticketsFadeShow ? 'show' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: 12, border: "", paddingBottom: "6rem" }}>
+            {visibleTickets.map((t, idx) => {
+              const expanded = selectedTicket?.id === t.id;
+              return (
+                <div key={t.id} className="ticket-item" data-id={t.id} style={{ ['--i' as any]: idx }}>
+                  <div
+                    style={{
+                      position: 'relative',
+                      display: 'flex',
+                      gap: 12,
+                      padding: 14,
+                      borderRadius: 10,
+                      background: '#fff',
+                      border: '1px solid rgba(16,24,40,0.06)',
+                      boxShadow: expanded ? '0 6px 18px rgba(16,24,40,0.06)' : 'none',
+                      alignItems: 'flex-start',
+                      transition: 'box-shadow 180ms ease, transform 120ms ease',
+                      transform: expanded ? 'translateY(-2px)' : 'none',
+                      flex: 1
+                    }}
+                  >
 
-                                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <div style={{ display: "flex", border: "", flex: 1, minWidth: 0, flexFlow: "column", gap: "0.25rem" }}>
+                      <div style={{ display: "flex", border: "", flex: 1, justifyContent: "space-between", alignItems: "center", }}>
+                        <div id="header-section" style={{ display: "flex", border: " " }}>
+                          <button onClick={(e) => { e.stopPropagation(); setProfileDialogEmail(t.createdBy); }} style={{ width: 65, height: 65, borderRadius: 12, background: avatarColor(t.createdBy), color: 'white', border: 'none', fontWeight: 700 }}>
+                            {<Ticket />}
+                          </button>
+                          <div style={{ display: "flex", flexFlow: "column", border: " ", minWidth: 0, marginLeft: 8, gap: "0.15rem" }}>
+                            <p style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "1rem", fontWeight: "600", padding: 0, border: "" }}>
+                              {ticketCreators[t.createdBy] || t.id}
+                            </p>
 
-                                      <div style={{ width:"fit-content",fontSize: 12, padding: '0.15rem 0.5rem', borderRadius: 999, background: t.status === 'open' ? '#fff1f2' : '#ecfdf5', color: t.status === 'open' ? '#dc2626' : '#059669', fontWeight: 600 }}>{t.status.toUpperCase()}</div>
-                                      
-                                      <div style={{ textTransform:"capitalize",width:"fit-content",fontSize: 12, padding: '0.15rem 0.5rem', borderRadius: 999, background: (t.priority === 'High' ? '#fff1f2' : (t.priority === 'Low' ? '#ecfdf5' : '#eef2ff')), color: (t.priority === 'High' ? '#b91c1c' : (t.priority === 'Low' ? '#059669' : '#3730a3')), fontWeight: 600 }}>{(t.priority || 'Normal')}</div>
+                            <div style={{ fontSize: 12, color: 'darkblue', fontWeight: "500" }}>{t.createdBy} · <ReactTimeAgo timeStyle={"twitter"} date={getDate(t.createdAt)} /></div>
 
-                                      
-                                      
-                                    </div>
-                                </div>
-                                
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+
+                              <div style={{ width: "fit-content", fontSize: 12, padding: '0.15rem 0.5rem', borderRadius: 999, background: t.status === 'open' ? '#fff1f2' : '#ecfdf5', color: t.status === 'open' ? '#dc2626' : '#059669', fontWeight: 600 }}>{t.status.toUpperCase()}</div>
+
+                              <div style={{ textTransform: "capitalize", width: "fit-content", fontSize: 12, padding: '0.15rem 0.5rem', borderRadius: 999, background: (t.priority === 'High' ? '#fff1f2' : (t.priority === 'Low' ? '#ecfdf5' : '#eef2ff')), color: (t.priority === 'High' ? '#b91c1c' : (t.priority === 'Low' ? '#059669' : '#3730a3')), fontWeight: 600 }}>{(t.priority || 'Normal')}</div>
+
+
+
                             </div>
-                            {(t.createdBy === user?.email || (overrideDeleteEnabled && hasTicketHandler)) && (
-                              <CustomDropDown
-                                trigger={<MoreVertical size={15}/>}
-                                option1Text={'Edit'}
-                                onOption1={() => { setEditingTicket(t); setEditTicketData({ title: t.title, description: t.description, priority: (t as any).priority || 'Normal', confidential: !!(t as any).confidential }); }}
-                                option2Text={'Delete'}
-                                onOption2={() => { setDeleteDialogOpen(t.id); }}
-                                onClear={undefined}
-                              />
-                            )}
+                          </div>
+
                         </div>
-                        
-                        <div style={{ marginTop: 6, color: '#374151', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', padding:"0.25rem" }}>
-                          
-                                      
-                            <p style={{fontWeight:"500", marginBottom:"0.5rem", lineHeight:"1.25rem", fontSize:"1rem", textAlign:"left"}}>{highlightText(t.title || '', keywords)}</p>
-                            <p style={{fontSize:"1rem", textAlign:"left", fontWeight:"400"}}>{highlightText(t.description || '', keywords)}</p>
-                            </div>
-                            <br/>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        {(t.createdBy === user?.email || (overrideDeleteEnabled && hasTicketHandler)) && (
+                          <CustomDropDown
+                            trigger={<MoreVertical size={15} />}
+                            option1Text={'Edit'}
+                            onOption1={() => { setEditingTicket(t); setEditTicketData({ title: t.title, description: t.description, priority: (t as any).priority || 'Normal', confidential: !!(t as any).confidential }); }}
+                            option2Text={'Delete'}
+                            onOption2={() => { setDeleteDialogOpen(t.id); }}
+                            onClear={undefined}
+                          />
+                        )}
+                      </div>
 
-                              <p onClick={() => setSelectedTicket(expanded ? null : t)} style={{ cursor: 'pointer', fontWeight: "600", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "darkblue", margin: 0, border:"" }}>
-                                {expanded ? <ArrowUp size={15} /> : <ArrowDown size={15} />} {expanded ? "Hide Replies " : "Replies " } ({messageCounts[t.id] ?? 0})
-                              </p>
+                      <div style={{ marginTop: 6, color: '#374151', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', padding: "0.25rem" }}>
 
-                              {(t.createdBy === user?.email || hasTicketHandler) ? (
-                                <button onClick={(e) => { e.stopPropagation(); handleToggleConfidential(t.id, !!t.confidential); }} title={t.confidential ? 'Private' : 'Public'} style={{ background:t.createdBy===user?.email ?"#eef2ff":"none", border: '', padding: "0.5rem", cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, borderRadius: 6, marginRight:"0.75rem" }}>
-                                  <p>{t.confidential ? <Lock color="darkblue" size={12} /> : <Globe color="darkblue" size={12} />}</p>
-                                  {/* <p>{t.confidential ? 'Private Thread' : 'Public Thread'}</p> */}
-                                  {/* <ChevronRight size={12} style={{ marginLeft: 4, opacity: 0.6 }} /> */}
-                                </button>
-                              ) : (
-                                <div title={t.confidential ? 'Private' : 'Public'} style={{background:t.createdBy===user?.email ?"#eef2ff":"none", border: '', padding: "0.5rem", borderRadius: 6, fontSize: 12, color: "", opacity: 0.8, display: 'inline-flex', alignItems: 'center', gap: 6, cursor:t.createdBy===user?.email ? 'pointer':"", marginRight:"0.75rem", fontWeight:"500", }}>
-                                  {t.confidential ? <Lock color="darkblue" size={12} /> : <Globe color="darkblue" size={12} />}
-                                  {/* <span style={{ fontSize: 12 }}>{t.confidential ? 'Private' : 'Public Thread'}</span> */}
-                                </div>
-                              )}
-                            </div>
 
-                            <div style={{
+                        <p style={{ fontWeight: "500", marginBottom: "0.5rem", lineHeight: "1.25rem", fontSize: "1rem", textAlign: "left" }}>{highlightText(t.title || '', keywords)}</p>
+                        <p style={{ fontSize: "1rem", textAlign: "left", fontWeight: "400" }}>{highlightText(t.description || '', keywords)}</p>
+                      </div>
+                      <br />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+
+                        <p onClick={() => setSelectedTicket(expanded ? null : t)} style={{ cursor: 'pointer', fontWeight: "600", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "darkblue", margin: 0, border: "" }}>
+                          {expanded ? <ArrowUp size={15} /> : <ArrowDown size={15} />} {expanded ? "Hide Replies " : "Replies "} ({messageCounts[t.id] ?? 0})
+                        </p>
+
+                        {(t.createdBy === user?.email || hasTicketHandler) ? (
+                          <button onClick={(e) => { e.stopPropagation(); handleToggleConfidential(t.id, !!t.confidential); }} title={t.confidential ? 'Private' : 'Public'} style={{ background: t.createdBy === user?.email ? "#eef2ff" : "none", border: '', padding: "0.5rem", cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, borderRadius: 6, marginRight: "0.75rem" }}>
+                            <p>{t.confidential ? <Lock color="darkblue" size={12} /> : <Globe color="darkblue" size={12} />}</p>
+                            {/* <p>{t.confidential ? 'Private Thread' : 'Public Thread'}</p> */}
+                            {/* <ChevronRight size={12} style={{ marginLeft: 4, opacity: 0.6 }} /> */}
+                          </button>
+                        ) : (
+                          <div title={t.confidential ? 'Private' : 'Public'} style={{ background: t.createdBy === user?.email ? "#eef2ff" : "none", border: '', padding: "0.5rem", borderRadius: 6, fontSize: 12, color: "", opacity: 0.8, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: t.createdBy === user?.email ? 'pointer' : "", marginRight: "0.75rem", fontWeight: "500", }}>
+                            {t.confidential ? <Lock color="darkblue" size={12} /> : <Globe color="darkblue" size={12} />}
+                            {/* <span style={{ fontSize: 12 }}>{t.confidential ? 'Private' : 'Public Thread'}</span> */}
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{
                         overflow: 'hidden',
                         transition: 'max-height 260ms ease, opacity 220ms ease',
                         maxHeight: expanded ? 1200 : 0,
@@ -835,7 +835,7 @@ export default function Tickets() {
                       }}>
                         <div style={{ padding: '', background: '', borderRadius: 8, border: '' }}>
                           {/* <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Replies </div> */}
-                          <div style={{padding:"0.5rem"}}>
+                          <div style={{ padding: "0.5rem" }}>
                             {messagesLoading && expanded ? (
                               <div style={{ display: 'flex', justifyContent: 'center', padding: 16 }}><Loader2 className="animate-spin" /></div>
                             ) : (messageRoots.length === 0 ? <div style={{ color: '#666' }}>No messages yet.</div> : messageRoots.map(r => <RenderNode key={r.id} node={r} depth={0} ticketId={t.id} />))}
@@ -844,14 +844,14 @@ export default function Tickets() {
                             <div style={{ marginTop: 12 }}>
                               <div className="ticket-actions-inline">
                                 {!topComposerOpen[t.id] ? (
-                                  <button onClick={(e) => { e.stopPropagation(); setTopComposerOpen(prev => ({ ...prev, [t.id]: true })); }} style={{ padding: "0.5rem 1rem", background: '', color: '', border: 'none', borderRadius: 8, flex:1 }}><Reply size={15}/>Reply</button>
+                                  <button onClick={(e) => { e.stopPropagation(); setTopComposerOpen(prev => ({ ...prev, [t.id]: true })); }} style={{ padding: "0.5rem 1rem", background: '', color: '', border: 'none', borderRadius: 8, flex: 1 }}><Reply size={15} />Reply</button>
                                 ) : (
                                   <div className={composerClosing[t.id] ? "composer-animate-out" : "composer-animate-in"}>
-                                    <TopLevelComposer 
-                                      posting={sending} 
+                                    <TopLevelComposer
+                                      posting={sending}
                                       text={draftTexts[t.id] || ''} // Pass the HTML string
                                       onTextChange={(newText) => setDraftTexts(prev => ({ ...prev, [t.id]: newText }))}
-                                      onPost={async (text: string) => { 
+                                      onPost={async (text: string) => {
                                         // do not clear draft until post completes; show loader on button
                                         const ok = await postMessage(t.id, text, null);
                                         if (ok) {
@@ -862,31 +862,31 @@ export default function Tickets() {
                                           return true;
                                         }
                                         return false;
-                                      }} 
-                                      onCancel={() => { 
+                                      }}
+                                      onCancel={() => {
                                         setDraftTexts(prev => ({ ...prev, [t.id]: '' }));
-                                        setComposerClosing(prev => ({ ...prev, [t.id]: true })); 
-                                        setTimeout(() => { 
-                                          setTopComposerOpen(prev => ({ ...prev, [t.id]: false })); 
-                                          setComposerClosing(prev => ({ ...prev, [t.id]: false })); 
-                                        }, 180); 
-                                      }} 
+                                        setComposerClosing(prev => ({ ...prev, [t.id]: true }));
+                                        setTimeout(() => {
+                                          setTopComposerOpen(prev => ({ ...prev, [t.id]: false }));
+                                          setComposerClosing(prev => ({ ...prev, [t.id]: false }));
+                                        }, 180);
+                                      }}
                                     />
                                   </div>
                                 )}
 
                                 {hasTicketHandler && !topComposerOpen[t.id] && (
-                                  <button onClick={(e) => { e.stopPropagation(); setCloseDialogOpen(t.id); }} style={{ background: '', color: 'crimson', padding: '0.5rem 1rem', border: 'none', borderRadius: 8, flex:1 }}><Ticket size={18}/>Close </button>
+                                  <button onClick={(e) => { e.stopPropagation(); setCloseDialogOpen(t.id); }} style={{ background: '', color: 'crimson', padding: '0.5rem 1rem', border: 'none', borderRadius: 8, flex: 1 }}><Ticket size={18} />Close </button>
                                 )}
                               </div>
                             </div>
                           )}
                         </div>
                       </div>
-                        
-                        </div>
-                       
-                        {/* <div style={{display:"flex", flexFlow:"column", border:"solid", width:"100%"}}>
+
+                    </div>
+
+                    {/* <div style={{display:"flex", flexFlow:"column", border:"solid", width:"100%"}}>
 
                             <div style={{display:"flex", gap:6, alignItems:"center", border:"solid red"}}>
 
@@ -919,149 +919,149 @@ export default function Tickets() {
                             </div>
                          <div style={{ marginTop: 6, color: '#374151', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', border:"solid" }}>{t.description}</div>  
                         </div> */}
-                        
-                      </div>
 
-                      
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                  </div>
 
-            
 
-            {/* Inline edit card replaces modal; no modal fallback */}
-
-            <ResponsiveModal title="Edit Reply" open={!!editingMessage} onOpenChange={(v) => !v && setEditingMessage(null)} hideHeader>
-              <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 16 }}>
-                <h3 style={{ margin: 0, marginBottom: 8, fontWeight: 600, display:"flex", alignItems:"center", gap:"0.25rem" }}><Reply size={18}/>Edit Reply</h3>
-                <RichTextField value={editingMessage?.text || ''} onChange={(html) => setEditingMessage(editingMessage ? { ...editingMessage, text: html } : null)} minHeight={160} style={{ padding: 8 }} />
-                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                  <button onClick={() => setEditingMessage(null)} style={{ flex: 1, padding: 10, background: '#eee', border: 'none' }}>Cancel</button>
-                  <button onClick={async () => { if (!editingMessage) return; try { await updateDoc(doc(db, 'tickets', editingMessage.ticketId, 'messages', editingMessage.id), { text: editingMessage.text, editedAt: serverTimestamp() }); toast.success('Reply updated'); setEditingMessage(null); } catch (err) { console.error(err); toast.error('Failed to update reply'); } }} style={{ flex: 1, padding: 10, background: 'darkblue', color: 'white', border: 'none' }}>Save</button>
                 </div>
-              </div>
-            </ResponsiveModal>
+              );
+            })}
+          </div>
+        )}
 
-            <ResponsiveModal title="New Ticket" open={showNewModal} onOpenChange={(v) => { if (!v) { setShowNewModal(false); setNewTicket({ title: '', description: '', priority: 'Normal', confidential: false }); } }} hideHeader>
-              <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 16 }}>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
-                  <button onClick={(e) => { e.stopPropagation(); }} style={{ width: 62, height: 62, borderRadius: 12, background: avatarColor(user?.email || ''), color: 'white', border: 'none', fontWeight: 700 }}>
-                    <Ticket />
+
+
+        {/* Inline edit card replaces modal; no modal fallback */}
+
+        <ResponsiveModal title="Edit Reply" open={!!editingMessage} onOpenChange={(v) => !v && setEditingMessage(null)} hideHeader>
+          <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 16 }}>
+            <h3 style={{ margin: 0, marginBottom: 8, fontWeight: 600, display: "flex", alignItems: "center", gap: "0.25rem" }}><Reply size={18} />Edit Reply</h3>
+            <RichTextField value={editingMessage?.text || ''} onChange={(html) => setEditingMessage(editingMessage ? { ...editingMessage, text: html } : null)} minHeight={160} style={{ padding: 8 }} />
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button onClick={() => setEditingMessage(null)} style={{ flex: 1, padding: 10, background: '#eee', border: 'none' }}>Cancel</button>
+              <button onClick={async () => { if (!editingMessage) return; try { await updateDoc(doc(db, 'tickets', editingMessage.ticketId, 'messages', editingMessage.id), { text: editingMessage.text, editedAt: serverTimestamp() }); toast.success('Reply updated'); setEditingMessage(null); } catch (err) { console.error(err); toast.error('Failed to update reply'); } }} style={{ flex: 1, padding: 10, background: 'darkblue', color: 'white', border: 'none' }}>Save</button>
+            </div>
+          </div>
+        </ResponsiveModal>
+
+        <ResponsiveModal title="New Ticket" open={showNewModal} onOpenChange={(v) => { if (!v) { setShowNewModal(false); setNewTicket({ title: '', description: '', priority: 'Normal', confidential: false }); } }} hideHeader>
+          <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 16 }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
+              <button onClick={(e) => { e.stopPropagation(); }} style={{ width: 62, height: 62, borderRadius: 12, background: avatarColor(user?.email || ''), color: 'white', border: 'none', fontWeight: 700 }}>
+                <Ticket />
+              </button>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontSize: '1rem', fontWeight: 500 }}>New Ticket</div>
+                <div style={{ fontSize: 12, color: 'darkblue', fontWeight: '500' }}>{user?.email}</div>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateTicket} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
+                <Select value={newTicket.title} onValueChange={(v: string) => setNewTicket({ ...newTicket, title: v })}>
+                  <SelectTrigger style={{ height: 40, display: 'flex', alignItems: 'center' }}>
+                    <SelectValue placeholder="Select request type" />
+                  </SelectTrigger>
+                  <SelectContent style={{ fontSize: '1rem' }}>
+                    <SelectItem value="Request for software installation">Request for software installation</SelectItem>
+                    <SelectItem value="Request for Printer support">Request for Printer support</SelectItem>
+                    <SelectItem value="Request for Troubleshooting">Autocad License Issue</SelectItem>
+                    <SelectItem value="Request for Technical support">Request for Technical support</SelectItem>
+                    <SelectItem value="Request for debugging">Request for debugging</SelectItem>
+                    <SelectItem value="Feature request">Feature request</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Select value={newTicket.priority} onValueChange={(v: string) => setNewTicket({ ...newTicket, priority: v })}>
+                    <SelectTrigger style={{ height: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
+                      <SelectValue placeholder="Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Low">Low Priority</SelectItem>
+                      <SelectItem value="Normal">Normal Priority</SelectItem>
+                      <SelectItem value="High">High Priority</SelectItem>
+                      <SelectItem value="Critical">Critical Priority</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <button type="button" onClick={() => setNewTicket({ ...newTicket, confidential: !newTicket.confidential })} style={{ width: 140, flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem', borderRadius: 8, background: newTicket.confidential ? '#f3f4f6' : '#fff', border: '1px solid rgba(0,0,0,0.04)' }}>
+                    {newTicket.confidential ? <LockKeyholeIcon size={14} /> : <Globe size={14} />}
+                    {newTicket.confidential ? 'Private' : 'Public'}
                   </button>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ fontSize: '1rem', fontWeight: 500 }}>New Ticket</div>
-                    <div style={{ fontSize: 12, color: 'darkblue', fontWeight: '500' }}>{user?.email}</div>
-                  </div>
                 </div>
-                
-                <form onSubmit={handleCreateTicket} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
-                    <Select value={newTicket.title} onValueChange={(v: string) => setNewTicket({ ...newTicket, title: v })}>
-                      <SelectTrigger style={{ height: 40, display: 'flex', alignItems: 'center' }}>
-                        <SelectValue placeholder="Select request type" />
-                      </SelectTrigger>
-                      <SelectContent style={{ fontSize: '1rem' }}>
-                        <SelectItem value="Request for software installation">Request for software installation</SelectItem>
-                        <SelectItem value="Request for Printer support">Request for Printer support</SelectItem>
-                        <SelectItem value="Request for Troubleshooting">Autocad License Issue</SelectItem>
-                        {/* <SelectItem value="Request for Technical support">Request for Technical support</SelectItem> */}
-                        {/* <SelectItem value="Request for debugging">Request for debugging</SelectItem> */}
-                        <SelectItem value="Feature request">Feature request</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <Select value={newTicket.priority} onValueChange={(v: string) => setNewTicket({ ...newTicket, priority: v })}>
-                        <SelectTrigger style={{ height: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
-                          <SelectValue placeholder="Priority" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Low">Low Priority</SelectItem>
-                          <SelectItem value="Normal">Normal Priority</SelectItem>
-                          <SelectItem value="High">High Priority</SelectItem>
-                          <SelectItem value="Critical">Critical Priority</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <button type="button" onClick={() => setNewTicket({ ...newTicket, confidential: !newTicket.confidential })} style={{ width: 140, flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem', borderRadius: 8, background: newTicket.confidential ? '#f3f4f6' : '#fff', border: '1px solid rgba(0,0,0,0.04)' }}>
-                        {newTicket.confidential ? <LockKeyholeIcon size={14} /> : <Globe size={14} />}
-                        {newTicket.confidential ? 'Private' : 'Public'}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <textarea ref={newDescRef} placeholder="Description" value={newTicket.description} onChange={e => setNewTicket({ ...newTicket, description: e.target.value })} required style={{ padding: '1rem', minHeight: 140, width: '100%' }} />
-                  <div style={{display:"flex", padding:"0.5rem 1rem", gap:"0.75rem", fontSize:"0.7rem", fontWeight:"500", alignItems:"center" }}>
-                    <Info style={{color:"darkblue"}} size={35}/>
-                    <p style={{margin:0, color:"#333"}}>
-                      Public tickets are visible to all users, while private tickets are only visible to handlers and the IT Department.
-                    </p>
-                    
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                    <button type="button" onClick={() => { setShowNewModal(false); setNewTicket({ title: '', description: '', priority: 'Normal', confidential: false }); }} style={{ padding: 10, background: '#eee', border: 'none', flex: 1 }}>Cancel</button>
-                    <button type="submit" disabled={sending} style={{ padding: 10, background: 'darkblue', color: 'white', border: 'none', flex: 1 }}>{sending ? 'Creating...' : 'Create'}</button>
-                  </div>
-                </form>
               </div>
-            </ResponsiveModal>
-            <ResponsiveModal title="Edit Ticket" open={!!editingTicket} onOpenChange={(v) => { if (!v) { setEditingTicket(null); setEditTicketData({ title: '', description: '', priority: 'Normal', confidential: false }); } }} hideHeader>
-              <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 16 }}>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
-                  <button onClick={(e) => { e.stopPropagation(); }} style={{ width: 62, height: 62, borderRadius: 12, background: avatarColor(editingTicket?.createdBy || ''), color: 'white', border: 'none', fontWeight: 700 }}>
-                    <Ticket />
-                  </button>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ fontSize: '1rem', fontWeight: 600 }}>Edit Ticket</div>
-                    <div style={{ fontSize: 12, color: 'darkblue', fontWeight: '500' }}>{editingTicket?.createdBy}</div>
-                  </div>
-                </div>
-                
-                <form onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (!editingTicket) return;
-                  try {
-                    await updateDoc(doc(db, 'tickets', editingTicket.id), { title: editTicketData.title, description: editTicketData.description, priority: editTicketData.priority || 'Normal', confidential: !!editTicketData.confidential });
-                    toast.success('Ticket updated');
-                    setEditingTicket(null);
-                    setEditTicketData({ title: '', description: '', priority: 'Normal', confidential: false });
-                  } catch (err) { console.error(err); toast.error('Failed to update ticket'); }
-                }} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <input value={editTicketData.title} onChange={e => setEditTicketData({ ...editTicketData, title: e.target.value })} placeholder="Title" required style={{ padding: 10 }} />
-                  
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <Select value={editTicketData.priority} onValueChange={(v: string) => setEditTicketData({ ...editTicketData, priority: v })}>
-                      <SelectTrigger style={{ height: 40, display: 'flex', alignItems: 'center', flex: 1 }}>
-                        <SelectValue placeholder="Priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Low">Low Priority</SelectItem>
-                        <SelectItem value="Normal">Normal Priority</SelectItem>
-                        <SelectItem value="High">High Priority</SelectItem>
-                        <SelectItem value="Critical">Critical Priority</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <button type="button" onClick={() => setEditTicketData({ ...editTicketData, confidential: !editTicketData.confidential })} style={{ width: 140, flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem', borderRadius: 8, background: editTicketData.confidential ? '#f3f4f6' : '#fff', border: '1px solid rgba(0,0,0,0.04)' }}>
-                      {editTicketData.confidential ? <LockKeyholeIcon size={14} /> : <Globe size={14} />}
-                      {editTicketData.confidential ? 'Private' : 'Public'}
-                    </button>
-                  </div>
-                  
-                  <textarea ref={editDescRef} value={editTicketData.description} onChange={e => setEditTicketData({ ...editTicketData, description: e.target.value })} placeholder="Description" required style={{ padding: '1rem', minHeight: 140, width: '100%' }} />
-                  
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                    <button type="button" onClick={() => { setEditingTicket(null); setEditTicketData({ title: '', description: '', priority: 'Normal', confidential: false }); }} style={{ padding: 10, background: '#eee', border: 'none', flex: 1 }}>Cancel</button>
-                    <button type="submit" disabled={sending} style={{ padding: 10, background: 'darkblue', color: 'white', border: 'none', flex: 1 }}>{sending ? 'Saving...' : 'Save'}</button>
-                  </div>
-                </form>
+
+              <textarea ref={newDescRef} placeholder="Description" value={newTicket.description} onChange={e => setNewTicket({ ...newTicket, description: e.target.value })} required style={{ padding: '1rem', minHeight: 140, width: '100%' }} />
+              <div style={{ display: "flex", padding: "0.5rem 1rem", gap: "0.75rem", fontSize: "0.7rem", fontWeight: "500", alignItems: "center" }}>
+                <Info style={{ color: "darkblue" }} size={35} />
+                <p style={{ margin: 0, color: "#333" }}>
+                  Public tickets are visible to all users, while private tickets are only visible to handlers and the IT Department.
+                </p>
+
               </div>
-            </ResponsiveModal>
-            <AddRecordButton icon={<Ticket color="darkblue" />} onClick={openOrScrollNewCard} title="New Ticket" />
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button type="button" onClick={() => { setShowNewModal(false); setNewTicket({ title: '', description: '', priority: 'Normal', confidential: false }); }} style={{ padding: 10, background: '#eee', border: 'none', flex: 1 }}>Cancel</button>
+                <button type="submit" disabled={sending} style={{ padding: 10, background: 'darkblue', color: 'white', border: 'none', flex: 1 }}>{sending ? 'Creating...' : 'Create'}</button>
+              </div>
+            </form>
+          </div>
+        </ResponsiveModal>
+        <ResponsiveModal title="Edit Ticket" open={!!editingTicket} onOpenChange={(v) => { if (!v) { setEditingTicket(null); setEditTicketData({ title: '', description: '', priority: 'Normal', confidential: false }); } }} hideHeader>
+          <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 16 }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
+              <button onClick={(e) => { e.stopPropagation(); }} style={{ width: 62, height: 62, borderRadius: 12, background: avatarColor(editingTicket?.createdBy || ''), color: 'white', border: 'none', fontWeight: 700 }}>
+                <Ticket />
+              </button>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontSize: '1rem', fontWeight: 600 }}>Edit Ticket</div>
+                <div style={{ fontSize: 12, color: 'darkblue', fontWeight: '500' }}>{editingTicket?.createdBy}</div>
+              </div>
+            </div>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (!editingTicket) return;
+              try {
+                await updateDoc(doc(db, 'tickets', editingTicket.id), { title: editTicketData.title, description: editTicketData.description, priority: editTicketData.priority || 'Normal', confidential: !!editTicketData.confidential });
+                toast.success('Ticket updated');
+                setEditingTicket(null);
+                setEditTicketData({ title: '', description: '', priority: 'Normal', confidential: false });
+              } catch (err) { console.error(err); toast.error('Failed to update ticket'); }
+            }} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <input value={editTicketData.title} onChange={e => setEditTicketData({ ...editTicketData, title: e.target.value })} placeholder="Title" required style={{ padding: 10 }} />
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Select value={editTicketData.priority} onValueChange={(v: string) => setEditTicketData({ ...editTicketData, priority: v })}>
+                  <SelectTrigger style={{ height: 40, display: 'flex', alignItems: 'center', flex: 1 }}>
+                    <SelectValue placeholder="Priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Low">Low Priority</SelectItem>
+                    <SelectItem value="Normal">Normal Priority</SelectItem>
+                    <SelectItem value="High">High Priority</SelectItem>
+                    <SelectItem value="Critical">Critical Priority</SelectItem>
+                  </SelectContent>
+                </Select>
+                <button type="button" onClick={() => setEditTicketData({ ...editTicketData, confidential: !editTicketData.confidential })} style={{ width: 140, flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem', borderRadius: 8, background: editTicketData.confidential ? '#f3f4f6' : '#fff', border: '1px solid rgba(0,0,0,0.04)' }}>
+                  {editTicketData.confidential ? <LockKeyholeIcon size={14} /> : <Globe size={14} />}
+                  {editTicketData.confidential ? 'Private' : 'Public'}
+                </button>
+              </div>
+
+              <textarea ref={editDescRef} value={editTicketData.description} onChange={e => setEditTicketData({ ...editTicketData, description: e.target.value })} placeholder="Description" required style={{ padding: '1rem', minHeight: 140, width: '100%' }} />
+
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button type="button" onClick={() => { setEditingTicket(null); setEditTicketData({ title: '', description: '', priority: 'Normal', confidential: false }); }} style={{ padding: 10, background: '#eee', border: 'none', flex: 1 }}>Cancel</button>
+                <button type="submit" disabled={sending} style={{ padding: 10, background: 'darkblue', color: 'white', border: 'none', flex: 1 }}>{sending ? 'Saving...' : 'Save'}</button>
+              </div>
+            </form>
+          </div>
+        </ResponsiveModal>
+        <AddRecordButton icon={<Ticket color="darkblue" />} onClick={openOrScrollNewCard} title="New Ticket" />
 
         <ResponsiveModal title="Delete Ticket?" open={!!deleteDialogOpen} onOpenChange={(v) => !v && setDeleteDialogOpen(null)} hideHeader>
-          <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 16,  }}>
+          <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 16, }}>
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 18, fontWeight: 500 }}>Delete Ticket?</div>
               <div style={{ fontSize: 13, color: '#555' }}>This action cannot be undone.</div>
@@ -1102,8 +1102,8 @@ export default function Tickets() {
         {/* Mobile bottom action bar: shows Reply and Close actions when a ticket is selected (hidden if composer open) */}
         {selectedTicket && selectedTicket.status === 'open' && !topComposerOpen[selectedTicket.id] && (
           <div className="ticket-actions-bottom-bar">
-            <button onClick={() => setTopComposerOpen(prev => ({ ...prev, [selectedTicket.id]: true }))} style={{ flex: 1, padding: '0.75rem', borderRadius: 8, border: 'none', background: '#eef2ff', color: '#3730a3', fontWeight: 700 }}><Reply size={16}/> Reply</button>
-            {hasTicketHandler && <button onClick={() => setCloseDialogOpen(selectedTicket.id)} style={{ flex: 1, padding: '0.75rem', borderRadius: 8, border: 'none', background: '#fff1f2', color: '#b91c1c', fontWeight: 700 }}><Ticket size={16}/> Close</button>}
+            <button onClick={() => setTopComposerOpen(prev => ({ ...prev, [selectedTicket.id]: true }))} style={{ flex: 1, padding: '0.75rem', borderRadius: 8, border: 'none', background: '#eef2ff', color: '#3730a3', fontWeight: 700 }}><Reply size={16} /> Reply</button>
+            {hasTicketHandler && <button onClick={() => setCloseDialogOpen(selectedTicket.id)} style={{ flex: 1, padding: '0.75rem', borderRadius: 8, border: 'none', background: '#fff1f2', color: '#b91c1c', fontWeight: 700 }}><Ticket size={16} /> Close</button>}
           </div>
         )}
 

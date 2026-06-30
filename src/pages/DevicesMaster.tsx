@@ -10,16 +10,18 @@ interface Device {
   item_code: string | null;
   last_stamp: number | null;
   last_seen: string | null;
-  start_time: string | null; // Added for timing range
-  end_time: string | null;   // Added for timing range
+  start_time: string | null;
+  end_time: string | null;
+  project_code: string | null;
 }
 
 interface EditForm {
   serial_no: string;
   location: string;
   item_code: string;
-  start_time: string; // Added for timing range
-  end_time: string;   // Added for timing range
+  start_time: string;
+  end_time: string;
+  project_code: string;
 }
 
 
@@ -40,17 +42,18 @@ function formatLastSeen(iso: string | null): string {
 
 export default function DevicesMaster() {
   const [devices, setDevices] = useState<Device[]>([]);
+  const [projects, setProjects] = useState<Array<{ project_code: string; project_name: string }>>([]);
   const [lastPunchMap, setLastPunchMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
-  const [form, setForm] = useState<EditForm>({ serial_no: '', location: '', item_code: '', start_time: '', end_time: '' });
+  const [form, setForm] = useState<EditForm>({ serial_no: '', location: '', item_code: '', start_time: '', end_time: '', project_code: '' });
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
   // Add Device state
   const [isAdding, setIsAdding] = useState(false);
-  const [addForm, setAddForm] = useState<EditForm>({ serial_no: '', location: '', item_code: '', start_time: '', end_time: '' });
+  const [addForm, setAddForm] = useState<EditForm>({ serial_no: '', location: '', item_code: '', start_time: '', end_time: '', project_code: '' });
   const [addError, setAddError] = useState<string | null>(null);
 
   const { userData } = useAuth();
@@ -136,10 +139,11 @@ export default function DevicesMaster() {
 
   function openAdd() {
     setIsAdding(true);
-    setAddForm({ serial_no: '', location: '', item_code: '', start_time: '', end_time: '' });
+    setAddForm({ serial_no: '', location: '', item_code: '', start_time: '', end_time: '', project_code: '' });
     setAddError(null);
   }
 
+  // ...
   function closeAdd() {
     setIsAdding(false);
     setAddError(null);
@@ -162,6 +166,7 @@ export default function DevicesMaster() {
         item_code: addForm.item_code.trim() || null,
         start_time: addForm.start_time.trim() || null,
         end_time: addForm.end_time.trim() || null,
+        project_code: addForm.project_code || null,
       });
 
     setSaving(false);
@@ -190,6 +195,14 @@ export default function DevicesMaster() {
         .select('*')
         .order('id', { ascending: true });
       if (devicesErr) throw devicesErr;
+
+      // Fetch projects list
+      const { data: projectsData, error: projectsErr } = await supabase
+        .from('projects')
+        .select('project_code, project_name')
+        .order('project_code', { ascending: true });
+      if (projectsErr) throw projectsErr;
+      setProjects(projectsData || []);
 
       const { data: punchesData, error: punchesErr } = await supabase
         .from('punches')
@@ -233,8 +246,9 @@ export default function DevicesMaster() {
       serial_no: device.serial_no,
       location: device.location ?? '',
       item_code: device.item_code ?? '',
-      start_time: device.start_time ?? '', // Populate start_time field
-      end_time: device.end_time ?? '',     // Populate end_time field
+      start_time: device.start_time ?? '',
+      end_time: device.end_time ?? '',
+      project_code: device.project_code ?? '',
     });
     setEditError(null);
   }
@@ -260,8 +274,9 @@ export default function DevicesMaster() {
         serial_no: form.serial_no.trim(),
         location: form.location.trim() || null,
         item_code: form.item_code.trim() || null,
-        start_time: form.start_time.trim() || null, // Update start_time field
-        end_time: form.end_time.trim() || null,     // Update end_time field
+        start_time: form.start_time.trim() || null,
+        end_time: form.end_time.trim() || null,
+        project_code: form.project_code || null,
       })
       .eq('id', editingDevice.id);
 
@@ -359,6 +374,7 @@ export default function DevicesMaster() {
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Device</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Location</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Item Code</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Project</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Ping</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Last Log</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Start Time</th>
@@ -402,6 +418,15 @@ export default function DevicesMaster() {
                       </td>
                       <td className="px-4 py-3 text-gray-500 font-mono text-xs">
                         {device.item_code ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">
+                        {device.project_code ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 font-mono uppercase">
+                            {device.project_code}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300 italic">Unallocated</span>
+                        )}
                       </td>
                       <td style={{ gap: "0.025rem", justifyContent: "flex-start" }} className="flex px-4 py-3 text-gray-500 text-xs">
                         {/* {
@@ -533,6 +558,24 @@ export default function DevicesMaster() {
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Allocate to Project
+                </label>
+                <select
+                  value={form.project_code}
+                  onChange={(e) => setForm(f => ({ ...f, project_code: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors bg-white"
+                >
+                  <option value="">-- Unallocated / None --</option>
+                  {projects.map(p => (
+                    <option key={p.project_code} value={p.project_code}>
+                      {p.project_code} - {p.project_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1.5">
@@ -648,6 +691,24 @@ export default function DevicesMaster() {
                   placeholder="e.g. ZK-001"
                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors font-mono"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Allocate to Project
+                </label>
+                <select
+                  value={addForm.project_code}
+                  onChange={(e) => setAddForm(f => ({ ...f, project_code: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors bg-white"
+                >
+                  <option value="">-- Unallocated / None --</option>
+                  {projects.map(p => (
+                    <option key={p.project_code} value={p.project_code}>
+                      {p.project_code} - {p.project_name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

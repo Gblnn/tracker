@@ -165,7 +165,7 @@ export default function TransferRequests({ embedMode = false }: Props) {
             display: "flex",
             alignItems: "center",
             gap: "0.35rem",
-            backgroundColor: "#1e3a8a",
+            backgroundColor: "black",
             color: "white"
           }}
         >

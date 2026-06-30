@@ -87,7 +87,6 @@ button_next: cn(
         range_end: cn("bg-accent rounded-r-md", defaultClassNames.range_end),
 
         today: cn(
-          "border border-primary rounded-md",
           defaultClassNames.today
         ),
 
@@ -140,22 +139,15 @@ function CalendarDayButton({
 
         // SELECTED (single day OR range start/end)
         (modifiers.selected || modifiers.range_start || modifiers.range_end) &&
-          "bg-primary text-primary-foreground hover:bg-primary",
+          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
 
         // RANGE MIDDLE
         modifiers.range_middle &&
           "bg-accent text-foreground hover:bg-accent",
 
         // TODAY FIX (IMPORTANT)
-        modifiers.today &&
-          "ring-1 ring-primary ring-offset-1",
-
-        // If TODAY + SELECTED → ensure text stays visible
-        modifiers.today &&
-          (modifiers.selected ||
-            modifiers.range_start ||
-            modifiers.range_end) &&
-          "ring-2 ring-primary ring-offset-2",
+        modifiers.today && !modifiers.selected && !modifiers.range_start && !modifiers.range_end && !modifiers.range_middle &&
+          "bg-accent text-accent-foreground",
 
         className
       )}

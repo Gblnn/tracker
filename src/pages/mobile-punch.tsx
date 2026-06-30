@@ -165,7 +165,7 @@ export default function MobilePunch() {
           verify_type: 3, // Password/Mobile Code
           punch_type: punchType,
           device_serial: selectedDeviceSerial,
-          location: resolvedLocation,
+          mobile_location: resolvedLocation,
           raw: `MOBILE_CLOCK_IN_BY_${userData?.email || "WEB"}`
         });
 

@@ -71,6 +71,33 @@ const DrawerContent = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>
 >(({ className, children, style, ...props }, ref) => {
+  const contentRef = React.useRef<HTMLDivElement | null>(null);
+
+  const setRefs = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      contentRef.current = node;
+      if (typeof ref === "function") {
+        ref(node);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }
+    },
+    [ref]
+  );
+
+  const handleOutsideClick = (e: Event) => {
+    if (!contentRef.current) return;
+    const portals = document.querySelectorAll(
+      '[role="listbox"], [role="menu"], [data-radix-popper-content-wrapper]'
+    );
+    for (const portal of Array.from(portals)) {
+      if (!contentRef.current.contains(portal)) {
+        e.preventDefault();
+        return;
+      }
+    }
+  };
+
   React.useEffect(() => {
     // Cleanup on mount and unmount
     return () => {
@@ -89,9 +116,11 @@ const DrawerContent = React.forwardRef<
     <DrawerPortal>
       <DrawerOverlay />
       <DrawerPrimitive.Content
-        ref={ref}
+        ref={setRefs}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
+        onPointerDownOutside={handleOutsideClick}
+        onInteractOutside={handleOutsideClick}
         className={cn(
           "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
           className

@@ -79,7 +79,7 @@ export function useAttendance(date: string) {
 
       const punchesWithLocation = (punchData ?? []).map(p => ({
         ...p,
-        location: devMap[p.device_serial]?.location ?? '—'
+        location: devMap[p.device_serial]?.location ?? p.mobile_location ?? '—'
       }));
 
       // Count location frequencies for the current month
@@ -157,7 +157,7 @@ export function useAttendance(date: string) {
 
             const punchWithLoc = {
               ...newPunch,
-              location: dev?.location ?? '—'
+              location: dev?.location ?? newPunch.mobile_location ?? '—'
             };
             setPunches((prev) => [punchWithLoc, ...prev]);
           }

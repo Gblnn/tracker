@@ -2,7 +2,7 @@ import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import Directive from "@/components/directive";
 import DropDown from "@/components/dropdown";
-import LineCharter from "@/components/bar-chart";
+import AreaCharter from "@/components/bar-chart";
 import NumberPlate from "@/components/number-plate";
 import RefreshButton from "@/components/refresh-button";
 import { ResponsiveModal } from "@/components/responsive-modal";
@@ -1244,7 +1244,7 @@ export default function FuelLog() {
                           <div style={{ minWidth: "100%", flexShrink: 0, scrollSnapAlign: "start", paddingRight: "0" }}>
                             <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Monthly Fuel Consumed</div>
                             <div style={{ height: "96px", width: "100%" }}>
-                              <LineCharter data={monthlyData} dataKey="fuel" lineColor="darkblue" />
+                              <AreaCharter data={monthlyData} dataKey="fuel" lineColor="darkblue" />
                             </div>
                           </div>
 
@@ -1252,7 +1252,7 @@ export default function FuelLog() {
                           <div style={{ minWidth: "100%", flexShrink: 0, scrollSnapAlign: "start", paddingRight: "0" }}>
                             <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Mileage Trend</div>
                             <div style={{ height: "96px", width: "100%" }}>
-                              <LineCharter data={monthlyData} dataKey="mileage" lineColor="darkblue" />
+                              <AreaCharter data={monthlyData} dataKey="mileage" lineColor="darkblue" />
                             </div>
                           </div>
                         </div>
@@ -1289,7 +1289,7 @@ export default function FuelLog() {
                         <div>
                           <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Monthly Fuel Consumed</div>
                           <div style={{ height: "96px", width: "100%" }}>
-                            <LineCharter data={monthlyData} dataKey="fuel" lineColor="darkblue" />
+                            <AreaCharter data={monthlyData} dataKey="fuel" lineColor="darkblue" />
                           </div>
                         </div>
 
@@ -1297,7 +1297,7 @@ export default function FuelLog() {
                         <div>
                           <div style={{ fontSize: "0.7rem", opacity: 0.6, marginBottom: "0.25rem", fontWeight: 500 }}>Mileage Trend</div>
                           <div style={{ height: "96px", width: "100%" }}>
-                            <LineCharter data={monthlyData} dataKey="mileage" lineColor="darkblue" />
+                            <AreaCharter data={monthlyData} dataKey="mileage" lineColor="darkblue" />
                           </div>
                         </div>
                       </div>
