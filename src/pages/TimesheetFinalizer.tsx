@@ -657,7 +657,7 @@ export default function TimesheetFinalizer() {
                 value={date}
                 onChange={setDate as any}
                 disabled={loading || saving}
-                className="h-8 text-lg font-medium bg-white border border-slate-300 w-[160px] p-4"
+                className="h-8 text-sm font-medium bg-white border border-slate-300 w-[160px] p-4"
               />
 
               {/* <button className="nav-btn" onClick={() => changeDate(1)} disabled={loading || saving}>
