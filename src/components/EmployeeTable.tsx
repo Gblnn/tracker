@@ -6,7 +6,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ChevronDown, Loader2, Search, User, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Area, AreaChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { supabase } from '../lib/supabase';
 import { formatTime } from '../lib/utilis';
 import type { EmployeeSummary } from '../types/attendance';
@@ -195,6 +195,14 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
     return dataList;
   }, [monthlyPunches, filteredSummaries, lastDay, yearMonth]);
 
+  const chartTicks = useMemo(() => {
+    const ticks = [1, 5, 10, 15, 20, 25];
+    if (lastDay >= 28) {
+      ticks.push(lastDay);
+    }
+    return ticks;
+  }, [lastDay]);
+
   if (summaries.length === 0) {
     return (
       <div className="text-center py-12 text-sm" style={{ border: "", width: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
@@ -241,13 +249,25 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={monthlyStats} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                    <AreaChart data={monthlyStats} margin={{ top: 5, right: 5, left: 5, bottom: 15 }}>
                       <defs>
                         <linearGradient id="colorPresent" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#009688" stopOpacity={0.3} />
                           <stop offset="95%" stopColor="#009688" stopOpacity={0} />
                         </linearGradient>
                       </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} horizontal={true} stroke="rgba(100, 100, 100, 0.08)" />
+                      <XAxis
+                        dataKey="day"
+                        type="number"
+                        domain={[1, lastDay]}
+                        ticks={chartTicks}
+                        axisLine={false}
+                        tickLine={false}
+                        height={15}
+                        tickMargin={4}
+                        tick={{ fontSize: 9, fill: 'rgba(100, 100, 100, 0.4)', fontWeight: 500 }}
+                      />
                       <Area
                         type="monotone"
                         dataKey="present"
@@ -291,13 +311,25 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={monthlyStats} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                    <AreaChart data={monthlyStats} margin={{ top: 5, right: 5, left: 5, bottom: 15 }}>
                       <defs>
                         <linearGradient id="colorAbsent" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#F43F5E" stopOpacity={0.3} />
                           <stop offset="95%" stopColor="#F43F5E" stopOpacity={0} />
                         </linearGradient>
                       </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} horizontal={true} stroke="rgba(100, 100, 100, 0.08)" />
+                      <XAxis
+                        dataKey="day"
+                        type="number"
+                        domain={[1, lastDay]}
+                        ticks={chartTicks}
+                        axisLine={false}
+                        tickLine={false}
+                        height={15}
+                        tickMargin={4}
+                        tick={{ fontSize: 9, fill: 'rgba(100, 100, 100, 0.4)', fontWeight: 500 }}
+                      />
                       <Area
                         type="monotone"
                         dataKey="absent"

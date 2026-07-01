@@ -44,19 +44,18 @@ export function avatarColor(idx: number) {
   return AVATAR_COLORS[idx % AVATAR_COLORS.length];
 }
 
-export const VERIFY_LABELS: Record  <number, string> = {
-  
- 0: 'Face',
-  1: 'Fingerprint',
-  3:'Password',
-  4: 'Card',
-  15: 'Face',
+export const VERIFY_LABELS: Record<number, string> = {
 
-  
+  0: 'Face',
+  1: 'Fingerprint',
+  2: 'Card',
+  3: 'Password',
+  5: 'Mobile',
+
 };
 
 export const PUNCH_TYPE_LABELS: Record<number, string> = {
- 0: 'Check in',
+  0: 'Check in',
   1: 'Check out',
   2: 'Break out',
   3: 'Break in',

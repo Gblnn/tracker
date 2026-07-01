@@ -137,9 +137,42 @@ export default function MobilePunch() {
 
     setSubmitting(true);
     try {
+      // Get GPS Coordinates
+      let coordinatesStr = "";
+      try {
+        coordinatesStr = await new Promise<string>((resolve, reject) => {
+          if (!navigator.geolocation) {
+            reject(new Error("Geolocation is not supported by this device/browser."));
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const lat = position.coords.latitude.toFixed(6);
+              const lng = position.coords.longitude.toFixed(6);
+              resolve(`${lat}, ${lng}`);
+            },
+            (error) => {
+              let msg = "Failed to retrieve location coordinates.";
+              if (error.code === error.PERMISSION_DENIED) {
+                msg = "Location permission denied. Please enable location access in your browser settings to punch.";
+              } else if (error.code === error.POSITION_UNAVAILABLE) {
+                msg = "Location information is unavailable. Please make sure GPS is turned on.";
+              } else if (error.code === error.TIMEOUT) {
+                msg = "Location request timed out. Please try again.";
+              }
+              reject(new Error(msg));
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+          );
+        });
+      } catch (geoErr: any) {
+        toast.error(geoErr.message || "Failed to get location coordinates.");
+        setSubmitting(false);
+        return;
+      }
+
       // Find matching device serial by matching employee location
       let selectedDeviceSerial = "MOBILE";
-      let resolvedLocation = employee.location || "Mobile";
 
       if (devices && devices.length > 0) {
         const matchedDevice = devices.find(
@@ -147,32 +180,52 @@ export default function MobilePunch() {
         );
         if (matchedDevice) {
           selectedDeviceSerial = matchedDevice.serial_no;
-          resolvedLocation = matchedDevice.location;
         } else {
           // Default to the first device in the table
           selectedDeviceSerial = devices[0].serial_no;
-          resolvedLocation = devices[0].location;
         }
       }
 
       const now = new Date();
+
+      // Format local Muscat time to match biometric device log format: YYYY-MM-DD HH:mm:ss
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: 'Asia/Muscat'
+      });
+      const parts = formatter.formatToParts(now);
+      const y = parts.find(p => p.type === 'year')?.value;
+      const mo = parts.find(p => p.type === 'month')?.value;
+      const d = parts.find(p => p.type === 'day')?.value;
+      const h = parts.find(p => p.type === 'hour')?.value;
+      const mi = parts.find(p => p.type === 'minute')?.value;
+      const s = parts.find(p => p.type === 'second')?.value;
+      const formattedLocalTime = `${y}-${mo}-${d} ${h}:${mi}:${s}`;
+
+      const rawString = `${employee.device_user_id}\t${formattedLocalTime}\t5\t${punchType}\t0\t\t\t0\t0`;
 
       const { error } = await supabase
         .from("punches")
         .insert({
           user_id: employee.device_user_id,
           punch_time: now.toISOString(),
-          verify_type: 3, // Password/Mobile Code
+          verify_type: 5, // Mobile
           punch_type: punchType,
           device_serial: selectedDeviceSerial,
-          mobile_location: resolvedLocation,
-          raw: `MOBILE_CLOCK_IN_BY_${userData?.email || "WEB"}`
+          mobile_location: coordinatesStr,
+          raw: rawString
         });
 
       if (error) throw error;
 
       toast.success(
-        `Successfully clocked ${punchType === 0 ? "IN" : "OUT"} at ${resolvedLocation}!`
+        `Successfully clocked ${punchType === 0 ? "IN" : "OUT"}! (${coordinatesStr})`
       );
 
       if (navigator.vibrate) {

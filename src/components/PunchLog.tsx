@@ -398,10 +398,27 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-500">
-                      {VERIFY_LABELS[punch.verify_type] ?? punch.verify_type}
+                      {punch.device_serial === 'MOBILE' || !!punch.mobile_location || (punch.raw && punch.raw.includes('MOBILE'))
+                        ? 'Mobile'
+                        : VERIFY_LABELS[punch.verify_type] ?? punch.verify_type}
                     </td>
                     <td className="px-4 py-3 text-gray-400">
-                      {punch.location ?? '—'}
+                      {punch.device_serial === 'MOBILE' || !!punch.mobile_location || (punch.raw && punch.raw.includes('MOBILE')) ? (
+                        punch.mobile_location && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(punch.mobile_location.trim()) ? (
+                          <a
+                            href={`https://www.google.com/maps?q=${punch.mobile_location.trim()}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 hover:underline"
+                          >
+                            {punch.mobile_location}
+                          </a>
+                        ) : (
+                          punch.mobile_location || '—'
+                        )
+                      ) : (
+                        punch.location ?? '—'
+                      )}
                     </td>
                   </tr>
                 );
