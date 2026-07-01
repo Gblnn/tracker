@@ -430,11 +430,11 @@ export default function ProjectsMaster() {
         }
         .link-btn {
           font-size: 11px;
-          font-weight: 600;
+          font-weight: 500;
           color: #4f46e5;
           background: #f5f3ff;
           border: 1px solid #e0e7ff;
-          padding: 4px 8px;
+          
           border-radius: 6px;
           cursor: pointer;
           transition: all 0.15s ease;
@@ -588,13 +588,14 @@ export default function ProjectsMaster() {
 
                       {canEditAttendance && !isAllocatingThis && (
                         <button
+                          style={{ padding: "0.1rem 0.5rem", display: "flex" }}
                           onClick={() => {
                             setAllocatingProjectId(project.project_code);
                             setSelectedDeviceSerial('');
                           }}
                           className="link-btn"
                         >
-                          + Link
+                          Link
                         </button>
                       )}
                     </div>

@@ -240,7 +240,7 @@ const QuotationPage = ({
                     border: "1px solid black",
                     padding: "0 0.5rem",
                     paddingBottom: "1rem",
-                    width: "60%",
+                    width: "42%",
                     fontWeight: "500",
                   }}
                 >
@@ -251,7 +251,7 @@ const QuotationPage = ({
                     border: "1px solid black",
                     padding: "0 0.5rem",
                     fontWeight: "500",
-                    width: "22%",
+                    width: "15%",
                     paddingBottom: "1rem",
                   }}
                 >
@@ -273,7 +273,7 @@ const QuotationPage = ({
                     border: "1px solid black",
                     padding: "0 0.5rem",
                     fontWeight: "500",
-                    width: "15%",
+                    width: "12%",
                     paddingBottom: "1rem",
                   }}
                 >

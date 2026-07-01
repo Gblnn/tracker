@@ -1,3 +1,4 @@
+import { DatePicker } from '@/components/date-picker';
 import { ResponsiveModal } from '@/components/responsive-modal';
 import {
   DropdownMenu,
@@ -12,15 +13,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { db } from '@/firebase';
 import { addDoc, collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { ChevronDown, ChevronLeft, ChevronRight, CircleMinus, Download, Loader2, PartyPopper, Plus, Search } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, ChevronRight, CircleMinus, Download, Loader2, PartyPopper, Plus, Search, X } from 'lucide-react';
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
+import { todayISO } from '../lib/utilis';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,7 +56,7 @@ interface DaySummary {
   isPresent: boolean;
 }
 
-type AttendanceMatrix = Record<string, Record<number, DaySummary>>;
+type AttendanceMatrix = Record<string, Record<string, DaySummary>>;
 
 type ReportType = 'inout' | 'pa' | 'hourly' | 'location_inout';
 
@@ -88,6 +91,15 @@ function getDayHours(summary: DaySummary | undefined): string {
   const start = new Date(summary.firstPunch).getTime();
   const end = new Date(summary.lastPunch).getTime();
   return ((end - start) / (1000 * 60 * 60)).toFixed(1);
+}
+
+function getOvertime(summary: DaySummary | undefined, empType: string | null): string {
+  if (empType === 'staff') return '—';
+  const hoursStr = getDayHours(summary);
+  if (hoursStr === '—') return '—';
+  const hours = parseFloat(hoursStr);
+  if (isNaN(hours) || hours <= 8) return '—';
+  return (hours - 8).toFixed(1);
 }
 
 // Shared row height so both tables stay in sync
@@ -291,9 +303,11 @@ interface FrozenRowProps {
   locationList: string;
   presenceCount: number;
   absentCount: number;
+  overtimeCount: string;
+  showOvertime: boolean;
 }
 
-const FrozenRow = memo(({ emp, index, locationList, presenceCount, absentCount }: FrozenRowProps) => {
+const FrozenRow = memo(({ emp, index, locationList, presenceCount, absentCount, overtimeCount, showOvertime }: FrozenRowProps) => {
   return (
     <tr style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }}>
       <td className="text-[13px] text-gray-400 text-center bg-white px-1">{index + 1}</td>
@@ -314,6 +328,11 @@ const FrozenRow = memo(({ emp, index, locationList, presenceCount, absentCount }
       <td className="text-center text-[13px] font-semibold text-red-600" style={{ background: '#fef2f2', height: ROW_H }}>
         {absentCount}
       </td>
+      {showOvertime && (
+        <td className="text-center text-[13px] font-semibold text-amber-700" style={{ background: '#fffbeb', height: ROW_H }}>
+          {overtimeCount}
+        </td>
+      )}
       <td className="bg-white" />
     </tr>
   );
@@ -325,7 +344,7 @@ interface ScrollableRowProps {
   dayList: number[];
   reportType: ReportType;
   useFirstLast: boolean;
-  matrixForEmployee: Record<number, DaySummary> | undefined;
+  matrixForEmployee: Record<string, DaySummary> | undefined;
   year: number;
   month: number;
   today: Date;
@@ -345,7 +364,9 @@ const ScrollableRow = memo(({
   return (
     <tr style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }} className="hover:bg-blue-50/20">
       {dayList.map(d => {
-        const c = matrixForEmployee?.[d];
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const dateKey = `${year}-${pad(month + 1)}-${pad(d)}`;
+        const c = matrixForEmployee?.[dateKey];
         if (reportType === 'hourly') {
           const holiday = holidayMap?.[d];
           const bg = isWeekend(year, month, d) ? '#f9fafb' : holiday ? '#eef2ff' : 'white';
@@ -412,6 +433,11 @@ export default function StaffMonthlyReport() {
   const [reportType, setReportType] = useState<ReportType>('inout');
   const [useFirstLast, setUseFirstLast] = useState(true);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [reportView, setReportView] = useState<'monthly' | 'daily' | 'individual'>('monthly');
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [selectedDailyDate, setSelectedDailyDate] = useState<string>(() => todayISO());
+  const [empSearch, setEmpSearch] = useState("");
+  const [openEmpSelect, setOpenEmpSelect] = useState(false);
 
   // Holidays State
   interface Holiday {
@@ -475,9 +501,21 @@ export default function StaffMonthlyReport() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const start = `${year}-${pad(month + 1)}-01T00:00:00`;
-    const end = `${year}-${pad(month + 1)}-${pad(days)}T23:59:59`;
+    let start = '';
+    let end = '';
+
+    if (reportView === 'daily') {
+      if (!selectedDailyDate) {
+        setLoading(false);
+        return;
+      }
+      start = `${selectedDailyDate}T00:00:00`;
+      end = `${selectedDailyDate}T23:59:59`;
+    } else {
+      const pad = (n: number) => String(n).padStart(2, '0');
+      start = `${year}-${pad(month + 1)}-01T00:00:00`;
+      end = `${year}-${pad(month + 1)}-${pad(days)}T23:59:59`;
+    }
 
     try {
       const { data: empData, error: eErr } = await supabase.from('employees')
@@ -529,7 +567,7 @@ export default function StaffMonthlyReport() {
     } finally {
       setLoading(false);
     }
-  }, [year, month, days]);
+  }, [year, month, days, reportView, selectedDailyDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -538,10 +576,9 @@ export default function StaffMonthlyReport() {
     const r: AttendanceMatrix = {};
     for (const p of punches) {
       const ds = new Date(p.punch_time).toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' });
-      const dn = parseInt(ds.split('-')[2]);
       if (!r[p.user_id]) r[p.user_id] = {};
-      if (!r[p.user_id][dn]) {
-        r[p.user_id][dn] = {
+      if (!r[p.user_id][ds]) {
+        r[p.user_id][ds] = {
           firstIn: null,
           firstInLocation: null,
           lastOut: null,
@@ -553,7 +590,7 @@ export default function StaffMonthlyReport() {
           isPresent: false
         };
       }
-      const c = r[p.user_id][dn];
+      const c = r[p.user_id][ds];
       c.isPresent = true;
       if (p.punch_type === 0) {
         if (!c.firstIn || p.punch_time < c.firstIn) {
@@ -645,6 +682,24 @@ export default function StaffMonthlyReport() {
     return list;
   }, [employees, deptFilter, selectedLocations, searchQuery, employeeLocations]);
 
+  const selectedEmp = useMemo(() => {
+    return employees.find(e => e.device_user_id === selectedEmployeeId) || filtered[0] || employees[0];
+  }, [employees, filtered, selectedEmployeeId]);
+
+  const selectableEmployees = useMemo(() => {
+    const q = empSearch.trim().toLowerCase();
+    if (!q) return filtered;
+    return filtered.filter(emp =>
+      emp.name.toLowerCase().includes(q) ||
+      (emp.emp_id && emp.emp_id.toLowerCase().includes(q))
+    );
+  }, [filtered, empSearch]);
+
+  const dateListInRange = useMemo(() => {
+    if (!selectedDailyDate) return [];
+    return [selectedDailyDate];
+  }, [selectedDailyDate]);
+
   const workDays = useMemo(() =>
     dayList.filter(d => !isWeekend(year, month, d) && !isHoliday(d)).length,
     [dayList, year, month, isHoliday]);
@@ -653,14 +708,63 @@ export default function StaffMonthlyReport() {
   //   dayList.filter(d => !isWeekend(year, month, d) && !isHoliday(d) && new Date(year, month, d) <= today).length,
   //   [dayList, year, month, isHoliday, today]);
 
-  const presenceDays = (uid: string) => Object.values(matrix[uid] ?? {}).filter(d => d.isPresent).length;
+  const presenceDays = (uid: string) => {
+    return dayList.filter(d => {
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const dateKey = `${year}-${pad(month + 1)}-${pad(d)}`;
+      return !!matrix[uid]?.[dateKey]?.isPresent;
+    }).length;
+  };
   const absentDays = (uid: string) => {
-    return dayList.filter(d =>
-      new Date(year, month, d) <= today &&
-      !isWeekend(year, month, d) &&
-      !isHoliday(d) &&
-      !matrix[uid]?.[d]?.isPresent
-    ).length;
+    return dayList.filter(d => {
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const dateKey = `${year}-${pad(month + 1)}-${pad(d)}`;
+      return (
+        new Date(year, month, d) <= today &&
+        !isWeekend(year, month, d) &&
+        !isHoliday(d) &&
+        !matrix[uid]?.[dateKey]?.isPresent
+      );
+    }).length;
+  };
+
+  const totalOvertime = (uid: string, empType: string | null) => {
+    if (empType === 'staff') return '—';
+    let total = 0;
+    dayList.forEach(d => {
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const dateKey = `${year}-${pad(month + 1)}-${pad(d)}`;
+      const c = matrix[uid]?.[dateKey];
+      if (c?.isPresent) {
+        const hoursStr = getDayHours(c);
+        if (hoursStr !== '—') {
+          const hours = parseFloat(hoursStr);
+          if (!isNaN(hours) && hours > 8) {
+            total += hours - 8;
+          }
+        }
+      }
+    });
+    return total > 0 ? total.toFixed(1) : '—';
+  };
+
+  const totalHours = (uid: string) => {
+    let total = 0;
+    dayList.forEach(d => {
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const dateKey = `${year}-${pad(month + 1)}-${pad(d)}`;
+      const c = matrix[uid]?.[dateKey];
+      if (c?.isPresent) {
+        const hoursStr = getDayHours(c);
+        if (hoursStr !== '—') {
+          const hours = parseFloat(hoursStr);
+          if (!isNaN(hours)) {
+            total += hours;
+          }
+        }
+      }
+    });
+    return total > 0 ? total.toFixed(1) : '—';
   };
 
   // ── Scroll sync ────────────────────────────────────────────────────────────
@@ -681,6 +785,151 @@ export default function StaffMonthlyReport() {
   function exportExcel() {
     const wb = XLSX.utils.book_new();
     const rows: (string | number)[][] = [];
+
+    if (reportView === 'individual') {
+      if (!selectedEmp) return;
+      rows.push([`Staff Individual Monthly Report — ${selectedEmp.name}`]);
+      rows.push([`Period: ${monthLabel(month, year)}`]);
+      rows.push([]);
+      rows.push(['Date', 'Day', 'Status', 'Check In', 'Check Out', 'Hours', 'Overtime']);
+
+      dayList.forEach((d) => {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const dateStr = `${year}-${pad(month + 1)}-${pad(d)}`;
+        const dateObj = new Date(year, month, d);
+        const displayDate = dateObj.toLocaleDateString('en-OM', { day: '2-digit', month: 'short', year: 'numeric' });
+        const displayDayName = getDayName(year, month, d);
+
+        const c = matrix[selectedEmp.device_user_id]?.[dateStr];
+        const isWeekendDay = isWeekend(year, month, d);
+        const isHolidayDay = isHoliday(d);
+        const holiday = holidayMap[d];
+
+        let statusText = 'Absent';
+        let checkInText = '—';
+        let checkOutText = '—';
+        let hoursText = '—';
+        let overtimeText = '—';
+
+        if (isWeekendDay) {
+          statusText = 'Weekend';
+        } else if (isHolidayDay) {
+          statusText = c?.isPresent ? 'Worked (Holiday)' : `Holiday (${holiday?.name || 'Holiday'})`;
+        } else if (c?.isPresent) {
+          statusText = 'Present';
+        } else {
+          statusText = dateObj > today ? '—' : 'Absent';
+        }
+
+        if (c?.isPresent) {
+          if (useFirstLast) {
+            checkInText = formatTime(c.firstPunch) || '✓';
+            checkOutText = c.firstPunch === c.lastPunch ? '—' : (formatTime(c.lastPunch) || '—');
+          } else {
+            checkInText = formatTime(c.firstIn) || '✓';
+            checkOutText = formatTime(c.lastOut) || '—';
+          }
+
+          const inLoc = useFirstLast ? c.firstPunchLocation : c.firstInLocation;
+          const outLoc = useFirstLast ? c.lastPunchLocation : c.lastOutLocation;
+
+          if (inLoc) checkInText += ` (${inLoc})`;
+          if (outLoc && c.firstPunch !== c.lastPunch) checkOutText += ` (${outLoc})`;
+
+          hoursText = getDayHours(c);
+          overtimeText = getOvertime(c, selectedEmp.emp_type);
+        }
+
+        rows.push([
+          displayDate,
+          displayDayName,
+          statusText,
+          checkInText,
+          checkOutText,
+          hoursText,
+          overtimeText
+        ]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [{ wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 30 }, { wch: 30 }, { wch: 8 }, { wch: 8 }];
+      XLSX.utils.book_append_sheet(wb, ws, `Individual_Report`);
+      XLSX.writeFile(wb, `Individual_${selectedEmp.name.replace(/\s+/g, '_')}_${year}_${String(month + 1).padStart(2, '0')}.xlsx`);
+      return;
+    }
+
+    if (reportView === 'daily') {
+      rows.push([`Staff Daily Attendance Report`]);
+      rows.push([`Date: ${selectedDailyDate}`]);
+      rows.push([]);
+      rows.push(['Date', '#', 'Name', 'Emp ID', 'Department', 'Status', 'Check In', 'Check Out', 'Hours', 'Overtime']);
+
+      dateListInRange.forEach((dateStr) => {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        const displayDate = dateObj.toLocaleDateString('en-OM', { day: '2-digit', month: 'short', year: 'numeric' });
+        const isWeekendDay = isWeekend(y, m - 1, d);
+        const isHolidayDay = holidays.some(h => h.day === d && year === y && month === (m - 1));
+
+        filtered.forEach((emp, idx) => {
+          const c = matrix[emp.device_user_id]?.[dateStr];
+
+          let statusText = 'Absent';
+          let checkInText = '—';
+          let checkOutText = '—';
+          let hoursText = '—';
+
+          if (isWeekendDay) {
+            statusText = 'Weekend';
+          } else if (isHolidayDay) {
+            statusText = c?.isPresent ? 'Worked (Holiday)' : 'Holiday';
+          } else if (c?.isPresent) {
+            statusText = 'Present';
+          } else {
+            statusText = dateObj > today ? '—' : 'Absent';
+          }
+
+          if (c?.isPresent) {
+            if (useFirstLast) {
+              checkInText = formatTime(c.firstPunch) || '✓';
+              checkOutText = c.firstPunch === c.lastPunch ? '—' : (formatTime(c.lastPunch) || '—');
+            } else {
+              checkInText = formatTime(c.firstIn) || '✓';
+              checkOutText = formatTime(c.lastOut) || '—';
+            }
+
+            const inLoc = useFirstLast ? c.firstPunchLocation : c.firstInLocation;
+            const outLoc = useFirstLast ? c.lastPunchLocation : c.lastOutLocation;
+
+            if (inLoc) checkInText += ` (${inLoc})`;
+            if (outLoc && c.firstPunch !== c.lastPunch) checkOutText += ` (${outLoc})`;
+
+            hoursText = getDayHours(c);
+          }
+
+          const overtimeText = getOvertime(c, emp.emp_type);
+
+          rows.push([
+            displayDate,
+            idx + 1,
+            emp.name,
+            emp.emp_id ?? '',
+            emp.department ?? '',
+            statusText,
+            checkInText,
+            checkOutText,
+            hoursText,
+            overtimeText
+          ]);
+        });
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [{ wch: 12 }, { wch: 4 }, { wch: 25 }, { wch: 10 }, { wch: 18 }, { wch: 12 }, { wch: 30 }, { wch: 30 }, { wch: 8 }, { wch: 8 }];
+      XLSX.utils.book_append_sheet(wb, ws, `Daily_Report`);
+      XLSX.writeFile(wb, `Daily_Attendance_${selectedDailyDate}.xlsx`);
+      return;
+    }
 
     rows.push([`Staff Attendance — ${monthLabel(month, year)}`]);
     rows.push([]);
@@ -706,13 +955,18 @@ export default function StaffMonthlyReport() {
         r3.push('In', 'Out');
       }
     }
-    r1.push('P', 'A'); r2.push('', ''); r3.push('', '');
+    if (reportType === 'hourly') {
+      r1.push('P', 'A', 'OT'); r2.push('', '', ''); r3.push('', '', '');
+    } else {
+      r1.push('P', 'A'); r2.push('', ''); r3.push('', '');
+    }
     rows.push(r1, r2, r3);
 
     filtered.forEach((emp, idx) => {
       const row: (string | number)[] = [idx + 1, emp.name, emp.emp_id ?? '', employeeLocations[emp.device_user_id] || '—'];
       for (let d = 1; d <= days; d++) {
-        const c = matrix[emp.device_user_id]?.[d];
+        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const c = matrix[emp.device_user_id]?.[dateKey];
         const isHolidayDay = isHoliday(d);
         const holiday = holidayMap[d];
 
@@ -773,6 +1027,9 @@ export default function StaffMonthlyReport() {
         }
       }
       row.push(presenceDays(emp.device_user_id), absentDays(emp.device_user_id));
+      if (reportType === 'hourly') {
+        row.push(totalOvertime(emp.device_user_id, emp.emp_type));
+      }
       rows.push(row);
     });
 
@@ -787,6 +1044,9 @@ export default function StaffMonthlyReport() {
       }
     }
     cols.push({ wch: 6 }, { wch: 6 });
+    if (reportType === 'hourly') {
+      cols.push({ wch: 6 });
+    }
     ws['!cols'] = cols;
     ws['!freeze'] = { xSplit: 4, ySplit: 5, topLeftCell: 'E6', activeCell: 'E6', sqref: 'E6' };
     XLSX.utils.book_append_sheet(wb, ws, 'Staff Attendance');
@@ -803,8 +1063,10 @@ export default function StaffMonthlyReport() {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
 
+    const isDaily = reportView === 'daily';
+    const isIndividual = reportView === 'individual';
     const colWidth = reportType === 'location_inout' ? 240 : reportType === 'inout' ? 92 : 46;
-    const totalWidth = 584 + (days * colWidth);
+    const totalWidth = isDaily || isIndividual ? 960 : 584 + (days * colWidth);
     const offscreen = document.createElement("div");
     offscreen.style.cssText =
       `position:fixed;top:0;left:-${totalWidth + 1000}px;` +
@@ -815,12 +1077,20 @@ export default function StaffMonthlyReport() {
     header.style.cssText = `margin-bottom: 20px; font-family: ui-sans-serif, system-ui, sans-serif;`;
 
     const title = document.createElement("h2");
-    title.innerText = `Staff Attendance Report — ${monthLabel(month, year)}`;
+    title.innerText = isDaily
+      ? `Staff Daily Attendance Report — Date: ${selectedDailyDate}`
+      : isIndividual
+        ? `Individual Attendance Report — ${selectedEmp?.name} — ${monthLabel(month, year)}`
+        : `Staff Attendance Report — ${monthLabel(month, year)}`;
     title.style.cssText = `margin: 0; font-size: 22px; font-weight: 600; color: #111827;`;
 
     const subtitle = document.createElement("div");
     const locText = selectedLocations.length === 0 ? 'All Locations' : selectedLocations.join(', ');
-    subtitle.innerText = `${filtered.length} staff  ·  ${workDays} working days  ·  Location: ${locText}`;
+    subtitle.innerText = isDaily
+      ? `${filtered.length} staff  ·  Location: ${locText}`
+      : isIndividual
+        ? `Department: ${selectedEmp?.department || '—'}  ·  Emp ID: ${selectedEmp?.emp_id || '—'}`
+        : `${filtered.length} staff  ·  ${workDays} working days  ·  Location: ${locText}`;
     subtitle.style.cssText = `margin-top: 6px; font-size: 13px; color: #4b5563;`;
 
     header.appendChild(title);
@@ -831,28 +1101,31 @@ export default function StaffMonthlyReport() {
     tableAreaClone.style.overflow = "visible";
     tableAreaClone.style.height = "auto";
     tableAreaClone.style.flex = "none";
-    tableAreaClone.style.display = "flex";
-    tableAreaClone.style.flexDirection = "row";
     tableAreaClone.style.width = `${totalWidth}px`;
     tableAreaClone.style.borderTop = "none";
 
-    const leftPanelClone = tableAreaClone.children[0] as HTMLElement;
-    const rightPanelClone = tableAreaClone.children[1] as HTMLElement;
+    if (reportView === 'monthly') {
+      tableAreaClone.style.display = "flex";
+      tableAreaClone.style.flexDirection = "row";
 
-    if (leftPanelClone) {
-      leftPanelClone.style.overflowY = "visible";
-      leftPanelClone.style.overflowX = "visible";
-      leftPanelClone.style.height = "auto";
-      leftPanelClone.style.boxShadow = "none";
-      leftPanelClone.style.borderRight = "1px solid #e5e7eb";
-    }
+      const leftPanelClone = tableAreaClone.children[0] as HTMLElement;
+      const rightPanelClone = tableAreaClone.children[1] as HTMLElement;
 
-    if (rightPanelClone) {
-      rightPanelClone.style.overflowX = "visible";
-      rightPanelClone.style.overflowY = "visible";
-      rightPanelClone.style.height = "auto";
-      rightPanelClone.style.flex = "none";
-      rightPanelClone.style.width = `${days * colWidth}px`;
+      if (leftPanelClone) {
+        leftPanelClone.style.overflowY = "visible";
+        leftPanelClone.style.overflowX = "visible";
+        leftPanelClone.style.height = "auto";
+        leftPanelClone.style.boxShadow = "none";
+        leftPanelClone.style.borderRight = "1px solid #e5e7eb";
+      }
+
+      if (rightPanelClone) {
+        rightPanelClone.style.overflowX = "visible";
+        rightPanelClone.style.overflowY = "visible";
+        rightPanelClone.style.height = "auto";
+        rightPanelClone.style.flex = "none";
+        rightPanelClone.style.width = `${days * colWidth}px`;
+      }
     }
 
     // Convert all sticky header rows to static so they render in standard flow
@@ -885,7 +1158,11 @@ export default function StaffMonthlyReport() {
       });
 
       pdf.addImage(imgData, 'JPEG', 0, 0, layoutWidth, layoutHeight, undefined, 'FAST');
-      pdf.save(`Staff_Attendance_${year}_${String(month + 1).padStart(2, '0')}.pdf`);
+      pdf.save(isDaily
+        ? `Staff_Daily_Attendance_${selectedDailyDate}.pdf`
+        : isIndividual
+          ? `Individual_Attendance_${selectedEmp?.name?.replace(/\s+/g, '_')}_${year}_${String(month + 1).padStart(2, '0')}.pdf`
+          : `Staff_Attendance_${year}_${String(month + 1).padStart(2, '0')}.pdf`);
     } catch (err) {
       console.error("Failed to generate PDF:", err);
     } finally {
@@ -894,7 +1171,7 @@ export default function StaffMonthlyReport() {
       }
       setPdfLoading(false);
     }
-  }, [days, month, year, filtered, workDays, reportType, useFirstLast, deptFilter, selectedLocations]);
+  }, [days, month, year, filtered, workDays, reportType, useFirstLast, deptFilter, selectedLocations, reportView, selectedDailyDate, selectedEmployeeId, selectedEmp]);
 
   // Render loops updated to use external memoized subcomponents
 
@@ -907,36 +1184,125 @@ export default function StaffMonthlyReport() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', padding: '0.5rem 0.75rem', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
 
-          {/* Search bar */}
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search name or ID..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="text-xs border border-gray-200 rounded-lg pl-8 pr-2 py-1.5 outline-none bg-white min-w-[180px] focus:border-gray-400 transition-colors"
-            />
-          </div>
-
+          {/* Report View Selector */}
           <Select
-            value={reportType}
-            onValueChange={(val: ReportType) => setReportType(val)}
+            value={reportView}
+            onValueChange={(val: 'monthly' | 'daily' | 'individual') => setReportView(val)}
           >
-            <SelectTrigger className="h-8 text-xs w-[140px] bg-white border-gray-200 rounded-lg">
-              <SelectValue placeholder="Report Type" />
+            <SelectTrigger className="h-8 text-xs w-[145px] bg-white border-gray-200 rounded-lg">
+              <SelectValue placeholder="Monthly Report" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="inout">In/Out Report</SelectItem>
-              <SelectItem value="location_inout">Location In/Out Report</SelectItem>
-              <SelectItem value="pa">P/A Matrix</SelectItem>
-              <SelectItem value="hourly">Hourly Report</SelectItem>
-
+              <SelectItem style={{ justifyContent: "flex-start" }} value="monthly">Monthly Report</SelectItem>
+              <SelectItem style={{ justifyContent: "flex-start" }} value="daily">Daily Report</SelectItem>
+              <SelectItem style={{ justifyContent: "flex-start" }} value="individual">Individual Report</SelectItem>
             </SelectContent>
           </Select>
 
+          {/* Employee Selector for Individual View */}
+          {reportView === 'individual' && (
+            <Popover open={openEmpSelect} onOpenChange={setOpenEmpSelect}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="h-8 text-xs w-[200px] bg-white border border-gray-205 rounded-lg px-3 py-1 flex items-center justify-between shadow-xs hover:bg-gray-50 transition-colors text-left"
+                >
+                  <span className="truncate font-medium text-gray-700 capitalize">
+                    {selectedEmp ? selectedEmp.name.toLowerCase() : "Select Employee"}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-[240px] p-0 bg-white border border-gray-200 shadow-md rounded-md z-50"
+                align="start"
+              >
+                {/* Search Input Area */}
+                <div className="p-2 border-b border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-white border border-gray-200 rounded-md">
+                    <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Search name or ID..."
+                      value={empSearch}
+                      onChange={(e) => setEmpSearch(e.target.value)}
+                      className="text-xs bg-transparent border-0 outline-none w-full p-0 focus:ring-0 placeholder:text-gray-400 normal-case"
+                      autoFocus
+                    />
+                    {empSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setEmpSearch("")}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* List Area */}
+                <div className="max-h-[220px] overflow-y-auto py-1">
+                  {selectableEmployees.length === 0 ? (
+                    <div className="px-3 py-4 text-center text-xs text-gray-400 font-medium">
+                      No results found
+                    </div>
+                  ) : (
+                    selectableEmployees.map((emp) => {
+                      const isSelected = selectedEmp?.device_user_id === emp.device_user_id;
+                      return (
+                        <button
+                          style={{ justifyContent: "space-between" }}
+                          key={emp.device_user_id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedEmployeeId(emp.device_user_id);
+                            setOpenEmpSelect(false);
+                            setEmpSearch("");
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between capitalize font-medium ${isSelected
+                            ? "bg-amber-50/70 text-amber-900"
+                            : "hover:bg-gray-50 bg-transparent"
+                            }`}
+                        >
+                          <div className="truncate">
+                            <div>{emp.name.toLowerCase()}</div>
+                            {emp.emp_id && (
+                              <div className="text-[10px] text-gray-400 font-normal normal-case">
+                                ID: {emp.emp_id}
+                              </div>
+                            )}
+                          </div>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {/* Hide Report Type in Daily and Individual views */}
+          {reportView === 'monthly' && (
+            <Select
+              value={reportType}
+              onValueChange={(val: ReportType) => setReportType(val)}
+            >
+              <SelectTrigger className="h-8 text-xs w-[140px] bg-white border-gray-200 rounded-lg">
+                <SelectValue placeholder="Report Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="inout">In/Out Report</SelectItem>
+                <SelectItem value="location_inout">Location In/Out Report</SelectItem>
+                <SelectItem value="pa">P/A Matrix</SelectItem>
+                <SelectItem value="hourly">Hourly Report</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+
           {/* Toggle for In/Out Logic */}
-          {(reportType === 'inout' || reportType === 'location_inout') && (
+          {(reportView === 'daily' || reportView === 'individual' || reportType === 'inout' || reportType === 'location_inout') && (
             <label className="flex items-center gap-2 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 cursor-pointer hover:bg-gray-100 transition-colors">
               <input
                 type="checkbox"
@@ -948,30 +1314,67 @@ export default function StaffMonthlyReport() {
             </label>
           )}
 
-          {/* Month nav */}
-          <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
-            <button onClick={prevMonth} className="px-1.5 py-1.5 hover:bg-gray-50 transition-colors">
-              <ChevronLeft className="w-3.5 h-3.5 text-gray-500" />
-            </button>
-            <span className="px-2 py-1 text-xs font-medium text-gray-700 min-w-[120px] text-center">
-              {monthLabel(month, year)}
-            </span>
-            <button
-              onClick={nextMonth}
-              disabled={year === today.getFullYear() && month === today.getMonth()}
-              className="px-1.5 py-1.5 hover:bg-gray-50 transition-colors disabled:opacity-30"
-            >
-              <ChevronRight className="w-3.5 h-3.5 text-gray-500" />
-            </button>
-          </div>
+          {/* Single date picker for Daily mode, Month nav for Monthly and Individual modes */}
+          {reportView === 'daily' ? (
+            <DatePicker
+              value={selectedDailyDate}
+              onChange={(val) => {
+                if (val) {
+                  setSelectedDailyDate(val as string);
+                }
+              }}
+              placeholder="Pick a date"
+              className="text-xs h-8 border-gray-200 bg-white rounded-lg min-w-[150px]"
+            />
+          ) : (
+            <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
+              <button onClick={prevMonth} className="px-1.5 py-1.5 hover:bg-gray-50 transition-colors">
+                <ChevronLeft className="w-3.5 h-3.5 text-gray-500" />
+              </button>
+              <span className="px-2 py-1 text-xs font-medium text-gray-700 min-w-[120px] text-center">
+                {monthLabel(month, year)}
+              </span>
+              <button
+                onClick={nextMonth}
+                disabled={year === today.getFullYear() && month === today.getMonth()}
+                className="px-1.5 py-1.5 hover:bg-gray-50 transition-colors disabled:opacity-30"
+              >
+                <ChevronRight className="w-3.5 h-3.5 text-gray-500" />
+              </button>
+            </div>
+          )}
 
           {/* Pills */}
-          <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
-            {filtered.length} staff
-          </span>
-          <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
-            {workDays} working days
-          </span>
+          {reportView !== 'individual' && (
+            <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
+              {filtered.length} employees
+            </span>
+          )}
+          {/* {reportView === 'daily' && (
+            <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
+              {dateListInRange.length * filtered.length} rows
+            </span>
+          )} */}
+          {/* {reportView === 'individual' && selectedEmp && (
+            <>
+              <span className="text-xs text-gray-450 bg-gray-50 px-2.5 py-1 rounded-full">
+                Present: {presenceDays(selectedEmp.device_user_id)} days
+              </span>
+              <span className="text-xs text-gray-450 bg-gray-50 px-2.5 py-1 rounded-full">
+                Absent: {absentDays(selectedEmp.device_user_id)} days
+              </span>
+              {selectedEmp.emp_type === 'worker' && (
+                <span className="text-xs text-gray-450 bg-gray-50 px-2.5 py-1 rounded-full">
+                  OT: {totalOvertime(selectedEmp.device_user_id, selectedEmp.emp_type)} hours
+                </span>
+              )}
+            </>
+          )} */}
+          {reportView !== 'daily' && (
+            <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
+              {workDays} working days
+            </span>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -1018,9 +1421,253 @@ export default function StaffMonthlyReport() {
           <Loader2 className="w-4 h-4 animate-spin" />
           Loading…
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex items-center justify-center flex-1 text-gray-400 text-sm">
-          No staff found.
+      ) : reportView === 'daily' ? (
+        /* ── DAILY REPORT VIEW ── */
+        <div ref={tableAreaRef} className="flex-1 overflow-auto border-t border-gray-200">
+          <table className="w-full text-sm text-left border-collapse">
+            <thead className="bg-[#111827] text-white sticky top-0 z-10">
+              <tr style={{ height: "2.5rem" }}>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 110 }}>Date</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 50 }}>#</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 270, verticalAlign: 'middle' }}>
+                  <div className="flex items-center gap-1.5 w-full">
+
+                    <div className="relative flex-1 ">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
+                      <input
+                        style={{ color: "white" }}
+                        type="text"
+                        placeholder="Search"
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className=" h-6 w-full border border-gray-750 rounded text-white pl-6 pr-2 py-0.5 outline-none focus:border-gray-500 transition-colors normal-case font-normal"
+                      />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery('')}
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 100 }}>Emp ID</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 170 }}>Department</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 120 }}>Status</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Check In</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Check Out</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Hours</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Overtime</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {dateListInRange.length === 0 || filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="py-20 text-center text-gray-400 font-medium bg-white">
+                    No employees found.
+                  </td>
+                </tr>
+              ) : (
+                dateListInRange.map((dateStr) => {
+                  const [y, m, d] = dateStr.split('-').map(Number);
+                  const dateObj = new Date(y, m - 1, d);
+                  const displayDate = dateObj.toLocaleDateString('en-OM', { day: '2-digit', month: 'short', year: 'numeric' });
+                  const isWeekendDay = isWeekend(y, m - 1, d);
+                  const isHolidayDay = holidays.some(h => h.day === d && year === y && month === (m - 1));
+
+                  return filtered.map((emp, empIdx) => {
+                    const c = matrix[emp.device_user_id]?.[dateStr];
+
+                    let statusBadge = null;
+                    let checkInText = '—';
+                    let checkOutText = '—';
+                    let hoursText = '—';
+
+                    if (isWeekendDay) {
+                      statusBadge = <span className="text-gray-400 text-xs">Weekend</span>;
+                    } else if (isHolidayDay) {
+                      statusBadge = c?.isPresent ? (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">Worked (H)</span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600">Holiday</span>
+                      );
+                    } else if (c?.isPresent) {
+                      statusBadge = (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+
+                          Present
+                        </span>
+                      );
+                    } else {
+                      const isFuture = dateObj > today;
+                      statusBadge = isFuture ? (
+                        <span className="text-gray-300 text-xs">—</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600">
+                          Absent
+                        </span>
+                      );
+                    }
+
+                    if (c?.isPresent) {
+                      if (useFirstLast) {
+                        checkInText = formatTime(c.firstPunch) || '✓';
+                        checkOutText = c.firstPunch === c.lastPunch ? '—' : (formatTime(c.lastPunch) || '—');
+                      } else {
+                        checkInText = formatTime(c.firstIn) || '✓';
+                        checkOutText = formatTime(c.lastOut) || '—';
+                      }
+
+                      // Location mapping
+                      const inLoc = useFirstLast ? c.firstPunchLocation : c.firstInLocation;
+                      const outLoc = useFirstLast ? c.lastPunchLocation : c.lastOutLocation;
+
+                      if (inLoc) checkInText += ` (${inLoc})`;
+                      if (outLoc && c.firstPunch !== c.lastPunch) checkOutText += ` (${outLoc})`;
+
+                      hoursText = getDayHours(c);
+                    }
+
+                    const overtimeText = getOvertime(c, emp.emp_type);
+
+                    return (
+                      <tr key={`${dateStr}-${emp.id}`} style={{ height: ROW_H }} className="hover:bg-gray-50/50 transition-colors border-b border-gray-100">
+                        <td className="px-4 py-2 text-gray-500 font-medium text-xs text-left">{displayDate}</td>
+                        <td className="px-4 py-2 text-gray-500 text-center">{empIdx + 1}</td>
+                        <td className="px-4 py-2 font-medium text-gray-900 capitalize text-left">{emp.name.toLowerCase()}</td>
+                        <td className="px-4 py-2 text-gray-500 text-left">{emp.emp_id ?? '—'}</td>
+                        <td className="px-4 py-2 text-gray-500 text-left">{emp.department ?? '—'}</td>
+                        <td className="px-4 py-2 text-left">{statusBadge}</td>
+                        <td className="px-4 py-2 text-gray-700 font-medium tabular-nums text-xs text-left">{checkInText}</td>
+                        <td className="px-4 py-2 text-gray-700 font-medium tabular-nums text-xs text-left">{checkOutText}</td>
+                        <td className="px-4 py-2 text-gray-600 font-semibold tabular-nums text-xs text-center">{hoursText}</td>
+                        <td className="px-4 py-2 text-gray-600 font-semibold tabular-nums text-xs text-center">{overtimeText}</td>
+                      </tr>
+                    );
+                  });
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : reportView === 'individual' ? (
+        /* ── INDIVIDUAL REPORT VIEW ── */
+        <div ref={tableAreaRef} className="flex-1 overflow-auto border-t border-gray-200">
+          <table className="w-full text-sm text-left border-collapse">
+            <thead className="bg-[#111827] text-white sticky top-0 z-10">
+              <tr style={{ height: "2.5rem" }}>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 130 }}>Date</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 100 }}>Day</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 140 }}>Status</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Check In</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Check Out</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Hours</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Overtime</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {!selectedEmp ? (
+                <tr>
+                  <td colSpan={7} className="py-20 text-center text-gray-400 font-medium bg-white">
+                    No employee selected.
+                  </td>
+                </tr>
+              ) : (
+                dayList.map((d) => {
+                  const pad = (n: number) => String(n).padStart(2, '0');
+                  const dateStr = `${year}-${pad(month + 1)}-${pad(d)}`;
+                  const dateObj = new Date(year, month, d);
+                  const displayDate = dateObj.toLocaleDateString('en-OM', { day: '2-digit', month: 'short', year: 'numeric' });
+                  const displayDayName = getDayName(year, month, d);
+
+                  const c = matrix[selectedEmp.device_user_id]?.[dateStr];
+                  const isWeekendDay = isWeekend(year, month, d);
+                  const isHolidayDay = isHoliday(d);
+                  const holiday = holidayMap[d];
+
+                  let statusBadge = null;
+                  let checkInText = '—';
+                  let checkOutText = '—';
+                  let hoursText = '—';
+                  let overtimeText = '—';
+
+                  if (isWeekendDay) {
+                    statusBadge = <span className="text-gray-400 text-xs">Weekend</span>;
+                  } else if (isHolidayDay) {
+                    statusBadge = c?.isPresent ? (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">Worked (H)</span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600">Holiday ({holiday?.name})</span>
+                    );
+                  } else if (c?.isPresent) {
+                    statusBadge = (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+                        Present
+                      </span>
+                    );
+                  } else {
+                    const isFuture = dateObj > today;
+                    statusBadge = isFuture ? (
+                      <span className="text-gray-300 text-xs">—</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600">
+                        Absent
+                      </span>
+                    );
+                  }
+
+                  if (c?.isPresent) {
+                    if (useFirstLast) {
+                      checkInText = formatTime(c.firstPunch) || '✓';
+                      checkOutText = c.firstPunch === c.lastPunch ? '—' : (formatTime(c.lastPunch) || '—');
+                    } else {
+                      checkInText = formatTime(c.firstIn) || '✓';
+                      checkOutText = formatTime(c.lastOut) || '—';
+                    }
+
+                    const inLoc = useFirstLast ? c.firstPunchLocation : c.firstInLocation;
+                    const outLoc = useFirstLast ? c.lastPunchLocation : c.lastOutLocation;
+
+                    if (inLoc) checkInText += ` (${inLoc})`;
+                    if (outLoc && c.firstPunch !== c.lastPunch) checkOutText += ` (${outLoc})`;
+
+                    hoursText = getDayHours(c);
+                    overtimeText = getOvertime(c, selectedEmp.emp_type);
+                  }
+
+                  return (
+                    <tr key={d} style={{ height: ROW_H }} className="hover:bg-gray-50/50 transition-colors border-b border-gray-100">
+                      <td className="px-4 py-2 text-gray-500 font-medium text-xs text-left">{displayDate}</td>
+                      <td className="px-4 py-2 text-gray-500 text-left capitalize">{displayDayName.toLowerCase()}</td>
+                      <td className="px-4 py-2 text-left">{statusBadge}</td>
+                      <td className="px-4 py-2 text-gray-700 font-medium tabular-nums text-xs text-left">{checkInText}</td>
+                      <td className="px-4 py-2 text-gray-700 font-medium tabular-nums text-xs text-left">{checkOutText}</td>
+                      <td className="px-4 py-2 text-gray-600 font-semibold tabular-nums text-xs text-center">{hoursText}</td>
+                      <td className="px-4 py-2 text-gray-600 font-semibold tabular-nums text-xs text-center">{overtimeText}</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+            {selectedEmp && (
+              <tfoot className="sticky bottom-0 z-10 border-t-2 border-gray-300 shadow-[0_-2px_5px_rgba(0,0,0,0.05)]">
+                <tr style={{ height: ROW_H }} className="font-bold text-xs bg-gray-100 text-gray-800">
+                  <td className="px-4 py-2 text-left bg-gray-100" colSpan={3}>TOTALS</td>
+                  <td className="px-4 py-2 text-left bg-gray-100">—</td>
+                  <td className="px-4 py-2 text-left bg-gray-100">—</td>
+                  <td className="px-4 py-2 text-center bg-gray-100 text-gray-900 font-bold tabular-nums">
+                    {totalHours(selectedEmp.device_user_id)}
+                  </td>
+                  <td className="px-4 py-2 text-center bg-gray-100 text-gray-900 font-bold tabular-nums">
+                    {totalOvertime(selectedEmp.device_user_id, selectedEmp.emp_type)}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
         </div>
       ) : (
         /*
@@ -1042,20 +1689,45 @@ export default function StaffMonthlyReport() {
               zIndex: 10,
             }}
           >
-            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: 584 }}>
+            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: reportType === 'hourly' ? 636 : 584 }}>
               <colgroup>
                 <col style={{ width: 28 }} />
                 <col style={{ width: 270 }} />
                 <col style={{ width: 170 }} />
                 <col style={{ width: 52 }} />
                 <col style={{ width: 52 }} />
+                {reportType === 'hourly' && <col style={{ width: 52 }} />}
                 <col style={{ width: 12 }} />
               </colgroup>
               <thead>
                 {/* Row 1: day number */}
                 <tr style={{ background: '#111827', color: '#fff', position: 'sticky', top: 0, zIndex: 5, paddingBottom: "1rem", height: "2.5rem" }}>
                   <th className="text-[13px] font-medium text-center px-1 py-2">#</th>
-                  <th className="text-[13px] font-medium text-left px-3 py-2">Name</th>
+                  <th className="text-[13px] font-medium text-left px-3 py-2" style={{ verticalAlign: 'middle' }}>
+                    <div className="flex items-center gap-1.5 w-full">
+
+                      <div className="relative flex-1 ">
+
+                        <input
+                          style={{ color: "white" }}
+                          type="text"
+                          placeholder="Search"
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                          className=" h-6 w-full border border-gray-700 rounded text-white pl-6 pr-2 py-0.5 outline-none focus:border-gray-500 transition-colors normal-case font-normal"
+                        />
+                        {searchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </th>
                   <th className="text-[13px] font-medium text-left px-1 py-1" style={{ width: 170 }}>
                     <DropdownMenu>
                       <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-white hover:bg-white/10 focus:ring-0 focus:ring-offset-0 focus:outline-none shadow-none px-2 rounded-md transition-colors font-medium w-full justify-between flex items-center outline-none">
@@ -1125,6 +1797,7 @@ export default function StaffMonthlyReport() {
                   </th>
                   <th className="text-[13px] font-medium text-center py-2" style={{ background: '#065f46' }}>P</th>
                   <th className="text-[13px] font-medium text-center py-2" style={{ background: '#7f1d1d' }}>A</th>
+                  {reportType === 'hourly' && <th className="text-[13px] font-medium text-center py-2" style={{ background: '#b45309' }}>OT</th>}
                   <th style={{ background: '#111827' }} />
                 </tr>
                 {/* Row 2: In/Out sub-label spacer */}
@@ -1134,19 +1807,30 @@ export default function StaffMonthlyReport() {
                   <th style={{ padding: '4px 0' }} />
                   <th style={{ background: '#ecfdf5' }} />
                   <th style={{ background: '#fef2f2' }} />
+                  {reportType === 'hourly' && <th style={{ background: '#fffbeb' }} />}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((emp, idx) => (
-                  <FrozenRow
-                    key={emp.id}
-                    emp={emp}
-                    index={idx}
-                    locationList={employeeLocations[emp.device_user_id] || '—'}
-                    presenceCount={presenceDays(emp.device_user_id)}
-                    absentCount={absentDays(emp.device_user_id)}
-                  />
-                ))}
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={reportType === 'hourly' ? 7 : 6} className="py-20 text-center text-gray-450 font-medium bg-white">
+                      No employee found.
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((emp, idx) => (
+                    <FrozenRow
+                      key={emp.id}
+                      emp={emp}
+                      index={idx}
+                      locationList={employeeLocations[emp.device_user_id] || '—'}
+                      presenceCount={presenceDays(emp.device_user_id)}
+                      absentCount={absentDays(emp.device_user_id)}
+                      overtimeCount={totalOvertime(emp.device_user_id, emp.emp_type)}
+                      showOvertime={reportType === 'hourly'}
+                    />
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -1214,20 +1898,28 @@ export default function StaffMonthlyReport() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(emp => (
-                  <ScrollableRow
-                    key={emp.id}
-                    emp={emp}
-                    dayList={dayList}
-                    reportType={reportType}
-                    useFirstLast={useFirstLast}
-                    matrixForEmployee={matrix[emp.device_user_id]}
-                    year={year}
-                    month={month}
-                    today={today}
-                    holidayMap={holidayMap}
-                  />
-                ))}
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={dayList.length * (reportType === 'inout' || reportType === 'location_inout' ? 2 : 1)} className="py-20 text-center text-gray-300 font-medium bg-white" style={{ height: ROW_H }}>
+                      —
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map(emp => (
+                    <ScrollableRow
+                      key={emp.id}
+                      emp={emp}
+                      dayList={dayList}
+                      reportType={reportType}
+                      useFirstLast={useFirstLast}
+                      matrixForEmployee={matrix[emp.device_user_id]}
+                      year={year}
+                      month={month}
+                      today={today}
+                      holidayMap={holidayMap}
+                    />
+                  ))
+                )}
               </tbody>
             </table>
           </div>

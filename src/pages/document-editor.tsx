@@ -102,6 +102,9 @@ interface ClientDetails {
   address: string;
   contactNo: string;
   vatinNo?: string;
+  refNo?: string;
+  quotationNo?: string;
+  invoiceNo?: string;
 }
 
 interface InvoiceDetails {
@@ -459,16 +462,22 @@ export default function DocumentEditor() {
   const saveClientDetails = async () => {
     if (!clientName.trim()) return;
     try {
-      // Check if client name already exists in database before writing duplicate
-      if (clients.some((c) => c.name.toLowerCase() === clientName.toLowerCase())) return;
-
+      const existingClient = clients.find((c) => c.name.toLowerCase() === clientName.toLowerCase());
+      
       const clientData: ClientDetails = {
         name: clientName,
         address: clientAddress,
         contactNo: contactNo,
+        refNo: refNo || "",
+        ...(documentType === "invoice" ? { invoiceNo } : { quotationNo }),
         ...(documentType === "invoice" && isTaxInvoice ? { vatinNo } : {}),
       };
-      await addDoc(collection(db, "client-details"), clientData);
+
+      if (existingClient && existingClient.id) {
+        await updateDoc(doc(db, "client-details", existingClient.id), clientData as any);
+      } else {
+        await addDoc(collection(db, "client-details"), clientData);
+      }
       await fetchClients();
     } catch (e) {
       console.error(e);
@@ -820,6 +829,14 @@ export default function DocumentEditor() {
       if (client.vatinNo) {
         setVatinNo(client.vatinNo);
         setIsTaxInvoice(true);
+      }
+      if (client.refNo) {
+        setRefNo(client.refNo);
+      }
+      if (documentType === "invoice" && client.invoiceNo) {
+        setInvoiceNo(client.invoiceNo);
+      } else if (documentType === "quotation" && client.quotationNo) {
+        setQuotationNo(client.quotationNo);
       }
     }
     setOpenClientSelect(false);

@@ -3,7 +3,7 @@ import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRightLeft, BarChart3, ChartLine, Database, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap, FolderKanban, FileCheck, Check } from 'lucide-react';
+import { ArrowRightLeft, BarChart3, ChartLine, Check, Database, FileCheck, FolderKanban, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
@@ -13,11 +13,11 @@ import AddEmployee from './AddEmployee';
 import DataManagement from './DataManagement';
 import DevicesMaster from './DevicesMaster';
 import EmployeeManage from './employee-manage';
+import ProjectsMaster from './ProjectsMaster';
 import ReportsPage from './ReportsPage';
 import Terminal from './Terminal';
-import TransferRequests from './transfer-requests';
-import ProjectsMaster from './ProjectsMaster';
 import TimesheetFinalizer from './TimesheetFinalizer';
+import TransferRequests from './transfer-requests';
 
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '../lib/supabase';
@@ -202,7 +202,6 @@ export default function AttendanceDashboard() {
                   {canEditAttendance && (
                     <Directive bg={tab === 'projects' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('projects')} title="Projects" icon={<FolderKanban size={16} />} />
                   )}
-
 
 
                   <Directive bg={tab === 'terminal' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('terminal')} title="Terminal" icon={<TerminalIcon size={16} />} />
