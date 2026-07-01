@@ -1293,10 +1293,10 @@ export default function StaffMonthlyReport() {
                 <SelectValue placeholder="Report Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="inout">In/Out Report</SelectItem>
-                <SelectItem value="location_inout">Location In/Out Report</SelectItem>
-                <SelectItem value="pa">P/A Matrix</SelectItem>
-                <SelectItem value="hourly">Hourly Report</SelectItem>
+                <SelectItem style={{ justifyContent: "flex-start" }} value="inout">In/Out Report</SelectItem>
+                <SelectItem style={{ justifyContent: "flex-start" }} value="location_inout">Location In/Out Report</SelectItem>
+                <SelectItem style={{ justifyContent: "flex-start" }} value="pa">P/A Matrix</SelectItem>
+                <SelectItem style={{ justifyContent: "flex-start" }} value="hourly">Hourly Report</SelectItem>
               </SelectContent>
             </Select>
           )}
