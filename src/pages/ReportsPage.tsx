@@ -1943,15 +1943,21 @@ export default function StaffMonthlyReport() {
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }} className="border-b border-gray-100 pb-4">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#4b5563' }}>Day of Month</label>
-              <select
-                value={newHolidayDay}
-                onChange={e => setNewHolidayDay(parseInt(e.target.value))}
-                style={{ height: '2.25rem', width: '80px', fontSize: '0.85rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', padding: '0 0.5rem', background: 'white' }}
+              <Select
+                value={String(newHolidayDay)}
+                onValueChange={val => setNewHolidayDay(parseInt(val))}
               >
-                {dayList.map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
+                <SelectTrigger className="h-9 w-[80px] bg-white border-gray-300 rounded-md text-xs">
+                  <SelectValue placeholder="Day" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px]">
+                  {dayList.map(d => (
+                    <SelectItem style={{ justifyContent: "flex-start" }} key={d} value={String(d)}>
+                      {d}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1, minWidth: '150px' }}>

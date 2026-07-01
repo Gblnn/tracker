@@ -669,6 +669,10 @@ export default function TimesheetFinalizer() {
                 className="h-8 text-sm font-medium bg-white border border-slate-300 w-[160px] p-4"
               />
 
+              <span className="text-xs text-gray-550 bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-full font-medium shrink-0">
+                {filteredEmployees.length} rows
+              </span>
+
               {/* <button className="nav-btn" onClick={() => changeDate(1)} disabled={loading || saving}>
                 <ChevronRight size={16} />
               </button> */}
