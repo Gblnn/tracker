@@ -15,6 +15,7 @@ import {
   Zap
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
 
@@ -72,6 +73,34 @@ export default function DataManagement() {
   const [loadingEmpPunches, setLoadingEmpPunches] = useState<boolean>(false);
   const [deletingPunchId, setDeletingPunchId] = useState<number | null>(null);
   const [deletingAll, setDeletingAll] = useState<boolean>(false);
+
+  const { userData } = useAuth();
+
+  const canEditAttendance = useMemo(() => {
+    try {
+      const permissions = JSON.parse(userData?.clearance || "{}") as Record<string, boolean>;
+      const hasStructuredClearance = Object.keys(permissions).length > 0;
+      const hasAttendanceModule = permissions.attendance === true;
+      const hasAttendanceEdit = permissions.attendance_edit === true;
+      const hasExplicitEditBlock = permissions.attendance_edit === false;
+
+      if (hasAttendanceModule) {
+        return hasAttendanceEdit;
+      }
+
+      if (permissions.attendance === false || hasExplicitEditBlock) {
+        return false;
+      }
+
+      if (userData?.role === "admin" || userData?.role === "site_admin") {
+        return !hasStructuredClearance;
+      }
+
+      return false;
+    } catch {
+      return userData?.role === "admin" || userData?.role === "site_admin";
+    }
+  }, [userData]);
 
 
   // ── Fetch metadata & total counts ──────────────────────────────────────────
@@ -185,12 +214,17 @@ export default function DataManagement() {
     if (!confirm('Are you sure you want to delete this punch record?')) return;
     setDeletingPunchId(punchId);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('punches')
         .delete()
-        .eq('id', punchId);
+        .eq('id', punchId)
+        .select();
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('Permission denied. Please verify your Supabase Row Level Security (RLS) policies allow DELETE actions on the "punches" table for public/anon clients.');
+      }
+
       toast.success('Punch log deleted successfully');
       setEmpPunches(prev => prev.filter(p => p.id !== punchId));
       fetchMetadata(); // update total row count
@@ -209,12 +243,17 @@ export default function DataManagement() {
     if (!confirm(msg)) return;
     setDeletingAll(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('punches')
         .delete()
-        .eq('user_id', activeEmp.device_user_id);
+        .eq('user_id', activeEmp.device_user_id)
+        .select();
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('Permission denied. Please verify your Supabase Row Level Security (RLS) policies allow DELETE actions on the "punches" table for public/anon clients.');
+      }
+
       toast.success('All punch logs deleted successfully');
       setEmpPunches([]);
       fetchMetadata(); // update total row count
@@ -572,7 +611,7 @@ export default function DataManagement() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {empPunches.length > 0 && (
+                {canEditAttendance && empPunches.length > 0 && (
                   <button
                     style={{ marginRight: "0.5rem" }}
                     onClick={handleDeleteAllPunches}
@@ -611,7 +650,7 @@ export default function DataManagement() {
                         <th className="px-4 py-2 font-semibold">Type</th>
                         <th className="px-4 py-2 font-semibold">Verify Method</th>
                         <th className="px-4 py-2 font-semibold">Source/Location</th>
-                        <th className="px-4 py-2 w-12 text-center">Actions</th>
+                        {canEditAttendance && <th className="px-4 py-2 w-12 text-center">Actions</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 bg-white">
@@ -656,20 +695,22 @@ export default function DataManagement() {
                                 )}
                               </div>
                             </td>
-                            <td className="px-4 py-2 text-center">
-                              <button
-                                onClick={() => handleDeletePunch(punch.id)}
-                                disabled={deletingPunchId === punch.id}
-                                className="text-red-500 hover:text-red-700 p-1 rounded-md hover:bg-red-50 transition-colors disabled:opacity-50"
-                                title="Delete this punch log"
-                              >
-                                {deletingPunchId === punch.id ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <CircleMinus className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-                            </td>
+                            {canEditAttendance && (
+                              <td className="px-4 py-2 text-center">
+                                <button
+                                  onClick={() => handleDeletePunch(punch.id)}
+                                  disabled={deletingPunchId === punch.id}
+                                  className="text-red-500 hover:text-red-700 p-1 rounded-md hover:bg-red-50 transition-colors disabled:opacity-50"
+                                  title="Delete this punch log"
+                                >
+                                  {deletingPunchId === punch.id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <CircleMinus className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                              </td>
+                            )}
                           </tr>
                         );
                       })}
