@@ -207,7 +207,7 @@ export default function AttendanceDashboard() {
                   <Directive bg={tab === 'terminal' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('terminal')} title="Terminal" icon={<TerminalIcon size={16} />} />
 
                   {canEditAttendance && (
-                    <Directive bg={tab === 'finalize' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('finalize')} title="Finalize Timesheets" icon={<Check size={16} />} />
+                    <Directive bg={tab === 'finalize' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('finalize')} title="Finalize" icon={<Check size={16} />} />
                   )}
                 </div>
 

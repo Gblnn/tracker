@@ -152,6 +152,16 @@ export default function TimesheetFinalizer() {
     }
   }, [userData]);
 
+  const employeesMap = useMemo(() => {
+    return Object.fromEntries(employees.map(e => [e.device_user_id, e]));
+  }, [employees]);
+
+  const [renderLimit, setRenderLimit] = useState(100);
+
+  useEffect(() => {
+    setRenderLimit(100);
+  }, [search, punchFilter, selectedProjects]);
+
   const loadTimesheet = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -214,9 +224,12 @@ export default function TimesheetFinalizer() {
         setLockedBy(sampleRow.attested_by && sampleRow.attested_by.includes('@') ? sampleRow.attested_by : 'Biometric System');
 
         // Map locked rows
+        const existingRowsMap = Object.fromEntries(
+          (existingRows || []).map(r => [r.employee_code, r])
+        );
         const initialRows: Record<string, TimesheetRow> = {};
         (empData || []).forEach(emp => {
-          const matched = existingRows.find(r => r.employee_code === emp.device_user_id);
+          const matched = existingRowsMap[emp.device_user_id];
           if (matched) {
             initialRows[emp.device_user_id] = {
               employee_code: emp.device_user_id,
@@ -336,7 +349,7 @@ export default function TimesheetFinalizer() {
         const inTime = key === 'punch_in' ? value : current.punch_in;
         const outTime = key === 'punch_out' ? value : current.punch_out;
 
-        const emp = employees.find(e => e.device_user_id === userId);
+        const emp = employeesMap[userId];
         const isStaff = emp?.emp_type === 'staff';
 
         if (inTime && outTime && !isStaff) {
@@ -705,7 +718,7 @@ export default function TimesheetFinalizer() {
                       setRows(prev => {
                         const updated = { ...prev };
                         Object.keys(updated).forEach(userId => {
-                          const emp = employees.find(e => e.device_user_id === userId);
+                          const emp = employeesMap[userId];
                           if (emp?.emp_type !== 'staff') {
                             updated[userId] = {
                               ...updated[userId],
@@ -927,183 +940,204 @@ export default function TimesheetFinalizer() {
                     </td>
                   </tr>
                 ) : (
-                  filteredEmployees.map(emp => {
-                    const row = rows[emp.device_user_id];
-                    if (!row) return null;
+                  <>
+                    {filteredEmployees.slice(0, renderLimit).map(emp => {
+                      const row = rows[emp.device_user_id];
+                      if (!row) return null;
 
-                    return (
-                      <tr key={emp.device_user_id}>
-                        {/* Employee Info */}
-                        <td>
-                          <div>
-                            <div style={{ fontWeight: 600, color: '#0f172a', textTransform: "uppercase" }}>{emp.name.toLowerCase()}</div>
-                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                              <span style={{ fontFamily: 'monospace', background: '#f1f5f9', padding: '1px 4px', borderRadius: '4px' }}>
-                                ID: {emp.device_user_id}
-                              </span>
-                              <span>·</span>
-                              <span>{emp.department || 'No Dept'}</span>
+                      return (
+                        <tr key={emp.device_user_id}>
+                          {/* Employee Info */}
+                          <td>
+                            <div>
+                              <div style={{ fontWeight: 600, color: '#0f172a', textTransform: "uppercase" }}>{emp.name.toLowerCase()}</div>
+                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                                <span style={{ fontFamily: 'monospace', background: '#f1f5f9', padding: '1px 4px', borderRadius: '4px' }}>
+                                  ID: {emp.device_user_id}
+                                </span>
+                                <span>·</span>
+                                <span>{emp.department || 'No Dept'}</span>
+                              </div>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* Punches Tracker */}
-                        <td>
-                          <div style={{ display: 'flex', flexFlow: 'column', gap: '4px' }}>
-                            {row.original_in_punch ? (
-                              <div style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px' }}>IN</span>
-                                <span>{extractTime(row.original_in_punch.punch_time)}</span>
-                                <span style={{ color: '#94a3b8', fontSize: '10px' }}>({row.original_in_punch.device_serial})</span>
-                              </div>
-                            ) : (
-                              <span style={{ fontSize: '11px', color: '#ef4444', fontStyle: 'italic', fontWeight: 500 }}>No clock in</span>
-                            )}
+                          {/* Punches Tracker */}
+                          <td>
+                            <div style={{ display: 'flex', flexFlow: 'column', gap: '4px' }}>
+                              {row.original_in_punch ? (
+                                <div style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                  <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px' }}>IN</span>
+                                  <span>{extractTime(row.original_in_punch.punch_time)}</span>
+                                  <span style={{ color: '#94a3b8', fontSize: '10px' }}>({row.original_in_punch.device_serial})</span>
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: '11px', color: '#ef4444', fontStyle: 'italic', fontWeight: 500 }}>No clock in</span>
+                              )}
 
-                            {row.original_out_punch ? (
-                              <div style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                <span style={{ background: '#fee2e2', color: '#b91c1c', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px' }}>OUT</span>
-                                <span>{extractTime(row.original_out_punch.punch_time)}</span>
-                                <span style={{ color: '#94a3b8', fontSize: '10px' }}>({row.original_out_punch.device_serial})</span>
-                              </div>
-                            ) : (
-                              row.original_in_punch ? (
-                                <span style={{ fontSize: '11px', color: '#f59e0b', fontStyle: 'italic', fontWeight: 500 }}>No clock out</span>
-                              ) : null
-                            )}
-                          </div>
-                        </td>
+                              {row.original_out_punch ? (
+                                <div style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                  <span style={{ background: '#fee2e2', color: '#b91c1c', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px' }}>OUT</span>
+                                  <span>{extractTime(row.original_out_punch.punch_time)}</span>
+                                  <span style={{ color: '#94a3b8', fontSize: '10px' }}>({row.original_out_punch.device_serial})</span>
+                                </div>
+                              ) : (
+                                row.original_in_punch ? (
+                                  <span style={{ fontSize: '11px', color: '#f59e0b', fontStyle: 'italic', fontWeight: 500 }}>No clock out</span>
+                                ) : null
+                              )}
+                            </div>
+                          </td>
 
-                        {/* Punch In Input */}
-                        <td>
-                          <Input
-                            type="time"
-                            value={row.punch_in}
-                            onChange={(e) => updateRow(emp.device_user_id, 'punch_in', e.target.value)}
-                            disabled={isLocked || !canEditAttendance}
-                            className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500"
-                          />
-                        </td>
-
-                        {/* Punch Out Input */}
-                        <td>
-                          <Input
-                            type="time"
-                            value={row.punch_out}
-                            onChange={(e) => updateRow(emp.device_user_id, 'punch_out', e.target.value)}
-                            disabled={isLocked || !canEditAttendance}
-                            className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500"
-                          />
-                        </td>
-
-                        {/* Project Allocation Select */}
-                        <td>
-                          <Select
-                            value={row.project_code || 'UNASSIGNED'}
-                            onValueChange={(val) => updateRow(emp.device_user_id, 'project_code', val === 'UNASSIGNED' ? '' : val)}
-                            disabled={isLocked || !canEditAttendance}
-                          >
-                            <SelectTrigger className="w-[150px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
-                              <SelectValue placeholder="Choose Project" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white border border-slate-200 z-50">
-                              <SelectItem value="UNASSIGNED" className="text-xs cursor-pointer focus:bg-slate-50">-- Choose Project --</SelectItem>
-                              {projects.map(p => (
-                                <SelectItem key={p.project_code} value={p.project_code} className="text-xs cursor-pointer focus:bg-slate-50">
-                                  {p.project_code}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </td>
-
-                        {/* Overtime Input */}
-                        <td>
-                          {emp.emp_type === 'staff' ? (
-                            <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', paddingLeft: '12px' }}>—</span>
-                          ) : (
-                            <input
-                              type="number"
-                              step="0.5"
-                              min="0"
-                              max="24"
-                              value={row.overtime}
-                              onChange={(e) => updateRow(emp.device_user_id, 'overtime', parseFloat(e.target.value) || 0)}
-                              className="table-input"
+                          {/* Punch In Input */}
+                          <td>
+                            <Input
+                              type="time"
+                              value={row.punch_in}
+                              onChange={(e) => updateRow(emp.device_user_id, 'punch_in', e.target.value)}
                               disabled={isLocked || !canEditAttendance}
-                              style={{ width: '70px', fontFamily: 'monospace' }}
+                              className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500"
                             />
-                          )}
-                        </td>
+                          </td>
 
-                        {/* Source/Attestation Badge */}
-                        <td>
-                          {row.isEdited ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                              <span className="source-badge source-manual">Manual</span>
-                              <span style={{ fontSize: '10px', color: '#64748b', wordBreak: 'break-all' }} title={row.attested_by}>
-                                {row.attested_by}
-                              </span>
-                            </div>
-                          ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                              <span className="source-badge source-auto">Biometric</span>
-                              <span style={{ fontSize: '10px', color: '#94a3b8', fontFamily: 'monospace' }}>
-                                {row.verify_type}
-                              </span>
-                            </div>
-                          )}
-                        </td>
+                          {/* Punch Out Input */}
+                          <td>
+                            <Input
+                              type="time"
+                              value={row.punch_out}
+                              onChange={(e) => updateRow(emp.device_user_id, 'punch_out', e.target.value)}
+                              disabled={isLocked || !canEditAttendance}
+                              className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500"
+                            />
+                          </td>
 
-                        {/* Remarks Input */}
-                        <td>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {/* Project Allocation Select */}
+                          <td>
                             <Select
-                              value={
-                                row.remarks === ''
-                                  ? 'NONE'
-                                  : (row.remarks === 'Forgot to Punch' || row.remarks === 'Absent')
-                                    ? row.remarks
-                                    : 'CUSTOM'
-                              }
-                              onValueChange={(val) => {
-                                if (val === 'NONE') {
-                                  updateRow(emp.device_user_id, 'remarks', '');
-                                } else if (val === 'CUSTOM') {
-                                  updateRow(emp.device_user_id, 'remarks', 'Custom: ');
-                                } else {
-                                  updateRow(emp.device_user_id, 'remarks', val);
-                                }
-                              }}
+                              value={row.project_code || 'UNASSIGNED'}
+                              onValueChange={(val) => updateRow(emp.device_user_id, 'project_code', val === 'UNASSIGNED' ? '' : val)}
                               disabled={isLocked || !canEditAttendance}
                             >
                               <SelectTrigger className="w-[150px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
-                                <SelectValue placeholder="No Remark" />
+                                <SelectValue placeholder="Choose Project" />
                               </SelectTrigger>
                               <SelectContent className="bg-white border border-slate-200 z-50">
-                                <SelectItem value="NONE" className="text-xs cursor-pointer focus:bg-slate-50">No Remark</SelectItem>
-                                <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
-                                <SelectItem value="Absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
-                                <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
+                                <SelectItem value="UNASSIGNED" className="text-xs cursor-pointer focus:bg-slate-50">-- Choose Project --</SelectItem>
+                                {projects.map(p => (
+                                  <SelectItem key={p.project_code} value={p.project_code} className="text-xs cursor-pointer focus:bg-slate-50">
+                                    {p.project_code}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
+                          </td>
 
-                            {(row.remarks !== '' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Absent') && (
-                              <Input
-                                type="text"
-                                value={row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks}
-                                onChange={(e) => updateRow(emp.device_user_id, 'remarks', 'Custom: ' + e.target.value)}
-                                placeholder="Type custom remark..."
+                          {/* Overtime Input */}
+                          <td>
+                            {emp.emp_type === 'staff' ? (
+                              <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', paddingLeft: '12px' }}>—</span>
+                            ) : (
+                              <input
+                                type="number"
+                                step="0.5"
+                                min="0"
+                                max="24"
+                                value={row.overtime}
+                                onChange={(e) => updateRow(emp.device_user_id, 'overtime', parseFloat(e.target.value) || 0)}
+                                className="table-input"
                                 disabled={isLocked || !canEditAttendance}
-                                className="h-8 text-xs w-[150px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500"
+                                style={{ width: '70px', fontFamily: 'monospace' }}
                               />
                             )}
+                          </td>
+
+                          {/* Source/Attestation Badge */}
+                          <td>
+                            {row.isEdited ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                <span className="source-badge source-manual">Manual</span>
+                                <span style={{ fontSize: '10px', color: '#64748b', wordBreak: 'break-all' }} title={row.attested_by}>
+                                  {row.attested_by}
+                                </span>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                <span className="source-badge source-auto">Biometric</span>
+                                <span style={{ fontSize: '10px', color: '#94a3b8', fontFamily: 'monospace' }}>
+                                  {row.verify_type}
+                                </span>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Remarks Input */}
+                          <td>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <Select
+                                value={
+                                  row.remarks === ''
+                                    ? 'NONE'
+                                    : (row.remarks === 'Forgot to Punch' || row.remarks === 'Absent')
+                                      ? row.remarks
+                                      : 'CUSTOM'
+                                }
+                                onValueChange={(val) => {
+                                  if (val === 'NONE') {
+                                    updateRow(emp.device_user_id, 'remarks', '');
+                                  } else if (val === 'CUSTOM') {
+                                    updateRow(emp.device_user_id, 'remarks', 'Custom: ');
+                                  } else {
+                                    updateRow(emp.device_user_id, 'remarks', val);
+                                  }
+                                }}
+                                disabled={isLocked || !canEditAttendance}
+                              >
+                                <SelectTrigger className="w-[150px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
+                                  <SelectValue placeholder="No Remark" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border border-slate-200 z-50">
+                                  <SelectItem value="NONE" className="text-xs cursor-pointer focus:bg-slate-50">No Remark</SelectItem>
+                                  <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
+                                  <SelectItem value="Absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
+                                  <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
+                                </SelectContent>
+                              </Select>
+
+                              {(row.remarks !== '' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Absent') && (
+                                <Input
+                                  type="text"
+                                  value={row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks}
+                                  onChange={(e) => updateRow(emp.device_user_id, 'remarks', 'Custom: ' + e.target.value)}
+                                  placeholder="Type custom remark..."
+                                  disabled={isLocked || !canEditAttendance}
+                                  className="h-8 text-xs w-[150px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500"
+                                />
+                              )}
+                            </div>
+                          </td>
+
+                        </tr>
+                      );
+                    })}
+                    {filteredEmployees.length > renderLimit && (
+                      <tr>
+                        <td colSpan={8} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
+                          <div className="flex items-center justify-center gap-4 w-full">
+                            <span className="text-xs text-gray-500 font-medium text-center">
+                              Showing {renderLimit} of {filteredEmployees.length} records
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setRenderLimit(prev => prev + 100)}
+                              className="text-xs font-semibold h-9 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors shadow-xs px-4 text-gray-750 cursor-pointer"
+                            >
+                              Load More
+                            </button>
                           </div>
                         </td>
-
                       </tr>
-                    );
-                  }))}
+                    )}
+                  </>
+                )}
               </tbody>
             </table>
           </div>

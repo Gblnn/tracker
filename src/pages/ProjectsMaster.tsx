@@ -373,7 +373,7 @@ export default function ProjectsMaster() {
   }
 
   return (
-    <div className="min-h-screen bg-white" style={{ width: "100%", height: "100%", overflowY: "auto" }}>
+    <div className="bg-white flex flex-col" style={{ width: "100%", height: "82vh", overflow: "hidden" }}>
       <style>{`
         .project-card {
           background: #ffffff;
@@ -464,10 +464,10 @@ export default function ProjectsMaster() {
           background: #fef2f2;
         }
       `}</style>
-      <div className="w-full px-4 sm:px-6 py-8">
+      <div className="w-full px-4 sm:px-6 py-8 flex flex-col flex-1 overflow-hidden">
 
         {/* Header Toolbar */}
-        <div className="flex justify-between items-center mb-6" style={{ justifyContent: "space-between", padding: "0 1.25rem" }}>
+        <div style={{ width: "100%", justifyContent: "space-between", padding: "0rem 1rem" }} className="flex justify-between items-center mb-6" >
           <div className="flex items-center gap-2">
             <h2>All Projects</h2>
             <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
@@ -506,195 +506,197 @@ export default function ProjectsMaster() {
 
         {/* Project Content / Loading */}
         {loading ? (
-          <div className="flex items-center justify-center gap-2 py-16 text-gray-400 text-sm">
+          <div className="flex-1 flex items-center justify-center gap-2 text-gray-400 text-sm bg-white">
             <Loader2 className="w-4 h-4 animate-spin" />
             Loading…
           </div>
         ) : projects.length === 0 ? (
-          <div className="text-center py-16 border border-dashed border-gray-200 rounded-2xl text-gray-400 text-sm">
+          <div className="flex-1 flex items-center justify-center border border-dashed border-gray-200 rounded-2xl text-gray-400 text-sm m-4">
             No projects registered. Click "Add Project" to register one.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => {
-              const assignedDevices = devicesByProject[project.project_code] || [];
-              const isAllocatingThis = allocatingProjectId === project.project_code;
+          <div style={{ border: "1px solid rgba(100 100 100/ 0.1)", width: "100%", borderRadius: "0.5rem", paddingTop: "1rem" }} className="flex-1 overflow-y-auto px-4 pb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-1">
+              {projects.map((project) => {
+                const assignedDevices = devicesByProject[project.project_code] || [];
+                const isAllocatingThis = allocatingProjectId === project.project_code;
 
-              return (
-                <div key={project.id} className="project-card">
-                  {/* Top Part: Info & Actions */}
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <span style={{
-                        fontSize: '10px',
+                return (
+                  <div key={project.id} className="project-card">
+                    {/* Top Part: Info & Actions */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <span style={{
+                          fontSize: '10px',
 
-                        fontWeight: 500,
-                        background: 'rgba(100 100 100/ 0.1)',
+                          fontWeight: 500,
+                          background: 'rgba(100 100 100/ 0.1)',
 
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        textTransform: 'uppercase'
-                      }}>
-                        {project.project_code}
-                      </span>
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          textTransform: 'uppercase'
+                        }}>
+                          {project.project_code}
+                        </span>
 
-                      {canEditAttendance && (
-                        <CustomDropDown
-                          trigger={<button className="action-btn" onClick={(e) => e.stopPropagation()}><MoreVertical size={14} /></button>}
-                          option1Text="Edit"
-                          option1Icon={<Pencil className="w-3.5 h-3.5 mr-2 " />}
-                          onOption1={() => openEdit(project)}
-                          option2Text="Delete"
-                          option2Icon={<Trash2 className="w-3.5 h-3.5 mr-2 " />}
-                          onOption2={() => handleDeleteConfirm(project)}
-                        />
+                        {canEditAttendance && (
+                          <CustomDropDown
+                            trigger={<button className="action-btn" onClick={(e) => e.stopPropagation()}><MoreVertical size={14} /></button>}
+                            option1Text="Edit"
+                            option1Icon={<Pencil className="w-3.5 h-3.5 mr-2 " />}
+                            onOption1={() => openEdit(project)}
+                            option2Text="Delete"
+                            option2Icon={<Trash2 className="w-3.5 h-3.5 mr-2 " />}
+                            onOption2={() => handleDeleteConfirm(project)}
+                          />
+                        )}
+                      </div>
+
+                      <h3 className="project-title">{project.project_name}</h3>
+                    </div>
+
+                    {/* Middle Part: Metadata Grid */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '12px 0' }}>
+                      <div className="meta-item">
+
+                        <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={project.project_location || "No location set"}>
+                          {project.project_location || <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: 300 }}>No location set</span>}
+                        </span>
+                      </div>
+
+                      <div className="meta-item">
+
+                        <span>
+                          Shift:{' '}
+                          <strong style={{ color: '#0f172a' }}>
+                            {project.project_in_time ? formatISOToTime(project.project_in_time) : '08:00'}
+                          </strong>
+                          {' '}-{' '}
+                          <strong style={{ color: '#0f172a' }}>
+                            {project.project_out_time ? formatISOToTime(project.project_out_time) : '17:00'}
+                          </strong>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Bottom Part: Devices list */}
+                    <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: 'auto' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Laptop2 className="w-3.5 h-3.5 text-gray-400" />
+                          Devices ({assignedDevices.length})
+                        </span>
+
+                        {canEditAttendance && !isAllocatingThis && (
+                          <button
+                            style={{ padding: "0.1rem 0.5rem", display: "flex" }}
+                            onClick={() => {
+                              setAllocatingProjectId(project.project_code);
+                              setSelectedDeviceSerial('');
+                            }}
+                            className="link-btn"
+                          >
+                            Link
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Allocate dropdown */}
+                      {isAllocatingThis && (
+                        <div style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          padding: '6px',
+                          display: 'flex',
+                          gap: '6px',
+                          marginBottom: '8px',
+                          alignItems: 'center'
+                        }}>
+                          <select
+                            value={selectedDeviceSerial}
+                            onChange={(e) => setSelectedDeviceSerial(e.target.value)}
+                            style={{
+                              flex: 1,
+                              fontSize: '11px',
+                              padding: '4px',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '4px',
+                              background: '#fff',
+                              fontFamily: 'monospace',
+                              outline: 'none'
+                            }}
+                          >
+                            <option value="">-- Select --</option>
+                            {unallocatedDevices.map(d => (
+                              <option key={d.id} value={d.serial_no}>
+                                {d.serial_no}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => handleAllocateDevice(project.project_code)}
+                            disabled={!selectedDeviceSerial || allocating !== null}
+                            style={{
+                              background: '#4f46e5',
+                              color: '#fff',
+                              border: 'none',
+                              padding: '4px 8px',
+                              fontSize: '11px',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontWeight: 500
+                            }}
+                          >
+                            {allocating === selectedDeviceSerial ? 'Linking…' : 'Link'}
+                          </button>
+                          <button
+                            onClick={() => setAllocatingProjectId(null)}
+                            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '2px' }}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       )}
-                    </div>
 
-                    <h3 className="project-title">{project.project_name}</h3>
-                  </div>
-
-                  {/* Middle Part: Metadata Grid */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '12px 0' }}>
-                    <div className="meta-item">
-
-                      <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={project.project_location || "No location set"}>
-                        {project.project_location || <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: 300 }}>No location set</span>}
-                      </span>
-                    </div>
-
-                    <div className="meta-item">
-
-                      <span>
-                        Shift:{' '}
-                        <strong style={{ color: '#0f172a' }}>
-                          {project.project_in_time ? formatISOToTime(project.project_in_time) : '08:00'}
-                        </strong>
-                        {' '}-{' '}
-                        <strong style={{ color: '#0f172a' }}>
-                          {project.project_out_time ? formatISOToTime(project.project_out_time) : '17:00'}
-                        </strong>
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Bottom Part: Devices list */}
-                  <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: 'auto' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Laptop2 className="w-3.5 h-3.5 text-gray-400" />
-                        Devices ({assignedDevices.length})
-                      </span>
-
-                      {canEditAttendance && !isAllocatingThis && (
-                        <button
-                          style={{ padding: "0.1rem 0.5rem", display: "flex" }}
-                          onClick={() => {
-                            setAllocatingProjectId(project.project_code);
-                            setSelectedDeviceSerial('');
-                          }}
-                          className="link-btn"
-                        >
-                          Link
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Allocate dropdown */}
-                    {isAllocatingThis && (
-                      <div style={{
-                        background: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        padding: '6px',
-                        display: 'flex',
-                        gap: '6px',
-                        marginBottom: '8px',
-                        alignItems: 'center'
-                      }}>
-                        <select
-                          value={selectedDeviceSerial}
-                          onChange={(e) => setSelectedDeviceSerial(e.target.value)}
-                          style={{
-                            flex: 1,
-                            fontSize: '11px',
-                            padding: '4px',
-                            border: '1px solid #cbd5e1',
-                            borderRadius: '4px',
-                            background: '#fff',
-                            fontFamily: 'monospace',
-                            outline: 'none'
-                          }}
-                        >
-                          <option value="">-- Select --</option>
-                          {unallocatedDevices.map(d => (
-                            <option key={d.id} value={d.serial_no}>
-                              {d.serial_no}
-                            </option>
+                      {/* Device tags */}
+                      {assignedDevices.length === 0 ? (
+                        <div style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
+                          No devices linked.
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '60px', overflowY: 'auto' }}>
+                          {assignedDevices.map(d => (
+                            <span key={d.id} className="device-badge">
+                              <span>{d.serial_no}</span>
+                              {canEditAttendance && (
+                                <button
+                                  onClick={() => handleDeallocateDevice(d.serial_no)}
+                                  disabled={allocating !== null}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#94a3b8',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                  }}
+                                  title="Unlink Device"
+                                >
+                                  <X className="w-2.5 h-2.5 hover:text-red-500" />
+                                </button>
+                              )}
+                            </span>
                           ))}
-                        </select>
-                        <button
-                          onClick={() => handleAllocateDevice(project.project_code)}
-                          disabled={!selectedDeviceSerial || allocating !== null}
-                          style={{
-                            background: '#4f46e5',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '4px 8px',
-                            fontSize: '11px',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontWeight: 500
-                          }}
-                        >
-                          {allocating === selectedDeviceSerial ? 'Linking…' : 'Link'}
-                        </button>
-                        <button
-                          onClick={() => setAllocatingProjectId(null)}
-                          style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '2px' }}
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Device tags */}
-                    {assignedDevices.length === 0 ? (
-                      <div style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
-                        No devices linked.
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '60px', overflowY: 'auto' }}>
-                        {assignedDevices.map(d => (
-                          <span key={d.id} className="device-badge">
-                            <span>{d.serial_no}</span>
-                            {canEditAttendance && (
-                              <button
-                                onClick={() => handleDeallocateDevice(d.serial_no)}
-                                disabled={allocating !== null}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  color: '#94a3b8',
-                                  cursor: 'pointer',
-                                  padding: 0,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center'
-                                }}
-                                title="Unlink Device"
-                              >
-                                <X className="w-2.5 h-2.5 hover:text-red-500" />
-                              </button>
-                            )}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

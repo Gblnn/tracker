@@ -14,6 +14,8 @@ interface QuotationItem {
   unit: string;
   quantity: number;
   amount: number;
+  hourlyRate?: number;
+  monthlyRate?: number;
 }
 
 interface Props {
@@ -30,6 +32,7 @@ interface Props {
   letterhead?: string;
   subject?: string;
   hideTotal?: boolean;
+  quotationFormat?: "standard" | "rates";
 }
 
 interface PageProps extends Props {
@@ -240,40 +243,69 @@ const QuotationPage = ({
                     border: "1px solid black",
                     padding: "0 0.5rem",
                     paddingBottom: "1rem",
-                    width: "42%",
+                    width: props.quotationFormat === "rates" ? "48%" : "42%",
                     fontWeight: "500",
                   }}
                 >
                   Description
                 </th>
+                {props.quotationFormat !== "rates" && (
+                  <th
+                    style={{
+                      border: "1px solid black",
+                      padding: "0 0.5rem",
+                      fontWeight: "500",
+                      width: "15%",
+                      paddingBottom: "1rem",
+                    }}
+                  >
+                    {(props.unitTitle || "Qty").toUpperCase()}
+                  </th>
+                )}
+                {props.quotationFormat === "rates" ? (
+                  <>
+                    <th
+                      style={{
+                        border: "1px solid black",
+                        padding: "0 0.5rem",
+                        fontWeight: "500",
+                        width: "14%",
+                        paddingBottom: "1rem",
+                      }}
+                    >
+                      Hourly Rate
+                    </th>
+                    <th
+                      style={{
+                        border: "1px solid black",
+                        padding: "0 0.5rem",
+                        fontWeight: "500",
+                        width: "15%",
+                        paddingBottom: "1rem",
+                      }}
+                    >
+                      Monthly Rate
+                    </th>
+                  </>
+                ) : (
+                  <th
+                    style={{
+                      border: "1px solid black",
+                      padding: "0 0.5rem",
+                      fontWeight: "500",
+                      width: "12%",
+                      paddingBottom: "1rem",
+                    }}
+                  >
+                    Rate
+                  </th>
+                )}
                 <th
                   style={{
                     border: "1px solid black",
                     padding: "0 0.5rem",
                     fontWeight: "500",
-                    width: "15%",
-                    paddingBottom: "1rem",
-                  }}
-                >
-                  {(props.unitTitle || "Qty").toUpperCase()}
-                </th>
-                <th
-                  style={{
-                    border: "1px solid black",
-                    padding: "0 0.5rem",
-                    fontWeight: "500",
-                    width: "12%",
-                    paddingBottom: "1rem",
-                  }}
-                >
-                  Rate
-                </th>
-                <th
-                  style={{
-                    border: "1px solid black",
-                    padding: "0 0.5rem",
-                    fontWeight: "500",
-                    width: "12%",
+                    width: props.quotationFormat === "rates" ? "16%" : "12%",
                     paddingBottom: "1rem",
                   }}
                 >
@@ -304,6 +336,49 @@ const QuotationPage = ({
                   >
                     {item.description}
                   </td>
+                  {props.quotationFormat !== "rates" && (
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        paddingBottom: "0.5rem",
+                        paddingLeft: "0.5rem",
+                      }}
+                    >
+                      {item.unit}
+                    </td>
+                  )}
+                  {props.quotationFormat === "rates" ? (
+                    <>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          paddingBottom: "0.5rem",
+                          paddingLeft: "0.5rem",
+                        }}
+                      >
+                        {item.hourlyRate !== undefined ? item.hourlyRate.toFixed(3) : "—"}
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid black",
+                          paddingBottom: "0.5rem",
+                          paddingLeft: "0.5rem",
+                        }}
+                      >
+                        {item.monthlyRate !== undefined ? item.monthlyRate.toFixed(3) : "—"}
+                      </td>
+                    </>
+                  ) : (
+                    <td
+                      style={{
+                        border: "1px solid black",
+                        paddingBottom: "0.5rem",
+                        paddingLeft: "0.5rem",
+                      }}
+                    >
+                      {item.amount.toFixed(3)}
+                    </td>
+                  )}
                   <td
                     style={{
                       border: "1px solid black",
@@ -311,25 +386,7 @@ const QuotationPage = ({
                       paddingLeft: "0.5rem",
                     }}
                   >
-                    {item.unit}
-                  </td>
-                  <td
-                    style={{
-                      border: "1px solid black",
-                      paddingBottom: "0.5rem",
-                      paddingLeft: "0.5rem",
-                    }}
-                  >
-                    {item.amount.toFixed(3)}
-                  </td>
-                  <td
-                    style={{
-                      border: "1px solid black",
-                      paddingBottom: "0.5rem",
-                      paddingLeft: "0.5rem",
-                    }}
-                  >
-                    {(parseQuantity(item.unit) * item.amount).toFixed(3)}
+                    {(props.quotationFormat === "rates" ? item.amount : parseQuantity(item.unit) * item.amount).toFixed(3)}
                   </td>
                 </tr>
               ))}
@@ -343,17 +400,14 @@ const QuotationPage = ({
                       border: "1px solid black",
                       padding: "0.5rem 0.5rem",
                       textAlign: "left",
-
                     }}
                   >
                     TOTAL
                   </td>
-
                   <td
                     style={{
                       border: "1px solid black",
                       padding: "0.5rem 0.5rem",
-
                     }}
                   >
                     {props.subtotal.toFixed(3)}
@@ -563,7 +617,7 @@ const QuotationPage = ({
 export default function Template1(props: Props) {
   // Calculate totals
   const subtotal = props.items.reduce(
-    (sum, item) => sum + parseQuantity(item.unit) * item.amount,
+    (sum, item) => sum + (props.quotationFormat === "rates" ? 1 : parseQuantity(item.unit)) * item.amount,
     0
   );
 

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -41,6 +42,34 @@ function formatTime(isoString: string): string {
 }
 
 export default function Terminal() {
+  const { userData } = useAuth();
+
+  const canEditAttendance = useMemo(() => {
+    try {
+      const permissions = JSON.parse(userData?.clearance || "{}") as Record<string, boolean>;
+      const hasStructuredClearance = Object.keys(permissions).length > 0;
+      const hasAttendanceModule = permissions.attendance === true;
+      const hasAttendanceEdit = permissions.attendance_edit === true;
+      const hasExplicitEditBlock = permissions.attendance_edit === false;
+
+      if (hasAttendanceModule) {
+        return hasAttendanceEdit;
+      }
+
+      if (permissions.attendance === false || hasExplicitEditBlock) {
+        return false;
+      }
+
+      if (userData?.role === "admin" || userData?.role === "site_admin") {
+        return !hasStructuredClearance;
+      }
+
+      return false;
+    } catch {
+      return userData?.role === "admin" || userData?.role === "site_admin";
+    }
+  }, [userData]);
+
   const [tasks, setTasks] = useState<CommandTask[]>([]);
   const [deviceLocationMap, setDeviceLocationMap] = useState<Record<string, string>>({});
   const [clearing, setClearing] = useState(false);
@@ -107,6 +136,21 @@ export default function Terminal() {
     }
   };
 
+  const handleRetryTask = async (taskId: number) => {
+    try {
+      const { error } = await supabase
+        .from('device_commands')
+        .update({ status: 'pending' })
+        .eq('id', taskId);
+
+      if (error) throw error;
+      toast.success('Task status reset to pending.');
+      fetchTasks();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to retry task.');
+    }
+  };
+
   useEffect(() => {
     fetchTasks();
 
@@ -150,12 +194,14 @@ export default function Terminal() {
         <span style={{ border: "1px solid rgba(100 100 100/ 0.5)", padding: "0.1rem 0.35rem", borderRadius: "0.25rem", fontWeight: "500" }} className="text-gray-500 text-xs uppercase tracking-wider font-semibold">All Tasks</span>
 
         {/* Confirmation dialog trigger */}
-        <ClearConfirmDialog
-          disabled={!hasCompleted || clearing}
-          clearing={clearing}
-          completedCount={completedCount}
-          onConfirm={clearCompletedTasks}
-        />
+        {canEditAttendance && (
+          <ClearConfirmDialog
+            disabled={!hasCompleted || clearing}
+            clearing={clearing}
+            completedCount={completedCount}
+            onConfirm={clearCompletedTasks}
+          />
+        )}
       </div>
 
       {/* Scrollable tasks list */}
@@ -195,6 +241,14 @@ export default function Terminal() {
               <span className="select-text" style={{ userSelect: "text", WebkitUserSelect: "text" }}>
                 Task #{task.id}: {task.command_type} {employeeInfo} to device {task.device_serial} {deviceLocation}
               </span>
+              {canEditAttendance && task.status === 'sent' && (
+                <button
+                  onClick={() => handleRetryTask(task.id)}
+                  className="text-indigo-400 hover:text-indigo-300 hover:underline text-[10px] uppercase font-semibold shrink-0 cursor-pointer"
+                >
+                  [Retry]
+                </button>
+              )}
             </div>
           );
         })}

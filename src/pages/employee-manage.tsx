@@ -1,6 +1,7 @@
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ResponsiveModal } from "@/components/responsive-modal";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -10,10 +11,13 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowUp, ChevronDown, Fingerprint, Loader2, Plus, Scan, Search, SquareCheck, Users, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChevronDown, Fingerprint, Loader2, Plus, Scan, Search, SquareCheck, Upload, Users, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 import { Avatar } from '../components/Avatar';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '../components/ui/empty';
 import { supabase } from '../lib/supabase';
@@ -28,6 +32,17 @@ interface Device {
 function buildAddUserCommand(cmdId: number, pin: string, name: string): string {
     const safeName = name.replace(/\t/g, ' ').slice(0, 24);
     return `C:${cmdId}:DATA UPDATE USERINFO PIN=${pin}\tName=${safeName}\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000\tVerify=0\tViceCard=`;
+}
+
+function findValue(row: any, keys: string[]): string | null {
+    const rowKeys = Object.keys(row);
+    for (const k of keys) {
+        const foundKey = rowKeys.find(rk => rk.toLowerCase().replace(/[\s_-]/g, '') === k.toLowerCase().replace(/[\s_-]/g, ''));
+        if (foundKey !== undefined && row[foundKey] !== undefined) {
+            return String(row[foundKey]).trim();
+        }
+    }
+    return null;
 }
 
 const NATIONALITIES = [
@@ -79,9 +94,12 @@ export default function EmployeeManage() {
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
     const [selectedNationalities, setSelectedNationalities] = useState<string[]>([]);
 
-    // Biometric availability states
-    const [fingerAvailable, setFingerAvailable] = useState<Record<number, boolean>>({});
-    const [faceAvailable, setFaceAvailable] = useState<Record<number, boolean>>({});
+    // Pagination / Rendering Limit state
+    const [renderLimit, setRenderLimit] = useState(100);
+
+    useEffect(() => {
+        setRenderLimit(100);
+    }, [search, selectedDepartments, selectedTypes, selectedNationalities]);
 
     // Selection and bulk states
     const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -129,24 +147,22 @@ export default function EmployeeManage() {
     const [editDesignation, setEditDesignation] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Selective individual push states and handler
+    // Selective individual push/fetch states and handler
     const [selectedPushDevices, setSelectedPushDevices] = useState<Set<string>>(new Set());
     const [isPushing, setIsPushing] = useState(false);
-    const [selectedFetchDevice, setSelectedFetchDevice] = useState<string>('');
     const [isFetching, setIsFetching] = useState(false);
 
     useEffect(() => {
         if (editingEmployee) {
             setSelectedPushDevices(new Set());
-            setSelectedFetchDevice('');
             setSyncAction('push');
             setActiveTab('profile');
         }
     }, [editingEmployee]);
 
     const handleFetchBiometrics = async () => {
-        if (!editingEmployee || !selectedFetchDevice) {
-            toast.error('Please select a device to fetch from');
+        if (!editingEmployee || selectedPushDevices.size === 0) {
+            toast.error('Please select at least one device to fetch from');
             return;
         }
 
@@ -154,36 +170,39 @@ export default function EmployeeManage() {
         try {
             const empId = editingEmployee.id;
 
-            const commandsToInsert = [
-                {
-                    device_serial: selectedFetchDevice,
-                    command: 'DATA QUERY USERINFO',
-                    command_type: 'QUERY_USERINFO',
-                    employee_id: empId,
-                    status: 'pending'
-                },
-                {
-                    device_serial: selectedFetchDevice,
-                    command: 'DATA QUERY FINGERTMP',
-                    command_type: 'QUERY_FINGERTMP',
-                    employee_id: empId,
-                    status: 'pending'
-                },
-                {
-                    device_serial: selectedFetchDevice,
-                    command: 'DATA QUERY BIODATA',
-                    command_type: 'QUERY_BIODATA',
-                    employee_id: empId,
-                    status: 'pending'
-                },
-                {
-                    device_serial: selectedFetchDevice,
-                    command: 'DATA QUERY FACE',
-                    command_type: 'QUERY_FACE',
-                    employee_id: empId,
-                    status: 'pending'
-                }
-            ];
+            const commandsToInsert: any[] = [];
+            for (const deviceSerial of Array.from(selectedPushDevices)) {
+                commandsToInsert.push(
+                    {
+                        device_serial: deviceSerial,
+                        command: 'DATA QUERY USERINFO',
+                        command_type: 'QUERY_USERINFO',
+                        employee_id: empId,
+                        status: 'pending'
+                    },
+                    {
+                        device_serial: deviceSerial,
+                        command: 'DATA QUERY FINGERTMP',
+                        command_type: 'QUERY_FINGERTMP',
+                        employee_id: empId,
+                        status: 'pending'
+                    },
+                    {
+                        device_serial: deviceSerial,
+                        command: 'DATA QUERY BIODATA',
+                        command_type: 'QUERY_BIODATA',
+                        employee_id: empId,
+                        status: 'pending'
+                    },
+                    {
+                        device_serial: deviceSerial,
+                        command: 'DATA QUERY FACE',
+                        command_type: 'QUERY_FACE',
+                        employee_id: empId,
+                        status: 'pending'
+                    }
+                );
+            }
 
             const { error: insertErr } = await supabase
                 .from('device_commands')
@@ -191,8 +210,8 @@ export default function EmployeeManage() {
 
             if (insertErr) throw insertErr;
 
-            toast.success(`Successfully queued biometrics query from device ${selectedFetchDevice}. Templates will sync automatically when the device processes the commands.`);
-            setSelectedFetchDevice('');
+            toast.success(`Successfully queued biometrics query from selected device(s). Templates will sync automatically when devices process the commands.`);
+            setSelectedPushDevices(new Set());
         } catch (err: any) {
             toast.error(err.message || 'Failed to queue fetch commands.');
         } finally {
@@ -284,8 +303,195 @@ export default function EmployeeManage() {
         }
     };
 
+    // Excel Upload states & handlers
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
+    const [uploadState, setUploadState] = useState<'idle' | 'preview' | 'uploading' | 'completed'>('idle');
+    const [parsedEmployees, setParsedEmployees] = useState<any[]>([]);
+    const [duplicateEmployees, setDuplicateEmployees] = useState<any[]>([]);
+    const [uploadPushToDevices, setUploadPushToDevices] = useState(false);
+    const [uploadSelectedDevices, setUploadSelectedDevices] = useState<Set<string>>(new Set());
+    const [uploadFileName, setUploadFileName] = useState('');
+    const [uploadCurrentIndex, setUploadCurrentIndex] = useState(0);
+    const [uploadTotalCount, setUploadTotalCount] = useState(0);
+
+    const handleResetUpload = () => {
+        setUploadState('idle');
+        setParsedEmployees([]);
+        setDuplicateEmployees([]);
+        setUploadFileName('');
+        setUploadCurrentIndex(0);
+        setUploadTotalCount(0);
+        setUploadPushToDevices(false);
+        setUploadSelectedDevices(new Set());
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadFileName(file.name);
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const data = evt.target?.result;
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(sheet) as any[];
+
+                if (rows.length === 0) {
+                    toast.error('The selected Excel file is empty.');
+                    handleResetUpload();
+                    return;
+                }
+
+                const employeesList: any[] = [];
+                const localDuplicates: any[] = [];
+                const seenExcelPins = new Set();
+
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+
+                    const name = findValue(row, ['name', 'employeename', 'emp_name', 'employee_name', 'full_name', 'fullname']);
+                    const pin = findValue(row, ['device_user_id', 'deviceuserid', 'pin', 'userid', 'user_id', 'device_id', 'deviceid']);
+
+                    if (!name || !pin) {
+                        continue; // Skip invalid rows
+                    }
+
+                    const emp_id = findValue(row, ['emp_id', 'empid', 'hr_id', 'hrid', 'employee_id', 'employeeid', 'id']);
+                    const rawType = findValue(row, ['emp_type', 'emptype', 'employee_type', 'employeetype', 'type']) || '';
+                    let emp_type: 'staff' | 'worker' = 'staff';
+                    if (rawType.toLowerCase().startsWith('work')) {
+                        emp_type = 'worker';
+                    }
+
+                    const department = findValue(row, ['department', 'dept', 'department_name', 'dept_name']);
+                    const designation = findValue(row, ['designation', 'design', 'job_title', 'jobtitle', 'role']);
+                    const nationality = findValue(row, ['nationality', 'nation', 'country']);
+                    const email = findValue(row, ['email', 'email_address', 'emailaddress']);
+
+                    const newEmp = {
+                        device_user_id: pin,
+                        name,
+                        emp_id,
+                        emp_type,
+                        department,
+                        designation,
+                        nationality,
+                        email
+                    };
+
+                    if (seenExcelPins.has(pin)) {
+                        localDuplicates.push(newEmp);
+                    } else {
+                        seenExcelPins.add(pin);
+                        employeesList.push(newEmp);
+                    }
+                }
+
+                if (employeesList.length === 0) {
+                    toast.error('No valid employee rows found. Each row must have a Name and Device User ID/PIN.');
+                    handleResetUpload();
+                    return;
+                }
+
+                // Check for duplicates locally against already loaded employees
+                const existingPins = new Set(employees.map(emp => emp.device_user_id));
+                const dbDuplicates = employeesList.filter(emp => existingPins.has(emp.device_user_id));
+                const newEmployees = employeesList.filter(emp => !existingPins.has(emp.device_user_id));
+                const allDuplicates = [...localDuplicates, ...dbDuplicates];
+
+                if (newEmployees.length === 0) {
+                    toast.error(`All ${employeesList.length} employees in the Excel file are already registered.`);
+                    handleResetUpload();
+                    return;
+                }
+
+                setParsedEmployees(newEmployees);
+                setDuplicateEmployees(allDuplicates);
+                setUploadTotalCount(newEmployees.length);
+                setUploadCurrentIndex(0);
+                setUploadState('preview');
+            } catch (err: any) {
+                toast.error(err.message || 'Failed to parse Excel file.');
+                handleResetUpload();
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
+
+    const handleConfirmUpload = async () => {
+        if (parsedEmployees.length === 0) return;
+        setUploadState('uploading');
+        setUploadCurrentIndex(0);
+
+        const newDuplicates: any[] = [];
+
+        try {
+            for (let i = 0; i < parsedEmployees.length; i++) {
+                const emp = parsedEmployees[i];
+
+                // 1. Double check DB duplicate before insert to avoid conflicts
+                const { data: existing } = await supabase
+                    .from('employees')
+                    .select('id')
+                    .eq('device_user_id', emp.device_user_id)
+                    .maybeSingle();
+
+                if (existing) {
+                    newDuplicates.push(emp);
+                    setUploadCurrentIndex(i + 1);
+                    continue;
+                }
+
+                // 2. Insert employee one by one
+                const { data: insertedData, error: insertErr } = await supabase
+                    .from('employees')
+                    .insert(emp)
+                    .select('id, device_user_id, name')
+                    .single();
+
+                if (insertErr) {
+                    toast.error(`Failed to import ${emp.name}: ${insertErr.message}`);
+                } else if (insertedData && uploadPushToDevices && uploadSelectedDevices.size > 0) {
+                    // 3. If push to devices is active, queue commands for this user
+                    const commands = [...uploadSelectedDevices].map(serial => ({
+                        device_serial: serial,
+                        command: buildAddUserCommand(Date.now() + Math.floor(Math.random() * 100000), insertedData.device_user_id, insertedData.name),
+                        command_type: 'ADD_USER',
+                        employee_id: insertedData.id,
+                        status: 'pending',
+                    }));
+
+                    const { error: cmdErr } = await supabase.from('device_commands').insert(commands);
+                    if (cmdErr) {
+                        console.error(`Failed to queue commands for ${insertedData.name}: ${cmdErr.message}`);
+                    }
+                }
+
+                setUploadCurrentIndex(i + 1);
+            }
+
+            if (newDuplicates.length > 0) {
+                setDuplicateEmployees(prev => [...prev, ...newDuplicates]);
+            }
+
+            setUploadState('completed');
+            fetchEmployees();
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to complete import.');
+            setUploadState('preview');
+        }
+    };
+
     // Add states
     const [isAdding, setIsAdding] = useState(false);
+    const [addActiveTab, setAddActiveTab] = useState<'profile' | 'sync'>('profile');
     const [addName, setAddName] = useState('');
     const [addDeviceUserId, setAddDeviceUserId] = useState('');
     const [addDept, setAddDept] = useState('');
@@ -302,11 +508,6 @@ export default function EmployeeManage() {
         setLoading(true);
         setError(null);
         try {
-            const today = new Date();
-            const past30Days = new Date();
-            past30Days.setDate(today.getDate() - 30);
-            const startOf30DaysStr = past30Days.toISOString().split('T')[0] + 'T00:00:00';
-
             const [empRes, devRes] = await Promise.all([
                 supabase.from('employees').select('*').order('name', { ascending: true }),
                 supabase.from('devices').select('serial_no, location')
@@ -320,83 +521,29 @@ export default function EmployeeManage() {
                 devData.map(d => [d.serial_no, d.location])
             );
 
-            // Fetch all punches of the last 30 days with pagination (capped at max 10 pages / 10000 records)
-            let allPunches: any[] = [];
-            let from = 0;
-            let to = 999;
-            let finished = false;
-            let page = 0;
+            // Fetch the latest 2000 punches to determine the most recent location for each employee
+            const { data: punchData, error: punchError } = await supabase
+                .from('punches')
+                .select('user_id, device_serial')
+                .order('punch_time', { ascending: false })
+                .limit(2000);
 
-            while (!finished && page < 10) {
-                const { data: punchData, error: punchError } = await supabase
-                    .from('punches')
-                    .select('user_id, device_serial')
-                    .gte('punch_time', startOf30DaysStr)
-                    .order('punch_time', { ascending: false })
-                    .range(from, to);
+            if (punchError) throw punchError;
 
-                if (punchError) throw punchError;
-
-                if (punchData && punchData.length > 0) {
-                    allPunches = [...allPunches, ...punchData];
-                    if (punchData.length < 1000) {
-                        finished = true;
-                    } else {
-                        from += 1000;
-                        to += 1000;
-                        page++;
-                    }
-                } else {
-                    finished = true;
-                }
-            }
-
-            // Group counts by employee PIN (user_id)
-            const userLocCounts: Record<string, Record<string, number>> = {};
-            allPunches.forEach(p => {
-                const loc = deviceMap[p.device_serial];
-                if (loc) {
-                    if (!userLocCounts[p.user_id]) {
-                        userLocCounts[p.user_id] = {};
-                    }
-                    userLocCounts[p.user_id][loc] = (userLocCounts[p.user_id][loc] || 0) + 1;
-                }
-            });
-
-            // Find primary location for each employee
+            // Map each user to their most recent location
             const empLocs: Record<string, string> = {};
-            Object.entries(userLocCounts).forEach(([pin, counts]) => {
-                let primaryLoc = '';
-                let maxCount = 0;
-                Object.entries(counts).forEach(([loc, count]) => {
-                    if (count > maxCount) {
-                        maxCount = count;
-                        primaryLoc = loc;
+            if (punchData) {
+                punchData.forEach(p => {
+                    const loc = deviceMap[p.device_serial];
+                    // Only set if not already set, so we keep the most recent punch location
+                    if (loc && !empLocs[p.user_id]) {
+                        empLocs[p.user_id] = loc;
                     }
                 });
-                if (primaryLoc) {
-                    empLocs[pin] = primaryLoc;
-                }
-            });
+            }
 
             setEmployeeLocations(empLocs);
 
-            const fingerMap: Record<number, boolean> = {};
-            const faceMap: Record<number, boolean> = {};
-
-            if (empRes.data) {
-                empRes.data.forEach(emp => {
-                    if (emp.fingerprint_templates && Object.keys(emp.fingerprint_templates).length > 0) {
-                        fingerMap[emp.id] = true;
-                    }
-                    if (emp.face_templates && Object.keys(emp.face_templates).length > 0) {
-                        faceMap[emp.id] = true;
-                    }
-                });
-            }
-
-            setFingerAvailable(fingerMap);
-            setFaceAvailable(faceMap);
             setEmployees(empRes.data || []);
         } catch (e: any) {
             setError(e.message || 'Failed to load employees');
@@ -415,22 +562,7 @@ export default function EmployeeManage() {
         setLoadingDevices(false);
     }, []);
 
-    function toggleDevice(serial: string) {
-        setSelectedDevices(prev => {
-            const next = new Set(prev);
-            if (next.has(serial)) next.delete(serial);
-            else next.add(serial);
-            return next;
-        });
-    }
 
-    function toggleAllDevices() {
-        if (selectedDevices.size === devices.length) {
-            setSelectedDevices(new Set());
-        } else {
-            setSelectedDevices(new Set(devices.map(d => d.serial_no)));
-        }
-    }
 
     const handleAddSubmit = async (e: React.FormEvent, pushToDevices: boolean) => {
         e.preventDefault();
@@ -806,7 +938,10 @@ export default function EmployeeManage() {
                         setIsSelectionMode(!isSelectionMode);
                         setSelectedEmployeeIds(new Set());
                     }}
-                    className={`h-10 w-10 p-0 rounded-xl shrink-0 ${isSelectionMode ? 'bg-gray-900 text-white border-gray-900' : 'bg-gray-50 text-gray-500 border-none'}`}
+                    className={`h-10 w-10 p-0 rounded-xl shrink-0 transition-all border ${isSelectionMode
+                        ? 'bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100/80 hover:text-indigo-700 shadow-xs'
+                        : 'bg-gray-50 text-gray-500 border-transparent hover:bg-gray-100 hover:text-gray-700'
+                        }`}
                     title="Toggle Selection Mode"
                 >
                     <SquareCheck className="w-4 h-4" />
@@ -829,51 +964,64 @@ export default function EmployeeManage() {
                 </div>
 
                 {/* "With Selected" bulk actions button on the right */}
-                {isSelectionMode && (
+                <div
+                    className="overflow-hidden transition-all duration-300 ease-in-out flex items-center shrink-0"
+                    style={{
+                        width: isSelectionMode ? "150px" : "0px",
+                        opacity: isSelectionMode ? 1 : 0,
+                        marginLeft: isSelectionMode ? "8px" : "0px",
+                        pointerEvents: isSelectionMode ? "auto" : "none"
+                    }}
+                >
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
+                                style={{ backgroundColor: "rgba(100 100 100/ 0.1)", color: "black" }}
                                 disabled={selectedEmployeeIds.size === 0}
-                                className="h-10 px-4 rounded-xl text-xs font-medium bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50 transition-colors shrink-0 flex items-center gap-1.5"
+                                className="h-10 px-4 rounded-xl font-medium disabled:opacity-50 w-[150px] justify-center flex items-center gap-1.5 shrink-0"
                             >
-                                With Selected ({selectedEmployeeIds.size})
-                                <ChevronDown className="w-3.5 h-3.5" />
+                                <span className="truncate">Selected ({selectedEmployeeIds.size})</span>
+                                <ChevronDown className="w-3.5 h-3.5 shrink-0" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-[180px] bg-white border border-gray-100 shadow-xl rounded-lg p-1 z-50">
                             <DropdownMenuItem
                                 onClick={() => setIsBulkDeptOpen(true)}
-                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                className="rounded-md focus:bg-gray-50 cursor-pointer"
                             >
                                 Change Department
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={() => setIsBulkTypeOpen(true)}
-                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                className="rounded-md focus:bg-gray-50 cursor-pointer"
                             >
                                 Change Employee Type
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={() => setIsBulkPushOpen(true)}
-                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs text-indigo-600 focus:text-indigo-700 font-semibold"
+                                className="rounded-md focus:bg-gray-50 cursor-pointer text-indigo-600 focus:text-indigo-700 font-semibold"
                             >
                                 Push to Devices
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1 border-gray-100" />
                             <DropdownMenuItem
+                                style={{ fontWeight: 500 }}
                                 onClick={() => setIsBulkDeleteOpen(true)}
-                                className="rounded-md focus:bg-gray-50 text-red-600 focus:text-red-700 cursor-pointer text-xs"
+                                className="rounded-md focus:bg-gray-50 text-red-600 focus:text-red-700 cursor-pointer"
                             >
                                 Delete Selected
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
-                )}
+                </div>
+
+
 
 
                 <Button
                     onClick={() => {
                         setIsAdding(true);
+                        setAddActiveTab('profile');
                         setAddName('');
                         setAddDeviceUserId('');
                         setAddDept('');
@@ -888,6 +1036,24 @@ export default function EmployeeManage() {
                 >
                     <Plus className="w-3.5 h-3.5" />
                     Add Employee
+                </Button>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".xlsx, .xls"
+                    className="hidden"
+                    onChange={handleFileChange}
+                />
+                <Button
+                    onClick={() => {
+                        handleResetUpload();
+                        setUploadModalOpen(true);
+                    }}
+                    variant="outline"
+                    className="h-10 w-10 p-0 rounded-xl bg-gray-50 border-none text-gray-500 hover:bg-gray-100 transition-colors shrink-0 flex items-center justify-center"
+                    title="Upload Employees from Excel"
+                >
+                    <Upload className="w-4 h-4" />
                 </Button>
             </div>
 
@@ -922,24 +1088,25 @@ export default function EmployeeManage() {
                         </Empty>
                     </div>
                 ) : (
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm" style={{ tableLayout: "fixed" }}>
                         <thead className="sticky top-0 bg-gray-50 z-10 shadow-[0_1px_0_rgba(0,0,0,0.05)]">
                             <tr className="border-b border-gray-100">
-                                {isSelectionMode && (
-                                    <th className="px-4 py-3 text-left w-12">
-                                        <input
-                                            type="checkbox"
-                                            checked={allFilteredSelected}
-                                            ref={el => {
-                                                if (el) {
-                                                    el.indeterminate = someFilteredSelected;
-                                                }
-                                            }}
-                                            onChange={handleSelectAllToggle}
-                                            className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                                <th
+                                    className="transition-[width,opacity] duration-200 ease-in-out overflow-hidden text-left p-0"
+                                    style={{
+                                        width: isSelectionMode ? "48px" : "0px",
+                                        opacity: isSelectionMode ? 1 : 0,
+                                        pointerEvents: isSelectionMode ? "auto" : "none"
+                                    }}
+                                >
+                                    <div className="w-12 h-10 flex items-center justify-center overflow-hidden">
+                                        <Checkbox
+                                            checked={someFilteredSelected ? 'indeterminate' : allFilteredSelected}
+                                            onCheckedChange={handleSelectAllToggle}
+                                            className="w-4 h-4 rounded border-gray-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 data-[state=checked]:text-white focus-visible:ring-indigo-500 cursor-pointer"
                                         />
-                                    </th>
-                                )}
+                                    </div>
+                                </th>
                                 <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "240px" }}>Employee</th>
                                 <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "160px" }}>IDs</th>
                                 <th className=" px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "180px", border: "" }}>Biometrics</th>
@@ -1162,7 +1329,7 @@ export default function EmployeeManage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {filteredEmployees.map((emp, idx) => (
+                            {filteredEmployees.slice(0, renderLimit).map((emp, idx) => (
                                 <tr
                                     onClick={() => {
                                         if (isSelectionMode) {
@@ -1180,16 +1347,23 @@ export default function EmployeeManage() {
                                         }
                                     }}
                                     key={emp.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
-                                    {isSelectionMode && (
-                                        <td className="px-4 py-3 w-12" onClick={(e) => e.stopPropagation()}>
-                                            <input
-                                                type="checkbox"
+                                    <td
+                                        className="transition-[width,opacity] duration-200 ease-in-out overflow-hidden p-0"
+                                        style={{
+                                            width: isSelectionMode ? "48px" : "0px",
+                                            opacity: isSelectionMode ? 1 : 0,
+                                            pointerEvents: isSelectionMode ? "auto" : "none"
+                                        }}
+                                    >
+                                        <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
+                                            <Checkbox
                                                 checked={selectedEmployeeIds.has(emp.id)}
-                                                onChange={() => toggleSelectEmployee(emp.id)}
-                                                className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                                                onCheckedChange={() => toggleSelectEmployee(emp.id)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="w-4 h-4 rounded border-gray-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 data-[state=checked]:text-white focus-visible:ring-indigo-500 cursor-pointer"
                                             />
-                                        </td>
-                                    )}
+                                        </div>
+                                    </td>
                                     {/* Name and Email */}
                                     <td className="px-4 py-3">
                                         <div className="flex gap-2.5" style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
@@ -1212,10 +1386,10 @@ export default function EmployeeManage() {
                                     {/* Biometrics */}
                                     <td className="px-4 py-3">
                                         <div className="flex gap-1.5" style={{ border: "", justifyContent: "flex-start" }}>
-                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium  ${fingerAvailable[emp.id] ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
+                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium  ${(emp.fingerprint_templates && Object.keys(emp.fingerprint_templates).length > 0) ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
                                                 <Fingerprint className="w-3.5 h-3.5" /> Finger
                                             </span>
-                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium  ${faceAvailable[emp.id] ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
+                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium  ${(emp.face_templates && Object.keys(emp.face_templates).length > 0) ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
                                                 <Scan className="w-3.5 h-3.5" /> Face
                                             </span>
                                         </div>
@@ -1270,44 +1444,56 @@ export default function EmployeeManage() {
                         </tbody>
                     </table>
                 )}
+                {filteredEmployees.length > renderLimit && (
+                    <div className="p-4 border-t border-gray-50 flex items-center justify-center gap-4 bg-white/80 backdrop-blur-xs sticky bottom-0 z-10">
+                        <span className="text-xs text-gray-500 font-medium text-center">
+                            Showing {renderLimit} of {filteredEmployees.length} employees
+                        </span>
+                        <Button
+                            variant="outline"
+                            onClick={() => setRenderLimit(prev => prev + 100)}
+                            className="text-xs font-semibold h-9 rounded-xl hover:bg-gray-50 border-gray-150 transition-colors shadow-xs px-4"
+                        >
+                            Load More
+                        </Button>
+                    </div>
+                )}
             </div>
 
-            <Dialog open={editingEmployee !== null} onOpenChange={(open) => { if (!open) setEditingEmployee(null); }}>
-                <DialogContent className="sm:max-w-[500px] max-h-[92vh] overflow-hidden flex flex-col p-0 bg-white rounded-2xl border border-gray-100 shadow-2xl">
-                    <DialogHeader className="p-6 pb-4 border-b border-gray-50">
-                        <DialogTitle style={{ fontWeight: "600" }} className="text-lg font-bold text-gray-900">Edit Employee</DialogTitle>
-                        <DialogDescription className="text-xs text-gray-400 mt-1">
-                            Modify employee details or synchronize templates to biometric terminals.
-                        </DialogDescription>
-                    </DialogHeader>
+            <ResponsiveModal
+                open={editingEmployee !== null}
+                onOpenChange={(open) => { if (!open) setEditingEmployee(null); }}
+                title="Edit Employee"
+                description="Modify employee details or synchronize templates to biometric terminals."
+                hideHeader
+                contentStyle={{ padding: 0, width: "100%", maxWidth: "500px" }}
+            >
+                <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'profile' | 'sync')} className="flex flex-col h-full max-h-[92vh] overflow-hidden bg-white md:rounded-2xl w-full">
+                    <div className="p-6 pb-4 border-b border-gray-50 shrink-0">
+                        <h3 style={{ fontWeight: "600" }} className="text-lg font-bold text-gray-900">Edit Employee</h3>
 
-                    {/* Tabs Header */}
-                    <div className="flex px-6 bg-gray-50/50 border-b border-gray-100">
-                        <button
-                            style={{ width: "200px" }}
-                            type="button"
-                            onClick={() => setActiveTab('profile')}
-                            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider text-center border-b-2 transition-all duration-200 ${activeTab === 'profile'
-                                ? 'border-indigo-600 text-indigo-600'
-                                : 'border-transparent text-gray-400 hover:text-gray-600'
-                                }`}
-                        >
-                            Profile Details
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('sync')}
-                            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider text-center border-b-2 transition-all duration-200 ${activeTab === 'sync'
-                                ? 'border-indigo-600 text-indigo-600'
-                                : 'border-transparent text-gray-400 hover:text-gray-600'
-                                }`}
-                        >
-                            Device Sync
-                        </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-6">
-                        {activeTab === 'profile' ? (
+                    {/* Tabs Header */}
+                    <div style={{ width: "100%" }} className="px-6 py-3 bg-gray-50/30 border-b border-gray-100 shrink-0">
+                        <TabsList className="grid grid-cols-2 bg-gray-100/80 p-1 h-9 rounded-xl w-full">
+                            <TabsTrigger
+                                value="profile"
+                                className=" font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900 text-gray-500"
+                            >
+                                Profile Details
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="sync"
+                                className=" font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900 text-gray-500"
+                            >
+                                Device Sync
+                            </TabsTrigger>
+                        </TabsList>
+                    </div>
+
+                    <ScrollArea className="flex-1 max-h-[calc(85vh-120px)] w-full">
+                        <TabsContent value="profile" className="p-6 mt-0">
                             <form onSubmit={handleEditSubmit} className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
@@ -1403,9 +1589,9 @@ export default function EmployeeManage() {
                                     />
                                 </div>
 
-                                <div className="flex gap-3 pt-6 border-t border-gray-50">
+                                <div className="flex gap-3 border-t border-gray-50">
                                     <Button
-                                        className="flex-1 h-10 text-xs font-bold rounded-xl"
+                                        className="flex-1 h-10 rounded-xl"
                                         type="button"
                                         variant="outline"
                                         onClick={() => setEditingEmployee(null)}
@@ -1413,100 +1599,111 @@ export default function EmployeeManage() {
                                     >
                                         Cancel
                                     </Button>
-                                    <Button className="flex-1 h-10 text-xs font-bold rounded-xl" type="submit" disabled={isSubmitting}>
+                                    <Button className="flex-1 h-10 rounded-xl" type="submit" disabled={isSubmitting}>
                                         {isSubmitting ? 'Saving...' : 'Save Changes'}
                                     </Button>
                                 </div>
                             </form>
-                        ) : (
-                            <div className="space-y-5">
-                                <div className="flex bg-gray-100 p-0.5 rounded-lg mb-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setSyncAction('push')}
-                                        className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${syncAction === 'push' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-                                    >
-                                        Push to Devices
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSyncAction('fetch')}
-                                        className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${syncAction === 'fetch' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-                                    >
-                                        Fetch from Device
-                                    </button>
+                        </TabsContent>
+
+                        <TabsContent style={{ width: "100%" }} value="sync" className="p-6 mt-0 w-full">
+                            <div className="space-y-5 w-full">
+                                <div className="space-y-1.5 w-full">
+                                    <label className="text-xs font-semibold text-gray-500 block">Device Action</label>
+                                    <Select value={syncAction} onValueChange={(val) => setSyncAction(val as 'push' | 'fetch')}>
+                                        <SelectTrigger className=" bg-gray-50 border-gray-105 rounded-xl h-10 w-full focus:bg-white transition-all">
+                                            <SelectValue placeholder="Select Action" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
+                                            <SelectItem value="push" className=" rounded-md focus:bg-gray-50 cursor-pointer">
+                                                Push to Device(s)
+                                            </SelectItem>
+                                            <SelectItem value="fetch" className=" rounded-md focus:bg-gray-50 cursor-pointer">
+                                                Fetch from Device(s)
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Common Device Selector */}
+                                <div className="space-y-2.5 w-full">
+                                    <div style={{ justifyContent: "space-between", border: "", height: "2rem" }} className="flex justify-between items-center">
+                                        <label className="text-xs font-semibold text-gray-550 block">Select Devices</label>
+                                        {selectedPushDevices.size > 0 && (
+                                            <button
+                                                style={{ padding: "0.1rem 0.5rem", borderRadius: "0.25rem" }}
+                                                type="button"
+                                                onClick={() => setSelectedPushDevices(new Set())}
+                                                className="text-[10px] text-gray-400 hover:text-indigo-600 transition-all font-medium"
+                                            >
+                                                Clear Selection
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {loadingDevices ? (
+                                        <div className="text-xs text-gray-400 flex items-center gap-2 py-4 justify-center">
+                                            <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> Loading devices...
+                                        </div>
+                                    ) : devices.length === 0 ? (
+                                        <div className="text-xs text-gray-400 py-4 text-center">No registered devices found.</div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[260px] overflow-y-auto pr-1 w-full">
+                                            {devices.map(device => {
+                                                const isChecked = selectedPushDevices.has(device.serial_no);
+                                                const isOnline = device.last_seen
+                                                    ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
+                                                    : false;
+                                                return (
+                                                    <div
+                                                        key={device.id}
+                                                        onClick={() => {
+                                                            setSelectedPushDevices(prev => {
+                                                                const next = new Set(prev);
+                                                                if (next.has(device.serial_no)) next.delete(device.serial_no);
+                                                                else next.add(device.serial_no);
+                                                                return next;
+                                                            });
+                                                        }}
+                                                        className={`flex items-center gap-2 p-2.5 px-2.5 rounded-lg border cursor-pointer select-none transition-all ${isChecked
+                                                            ? ''
+                                                            : 'border-gray-100 hover:border-gray-200 bg-white'
+                                                            }`}
+                                                    >
+                                                        <Checkbox
+                                                            checked={isChecked}
+                                                            className="w-3.5 h-3.5 rounded border-gray-300 data-[state=checked]:bg-indigo-700 data-[state=checked]:text-white focus-visible:ring-indigo-500 cursor-pointer pointer-events-none shrink-0"
+                                                        />
+                                                        <div className="flex-1 min-w-0 flex items-center justify-between gap-1.5">
+                                                            <div className="min-w-0 flex-1">
+                                                                <span style={{ fontWeight: 500 }} className=" text-[11px] text-gray-850 truncate block leading-tight">
+                                                                    {device.serial_no}
+                                                                </span>
+                                                                {device.location && (
+                                                                    <span className="text-[12px] text-gray-400 truncate block leading-tight">
+                                                                        {device.location}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-1 shrink-0">
+                                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+                                                                {/* <span className="text-[11px] text-gray-400">
+                                                                    {isOnline ? 'Online' : 'Offline'}
+                                                                </span> */}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {syncAction === 'push' ? (
-                                    <>
-                                        <div className="space-y-1">
-                                            <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
-                                                <ArrowUp className="w-4 h-4 text-indigo-600" /> Push to Devices
-                                            </h4>
-                                        </div>
-
-                                        {loadingDevices ? (
-                                            <div className="text-xs text-gray-400 flex items-center gap-2 py-4 justify-center">
-                                                <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> Loading devices...
-                                            </div>
-                                        ) : devices.length === 0 ? (
-                                            <div className="text-xs text-gray-400 py-4 text-center">No registered devices found.</div>
-                                        ) : (
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[260px] overflow-y-auto pr-1">
-                                                {devices.map(device => {
-                                                    const isChecked = selectedPushDevices.has(device.serial_no);
-                                                    const isOnline = device.last_seen
-                                                        ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
-                                                        : false;
-                                                    return (
-                                                        <div
-                                                            key={device.id}
-                                                            onClick={() => {
-                                                                setSelectedPushDevices(prev => {
-                                                                    const next = new Set(prev);
-                                                                    if (next.has(device.serial_no)) next.delete(device.serial_no);
-                                                                    else next.add(device.serial_no);
-                                                                    return next;
-                                                                });
-                                                            }}
-                                                            className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all ${isChecked
-                                                                ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
-                                                                : 'border-gray-100 hover:border-gray-200 bg-white'
-                                                                }`}
-                                                        >
-                                                            <div className="pt-0.5">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={isChecked}
-                                                                    readOnly
-                                                                    className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
-                                                                />
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-1.5 mb-0.5">
-                                                                    <span className="font-mono text-[11px] font-semibold text-gray-800 truncate">
-                                                                        {device.serial_no}
-                                                                    </span>
-                                                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
-                                                                </div>
-                                                                {device.location && (
-                                                                    <div className="text-[11px] text-gray-500 font-sans truncate">
-                                                                        {device.location}
-                                                                    </div>
-                                                                )}
-                                                                <span className="text-[9px] text-gray-400 font-sans block mt-0.5">
-                                                                    {isOnline ? 'Online' : 'Offline'}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-
-                                        <div className="flex gap-3 pt-6 border-t border-gray-50">
+                                    <div style={{ width: "100%" }} className="space-y-4 pt-2 border-t border-gray-50 w-full">
+                                        <div className="flex gap-3">
                                             <Button
-                                                className="flex-1 h-10 text-xs font-bold rounded-xl"
+                                                className="flex-1 h-10 rounded-xl"
                                                 type="button"
                                                 variant="outline"
                                                 onClick={() => setEditingEmployee(null)}
@@ -1518,7 +1715,7 @@ export default function EmployeeManage() {
                                                 type="button"
                                                 disabled={isPushing || selectedPushDevices.size === 0 || !editingEmployee}
                                                 onClick={handleIndividualPush}
-                                                className="flex-1 h-10 text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                                                className="flex-1 h-10 bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 rounded-xl transition-all flex items-center justify-center gap-1.5"
                                             >
                                                 {isPushing ? (
                                                     <>
@@ -1532,76 +1729,14 @@ export default function EmployeeManage() {
                                                 )}
                                             </Button>
                                         </div>
-                                    </>
+                                    </div>
                                 ) : (
-                                    <>
-                                        <div className="space-y-1.5">
-                                            <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
-                                                <ArrowUp className="w-4 h-4 text-indigo-600 rotate-180" /> Fetch from Device
-                                            </h4>
-                                            <p className="text-[11px] text-gray-500 leading-relaxed bg-indigo-50/50 p-2.5 rounded-lg border border-indigo-100/50">
-                                                Select the specific terminal where this employee registered their fingerprint/face. The system will query the device for the templates, save them to the server, and automatically sync them to all other active devices.
-                                            </p>
-                                        </div>
+                                    <div style={{ width: "100%" }} className="space-y-4 pt-2 border-t border-gray-50 w-full">
 
-                                        {loadingDevices ? (
-                                            <div className="text-xs text-gray-400 flex items-center gap-2 py-4 justify-center">
-                                                <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> Loading devices...
-                                            </div>
-                                        ) : devices.length === 0 ? (
-                                            <div className="text-xs text-gray-400 py-4 text-center">No registered devices found.</div>
-                                        ) : (
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[200px] overflow-y-auto pr-1">
-                                                {devices.map(device => {
-                                                    const isChecked = selectedFetchDevice === device.serial_no;
-                                                    const isOnline = device.last_seen
-                                                        ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
-                                                        : false;
-                                                    return (
-                                                        <div
-                                                            key={device.id}
-                                                            onClick={() => {
-                                                                setSelectedFetchDevice(device.serial_no);
-                                                            }}
-                                                            className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all ${isChecked
-                                                                ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
-                                                                : 'border-gray-100 hover:border-gray-200 bg-white'
-                                                                }`}
-                                                        >
-                                                            <div className="pt-0.5">
-                                                                <input
-                                                                    type="radio"
-                                                                    name="fetch_source_device"
-                                                                    checked={isChecked}
-                                                                    readOnly
-                                                                    className="w-4 h-4 rounded-full border-gray-300 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
-                                                                />
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-1.5 mb-0.5">
-                                                                    <span className="font-mono text-[11px] font-semibold text-gray-800 truncate">
-                                                                        {device.serial_no}
-                                                                    </span>
-                                                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
-                                                                </div>
-                                                                {device.location && (
-                                                                    <div className="text-[11px] text-gray-500 font-sans truncate">
-                                                                        {device.location}
-                                                                    </div>
-                                                                )}
-                                                                <span className="text-[9px] text-gray-400 font-sans block mt-0.5">
-                                                                    {isOnline ? 'Online' : 'Offline'}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
 
-                                        <div className="flex gap-3 pt-6 border-t border-gray-50">
+                                        <div className="flex gap-3">
                                             <Button
-                                                className="flex-1 h-10 text-xs font-bold rounded-xl"
+                                                className="flex-1 h-10 rounded-xl"
                                                 type="button"
                                                 variant="outline"
                                                 onClick={() => setEditingEmployee(null)}
@@ -1611,9 +1746,9 @@ export default function EmployeeManage() {
                                             </Button>
                                             <Button
                                                 type="button"
-                                                disabled={isFetching || !selectedFetchDevice || !editingEmployee}
+                                                disabled={isFetching || selectedPushDevices.size === 0 || !editingEmployee}
                                                 onClick={handleFetchBiometrics}
-                                                className="flex-1 h-10 text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                                                className="flex-1 h-10 bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 rounded-xl transition-all flex items-center justify-center gap-1.5"
                                             >
                                                 {isFetching ? (
                                                     <>
@@ -1622,18 +1757,18 @@ export default function EmployeeManage() {
                                                     </>
                                                 ) : (
                                                     <>
-                                                        Fetch Biometrics
+                                                        Fetch Biometrics ({selectedPushDevices.size})
                                                     </>
                                                 )}
                                             </Button>
                                         </div>
-                                    </>
+                                    </div>
                                 )}
                             </div>
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog>
+                        </TabsContent>
+                    </ScrollArea>
+                </Tabs>
+            </ResponsiveModal>
 
             {/* Add Employee Dialog */}
             <ResponsiveModal
@@ -1641,232 +1776,265 @@ export default function EmployeeManage() {
                 onOpenChange={setIsAdding}
                 title="Add Employee"
                 description="Create a new employee record and optionally push it to biometric devices."
+                hideHeader
+                contentStyle={{ padding: 0, width: "100%", maxWidth: "500px" }}
             >
-                <form onSubmit={(e) => e.preventDefault()} className="space-y-3 p-4 md:p-0">
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <label className="text-xs font-medium text-gray-600 block">Device User ID <span className="text-red-500">*</span></label>
-                            <Input
-                                type="text"
-                                required
-                                value={addDeviceUserId}
-                                onChange={(e) => setAddDeviceUserId(e.target.value)}
-                                placeholder="e.g. 110525"
-                                className="font-mono h-9 text-xs"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-medium text-gray-600 block">Employee ID (HR)</label>
-                            <Input
-                                type="text"
-                                value={addEmpId}
-                                onChange={(e) => setAddEmpId(e.target.value)}
-                                placeholder="e.g. EMP-045"
-                                className="h-9 text-xs"
-                            />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <label className="text-xs font-medium text-gray-600 block">Full Name <span className="text-red-500">*</span></label>
-                            <Input
-                                type="text"
-                                required
-                                value={addName}
-                                onChange={(e) => setAddName(e.target.value)}
-                                placeholder="e.g. John Smith"
-                                className="h-9 text-xs"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-medium text-gray-600 block">Email</label>
-                            <Input
-                                type="email"
-                                value={addEmail}
-                                onChange={(e) => setAddEmail(e.target.value)}
-                                placeholder="john@company.com"
-                                className="h-9 text-xs"
-                            />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <label className="text-xs font-medium text-gray-600 block">Department</label>
-                            <Input
-                                type="text"
-                                value={addDept}
-                                onChange={(e) => setAddDept(e.target.value)}
-                                placeholder="e.g. Operations"
-                                className="h-9 text-xs"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-medium text-gray-600 block">Designation</label>
-                            <Input
-                                type="text"
-                                value={addDesignation}
-                                onChange={(e) => setAddDesignation(e.target.value)}
-                                placeholder="e.g. Engineer"
-                                className="h-9 text-xs"
-                            />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <label className="text-xs font-medium text-gray-600 block">Employee Type</label>
-                            <Select value={addEmpType} onValueChange={(e) => setAddEmpType(e as 'staff' | 'worker')}>
-                                <SelectTrigger className="h-9 text-xs">
-                                    <SelectValue placeholder="Select Employee Type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="staff">Staff</SelectItem>
-                                    <SelectItem value="worker">Worker</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-medium text-gray-600 block">Nationality</label>
-                            <Select value={addNationality} onValueChange={(e) => setAddNationality(e)}>
-                                <SelectTrigger className="h-9 text-xs">
-                                    <SelectValue placeholder="Select Nationality" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {NATIONALITIES.map((nat) => (
-                                        <SelectItem key={nat} value={nat}>
-                                            {nat.toUpperCase()}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                <Tabs value={addActiveTab} onValueChange={(val) => setAddActiveTab(val as 'profile' | 'sync')} className="flex flex-col h-full max-h-[92vh] overflow-hidden bg-white md:rounded-2xl w-full">
+                    <div className="p-6 pb-4 border-b border-gray-50 shrink-0 bg-white">
+                        <h3 style={{ fontWeight: "600" }} className="text-lg font-bold text-gray-900">Add Employee</h3>
                     </div>
 
-                    {/* Device Selection Dropdown */}
-                    <div className="space-y-1 pt-2 border-t border-gray-100">
-                        <label className="text-xs font-medium text-gray-600 block">Push to biometric devices</label>
+                    {/* Tabs Header */}
+                    <div style={{ width: "100%" }} className="px-6 py-3 bg-gray-50/30 border-b border-gray-100 shrink-0">
+                        <TabsList className="grid grid-cols-2 bg-gray-100/80 p-1 h-9 rounded-xl w-full">
+                            <TabsTrigger
+                                value="profile"
+                                className=" font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900 text-gray-500"
+                            >
+                                Profile Details
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="sync"
+                                className=" font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900 text-gray-500"
+                            >
+                                Device Sync
+                            </TabsTrigger>
+                        </TabsList>
+                    </div>
 
-                        {loadingDevices ? (
-                            <div className="flex items-center gap-2 text-xs text-gray-400 py-2 justify-center">
-                                <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
-                                Loading devices…
-                            </div>
-                        ) : devices.length === 0 ? (
-                            <div className="text-xs text-gray-400 py-1 text-center">No devices registered in the system.</div>
-                        ) : (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
+                    <ScrollArea className="flex-1 max-h-[calc(85vh-120px)] w-full">
+                        <TabsContent value="profile" className="p-6 mt-0 w-full">
+                            <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-500 block">Device User ID <span className="text-red-500">*</span></label>
+                                        <Input
+                                            type="text"
+                                            required
+                                            value={addDeviceUserId}
+                                            onChange={(e) => setAddDeviceUserId(e.target.value)}
+                                            placeholder="e.g. 110525"
+                                            className="font-mono text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-500 block">Employee ID (HR)</label>
+                                        <Input
+                                            type="text"
+                                            value={addEmpId}
+                                            onChange={(e) => setAddEmpId(e.target.value)}
+                                            placeholder="e.g. EMP-045"
+                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-500 block">Full Name <span className="text-red-500">*</span></label>
+                                        <Input
+                                            type="text"
+                                            required
+                                            value={addName}
+                                            onChange={(e) => setAddName(e.target.value)}
+                                            placeholder="e.g. John Smith"
+                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-500 block">Email</label>
+                                        <Input
+                                            type="email"
+                                            value={addEmail}
+                                            onChange={(e) => setAddEmail(e.target.value)}
+                                            placeholder="john@company.com"
+                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-500 block">Department</label>
+                                        <Input
+                                            type="text"
+                                            value={addDept}
+                                            onChange={(e) => setAddDept(e.target.value)}
+                                            placeholder="e.g. Operations"
+                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-500 block">Designation</label>
+                                        <Input
+                                            type="text"
+                                            value={addDesignation}
+                                            onChange={(e) => setAddDesignation(e.target.value)}
+                                            placeholder="e.g. Engineer"
+                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-500 block">Employee Type</label>
+                                        <Select value={addEmpType} onValueChange={(e) => setAddEmpType(e as 'staff' | 'worker')}>
+                                            <SelectTrigger className="text-xs bg-gray-50 border-gray-100 rounded-xl h-10 w-full focus:bg-white transition-all">
+                                                <SelectValue placeholder="Select Employee Type" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
+                                                <SelectItem value="staff" className="rounded-md focus:bg-gray-50 cursor-pointer">Staff</SelectItem>
+                                                <SelectItem value="worker" className="rounded-md focus:bg-gray-50 cursor-pointer">Worker</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-500 block">Nationality</label>
+                                        <Select value={addNationality} onValueChange={(e) => setAddNationality(e)}>
+                                            <SelectTrigger className="text-xs bg-gray-50 border-gray-100 rounded-xl h-10 w-full focus:bg-white transition-all">
+                                                <SelectValue placeholder="Select Nationality" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
+                                                {NATIONALITIES.map((nat) => (
+                                                    <SelectItem key={nat} value={nat} className="rounded-md focus:bg-gray-50 cursor-pointer">
+                                                        {nat.toUpperCase()}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 pt-6 border-t border-gray-50 w-full">
                                     <Button
+                                        className="flex-1 h-10 rounded-xl"
                                         type="button"
                                         variant="outline"
-                                        className="w-full justify-between h-9 text-xs font-normal border-gray-200"
+                                        onClick={() => setIsAdding(false)}
+                                        disabled={isSubmitting}
                                     >
-                                        <span className="truncate">
-                                            {selectedDevices.size === 0
-                                                ? "Select devices..."
-                                                : selectedDevices.size === devices.length
-                                                    ? "All devices selected"
-                                                    : `${selectedDevices.size} device(s) selected`}
-                                        </span>
-                                        <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                                        Cancel
                                     </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-[300px] max-h-[220px] overflow-y-auto p-0">
-                                    <div
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="sticky top-0 z-10 flex items-center justify-between px-3 py-1.5 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs shrink-0"
+                                    <Button
+                                        className="flex-1 h-10 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-all font-semibold"
+                                        type="button"
+                                        onClick={() => setAddActiveTab('sync')}
                                     >
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                toggleAllDevices();
-                                            }}
-                                            className="text-[11px] cursor-pointer text-left"
-                                            style={{ background: "none", flex: 1 }}
-                                        >
-                                            Select All
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                setSelectedDevices(new Set());
-                                            }}
-                                            className="text-[11px] cursor-pointer text-right"
-                                            style={{ background: "none", flex: 1 }}
-                                        >
-                                            Clear All
-                                        </button>
-                                    </div>
-                                    <div className="py-1">
-                                        {devices.map((device) => {
-                                            const isChecked = selectedDevices.has(device.serial_no);
-                                            const isOnline = device.last_seen
-                                                ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
-                                                : false;
-                                            return (
-                                                <DropdownMenuCheckboxItem
-                                                    key={device.id}
-                                                    checked={isChecked}
-                                                    onCheckedChange={() => toggleDevice(device.serial_no)}
-                                                    onSelect={(e) => e.preventDefault()}
-                                                    className="text-xs"
-                                                >
-                                                    <div style={{ justifyContent: "space-between" }} className="flex items-center w-full gap-2">
-                                                        <div style={{ border: "" }} className="flex gap-1.5 truncate">
-                                                            <span className="font-mono text-[11px] font-semibold text-gray-800">
-                                                                {device.serial_no}
-                                                            </span>
-                                                            {device.location && (
-                                                                <span className="text-gray-500 font-sans truncate max-w-[120px] text-[10px]">
-                                                                    ({device.location})
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
-                                                    </div>
-                                                </DropdownMenuCheckboxItem>
-                                            );
-                                        })}
-                                    </div>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
-                    </div>
+                                        Next: Device Sync
+                                    </Button>
+                                </div>
+                            </form>
+                        </TabsContent>
 
-                    <DialogFooter className="pt-4 gap-2 sm:gap-0">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setIsAdding(false)}
-                            disabled={isSubmitting}
-                            className="w-full sm:w-auto"
-                        >
-                            Cancel
-                        </Button>
-                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={(e) => handleAddSubmit(e, false)}
-                                disabled={isSubmitting}
-                                className="w-full sm:w-auto"
-                            >
-                                {isSubmitting ? 'Saving...' : 'Save only'}
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={(e) => handleAddSubmit(e, true)}
-                                disabled={isSubmitting || selectedDevices.size === 0}
-                                className="w-full sm:w-auto"
-                            >
-                                {isSubmitting ? 'Saving...' : `Save & Push (${selectedDevices.size})`}
-                            </Button>
-                        </div>
-                    </DialogFooter>
-                </form>
+                        <TabsContent value="sync" className="p-6 mt-0 w-full">
+                            <div className="space-y-5 w-full">
+                                {/* Device Selection Grid */}
+                                <div className="space-y-2.5 w-full">
+                                    <div style={{ justifyContent: "space-between", height: "2rem" }} className="flex justify-between items-center">
+                                        <label className="text-xs font-semibold text-gray-550 block">Push to biometric devices</label>
+                                        {selectedDevices.size > 0 && (
+                                            <button
+                                                style={{ padding: "0.1rem 0.5rem", borderRadius: "0.25rem" }}
+                                                type="button"
+                                                onClick={() => setSelectedDevices(new Set())}
+                                                className="text-[10px] text-gray-400 hover:text-indigo-600 transition-all font-medium"
+                                            >
+                                                Clear Selection
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {loadingDevices ? (
+                                        <div className="text-xs text-gray-400 flex items-center gap-2 py-4 justify-center">
+                                            <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> Loading devices...
+                                        </div>
+                                    ) : devices.length === 0 ? (
+                                        <div className="text-xs text-gray-400 py-4 text-center">No registered devices found.</div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1 w-full">
+                                            {devices.map(device => {
+                                                const isChecked = selectedDevices.has(device.serial_no);
+                                                const isOnline = device.last_seen
+                                                    ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
+                                                    : false;
+                                                return (
+                                                    <div
+                                                        key={device.id}
+                                                        onClick={() => {
+                                                            setSelectedDevices(prev => {
+                                                                const next = new Set(prev);
+                                                                if (next.has(device.serial_no)) next.delete(device.serial_no);
+                                                                else next.add(device.serial_no);
+                                                                return next;
+                                                            });
+                                                        }}
+                                                        className={`flex items-center gap-2 p-1.5 px-2.5 rounded-lg border cursor-pointer select-none transition-all ${isChecked
+                                                            ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
+                                                            : 'border-gray-100 hover:border-gray-200 bg-white'
+                                                            }`}
+                                                    >
+                                                        <Checkbox
+                                                            checked={isChecked}
+                                                            className="w-3.5 h-3.5 rounded border-gray-300 data-[state=checked]:bg-indigo-700 data-[state=checked]:text-white focus-visible:ring-indigo-500 cursor-pointer pointer-events-none shrink-0"
+                                                        />
+                                                        <div className="flex-1 min-w-0 flex items-center justify-between gap-1.5">
+                                                            <div className="min-w-0 flex-1">
+                                                                <span className="font-mono text-[10px] font-semibold text-gray-850 truncate block leading-tight">
+                                                                    {device.serial_no}
+                                                                </span>
+                                                                {device.location && (
+                                                                    <span className="text-[10px] text-gray-400 font-sans truncate block leading-tight">
+                                                                        {device.location}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-1 shrink-0">
+                                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+                                                                <span className="text-[11px] text-gray-400">
+                                                                    {isOnline ? 'Online' : 'Offline'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex gap-3 pt-6 border-t border-gray-50 w-full">
+                                    <Button
+                                        className="flex-1 h-10 rounded-xl"
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setIsAdding(false)}
+                                        disabled={isSubmitting}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        className="flex-1 h-10 rounded-xl"
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={(e) => handleAddSubmit(e, false)}
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? 'Saving...' : 'Save only'}
+                                    </Button>
+                                    <Button
+                                        className="flex-1 h-10 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 transition-all font-semibold"
+                                        type="button"
+                                        onClick={(e) => handleAddSubmit(e, true)}
+                                        disabled={isSubmitting || selectedDevices.size === 0}
+                                    >
+                                        {isSubmitting ? 'Saving...' : `Save & Push (${selectedDevices.size})`}
+                                    </Button>
+                                </div>
+                            </div>
+                        </TabsContent>
+                    </ScrollArea>
+                </Tabs>
             </ResponsiveModal>
 
             {/* Bulk Change Department Dialog */}
@@ -2038,11 +2206,9 @@ export default function EmployeeManage() {
                                                     }`}
                                             >
                                                 <div className="pt-0.5">
-                                                    <input
-                                                        type="checkbox"
+                                                    <Checkbox
                                                         checked={isChecked}
-                                                        readOnly
-                                                        className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+                                                        className="w-4 h-4 rounded border-gray-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 data-[state=checked]:text-white focus-visible:ring-indigo-500 cursor-pointer pointer-events-none"
                                                     />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
@@ -2088,6 +2254,270 @@ export default function EmployeeManage() {
                             </Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Excel Upload Confirmation Dialog */}
+            <Dialog open={uploadModalOpen} onOpenChange={(open) => {
+                if (uploadState === 'uploading') return; // Prevent closing while uploading
+                setUploadModalOpen(open);
+            }}>
+                <DialogContent className="sm:max-w-[550px] bg-white border border-gray-105 shadow-2xl rounded-2xl p-6">
+                    <DialogHeader className="space-y-1">
+                        <DialogTitle className="text-lg text-gray-900 flex items-center gap-2">
+
+                            Import Employees from Excel
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-gray-505">
+                            {uploadState === 'idle' && "Upload a spreadsheet file to batch import employees."}
+                            {uploadState === 'preview' && `Review data parsed from "${uploadFileName}".`}
+                            {uploadState === 'uploading' && "Importing employees. Please do not close this window."}
+                            {uploadState === 'completed' && "Import completed successfully."}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {/* Step 1: Choose File */}
+                    {uploadState === 'idle' && (
+                        <div
+                            onClick={() => fileInputRef.current?.click()}
+                            className="my-6 border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-slate-50/50 hover:border-indigo-300 transition-all group"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 group-hover:bg-indigo-50/50 transition-colors">
+                                <Upload className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 transition-colors" />
+                            </div>
+                            <div className="text-center">
+                                <span className="text-sm font-semibold text-gray-805 block mb-0.5">Click to upload or drag & drop</span>
+                                <span className="text-xs text-gray-400">Excel files (.xlsx, .xls) only</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 2: Preview & Confirm */}
+                    {uploadState === 'preview' && (
+                        <div className="space-y-4 my-2">
+                            {/* Summary Info */}
+                            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 flex gap-4 text-xs font-medium">
+                                <div className="flex-1">
+                                    <span className="text-gray-400 block mb-0.5">New Employees</span>
+                                    <span className="text-gray-950 text-lg font-bold">{parsedEmployees.length}</span>
+                                </div>
+                                {duplicateEmployees.length > 0 && (
+                                    <div className="flex-1 border-l border-slate-200 pl-4">
+                                        <span className="text-amber-600 block mb-0.5">Already Registered (Skipped)</span>
+                                        <span className="text-amber-700 text-lg font-bold">{duplicateEmployees.length}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Preview list */}
+                            <div>
+                                <h4 className="text-xs font-semibold text-gray-700 mb-2">Employees Preview (showing up to 5)</h4>
+                                <div className="border border-gray-100 rounded-xl overflow-hidden max-h-[160px] overflow-y-auto">
+                                    <table className="w-full text-left text-xs text-gray-600">
+                                        <thead className="bg-gray-50 sticky top-0 border-b border-gray-100 font-semibold text-gray-500">
+                                            <tr>
+                                                <th className="px-3 py-2">Device User ID</th>
+                                                <th className="px-3 py-2">Name</th>
+                                                <th className="px-3 py-2">Type</th>
+                                                <th className="px-3 py-2">Department</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50 bg-white">
+                                            {parsedEmployees.slice(0, 5).map((emp, index) => (
+                                                <tr key={index}>
+                                                    <td className="px-3 py-2 font-mono text-gray-900">{emp.device_user_id}</td>
+                                                    <td className="px-3 py-2 capitalize font-medium text-gray-900">{emp.name.toLowerCase()}</td>
+                                                    <td className="px-3 py-2 uppercase font-semibold text-[10px] text-gray-400">{emp.emp_type}</td>
+                                                    <td className="px-3 py-2">{emp.department || '—'}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Push to Devices Toggle Option */}
+                            <div className="border-t border-gray-100 pt-3">
+                                <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={uploadPushToDevices}
+                                        onChange={(e) => setUploadPushToDevices(e.target.checked)}
+                                        className="w-4 h-4 rounded accent-indigo-600"
+                                    />
+                                    Also push these new employees to attendance devices
+                                </label>
+
+                                {uploadPushToDevices && (
+                                    <div className="mt-3 bg-gray-50/50 border border-gray-100 rounded-xl p-3.5 space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <h5 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Select Devices</h5>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (uploadSelectedDevices.size === devices.length) {
+                                                        setUploadSelectedDevices(new Set());
+                                                    } else {
+                                                        setUploadSelectedDevices(new Set(devices.map(d => d.serial_no)));
+                                                    }
+                                                }}
+                                                className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700"
+                                            >
+                                                {uploadSelectedDevices.size === devices.length ? 'Select None' : 'Select All'}
+                                            </button>
+                                        </div>
+
+                                        {devices.length === 0 ? (
+                                            <div className="text-xs text-gray-400 text-center py-4 bg-white border border-gray-100 rounded-lg">
+                                                No registered devices found.
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1">
+                                                {devices.map(device => {
+                                                    const isChecked = uploadSelectedDevices.has(device.serial_no);
+                                                    const isOnline = device.last_seen
+                                                        ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
+                                                        : false;
+                                                    return (
+                                                        <div
+
+                                                            key={device.id}
+                                                            onClick={() => {
+                                                                setUploadSelectedDevices(prev => {
+                                                                    const next = new Set(prev);
+                                                                    if (next.has(device.serial_no)) next.delete(device.serial_no);
+                                                                    else next.add(device.serial_no);
+                                                                    return next;
+                                                                });
+                                                            }}
+                                                            className={`flex items-center gap-2.5 p-2 px-3 rounded-lg border cursor-pointer select-none transition-all ${isChecked
+                                                                ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
+                                                                : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                                }`}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isChecked}
+                                                                onChange={() => { }} // Controlled by onClick
+                                                                className="w-3.5 h-3.5 accent-indigo-600 pointer-events-none"
+                                                            />
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-1 mb-0.5">
+                                                                    <span className="font-mono text-[10px] font-semibold text-gray-805 truncate">
+                                                                        {device.serial_no}
+                                                                    </span>
+                                                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+                                                                </div>
+                                                                {device.location && (
+                                                                    <div className="text-[9px] text-gray-500 truncate leading-none">
+                                                                        {device.location}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 3: Progress & Uploading */}
+                    {uploadState === 'uploading' && (
+                        <div className="my-8 space-y-4 flex flex-col items-center justify-center">
+                            <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mb-1" />
+                            <div className="w-full text-center">
+                                <span className="text-sm font-semibold text-gray-850 block mb-1">
+                                    Importing employees ({uploadCurrentIndex} of {uploadTotalCount})
+                                </span>
+                                <span className="text-xs text-gray-400">
+                                    {uploadTotalCount - uploadCurrentIndex} remaining...
+                                </span>
+                            </div>
+
+                            {/* Progress bar */}
+                            <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                                <div
+                                    className="bg-indigo-600 h-2.5 rounded-full transition-all duration-200 ease-out"
+                                    style={{ width: `${(uploadCurrentIndex / uploadTotalCount) * 100}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 4: Completed */}
+                    {uploadState === 'completed' && (
+                        <div className="my-8 flex flex-col items-center justify-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center border border-emerald-100 animate-bounce">
+                                <SquareCheck className="w-6 h-6 text-emerald-600" />
+                            </div>
+                            <div className="text-center">
+                                <span className="text-sm font-semibold text-gray-800 block mb-0.5">Import completed successfully!</span>
+                                <span className="text-xs text-gray-400">Added {uploadTotalCount} employees into the database.</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Footer (conditional based on step) */}
+                    <DialogFooter className="pt-4 border-t border-gray-100 flex gap-2">
+                        {uploadState === 'idle' && (
+                            <Button
+                                style={{ flex: 1 }}
+                                type="button"
+                                variant="outline"
+                                onClick={() => setUploadModalOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                        )}
+                        {uploadState === 'preview' && (
+                            <>
+                                <Button
+                                    style={{ flex: 1 }}
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleResetUpload}
+                                >
+                                    Select Another File
+                                </Button>
+                                <Button
+                                    style={{ flex: 1 }}
+                                    type="button"
+                                    onClick={handleConfirmUpload}
+                                    disabled={uploadPushToDevices && uploadSelectedDevices.size === 0}
+                                    className="bg-indigo-600 text-white hover:bg-indigo-700 font-semibold"
+                                >
+                                    Import {parsedEmployees.length} Employees
+                                </Button>
+                            </>
+                        )}
+                        {uploadState === 'uploading' && (
+                            <Button
+                                style={{ flex: 1 }}
+                                type="button"
+                                disabled
+                                className="bg-gray-100 text-gray-450 cursor-not-allowed"
+                            >
+                                Importing in progress...
+                            </Button>
+                        )}
+                        {uploadState === 'completed' && (
+                            <Button
+                                style={{ flex: 1 }}
+                                type="button"
+                                onClick={() => {
+                                    setUploadModalOpen(false);
+                                    handleResetUpload();
+                                }}
+                                className="bg-emerald-600 text-white hover:bg-emerald-700 font-semibold"
+                            >
+                                Close
+                            </Button>
+                        )}
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

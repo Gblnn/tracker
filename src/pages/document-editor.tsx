@@ -83,6 +83,8 @@ interface DocumentItem {
   unit: string;
   quantity: number;
   amount: number;
+  hourlyRate?: number;
+  monthlyRate?: number;
 }
 
 const parseQuantity = (unit: string | number | undefined | null): number => {
@@ -330,6 +332,7 @@ export default function DocumentEditor() {
   const [letterhead, setLetterhead] = useState("Sohar Star United");
   const [subject, setSubject] = useState("");
   const [hideTotal, setHideTotal] = useState(false);
+  const [quotationFormat, setQuotationFormat] = useState<"standard" | "rates">("standard");
 
   // Autofill lists loaded from Firestore
   const [clients, setClients] = useState<ClientDetails[]>([]);
@@ -648,6 +651,7 @@ export default function DocumentEditor() {
         subject,
         bankDetails,
         hideTotal,
+        quotationFormat,
         generated_at: Timestamp.now(),
         generated_by: auth.currentUser?.email || null,
       };
@@ -689,6 +693,7 @@ export default function DocumentEditor() {
         subject,
         bankDetails,
         hideTotal,
+        quotationFormat,
         updated_at: Timestamp.now(),
       };
       await updateDoc(doc(db, "document_editor_docs", loadedDocId), docPayload);
@@ -742,6 +747,7 @@ export default function DocumentEditor() {
       setSubject(documentObj.subject || "");
       setBankDetails(documentObj.bankDetails || "");
       setHideTotal(documentObj.hideTotal ?? false);
+      setQuotationFormat(documentObj.quotationFormat || "standard");
 
       const compareState = {
         documentType: documentObj.documentType || "invoice",
@@ -762,6 +768,7 @@ export default function DocumentEditor() {
         subject: documentObj.subject || "",
         bankDetails: documentObj.bankDetails || "",
         hideTotal: documentObj.hideTotal ?? false,
+        quotationFormat: documentObj.quotationFormat || "standard",
       };
       setOriginalDocState(compareState);
       setDocumentsDrawerVisible(false);
@@ -794,6 +801,7 @@ export default function DocumentEditor() {
     setLetterhead("ARC");
     setSubject("");
     setHideTotal(false);
+    setQuotationFormat("standard");
     setBankDetails(
       "<p>Bank Name: BANK MUSCAT </p><p>Account Number: 0423 0614 8250 0019</p><p>Swift Code: BMUSOMRX</p>"
     );
@@ -1106,6 +1114,21 @@ export default function DocumentEditor() {
           </div>
         )}
 
+        {documentType === "quotation" && (
+          <div>
+            <label style={{ fontSize: "0.75rem", opacity: 0.7, marginBottom: "0.35rem", display: "block" }}>Quotation Format</label>
+            <Select value={quotationFormat} onValueChange={(val) => setQuotationFormat(val as "standard" | "rates")}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Format" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="standard">Standard Format</SelectItem>
+                <SelectItem value="rates">Hourly & Monthly Rates Format</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {/* Client Details Section */}
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", borderTop: "1px solid rgba(0,0,0,0.06)", paddingTop: "0.8rem" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1356,14 +1379,34 @@ export default function DocumentEditor() {
                   onChange={(e) => updateItem(idx, "description", e.target.value)}
                   placeholder="Item Description"
                 />
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.4rem" }}>
-                  <input
-                    type="text"
-                    style={inputStyle}
-                    value={item.unit}
-                    onChange={(e) => updateItem(idx, "unit", e.target.value)}
-                    placeholder={unitTitle || "Duration"}
-                  />
+                <div style={{ display: "grid", gridTemplateColumns: documentType === "quotation" && quotationFormat === "rates" ? "1fr 1fr 1fr" : "1fr 1fr", gap: "0.4rem" }}>
+                  {!(documentType === "quotation" && quotationFormat === "rates") && (
+                    <input
+                      type="text"
+                      style={inputStyle}
+                      value={item.unit}
+                      onChange={(e) => updateItem(idx, "unit", e.target.value)}
+                      placeholder={unitTitle || "Duration"}
+                    />
+                  )}
+                  {documentType === "quotation" && quotationFormat === "rates" ? (
+                    <>
+                      <input
+                        type="number"
+                        style={inputStyle}
+                        value={item.hourlyRate !== undefined ? item.hourlyRate : ""}
+                        onChange={(e) => updateItem(idx, "hourlyRate", e.target.value !== "" ? Number(e.target.value) : undefined)}
+                        placeholder="Hourly Rate"
+                      />
+                      <input
+                        type="number"
+                        style={inputStyle}
+                        value={item.monthlyRate !== undefined ? item.monthlyRate : ""}
+                        onChange={(e) => updateItem(idx, "monthlyRate", e.target.value !== "" ? Number(e.target.value) : undefined)}
+                        placeholder="Monthly Rate"
+                      />
+                    </>
+                  ) : null}
                   <input
                     type="number"
                     style={inputStyle}
@@ -1565,6 +1608,7 @@ export default function DocumentEditor() {
                   letterhead={letterhead}
                   subject={subject}
                   hideTotal={hideTotal}
+                  quotationFormat={quotationFormat}
                 />
               )}
             </div>

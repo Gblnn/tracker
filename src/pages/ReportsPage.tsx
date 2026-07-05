@@ -1,3 +1,4 @@
+import { useAuth } from '@/components/AuthProvider';
 import { DatePicker } from '@/components/date-picker';
 import { ResponsiveModal } from '@/components/responsive-modal';
 import {
@@ -420,6 +421,34 @@ ScrollableRow.displayName = 'ScrollableRow';
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function StaffMonthlyReport() {
+  const { userData } = useAuth();
+
+  const canEditAttendance = useMemo(() => {
+    try {
+      const permissions = JSON.parse(userData?.clearance || "{}") as Record<string, boolean>;
+      const hasStructuredClearance = Object.keys(permissions).length > 0;
+      const hasAttendanceModule = permissions.attendance === true;
+      const hasAttendanceEdit = permissions.attendance_edit === true;
+      const hasExplicitEditBlock = permissions.attendance_edit === false;
+
+      if (hasAttendanceModule) {
+        return hasAttendanceEdit;
+      }
+
+      if (permissions.attendance === false || hasExplicitEditBlock) {
+        return false;
+      }
+
+      if (userData?.role === "admin" || userData?.role === "site_admin") {
+        return !hasStructuredClearance;
+      }
+
+      return false;
+    } catch {
+      return userData?.role === "admin" || userData?.role === "site_admin";
+    }
+  }, [userData]);
+
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -438,6 +467,13 @@ export default function StaffMonthlyReport() {
   const [selectedDailyDate, setSelectedDailyDate] = useState<string>(() => todayISO());
   const [empSearch, setEmpSearch] = useState("");
   const [openEmpSelect, setOpenEmpSelect] = useState(false);
+
+  // Pagination / Rendering Limit state
+  const [renderLimit, setRenderLimit] = useState(100);
+
+  useEffect(() => {
+    setRenderLimit(100);
+  }, [searchQuery, deptFilter, selectedLocations, reportView, reportType, selectedDailyDate]);
 
   // Holidays State
   interface Holiday {
@@ -509,12 +545,20 @@ export default function StaffMonthlyReport() {
         setLoading(false);
         return;
       }
-      start = `${selectedDailyDate}T00:00:00`;
-      end = `${selectedDailyDate}T23:59:59`;
+      // Extend by 1 day either side to capture punches regardless of UTC vs local storage
+      const dayBefore = new Date(`${selectedDailyDate}T00:00:00`);
+      dayBefore.setDate(dayBefore.getDate() - 1);
+      const dayAfter = new Date(`${selectedDailyDate}T00:00:00`);
+      dayAfter.setDate(dayAfter.getDate() + 1);
+      const padDate = (d: Date) => d.toISOString().slice(0, 10);
+      start = `${padDate(dayBefore)}T00:00:00`;
+      end = `${padDate(dayAfter)}T23:59:59`;
     } else {
       const pad = (n: number) => String(n).padStart(2, '0');
+      // Extend end by 1 day to capture early-morning punches stored as next UTC day
+      const dayAfterMonth = new Date(year, month + 1, 1); // 1st of next month
       start = `${year}-${pad(month + 1)}-01T00:00:00`;
-      end = `${year}-${pad(month + 1)}-${pad(days)}T23:59:59`;
+      end = `${dayAfterMonth.getFullYear()}-${pad(dayAfterMonth.getMonth() + 1)}-${pad(dayAfterMonth.getDate())}T03:59:59`;
     }
 
     try {
@@ -1173,6 +1217,8 @@ export default function StaffMonthlyReport() {
     }
   }, [days, month, year, filtered, workDays, reportType, useFirstLast, deptFilter, selectedLocations, reportView, selectedDailyDate, selectedEmployeeId, selectedEmp]);
 
+  const limit = pdfLoading ? filtered.length : renderLimit;
+
   // Render loops updated to use external memoized subcomponents
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1301,17 +1347,37 @@ export default function StaffMonthlyReport() {
             </Select>
           )}
 
-          {/* Toggle for In/Out Logic */}
+          {/* Animated Toggle for In/Out Logic */}
           {(reportView === 'daily' || reportView === 'individual' || reportType === 'inout' || reportType === 'location_inout') && (
-            <label className="flex items-center gap-2 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 cursor-pointer hover:bg-gray-100 transition-colors">
-              <input
-                type="checkbox"
-                checked={useFirstLast}
-                onChange={e => setUseFirstLast(e.target.checked)}
-                className="w-3.5 h-3.5 accent-gray-900 rounded"
-              />
-              <span>First In / Last Out</span>
-            </label>
+            <div
+              onClick={() => setUseFirstLast(prev => !prev)}
+              className="h-8 select-none border border-gray-200 bg-gray-50 hover:bg-gray-100 active:bg-gray-200/50 rounded-lg flex items-center justify-center cursor-pointer font-medium text-xs relative overflow-hidden transition-all duration-200 shrink-0"
+              style={{ width: "9rem" }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') setUseFirstLast(prev => !prev); }}
+            >
+              <div
+                className="absolute inset-0 flex items-center justify-center transition-all duration-300 transform"
+                style={{
+                  opacity: useFirstLast ? 1 : 0,
+                  transform: useFirstLast ? 'translateY(0)' : 'translateY(-15px)',
+                  pointerEvents: useFirstLast ? 'auto' : 'none'
+                }}
+              >
+                First In / Last Out
+              </div>
+              <div
+                className="absolute inset-0 flex items-center justify-center transition-all duration-300 transform"
+                style={{
+                  opacity: useFirstLast ? 0 : 1,
+                  transform: useFirstLast ? 'translateY(15px)' : 'translateY(0)',
+                  pointerEvents: useFirstLast ? 'none' : 'auto'
+                }}
+              >
+                Check In / Check Out
+              </div>
+            </div>
           )}
 
           {/* Single date picker for Daily mode, Month nav for Monthly and Individual modes */}
@@ -1378,13 +1444,15 @@ export default function StaffMonthlyReport() {
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            onClick={() => setIsHolidayModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <PartyPopper className="w-4 h-4" />
-            Holidays ({holidays.length})
-          </button>
+          {canEditAttendance && (
+            <button
+              onClick={() => setIsHolidayModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <PartyPopper className="w-4 h-4" />
+              Holidays ({holidays.length})
+            </button>
+          )}
           <button
             onClick={exportExcel}
             disabled={loading || filtered.length === 0}
@@ -1471,84 +1539,104 @@ export default function StaffMonthlyReport() {
                   </td>
                 </tr>
               ) : (
-                dateListInRange.map((dateStr) => {
-                  const [y, m, d] = dateStr.split('-').map(Number);
-                  const dateObj = new Date(y, m - 1, d);
-                  const displayDate = dateObj.toLocaleDateString('en-OM', { day: '2-digit', month: 'short', year: 'numeric' });
-                  const isWeekendDay = isWeekend(y, m - 1, d);
-                  const isHolidayDay = holidays.some(h => h.day === d && year === y && month === (m - 1));
+                <>
+                  {dateListInRange.map((dateStr) => {
+                    const [y, m, d] = dateStr.split('-').map(Number);
+                    const dateObj = new Date(y, m - 1, d);
+                    const displayDate = dateObj.toLocaleDateString('en-OM', { day: '2-digit', month: 'short', year: 'numeric' });
+                    const isWeekendDay = isWeekend(y, m - 1, d);
+                    const isHolidayDay = holidays.some(h => h.day === d && year === y && month === (m - 1));
 
-                  return filtered.map((emp, empIdx) => {
-                    const c = matrix[emp.device_user_id]?.[dateStr];
+                    return filtered.slice(0, limit).map((emp, empIdx) => {
+                      const c = matrix[emp.device_user_id]?.[dateStr];
 
-                    let statusBadge = null;
-                    let checkInText = '—';
-                    let checkOutText = '—';
-                    let hoursText = '—';
+                      let statusBadge = null;
+                      let checkInText = '—';
+                      let checkOutText = '—';
+                      let hoursText = '—';
 
-                    if (isWeekendDay) {
-                      statusBadge = <span className="text-gray-400 text-xs">Weekend</span>;
-                    } else if (isHolidayDay) {
-                      statusBadge = c?.isPresent ? (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">Worked (H)</span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600">Holiday</span>
-                      );
-                    } else if (c?.isPresent) {
-                      statusBadge = (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+                      if (isWeekendDay) {
+                        statusBadge = <span className="text-gray-400 text-xs">Weekend</span>;
+                      } else if (isHolidayDay) {
+                        statusBadge = c?.isPresent ? (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">Worked (H)</span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600">Holiday</span>
+                        );
+                      } else if (c?.isPresent) {
+                        statusBadge = (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
 
-                          Present
-                        </span>
-                      );
-                    } else {
-                      const isFuture = dateObj > today;
-                      statusBadge = isFuture ? (
-                        <span className="text-gray-300 text-xs">—</span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600">
-                          Absent
-                        </span>
-                      );
-                    }
-
-                    if (c?.isPresent) {
-                      if (useFirstLast) {
-                        checkInText = formatTime(c.firstPunch) || '✓';
-                        checkOutText = c.firstPunch === c.lastPunch ? '—' : (formatTime(c.lastPunch) || '—');
+                            Present
+                          </span>
+                        );
                       } else {
-                        checkInText = formatTime(c.firstIn) || '✓';
-                        checkOutText = formatTime(c.lastOut) || '—';
+                        const isFuture = dateObj > today;
+                        statusBadge = isFuture ? (
+                          <span className="text-gray-300 text-xs">—</span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600">
+                            Absent
+                          </span>
+                        );
                       }
 
-                      // Location mapping
-                      const inLoc = useFirstLast ? c.firstPunchLocation : c.firstInLocation;
-                      const outLoc = useFirstLast ? c.lastPunchLocation : c.lastOutLocation;
+                      if (c?.isPresent) {
+                        if (useFirstLast) {
+                          checkInText = formatTime(c.firstPunch) || '✓';
+                          checkOutText = c.firstPunch === c.lastPunch ? '—' : (formatTime(c.lastPunch) || '—');
+                        } else {
+                          checkInText = formatTime(c.firstIn) || '✓';
+                          checkOutText = formatTime(c.lastOut) || '—';
+                        }
 
-                      if (inLoc) checkInText += ` (${inLoc})`;
-                      if (outLoc && c.firstPunch !== c.lastPunch) checkOutText += ` (${outLoc})`;
+                        // Location mapping
+                        const inLoc = useFirstLast ? c.firstPunchLocation : c.firstInLocation;
+                        const outLoc = useFirstLast ? c.lastPunchLocation : c.lastOutLocation;
 
-                      hoursText = getDayHours(c);
-                    }
+                        if (inLoc) checkInText += ` (${inLoc})`;
+                        if (outLoc && c.firstPunch !== c.lastPunch) checkOutText += ` (${outLoc})`;
 
-                    const overtimeText = getOvertime(c, emp.emp_type);
+                        hoursText = getDayHours(c);
+                      }
 
-                    return (
-                      <tr key={`${dateStr}-${emp.id}`} style={{ height: ROW_H }} className="hover:bg-gray-50/50 transition-colors border-b border-gray-100">
-                        <td className="px-4 py-2 text-gray-500 font-medium text-xs text-left">{displayDate}</td>
-                        <td className="px-4 py-2 text-gray-500 text-center">{empIdx + 1}</td>
-                        <td className="px-4 py-2 font-medium text-gray-900 capitalize text-left">{emp.name.toLowerCase()}</td>
-                        <td className="px-4 py-2 text-gray-500 text-left">{emp.emp_id ?? '—'}</td>
-                        <td className="px-4 py-2 text-gray-500 text-left">{emp.department ?? '—'}</td>
-                        <td className="px-4 py-2 text-left">{statusBadge}</td>
-                        <td className="px-4 py-2 text-gray-700 font-medium tabular-nums text-xs text-left">{checkInText}</td>
-                        <td className="px-4 py-2 text-gray-700 font-medium tabular-nums text-xs text-left">{checkOutText}</td>
-                        <td className="px-4 py-2 text-gray-600 font-semibold tabular-nums text-xs text-center">{hoursText}</td>
-                        <td className="px-4 py-2 text-gray-600 font-semibold tabular-nums text-xs text-center">{overtimeText}</td>
-                      </tr>
-                    );
-                  });
-                })
+                      const overtimeText = getOvertime(c, emp.emp_type);
+
+                      return (
+                        <tr key={`${dateStr}-${emp.id}`} style={{ height: ROW_H }} className="hover:bg-gray-50/50 transition-colors border-b border-gray-100">
+                          <td className="px-4 py-2 text-gray-500 font-medium text-xs text-left">{displayDate}</td>
+                          <td className="px-4 py-2 text-gray-500 text-center">{empIdx + 1}</td>
+                          <td className="px-4 py-2 font-medium text-gray-900 capitalize text-left">{emp.name.toLowerCase()}</td>
+                          <td className="px-4 py-2 text-gray-500 text-left">{emp.emp_id ?? '—'}</td>
+                          <td className="px-4 py-2 text-gray-500 text-left">{emp.department ?? '—'}</td>
+                          <td className="px-4 py-2 text-left">{statusBadge}</td>
+                          <td className="px-4 py-2 text-gray-700 font-medium tabular-nums text-xs text-left">{checkInText}</td>
+                          <td className="px-4 py-2 text-gray-700 font-medium tabular-nums text-xs text-left">{checkOutText}</td>
+                          <td className="px-4 py-2 text-gray-600 font-semibold tabular-nums text-xs text-center">{hoursText}</td>
+                          <td className="px-4 py-2 text-gray-600 font-semibold tabular-nums text-xs text-center">{overtimeText}</td>
+                        </tr>
+                      );
+                    });
+                  })}
+                  {filtered.length > limit && (
+                    <tr >
+                      <td colSpan={10} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
+                        <div style={{}} className="flex items-center justify-center gap-4 w-full">
+                          <span className="text-xs text-gray-500 font-medium text-center">
+                            Showing {limit} of {filtered.length} records
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setRenderLimit(prev => prev + 100)}
+                            className="text-xs font-semibold h-9 rounded-xl border border-gray-200 bg-white hover:bg-gray-55 transition-colors shadow-xs px-4 text-gray-700 cursor-pointer"
+                          >
+                            Load More
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               )}
             </tbody>
           </table>
@@ -1818,18 +1906,38 @@ export default function StaffMonthlyReport() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((emp, idx) => (
-                    <FrozenRow
-                      key={emp.id}
-                      emp={emp}
-                      index={idx}
-                      locationList={employeeLocations[emp.device_user_id] || '—'}
-                      presenceCount={presenceDays(emp.device_user_id)}
-                      absentCount={absentDays(emp.device_user_id)}
-                      overtimeCount={totalOvertime(emp.device_user_id, emp.emp_type)}
-                      showOvertime={reportType === 'hourly'}
-                    />
-                  ))
+                  <>
+                    {filtered.slice(0, limit).map((emp, idx) => (
+                      <FrozenRow
+                        key={emp.id}
+                        emp={emp}
+                        index={idx}
+                        locationList={employeeLocations[emp.device_user_id] || '—'}
+                        presenceCount={presenceDays(emp.device_user_id)}
+                        absentCount={absentDays(emp.device_user_id)}
+                        overtimeCount={totalOvertime(emp.device_user_id, emp.emp_type)}
+                        showOvertime={reportType === 'hourly'}
+                      />
+                    ))}
+                    {filtered.length > limit && (
+                      <tr style={{ height: ROW_H }}>
+                        <td colSpan={reportType === 'hourly' ? 7 : 6} className="p-2 text-center bg-white/95 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150" style={{ height: ROW_H }}>
+                          <div className="flex items-center justify-center gap-4 w-full h-full">
+                            <span className="text-xs text-gray-500 font-medium whitespace-nowrap text-center">
+                              Showing {limit} of {filtered.length} rows
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setRenderLimit(prev => prev + 100)}
+                              className="text-xs font-semibold h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors shadow-xs px-3 text-gray-700 cursor-pointer"
+                            >
+                              Load More
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 )}
               </tbody>
             </table>
@@ -1905,20 +2013,29 @@ export default function StaffMonthlyReport() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map(emp => (
-                    <ScrollableRow
-                      key={emp.id}
-                      emp={emp}
-                      dayList={dayList}
-                      reportType={reportType}
-                      useFirstLast={useFirstLast}
-                      matrixForEmployee={matrix[emp.device_user_id]}
-                      year={year}
-                      month={month}
-                      today={today}
-                      holidayMap={holidayMap}
-                    />
-                  ))
+                  <>
+                    {filtered.slice(0, limit).map(emp => (
+                      <ScrollableRow
+                        key={emp.id}
+                        emp={emp}
+                        dayList={dayList}
+                        reportType={reportType}
+                        useFirstLast={useFirstLast}
+                        matrixForEmployee={matrix[emp.device_user_id]}
+                        year={year}
+                        month={month}
+                        today={today}
+                        holidayMap={holidayMap}
+                      />
+                    ))}
+                    {filtered.length > limit && (
+                      <tr style={{ height: ROW_H }}>
+                        <td colSpan={dayList.length * (reportType === 'inout' || reportType === 'location_inout' ? 2 : 1)} className="bg-white/95 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150" style={{ height: ROW_H }}>
+                          <div style={{ height: '100%' }} />
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 )}
               </tbody>
             </table>

@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+/* Prevent layout shift/vibration when Radix UI modals, selects, or popovers open */
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  padding-right: 0px !important;
+}

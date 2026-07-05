@@ -26,6 +26,11 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [loading] = useState(false);
+  const [renderLimit, setRenderLimit] = useState(100);
+
+  useEffect(() => {
+    setRenderLimit(100);
+  }, [search, selectedLocations, selectedDepartments, selectedStatuses]);
 
 
   const uniqueLocations = useMemo(() => {
@@ -610,78 +615,97 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                 </td>
               </tr>
             ) : (
-              filteredSummaries.map((emp, idx) => (
-                <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2.5" style={{ border: '', display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
-                      <Avatar size={"md"} name={emp.name} index={idx} />
-                      <div style={{ display: "flex", flexFlow: "column" }}>
-                        <div className="font-medium text-gray-900" style={{ textAlign: "left", textTransform: "capitalize" }}>{emp.name.toLowerCase()}</div>
-                        {emp.emp_id && (
-                          <div className="text-xs text-gray-400">{emp.emp_id}</div>
+              <>
+                {filteredSummaries.slice(0, renderLimit).map((emp, idx) => (
+                  <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2.5" style={{ border: '', display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
+                        <Avatar size={"md"} name={emp.name} index={idx} />
+                        <div style={{ display: "flex", flexFlow: "column" }}>
+                          <div className="font-medium text-gray-900" style={{ textAlign: "left", textTransform: "capitalize" }}>{emp.name.toLowerCase()}</div>
+                          {emp.emp_id && (
+                            <div className="text-xs text-gray-400">{emp.emp_id}</div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">{emp.department ?? '—'}</td>
+                    <td className="px-4 py-3 text-gray-500">{emp.location ?? '—'}</td>
+                    <td className="px-4 py-3 tabular-nums text-gray-700">{formatTime(emp.firstIn)}</td>
+                    <td className="px-4 py-3 tabular-nums text-gray-700">{formatTime(emp.lastOut)}</td>
+                    <td className="px-4 py-4" style={{ border: "", display: "flex", justifyContent: "center", alignItems: "center", }}>
+                      {emp.isPresent ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Present
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                          Absent
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {emp.remarks && emp.remarks.length > 0 ? (
+                          emp.remarks.map((remark, rIdx) => {
+                            const isLate = remark.toLowerCase().includes('late');
+                            const isEarly = remark.toLowerCase().includes('early');
+
+                            let badgeColorClass = 'bg-gray-50 text-gray-600 border-gray-100';
+                            if (isLate) {
+                              let isWarning = false;
+                              const match = remark.match(/Late in by (?:(\d+)h\s*)?(?:(\d+)m)?/i);
+                              if (match) {
+                                const hours = match[1] ? parseInt(match[1], 10) : 0;
+                                const minutes = match[2] ? parseInt(match[2], 10) : 0;
+                                const totalMinutes = hours * 60 + minutes;
+                                if (totalMinutes < 45) {
+                                  isWarning = true;
+                                }
+                              }
+                              badgeColorClass = isWarning
+                                ? 'bg-amber-50 text-amber-700 border-amber-100'
+                                : 'bg-rose-50 text-rose-700 border-rose-100';
+                            } else if (isEarly) {
+                              badgeColorClass = 'bg-amber-50 text-amber-700 border-amber-100';
+                            }
+
+                            return (
+                              <span
+                                key={rIdx}
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${badgeColorClass}`}
+                              >
+                                {remark}
+                              </span>
+                            );
+                          })
+                        ) : (
+                          <span className="text-gray-300">—</span>
                         )}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">{emp.department ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500">{emp.location ?? '—'}</td>
-                  <td className="px-4 py-3 tabular-nums text-gray-700">{formatTime(emp.firstIn)}</td>
-                  <td className="px-4 py-3 tabular-nums text-gray-700">{formatTime(emp.lastOut)}</td>
-                  <td className="px-4 py-4" style={{ border: "", display: "flex", justifyContent: "center", alignItems: "center", }}>
-                    {emp.isPresent ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        Present
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-                        Absent
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      {emp.remarks && emp.remarks.length > 0 ? (
-                        emp.remarks.map((remark, rIdx) => {
-                          const isLate = remark.toLowerCase().includes('late');
-                          const isEarly = remark.toLowerCase().includes('early');
-
-                          let badgeColorClass = 'bg-gray-50 text-gray-600 border-gray-100';
-                          if (isLate) {
-                            let isWarning = false;
-                            const match = remark.match(/Late in by (?:(\d+)h\s*)?(?:(\d+)m)?/i);
-                            if (match) {
-                              const hours = match[1] ? parseInt(match[1], 10) : 0;
-                              const minutes = match[2] ? parseInt(match[2], 10) : 0;
-                              const totalMinutes = hours * 60 + minutes;
-                              if (totalMinutes < 45) {
-                                isWarning = true;
-                              }
-                            }
-                            badgeColorClass = isWarning
-                              ? 'bg-amber-50 text-amber-700 border-amber-100'
-                              : 'bg-rose-50 text-rose-700 border-rose-100';
-                          } else if (isEarly) {
-                            badgeColorClass = 'bg-amber-50 text-amber-700 border-amber-100';
-                          }
-
-                          return (
-                            <span
-                              key={rIdx}
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${badgeColorClass}`}
-                            >
-                              {remark}
-                            </span>
-                          );
-                        })
-                      ) : (
-                        <span className="text-gray-300">—</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ),
-              )
+                    </td>
+                  </tr>
+                ))}
+                {filteredSummaries.length > renderLimit && (
+                  <tr>
+                    <td colSpan={7} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-50">
+                      <div className="flex items-center justify-center gap-4 w-full">
+                        <span className="text-xs text-gray-500 font-medium text-center">
+                          Showing {renderLimit} of {filteredSummaries.length} employees
+                        </span>
+                        <button 
+                          type="button"
+                          onClick={() => setRenderLimit(prev => prev + 100)}
+                          className="text-xs font-semibold h-9 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors shadow-xs px-4 text-gray-700 cursor-pointer"
+                        >
+                          Load More
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
             )}
           </tbody>
         </table>

@@ -357,20 +357,21 @@ export default function DevicesMaster() {
         )}
 
         {/* Table */}
-        <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+        <div className="border border-gray-100 rounded-2xl overflow-auto shadow-sm flex flex-col bg-white" style={{ height: "70vh" }}>
           {loading ? (
-            <div className="flex items-center justify-center gap-2 py-16 text-gray-400 text-sm">
+            <div className="flex-1 flex items-center justify-center gap-2 text-gray-400 text-sm">
               <Loader2 className="w-4 h-4 animate-spin" />
               Loading…
             </div>
           ) : devices.length === 0 ? (
-            <div className="text-center py-12 text-gray-400 text-sm">
+            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
               No devices found.
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
+            <table className="w-full text-sm border-collapse">
+              <thead className="sticky top-0 bg-gray-50 z-10 shadow-[0_1px_0_rgba(0,0,0,0.05)]">
                 <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="text-center px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: 50 }}>#</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Device</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Location</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Item Code</th>
@@ -384,13 +385,14 @@ export default function DevicesMaster() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {devices.map((device) => {
+                {devices.map((device, idx) => {
                   const online = device.last_seen
                     ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
                     : false;
 
                   return (
                     <tr key={device.id} className="hover:bg-gray-50 transition-colors group">
+                      <td className="px-4 py-3 text-center text-xs text-gray-400 font-medium">{idx + 1}</td>
                       <td className="px-4 py-3" >
                         <div className="flex gap-2.5" style={{ border: "", justifyContent: "flex-start" }}>
                           <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -421,7 +423,7 @@ export default function DevicesMaster() {
                       </td>
                       <td className="px-4 py-3 text-gray-500 text-xs">
                         {device.project_code ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 font-mono uppercase">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[14px] bg-gray-50 text-gray-700 font-mono uppercase">
                             {device.project_code}
                           </span>
                         ) : (
@@ -483,9 +485,7 @@ export default function DevicesMaster() {
           )}
         </div>
 
-        <p className="text-center text-xs text-gray-300 mt-6">
-          Status refreshes every 30 seconds · Online = seen within last 60 seconds
-        </p>
+
       </div>
 
       {/* Edit Modal */}
