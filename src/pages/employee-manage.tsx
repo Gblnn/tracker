@@ -976,7 +976,7 @@ export default function EmployeeManage() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
-                                style={{ backgroundColor: "rgba(100 100 100/ 0.1)", color: "black" }}
+                                style={{ backgroundColor: "rgba(100 100 100/ 0.1)", color: "black", fontSize: "0.8rem" }}
                                 disabled={selectedEmployeeIds.size === 0}
                                 className="h-10 px-4 rounded-xl font-medium disabled:opacity-50 w-[150px] justify-center flex items-center gap-1.5 shrink-0"
                             >
