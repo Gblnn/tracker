@@ -1,14 +1,21 @@
+import { ResponsiveModal } from '@/components/responsive-modal';
 import {
+  AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  CircleMinus,
   Database,
   HardDrive,
+  Laptop,
   List,
   Loader2,
+  Smartphone,
   Users,
+  X,
   Zap
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
@@ -23,8 +30,6 @@ interface Employee {
 
 interface CompactPunch {
   user_id: string;
-  location: string | null;
-  punch_type: number;
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -61,6 +66,13 @@ export default function DataManagement() {
   const [statsLoading, setStatsLoading] = useState<boolean>(true);
   const [recordsLoading, setRecordsLoading] = useState<boolean>(true);
 
+  // Selected employee for detail view modal
+  const [selectedEmpForPunches, setSelectedEmpForPunches] = useState<Employee | null>(null);
+  const [empPunches, setEmpPunches] = useState<any[]>([]);
+  const [loadingEmpPunches, setLoadingEmpPunches] = useState<boolean>(false);
+  const [deletingPunchId, setDeletingPunchId] = useState<number | null>(null);
+  const [deletingAll, setDeletingAll] = useState<boolean>(false);
+
 
   // ── Fetch metadata & total counts ──────────────────────────────────────────
   const fetchMetadata = useCallback(async () => {
@@ -68,7 +80,7 @@ export default function DataManagement() {
     try {
       // 1. Fetch total count of punches
       const { count, error: countErr } = await supabase
-        .from('punch_details')
+        .from('punches')
         .select('*', { count: 'exact', head: true });
 
       if (countErr) throw countErr;
@@ -96,23 +108,23 @@ export default function DataManagement() {
     try {
       let punchesList: CompactPunch[] = [];
       let from = 0;
-      let to = 4999;
+      let to = 999;
       let finished = false;
 
       while (!finished) {
         const { data, error } = await supabase
-          .from('punch_details')
-          .select('user_id, location, punch_type')
+          .from('punches')
+          .select('user_id')
           .range(from, to);
 
         if (error) throw error;
         if (data && data.length > 0) {
           punchesList = [...punchesList, ...data];
-          if (data.length < 5000) {
+          if (data.length < 1000) {
             finished = true;
           } else {
-            from += 5000;
-            to += 5000;
+            from += 1000;
+            to += 1000;
           }
         } else {
           finished = true;
@@ -131,6 +143,98 @@ export default function DataManagement() {
     fetchMetadata();
     fetchPunches();
   }, [fetchMetadata, fetchPunches]);
+
+  const fetchEmpPunches = useCallback(async (userId: string) => {
+    setLoadingEmpPunches(true);
+    try {
+      const { data, error } = await supabase
+        .from('punches')
+        .select('*')
+        .eq('user_id', userId)
+        .order('punch_time', { ascending: false });
+
+      if (error) throw error;
+      setEmpPunches(data ?? []);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to fetch punches');
+    } finally {
+      setLoadingEmpPunches(false);
+    }
+  }, []);
+
+  // Keep a local cached employee to prevent content flashing blank during close transition
+  const [cachedEmp, setCachedEmp] = useState<Employee | null>(null);
+
+  useEffect(() => {
+    if (selectedEmpForPunches) {
+      setCachedEmp(selectedEmpForPunches);
+    }
+  }, [selectedEmpForPunches]);
+
+  const displayEmp = selectedEmpForPunches || cachedEmp;
+
+  useEffect(() => {
+    if (selectedEmpForPunches) {
+      fetchEmpPunches(selectedEmpForPunches.device_user_id);
+    } else {
+      setEmpPunches([]);
+    }
+  }, [selectedEmpForPunches, fetchEmpPunches]);
+
+  const handleDeletePunch = async (punchId: number) => {
+    if (!confirm('Are you sure you want to delete this punch record?')) return;
+    setDeletingPunchId(punchId);
+    try {
+      const { error } = await supabase
+        .from('punches')
+        .delete()
+        .eq('id', punchId);
+
+      if (error) throw error;
+      toast.success('Punch log deleted successfully');
+      setEmpPunches(prev => prev.filter(p => p.id !== punchId));
+      fetchMetadata(); // update total row count
+      fetchPunches(); // update aggregations
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete punch log');
+    } finally {
+      setDeletingPunchId(null);
+    }
+  };
+
+  const handleDeleteAllPunches = async () => {
+    const activeEmp = selectedEmpForPunches || cachedEmp;
+    if (!activeEmp) return;
+    const msg = `WARNING: Are you sure you want to delete ALL (${empPunches.length}) punch records for ${activeEmp.name}? This action cannot be undone.`;
+    if (!confirm(msg)) return;
+    setDeletingAll(true);
+    try {
+      const { error } = await supabase
+        .from('punches')
+        .delete()
+        .eq('user_id', activeEmp.device_user_id);
+
+      if (error) throw error;
+      toast.success('All punch logs deleted successfully');
+      setEmpPunches([]);
+      fetchMetadata(); // update total row count
+      fetchPunches(); // update aggregations
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete all punch logs');
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
+  const getVerifyTypeName = (type: number): string => {
+    switch (type) {
+      case 1: return 'Fingerprint';
+      case 4: return 'Card';
+      case 15: return 'Face';
+      case 0: return 'Mobile / App';
+      default: return `Type ${type}`;
+    }
+  };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -162,6 +266,8 @@ export default function DataManagement() {
       matchedPunchesCount++;
     }
 
+    const employeeUserIds = new Set(employees.map(e => e.device_user_id));
+
     // Build storage list per employee
     let list = employees.map(emp => {
       const count = counts[emp.device_user_id] || 0;
@@ -172,6 +278,25 @@ export default function DataManagement() {
         sizeBytes,
         percentOfTotal: matchedPunchesCount > 0 ? parseFloat(((count / matchedPunchesCount) * 100).toFixed(2)) : 0
       };
+    });
+
+    // Add unmapped/orphaned device user IDs
+    Object.entries(counts).forEach(([userId, count]) => {
+      if (!employeeUserIds.has(userId)) {
+        const sizeBytes = count * ROW_SIZE_BYTES;
+        list.push({
+          emp: {
+            id: -parseInt(userId) || -Math.floor(Math.random() * 1000000), // unique negative id
+            device_user_id: userId,
+            name: `Unmapped Device User (ID: ${userId})`,
+            emp_id: 'N/A',
+            department: 'Unmapped / Orphaned'
+          },
+          count,
+          sizeBytes,
+          percentOfTotal: matchedPunchesCount > 0 ? parseFloat(((count / matchedPunchesCount) * 100).toFixed(2)) : 0
+        });
+      }
     });
 
     // Filter by search query
@@ -352,12 +477,17 @@ export default function DataManagement() {
                 paginatedList.map((item, idx) => {
                   const sequentialIndex = (page - 1) * pageSize + idx + 1;
                   return (
-                    <tr key={item.emp.id} className="hover:bg-gray-50/50 transition-colors">
+                    <tr
+                      key={item.emp.id}
+                      onClick={() => setSelectedEmpForPunches(item.emp)}
+                      className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                      title="Click to view and manage punch logs"
+                    >
                       <td className="px-4 py-2.5 text-center text-gray-450 font-mono">{sequentialIndex}</td>
                       <td style={{ fontSize: "0.8rem", fontWeight: 500 }} className="px-4 py-2.5 text-gray-900">
                         <div className="capitalize">{item.emp.name.toLowerCase()}</div>
                         <div className="text-[10px] text-gray-400 font-normal">
-                          Device PIN: {item.emp.device_user_id} {item.emp.emp_id ? `· ID: ${item.emp.emp_id}` : ''}
+                          Device ID: {item.emp.device_user_id} {item.emp.emp_id ? `· ID: ${item.emp.emp_id}` : ''}
                         </div>
                       </td>
                       <td className="px-4 py-2.5 text-center font-semibold text-gray-805">
@@ -416,6 +546,141 @@ export default function DataManagement() {
         )}
       </div>
 
+      <ResponsiveModal
+        open={!!selectedEmpForPunches}
+        onOpenChange={(open) => { if (!open) setSelectedEmpForPunches(null); }}
+        title=""
+        description=""
+        hideHeader
+        contentStyle={{ padding: 0, width: '100%', maxWidth: '650px' }}
+      >
+        {displayEmp && (
+          <div style={{ width: '100%', height: '500px', display: 'flex', flexDirection: 'column' }} className="overflow-hidden bg-white rounded-2xl">
+            {/* Modal Header */}
+            <div style={{ justifyContent: "space-between" }} className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center">
+                  <Database className="w-4 h-4 text-teal-600" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-900 capitalize">
+                    {displayEmp.name.toLowerCase()}'s Punches
+                  </h2>
+                  <p className="text-xs text-gray-400">
+                    Device ID: {displayEmp.device_user_id} · {empPunches.length} total records
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {empPunches.length > 0 && (
+                  <button
+                    style={{ marginRight: "0.5rem" }}
+                    onClick={handleDeleteAllPunches}
+                    disabled={deletingAll || loadingEmpPunches}
+                    className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-655 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all disabled:opacity-50"
+                  >
+                    <CircleMinus className="w-3.5 h-3.5 text-red-600" />
+                    Purge All
+                  </button>
+                )}
+                <button onClick={() => setSelectedEmpForPunches(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-hidden p-4 flex flex-col">
+              {loadingEmpPunches ? (
+                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                  <Loader2 className="w-6 h-6 animate-spin text-teal-500 mb-2" />
+                  <span>Fetching historical punch logs...</span>
+                </div>
+              ) : empPunches.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-gray-400 text-center">
+                  <AlertTriangle className="w-8 h-8 text-amber-500 mb-2" />
+                  <span className="text-sm font-medium">No punches found</span>
+                  <span className="text-xs text-gray-400">This user has no punch records stored in the database.</span>
+                </div>
+              ) : (
+                <div style={{ width: '100%', flex: 1 }} className="border border-gray-150 rounded-xl overflow-auto shadow-xs">
+                  <table style={{ width: '100%' }} className="w-full text-left border-collapse text-xs">
+                    <thead className="bg-gray-50 text-gray-500 border-b border-gray-200 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-4 py-2 font-semibold">Date & Time</th>
+                        <th className="px-4 py-2 font-semibold">Type</th>
+                        <th className="px-4 py-2 font-semibold">Verify Method</th>
+                        <th className="px-4 py-2 font-semibold">Source/Location</th>
+                        <th className="px-4 py-2 w-12 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 bg-white">
+                      {empPunches.map((punch) => {
+                        const isMobile = !!punch.mobile_location;
+                        const formattedTime = new Date(punch.punch_time).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true
+                        });
+                        return (
+                          <tr key={punch.id} className="hover:bg-gray-50/50 transition-colors">
+                            <td className="px-4 py-2 text-gray-900 font-medium whitespace-nowrap">
+                              {formattedTime}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap">
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${punch.punch_type === 0
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                : 'bg-orange-50 text-orange-700 border border-orange-100'
+                                }`}>
+                                {punch.punch_type === 0 ? 'IN' : 'OUT'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
+                              {getVerifyTypeName(punch.verify_type)}
+                            </td>
+                            <td className="px-4 py-2 text-gray-500 max-w-[150px] truncate">
+                              <div className="flex items-center gap-1">
+                                {isMobile ? (
+                                  <>
+                                    <Smartphone className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                    <span className="truncate">{punch.location || 'Mobile'}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Laptop className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                    <span className="font-mono text-[10px] truncate">{punch.device_serial || 'Device'}</span>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-2 text-center">
+                              <button
+                                onClick={() => handleDeletePunch(punch.id)}
+                                disabled={deletingPunchId === punch.id}
+                                className="text-red-500 hover:text-red-700 p-1 rounded-md hover:bg-red-50 transition-colors disabled:opacity-50"
+                                title="Delete this punch log"
+                              >
+                                {deletingPunchId === punch.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <CircleMinus className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </ResponsiveModal>
 
     </div>
   );

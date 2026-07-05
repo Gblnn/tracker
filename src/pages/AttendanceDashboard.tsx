@@ -47,7 +47,7 @@ export default function AttendanceDashboard() {
 
   const fetchDbCount = () => {
     supabase
-      .from('punch_details')
+      .from('punches')
       .select('*', { count: 'exact', head: true })
       .then(({ count, error }) => {
         if (!error && count !== null) {
