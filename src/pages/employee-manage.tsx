@@ -1917,7 +1917,7 @@ export default function EmployeeManage() {
                                         Cancel
                                     </Button>
                                     <Button
-                                        className="flex-1 h-10 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-all font-semibold"
+                                        className="flex-1 h-10 rounded-xl bg-gray-900 text-white hover:bg-gray-700 transition-all font-semibold"
                                         type="button"
                                         onClick={() => setAddActiveTab('sync')}
                                     >

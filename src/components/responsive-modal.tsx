@@ -64,6 +64,8 @@ export function ResponsiveModal({
   };
 
   const desktopContentStyle: CSSProperties = {
+    width: "100%",
+    maxWidth: "650px",
     ...(hideHeader ? { padding: "0", gap: "0" } : { padding: "2rem" }),
     ...contentStyle,
   };

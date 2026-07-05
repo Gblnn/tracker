@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Input } from "@/components/ui/input";
-import { ChevronDown, Search, UserPlus, X } from 'lucide-react';
+import { ChevronDown, MapPin, Search, UserPlus, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
@@ -402,23 +402,23 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
                         ? 'Mobile'
                         : VERIFY_LABELS[punch.verify_type] ?? punch.verify_type}
                     </td>
-                    <td className="px-4 py-3 text-gray-400">
-                      {punch.device_serial === 'MOBILE' || !!punch.mobile_location || (punch.raw && punch.raw.includes('MOBILE')) ? (
-                        punch.mobile_location && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(punch.mobile_location.trim()) ? (
+                    <td className="px-4 py-3">
+                      <div style={{ gap: "0.1rem" }} className="flex flex-col gap-0.5">
+                        <span className="text-gray-900 font-medium truncate max-w-[200px]" title={punch.location}>
+                          {punch.location}
+                        </span>
+                        {punch.coordinates && (
                           <a
-                            href={`https://www.google.com/maps?q=${punch.mobile_location.trim()}`}
+                            href={`https://www.google.com/maps?q=${punch.coordinates}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-indigo-600 hover:underline"
+                            className="text-[11px] text-indigo-600 hover:underline inline-flex items-center gap-1 mt-0.5"
                           >
-                            {punch.mobile_location}
+                            <MapPin className="w-3 h-3 text-indigo-400 shrink-0" />
+                            {punch.coordinates}
                           </a>
-                        ) : (
-                          punch.mobile_location || '—'
-                        )
-                      ) : (
-                        punch.location ?? '—'
-                      )}
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

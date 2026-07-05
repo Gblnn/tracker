@@ -2,6 +2,7 @@ import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { supabase } from "@/lib/supabase";
+import { findProjectForCoordinates } from "@/lib/geofence";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
@@ -16,6 +17,7 @@ export default function MobilePunch() {
   const { userData } = useAuth();
   const [employee, setEmployee] = useState<any>(null);
   const [devices, setDevices] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [punchType, setPunchType] = useState<number>(0); // 0 = In, 1 = Out
   const [submitting, setSubmitting] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -76,6 +78,14 @@ export default function MobilePunch() {
 
         if (devsErr) throw devsErr;
         setDevices(devs || []);
+
+        // Fetch projects to match geofence config
+        const { data: projs, error: projsErr } = await supabase
+          .from("projects")
+          .select("project_code, project_name, project_location");
+
+        if (projsErr) throw projsErr;
+        setProjects(projs || []);
 
         if (emp) {
           await checkLastPunch(emp.device_user_id);
@@ -186,6 +196,24 @@ export default function MobilePunch() {
         }
       }
 
+      // Check if coordinates match a project geofence
+      let geofenceResult = null;
+      let finalMobileLocation = coordinatesStr;
+      try {
+        const [latStr, lngStr] = coordinatesStr.split(',');
+        const latVal = parseFloat(latStr.trim());
+        const lngVal = parseFloat(lngStr.trim());
+        if (!isNaN(latVal) && !isNaN(lngVal)) {
+          geofenceResult = findProjectForCoordinates(latVal, lngVal, projects);
+          if (geofenceResult) {
+            const { project } = geofenceResult;
+            finalMobileLocation = `${coordinatesStr} @ ${project.project_name}`;
+          }
+        }
+      } catch (err) {
+        console.error("Error matching geofence:", err);
+      }
+
       const now = new Date();
 
       // Format local Muscat time to match biometric device log format: YYYY-MM-DD HH:mm:ss
@@ -218,14 +246,18 @@ export default function MobilePunch() {
           verify_type: 5, // Mobile
           punch_type: punchType,
           device_serial: selectedDeviceSerial,
-          mobile_location: coordinatesStr,
+          mobile_location: finalMobileLocation,
           raw: rawString
         });
 
       if (error) throw error;
 
+      const locationText = geofenceResult
+        ? `Within ${geofenceResult.project.project_name}`
+        : coordinatesStr;
+
       toast.success(
-        `Successfully clocked ${punchType === 0 ? "IN" : "OUT"}! (${coordinatesStr})`
+        `Successfully clocked ${punchType === 0 ? "IN" : "OUT"}! (${locationText})`
       );
 
       if (navigator.vibrate) {

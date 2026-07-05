@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Punch, Employee, EmployeeSummary } from '../types/attendance';
+import { parsePunchLocation } from './geofence';
 
 export function useAttendance(date: string) {
   const [useFirstLast, setUseFirstLast] = useState<boolean>(true);
@@ -77,10 +78,15 @@ export function useAttendance(date: string) {
       );
       setDevicesMap(devMap);
 
-      const punchesWithLocation = (punchData ?? []).map(p => ({
-        ...p,
-        location: devMap[p.device_serial]?.location ?? p.mobile_location ?? '—'
-      }));
+      const punchesWithLocation = (punchData ?? []).map(p => {
+        const devLoc = devMap[p.device_serial]?.location;
+        const { location, coordinates } = parsePunchLocation(p.mobile_location, devLoc);
+        return {
+          ...p,
+          location,
+          coordinates
+        };
+      });
 
       // Count location frequencies for the current month
       const userLocationCounts: Record<string, Record<string, number>> = {};
@@ -155,9 +161,11 @@ export function useAttendance(date: string) {
               }));
             }
 
+            const { location, coordinates } = parsePunchLocation(newPunch.mobile_location, dev?.location);
             const punchWithLoc = {
               ...newPunch,
-              location: dev?.location ?? newPunch.mobile_location ?? '—'
+              location,
+              coordinates
             };
             setPunches((prev) => [punchWithLoc, ...prev]);
           }

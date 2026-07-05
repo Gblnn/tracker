@@ -9,6 +9,7 @@ export interface Punch {
   created_at: string;
   location:string;
   mobile_location?: string;
+  coordinates?: string;
 }
 
 export interface Employee {

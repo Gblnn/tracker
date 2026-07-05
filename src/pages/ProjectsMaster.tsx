@@ -1,6 +1,8 @@
 import { useAuth } from '@/components/AuthProvider';
 import CustomDropDown from '@/components/custom-dropdown';
+import { ResponsiveModal } from '@/components/responsive-modal';
 import {
+  Compass,
   FolderKanban,
   Laptop2,
   Loader2,
@@ -8,11 +10,13 @@ import {
   Pencil,
   Plus,
   RefreshCw,
+  Scan,
   Trash2,
   X
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { formatLocationGeofence, parseLocationGeofence } from '../lib/geofence';
 import { supabase } from '../lib/supabase';
 
 interface Project {
@@ -37,6 +41,10 @@ interface ProjectForm {
   project_location: string;
   project_in_time: string;
   project_out_time: string;
+  geofence_enabled: boolean;
+  geofence_lat: string;
+  geofence_lng: string;
+  geofence_radius: string;
 }
 
 const defaultForm: ProjectForm = {
@@ -44,7 +52,11 @@ const defaultForm: ProjectForm = {
   project_name: '',
   project_location: '',
   project_in_time: '08:00',
-  project_out_time: '17:00'
+  project_out_time: '17:00',
+  geofence_enabled: false,
+  geofence_lat: '',
+  geofence_lng: '',
+  geofence_radius: ''
 };
 
 const toISOString = (timeStr: string | null): string | null => {
@@ -126,6 +138,10 @@ export default function ProjectsMaster() {
       return userData?.role === "admin" || userData?.role === "site_admin";
     }
   }, [userData]);
+
+  const previewLat = parseFloat(form.geofence_lat);
+  const previewLng = parseFloat(form.geofence_lng);
+  const showMapPreview = !isNaN(previewLat) && previewLat >= -90 && previewLat <= 90 && !isNaN(previewLng) && previewLng >= -180 && previewLng <= 180;
 
   const loadData = useCallback(async (silent = false) => {
     if (silent) {
@@ -211,6 +227,32 @@ export default function ProjectsMaster() {
       return;
     }
 
+    // Validate geofence parameters
+    let finalLocation = form.project_location.trim();
+    const latStr = form.geofence_lat.trim();
+    const lngStr = form.geofence_lng.trim();
+    const radStr = form.geofence_radius.trim();
+    const hasGeofenceInput = latStr !== '' || lngStr !== '' || radStr !== '';
+
+    if (hasGeofenceInput) {
+      const latVal = parseFloat(latStr);
+      const lngVal = parseFloat(lngStr);
+      const radVal = parseFloat(radStr);
+      if (isNaN(latVal) || latVal < -90 || latVal > 90) {
+        setFormError('Please enter a valid Latitude (-90 to 90).');
+        return;
+      }
+      if (isNaN(lngVal) || lngVal < -180 || lngVal > 180) {
+        setFormError('Please enter a valid Longitude (-180 to 180).');
+        return;
+      }
+      if (isNaN(radVal) || radVal <= 0) {
+        setFormError('Please enter a valid Radius in meters (> 0).');
+        return;
+      }
+      finalLocation = formatLocationGeofence(finalLocation, latVal, lngVal, radVal);
+    }
+
     setSaving(true);
     setFormError(null);
 
@@ -223,7 +265,7 @@ export default function ProjectsMaster() {
         .insert({
           project_code: form.project_code.trim(),
           project_name: form.project_name.trim(),
-          project_location: form.project_location.trim() || null,
+          project_location: finalLocation || null,
           project_in_time: inTimeISO,
           project_out_time: outTimeISO
         });
@@ -242,12 +284,17 @@ export default function ProjectsMaster() {
 
   function openEdit(project: Project) {
     setEditingProject(project);
+    const { name: displayName, geofence } = parseLocationGeofence(project.project_location);
     setForm({
       project_code: project.project_code,
       project_name: project.project_name,
-      project_location: project.project_location ?? '',
+      project_location: displayName,
       project_in_time: formatISOToTime(project.project_in_time) || '08:00',
-      project_out_time: formatISOToTime(project.project_out_time) || '17:00'
+      project_out_time: formatISOToTime(project.project_out_time) || '17:00',
+      geofence_enabled: !!geofence,
+      geofence_lat: geofence ? String(geofence.lat) : '',
+      geofence_lng: geofence ? String(geofence.lng) : '',
+      geofence_radius: geofence ? String(geofence.radius) : ''
     });
     setFormError(null);
   }
@@ -264,6 +311,32 @@ export default function ProjectsMaster() {
       return;
     }
 
+    // Validate geofence parameters
+    let finalLocation = form.project_location.trim();
+    const latStr = form.geofence_lat.trim();
+    const lngStr = form.geofence_lng.trim();
+    const radStr = form.geofence_radius.trim();
+    const hasGeofenceInput = latStr !== '' || lngStr !== '' || radStr !== '';
+
+    if (hasGeofenceInput) {
+      const latVal = parseFloat(latStr);
+      const lngVal = parseFloat(lngStr);
+      const radVal = parseFloat(radStr);
+      if (isNaN(latVal) || latVal < -90 || latVal > 90) {
+        setFormError('Please enter a valid Latitude (-90 to 90).');
+        return;
+      }
+      if (isNaN(lngVal) || lngVal < -180 || lngVal > 180) {
+        setFormError('Please enter a valid Longitude (-180 to 180).');
+        return;
+      }
+      if (isNaN(radVal) || radVal <= 0) {
+        setFormError('Please enter a valid Radius in meters (> 0).');
+        return;
+      }
+      finalLocation = formatLocationGeofence(finalLocation, latVal, lngVal, radVal);
+    }
+
     setSaving(true);
     setFormError(null);
 
@@ -271,17 +344,21 @@ export default function ProjectsMaster() {
       const inTimeISO = toISOString(form.project_in_time);
       const outTimeISO = toISOString(form.project_out_time);
 
-      const { error: err } = await supabase
+      const { data, error: err } = await supabase
         .from('projects')
         .update({
           project_name: form.project_name.trim(),
-          project_location: form.project_location.trim() || null,
+          project_location: finalLocation || null,
           project_in_time: inTimeISO,
           project_out_time: outTimeISO
         })
-        .eq('project_code', editingProject.project_code);
+        .eq('project_code', editingProject.project_code)
+        .select();
 
       if (err) throw err;
+      if (!data || data.length === 0) {
+        throw new Error('Update failed. This may be due to Row Level Security (RLS) policies blocking updates on the projects table.');
+      }
 
       toast.success('Project updated successfully!');
       closeEdit();
@@ -527,7 +604,7 @@ export default function ProjectsMaster() {
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <span style={{
-                          fontSize: '10px',
+                          fontSize: '12px',
 
                           fontWeight: 500,
                           background: 'rgba(100 100 100/ 0.1)',
@@ -557,11 +634,27 @@ export default function ProjectsMaster() {
 
                     {/* Middle Part: Metadata Grid */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '12px 0' }}>
-                      <div className="meta-item">
-
-                        <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={project.project_location || "No location set"}>
-                          {project.project_location || <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: 300 }}>No location set</span>}
-                        </span>
+                      <div style={{ border: "", justifyContent: "flex-start" }} className="meta-item flex items-center justify-between flex-wrap gap-2">
+                        {(() => {
+                          const { name: displayName, geofence } = parseLocationGeofence(project.project_location);
+                          return (
+                            <>
+                              <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={displayName || "No location set"}>
+                                {displayName || <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: 300 }}>No location set</span>}
+                              </span>
+                              {geofence && (
+                                <span
+                                  style={{ alignItems: "center", display: "flex", gap: "0.5rem" }}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100 cursor-help"
+                                  title={`Geofence Active:\nLat: ${geofence.lat}\nLng: ${geofence.lng}\nRadius: ${geofence.radius}m`}
+                                >
+                                  <Scan className="w-2.5 h-2.5" />
+                                  Geofence Active
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
 
                       <div className="meta-item">
@@ -701,130 +794,222 @@ export default function ProjectsMaster() {
         )}
       </div>
 
-      {/* Add Project Modal */}
-      {isAdding && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) closeAdd(); }}
-        >
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
-            <div style={{ justifyContent: "space-between" }} className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <FolderKanban className="w-4 h-4 text-gray-500" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-gray-900">Add Project</h2>
-                  <p className="text-xs text-gray-400">Register a new project site</p>
-                </div>
+      <ResponsiveModal
+        open={isAdding}
+        onOpenChange={(open) => { if (!open) closeAdd(); }}
+        title=""
+        description=""
+        hideHeader
+        contentStyle={{ padding: 0 }}
+      >
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }} className="overflow-hidden">
+          <div style={{ justifyContent: "space-between" }} className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                <FolderKanban className="w-4 h-4 text-gray-500" />
               </div>
-              <button onClick={closeAdd} className="text-gray-400 hover:text-gray-600 transition-colors">
-                <X className="w-5 h-5" />
-              </button>
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900">Add Project</h2>
+                <p className="text-xs text-gray-400">Register a new project site</p>
+              </div>
+            </div>
+            <button onClick={closeAdd} className="text-gray-400 hover:text-gray-600 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="px-4 py-4 space-y-3">
+            {formError && (
+              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                {formError}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Project Code <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.project_code}
+                onChange={(e) => setForm(f => ({ ...f, project_code: e.target.value }))}
+                placeholder="e.g. VALE-01, MED#198"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors font-mono"
+              />
             </div>
 
-            <div className="px-6 py-5 space-y-4">
-              {formError && (
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-                  {formError}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Project Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.project_name}
+                onChange={(e) => setForm(f => ({ ...f, project_name: e.target.value }))}
+                placeholder="e.g. Vale Jetty Port Site"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Project Location
+              </label>
+              <input
+                type="text"
+                value={form.project_location}
+                onChange={(e) => setForm(f => ({ ...f, project_location: e.target.value }))}
+                placeholder="e.g. Sohar Industrial Port, Oman"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors"
+              />
+            </div>
+
+            <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-3">
+              <div style={{ justifyContent: "space-between" }} className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Geofence Settings</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!navigator.geolocation) {
+                      toast.error("Geolocation is not supported by this browser.");
+                      return;
+                    }
+                    toast.loading("Fetching coordinates...", { id: "gps-fetch" });
+                    navigator.geolocation.getCurrentPosition(
+                      (pos) => {
+                        setForm(f => ({
+                          ...f,
+                          geofence_lat: pos.coords.latitude.toFixed(6),
+                          geofence_lng: pos.coords.longitude.toFixed(6)
+                        }));
+                        toast.success("Coordinates filled!", { id: "gps-fetch" });
+                      },
+                      (err) => {
+                        toast.error(`GPS Error: ${err.message}`, { id: "gps-fetch" });
+                      },
+                      { enableHighAccuracy: true }
+                    );
+                  }}
+                  className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-medium bg-white px-2 py-1 rounded border border-gray-200 shadow-sm transition-all"
+                >
+                  <Compass className="w-3 h-3 text-indigo-500" />
+                  Get Current Location
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-medium text-gray-500 mb-1">
+                    Latitude <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={form.geofence_lat}
+                    onChange={(e) => setForm(f => ({ ...f, geofence_lat: e.target.value }))}
+                    placeholder="e.g. 23.614328"
+                    className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:border-gray-400 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-medium text-gray-500 mb-1">
+                    Longitude <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={form.geofence_lng}
+                    onChange={(e) => setForm(f => ({ ...f, geofence_lng: e.target.value }))}
+                    placeholder="e.g. 58.545284"
+                    className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:border-gray-400 bg-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-medium text-gray-500 mb-1">
+                  Radius (meters) <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={form.geofence_radius}
+                  onChange={(e) => setForm(f => ({ ...f, geofence_radius: e.target.value }))}
+                  placeholder="e.g. 100"
+                  className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:border-gray-400 bg-white"
+                />
+              </div>
+              {showMapPreview && (
+                <div style={{ height: '180px', width: '100%', position: 'relative', marginTop: '12px' }} className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+                  <iframe
+                    src={`https://maps.google.com/maps?q=${previewLat},${previewLng}&z=16&output=embed`}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    title="Geofence Preview Map"
+                  />
+                  <div className="absolute bottom-1 right-1 bg-white/90 backdrop-blur-xs px-1.5 py-0.5 rounded text-[9px] font-semibold text-gray-600 border border-gray-100 shadow-xs pointer-events-none">
+                    Radius: {form.geofence_radius || '100'}m
+                  </div>
                 </div>
               )}
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                  Project Code <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.project_code}
-                  onChange={(e) => setForm(f => ({ ...f, project_code: e.target.value }))}
-                  placeholder="e.g. VALE-01, MED#198"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                  Project Name <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.project_name}
-                  onChange={(e) => setForm(f => ({ ...f, project_name: e.target.value }))}
-                  placeholder="e.g. Vale Jetty Port Site"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                  Project Location
-                </label>
-                <input
-                  type="text"
-                  value={form.project_location}
-                  onChange={(e) => setForm(f => ({ ...f, project_location: e.target.value }))}
-                  placeholder="e.g. Sohar Industrial Port, Oman"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                    Shift In Time
-                  </label>
-                  <input
-                    type="time"
-                    value={form.project_in_time}
-                    onChange={(e) => setForm(f => ({ ...f, project_in_time: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                    Shift Out Time
-                  </label>
-                  <input
-                    type="time"
-                    value={form.project_out_time}
-                    onChange={(e) => setForm(f => ({ ...f, project_out_time: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors"
-                  />
-                </div>
-              </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50">
-              <button
-                style={{ flex: 1 }}
-                onClick={closeAdd}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                style={{ flex: 1 }}
-                onClick={handleAdd}
-                disabled={saving}
-                className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                {saving ? 'Adding…' : 'Add Project'}
-              </button>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Shift In Time
+                </label>
+                <input
+                  type="time"
+                  value={form.project_in_time}
+                  onChange={(e) => setForm(f => ({ ...f, project_in_time: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Shift Out Time
+                </label>
+                <input
+                  type="time"
+                  value={form.project_out_time}
+                  onChange={(e) => setForm(f => ({ ...f, project_out_time: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors"
+                />
+              </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Edit Project Modal */}
-      {editingProject && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) closeEdit(); }}
-        >
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
-            <div style={{ justifyContent: "space-between" }} className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-100 bg-gray-50">
+            <button
+              style={{ flex: 1 }}
+              onClick={closeAdd}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              style={{ flex: 1 }}
+              onClick={handleAdd}
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {saving ? 'Adding…' : 'Add Project'}
+            </button>
+          </div>
+        </div>
+      </ResponsiveModal>
+
+      <ResponsiveModal
+        open={!!editingProject}
+        onOpenChange={(open) => { if (!open) closeEdit(); }}
+        title=""
+        description=""
+        hideHeader
+        contentStyle={{ padding: 0 }}
+      >
+        {editingProject && (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }} className="overflow-hidden">
+            <div style={{ justifyContent: "space-between" }} className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
                   <FolderKanban className="w-4 h-4 text-gray-500" />
@@ -839,7 +1024,7 @@ export default function ProjectsMaster() {
               </button>
             </div>
 
-            <div className="px-6 py-5 space-y-4">
+            <div className="px-4 py-4 space-y-3">
               {formError && (
                 <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
                   {formError}
@@ -884,6 +1069,94 @@ export default function ProjectsMaster() {
                 />
               </div>
 
+            <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-3">
+              <div style={{ justifyContent: "space-between" }} className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Geofence Settings</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!navigator.geolocation) {
+                      toast.error("Geolocation is not supported by this browser.");
+                      return;
+                    }
+                    toast.loading("Fetching coordinates...", { id: "gps-fetch" });
+                    navigator.geolocation.getCurrentPosition(
+                      (pos) => {
+                        setForm(f => ({
+                          ...f,
+                          geofence_lat: pos.coords.latitude.toFixed(6),
+                          geofence_lng: pos.coords.longitude.toFixed(6)
+                        }));
+                        toast.success("Coordinates filled!", { id: "gps-fetch" });
+                      },
+                      (err) => {
+                        toast.error(`GPS Error: ${err.message}`, { id: "gps-fetch" });
+                      },
+                      { enableHighAccuracy: true }
+                    );
+                  }}
+                  className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-medium bg-white px-2 py-1 rounded border border-gray-200 shadow-sm transition-all"
+                >
+                  <Compass className="w-3 h-3 text-indigo-500" />
+                  Get Current Location
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-medium text-gray-500 mb-1">
+                    Latitude <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={form.geofence_lat}
+                    onChange={(e) => setForm(f => ({ ...f, geofence_lat: e.target.value }))}
+                    placeholder="e.g. 23.614328"
+                    className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:border-gray-400 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-medium text-gray-500 mb-1">
+                    Longitude <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={form.geofence_lng}
+                    onChange={(e) => setForm(f => ({ ...f, geofence_lng: e.target.value }))}
+                    placeholder="e.g. 58.545284"
+                    className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:border-gray-400 bg-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-medium text-gray-500 mb-1">
+                  Radius (meters) <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={form.geofence_radius}
+                  onChange={(e) => setForm(f => ({ ...f, geofence_radius: e.target.value }))}
+                  placeholder="e.g. 100"
+                  className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:border-gray-400 bg-white"
+                />
+              </div>
+              {showMapPreview && (
+                <div style={{ height: '180px', width: '100%', position: 'relative', marginTop: '12px' }} className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+                  <iframe
+                    src={`https://maps.google.com/maps?q=${previewLat},${previewLng}&z=16&output=embed`}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    title="Geofence Preview Map"
+                  />
+                  <div className="absolute bottom-1 right-1 bg-white/90 backdrop-blur-xs px-1.5 py-0.5 rounded text-[9px] font-semibold text-gray-600 border border-gray-100 shadow-xs pointer-events-none">
+                    Radius: {form.geofence_radius || '100'}m
+                  </div>
+                </div>
+              )}
+            </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1.5">
@@ -910,7 +1183,7 @@ export default function ProjectsMaster() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50">
+            <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-100 bg-gray-50">
               <button
                 style={{ flex: 1 }}
                 onClick={closeEdit}
@@ -929,8 +1202,8 @@ export default function ProjectsMaster() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </ResponsiveModal>
 
       {/* Delete Confirmation Dialog */}
       {deletingProject && (
