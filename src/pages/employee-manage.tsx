@@ -11,9 +11,9 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { motion } from "framer-motion";
 import { ChevronDown, Fingerprint, Loader2, Plus, Scan, Search, SquareCheck, Upload, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -939,8 +939,8 @@ export default function EmployeeManage() {
                         setSelectedEmployeeIds(new Set());
                     }}
                     className={`h-10 w-10 p-0 rounded-xl shrink-0 transition-all border ${isSelectionMode
-                        ? 'bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100/80 hover:text-indigo-700 shadow-xs'
-                        : 'bg-gray-50 text-gray-500 border-transparent hover:bg-gray-100 hover:text-gray-700'
+                        ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100/80 hover:text-indigo-700 shadow-xs'
+                        : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700'
                         }`}
                     title="Toggle Selection Mode"
                 >
@@ -995,9 +995,11 @@ export default function EmployeeManage() {
                                 onClick={() => setIsBulkTypeOpen(true)}
                                 className="rounded-md focus:bg-gray-50 cursor-pointer"
                             >
-                                Change Employee Type
+                                Change Type
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator className="my-1 border-gray-100" />
                             <DropdownMenuItem
+                                style={{ fontWeight: 500 }}
                                 onClick={() => setIsBulkPushOpen(true)}
                                 className="rounded-md focus:bg-gray-50 cursor-pointer text-indigo-600 focus:text-indigo-700 font-semibold"
                             >
@@ -1107,6 +1109,7 @@ export default function EmployeeManage() {
                                         />
                                     </div>
                                 </th>
+                                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "20px" }}>#</th>
                                 <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "240px" }}>Employee</th>
                                 <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "160px" }}>IDs</th>
                                 <th className=" px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "180px", border: "" }}>Biometrics</th>
@@ -1364,6 +1367,10 @@ export default function EmployeeManage() {
                                             />
                                         </div>
                                     </td>
+                                    {/* S.No. */}
+                                    <td className="px-4 py-3 text-xs text-gray-400 font-medium">
+                                        {idx + 1}
+                                    </td>
                                     {/* Name and Email */}
                                     <td className="px-4 py-3">
                                         <div className="flex gap-2.5" style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
@@ -1468,7 +1475,7 @@ export default function EmployeeManage() {
                 hideHeader
                 contentStyle={{ padding: 0, width: "100%", maxWidth: "500px" }}
             >
-                <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'profile' | 'sync')} className="flex flex-col h-full max-h-[92vh] overflow-hidden bg-white md:rounded-2xl w-full">
+                <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'profile' | 'sync')} className="flex flex-col h-[650px] max-h-[92vh] overflow-hidden bg-white md:rounded-2xl w-full">
                     <div className="p-6 pb-4 border-b border-gray-50 shrink-0">
                         <h3 style={{ fontWeight: "600" }} className="text-lg font-bold text-gray-900">Edit Employee</h3>
 
@@ -1476,120 +1483,143 @@ export default function EmployeeManage() {
 
                     {/* Tabs Header */}
                     <div style={{ width: "100%" }} className="px-6 py-3 bg-gray-50/30 border-b border-gray-100 shrink-0">
-                        <TabsList className="grid grid-cols-2 bg-gray-100/80 p-1 h-9 rounded-xl w-full">
+                        <TabsList style={{ border: "", padding: "0.1rem 0.5rem" }} className="grid grid-cols-2 h-12 rounded-xl bg-gray-100/80 w-full relative">
                             <TabsTrigger
+                                style={{ margin: 0 }}
                                 value="profile"
-                                className=" font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900 text-gray-500"
+                                className="relative font-semibold rounded-lg text-gray-500 data-[state=active]:text-gray-900 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none focus-visible:ring-0 cursor-pointer z-10"
                             >
-                                Profile Details
+                                <span className="relative z-10">Profile Details</span>
+                                {activeTab === 'profile' && (
+                                    <motion.div
+                                        layoutId="activeTabBackgroundEdit"
+                                        className="absolute inset-0 bg-white rounded-lg shadow-xs z-0"
+                                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                    />
+                                )}
                             </TabsTrigger>
                             <TabsTrigger
+                                style={{ margin: 0 }}
                                 value="sync"
-                                className=" font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900 text-gray-500"
+                                className="relative font-semibold rounded-lg text-gray-555 data-[state=active]:text-gray-900 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none focus-visible:ring-0 cursor-pointer z-10"
                             >
-                                Device Sync
+                                <span className="relative z-10">Device Sync</span>
+                                {activeTab === 'sync' && (
+                                    <motion.div
+                                        layoutId="activeTabBackgroundEdit"
+                                        className="absolute inset-0 bg-white rounded-lg shadow-xs z-0"
+                                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                    />
+                                )}
                             </TabsTrigger>
                         </TabsList>
                     </div>
 
-                    <ScrollArea className="flex-1 max-h-[calc(85vh-120px)] w-full">
-                        <TabsContent value="profile" className="p-6 mt-0">
-                            <form onSubmit={handleEditSubmit} className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-500 block">Device User ID</label>
-                                        <Input
-                                            type="text"
-                                            value={editDeviceUserId}
-                                            onChange={(e) => setEditDeviceUserId(e.target.value)}
-                                            className="font-mono text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
-                                        />
+                    <TabsContent value="profile" className="h-[500px] mt-0 overflow-hidden w-full">
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="flex flex-col h-full w-full overflow-hidden"
+                        >
+                            <form onSubmit={handleEditSubmit} className="flex flex-col h-full justify-between overflow-hidden">
+                                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-550 block">Device User ID</label>
+                                            <Input
+                                                type="text"
+                                                value={editDeviceUserId}
+                                                onChange={(e) => setEditDeviceUserId(e.target.value)}
+                                                className="font-mono text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Employee ID (HR)</label>
+                                            <Input
+                                                type="text"
+                                                value={editEmpId}
+                                                onChange={(e) => setEditEmpId(e.target.value)}
+                                                placeholder="SS0001"
+                                                className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
+                                            />
+                                        </div>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-500 block">Employee ID (HR)</label>
+                                        <label className="text-xs font-semibold text-gray-555 block">Full Name <span className="text-red-500">*</span></label>
                                         <Input
                                             type="text"
-                                            value={editEmpId}
-                                            onChange={(e) => setEditEmpId(e.target.value)}
-                                            placeholder="SS0001"
+                                            required
+                                            value={editName}
+                                            onChange={(e) => setEditName(e.target.value)}
+                                            placeholder="e.g. John Smith"
                                             className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
                                         />
                                     </div>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-gray-500 block">Full Name <span className="text-red-500">*</span></label>
-                                    <Input
-                                        type="text"
-                                        required
-                                        value={editName}
-                                        onChange={(e) => setEditName(e.target.value)}
-                                        placeholder="e.g. John Smith"
-                                        className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Department</label>
+                                            <Input
+                                                type="text"
+                                                value={editDept}
+                                                onChange={(e) => setEditDept(e.target.value)}
+                                                placeholder="e.g. Operations"
+                                                className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Designation</label>
+                                            <Input
+                                                type="text"
+                                                value={editDesignation}
+                                                onChange={(e) => setEditDesignation(e.target.value)}
+                                                placeholder="e.g. Engineer"
+                                                className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Employee Type</label>
+                                            <Select value={editEmpType} onValueChange={(e) => setEditEmpType(e as 'staff' | 'worker')}>
+                                                <SelectTrigger className="text-sm bg-gray-50 border-gray-100 rounded-xl">
+                                                    <SelectValue placeholder="Select Employee Type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="staff">Staff</SelectItem>
+                                                    <SelectItem value="worker">Worker</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Nationality</label>
+                                            <Select value={editNationality} onValueChange={(e) => setEditNationality(e)}>
+                                                <SelectTrigger className="text-sm bg-gray-50 border-gray-100 rounded-xl">
+                                                    <SelectValue placeholder="Select Nationality" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {NATIONALITIES.map((nat) => (
+                                                        <SelectItem key={nat} value={nat}>
+                                                            {nat.toUpperCase()}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-500 block">Department</label>
+                                        <label className="text-xs font-semibold text-gray-555 block">Email</label>
                                         <Input
-                                            type="text"
-                                            value={editDept}
-                                            onChange={(e) => setEditDept(e.target.value)}
-                                            placeholder="e.g. Operations"
+                                            type="email"
+                                            value={editEmail}
+                                            onChange={(e) => setEditEmail(e.target.value)}
+                                            placeholder="john@company.com"
                                             className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
                                         />
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-500 block">Designation</label>
-                                        <Input
-                                            type="text"
-                                            value={editDesignation}
-                                            onChange={(e) => setEditDesignation(e.target.value)}
-                                            placeholder="e.g. Engineer"
-                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-500 block">Employee Type</label>
-                                        <Select value={editEmpType} onValueChange={(e) => setEditEmpType(e as 'staff' | 'worker')}>
-                                            <SelectTrigger className="text-sm bg-gray-50 border-gray-100 rounded-xl">
-                                                <SelectValue placeholder="Select Employee Type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="staff">Staff</SelectItem>
-                                                <SelectItem value="worker">Worker</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-500 block">Nationality</label>
-                                        <Select value={editNationality} onValueChange={(e) => setEditNationality(e)}>
-                                            <SelectTrigger className="text-sm bg-gray-50 border-gray-100 rounded-xl">
-                                                <SelectValue placeholder="Select Nationality" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {NATIONALITIES.map((nat) => (
-                                                    <SelectItem key={nat} value={nat}>
-                                                        {nat.toUpperCase()}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-gray-500 block">Email</label>
-                                    <Input
-                                        type="email"
-                                        value={editEmail}
-                                        onChange={(e) => setEditEmail(e.target.value)}
-                                        placeholder="john@company.com"
-                                        className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
-                                    />
                                 </div>
 
-                                <div className="flex gap-3 border-t border-gray-50">
+                                <div className="p-6 border-t border-gray-50 bg-white shrink-0 flex gap-3 w-full">
                                     <Button
                                         className="flex-1 h-10 rounded-xl"
                                         type="button"
@@ -1604,10 +1634,17 @@ export default function EmployeeManage() {
                                     </Button>
                                 </div>
                             </form>
-                        </TabsContent>
+                        </motion.div>
+                    </TabsContent>
 
-                        <TabsContent style={{ width: "100%" }} value="sync" className="p-6 mt-0 w-full">
-                            <div className="space-y-5 w-full">
+                    <TabsContent style={{ width: "100%" }} value="sync" className="h-[500px] mt-0 overflow-hidden w-full">
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="flex flex-col h-full w-full overflow-hidden"
+                        >
+                            <div className="flex-grow overflow-y-auto p-6 space-y-5 w-full">
                                 <div className="space-y-1.5 w-full">
                                     <label className="text-xs font-semibold text-gray-500 block">Device Action</label>
                                     <Select value={syncAction} onValueChange={(val) => setSyncAction(val as 'push' | 'fetch')}>
@@ -1666,7 +1703,7 @@ export default function EmployeeManage() {
                                                             });
                                                         }}
                                                         className={`flex items-center gap-2 p-2.5 px-2.5 rounded-lg border cursor-pointer select-none transition-all ${isChecked
-                                                            ? ''
+                                                            ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
                                                             : 'border-gray-100 hover:border-gray-200 bg-white'
                                                             }`}
                                                     >
@@ -1687,9 +1724,6 @@ export default function EmployeeManage() {
                                                             </div>
                                                             <div className="flex items-center gap-1 shrink-0">
                                                                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
-                                                                {/* <span className="text-[11px] text-gray-400">
-                                                                    {isOnline ? 'Online' : 'Offline'}
-                                                                </span> */}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1698,75 +1732,71 @@ export default function EmployeeManage() {
                                         </div>
                                     )}
                                 </div>
+                            </div>
 
+                            <div className="p-6 border-t border-gray-50 bg-white shrink-0 w-full">
                                 {syncAction === 'push' ? (
-                                    <div style={{ width: "100%" }} className="space-y-4 pt-2 border-t border-gray-50 w-full">
-                                        <div className="flex gap-3">
-                                            <Button
-                                                className="flex-1 h-10 rounded-xl"
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => setEditingEmployee(null)}
-                                                disabled={isPushing}
-                                            >
-                                                Cancel
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                disabled={isPushing || selectedPushDevices.size === 0 || !editingEmployee}
-                                                onClick={handleIndividualPush}
-                                                className="flex-1 h-10 bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 rounded-xl transition-all flex items-center justify-center gap-1.5"
-                                            >
-                                                {isPushing ? (
-                                                    <>
-                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                        Pushing...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        Push to Devices ({selectedPushDevices.size})
-                                                    </>
-                                                )}
-                                            </Button>
-                                        </div>
+                                    <div className="flex gap-3">
+                                        <Button
+                                            className="flex-1 h-10 rounded-xl"
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setEditingEmployee(null)}
+                                            disabled={isPushing}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            disabled={isPushing || selectedPushDevices.size === 0 || !editingEmployee}
+                                            onClick={handleIndividualPush}
+                                            className="flex-1 h-10 bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                                        >
+                                            {isPushing ? (
+                                                <>
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    Pushing...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    Push to Devices ({selectedPushDevices.size})
+                                                </>
+                                            )}
+                                        </Button>
                                     </div>
                                 ) : (
-                                    <div style={{ width: "100%" }} className="space-y-4 pt-2 border-t border-gray-50 w-full">
-
-
-                                        <div className="flex gap-3">
-                                            <Button
-                                                className="flex-1 h-10 rounded-xl"
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => setEditingEmployee(null)}
-                                                disabled={isFetching}
-                                            >
-                                                Cancel
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                disabled={isFetching || selectedPushDevices.size === 0 || !editingEmployee}
-                                                onClick={handleFetchBiometrics}
-                                                className="flex-1 h-10 bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 rounded-xl transition-all flex items-center justify-center gap-1.5"
-                                            >
-                                                {isFetching ? (
-                                                    <>
-                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                        Requesting Fetch...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        Fetch Biometrics ({selectedPushDevices.size})
-                                                    </>
-                                                )}
-                                            </Button>
-                                        </div>
+                                    <div className="flex gap-3">
+                                        <Button
+                                            className="flex-1 h-10 rounded-xl"
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setEditingEmployee(null)}
+                                            disabled={isFetching}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            disabled={isFetching || selectedPushDevices.size === 0 || !editingEmployee}
+                                            onClick={handleFetchBiometrics}
+                                            className="flex-1 h-10 bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                                        >
+                                            {isFetching ? (
+                                                <>
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    Requesting Fetch...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    Fetch Biometrics ({selectedPushDevices.size})
+                                                </>
+                                            )}
+                                        </Button>
                                     </div>
                                 )}
                             </div>
-                        </TabsContent>
-                    </ScrollArea>
+                        </motion.div>
+                    </TabsContent>
                 </Tabs>
             </ResponsiveModal>
 
@@ -1779,134 +1809,157 @@ export default function EmployeeManage() {
                 hideHeader
                 contentStyle={{ padding: 0, width: "100%", maxWidth: "500px" }}
             >
-                <Tabs value={addActiveTab} onValueChange={(val) => setAddActiveTab(val as 'profile' | 'sync')} className="flex flex-col h-full max-h-[92vh] overflow-hidden bg-white md:rounded-2xl w-full">
+                <Tabs value={addActiveTab} onValueChange={(val) => setAddActiveTab(val as 'profile' | 'sync')} className="flex flex-col h-[650px] max-h-[92vh] overflow-hidden bg-white md:rounded-2xl w-full">
                     <div className="p-6 pb-4 border-b border-gray-50 shrink-0 bg-white">
                         <h3 style={{ fontWeight: "600" }} className="text-lg font-bold text-gray-900">Add Employee</h3>
                     </div>
 
                     {/* Tabs Header */}
                     <div style={{ width: "100%" }} className="px-6 py-3 bg-gray-50/30 border-b border-gray-100 shrink-0">
-                        <TabsList className="grid grid-cols-2 bg-gray-100/80 p-1 h-9 rounded-xl w-full">
+                        <TabsList style={{ border: "", padding: "0.1rem 0.5rem" }} className="grid grid-cols-2 h-12 rounded-xl bg-gray-100/80 w-full relative">
                             <TabsTrigger
+                                style={{ margin: 0 }}
                                 value="profile"
-                                className=" font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900 text-gray-500"
+                                className="relative font-semibold rounded-lg text-gray-500 data-[state=active]:text-gray-900 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none focus-visible:ring-0 cursor-pointer z-10"
                             >
-                                Profile Details
+                                <span className="relative z-10">Profile Details</span>
+                                {addActiveTab === 'profile' && (
+                                    <motion.div
+                                        layoutId="activeTabBackgroundAdd"
+                                        className="absolute inset-0 bg-white rounded-lg shadow-xs z-0"
+                                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                    />
+                                )}
                             </TabsTrigger>
                             <TabsTrigger
+                                style={{ margin: 0 }}
                                 value="sync"
-                                className=" font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900 text-gray-500"
+                                className="relative font-semibold rounded-lg text-gray-500 data-[state=active]:text-gray-900 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none focus-visible:ring-0 cursor-pointer z-10"
                             >
-                                Device Sync
+                                <span className="relative z-10">Device Sync</span>
+                                {addActiveTab === 'sync' && (
+                                    <motion.div
+                                        layoutId="activeTabBackgroundAdd"
+                                        className="absolute inset-0 bg-white rounded-lg shadow-xs z-0"
+                                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                    />
+                                )}
                             </TabsTrigger>
                         </TabsList>
                     </div>
 
-                    <ScrollArea className="flex-1 max-h-[calc(85vh-120px)] w-full">
-                        <TabsContent value="profile" className="p-6 mt-0 w-full">
-                            <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-500 block">Device User ID <span className="text-red-500">*</span></label>
-                                        <Input
-                                            type="text"
-                                            required
-                                            value={addDeviceUserId}
-                                            onChange={(e) => setAddDeviceUserId(e.target.value)}
-                                            placeholder="e.g. 110525"
-                                            className="font-mono text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
-                                        />
+                    <TabsContent value="profile" className="h-[500px] mt-0 overflow-hidden w-full">
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="flex flex-col h-full w-full overflow-hidden"
+                        >
+                            <form onSubmit={(e) => e.preventDefault()} className="flex flex-col h-full justify-between overflow-hidden">
+                                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-550 block">Device User ID <span className="text-red-500">*</span></label>
+                                            <Input
+                                                type="text"
+                                                required
+                                                value={addDeviceUserId}
+                                                onChange={(e) => setAddDeviceUserId(e.target.value)}
+                                                placeholder="e.g. 110525"
+                                                className="font-mono text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-550 block">Employee ID (HR)</label>
+                                            <Input
+                                                type="text"
+                                                value={addEmpId}
+                                                onChange={(e) => setAddEmpId(e.target.value)}
+                                                placeholder="e.g. EMP-045"
+                                                className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-500 block">Employee ID (HR)</label>
-                                        <Input
-                                            type="text"
-                                            value={addEmpId}
-                                            onChange={(e) => setAddEmpId(e.target.value)}
-                                            placeholder="e.g. EMP-045"
-                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
-                                        />
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Full Name <span className="text-red-500">*</span></label>
+                                            <Input
+                                                type="text"
+                                                required
+                                                value={addName}
+                                                onChange={(e) => setAddName(e.target.value)}
+                                                placeholder="e.g. John Smith"
+                                                className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Email</label>
+                                            <Input
+                                                type="email"
+                                                value={addEmail}
+                                                onChange={(e) => setAddEmail(e.target.value)}
+                                                placeholder="john@company.com"
+                                                className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Department</label>
+                                            <Input
+                                                type="text"
+                                                value={addDept}
+                                                onChange={(e) => setAddDept(e.target.value)}
+                                                placeholder="e.g. Operations"
+                                                className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Designation</label>
+                                            <Input
+                                                type="text"
+                                                value={addDesignation}
+                                                onChange={(e) => setAddDesignation(e.target.value)}
+                                                placeholder="e.g. Engineer"
+                                                className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Employee Type</label>
+                                            <Select value={addEmpType} onValueChange={(e) => setAddEmpType(e as 'staff' | 'worker')}>
+                                                <SelectTrigger className="text-xs bg-gray-50 border-gray-100 rounded-xl h-10 w-full focus:bg-white transition-all">
+                                                    <SelectValue placeholder="Select Employee Type" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
+                                                    <SelectItem value="staff" className="rounded-md focus:bg-gray-50 cursor-pointer">Staff</SelectItem>
+                                                    <SelectItem value="worker" className="rounded-md focus:bg-gray-50 cursor-pointer">Worker</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Nationality</label>
+                                            <Select value={addNationality} onValueChange={(e) => setAddNationality(e)}>
+                                                <SelectTrigger className="text-xs bg-gray-50 border-gray-100 rounded-xl h-10 w-full focus:bg-white transition-all">
+                                                    <SelectValue placeholder="Select Nationality" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
+                                                    {NATIONALITIES.map((nat) => (
+                                                        <SelectItem key={nat} value={nat} className="rounded-md focus:bg-gray-50 cursor-pointer">
+                                                            {nat.toUpperCase()}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-500 block">Full Name <span className="text-red-500">*</span></label>
-                                        <Input
-                                            type="text"
-                                            required
-                                            value={addName}
-                                            onChange={(e) => setAddName(e.target.value)}
-                                            placeholder="e.g. John Smith"
-                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-500 block">Email</label>
-                                        <Input
-                                            type="email"
-                                            value={addEmail}
-                                            onChange={(e) => setAddEmail(e.target.value)}
-                                            placeholder="john@company.com"
-                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-500 block">Department</label>
-                                        <Input
-                                            type="text"
-                                            value={addDept}
-                                            onChange={(e) => setAddDept(e.target.value)}
-                                            placeholder="e.g. Operations"
-                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-500 block">Designation</label>
-                                        <Input
-                                            type="text"
-                                            value={addDesignation}
-                                            onChange={(e) => setAddDesignation(e.target.value)}
-                                            placeholder="e.g. Engineer"
-                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-500 block">Employee Type</label>
-                                        <Select value={addEmpType} onValueChange={(e) => setAddEmpType(e as 'staff' | 'worker')}>
-                                            <SelectTrigger className="text-xs bg-gray-50 border-gray-100 rounded-xl h-10 w-full focus:bg-white transition-all">
-                                                <SelectValue placeholder="Select Employee Type" />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
-                                                <SelectItem value="staff" className="rounded-md focus:bg-gray-50 cursor-pointer">Staff</SelectItem>
-                                                <SelectItem value="worker" className="rounded-md focus:bg-gray-50 cursor-pointer">Worker</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-500 block">Nationality</label>
-                                        <Select value={addNationality} onValueChange={(e) => setAddNationality(e)}>
-                                            <SelectTrigger className="text-xs bg-gray-50 border-gray-100 rounded-xl h-10 w-full focus:bg-white transition-all">
-                                                <SelectValue placeholder="Select Nationality" />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
-                                                {NATIONALITIES.map((nat) => (
-                                                    <SelectItem key={nat} value={nat} className="rounded-md focus:bg-gray-50 cursor-pointer">
-                                                        {nat.toUpperCase()}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3 pt-6 border-t border-gray-50 w-full">
+                                <div className="p-6 border-t border-gray-50 bg-white shrink-0 flex gap-3 w-full">
                                     <Button
                                         className="flex-1 h-10 rounded-xl"
                                         type="button"
@@ -1925,10 +1978,17 @@ export default function EmployeeManage() {
                                     </Button>
                                 </div>
                             </form>
-                        </TabsContent>
+                        </motion.div>
+                    </TabsContent>
 
-                        <TabsContent value="sync" className="p-6 mt-0 w-full">
-                            <div className="space-y-5 w-full">
+                    <TabsContent value="sync" className="h-[500px] mt-0 overflow-hidden w-full">
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="flex flex-col h-full w-full overflow-hidden"
+                        >
+                            <div className="flex-grow overflow-y-auto p-6 space-y-5 w-full">
                                 {/* Device Selection Grid */}
                                 <div className="space-y-2.5 w-full">
                                     <div style={{ justifyContent: "space-between", height: "2rem" }} className="flex justify-between items-center">
@@ -1952,7 +2012,7 @@ export default function EmployeeManage() {
                                     ) : devices.length === 0 ? (
                                         <div className="text-xs text-gray-400 py-4 text-center">No registered devices found.</div>
                                     ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1 w-full">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1 w-full">
                                             {devices.map(device => {
                                                 const isChecked = selectedDevices.has(device.serial_no);
                                                 const isOnline = device.last_seen
@@ -1969,9 +2029,9 @@ export default function EmployeeManage() {
                                                                 return next;
                                                             });
                                                         }}
-                                                        className={`flex items-center gap-2 p-1.5 px-2.5 rounded-lg border cursor-pointer select-none transition-all ${isChecked
+                                                        className={`flex items-center gap-2 p-2.5 px-2.5 rounded-lg border border-gray-100 cursor-pointer select-none transition-all ${isChecked
                                                             ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
-                                                            : 'border-gray-100 hover:border-gray-200 bg-white'
+                                                            : ''
                                                             }`}
                                                     >
                                                         <Checkbox
@@ -1980,20 +2040,17 @@ export default function EmployeeManage() {
                                                         />
                                                         <div className="flex-1 min-w-0 flex items-center justify-between gap-1.5">
                                                             <div className="min-w-0 flex-1">
-                                                                <span className="font-mono text-[10px] font-semibold text-gray-850 truncate block leading-tight">
+                                                                <span style={{ fontWeight: 600 }} className=" text-[11px] text-gray-850 truncate block leading-tight">
                                                                     {device.serial_no}
                                                                 </span>
                                                                 {device.location && (
-                                                                    <span className="text-[10px] text-gray-400 font-sans truncate block leading-tight">
+                                                                    <span className="text-[12px] text-gray-400 truncate block leading-tight">
                                                                         {device.location}
                                                                     </span>
                                                                 )}
                                                             </div>
                                                             <div className="flex items-center gap-1 shrink-0">
                                                                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
-                                                                <span className="text-[11px] text-gray-400">
-                                                                    {isOnline ? 'Online' : 'Offline'}
-                                                                </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -2002,38 +2059,38 @@ export default function EmployeeManage() {
                                         </div>
                                     )}
                                 </div>
-
-                                <div className="flex gap-3 pt-6 border-t border-gray-50 w-full">
-                                    <Button
-                                        className="flex-1 h-10 rounded-xl"
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setIsAdding(false)}
-                                        disabled={isSubmitting}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        className="flex-1 h-10 rounded-xl"
-                                        type="button"
-                                        variant="secondary"
-                                        onClick={(e) => handleAddSubmit(e, false)}
-                                        disabled={isSubmitting}
-                                    >
-                                        {isSubmitting ? 'Saving...' : 'Save only'}
-                                    </Button>
-                                    <Button
-                                        className="flex-1 h-10 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 transition-all font-semibold"
-                                        type="button"
-                                        onClick={(e) => handleAddSubmit(e, true)}
-                                        disabled={isSubmitting || selectedDevices.size === 0}
-                                    >
-                                        {isSubmitting ? 'Saving...' : `Save & Push (${selectedDevices.size})`}
-                                    </Button>
-                                </div>
                             </div>
-                        </TabsContent>
-                    </ScrollArea>
+
+                            <div className="p-6 border-t border-gray-50 bg-white shrink-0 w-full flex gap-3">
+                                <Button
+                                    className="flex-1 h-10 rounded-xl"
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setIsAdding(false)}
+                                    disabled={isSubmitting}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    className="flex-1 h-10 rounded-xl"
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={(e) => handleAddSubmit(e, false)}
+                                    disabled={isSubmitting}
+                                >
+                                    {isSubmitting ? 'Saving...' : 'Save only'}
+                                </Button>
+                                <Button
+                                    className="flex-1 h-10 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 transition-all font-semibold"
+                                    type="button"
+                                    onClick={(e) => handleAddSubmit(e, true)}
+                                    disabled={isSubmitting || selectedDevices.size === 0}
+                                >
+                                    {isSubmitting ? 'Saving...' : `Save & Push (${selectedDevices.size})`}
+                                </Button>
+                            </div>
+                        </motion.div>
+                    </TabsContent>
                 </Tabs>
             </ResponsiveModal>
 

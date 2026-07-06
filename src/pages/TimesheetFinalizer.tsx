@@ -814,6 +814,7 @@ export default function TimesheetFinalizer() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-[180px] p-1 bg-white border border-slate-200 z-50">
                         <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
                           checked={punchFilter === 'ALL'}
                           onCheckedChange={() => setPunchFilter('ALL')}
                           className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
@@ -821,6 +822,7 @@ export default function TimesheetFinalizer() {
                           All Punches
                         </DropdownMenuCheckboxItem>
                         <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
                           checked={punchFilter === 'NO_IN'}
                           onCheckedChange={() => setPunchFilter('NO_IN')}
                           className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
@@ -828,6 +830,7 @@ export default function TimesheetFinalizer() {
                           No Clock In
                         </DropdownMenuCheckboxItem>
                         <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
                           checked={punchFilter === 'NO_OUT'}
                           onCheckedChange={() => setPunchFilter('NO_OUT')}
                           className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
@@ -835,6 +838,7 @@ export default function TimesheetFinalizer() {
                           No Clock Out
                         </DropdownMenuCheckboxItem>
                         <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
                           checked={punchFilter === 'BOTH'}
                           onCheckedChange={() => setPunchFilter('BOTH')}
                           className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
@@ -966,7 +970,7 @@ export default function TimesheetFinalizer() {
                             <div style={{ display: 'flex', flexFlow: 'column', gap: '4px' }}>
                               {row.original_in_punch ? (
                                 <div style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                  <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px' }}>IN</span>
+                                  <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px', width: "1.75rem", textAlign: "center" }}>IN</span>
                                   <span>{extractTime(row.original_in_punch.punch_time)}</span>
                                   <span style={{ color: '#94a3b8', fontSize: '10px' }}>({row.original_in_punch.device_serial})</span>
                                 </div>
@@ -976,7 +980,7 @@ export default function TimesheetFinalizer() {
 
                               {row.original_out_punch ? (
                                 <div style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                  <span style={{ background: '#fee2e2', color: '#b91c1c', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px' }}>OUT</span>
+                                  <span style={{ background: '#fee2e2', color: '#b91c1c', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px', width: "1.75rem", textAlign: "center" }}>OUT</span>
                                   <span>{extractTime(row.original_out_punch.punch_time)}</span>
                                   <span style={{ color: '#94a3b8', fontSize: '10px' }}>({row.original_out_punch.device_serial})</span>
                                 </div>
@@ -1055,7 +1059,7 @@ export default function TimesheetFinalizer() {
                             {row.isEdited ? (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                                 <span className="source-badge source-manual">Manual</span>
-                                <span style={{ fontSize: '10px', color: '#64748b', wordBreak: 'break-all' }} title={row.attested_by}>
+                                <span style={{ fontSize: '12px', color: '#64748b', wordBreak: 'break-all' }} title={row.attested_by}>
                                   {row.attested_by}
                                 </span>
                               </div>
@@ -1076,7 +1080,7 @@ export default function TimesheetFinalizer() {
                                 value={
                                   row.remarks === ''
                                     ? 'NONE'
-                                    : (row.remarks === 'Forgot to Punch' || row.remarks === 'Absent')
+                                    : (row.remarks === 'Forgot to Punch' || row.remarks === 'Absent' || row.remarks === 'Sick Leave')
                                       ? row.remarks
                                       : 'CUSTOM'
                                 }
@@ -1097,12 +1101,13 @@ export default function TimesheetFinalizer() {
                                 <SelectContent className="bg-white border border-slate-200 z-50">
                                   <SelectItem value="NONE" className="text-xs cursor-pointer focus:bg-slate-50">No Remark</SelectItem>
                                   <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
+                                  <SelectItem value="Sick Leave" className="text-xs cursor-pointer focus:bg-slate-50">Sick Leave</SelectItem>
                                   <SelectItem value="Absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
                                   <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
                                 </SelectContent>
                               </Select>
 
-                              {(row.remarks !== '' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Absent') && (
+                              {(row.remarks !== '' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Absent' && row.remarks !== 'Sick Leave') && (
                                 <Input
                                   type="text"
                                   value={row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks}
