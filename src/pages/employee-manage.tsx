@@ -974,12 +974,13 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             <div className="flex items-center gap-3 px-3 py-3 border-b border-gray-100 bg-white sticky top-0 z-20" style={{ width: "100%" }}>
                 {/* Selection toggle button on the left */}
                 <Button
+                    style={{ border: "none" }}
                     variant="outline"
                     onClick={() => {
                         setIsSelectionMode(!isSelectionMode);
                         setSelectedEmployeeIds(new Set());
                     }}
-                    className={`h-10 w-10 p-0 rounded-xl shrink-0 transition-all border ${isSelectionMode
+                    className={`h-10 w-10 p-0 rounded-xl shrink-0 transition-all ${isSelectionMode
                         ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100/80 hover:text-indigo-700 shadow-xs'
                         : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700'
                         }`}
