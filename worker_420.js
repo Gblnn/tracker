@@ -857,7 +857,7 @@ export default {
       performDeviceHeartbeat(sn, ctx);
 
       try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/device_commands?device_serial=eq.${encodeURIComponent(sn)}&status=eq.pending&order=id.asc&limit=10`, {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/device_commands?device_serial=eq.${encodeURIComponent(sn)}&status=eq.pending&order=id.asc&limit=1`, {
           headers: {
             'apikey': SUPABASE_SERVICE_KEY,
             'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`

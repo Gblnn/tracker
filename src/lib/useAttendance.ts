@@ -163,10 +163,26 @@ export function useAttendance(date: string) {
         });
       }
 
+      // Fetch all projects to build a project_name to location display name mapping
+      const { data: projData } = await supabase.from('projects').select('project_name, project_location');
+      const projLocationMap: Record<string, string> = {};
+      (projData ?? []).forEach(p => {
+        const { name } = parseLocationGeofence(p.project_location);
+        if (p.project_name && name) {
+          projLocationMap[p.project_name.toLowerCase().trim()] = name;
+        }
+      });
+
       // 6. Filter punches list
       const punchesWithLocation = (punchData ?? []).map(p => {
         const devLoc = devMap[p.device_serial]?.location;
-        const { location, coordinates } = parsePunchLocation(p.mobile_location, devLoc);
+        let { location, coordinates } = parsePunchLocation(p.mobile_location, devLoc);
+        if (location) {
+          const key = location.toLowerCase().trim();
+          if (projLocationMap[key]) {
+            location = projLocationMap[key];
+          }
+        }
         return {
           ...p,
           location,

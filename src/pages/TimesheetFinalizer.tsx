@@ -585,8 +585,15 @@ export default function TimesheetFinalizer() {
   }, [employees, rows, search, punchFilter, selectedProjects]);
 
   return (
-    <div className="bg-white" style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div className="bg-white animate-fade-in" style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.35s ease-out forwards;
+        }
         .finalizer-container {
           padding: 24px;
           display: flex;
@@ -877,7 +884,7 @@ export default function TimesheetFinalizer() {
           </div>
         ) : (
           /* Shift Review Table */
-          <div className="table-scroll-container">
+          <div className="table-scroll-container animate-fade-in">
             <table className="timesheet-table">
               <thead>
                 <tr>

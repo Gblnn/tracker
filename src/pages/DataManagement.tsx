@@ -27,6 +27,27 @@ interface Employee {
   name: string;
   emp_id: string | null;
   department: string | null;
+  fingerprint_templates?: Record<string, any> | null;
+  face_templates?: Record<string, any> | null;
+}
+
+function getEmployeeTemplatesSize(emp: Employee): number {
+  let totalBytes = 0;
+  if (emp.fingerprint_templates) {
+    Object.values(emp.fingerprint_templates).forEach((val: any) => {
+      if (val && val.template) {
+        totalBytes += val.template.length;
+      }
+    });
+  }
+  if (emp.face_templates) {
+    Object.values(emp.face_templates).forEach((val: any) => {
+      if (val && val.template) {
+        totalBytes += val.template.length;
+      }
+    });
+  }
+  return totalBytes;
 }
 
 interface CompactPunch {
@@ -118,7 +139,7 @@ export default function DataManagement() {
       // 2. Fetch list of employees
       const { data: empData, error: empErr } = await supabase
         .from('employees')
-        .select('id, device_user_id, name, emp_id, department')
+        .select('id, device_user_id, name, emp_id, department, fingerprint_templates, face_templates')
         .order('name', { ascending: true });
 
       if (empErr) throw empErr;
@@ -283,8 +304,12 @@ export default function DataManagement() {
   // Manual refresh trigger
 
 
+  const totalBiometricsSpace = useMemo(() => {
+    return employees.reduce((sum, emp) => sum + getEmployeeTemplatesSize(emp), 0);
+  }, [employees]);
+
   // Space calculations
-  const totalSpaceUsed = totalCount * ROW_SIZE_BYTES;
+  const totalSpaceUsed = totalCount * ROW_SIZE_BYTES + totalBiometricsSpace;
   const quotaPercent = parseFloat(((totalSpaceUsed / FREE_TIER_QUOTA_BYTES) * 100).toFixed(3));
   const remainingSpace = Math.max(0, FREE_TIER_QUOTA_BYTES - totalSpaceUsed);
 
@@ -310,10 +335,12 @@ export default function DataManagement() {
     // Build storage list per employee
     let list = employees.map(emp => {
       const count = counts[emp.device_user_id] || 0;
-      const sizeBytes = count * ROW_SIZE_BYTES;
+      const templateSize = getEmployeeTemplatesSize(emp);
+      const sizeBytes = count * ROW_SIZE_BYTES + templateSize;
       return {
         emp,
         count,
+        templateSize,
         sizeBytes,
         percentOfTotal: matchedPunchesCount > 0 ? parseFloat(((count / matchedPunchesCount) * 100).toFixed(2)) : 0
       };
@@ -332,6 +359,7 @@ export default function DataManagement() {
             department: 'Unmapped / Orphaned'
           },
           count,
+          templateSize: 0,
           sizeBytes,
           percentOfTotal: matchedPunchesCount > 0 ? parseFloat(((count / matchedPunchesCount) * 100).toFixed(2)) : 0
         });
@@ -378,7 +406,16 @@ export default function DataManagement() {
   }, [employeeStats.list]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', width: '100%', padding: '1rem', boxSizing: 'border-box', backgroundColor: '#f9fafb' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', width: '100%', padding: '1rem', boxSizing: 'border-box', backgroundColor: '#f9fafb' }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.35s ease-out forwards;
+        }
+      ` }} />
 
 
 
@@ -469,7 +506,7 @@ export default function DataManagement() {
       <div className="bg-white border border-gray-200 rounded-xl flex-1 flex flex-col overflow-hidden shadow-sm">
 
         {/* Table Body Container */}
-        <div style={{ width: "100%" }} className="flex-1 overflow-auto">
+        <div style={{ width: "100%" }} className="flex-1 overflow-auto animate-fade-in">
           <table style={{ width: "100%" }} className="w-full border-collapse text-left text-xs">
             <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 sticky top-0 z-10">
               <tr>
@@ -532,8 +569,13 @@ export default function DataManagement() {
                       <td className="px-4 py-2.5 text-center font-semibold text-gray-805">
                         {item.count.toLocaleString()}
                       </td>
-                      <td className="px-4 py-2.5 text-center font-bold font-mono text-indigo-650">
-                        {formatSize(item.sizeBytes)}
+                      <td style={{ fontWeight: "500" }} className="px-4 py-2.5 text-center font-mono text-indigo-650">
+                        <div>{formatSize(item.sizeBytes)}</div>
+                        {item.templateSize > 0 && (
+                          <div style={{ fontSize: '9px', fontWeight: 'normal', color: '#6b7280', fontFamily: 'sans-serif', textTransform: 'none', marginTop: '2px' }}>
+                            (incl. templates {formatSize(item.templateSize)})
+                          </div>
+                        )}
                       </td>
                       <td style={{ border: "", display: "flex" }} className="px-4 py-2.5">
                         <div className="flex items-center gap-2">

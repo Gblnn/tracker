@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { Avatar } from '../components/Avatar';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '../components/ui/empty';
-import { parsePunchLocation } from '../lib/geofence';
+import { parsePunchLocation, parseLocationGeofence } from '../lib/geofence';
 import { supabase } from '../lib/supabase';
 
 
@@ -545,12 +545,28 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
 
             if (punchError) throw punchError;
 
+            // Fetch all projects to build a project_name to location display name mapping
+            const { data: projData } = await supabase.from('projects').select('project_name, project_location');
+            const projLocationMap: Record<string, string> = {};
+            (projData ?? []).forEach(p => {
+                const { name } = parseLocationGeofence(p.project_location);
+                if (p.project_name && name) {
+                    projLocationMap[p.project_name.toLowerCase().trim()] = name;
+                }
+            });
+
             // Map each user to their most recent location
             const empLocs: Record<string, string> = {};
             if (punchData) {
                 punchData.forEach(p => {
                     const devLoc = deviceMap[p.device_serial];
-                    const { location: loc } = parsePunchLocation(p.mobile_location, devLoc);
+                    let { location: loc } = parsePunchLocation(p.mobile_location, devLoc);
+                    if (loc) {
+                        const key = loc.toLowerCase().trim();
+                        if (projLocationMap[key]) {
+                            loc = projLocationMap[key];
+                        }
+                    }
                     const isRealLocation = loc && loc !== '—' && loc !== 'Un-Mapped';
                     // Only set if not already set, so we keep the most recent punch location
                     if (isRealLocation && !empLocs[p.user_id]) {
@@ -935,7 +951,15 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             const loc = employeeLocations[emp.device_user_id] ?? emp.location;
             if (loc) locSet.add(loc);
         });
-        return Array.from(locSet).sort();
+        const sorted = Array.from(locSet).sort();
+        const hasBlank = employees.some(emp => {
+            const loc = employeeLocations[emp.device_user_id] ?? emp.location;
+            return !loc || loc.trim() === '';
+        });
+        if (hasBlank) {
+            sorted.push('(Blank)');
+        }
+        return sorted;
     }, [employees, employeeLocations]);
 
     // Filtered employees logic
@@ -963,7 +987,8 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             const empLoc = employeeLocations[emp.device_user_id] ?? emp.location;
             const matchesLocation =
                 selectedLocations.length === 0 ||
-                (empLoc && selectedLocations.includes(empLoc));
+                (empLoc && selectedLocations.includes(empLoc)) ||
+                ((!empLoc || empLoc.trim() === '') && selectedLocations.includes('(Blank)'));
 
             return matchesSearch && matchesDept && matchesType && matchesNationality && matchesLocation;
         });
@@ -1004,7 +1029,16 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     };
 
     return (
-        <div className="flex flex-col h-full overflow-hidden bg-white" style={{ width: "100%" }}>
+        <div className="flex flex-col h-full overflow-hidden bg-white animate-fade-in" style={{ width: "100%" }}>
+            <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes fadeIn {
+                  from { opacity: 0; transform: translateY(4px); }
+                  to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in {
+                  animation: fadeIn 0.35s ease-out forwards;
+                }
+            ` }} />
 
 
             {/* Toolbar: Search and Filters */}
@@ -1169,7 +1203,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                         </Empty>
                     </div>
                 ) : (
-                    <table className="w-full text-sm" style={{ tableLayout: "fixed" }}>
+                    <table className="w-full text-sm animate-fade-in" style={{ tableLayout: "fixed" }}>
                         <thead className="sticky top-0 bg-gray-50 z-10 shadow-[0_1px_0_rgba(0,0,0,0.05)]">
                             <tr className="border-b border-gray-100">
                                 <th

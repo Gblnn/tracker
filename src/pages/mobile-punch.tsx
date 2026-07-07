@@ -207,7 +207,8 @@ export default function MobilePunch() {
           geofenceResult = findProjectForCoordinates(latVal, lngVal, projects);
           if (geofenceResult) {
             const { project } = geofenceResult;
-            finalMobileLocation = `${coordinatesStr} @ ${project.project_name}`;
+            const { name: locName } = parseLocationGeofence(project.project_location);
+            finalMobileLocation = `${coordinatesStr} @ ${locName || project.project_name}`;
           }
         }
       } catch (err) {
@@ -252,9 +253,13 @@ export default function MobilePunch() {
 
       if (error) throw error;
 
-      const locationText = geofenceResult
-        ? `Within ${geofenceResult.project.project_name}`
-        : coordinatesStr;
+      let displayLoc = coordinatesStr;
+      if (geofenceResult) {
+        const { name: locName } = parseLocationGeofence(geofenceResult.project.project_location);
+        displayLoc = `Within ${locName || geofenceResult.project.project_name}`;
+      }
+
+      const locationText = displayLoc;
 
       toast.success(
         `Successfully clocked ${punchType === 0 ? "IN" : "OUT"}! (${locationText})`

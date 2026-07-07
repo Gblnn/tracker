@@ -666,8 +666,15 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange }: Proj
   }
 
   return (
-    <div className="bg-white flex flex-col" style={{ width: "100%", height: "82vh", overflow: "hidden" }}>
+    <div className="bg-white flex flex-col animate-fade-in" style={{ width: "100%", height: "82vh", overflow: "hidden" }}>
       <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.35s ease-out forwards;
+        }
         .project-card {
           background: #ffffff;
           border: 1px solid #f1f5f9;
@@ -808,7 +815,7 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange }: Proj
             No projects registered. Click "Add Project" to register one.
           </div>
         ) : (
-          <div style={{ border: "1px solid rgba(100 100 100/ 0.1)", width: "100%", borderRadius: "0.5rem", paddingTop: "1rem" }} className="flex-1 overflow-y-auto px-4 pb-8">
+          <div style={{ border: "1px solid rgba(100 100 100/ 0.1)", width: "100%", borderRadius: "0.5rem", paddingTop: "1rem" }} className="flex-1 overflow-y-auto px-4 pb-8 animate-fade-in">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-1">
               {projects.map((project) => {
                 const assignedDevices = devicesByProject[project.project_code] || [];

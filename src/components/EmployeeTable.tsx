@@ -42,7 +42,12 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
       }
     });
 
-    return Array.from(locations).sort();
+    const sorted = Array.from(locations).sort();
+    const hasBlank = summaries.some(emp => !emp.location || emp.location.trim() === '');
+    if (hasBlank) {
+      sorted.push('(Blank)');
+    }
+    return sorted;
   }, [summaries]);
 
   const uniqueDepartments = useMemo(() => {
@@ -61,7 +66,8 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
 
       const matchesLocation =
         selectedLocations.length === 0 ||
-        (emp.location && selectedLocations.includes(emp.location));
+        (emp.location && selectedLocations.includes(emp.location)) ||
+        ((!emp.location || emp.location.trim() === '') && selectedLocations.includes('(Blank)'));
 
       const matchesDepartment =
         selectedDepartments.length === 0 ||
@@ -227,12 +233,21 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
   }
 
   return (
-    <div className="flex flex-col h-auto overflow-hidden" style={{ border: "", width: "100%" }}>
+    <div className="flex flex-col h-auto overflow-hidden animate-fade-in" style={{ border: "", width: "100%" }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.35s ease-out forwards;
+        }
+      ` }} />
       {
         (
           // Stat Cards
           <div style={{ width: "100%", display: "flex", justifyContent: "space-between", padding: "0.75rem", gap: "0.75rem", borderBottom: "1px solid rgba(100 100 100/ 0.1)" }}>
-
+            
             <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.75rem", flexFlow: "column", height: "9.5rem", minWidth: 0, justifyContent: "center", alignItems: "center" }}>
               <p style={{ fontSize: "1rem", fontWeight: 500, color: "grey", marginBottom: "0.25rem" }}>Total</p>
               <h1 style={{ fontWeight: 600, fontSize: "2.5rem" }}>
@@ -367,7 +382,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
           </div>)
       }
       {/* Table Section */}
-      <div className="overflow-auto flex-1" style={{ border: "", width: "100%" }}>
+      <div className="overflow-auto flex-1 animate-fade-in" style={{ border: "", width: "100%" }}>
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-gray-50 z-10 shadow-[0_1px_0_rgba(0,0,0,0.05)]">
             <tr className="border-b border-gray-100">

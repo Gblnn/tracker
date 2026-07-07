@@ -168,8 +168,17 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden" style={{ width: "100%", height: '100%', border: "", display: "flex", flexFlow: "column", justifyContent: "flex-start" }}> {/* Make PunchLog itself a flex container that takes full height and hides overflow */}
-      <div className="overflow-auto flex-1" style={{ border: "", width: "100%" }}> {/* This div now handles both vertical and horizontal scrolling, taking remaining height */}
+    <div className="flex flex-col h-full overflow-hidden animate-fade-in" style={{ width: "100%", height: '100%', border: "", display: "flex", flexFlow: "column", justifyContent: "flex-start" }}> {/* Make PunchLog itself a flex container that takes full height and hides overflow */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.35s ease-out forwards;
+        }
+      ` }} />
+      <div className="overflow-auto flex-1 animate-fade-in" style={{ border: "", width: "100%" }}> {/* This div now handles both vertical and horizontal scrolling, taking remaining height */}
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-gray-50 z-10 shadow-[0_1px_0_rgba(0,0,0,0.05)]"> {/* Sticky relative to its new scrollable parent */}
             <tr className="border-b border-gray-100">

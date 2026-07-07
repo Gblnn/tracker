@@ -98,7 +98,7 @@ export default function Terminal() {
         .from('device_commands')
         .select('id, device_serial, command_type, status, created_at, employees(name, device_user_id)')
         .neq('status', 'cancelled')
-        .order('id', { ascending: true });
+        .order('id', { ascending: false });
 
       setTasks((data as any) || []);
     } catch (err) {
@@ -155,7 +155,7 @@ export default function Terminal() {
         if (error) throw error;
         await new Promise(resolve => setTimeout(resolve, 80));
       }
-      toast.success(`Successfully reset ${dispatchedTasks.length} dispatch tasks back to pending.`);
+      toast.success(`Successfully queued ${dispatchedTasks.length} dispatch tasks back to pending.`);
       fetchTasks();
     } catch (err: any) {
       toast.error(err.message || 'Failed to retry dispatched tasks.');

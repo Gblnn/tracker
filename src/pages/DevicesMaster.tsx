@@ -307,83 +307,68 @@ export default function DevicesMaster({ refreshTrigger, onLoadingChange }: Devic
   }
 
   return (
-    <div className="min-h-screen bg-white" style={{ width: "100%" }}>
-      <div className="w-full px-4 sm:px-6 py-8">
-
-        {/* Toolbar */}
-        <div className="flex justify-between items-center mb-4" style={{ justifyContent: "space-between", padding: "0 1.25rem" }}>
-          <div className="flex items-center gap-2">
-            <h2>All Devices</h2>
-            <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
-              {devices.length} registered device(s)
-            </span>
-
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "0.5rem" }}>
-
-            {/* <button
-              onClick={handleImportDeviceData}
-              disabled={importing || devices.length === 0}
-              className="px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
-              title="Import user and biometric templates from all registered devices"
-            >
-              {importing ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <Download className="w-3.5 h-3.5" />
-                  Import Device Data
-                </>
-              )}
-            </button> */}
-
-            {canEditAttendance && (
-              <button
-                onClick={openAdd}
-                className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1.5"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Add Device
-              </button>
-            )}
-
-            <button
-              onClick={() => fetchDevices(true)}
-              disabled={loading || refreshing}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
-              title="Refresh Status"
-            >
-              <RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            </button>
-
-          </div>
-
+    <div className="flex flex-col flex-1 h-full overflow-hidden bg-white animate-fade-in" style={{ width: "100%" }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.35s ease-out forwards;
+        }
+      ` }} />
+      {/* Toolbar */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem 1rem", borderBottom: "1px solid rgba(100 100 100/ 0.1)", background: "white", flexShrink: 0, width: "100%" }}>
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-gray-900">All Devices</h2>
+          <span className="text-[10px] font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200/50">
+            {devices.length} registered
+          </span>
         </div>
 
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "0.5rem" }}>
+          {canEditAttendance && (
+            <button
+              onClick={openAdd}
+              className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Device
+            </button>
+          )}
+
+          <button
+            onClick={() => fetchDevices(true)}
+            disabled={loading || refreshing}
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
+            title="Refresh Status"
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col flex-1 overflow-hidden" style={{ width: "100%" }}>
         {/* Error */}
         {error && (
-          <div className="mb-6 flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-3">
+          <div className="m-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 flex-shrink-0">
             {error}
           </div>
         )}
 
         {/* Table */}
-        <div className="border border-gray-100 rounded-2xl overflow-auto shadow-sm flex flex-col bg-white" style={{ height: "70vh" }}>
+        <div className="overflow-auto flex-1 animate-fade-in" style={{ border: "", width: "100%" }}>
           {loading ? (
-            <div className="flex-1 flex items-center justify-center gap-2 text-gray-400 text-sm">
+            <div className="flex-1 flex items-center justify-center gap-2 text-gray-400 text-sm h-full">
               <Loader2 className="w-4 h-4 animate-spin" />
               Loading…
             </div>
           ) : devices.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm h-full">
               No devices found.
             </div>
           ) : (
-            <table className="w-full text-sm border-collapse">
+            <table className="w-full text-sm animate-fade-in">
               <thead className="sticky top-0 bg-gray-50 z-10 shadow-[0_1px_0_rgba(0,0,0,0.05)]">
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="text-center px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: 50 }}>#</th>

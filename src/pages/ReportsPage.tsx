@@ -7,6 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -14,16 +15,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { db } from '@/firebase';
 import { addDoc, collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Check, ChevronDown, ChevronLeft, ChevronRight, CircleMinus, Download, Loader2, PartyPopper, Plus, Search, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, ChevronRight, CircleMinus, Download, Hash, Highlighter, Loader2, PartyPopper, Plus, Search, X } from 'lucide-react';
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
-import { parsePunchLocation } from '../lib/geofence';
+import { parseLocationGeofence, parsePunchLocation } from '../lib/geofence';
 import { supabase } from '../lib/supabase';
 import { todayISO } from '../lib/utilis';
 
@@ -307,11 +307,18 @@ interface FrozenRowProps {
   absentCount: number;
   overtimeCount: string;
   showOvertime: boolean;
+  isHighlighted?: boolean;
+  onClick?: () => void;
+  highlightMode?: boolean;
 }
 
-const FrozenRow = memo(({ emp, index, locationList, presenceCount, absentCount, overtimeCount, showOvertime }: FrozenRowProps) => {
+const FrozenRow = memo(({ emp, index, locationList, presenceCount, absentCount, overtimeCount, showOvertime, isHighlighted, onClick, highlightMode }: FrozenRowProps) => {
   return (
-    <tr style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }}>
+    <tr
+      onClick={onClick}
+      className={`${isHighlighted ? 'highlighted-row' : ''} ${highlightMode ? 'cursor-pointer' : ''}`}
+      style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }}
+    >
       <td className="text-[13px] text-gray-400 text-center bg-white px-1">{index + 1}</td>
       <td style={{ textTransform: "capitalize" }} className="text-[13px] font-medium text-gray-900 bg-white px-3 whitespace-nowrap">
         {emp.name.toLowerCase()}
@@ -351,6 +358,9 @@ interface ScrollableRowProps {
   month: number;
   today: Date;
   holidayMap: Record<number, { id: string; name: string }>;
+  isHighlighted?: boolean;
+  onClick?: () => void;
+  highlightMode?: boolean;
 }
 
 const ScrollableRow = memo(({
@@ -361,10 +371,17 @@ const ScrollableRow = memo(({
   year,
   month,
   today,
-  holidayMap
+  holidayMap,
+  isHighlighted,
+  onClick,
+  highlightMode
 }: ScrollableRowProps) => {
   return (
-    <tr style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }} className="hover:bg-blue-50/20">
+    <tr
+      onClick={onClick}
+      className={`hover:bg-blue-50/20 ${isHighlighted ? 'highlighted-row' : ''} ${highlightMode ? 'cursor-pointer' : ''}`}
+      style={{ height: ROW_H, borderBottom: '1px solid #f9fafb' }}
+    >
       {dayList.map(d => {
         const pad = (n: number) => String(n).padStart(2, '0');
         const dateKey = `${year}-${pad(month + 1)}-${pad(d)}`;
@@ -467,6 +484,21 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
   const [selectedEmpPrefixes, setSelectedEmpPrefixes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [presenceFilter, setPresenceFilter] = useState<'ALL' | 'ZERO' | 'NON_ZERO'>('ALL');
+  const [highlightMode, setHighlightMode] = useState(false);
+  const [highlightedRows, setHighlightedRows] = useState<Set<string>>(new Set());
+
+  const toggleRowHighlight = (deviceUserId: string) => {
+    setHighlightedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(deviceUserId)) {
+        next.delete(deviceUserId);
+      } else {
+        next.add(deviceUserId);
+      }
+      return next;
+    });
+  };
+
   const [searchQuery, setSearchQuery] = useState('');
   const [reportType, setReportType] = useState<ReportType>('inout');
   const [useFirstLast, setUseFirstLast] = useState(true);
@@ -674,9 +706,25 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
         (devData ?? []).map(d => [d.serial_no, d.location])
       );
 
+      // Fetch all projects to build a project_name to location display name mapping
+      const { data: projData } = await supabase.from('projects').select('project_name, project_location');
+      const projLocationMap: Record<string, string> = {};
+      (projData ?? []).forEach(p => {
+        const { name } = parseLocationGeofence(p.project_location);
+        if (p.project_name && name) {
+          projLocationMap[p.project_name.toLowerCase().trim()] = name;
+        }
+      });
+
       const mappedPunches = allPunches.map(p => {
         const devLoc = deviceMap[p.device_serial];
-        const { location: resolvedLoc } = parsePunchLocation(p.mobile_location, devLoc);
+        let { location: resolvedLoc } = parsePunchLocation(p.mobile_location, devLoc);
+        if (resolvedLoc) {
+          const key = resolvedLoc.toLowerCase().trim();
+          if (projLocationMap[key]) {
+            resolvedLoc = projLocationMap[key];
+          }
+        }
         return {
           user_id: p.user_id,
           punch_time: p.punch_time,
@@ -791,10 +839,6 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
     return Array.from(prefixes).sort();
   }, [employees]);
 
-  const locations = useMemo(() =>
-    [...new Set(punches.map(p => p.location).filter(Boolean) as string[])].sort(),
-    [punches]);
-
   const employeeLocations = useMemo(() => {
     const map: Record<string, Set<string>> = {};
     for (const p of punches) {
@@ -810,6 +854,21 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
     }
     return result;
   }, [punches]);
+
+  const locations = useMemo(() => {
+    const locSet = new Set(punches.map(p => p.location).filter(Boolean) as string[]);
+    const sorted = Array.from(locSet).sort();
+
+    // Check if any employee has no punches/locations
+    const hasBlank = employees.some(e => {
+      const locs = employeeLocations[e.device_user_id];
+      return !locs || locs.trim() === '';
+    });
+    if (hasBlank) {
+      sorted.push('(Blank)');
+    }
+    return sorted;
+  }, [punches, employees, employeeLocations]);
 
   const filtered = useMemo(() => {
     let list = employees;
@@ -827,17 +886,26 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
       if (reportView === 'daily') {
         list = list.filter(e => {
           const c = matrix[e.device_user_id]?.[selectedDailyDate];
-          if (!c || !c.isPresent) return false;
+          if (!c || !c.isPresent) {
+            return selectedLocations.includes('(Blank)');
+          }
           const inLoc = useFirstLast ? c.firstPunchLocation : c.firstInLocation;
           const outLoc = useFirstLast ? c.lastPunchLocation : c.lastOutLocation;
+          const hasInLoc = inLoc && inLoc.trim() !== '';
+          const hasOutLoc = outLoc && outLoc.trim() !== '';
+          if (selectedLocations.includes('(Blank)') && !hasInLoc && !hasOutLoc) {
+            return true;
+          }
           return (inLoc && selectedLocations.includes(inLoc)) || (outLoc && selectedLocations.includes(outLoc));
         });
       } else {
         list = list.filter(e => {
           const locs = employeeLocations[e.device_user_id];
-          if (!locs) return false;
+          if (!locs || locs.trim() === '') {
+            return selectedLocations.includes('(Blank)');
+          }
           const employeeLocArray = locs.split(', ');
-          return employeeLocArray.some(loc => selectedLocations.includes(loc));
+          return employeeLocArray.some(loc => selectedLocations.includes(loc)) || (selectedLocations.includes('(Blank)') && (!locs || locs.trim() === ''));
         });
       }
     }
@@ -1400,7 +1468,20 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
   // ─────────────────────────────────────────────────────────────────────────
   return (
     // Fill the parent panel entirely — no own padding or min-h
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', width: "100%" }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', width: "100%" }}>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .highlighted-row td {
+          background-color: #fef08a !important;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.35s ease-out forwards;
+        }
+      ` }} />
 
       {/* ── Toolbar ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', padding: '0.5rem 0.75rem', flexShrink: 0 }}>
@@ -1619,7 +1700,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {canEditAttendance && (
             <button
               onClick={() => setIsHolidayModalOpen(true)}
@@ -1629,6 +1710,17 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
               Holidays ({holidays.length})
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => setHighlightMode(!highlightMode)}
+            className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors cursor-pointer ${highlightMode
+              ? 'bg-yellow-100 border-yellow-300 text-yellow-700 hover:bg-yellow-200'
+              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
+            title={highlightMode ? "Deactivate Highlighter Mode" : "Activate Highlighter Mode (Click rows to highlight)"}
+          >
+            <Highlighter className="w-4 h-4" />
+          </button>
           <button
             onClick={exportExcel}
             disabled={loading || filtered.length === 0}
@@ -1667,7 +1759,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
         </div>
       ) : reportView === 'daily' ? (
         /* ── DAILY REPORT VIEW ── */
-        <div ref={tableAreaRef} className="flex-1 overflow-auto border-t border-gray-200">
+        <div ref={tableAreaRef} className="flex-1 overflow-auto border-t border-gray-200 animate-fade-in">
           <table className="w-full text-sm text-left border-collapse">
             <thead className="bg-[#111827] text-white sticky top-0 z-10">
               <tr style={{ height: "2.5rem" }}>
@@ -2085,7 +2177,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
         </div>
       ) : reportView === 'individual' ? (
         /* ── INDIVIDUAL REPORT VIEW ── */
-        <div ref={tableAreaRef} className="flex-1 overflow-auto border-t border-gray-200">
+        <div ref={tableAreaRef} className="flex-1 overflow-auto border-t border-gray-200 animate-fade-in">
           <table className="w-full text-sm text-left border-collapse">
             <thead className="bg-[#111827] text-white sticky top-0 z-10">
               <tr style={{ height: "2.5rem" }}>
@@ -2206,7 +2298,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
          *   Right = day columns — overflow-x auto, overflow-y auto (drives scroll)
          * Both panels share the same row height constant so rows stay aligned.
          */
-        <div ref={tableAreaRef} style={{ display: 'flex', flex: 1, overflow: 'hidden', borderTop: '1px solid #f3f4f6' }}>
+        <div ref={tableAreaRef} className="animate-fade-in" style={{ display: 'flex', flex: 1, overflow: 'hidden', borderTop: '1px solid #f3f4f6' }}>
 
           {/* ── LEFT FROZEN PANEL ── */}
           <div
@@ -2235,16 +2327,15 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                   <th className="text-[13px] font-medium text-center px-1 py-2">#</th>
                   <th className="text-[13px] font-medium text-left px-3 py-2" style={{ verticalAlign: 'middle' }}>
                     <div className="flex items-center gap-1.5 w-full">
-
-                      <div className="relative flex-1 ">
-
+                      <div className="relative flex-1">
+                        <Search className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
                         <input
                           style={{ color: "white" }}
                           type="text"
                           placeholder="Search"
                           value={searchQuery}
                           onChange={e => setSearchQuery(e.target.value)}
-                          className=" h-6 w-full border border-gray-700 rounded text-white pl-6 pr-2 py-0.5 outline-none focus:border-gray-500 transition-colors normal-case font-normal"
+                          className="h-6 w-full border border-gray-700 rounded text-white pl-6 pr-2 py-0.5 outline-none focus:border-gray-500 transition-colors normal-case font-normal text-xs"
                         />
                         {searchQuery && (
                           <button
@@ -2256,6 +2347,74 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                           </button>
                         )}
                       </div>
+
+                      {/* Filter Emp ID Button */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className={`h-6 w-6 shrink-0 flex items-center justify-center border rounded transition-colors ${selectedEmpPrefixes.length > 0
+                              ? 'border-amber-500 text-amber-500 hover:bg-amber-500/10'
+                              : 'border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+                              }`}
+                            title="Filter Emp ID"
+                          >
+                            <Hash size={20} className="" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[180px] max-h-[300px] overflow-y-auto p-0 z-50">
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedEmpPrefixes(empCodePrefixes);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left normal-case"
+                              style={{ background: "none", flex: 1 }}
+                            >
+                              Select All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedEmpPrefixes([]);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right normal-case"
+                              style={{ background: "none", flex: 1 }}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                          {empCodePrefixes.map(prefix => {
+                            const isChecked = selectedEmpPrefixes.includes(prefix);
+                            return (
+                              <DropdownMenuCheckboxItem
+                                key={prefix}
+                                checked={isChecked}
+                                onSelect={(e) => e.preventDefault()}
+                                onCheckedChange={checked => {
+                                  if (checked) {
+                                    setSelectedEmpPrefixes([...selectedEmpPrefixes, prefix]);
+                                  } else {
+                                    setSelectedEmpPrefixes(selectedEmpPrefixes.filter(item => item !== prefix));
+                                  }
+                                }}
+                                style={{ fontWeight: 400 }}
+                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs normal-case font-medium"
+                              >
+                                {prefix}
+                              </DropdownMenuCheckboxItem>
+                            );
+                          })}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </th>
                   <th className="text-[13px] font-medium text-left px-1 py-1" style={{ width: 170 }}>
@@ -2394,6 +2553,13 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                         absentCount={absentDays(emp.device_user_id)}
                         overtimeCount={totalOvertime(emp.device_user_id, emp.emp_type)}
                         showOvertime={reportType === 'hourly'}
+                        isHighlighted={highlightedRows.has(emp.device_user_id)}
+                        onClick={() => {
+                          if (highlightMode) {
+                            toggleRowHighlight(emp.device_user_id);
+                          }
+                        }}
+                        highlightMode={highlightMode}
                       />
                     ))}
                     {filtered.length > limit && (
@@ -2503,6 +2669,13 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                         month={month}
                         today={today}
                         holidayMap={holidayMap}
+                        isHighlighted={highlightedRows.has(emp.device_user_id)}
+                        onClick={() => {
+                          if (highlightMode) {
+                            toggleRowHighlight(emp.device_user_id);
+                          }
+                        }}
+                        highlightMode={highlightMode}
                       />
                     ))}
                     {filtered.length > limit && (
