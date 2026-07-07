@@ -147,12 +147,14 @@ export default function Terminal() {
 
     setRetryingAll(true);
     try {
-      const { error } = await supabase
-        .from('device_commands')
-        .update({ status: 'pending' })
-        .eq('status', 'sent');
-
-      if (error) throw error;
+      for (const t of dispatchedTasks) {
+        const { error } = await supabase
+          .from('device_commands')
+          .update({ status: 'pending' })
+          .eq('id', t.id);
+        if (error) throw error;
+        await new Promise(resolve => setTimeout(resolve, 80));
+      }
       toast.success(`Successfully reset ${dispatchedTasks.length} dispatch tasks back to pending.`);
       fetchTasks();
     } catch (err: any) {

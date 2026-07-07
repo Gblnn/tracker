@@ -20,7 +20,9 @@ import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { Avatar } from '../components/Avatar';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '../components/ui/empty';
+import { parsePunchLocation } from '../lib/geofence';
 import { supabase } from '../lib/supabase';
+
 
 interface Device {
     id: number;
@@ -120,10 +122,14 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [isBulkPushOpen, setIsBulkPushOpen] = useState(false);
     const [selectedBulkPushDevices, setSelectedBulkPushDevices] = useState<Set<string>>(new Set());
     const [isBulkPushing, setIsBulkPushing] = useState(false);
+    const [bulkSyncAction, setBulkSyncAction] = useState<'push' | 'fetch'>('push');
+    const [bulkPushType, setBulkPushType] = useState<'all' | 'user_info' | 'finger' | 'face'>('all');
 
     useEffect(() => {
         if (isBulkPushOpen) {
             setSelectedBulkPushDevices(new Set());
+            setBulkSyncAction('push');
+            setBulkPushType('all');
         }
     }, [isBulkPushOpen]);
 
@@ -168,6 +174,14 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
         }
     }, [editingEmployee]);
 
+    const insertCommandsSequentially = async (commands: any[]) => {
+        for (const cmd of commands) {
+            const { error } = await supabase.from('device_commands').insert(cmd);
+            if (error) throw error;
+            await new Promise(resolve => setTimeout(resolve, 80));
+        }
+    };
+
     const handleFetchBiometrics = async () => {
         if (!editingEmployee || selectedPushDevices.size === 0) {
             toast.error('Please select at least one device to fetch from');
@@ -198,13 +212,6 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     },
                     {
                         device_serial: deviceSerial,
-                        command: `DATA QUERY BIODATA PIN=${pin}\tType=9`,
-                        command_type: 'QUERY_BIODATA',
-                        employee_id: empId,
-                        status: 'pending'
-                    },
-                    {
-                        device_serial: deviceSerial,
                         command: `DATA QUERY FACE PIN=${pin}`,
                         command_type: 'QUERY_FACE',
                         employee_id: empId,
@@ -213,11 +220,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 );
             }
 
-            const { error: insertErr } = await supabase
-                .from('device_commands')
-                .insert(commandsToInsert);
-
-            if (insertErr) throw insertErr;
+            await insertCommandsSequentially(commandsToInsert);
 
             toast.success(`Successfully queued biometrics query from selected device(s). Templates will sync automatically when devices process the commands.`);
             setSelectedPushDevices(new Set());
@@ -303,11 +306,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 }
             });
 
-            const { error: insertErr } = await supabase
-                .from('device_commands')
-                .insert(commandsToInsert);
-
-            if (insertErr) throw insertErr;
+            await insertCommandsSequentially(commandsToInsert);
 
             toast.success(`Successfully queued profile and biometrics sync for ${name} to ${selectedPushDevices.size} device(s).`);
             setSelectedPushDevices(new Set());
@@ -483,8 +482,9 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                         status: 'pending',
                     }));
 
-                    const { error: cmdErr } = await supabase.from('device_commands').insert(commands);
-                    if (cmdErr) {
+                    try {
+                        await insertCommandsSequentially(commands);
+                    } catch (cmdErr: any) {
                         console.error(`Failed to queue commands for ${insertedData.name}: ${cmdErr.message}`);
                     }
                 }
@@ -539,7 +539,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             // Fetch the latest 2000 punches to determine the most recent location for each employee
             const { data: punchData, error: punchError } = await supabase
                 .from('punches')
-                .select('user_id, device_serial')
+                .select('user_id, device_serial, mobile_location')
                 .order('punch_time', { ascending: false })
                 .limit(2000);
 
@@ -549,9 +549,11 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             const empLocs: Record<string, string> = {};
             if (punchData) {
                 punchData.forEach(p => {
-                    const loc = deviceMap[p.device_serial];
+                    const devLoc = deviceMap[p.device_serial];
+                    const { location: loc } = parsePunchLocation(p.mobile_location, devLoc);
+                    const isRealLocation = loc && loc !== '—' && loc !== 'Un-Mapped';
                     // Only set if not already set, so we keep the most recent punch location
-                    if (loc && !empLocs[p.user_id]) {
+                    if (isRealLocation && !empLocs[p.user_id]) {
                         empLocs[p.user_id] = loc;
                     }
                 });
@@ -624,8 +626,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     status: 'pending',
                 }));
 
-                const { error: cmdErr } = await supabase.from('device_commands').insert(commands);
-                if (cmdErr) throw new Error(`Employee added, but failed to queue device commands: ${cmdErr.message}`);
+                await insertCommandsSequentially(commands);
             }
 
             toast.success(pushToDevices
@@ -813,71 +814,107 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 const userCmd = `DATA UPDATE USERINFO PIN=${pin}\tName=${name.replace(/\t/g, ' ').slice(0, 24)}\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000`;
 
                 [...selectedBulkPushDevices].forEach(serial => {
-                    // USERINFO update command
-                    commandsToInsert.push({
-                        device_serial: serial,
-                        command: userCmd,
-                        command_type: 'ADD_USER',
-                        employee_id: empId,
-                        status: 'pending'
-                    });
-
-                    // Fingerprint templates from JSONB
-                    const fingerTemplates = emp.fingerprint_templates || {};
-                    Object.entries(fingerTemplates).forEach(([fid, val]: [string, any]) => {
-                        if (val && val.template) {
+                    if (bulkSyncAction === 'push') {
+                        // USERINFO update command
+                        if (bulkPushType === 'all' || bulkPushType === 'user_info') {
                             commandsToInsert.push({
                                 device_serial: serial,
-                                command: `DATA UPDATE FINGERTMP PIN=${pin}\tFID=${fid}\tSize=${val.size ?? 0}\tValid=${val.valid ?? 1}\tTMP=${val.template}`,
-                                command_type: 'UPDATE_FINGERTMP',
+                                command: userCmd,
+                                command_type: 'ADD_USER',
                                 employee_id: empId,
                                 status: 'pending'
                             });
                         }
-                    });
 
-                    // Face templates from JSONB
-                    const faceTemplates = emp.face_templates || {};
-                    Object.entries(faceTemplates).forEach(([key, val]: [string, any]) => {
-                        if (val && val.template) {
-                            if (key.startsWith('face-')) {
-                                const fid = key.replace('face-', '');
-                                commandsToInsert.push({
-                                    device_serial: serial,
-                                    command: `DATA UPDATE FACE PIN=${pin}\tFID=${fid}\tSize=${val.size ?? val.template.length}\tValid=${val.valid ?? 1}\tTMP=${val.template}`,
-                                    command_type: 'UPDATE_FACE',
-                                    employee_id: empId,
-                                    status: 'pending'
-                                });
-                            } else {
-                                const [type, no] = key.split('-');
-                                commandsToInsert.push({
-                                    device_serial: serial,
-                                    command: `DATA UPDATE BIODATA Pin=${pin}\tType=${type || 9}\tNo=${no || 0}\tIndex=${val.index ?? 0}\tFormat=${val.format ?? 0}\tMajorVer=${val.major_ver ?? 10}\tMinorVer=${val.minor_ver ?? 0}\tTmp=${val.template}`,
-                                    command_type: 'UPDATE_BIODATA',
-                                    employee_id: empId,
-                                    status: 'pending'
-                                });
-                            }
+                        // Fingerprint templates from JSONB
+                        if (bulkPushType === 'all' || bulkPushType === 'finger') {
+                            const fingerTemplates = emp.fingerprint_templates || {};
+                            Object.entries(fingerTemplates).forEach(([fid, val]: [string, any]) => {
+                                if (val && val.template) {
+                                    commandsToInsert.push({
+                                        device_serial: serial,
+                                        command: `DATA UPDATE FINGERTMP PIN=${pin}\tFID=${fid}\tSize=${val.size ?? 0}\tValid=${val.valid ?? 1}\tTMP=${val.template}`,
+                                        command_type: 'UPDATE_FINGERTMP',
+                                        employee_id: empId,
+                                        status: 'pending'
+                                    });
+                                }
+                            });
                         }
-                    });
+
+                        // Face templates from JSONB
+                        if (bulkPushType === 'all' || bulkPushType === 'face') {
+                            const faceTemplates = emp.face_templates || {};
+                            Object.entries(faceTemplates).forEach(([key, val]: [string, any]) => {
+                                if (val && val.template) {
+                                    if (key.startsWith('face-')) {
+                                        const fid = key.replace('face-', '');
+                                        commandsToInsert.push({
+                                            device_serial: serial,
+                                            command: `DATA UPDATE FACE PIN=${pin}\tFID=${fid}\tSize=${val.size ?? val.template.length}\tValid=${val.valid ?? 1}\tTMP=${val.template}`,
+                                            command_type: 'UPDATE_FACE',
+                                            employee_id: empId,
+                                            status: 'pending'
+                                        });
+                                    } else {
+                                        const [type, no] = key.split('-');
+                                        commandsToInsert.push({
+                                            device_serial: serial,
+                                            command: `DATA UPDATE BIODATA Pin=${pin}\tType=${type || 9}\tNo=${no || 0}\tIndex=${val.index ?? 0}\tFormat=${val.format ?? 0}\tMajorVer=${val.major_ver ?? 10}\tMinorVer=${val.minor_ver ?? 0}\tTmp=${val.template}`,
+                                            command_type: 'UPDATE_BIODATA',
+                                            employee_id: empId,
+                                            status: 'pending'
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    } else {
+                        // Fetch biometrics queries from device
+                        commandsToInsert.push(
+                            {
+                                device_serial: serial,
+                                command: `DATA QUERY USERINFO PIN=${pin}`,
+                                command_type: 'QUERY_USERINFO',
+                                employee_id: empId,
+                                status: 'pending'
+                            },
+                            {
+                                device_serial: serial,
+                                command: `DATA QUERY FINGERTMP PIN=${pin}`,
+                                command_type: 'QUERY_FINGERTMP',
+                                employee_id: empId,
+                                status: 'pending'
+                            },
+                            {
+                                device_serial: serial,
+                                command: `DATA QUERY FACE PIN=${pin}`,
+                                command_type: 'QUERY_FACE',
+                                employee_id: empId,
+                                status: 'pending'
+                            }
+                        );
+                    }
                 });
             }
 
             if (commandsToInsert.length > 0) {
-                const { error: insertErr } = await supabase
-                    .from('device_commands')
-                    .insert(commandsToInsert);
+                await insertCommandsSequentially(commandsToInsert);
 
-                if (insertErr) throw insertErr;
+                if (bulkSyncAction === 'push') {
+                    toast.success(`Successfully queued profile push for ${selectedEmployeeIds.size} employee(s) to selected devices.`);
+                } else {
+                    toast.success(`Successfully queued biometrics query/fetch for ${selectedEmployeeIds.size} employee(s) from selected devices.`);
+                }
+                setSelectedBulkPushDevices(new Set());
+                setIsBulkPushOpen(false);
+                setSelectedEmployeeIds(new Set());
+                setIsSelectionMode(false);
+            } else {
+                toast.info('No commands to queue.');
             }
-
-            toast.success(`Successfully queued profile and biometrics sync for ${selectedEmployeeIds.size} employee(s) to ${selectedBulkPushDevices.size} device(s).`);
-            setIsBulkPushOpen(false);
-            setSelectedEmployeeIds(new Set());
-            setIsSelectionMode(false);
         } catch (err: any) {
-            toast.error(err.message || 'Failed to bulk push to devices.');
+            toast.error(err.message || 'Failed to sync with devices.');
         } finally {
             setIsBulkPushing(false);
         }
@@ -1040,12 +1077,12 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                 Change Type
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1 border-gray-100" />
-                            <DropdownMenuItem
+                             <DropdownMenuItem
                                 style={{ fontWeight: 500 }}
                                 onClick={() => setIsBulkPushOpen(true)}
                                 className="rounded-md focus:bg-gray-50 cursor-pointer text-indigo-600 focus:text-indigo-700 font-semibold"
                             >
-                                Push to Devices
+                                Device Sync
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1 border-gray-100" />
                             <DropdownMenuItem
@@ -1840,10 +1877,18 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                             : 'border-gray-100 hover:border-gray-200 bg-white'
                                                             }`}
                                                     >
-                                                        <Checkbox
-                                                            checked={isChecked}
-                                                            className="w-3.5 h-3.5 rounded border-gray-300 data-[state=checked]:bg-indigo-700 data-[state=checked]:text-white focus-visible:ring-indigo-500 cursor-pointer pointer-events-none shrink-0"
-                                                        />
+                                                        <div
+                                                            className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all shrink-0 ${isChecked
+                                                                ? 'bg-indigo-700 border-indigo-700 text-white'
+                                                                : 'border-gray-300 bg-white'
+                                                            }`}
+                                                        >
+                                                            {isChecked && (
+                                                                <svg className="w-2 h-2 fill-current" viewBox="0 0 20 20">
+                                                                    <path d="M0 11l2-2 5 5L18 3l2 2L7 18z" />
+                                                                </svg>
+                                                            )}
+                                                        </div>
                                                         <div className="flex-1 min-w-0 flex items-center justify-between gap-1.5">
                                                             <div className="min-w-0 flex-1">
                                                                 <span style={{ fontWeight: 500 }} className=" text-[11px] text-gray-850 truncate block leading-tight">
@@ -2167,10 +2212,18 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                             : ''
                                                             }`}
                                                     >
-                                                        <Checkbox
-                                                            checked={isChecked}
-                                                            className="w-3.5 h-3.5 rounded border-gray-300 data-[state=checked]:bg-indigo-700 data-[state=checked]:text-white focus-visible:ring-indigo-500 cursor-pointer pointer-events-none shrink-0"
-                                                        />
+                                                        <div
+                                                            className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all shrink-0 ${isChecked
+                                                                ? 'bg-indigo-700 border-indigo-700 text-white'
+                                                                : 'border-gray-300 bg-white'
+                                                            }`}
+                                                        >
+                                                            {isChecked && (
+                                                                <svg className="w-2 h-2 fill-current" viewBox="0 0 20 20">
+                                                                    <path d="M0 11l2-2 5 5L18 3l2 2L7 18z" />
+                                                                </svg>
+                                                            )}
+                                                        </div>
                                                         <div className="flex-1 min-w-0 flex items-center justify-between gap-1.5">
                                                             <div className="min-w-0 flex-1">
                                                                 <span style={{ fontWeight: 600 }} className=" text-[11px] text-gray-850 truncate block leading-tight">
@@ -2332,96 +2385,137 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 </DialogContent>
             </Dialog>
 
-            {/* Bulk Push to Devices Dialog */}
+            {/* Bulk Device Sync Dialog */}
             <Dialog open={isBulkPushOpen} onOpenChange={(open) => { if (!open) setIsBulkPushOpen(false); }}>
                 <DialogContent className="sm:max-w-[480px]">
                     <DialogHeader>
-                        <DialogTitle>Push Selected Employees to Devices</DialogTitle>
+                        <DialogTitle>Bulk Device Sync</DialogTitle>
                         <DialogDescription>
                             You have selected {selectedEmployeeIds.size} employee(s). Choose target biometric devices to queue user profile and templates sync.
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleBulkPushSubmit} className="space-y-4">
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between" style={{ justifyContent: "space-between", padding: "0 0.5rem" }}>
-                                <label className="text-xs font-semibold text-gray-500 block">Select target devices</label>
-                                {devices.length > 0 && (
-                                    <button
-                                        style={{
-                                            cursor: "pointer",
-                                            padding: "0.1rem 0.45rem"
-                                        }}
-                                        type="button"
-                                        onClick={() => {
-                                            if (selectedBulkPushDevices.size === devices.length) {
-                                                setSelectedBulkPushDevices(new Set());
-                                            } else {
-                                                setSelectedBulkPushDevices(new Set(devices.map(d => d.serial_no)));
-                                            }
-                                        }}
-                                        className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
-                                    >
-                                        {selectedBulkPushDevices.size === devices.length ? 'Deselect all' : 'Select all'}
-                                    </button>
-                                )}
+                        <div className="space-y-4">
+                            <div className="space-y-1.5 w-full">
+                                <label className="text-xs font-semibold text-gray-500 block">Device Action</label>
+                                <Select value={bulkSyncAction} onValueChange={(val) => setBulkSyncAction(val as 'push' | 'fetch')}>
+                                    <SelectTrigger className=" bg-gray-50 border-gray-105 rounded-xl h-10 w-full focus:bg-white transition-all">
+                                        <SelectValue placeholder="Select Action" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
+                                        <SelectItem value="push" className=" rounded-md focus:bg-gray-50 cursor-pointer">
+                                            Push to Device(s)
+                                        </SelectItem>
+                                        <SelectItem value="fetch" className=" rounded-md focus:bg-gray-50 cursor-pointer">
+                                            Fetch from Device(s)
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
-                            {loadingDevices ? (
-                                <div className="text-xs text-gray-400 flex items-center justify-center gap-1.5 py-4">
-                                    <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> Loading devices...
-                                </div>
-                            ) : devices.length === 0 ? (
-                                <div className="text-xs text-gray-400 py-4 text-center">No registered devices found.</div>
-                            ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[250px] overflow-y-auto pr-1">
-                                    {devices.map(device => {
-                                        const isChecked = selectedBulkPushDevices.has(device.serial_no);
-                                        const isOnline = device.last_seen
-                                            ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
-                                            : false;
-                                        return (
-                                            <div
-                                                key={device.id}
-                                                onClick={() => {
-                                                    setSelectedBulkPushDevices(prev => {
-                                                        const next = new Set(prev);
-                                                        if (next.has(device.serial_no)) next.delete(device.serial_no);
-                                                        else next.add(device.serial_no);
-                                                        return next;
-                                                    });
-                                                }}
-                                                className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all duration-200 ${isChecked
-                                                    ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
-                                                    : 'border-gray-100 hover:border-gray-200 bg-white'
-                                                    }`}
-                                            >
-                                                <div className="pt-0.5">
-                                                    <Checkbox
-                                                        checked={isChecked}
-                                                        className="w-4 h-4 rounded border-gray-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 data-[state=checked]:text-white focus-visible:ring-indigo-500 cursor-pointer pointer-events-none"
-                                                    />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-1.5 mb-0.5">
-                                                        <span className="font-mono text-[11px] font-semibold text-gray-800 truncate">
-                                                            {device.serial_no}
-                                                        </span>
-                                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
-                                                    </div>
-                                                    {device.location && (
-                                                        <div className="text-[11px] text-gray-500 font-sans truncate">
-                                                            {device.location}
-                                                        </div>
-                                                    )}
-                                                    <span className="text-[9px] text-gray-400 font-sans block mt-0.5">
-                                                        {isOnline ? 'Online' : 'Offline'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                            {bulkSyncAction === 'push' && (
+                                <div className="space-y-1.5 w-full">
+                                    <label className="text-xs font-semibold text-gray-500 block">Select Data to Push</label>
+                                    <Select value={bulkPushType} onValueChange={(val) => setBulkPushType(val as 'all' | 'user_info' | 'finger' | 'face')}>
+                                        <SelectTrigger className=" bg-gray-50 border-gray-105 rounded-xl h-10 w-full focus:bg-white transition-all">
+                                            <SelectValue placeholder="Select Data Type" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
+                                            <SelectItem value="all" className=" rounded-md focus:bg-gray-50 cursor-pointer">
+                                                All together
+                                            </SelectItem>
+                                            <SelectItem value="user_info" className=" rounded-md focus:bg-gray-50 cursor-pointer">
+                                                User Info Only
+                                            </SelectItem>
+                                            <SelectItem value="finger" className=" rounded-md focus:bg-gray-50 cursor-pointer">
+                                                Fingerprint Only
+                                            </SelectItem>
+                                            <SelectItem value="face" className=" rounded-md focus:bg-gray-50 cursor-pointer">
+                                                Face Only
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             )}
+
+                            {/* Devices List */}
+                            <div className="space-y-2.5 w-full">
+                                <div style={{ justifyContent: "space-between", height: "2rem" }} className="flex justify-between items-center">
+                                    <label className="text-xs font-semibold text-gray-550 block">Select Devices</label>
+                                    {selectedBulkPushDevices.size > 0 && (
+                                        <button
+                                            style={{ padding: "0.1rem 0.5rem", borderRadius: "0.25rem" }}
+                                            type="button"
+                                            onClick={() => setSelectedBulkPushDevices(new Set())}
+                                            className="text-[10px] text-gray-400 hover:text-indigo-600 transition-all font-medium"
+                                        >
+                                            Clear Selection
+                                        </button>
+                                    )}
+                                </div>
+
+                                {loadingDevices ? (
+                                    <div className="text-xs text-gray-400 flex items-center justify-center gap-1.5 py-4">
+                                        <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> Loading devices...
+                                    </div>
+                                ) : devices.length === 0 ? (
+                                    <div className="text-xs text-gray-400 py-4 text-center">No registered devices found.</div>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[220px] overflow-y-auto pr-1">
+                                        {devices.map(device => {
+                                            const isChecked = selectedBulkPushDevices.has(device.serial_no);
+                                            const isOnline = device.last_seen
+                                                ? (new Date().getTime() - new Date(device.last_seen).getTime()) < 90000
+                                                : false;
+                                            return (
+                                                <div
+                                                    key={device.id}
+                                                    onClick={() => {
+                                                        setSelectedBulkPushDevices(prev => {
+                                                            const next = new Set(prev);
+                                                            if (next.has(device.serial_no)) next.delete(device.serial_no);
+                                                            else next.add(device.serial_no);
+                                                            return next;
+                                                        });
+                                                    }}
+                                                    className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer select-none transition-all duration-200 ${isChecked
+                                                        ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
+                                                        : 'border-gray-100 hover:border-gray-200 bg-white'
+                                                        }`}
+                                                >
+                                                    <div className="pt-0.5">
+                                                        <div
+                                                            className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked
+                                                                ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                                : 'border-gray-300 bg-white'
+                                                            }`}
+                                                        >
+                                                            {isChecked && (
+                                                                <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 20 20">
+                                                                    <path d="M0 11l2-2 5 5L18 3l2 2L7 18z" />
+                                                                </svg>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                                            <span className="font-mono text-[11px] font-semibold text-gray-800 truncate">
+                                                                {device.serial_no}
+                                                            </span>
+                                                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+                                                        </div>
+                                                        {device.location && (
+                                                            <div className="text-[11px] text-gray-500 font-sans truncate">
+                                                                {device.location}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <DialogFooter className="pt-4 border-t border-gray-100">
@@ -2440,7 +2534,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                 disabled={isBulkPushing || selectedBulkPushDevices.size === 0}
                                 className="bg-indigo-600 text-white hover:bg-indigo-700"
                             >
-                                {isBulkPushing ? 'Queuing...' : `Push to ${selectedBulkPushDevices.size} Device(s)`}
+                                {isBulkPushing ? 'Queuing...' : bulkSyncAction === 'push' ? `Push to ${selectedBulkPushDevices.size} Device(s)` : `Fetch from ${selectedBulkPushDevices.size} Device(s)`}
                             </Button>
                         </DialogFooter>
                     </form>

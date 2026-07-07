@@ -26,7 +26,9 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { parsePunchLocation } from '../lib/geofence';
 import { supabase } from '../lib/supabase';
+
 
 interface Employee {
   id: number;
@@ -159,6 +161,7 @@ export default function TimesheetFinalizer() {
   }, [employees]);
 
   const [renderLimit, setRenderLimit] = useState(100);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     setRenderLimit(100);
@@ -347,7 +350,22 @@ export default function TimesheetFinalizer() {
 
           if (empPunches.length > 0) {
             firstPunch = empPunches[0];
-            computedProject = deviceProjectMap[firstPunch.device_serial] || '';
+            const isMobilePunch = firstPunch.mobile_location || (firstPunch.raw && firstPunch.raw.includes('MOBILE'));
+
+            if (isMobilePunch) {
+              computedProject = '';
+              if (firstPunch.mobile_location) {
+                const { location: projName } = parsePunchLocation(firstPunch.mobile_location, undefined);
+                if (projName && projName !== '—' && projName !== 'Un-Mapped') {
+                  const matchedProj = (projects || []).find(p => p.project_name.toLowerCase().trim() === projName.toLowerCase().trim());
+                  if (matchedProj) {
+                    computedProject = matchedProj.project_code;
+                  }
+                }
+              }
+            } else {
+              computedProject = deviceProjectMap[firstPunch.device_serial] || '';
+            }
 
             if (empPunches.length > 1) {
               const last = empPunches[empPunches.length - 1];
@@ -374,6 +392,16 @@ export default function TimesheetFinalizer() {
             }
           }
 
+          let resolvedAttestedBy = firstPunch ? firstPunch.device_serial : (userData?.email || 'Timekeeper');
+          if (firstPunch && (firstPunch.mobile_location || (firstPunch.raw && firstPunch.raw.includes('MOBILE')))) {
+            const { location: projName } = parsePunchLocation(firstPunch.mobile_location, undefined);
+            if (projName === 'Un-Mapped') {
+              resolvedAttestedBy = 'Un-Mapped';
+            } else {
+              resolvedAttestedBy = projName || 'Mobile';
+            }
+          }
+
           initialRows[emp.device_user_id] = {
             employee_code: emp.device_user_id,
             employee_name: emp.name,
@@ -384,7 +412,7 @@ export default function TimesheetFinalizer() {
             overtime: autoOvertime,
             remarks: '',
             verify_type: firstPunch ? getVerifyTypeLabel(firstPunch) : 'Manual Input',
-            attested_by: firstPunch ? firstPunch.device_serial : (userData?.email || 'Timekeeper'),
+            attested_by: resolvedAttestedBy,
             isEdited: false,
             original_in_punch: firstPunch,
             original_out_punch: lastPunch
@@ -1209,10 +1237,24 @@ export default function TimesheetFinalizer() {
                             </span>
                             <button
                               type="button"
-                              onClick={() => setRenderLimit(prev => prev + 100)}
-                              className="text-xs font-semibold h-9 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors shadow-xs px-4 text-gray-750 cursor-pointer"
+                              onClick={() => {
+                                setLoadingMore(true);
+                                setTimeout(() => {
+                                  setRenderLimit(prev => prev + 100);
+                                  setLoadingMore(false);
+                                }, 50);
+                              }}
+                              disabled={loadingMore}
+                              className="text-xs font-semibold h-9 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors shadow-xs px-4 text-gray-755 cursor-pointer flex items-center justify-center gap-1.5 min-w-[100px]"
                             >
-                              Load More
+                              {loadingMore ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  Loading...
+                                </>
+                              ) : (
+                                "Load More"
+                              )}
                             </button>
                           </div>
                         </td>

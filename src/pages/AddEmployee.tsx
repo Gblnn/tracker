@@ -120,8 +120,11 @@ export default function AddEmployee() {
         status: 'pending',
       }));
 
-      const { error: cmdErr } = await supabase.from('device_commands').insert(commands);
-      if (cmdErr) throw new Error(`Employee saved, but failed to queue device commands: ${cmdErr.message}`);
+      for (const cmd of commands) {
+        const { error: cmdErr } = await supabase.from('device_commands').insert(cmd);
+        if (cmdErr) throw new Error(`Employee saved, but failed to queue device commands: ${cmdErr.message}`);
+        await new Promise(resolve => setTimeout(resolve, 80));
+      }
 
       setSuccess(`${form.name} added and queued for ${selectedDevices.size} device(s). The command will be sent next time the device checks in (usually within ~15 seconds).`);
       setForm(EMPTY_FORM);

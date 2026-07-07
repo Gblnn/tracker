@@ -23,6 +23,7 @@ import { Check, ChevronDown, ChevronLeft, ChevronRight, CircleMinus, Download, L
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
+import { parsePunchLocation } from '../lib/geofence';
 import { supabase } from '../lib/supabase';
 import { todayISO } from '../lib/utilis';
 
@@ -465,6 +466,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedEmpPrefixes, setSelectedEmpPrefixes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [presenceFilter, setPresenceFilter] = useState<'ALL' | 'ZERO' | 'NON_ZERO'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [reportType, setReportType] = useState<ReportType>('inout');
   const [useFirstLast, setUseFirstLast] = useState(true);
@@ -480,7 +482,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
 
   useEffect(() => {
     setRenderLimit(100);
-  }, [searchQuery, selectedDepartments, selectedLocations, selectedEmpPrefixes, selectedStatuses, reportView, reportType, selectedDailyDate]);
+  }, [searchQuery, selectedDepartments, selectedLocations, selectedEmpPrefixes, selectedStatuses, presenceFilter, reportView, reportType, selectedDailyDate]);
 
   // Holidays State
   interface Holiday {
@@ -596,7 +598,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
       }
 
       // Fetch all devices to get their project code mappings
-      const { data: devData } = await supabase.from('devices').select('serial_no, project_code');
+      const { data: devData } = await supabase.from('devices').select('serial_no, project_code, location');
 
       const projectDeviceSerials = (devData ?? [])
         .filter(d => d.project_code && focalProjectCodes.includes(d.project_code))
@@ -642,8 +644,8 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
       let finished = false;
 
       while (!finished) {
-        const { data, error: pErr } = await supabase.from('punch_details')
-          .select('user_id, punch_time, punch_type, location')
+        const { data, error: pErr } = await supabase.from('punches')
+          .select('user_id, punch_time, punch_type, device_serial, mobile_location')
           .gte('punch_time', start)
           .lte('punch_time', end)
           .order('punch_time', { ascending: true })
@@ -668,9 +670,24 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
         }
       }
 
+      const deviceMap = Object.fromEntries(
+        (devData ?? []).map(d => [d.serial_no, d.location])
+      );
+
+      const mappedPunches = allPunches.map(p => {
+        const devLoc = deviceMap[p.device_serial];
+        const { location: resolvedLoc } = parsePunchLocation(p.mobile_location, devLoc);
+        return {
+          user_id: p.user_id,
+          punch_time: p.punch_time,
+          punch_type: p.punch_type,
+          location: resolvedLoc
+        };
+      });
+
       const filteredPunches = isFocalFiltered
-        ? allPunches.filter(p => allowedDeviceUserIds.has(p.user_id))
-        : allPunches;
+        ? mappedPunches.filter(p => allowedDeviceUserIds.has(p.user_id))
+        : mappedPunches;
 
       setEmployees(filteredEmployees);
       setPunches(filteredPunches);
@@ -679,7 +696,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
     } finally {
       setLoading(false);
     }
-  }, [year, month, days, reportView, selectedDailyDate, userData]);
+  }, [year, month, days, reportView, selectedDailyDate, userData?.email, userData?.role]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -848,6 +865,28 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
         return false;
       });
     }
+    if (presenceFilter === 'ZERO') {
+      list = list.filter(e => {
+        const uid = e.device_user_id;
+        const presentCount = dayList.filter(d => {
+          const pad = (n: number) => String(n).padStart(2, '0');
+          const dateKey = `${year}-${pad(month + 1)}-${pad(d)}`;
+          return !!matrix[uid]?.[dateKey]?.isPresent;
+        }).length;
+        return presentCount === 0;
+      });
+    } else if (presenceFilter === 'NON_ZERO') {
+      list = list.filter(e => {
+        const uid = e.device_user_id;
+        const presentCount = dayList.filter(d => {
+          const pad = (n: number) => String(n).padStart(2, '0');
+          const dateKey = `${year}-${pad(month + 1)}-${pad(d)}`;
+          return !!matrix[uid]?.[dateKey]?.isPresent;
+        }).length;
+        return presentCount > 0;
+      });
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(e =>
@@ -856,7 +895,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
       );
     }
     return list;
-  }, [employees, selectedDepartments, selectedLocations, selectedEmpPrefixes, selectedStatuses, searchQuery, employeeLocations, reportView, selectedDailyDate, matrix, useFirstLast, holidays, year, month]);
+  }, [employees, selectedDepartments, selectedLocations, selectedEmpPrefixes, selectedStatuses, presenceFilter, dayList, searchQuery, employeeLocations, reportView, selectedDailyDate, matrix, useFirstLast, holidays, year, month]);
 
   const selectedEmp = useMemo(() => {
     return employees.find(e => e.device_user_id === selectedEmployeeId) || filtered[0] || employees[0];
@@ -2286,7 +2325,42 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </th>
-                  <th className="text-[13px] font-medium text-center py-2" style={{ background: '#065f46' }}>P</th>
+                  <th className="text-[13px] font-medium text-center p-0" style={{ background: '#065f46', width: 52 }}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        style={{ color: presenceFilter !== 'ALL' ? '#facc15' : '#ffffff' }}
+                        className="h-full w-full bg-transparent border-0 hover:bg-white/10 focus:ring-0 focus:ring-offset-0 focus:outline-none shadow-none rounded-none transition-colors font-medium justify-center flex items-center gap-0.5 outline-none cursor-pointer py-2"
+                      >
+                        <span>P</span>
+                        <ChevronDown className="h-3 w-3 opacity-80 shrink-0" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[150px] p-0 z-50">
+                        <div className="py-1">
+                          <DropdownMenuCheckboxItem
+                            checked={presenceFilter === 'ALL'}
+                            onCheckedChange={() => setPresenceFilter('ALL')}
+                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                          >
+                            All
+                          </DropdownMenuCheckboxItem>
+                          <DropdownMenuCheckboxItem
+                            checked={presenceFilter === 'ZERO'}
+                            onCheckedChange={() => setPresenceFilter('ZERO')}
+                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs font-semibold text-red-600 focus:text-red-700"
+                          >
+                            Zero Punches
+                          </DropdownMenuCheckboxItem>
+                          <DropdownMenuCheckboxItem
+                            checked={presenceFilter === 'NON_ZERO'}
+                            onCheckedChange={() => setPresenceFilter('NON_ZERO')}
+                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs font-semibold text-emerald-700 focus:text-emerald-800"
+                          >
+                            Non Zero Punches
+                          </DropdownMenuCheckboxItem>
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </th>
                   <th className="text-[13px] font-medium text-center py-2" style={{ background: '#7f1d1d' }}>A</th>
                   {reportType === 'hourly' && <th className="text-[13px] font-medium text-center py-2" style={{ background: '#b45309' }}>OT</th>}
                   <th style={{ background: '#111827' }} />
