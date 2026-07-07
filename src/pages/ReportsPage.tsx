@@ -572,6 +572,63 @@ export default function StaffMonthlyReport() {
         return;
       }
 
+      // 1. Determine if focal point filter is active
+      let focalProjectCodes: string[] = [];
+      let isFocalFiltered = false;
+
+      if (userData?.role !== 'admin' && userData?.email) {
+        const { data: focalProjects } = await supabase
+          .from('projects')
+          .select('project_code')
+          .eq('focal_point_email', userData.email);
+
+        if (focalProjects && focalProjects.length > 0) {
+          focalProjectCodes = focalProjects.map(p => p.project_code);
+          isFocalFiltered = true;
+        }
+      }
+
+      // Fetch all devices to get their project code mappings
+      const { data: devData } = await supabase.from('devices').select('serial_no, project_code');
+
+      const projectDeviceSerials = (devData ?? [])
+        .filter(d => d.project_code && focalProjectCodes.includes(d.project_code))
+        .map(d => d.serial_no);
+
+      let allowedEmpIds = new Set<number>();
+      let allowedDeviceUserIds = new Set<string>();
+
+      if (isFocalFiltered) {
+        if (projectDeviceSerials.length > 0) {
+          const { data: cmdData } = await supabase
+            .from('device_commands')
+            .select('employee_id')
+            .in('device_serial', projectDeviceSerials);
+
+          if (cmdData) {
+            cmdData.forEach(c => {
+              if (c.employee_id) allowedEmpIds.add(c.employee_id);
+            });
+          }
+
+          const { data: punchUserIds } = await supabase
+            .from('punches')
+            .select('user_id')
+            .in('device_serial', projectDeviceSerials)
+            .limit(5000);
+
+          if (punchUserIds) {
+            punchUserIds.forEach(p => {
+              if (p.user_id) allowedDeviceUserIds.add(p.user_id);
+            });
+          }
+        }
+      }
+
+      const filteredEmployees = isFocalFiltered
+        ? (empData || []).filter(emp => allowedEmpIds.has(emp.id) || allowedDeviceUserIds.has(emp.device_user_id))
+        : (empData || []);
+
       let allPunches: any[] = [];
       let from = 0;
       let to = 999;
@@ -604,14 +661,18 @@ export default function StaffMonthlyReport() {
         }
       }
 
-      setEmployees(empData ?? []);
-      setPunches(allPunches);
+      const filteredPunches = isFocalFiltered
+        ? allPunches.filter(p => allowedDeviceUserIds.has(p.user_id))
+        : allPunches;
+
+      setEmployees(filteredEmployees);
+      setPunches(filteredPunches);
     } catch (err: any) {
       setError(err.message || 'An error occurred while fetching data');
     } finally {
       setLoading(false);
     }
-  }, [year, month, days, reportView, selectedDailyDate]);
+  }, [year, month, days, reportView, selectedDailyDate, userData]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

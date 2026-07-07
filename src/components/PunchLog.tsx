@@ -106,7 +106,14 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
       const emp = empMap[p.user_id];
       const name = emp?.name ?? p.user_id; // Fallback to user_id if name is not available
 
-      const matchesSearch = name.toLowerCase().includes(search.toLowerCase());
+      const query = search.toLowerCase().trim();
+      const matchesSearch =
+        !query ||
+        name.toLowerCase().includes(query) ||
+        (emp?.emp_id && emp.emp_id.toLowerCase().includes(query)) ||
+        p.user_id.toLowerCase().includes(query) ||
+        (p.device_serial && p.device_serial.toLowerCase().includes(query));
+
       const matchesPunchType =
         selectedPunchTypes.length === 0 || selectedPunchTypes.includes(p.punch_type);
       const matchesLocation =
@@ -171,7 +178,7 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-darkblue transition-colors" />
                   <input
                     type="text"
-                    placeholder="Search Employee..."
+                    placeholder="Search name, code, device..."
                     value={search}
                     style={{ fontSize: "0.8rem", fontWeight: "400" }}
                     onChange={(e) => setSearch(e.target.value)}

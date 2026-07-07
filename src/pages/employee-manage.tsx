@@ -151,11 +151,13 @@ export default function EmployeeManage() {
     const [selectedPushDevices, setSelectedPushDevices] = useState<Set<string>>(new Set());
     const [isPushing, setIsPushing] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
+    const [pushType, setPushType] = useState<'all' | 'user_info' | 'finger' | 'face'>('all');
 
     useEffect(() => {
         if (editingEmployee) {
             setSelectedPushDevices(new Set());
             setSyncAction('push');
+            setPushType('all');
             setActiveTab('profile');
         }
     }, [editingEmployee]);
@@ -169,34 +171,35 @@ export default function EmployeeManage() {
         setIsFetching(true);
         try {
             const empId = editingEmployee.id;
+            const pin = editingEmployee.device_user_id.trim();
 
             const commandsToInsert: any[] = [];
             for (const deviceSerial of Array.from(selectedPushDevices)) {
                 commandsToInsert.push(
                     {
                         device_serial: deviceSerial,
-                        command: 'DATA QUERY USERINFO',
+                        command: `DATA QUERY USERINFO PIN=${pin}`,
                         command_type: 'QUERY_USERINFO',
                         employee_id: empId,
                         status: 'pending'
                     },
                     {
                         device_serial: deviceSerial,
-                        command: 'DATA QUERY FINGERTMP',
+                        command: `DATA QUERY FINGERTMP PIN=${pin}`,
                         command_type: 'QUERY_FINGERTMP',
                         employee_id: empId,
                         status: 'pending'
                     },
                     {
                         device_serial: deviceSerial,
-                        command: 'DATA QUERY BIODATA',
+                        command: `DATA QUERY BIODATA PIN=${pin}\tType=9`,
                         command_type: 'QUERY_BIODATA',
                         employee_id: empId,
                         status: 'pending'
                     },
                     {
                         device_serial: deviceSerial,
-                        command: 'DATA QUERY FACE',
+                        command: `DATA QUERY FACE PIN=${pin}`,
                         command_type: 'QUERY_FACE',
                         employee_id: empId,
                         status: 'pending'
@@ -241,51 +244,57 @@ export default function EmployeeManage() {
 
             [...selectedPushDevices].forEach(serial => {
                 // User info update command
-                commandsToInsert.push({
-                    device_serial: serial,
-                    command: userCmd,
-                    command_type: 'ADD_USER',
-                    employee_id: empId,
-                    status: 'pending'
-                });
+                if (pushType === 'all' || pushType === 'user_info') {
+                    commandsToInsert.push({
+                        device_serial: serial,
+                        command: userCmd,
+                        command_type: 'ADD_USER',
+                        employee_id: empId,
+                        status: 'pending'
+                    });
+                }
 
                 // Fingerprints
-                Object.entries(fingerTemplates).forEach(([fid, val]: [string, any]) => {
-                    if (val && val.template) {
-                        commandsToInsert.push({
-                            device_serial: serial,
-                            command: `DATA UPDATE FINGERTMP PIN=${pin}\tFID=${fid}\tSize=${val.size ?? 0}\tValid=${val.valid ?? 1}\tTMP=${val.template}`,
-                            command_type: 'UPDATE_FINGERTMP',
-                            employee_id: empId,
-                            status: 'pending'
-                        });
-                    }
-                });
-
-                // Faces
-                Object.entries(faceTemplates).forEach(([key, val]: [string, any]) => {
-                    if (val && val.template) {
-                        if (key.startsWith('face-')) {
-                            const fid = key.replace('face-', '');
+                if (pushType === 'all' || pushType === 'finger') {
+                    Object.entries(fingerTemplates).forEach(([fid, val]: [string, any]) => {
+                        if (val && val.template) {
                             commandsToInsert.push({
                                 device_serial: serial,
-                                command: `DATA UPDATE FACE PIN=${pin}\tFID=${fid}\tSize=${val.size ?? val.template.length}\tValid=${val.valid ?? 1}\tTMP=${val.template}`,
-                                command_type: 'UPDATE_FACE',
-                                employee_id: empId,
-                                status: 'pending'
-                            });
-                        } else {
-                            const [type, no] = key.split('-');
-                            commandsToInsert.push({
-                                device_serial: serial,
-                                command: `DATA UPDATE BIODATA Pin=${pin}\tType=${type || 9}\tNo=${no || 0}\tIndex=${val.index ?? 0}\tFormat=${val.format ?? 0}\tMajorVer=${val.major_ver ?? 10}\tMinorVer=${val.minor_ver ?? 0}\tTmp=${val.template}`,
-                                command_type: 'UPDATE_BIODATA',
+                                command: `DATA UPDATE FINGERTMP PIN=${pin}\tFID=${fid}\tSize=${val.size ?? 0}\tValid=${val.valid ?? 1}\tTMP=${val.template}`,
+                                command_type: 'UPDATE_FINGERTMP',
                                 employee_id: empId,
                                 status: 'pending'
                             });
                         }
-                    }
-                });
+                    });
+                }
+
+                // Faces
+                if (pushType === 'all' || pushType === 'face') {
+                    Object.entries(faceTemplates).forEach(([key, val]: [string, any]) => {
+                        if (val && val.template) {
+                            if (key.startsWith('face-')) {
+                                const fid = key.replace('face-', '');
+                                commandsToInsert.push({
+                                    device_serial: serial,
+                                    command: `DATA UPDATE FACE PIN=${pin}\tFID=${fid}\tSize=${val.size ?? val.template.length}\tValid=${val.valid ?? 1}\tTMP=${val.template}`,
+                                    command_type: 'UPDATE_FACE',
+                                    employee_id: empId,
+                                    status: 'pending'
+                                });
+                            } else {
+                                const [type, no] = key.split('-');
+                                commandsToInsert.push({
+                                    device_serial: serial,
+                                    command: `DATA UPDATE BIODATA Pin=${pin}\tType=${type || 9}\tNo=${no || 0}\tIndex=${val.index ?? 0}\tFormat=${val.format ?? 0}\tMajorVer=${val.major_ver ?? 10}\tMinorVer=${val.minor_ver ?? 0}\tTmp=${val.template}`,
+                                    command_type: 'UPDATE_BIODATA',
+                                    employee_id: empId,
+                                    status: 'pending'
+                                });
+                            }
+                        }
+                    });
+                }
             });
 
             const { error: insertErr } = await supabase
@@ -1661,6 +1670,31 @@ export default function EmployeeManage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
+
+                                {syncAction === 'push' && (
+                                    <div className="space-y-1.5 w-full">
+                                        <label className="text-xs font-semibold text-gray-500 block">Select Data to Push</label>
+                                        <Select value={pushType} onValueChange={(val) => setPushType(val as 'all' | 'user_info' | 'finger' | 'face')}>
+                                            <SelectTrigger className=" bg-gray-50 border-gray-105 rounded-xl h-10 w-full focus:bg-white transition-all">
+                                                <SelectValue placeholder="Select Data Type" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
+                                                <SelectItem value="all" className=" rounded-md focus:bg-gray-50 cursor-pointer">
+                                                    All together
+                                                </SelectItem>
+                                                <SelectItem value="user_info" className=" rounded-md focus:bg-gray-50 cursor-pointer">
+                                                    User Info Only
+                                                </SelectItem>
+                                                <SelectItem value="finger" className=" rounded-md focus:bg-gray-50 cursor-pointer">
+                                                    Fingerprint Only
+                                                </SelectItem>
+                                                <SelectItem value="face" className=" rounded-md focus:bg-gray-50 cursor-pointer">
+                                                    Face Only
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
 
                                 {/* Common Device Selector */}
                                 <div className="space-y-2.5 w-full">

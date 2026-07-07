@@ -161,7 +161,7 @@ async function getOtherDevices(sn) {
 // Helper to retrieve command by ID
 async function getCommandById(id) {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/device_commands?id=eq.${id}&select=command_type`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/device_commands?id=eq.${id}&select=command,command_type`, {
       headers: {
         'apikey': SUPABASE_SERVICE_KEY,
         'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
@@ -275,8 +275,6 @@ async function handleUserInfoUpload(body, sn) {
   const lines = body.split('\n').filter(l => l.trim());
   if (lines.length === 0) return;
 
-  const otherDevices = await getOtherDevices(sn);
-
   // 1. Extract all pin/name pairs
   const pinToNameMap = [];
   for (const line of lines) {
@@ -317,8 +315,6 @@ async function handleUserInfoUpload(body, sn) {
     console.error('Error fetching employees for userinfo upload:', err);
   }
 
-  const commands = [];
-  
   // 3. Process each employee
   for (const { pin, name, params } of pinToNameMap) {
     let employeeDbId = null;
@@ -375,25 +371,6 @@ async function handleUserInfoUpload(body, sn) {
         console.error(`Error creating employee for PIN ${pin}:`, err);
       }
     }
-
-    if (!employeeDbId) continue;
-
-    // Propagate to other devices
-    if (otherDevices.length > 0) {
-      for (const otherSn of otherDevices) {
-        commands.push({
-          device_serial: otherSn,
-          command: `DATA UPDATE USERINFO PIN=${pin}\tName=${name}\tPri=${params.Pri || 0}\tPasswd=${params.Passwd || ''}\tCard=${params.Card || ''}\tGrp=${params.Grp || 1}\tTZ=${params.TZ || '0000000100000000'}`,
-          command_type: 'ADD_USER',
-          employee_id: employeeDbId,
-          status: 'pending'
-        });
-      }
-    }
-  }
-
-  if (commands.length > 0) {
-    await insertDeviceCommands(commands);
   }
 }
 
@@ -417,7 +394,7 @@ async function getEmployeeBiometrics(id) {
 }
 
 // Helper to patch employee's biometrics JSON data
-async function updateEmployeeBiometrics(id, updates) {
+async function updateEmployeeBiometrics(id, updates, sn) {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/employees?id=eq.${id}`, {
       method: 'PATCH',
@@ -429,37 +406,108 @@ async function updateEmployeeBiometrics(id, updates) {
       body: JSON.stringify(updates)
     });
     if (!res.ok) {
-      console.error('Failed to update employee biometrics:', res.status, await res.text());
+      const errorText = await res.text();
+      console.error('Failed to update employee biometrics:', res.status, errorText);
+      if (sn) await logToCommand(sn, `Failed to update employee biometrics: Status=${res.status}, Error=${errorText}`);
+    } else {
+      if (sn) await logToCommand(sn, `Successfully patched employee biometrics in Supabase!`);
     }
   } catch (err) {
     console.error('Error updating employee biometrics:', err);
+    if (sn) await logToCommand(sn, `Exception in updateEmployeeBiometrics: ${err.message}`);
+  }
+}
+
+// Telemetry helper to write logs to the active command row in Supabase
+async function logToCommand(sn, text) {
+  try {
+    const resCmds = await fetch(`${SUPABASE_URL}/rest/v1/device_commands?device_serial=eq.${encodeURIComponent(sn)}&order=id.desc&limit=1`, {
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+      }
+    });
+    if (resCmds.ok) {
+      const cmds = await resCmds.json();
+      if (cmds && cmds.length > 0) {
+        await fetch(`${SUPABASE_URL}/rest/v1/device_commands?id=eq.${cmds[0].id}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            command: `${cmds[0].command}\nWORKER_LOG: ${text}`
+          })
+        });
+      }
+    }
+  } catch (err) {
+    // Ignore logging errors
   }
 }
 
 // Async logic to process and propagate TEMPLATE (fingerprint) to other devices
 async function handleTemplateUpload(body, sn) {
+  await logToCommand(sn, `Starting handleTemplateUpload with sn ${sn}, body len ${body.length}`);
   console.log(`Received TEMPLATE/FINGERTMP upload from SN ${sn}. Length: ${body.length}`);
   const lines = body.split('\n').filter(l => l.trim());
-  if (lines.length === 0) return;
-
-  const otherDevices = await getOtherDevices(sn);
+  if (lines.length === 0) {
+    await logToCommand(sn, `Lines length is 0, returning.`);
+    return;
+  }
 
   // 1. Extract all unique PINs
   const pinToLineMap = [];
   for (const line of lines) {
     const params = parseTabParams(line);
-    const pin = params.PIN || params.Pin || params.pin;
-    const tmp = params.TMP || params.Tmp || params.tmp;
+    let pin = params.PIN || params.Pin || params.pin;
+    let tmp = params.TMP || params.Tmp || params.tmp;
+    let fid = params.FID || params.Fid || params.fid || '0';
+    let size = params.Size || params.size || (tmp ? tmp.length : 0);
+    let valid = params.Valid || params.valid || 1;
+
+    // Fallback to positional parsing if PIN or TMP is not found
+    if (!pin || !tmp) {
+      const parts = line.split('\t');
+      let startIndex = 0;
+      if (parts[0] && (parts[0].trim() === 'TEMPLATE' || parts[0].trim() === 'FINGERTMP')) {
+        startIndex = 1;
+      }
+      if (parts.length - startIndex >= 5) {
+        pin = parts[startIndex].trim();
+        fid = parts[startIndex + 1].trim();
+        size = parseInt(parts[startIndex + 2].trim()) || parts[startIndex + 4].trim().length;
+        valid = parseInt(parts[startIndex + 3].trim()) || 1;
+        tmp = parts[startIndex + 4].trim();
+      } else if (parts.length - startIndex >= 2) {
+        const maybePin = parts[startIndex].trim();
+        const maybeTmp = parts[parts.length - 1].trim();
+        if (/^\d+$/.test(maybePin) && maybeTmp.length > 50) {
+          pin = maybePin;
+          tmp = maybeTmp;
+          fid = parts[startIndex + 1] ? parts[startIndex + 1].trim() : '0';
+          size = maybeTmp.length;
+          valid = 1;
+        }
+      }
+    }
+
     if (pin && tmp) {
-      pinToLineMap.push({ pin, tmp, params });
+      pinToLineMap.push({ pin, tmp, fid, size, valid, params });
     } else {
-      console.log(`Skipping template line due to missing PIN or TMP. Line: ${line}`);
+      await logToCommand(sn, `Skipped line due to missing PIN or TMP: ${line.slice(0, 100)}`);
     }
   }
 
-  if (pinToLineMap.length === 0) return;
+  if (pinToLineMap.length === 0) {
+    await logToCommand(sn, `pinToLineMap is empty, returning.`);
+    return;
+  }
 
   const uniquePins = Array.from(new Set(pinToLineMap.map(item => item.pin)));
+  await logToCommand(sn, `Found unique pins: ${uniquePins.join(', ')}`);
 
   // 2. Fetch all matching employees in a single request
   const employeesMap = new Map();
@@ -473,6 +521,7 @@ async function handleTemplateUpload(body, sn) {
     });
     if (res.ok) {
       const emps = await res.json();
+      await logToCommand(sn, `Supabase returned ${emps.length} matching employees.`);
       for (const emp of emps) {
         employeesMap.set(emp.device_user_id, {
           id: emp.id,
@@ -481,51 +530,39 @@ async function handleTemplateUpload(body, sn) {
         });
       }
     } else {
-      console.error('Failed to fetch employees for template upload:', await res.text());
+      const errorText = await res.text();
+      console.error('Failed to fetch employees for template upload:', errorText);
+      await logToCommand(sn, `Failed to fetch employees: Status=${res.status}, Error=${errorText}`);
       return;
     }
   } catch (err) {
     console.error('Error fetching employees for template upload:', err);
+    await logToCommand(sn, `Exception fetching employees: ${err.message}`);
     return;
   }
 
-  const commands = [];
   const updatedEmployees = new Map(); // employeeDbId -> new fingerprint_templates
 
   // 3. Process each line using cached employees
-  for (const { pin, tmp, params } of pinToLineMap) {
+  for (const { pin, tmp, fid, size, valid, params } of pinToLineMap) {
     const empData = employeesMap.get(pin);
     if (!empData) {
-      console.log(`Employee not found for PIN/Pin: ${pin} in database.`);
+      await logToCommand(sn, `Employee PIN ${pin} NOT found in database mapping!`);
       continue;
     }
 
     const employeeDbId = empData.id;
-    const fid = params.FID || '0';
     
     // Get currently accumulated/updated templates for this employee
     const accumulated = updatedEmployees.get(employeeDbId) || { ...empData.fingerprint_templates };
     
     accumulated[fid] = {
       template: tmp,
-      size: parseInt(params.Size) || 0,
-      valid: parseInt(params.Valid) || 1
+      size: parseInt(size) || 0,
+      valid: parseInt(valid) || 1
     };
 
     updatedEmployees.set(employeeDbId, accumulated);
-
-    // Propagate command to other devices if any exist
-    if (otherDevices.length > 0) {
-      for (const otherSn of otherDevices) {
-        commands.push({
-          device_serial: otherSn,
-          command: `DATA UPDATE FINGERTMP PIN=${pin}\tFID=${fid}\tSize=${params.Size || 0}\tValid=${params.Valid || 1}\tTMP=${tmp}`,
-          command_type: 'UPDATE_FINGERTMP',
-          employee_id: employeeDbId,
-          status: 'pending'
-        });
-      }
-    }
   }
 
   // 4. Batch patch updated biometrics to Supabase
@@ -538,16 +575,13 @@ async function handleTemplateUpload(body, sn) {
       }
     }
     if (originalStr === JSON.stringify(fingerTemplates)) {
-      continue; // no changes, skip patch
+      await logToCommand(sn, `No changes in fingerprint templates for Employee ID ${employeeDbId}. Skipping patch.`);
+      continue;
     }
 
     console.log(`Saving fingerprint template updates for Employee ID ${employeeDbId}`);
-    await updateEmployeeBiometrics(employeeDbId, { fingerprint_templates: fingerTemplates });
-  }
-
-  // 5. Bulk insert propagation commands
-  if (commands.length > 0) {
-    await insertDeviceCommands(commands);
+    await logToCommand(sn, `Saving template updates to Supabase for Employee ID ${employeeDbId}`);
+    await updateEmployeeBiometrics(employeeDbId, { fingerprint_templates: fingerTemplates }, sn);
   }
 }
 
@@ -557,18 +591,55 @@ async function handleBiodataUpload(body, sn) {
   const lines = body.split('\n').filter(l => l.trim());
   if (lines.length === 0) return;
 
-  const otherDevices = await getOtherDevices(sn);
-
   // 1. Extract all unique PINs
   const pinToLineMap = [];
   for (const line of lines) {
     const params = parseTabParams(line);
-    const pin = params.PIN || params.Pin || params.pin;
-    const tmp = params.TMP || params.Tmp || params.tmp;
+    let pin = params.PIN || params.Pin || params.pin;
+    let tmp = params.TMP || params.Tmp || params.tmp || params.Content || params.content;
+    let type = params.Type || params.type || '9';
+    let no = params.No || params.no || params.FID || params.fid || '0';
+    let index = params.Index || params.index || '0';
+    let format = params.Format || params.format || '0';
+    let majorVer = params.MajorVer || params.majorver || '10';
+    let minorVer = params.MinorVer || params.minorver || '0';
+
+    // Fallback to positional parsing if PIN or TMP/Content is not found
+    if (!pin || !tmp) {
+      const parts = line.split('\t');
+      let startIndex = 0;
+      if (parts[0] && parts[0].trim() === 'BIODATA') {
+        startIndex = 1;
+      }
+      if (parts.length - startIndex >= 12) {
+        pin = parts[startIndex].trim();
+        type = parts[startIndex + 1].trim();
+        majorVer = parts[startIndex + 2].trim();
+        minorVer = parts[startIndex + 3].trim();
+        format = parts[startIndex + 4].trim();
+        no = parts[startIndex + 6].trim();
+        index = parts[startIndex + 7].trim();
+        tmp = parts[startIndex + 11].trim();
+      } else if (parts.length - startIndex >= 2) {
+        const maybePin = parts[startIndex].trim();
+        const maybeTmp = parts[parts.length - 1].trim();
+        if (/^\d+$/.test(maybePin) && maybeTmp.length > 50) {
+          pin = maybePin;
+          tmp = maybeTmp;
+          type = '9';
+          no = parts[startIndex + 1] ? parts[startIndex + 1].trim() : '0';
+          index = '0';
+          format = '0';
+          majorVer = '10';
+          minorVer = '0';
+        }
+      }
+    }
+
     if (pin && tmp) {
-      pinToLineMap.push({ pin, tmp, params });
+      pinToLineMap.push({ pin, tmp, type, no, index, format, majorVer, minorVer, params });
     } else {
-      console.log(`Skipping biodata line due to missing PIN or TMP. Line: ${line}`);
+      console.log(`Skipping biodata line due to missing PIN or TMP/Content. Line: ${line}`);
     }
   }
 
@@ -576,7 +647,7 @@ async function handleBiodataUpload(body, sn) {
 
   const uniquePins = Array.from(new Set(pinToLineMap.map(item => item.pin)));
 
-  // 2. Fetch all matching employees in a single request
+  // 2. Fetch existing employees matching these pins in one query
   const employeesMap = new Map();
   try {
     const queryPins = uniquePins.map(p => encodeURIComponent(p)).join(',');
@@ -604,11 +675,10 @@ async function handleBiodataUpload(body, sn) {
     return;
   }
 
-  const commands = [];
   const updatedEmployees = new Map(); // employeeDbId -> new face_templates
 
   // 3. Process each line using cached employees
-  for (const { pin, tmp, params } of pinToLineMap) {
+  for (const { pin, tmp, type, no, index, format, majorVer, minorVer } of pinToLineMap) {
     const empData = employeesMap.get(pin);
     if (!empData) {
       console.log(`Employee not found for PIN/Pin: ${pin} in database.`);
@@ -616,8 +686,6 @@ async function handleBiodataUpload(body, sn) {
     }
 
     const employeeDbId = empData.id;
-    const type = params.Type || '9';
-    const no = params.No || '0';
     const key = `${type}-${no}`;
 
     // Get currently accumulated/updated templates for this employee
@@ -625,26 +693,13 @@ async function handleBiodataUpload(body, sn) {
 
     accumulated[key] = {
       template: tmp,
-      index: parseInt(params.Index) || 0,
-      format: parseInt(params.Format) || 0,
-      major_ver: parseInt(params.MajorVer) || 10,
-      minor_ver: parseInt(params.MinorVer) || 0
+      index: parseInt(index) || 0,
+      format: parseInt(format) || 0,
+      major_ver: parseInt(majorVer) || 10,
+      minor_ver: parseInt(minorVer) || 0
     };
 
     updatedEmployees.set(employeeDbId, accumulated);
-
-    // Propagate command to other devices if any exist
-    if (otherDevices.length > 0) {
-      for (const otherSn of otherDevices) {
-        commands.push({
-          device_serial: otherSn,
-          command: `DATA UPDATE BIODATA Pin=${pin}\tType=${params.Type || 9}\tNo=${params.No || 0}\tIndex=${params.Index || 0}\tFormat=${params.Format || 0}\tMajorVer=${params.MajorVer || 10}\tMinorVer=${params.MinorVer || 0}\tTmp=${tmp}`,
-          command_type: 'UPDATE_BIODATA',
-          employee_id: employeeDbId,
-          status: 'pending'
-        });
-      }
-    }
   }
 
   // 4. Batch patch updated biometrics to Supabase
@@ -663,11 +718,6 @@ async function handleBiodataUpload(body, sn) {
     console.log(`Saving face template updates (biodata) for Employee ID ${employeeDbId}`);
     await updateEmployeeBiometrics(employeeDbId, { face_templates: faceTemplates });
   }
-
-  // 5. Bulk insert propagation commands
-  if (commands.length > 0) {
-    await insertDeviceCommands(commands);
-  }
 }
 
 // Async logic to process and propagate FACE (older biometrics/face) to other devices
@@ -676,16 +726,44 @@ async function handleFaceUpload(body, sn) {
   const lines = body.split('\n').filter(l => l.trim());
   if (lines.length === 0) return;
 
-  const otherDevices = await getOtherDevices(sn);
-
   // 1. Extract all unique PINs
   const pinToLineMap = [];
   for (const line of lines) {
     const params = parseTabParams(line);
-    const pin = params.PIN || params.Pin || params.pin;
-    const tmp = params.TMP || params.Template || params.Tmp || params.tmp;
+    let pin = params.PIN || params.Pin || params.pin;
+    let tmp = params.TMP || params.Template || params.Tmp || params.tmp;
+    let fid = params.FID || params.Fid || params.fid || '0';
+    let size = params.Size || params.size || (tmp ? tmp.length : 0);
+    let valid = params.Valid || params.valid || params.Active || params.active || 1;
+
+    // Fallback to positional parsing if PIN or TMP is not found
+    if (!pin || !tmp) {
+      const parts = line.split('\t');
+      let startIndex = 0;
+      if (parts[0] && parts[0].trim() === 'FACE') {
+        startIndex = 1;
+      }
+      if (parts.length - startIndex >= 5) {
+        pin = parts[startIndex].trim();
+        fid = parts[startIndex + 1].trim();
+        size = parseInt(parts[startIndex + 2].trim()) || parts[startIndex + 4].trim().length;
+        valid = parseInt(parts[startIndex + 3].trim()) || 1;
+        tmp = parts[startIndex + 4].trim();
+      } else if (parts.length - startIndex >= 2) {
+        const maybePin = parts[startIndex].trim();
+        const maybeTmp = parts[parts.length - 1].trim();
+        if (/^\d+$/.test(maybePin) && maybeTmp.length > 50) {
+          pin = maybePin;
+          tmp = maybeTmp;
+          fid = parts[startIndex + 1] ? parts[startIndex + 1].trim() : '0';
+          size = maybeTmp.length;
+          valid = 1;
+        }
+      }
+    }
+
     if (pin && tmp) {
-      pinToLineMap.push({ pin, tmp, params });
+      pinToLineMap.push({ pin, tmp, fid, size, valid, params });
     } else {
       console.log(`Skipping face line due to missing PIN or TMP/Template. Line: ${line}`);
     }
@@ -723,11 +801,10 @@ async function handleFaceUpload(body, sn) {
     return;
   }
 
-  const commands = [];
   const updatedEmployees = new Map(); // employeeDbId -> new face_templates
 
   // 3. Process each line using cached employees
-  for (const { pin, tmp, params } of pinToLineMap) {
+  for (const { pin, tmp, fid, size, valid, params } of pinToLineMap) {
     const empData = employeesMap.get(pin);
     if (!empData) {
       console.log(`Employee not found for PIN/Pin: ${pin} in database.`);
@@ -735,7 +812,6 @@ async function handleFaceUpload(body, sn) {
     }
 
     const employeeDbId = empData.id;
-    const fid = params.FID || params.Fid || params.fid || '0';
     const key = `face-${fid}`;
 
     // Get currently accumulated/updated templates for this employee
@@ -743,24 +819,11 @@ async function handleFaceUpload(body, sn) {
 
     accumulated[key] = {
       template: tmp,
-      size: parseInt(params.Size) || tmp.length,
-      valid: parseInt(params.Valid || params.Active) || 1
+      size: parseInt(size) || tmp.length,
+      valid: parseInt(valid) || 1
     };
 
     updatedEmployees.set(employeeDbId, accumulated);
-
-    // Propagate command to other devices if any exist
-    if (otherDevices.length > 0) {
-      for (const otherSn of otherDevices) {
-        commands.push({
-          device_serial: otherSn,
-          command: `DATA UPDATE FACE PIN=${pin}\tFID=${fid}\tSize=${params.Size || tmp.length}\tValid=${params.Valid || params.Active || 1}\tTMP=${tmp}`,
-          command_type: 'UPDATE_FACE',
-          employee_id: employeeDbId,
-          status: 'pending'
-        });
-      }
-    }
   }
 
   // 4. Batch patch updated biometrics to Supabase
@@ -778,11 +841,6 @@ async function handleFaceUpload(body, sn) {
 
     console.log(`Saving face template updates for Employee ID ${employeeDbId}`);
     await updateEmployeeBiometrics(employeeDbId, { face_templates: faceTemplates });
-  }
-
-  // 5. Bulk insert propagation commands
-  if (commands.length > 0) {
-    await insertDeviceCommands(commands);
   }
 }
 
@@ -859,15 +917,17 @@ export default {
 
           if (id) {
             const status = returnVal === '0' ? 'acknowledged' : 'error';
+            const cmd = await getCommandById(id);
+            const ackBodyLog = body.slice(0, 1000);
             await updateSingleCommand(id, {
               status: status,
-              acknowledged_at: new Date().toISOString()
+              acknowledged_at: new Date().toISOString(),
+              command: cmd ? `${cmd.command}\nACK_BODY: ${ackBodyLog}` : `ACK_BODY: ${ackBodyLog}`
             });
 
             // If the command succeeded and there are data lines following, process them!
             if (returnVal === '0' && lines.length > 1) {
               const dataLines = lines.slice(1).join('\n');
-              const cmd = await getCommandById(id);
               if (cmd) {
                 const cmdType = cmd.command_type;
                 console.log(`Command ${id} is of type ${cmdType}. Parsing ${lines.length - 1} data lines.`);
@@ -943,6 +1003,34 @@ export default {
       const body = await request.text();
       console.log(`POST /iclock/cdata from SN ${sn}, table: ${table}. Body length: ${body.length}`);
 
+      // Log all incoming cdata table names for debugging
+      try {
+        const resCmds = await fetch(`${SUPABASE_URL}/rest/v1/device_commands?device_serial=eq.${encodeURIComponent(sn)}&order=id.desc&limit=1`, {
+          headers: {
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+          }
+        });
+        if (resCmds.ok) {
+          const cmds = await resCmds.json();
+          if (cmds && cmds.length > 0) {
+            await fetch(`${SUPABASE_URL}/rest/v1/device_commands?id=eq.${cmds[0].id}`, {
+              method: 'PATCH',
+              headers: {
+                'apikey': SUPABASE_SERVICE_KEY,
+                'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                command: `${cmds[0].command}\nCDATA_LOG: Table=${table}, Len=${body.length}, Preview=${body.slice(0, 200).replace(/\n/g, ' ')}`
+              })
+            });
+          }
+        }
+      } catch (err) {
+        console.error("General cdata log failed:", err);
+      }
+
       // Handle standard attendance punches
       if (!table || table === 'ATTLOG') {
         const lines = body.split('\n').filter(l => l.trim());
@@ -993,6 +1081,34 @@ export default {
 
       // Handle TEMPLATE (fingerprint) upload (triggers command sync)
       else if (table === 'TEMPLATE' || table === 'FINGERTMP') {
+        try {
+          const resCmds = await fetch(`${SUPABASE_URL}/rest/v1/device_commands?device_serial=eq.${encodeURIComponent(sn)}&command_type=eq.QUERY_FINGERTMP&order=id.desc&limit=1`, {
+            headers: {
+              'apikey': SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+            }
+          });
+          if (resCmds.ok) {
+            const cmds = await resCmds.json();
+            if (cmds && cmds.length > 0) {
+              const cmdId = cmds[0].id;
+              await fetch(`${SUPABASE_URL}/rest/v1/device_commands?id=eq.${cmdId}`, {
+                method: 'PATCH',
+                headers: {
+                  'apikey': SUPABASE_SERVICE_KEY,
+                  'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  command: `${cmds[0].command}\nCDATA_BODY: ${body.slice(0, 1000)}`
+                })
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Debug cdata log failed:", err);
+        }
+
         if (ctx && typeof ctx.waitUntil === 'function') {
           ctx.waitUntil(handleTemplateUpload(body, sn));
         } else {
@@ -1002,6 +1118,34 @@ export default {
 
       // Handle BIODATA (newer biometrics/face) upload (triggers command sync)
       else if (table === 'BIODATA') {
+        try {
+          const resCmds = await fetch(`${SUPABASE_URL}/rest/v1/device_commands?device_serial=eq.${encodeURIComponent(sn)}&command_type=eq.QUERY_BIODATA&order=id.desc&limit=1`, {
+            headers: {
+              'apikey': SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+            }
+          });
+          if (resCmds.ok) {
+            const cmds = await resCmds.json();
+            if (cmds && cmds.length > 0) {
+              const cmdId = cmds[0].id;
+              await fetch(`${SUPABASE_URL}/rest/v1/device_commands?id=eq.${cmdId}`, {
+                method: 'PATCH',
+                headers: {
+                  'apikey': SUPABASE_SERVICE_KEY,
+                  'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  command: `${cmds[0].command}\nCDATA_BODY: ${body.slice(0, 1000)}`
+                })
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Debug biodata cdata log failed:", err);
+        }
+
         if (ctx && typeof ctx.waitUntil === 'function') {
           ctx.waitUntil(handleBiodataUpload(body, sn));
         } else {
@@ -1011,10 +1155,85 @@ export default {
 
       // Handle FACE (older biometrics/face) upload (triggers command sync)
       else if (table === 'FACE') {
+        try {
+          const resCmds = await fetch(`${SUPABASE_URL}/rest/v1/device_commands?device_serial=eq.${encodeURIComponent(sn)}&command_type=eq.QUERY_FACE&order=id.desc&limit=1`, {
+            headers: {
+              'apikey': SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+            }
+          });
+          if (resCmds.ok) {
+            const cmds = await resCmds.json();
+            if (cmds && cmds.length > 0) {
+              const cmdId = cmds[0].id;
+              await fetch(`${SUPABASE_URL}/rest/v1/device_commands?id=eq.${cmdId}`, {
+                method: 'PATCH',
+                headers: {
+                  'apikey': SUPABASE_SERVICE_KEY,
+                  'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  command: `${cmds[0].command}\nCDATA_BODY: ${body.slice(0, 1000)}`
+                })
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Debug face cdata log failed:", err);
+        }
+
         if (ctx && typeof ctx.waitUntil === 'function') {
           ctx.waitUntil(handleFaceUpload(body, sn));
         } else {
           await handleFaceUpload(body, sn);
+        }
+      }
+
+      // Handle OPERLOG (device operation logs which carry biometrics uploads in key-value formats)
+      else if (table === 'OPERLOG') {
+        const lines = body.split('\n').filter(l => l.trim());
+        const userLines = [];
+        const fpLines = [];
+        const faceLines = [];
+        const biodataLines = [];
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('USER ')) {
+            userLines.push(trimmed.slice(5).trim());
+          } else if (trimmed.startsWith('USER\t')) {
+            userLines.push(trimmed.slice(5).trim());
+          } else if (trimmed.startsWith('FP ')) {
+            fpLines.push(trimmed.slice(3).trim());
+          } else if (trimmed.startsWith('FP\t')) {
+            fpLines.push(trimmed.slice(3).trim());
+          } else if (trimmed.startsWith('FACE ')) {
+            faceLines.push(trimmed.slice(5).trim());
+          } else if (trimmed.startsWith('FACE\t')) {
+            faceLines.push(trimmed.slice(5).trim());
+          } else if (trimmed.startsWith('BIODATA ')) {
+            biodataLines.push(trimmed.slice(8).trim());
+          } else if (trimmed.startsWith('BIODATA\t')) {
+            biodataLines.push(trimmed.slice(8).trim());
+          }
+        }
+
+        if (userLines.length > 0) {
+          const payload = userLines.join('\n');
+          await handleUserInfoUpload(payload, sn);
+        }
+        if (fpLines.length > 0) {
+          const payload = fpLines.join('\n');
+          await handleTemplateUpload(payload, sn);
+        }
+        if (faceLines.length > 0) {
+          const payload = faceLines.join('\n');
+          await handleFaceUpload(payload, sn);
+        }
+        if (biodataLines.length > 0) {
+          const payload = biodataLines.join('\n');
+          await handleBiodataUpload(payload, sn);
         }
       }
 

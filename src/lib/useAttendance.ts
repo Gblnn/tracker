@@ -1,16 +1,30 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '@/components/AuthProvider';
 import type { Punch, Employee, EmployeeSummary } from '../types/attendance';
-import { parsePunchLocation } from './geofence';
+import { parsePunchLocation, parseLocationGeofence } from './geofence';
 
 export function useAttendance(date: string) {
+  const { userData } = useAuth();
   const [useFirstLast, setUseFirstLast] = useState<boolean>(true);
   const [punches, setPunches] = useState<Punch[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [primaryLocations, setPrimaryLocations] = useState<Record<string, string>>({});
-  const [devicesMap, setDevicesMap] = useState<Record<string, { serial_no?: string; start_time: string | null; end_time: string | null; location: string | null }>>({});
+  const [devicesMap, setDevicesMap] = useState<Record<string, { serial_no?: string; start_time: string | null; end_time: string | null; location: string | null; project_code?: string | null }>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const filterRef = useRef<{
+    isFocalFiltered: boolean;
+    projectDeviceSerials: string[];
+    focalProjectLocations: string[];
+    visibleDeviceUserIds: Set<string>;
+  }>({
+    isFocalFiltered: false,
+    projectDeviceSerials: [],
+    focalProjectLocations: [],
+    visibleDeviceUserIds: new Set()
+  });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -35,14 +49,34 @@ export function useAttendance(date: string) {
           .lte('punch_time', end)
           .order('punch_time', { ascending: false }),
         supabase.from('employees').select('*').order('name', { ascending: true }),
-        supabase.from('devices').select('serial_no, location, start_time, end_time')
+        supabase.from('devices').select('serial_no, location, start_time, end_time, project_code')
       ]);
 
       if (punchError) throw punchError;
       if (empError) throw empError;
       if (devError) throw devError;
 
-      // Fetch all historical punches for the month with pagination (capped at max 10 pages / 10000 records)
+      // 1. Determine if focal point filter is active
+      let focalProjectCodes: string[] = [];
+      let focalProjectLocations: string[] = [];
+      let isFocalFiltered = false;
+
+      if (userData?.role !== 'admin' && userData?.email) {
+        const { data: focalProjects } = await supabase
+          .from('projects')
+          .select('project_code, project_location')
+          .eq('focal_point_email', userData.email);
+
+        if (focalProjects && focalProjects.length > 0) {
+          focalProjectCodes = focalProjects.map(p => p.project_code);
+          focalProjectLocations = focalProjects
+            .map(p => parseLocationGeofence(p.project_location).name.toLowerCase().trim())
+            .filter(Boolean);
+          isFocalFiltered = true;
+        }
+      }
+
+      // 2. Fetch all historical punches for the month with pagination (capped at max 10 pages / 10000 records)
       let historicalPunchData: any[] = [];
       let from = 0;
       let to = 999;
@@ -78,6 +112,58 @@ export function useAttendance(date: string) {
       );
       setDevicesMap(devMap);
 
+      // 3. Resolve the project device serials
+      const projectDeviceSerials = (devData ?? [])
+        .filter(d => d.project_code && focalProjectCodes.includes(d.project_code))
+        .map(d => d.serial_no);
+
+      // 4. Resolve the associated employee IDs
+      let allowedEmpIds = new Set<number>();
+      let allowedDeviceUserIds = new Set<string>();
+
+      if (isFocalFiltered) {
+        if (projectDeviceSerials.length > 0) {
+          // Fetch employee IDs from device_commands on project devices
+          const { data: cmdData } = await supabase
+            .from('device_commands')
+            .select('employee_id')
+            .in('device_serial', projectDeviceSerials);
+
+          if (cmdData) {
+            cmdData.forEach(c => {
+              if (c.employee_id) allowedEmpIds.add(c.employee_id);
+            });
+          }
+        }
+
+        // Fetch employee device_user_ids from punches on project devices
+        if (projectDeviceSerials.length > 0) {
+          const { data: punchUserIds } = await supabase
+            .from('punches')
+            .select('user_id')
+            .in('device_serial', projectDeviceSerials)
+            .limit(5000);
+
+          if (punchUserIds) {
+            punchUserIds.forEach(p => {
+              if (p.user_id) allowedDeviceUserIds.add(p.user_id);
+            });
+          }
+        }
+      }
+
+      // 5. Filter employee list
+      let filteredEmployees = empData ?? [];
+      if (isFocalFiltered) {
+        filteredEmployees = (empData ?? []).filter(emp => {
+          const hasCommand = allowedEmpIds.has(emp.id);
+          const hasPunch = allowedDeviceUserIds.has(emp.device_user_id);
+          const hasLocationMatch = emp.location && focalProjectLocations.includes(emp.location.toLowerCase().trim());
+          return hasCommand || hasPunch || hasLocationMatch;
+        });
+      }
+
+      // 6. Filter punches list
       const punchesWithLocation = (punchData ?? []).map(p => {
         const devLoc = devMap[p.device_serial]?.location;
         const { location, coordinates } = parsePunchLocation(p.mobile_location, devLoc);
@@ -87,6 +173,31 @@ export function useAttendance(date: string) {
           coordinates
         };
       });
+
+      let filteredPunches = punchesWithLocation;
+      if (isFocalFiltered) {
+        const visibleDeviceUserIds = new Set(filteredEmployees.map(e => e.device_user_id));
+        filteredPunches = punchesWithLocation.filter(p => {
+          if (p.user_id && visibleDeviceUserIds.has(p.user_id)) {
+            return true;
+          }
+          if (p.device_serial && projectDeviceSerials.includes(p.device_serial)) {
+            return true;
+          }
+          if (p.location && focalProjectLocations.includes(p.location.toLowerCase().trim())) {
+            return true;
+          }
+          return false;
+        });
+      }
+
+      // 7. Update Ref for realtime use
+      filterRef.current = {
+        isFocalFiltered,
+        projectDeviceSerials,
+        focalProjectLocations,
+        visibleDeviceUserIds: new Set(filteredEmployees.map(e => e.device_user_id))
+      };
 
       // Count location frequencies for the current month
       const userLocationCounts: Record<string, Record<string, number>> = {};
@@ -116,14 +227,14 @@ export function useAttendance(date: string) {
       });
 
       setPrimaryLocations(primLocs);
-      setPunches(punchesWithLocation);
-      setEmployees(empData ?? []);
+      setPunches(filteredPunches);
+      setEmployees(filteredEmployees);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load data');
     } finally {
       setLoading(false);
     }
-  }, [date]);
+  }, [date, userData]);
 
   // Initial fetch
   useEffect(() => {
@@ -162,6 +273,19 @@ export function useAttendance(date: string) {
             }
 
             const { location, coordinates } = parsePunchLocation(newPunch.mobile_location, dev?.location);
+
+            // Filter real-time punches if focal point filter is active
+            const filter = filterRef.current;
+            if (filter.isFocalFiltered) {
+              const isEmpVisible = newPunch.user_id && filter.visibleDeviceUserIds.has(newPunch.user_id);
+              const isDeviceVisible = newPunch.device_serial && filter.projectDeviceSerials.includes(newPunch.device_serial);
+              const isLocationVisible = location && filter.focalProjectLocations.includes(location.toLowerCase().trim());
+
+              if (!isEmpVisible && !isDeviceVisible && !isLocationVisible) {
+                return; // Ignore this punch
+              }
+            }
+
             const punchWithLoc = {
               ...newPunch,
               location,

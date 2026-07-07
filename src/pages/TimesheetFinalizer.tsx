@@ -123,6 +123,8 @@ export default function TimesheetFinalizer() {
   const [punchFilter, setPunchFilter] = useState<'ALL' | 'NO_IN' | 'NO_OUT' | 'BOTH'>('ALL');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [roundOT, setRoundOT] = useState(false);
+  const [focalProjectCodes, setFocalProjectCodes] = useState<string[]>([]);
+  const [isFocalFiltered, setIsFocalFiltered] = useState(false);
 
   const { userData } = useAuth();
 
@@ -181,8 +183,69 @@ export default function TimesheetFinalizer() {
       if (projErr) throw projErr;
       if (devErr) throw devErr;
 
-      setEmployees(empData || []);
-      setProjects(projData || []);
+      // 1. Determine if focal point filter is active
+      let focalProjectCodes: string[] = [];
+      let isFocalFiltered = false;
+
+      if (userData?.role !== 'admin' && userData?.email) {
+        const { data: focalProjects } = await supabase
+          .from('projects')
+          .select('project_code')
+          .eq('focal_point_email', userData.email);
+
+        if (focalProjects && focalProjects.length > 0) {
+          focalProjectCodes = focalProjects.map(p => p.project_code);
+          isFocalFiltered = true;
+        }
+      }
+
+      setFocalProjectCodes(focalProjectCodes);
+      setIsFocalFiltered(isFocalFiltered);
+
+      const projectDeviceSerials = (devData ?? [])
+        .filter(d => d.project_code && focalProjectCodes.includes(d.project_code))
+        .map(d => d.serial_no);
+
+      let allowedEmpIds = new Set<number>();
+      let allowedDeviceUserIds = new Set<string>();
+
+      if (isFocalFiltered) {
+        if (projectDeviceSerials.length > 0) {
+          const { data: cmdData } = await supabase
+            .from('device_commands')
+            .select('employee_id')
+            .in('device_serial', projectDeviceSerials);
+
+          if (cmdData) {
+            cmdData.forEach(c => {
+              if (c.employee_id) allowedEmpIds.add(c.employee_id);
+            });
+          }
+
+          const { data: punchUserIds } = await supabase
+            .from('punches')
+            .select('user_id')
+            .in('device_serial', projectDeviceSerials)
+            .limit(5000);
+
+          if (punchUserIds) {
+            punchUserIds.forEach(p => {
+              if (p.user_id) allowedDeviceUserIds.add(p.user_id);
+            });
+          }
+        }
+      }
+
+      const filteredEmployees = isFocalFiltered
+        ? (empData || []).filter(emp => allowedEmpIds.has(emp.id) || allowedDeviceUserIds.has(emp.device_user_id))
+        : (empData || []);
+
+      const filteredProjects = isFocalFiltered
+        ? (projData || []).filter(p => focalProjectCodes.includes(p.project_code))
+        : (projData || []);
+
+      setEmployees(filteredEmployees);
+      setProjects(filteredProjects);
 
       const deviceProjectMap = Object.fromEntries(
         (devData || []).map(d => [d.serial_no, d.project_code])
@@ -199,9 +262,13 @@ export default function TimesheetFinalizer() {
         .order('punch_time', { ascending: true });
       if (punchErr) throw punchErr;
 
+      const filteredPunches = isFocalFiltered
+        ? (punchesData || []).filter(p => allowedDeviceUserIds.has(p.user_id) || (p.device_serial && projectDeviceSerials.includes(p.device_serial)))
+        : (punchesData || []);
+
       // Group punches by employee device_user_id
       const punchGroups: Record<string, Punch[]> = {};
-      (punchesData || []).forEach((p: Punch) => {
+      filteredPunches.forEach((p: Punch) => {
         if (!punchGroups[p.user_id]) {
           punchGroups[p.user_id] = [];
         }
@@ -215,20 +282,24 @@ export default function TimesheetFinalizer() {
         .eq('date', date);
       if (existingErr) throw existingErr;
 
-      const isDayLocked = existingRows && existingRows.length > 0;
+      const filteredExistingRows = isFocalFiltered
+        ? (existingRows || []).filter(row => row.project_code && focalProjectCodes.includes(row.project_code))
+        : (existingRows || []);
+
+      const isDayLocked = filteredExistingRows && filteredExistingRows.length > 0;
       setIsLocked(isDayLocked);
 
       if (isDayLocked) {
         // Find locked metadata from the first record
-        const sampleRow = existingRows[0];
+        const sampleRow = filteredExistingRows[0];
         setLockedBy(sampleRow.attested_by && sampleRow.attested_by.includes('@') ? sampleRow.attested_by : 'Biometric System');
 
         // Map locked rows
         const existingRowsMap = Object.fromEntries(
-          (existingRows || []).map(r => [r.employee_code, r])
+          filteredExistingRows.map(r => [r.employee_code, r])
         );
         const initialRows: Record<string, TimesheetRow> = {};
-        (empData || []).forEach(emp => {
+        filteredEmployees.forEach(emp => {
           const matched = existingRowsMap[emp.device_user_id];
           if (matched) {
             initialRows[emp.device_user_id] = {
@@ -267,7 +338,7 @@ export default function TimesheetFinalizer() {
         setLockedBy(null);
 
         const initialRows: Record<string, TimesheetRow> = {};
-        (empData || []).forEach(emp => {
+        filteredEmployees.forEach(emp => {
           const empPunches = punchGroups[emp.device_user_id] || [];
 
           let firstPunch: Punch | null = null;
@@ -411,10 +482,11 @@ export default function TimesheetFinalizer() {
       }
 
       // 2. Delete any existing entries for this date
-      const { error: delErr } = await supabase
-        .from('timesheet')
-        .delete()
-        .eq('date', date);
+      let deleteQuery = supabase.from('timesheet').delete().eq('date', date);
+      if (isFocalFiltered && focalProjectCodes.length > 0) {
+        deleteQuery = deleteQuery.in('project_code', focalProjectCodes);
+      }
+      const { error: delErr } = await deleteQuery;
       if (delErr) throw delErr;
 
       // 3. Insert newly approved/finalized records
@@ -441,10 +513,11 @@ export default function TimesheetFinalizer() {
     setSaving(true);
     try {
       // Delete existing rows for this date to unlock it
-      const { error: delErr } = await supabase
-        .from('timesheet')
-        .delete()
-        .eq('date', date);
+      let deleteQuery = supabase.from('timesheet').delete().eq('date', date);
+      if (isFocalFiltered && focalProjectCodes.length > 0) {
+        deleteQuery = deleteQuery.in('project_code', focalProjectCodes);
+      }
+      const { error: delErr } = await deleteQuery;
       if (delErr) throw delErr;
 
       toast.success(`Timesheets for ${date} unlocked for editing.`);
@@ -848,8 +921,8 @@ export default function TimesheetFinalizer() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </th>
-                  <th style={{ width: '150px' }}>Punch In</th>
-                  <th style={{ width: '150px' }}>Punch Out</th>
+                  <th style={{ width: '100px' }}>Punch In</th>
+                  <th style={{ width: '100px' }}>Punch Out</th>
                   <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '160px' }}>
                     <DropdownMenu>
                       <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
@@ -894,6 +967,7 @@ export default function TimesheetFinalizer() {
                         </div>
                         <div className="py-1">
                           <DropdownMenuCheckboxItem
+                            style={{ justifyContent: "flex-start" }}
                             checked={selectedProjects.includes('UNASSIGNED')}
                             onCheckedChange={(checked) => {
                               if (checked) {
@@ -911,6 +985,7 @@ export default function TimesheetFinalizer() {
                             const isChecked = selectedProjects.includes(p.project_code);
                             return (
                               <DropdownMenuCheckboxItem
+                                style={{ justifyContent: "flex-start" }}
                                 key={p.project_code}
                                 checked={isChecked}
                                 onCheckedChange={(checked) => {
@@ -933,7 +1008,7 @@ export default function TimesheetFinalizer() {
                   </th>
                   <th style={{ width: '90px' }}>Overtime</th>
                   <th>Source</th>
-                  <th style={{ width: '180px' }}>Remarks</th>
+                  <th style={{ width: '200px' }}>Remarks</th>
                 </tr>
               </thead>
               <tbody>
@@ -960,7 +1035,9 @@ export default function TimesheetFinalizer() {
                                   ID: {emp.device_user_id}
                                 </span>
                                 <span>·</span>
-                                <span>{emp.department || 'No Dept'}</span>
+                                <span style={{ textTransform: 'capitalize' }}>
+                                  {emp.emp_type || 'undefined'}
+                                </span>
                               </div>
                             </div>
                           </td>
@@ -970,17 +1047,17 @@ export default function TimesheetFinalizer() {
                             <div style={{ display: 'flex', flexFlow: 'column', gap: '4px' }}>
                               {row.original_in_punch ? (
                                 <div style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                  <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px', width: "1.75rem", textAlign: "center" }}>IN</span>
+                                  <span className='bg-teal-100 text-teal-600' style={{ fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px', width: "1.75rem", textAlign: "center" }}>IN</span>
                                   <span>{extractTime(row.original_in_punch.punch_time)}</span>
                                   <span style={{ color: '#94a3b8', fontSize: '10px' }}>({row.original_in_punch.device_serial})</span>
                                 </div>
                               ) : (
-                                <span style={{ fontSize: '11px', color: '#ef4444', fontStyle: 'italic', fontWeight: 500 }}>No clock in</span>
+                                <span className='text-rose-500' style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 500 }}>No clock in</span>
                               )}
 
                               {row.original_out_punch ? (
                                 <div style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                  <span style={{ background: '#fee2e2', color: '#b91c1c', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px', width: "1.75rem", textAlign: "center" }}>OUT</span>
+                                  <span className='text-rose-500' style={{ background: '#fee2e2', color: '#b91c1c', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px', width: "1.75rem", textAlign: "center" }}>OUT</span>
                                   <span>{extractTime(row.original_out_punch.punch_time)}</span>
                                   <span style={{ color: '#94a3b8', fontSize: '10px' }}>({row.original_out_punch.device_serial})</span>
                                 </div>
@@ -998,8 +1075,8 @@ export default function TimesheetFinalizer() {
                               type="time"
                               value={row.punch_in}
                               onChange={(e) => updateRow(emp.device_user_id, 'punch_in', e.target.value)}
-                              disabled={isLocked || !canEditAttendance}
-                              className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500"
+                              disabled={isLocked || !canEditAttendance || !!row.original_in_punch}
+                              className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                             />
                           </td>
 
@@ -1009,8 +1086,8 @@ export default function TimesheetFinalizer() {
                               type="time"
                               value={row.punch_out}
                               onChange={(e) => updateRow(emp.device_user_id, 'punch_out', e.target.value)}
-                              disabled={isLocked || !canEditAttendance}
-                              className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500"
+                              disabled={isLocked || !canEditAttendance || !!row.original_out_punch}
+                              className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                             />
                           </td>
 
@@ -1058,15 +1135,15 @@ export default function TimesheetFinalizer() {
                           <td>
                             {row.isEdited ? (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                <span className="source-badge source-manual">Manual</span>
-                                <span style={{ fontSize: '12px', color: '#64748b', wordBreak: 'break-all' }} title={row.attested_by}>
+                                <span style={{ fontSize: "0.7rem", background: "slateblue", color: 'white', border: "none", fontWeight: 500 }} className="source-badge source-manual">Manual</span>
+                                <span className='text-indigo-800' style={{ fontFamily: "monospace", fontSize: '11px', color: '', wordBreak: 'break-all', fontWeight: 500 }} title={row.attested_by}>
                                   {row.attested_by}
                                 </span>
                               </div>
                             ) : (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                <span className="source-badge source-auto">Biometric</span>
-                                <span style={{ fontSize: '10px', color: '#94a3b8', fontFamily: 'monospace' }}>
+                                <span style={{ fontSize: "0.7rem", background: "teal", color: "white", fontWeight: 500 }} className="source-badge source-auto">Biometric</span>
+                                <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>
                                   {row.verify_type}
                                 </span>
                               </div>
