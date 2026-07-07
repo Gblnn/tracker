@@ -420,7 +420,12 @@ ScrollableRow.displayName = 'ScrollableRow';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function StaffMonthlyReport() {
+interface ReportsPageProps {
+  refreshTrigger?: number;
+  onLoadingChange?: (loading: boolean) => void;
+}
+
+export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: ReportsPageProps = {}) {
   const { userData } = useAuth();
 
   const canEditAttendance = useMemo(() => {
@@ -456,8 +461,10 @@ export default function StaffMonthlyReport() {
   const [punches, setPunches] = useState<PunchDetail[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [deptFilter] = useState('all');
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [selectedEmpPrefixes, setSelectedEmpPrefixes] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [reportType, setReportType] = useState<ReportType>('inout');
   const [useFirstLast, setUseFirstLast] = useState(true);
@@ -473,7 +480,7 @@ export default function StaffMonthlyReport() {
 
   useEffect(() => {
     setRenderLimit(100);
-  }, [searchQuery, deptFilter, selectedLocations, reportView, reportType, selectedDailyDate]);
+  }, [searchQuery, selectedDepartments, selectedLocations, selectedEmpPrefixes, selectedStatuses, reportView, reportType, selectedDailyDate]);
 
   // Holidays State
   interface Holiday {
@@ -676,6 +683,16 @@ export default function StaffMonthlyReport() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  useEffect(() => {
+    onLoadingChange?.(loading);
+  }, [loading, onLoadingChange]);
+
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      fetchData();
+    }
+  }, [refreshTrigger, fetchData]);
+
   // ── Matrix ─────────────────────────────────────────────────────────────────
   const matrix: AttendanceMatrix = useMemo(() => {
     const r: AttendanceMatrix = {};
@@ -743,9 +760,19 @@ export default function StaffMonthlyReport() {
   }, [punches]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
-  // const departments = useMemo(() =>
-  //   [...new Set(employees.map(e => e.department).filter(Boolean) as string[])].sort(),
-  //   [employees]);
+  const departments = useMemo(() =>
+    [...new Set(employees.map(e => e.department).filter(Boolean) as string[])].sort(),
+    [employees]);
+
+  const empCodePrefixes = useMemo(() => {
+    const prefixes = new Set<string>();
+    employees.forEach(e => {
+      if (e.emp_id && e.emp_id.length >= 2) {
+        prefixes.add(e.emp_id.slice(0, 2).toUpperCase());
+      }
+    });
+    return Array.from(prefixes).sort();
+  }, [employees]);
 
   const locations = useMemo(() =>
     [...new Set(punches.map(p => p.location).filter(Boolean) as string[])].sort(),
@@ -768,13 +795,57 @@ export default function StaffMonthlyReport() {
   }, [punches]);
 
   const filtered = useMemo(() => {
-    let list = deptFilter === 'all' ? employees : employees.filter(e => e.department === deptFilter);
-    if (selectedLocations.length > 0) {
+    let list = employees;
+    if (selectedDepartments.length > 0) {
+      list = list.filter(e => e.department && selectedDepartments.includes(e.department));
+    }
+    if (selectedEmpPrefixes.length > 0) {
       list = list.filter(e => {
-        const locs = employeeLocations[e.device_user_id];
-        if (!locs) return false;
-        const employeeLocArray = locs.split(', ');
-        return employeeLocArray.some(loc => selectedLocations.includes(loc));
+        if (!e.emp_id || e.emp_id.length < 2) return false;
+        const prefix = e.emp_id.slice(0, 2).toUpperCase();
+        return selectedEmpPrefixes.includes(prefix);
+      });
+    }
+    if (selectedLocations.length > 0) {
+      if (reportView === 'daily') {
+        list = list.filter(e => {
+          const c = matrix[e.device_user_id]?.[selectedDailyDate];
+          if (!c || !c.isPresent) return false;
+          const inLoc = useFirstLast ? c.firstPunchLocation : c.firstInLocation;
+          const outLoc = useFirstLast ? c.lastPunchLocation : c.lastOutLocation;
+          return (inLoc && selectedLocations.includes(inLoc)) || (outLoc && selectedLocations.includes(outLoc));
+        });
+      } else {
+        list = list.filter(e => {
+          const locs = employeeLocations[e.device_user_id];
+          if (!locs) return false;
+          const employeeLocArray = locs.split(', ');
+          return employeeLocArray.some(loc => selectedLocations.includes(loc));
+        });
+      }
+    }
+    if (reportView === 'daily' && selectedStatuses.length > 0) {
+      list = list.filter(e => {
+        const c = matrix[e.device_user_id]?.[selectedDailyDate];
+        const [y, m, d] = selectedDailyDate.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        const isWeekendDay = isWeekend(y, m - 1, d);
+        const isHolidayDay = holidays.some(h => h.day === d && year === y && month === (m - 1));
+
+        let statusText = 'Absent';
+        if (isWeekendDay) {
+          statusText = 'Weekend';
+        } else if (isHolidayDay) {
+          statusText = c?.isPresent ? 'Worked (Holiday)' : 'Holiday';
+        } else if (c?.isPresent) {
+          statusText = 'Present';
+        } else {
+          statusText = dateObj > today ? '—' : 'Absent';
+        }
+
+        if (selectedStatuses.includes(statusText)) return true;
+        if (selectedStatuses.includes('Holiday') && (statusText === 'Holiday' || statusText === 'Worked (Holiday)')) return true;
+        return false;
       });
     }
     if (searchQuery.trim()) {
@@ -785,7 +856,7 @@ export default function StaffMonthlyReport() {
       );
     }
     return list;
-  }, [employees, deptFilter, selectedLocations, searchQuery, employeeLocations]);
+  }, [employees, selectedDepartments, selectedLocations, selectedEmpPrefixes, selectedStatuses, searchQuery, employeeLocations, reportView, selectedDailyDate, matrix, useFirstLast, holidays, year, month]);
 
   const selectedEmp = useMemo(() => {
     return employees.find(e => e.device_user_id === selectedEmployeeId) || filtered[0] || employees[0];
@@ -967,7 +1038,7 @@ export default function StaffMonthlyReport() {
       rows.push([`Staff Daily Attendance Report`]);
       rows.push([`Date: ${selectedDailyDate}`]);
       rows.push([]);
-      rows.push(['Date', '#', 'Name', 'Emp ID', 'Department', 'Status', 'Check In', 'Check Out', 'Hours', 'Overtime']);
+      rows.push(['Date', '#', 'Name', 'Emp ID', 'Department', 'Location', 'Status', 'Check In', 'Check Out', 'Hours', 'Overtime']);
 
       dateListInRange.forEach((dateStr) => {
         const [y, m, d] = dateStr.split('-').map(Number);
@@ -983,6 +1054,7 @@ export default function StaffMonthlyReport() {
           let checkInText = '—';
           let checkOutText = '—';
           let hoursText = '—';
+          let locDisplay = '—';
 
           if (isWeekendDay) {
             statusText = 'Weekend';
@@ -1006,8 +1078,11 @@ export default function StaffMonthlyReport() {
             const inLoc = useFirstLast ? c.firstPunchLocation : c.firstInLocation;
             const outLoc = useFirstLast ? c.lastPunchLocation : c.lastOutLocation;
 
-            if (inLoc) checkInText += ` (${inLoc})`;
-            if (outLoc && c.firstPunch !== c.lastPunch) checkOutText += ` (${outLoc})`;
+            if (inLoc && outLoc && inLoc !== outLoc && c.firstPunch !== c.lastPunch) {
+              locDisplay = `${inLoc} / ${outLoc}`;
+            } else {
+              locDisplay = inLoc || outLoc || '—';
+            }
 
             hoursText = getDayHours(c);
           }
@@ -1020,6 +1095,7 @@ export default function StaffMonthlyReport() {
             emp.name,
             emp.emp_id ?? '',
             emp.department ?? '',
+            locDisplay,
             statusText,
             checkInText,
             checkOutText,
@@ -1030,7 +1106,7 @@ export default function StaffMonthlyReport() {
       });
 
       const ws = XLSX.utils.aoa_to_sheet(rows);
-      ws['!cols'] = [{ wch: 12 }, { wch: 4 }, { wch: 25 }, { wch: 10 }, { wch: 18 }, { wch: 12 }, { wch: 30 }, { wch: 30 }, { wch: 8 }, { wch: 8 }];
+      ws['!cols'] = [{ wch: 12 }, { wch: 4 }, { wch: 25 }, { wch: 10 }, { wch: 18 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 8 }];
       XLSX.utils.book_append_sheet(wb, ws, `Daily_Report`);
       XLSX.writeFile(wb, `Daily_Attendance_${selectedDailyDate}.xlsx`);
       return;
@@ -1276,7 +1352,7 @@ export default function StaffMonthlyReport() {
       }
       setPdfLoading(false);
     }
-  }, [days, month, year, filtered, workDays, reportType, useFirstLast, deptFilter, selectedLocations, reportView, selectedDailyDate, selectedEmployeeId, selectedEmp]);
+  }, [days, month, year, filtered, workDays, reportType, useFirstLast, selectedDepartments, selectedLocations, reportView, selectedDailyDate, selectedEmployeeId, selectedEmp]);
 
   const limit = pdfLoading ? filtered.length : renderLimit;
 
@@ -1583,9 +1659,270 @@ export default function StaffMonthlyReport() {
                     </div>
                   </div>
                 </th>
-                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 100 }}>Emp ID</th>
-                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 170 }}>Department</th>
-                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 120 }}>Status</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 140, verticalAlign: 'middle' }}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-white hover:bg-white/10 focus:ring-0 focus:ring-offset-0 focus:outline-none shadow-none px-2 rounded-md transition-colors font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                      <span className="truncate">
+                        {selectedEmpPrefixes.length === 0
+                          ? 'Emp ID'
+                          : selectedEmpPrefixes.length === 1
+                            ? `ID: ${selectedEmpPrefixes[0]}`
+                            : `ID (${selectedEmpPrefixes.length})`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-80 shrink-0" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[180px] max-h-[300px] overflow-y-auto p-0 z-50">
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedEmpPrefixes(empCodePrefixes);
+                          }}
+                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left normal-case"
+                          style={{ background: "none", flex: 1 }}
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedEmpPrefixes([]);
+                          }}
+                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right normal-case"
+                          style={{ background: "none", flex: 1 }}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      {empCodePrefixes.map(prefix => {
+                        const isChecked = selectedEmpPrefixes.includes(prefix);
+                        return (
+                          <DropdownMenuCheckboxItem
+                            key={prefix}
+                            checked={isChecked}
+                            onSelect={(e) => e.preventDefault()}
+                            onCheckedChange={checked => {
+                              if (checked) {
+                                setSelectedEmpPrefixes([...selectedEmpPrefixes, prefix]);
+                              } else {
+                                setSelectedEmpPrefixes(selectedEmpPrefixes.filter(item => item !== prefix));
+                              }
+                            }}
+                            style={{ fontWeight: 400 }}
+                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs normal-case font-medium"
+                          >
+                            {prefix}
+                          </DropdownMenuCheckboxItem>
+                        );
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 170, verticalAlign: 'middle' }}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-white hover:bg-white/10 focus:ring-0 focus:ring-offset-0 focus:outline-none shadow-none px-2 rounded-md transition-colors font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                      <span className="truncate">
+                        {selectedDepartments.length === 0
+                          ? 'Department'
+                          : selectedDepartments.length === 1
+                            ? selectedDepartments[0]
+                            : `Dept (${selectedDepartments.length})`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-80 shrink-0" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedDepartments(departments);
+                          }}
+                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left normal-case"
+                          style={{ background: "none", flex: 1 }}
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedDepartments([]);
+                          }}
+                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right normal-case"
+                          style={{ background: "none", flex: 1 }}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      {departments.map(dept => {
+                        const isChecked = selectedDepartments.includes(dept);
+                        return (
+                          <DropdownMenuCheckboxItem
+                            key={dept}
+                            checked={isChecked}
+                            onSelect={(e) => e.preventDefault()}
+                            onCheckedChange={checked => {
+                              if (checked) {
+                                setSelectedDepartments([...selectedDepartments, dept]);
+                              } else {
+                                setSelectedDepartments(selectedDepartments.filter(item => item !== dept));
+                              }
+                            }}
+                            style={{ fontWeight: 400 }}
+                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs normal-case font-medium"
+                          >
+                            {dept}
+                          </DropdownMenuCheckboxItem>
+                        );
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 180, verticalAlign: 'middle' }}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-white hover:bg-white/10 focus:ring-0 focus:ring-offset-0 focus:outline-none shadow-none px-2 rounded-md transition-colors font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                      <span className="truncate">
+                        {selectedLocations.length === 0
+                          ? 'Location (All)'
+                          : selectedLocations.length === 1
+                            ? selectedLocations[0]
+                            : `Location (${selectedLocations.length})`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-80 shrink-0" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedLocations(locations);
+                          }}
+                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left normal-case"
+                          style={{ background: "none", flex: 1 }}
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedLocations([]);
+                          }}
+                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right normal-case"
+                          style={{ background: "none", flex: 1 }}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      {locations.map(loc => {
+                        const isChecked = selectedLocations.includes(loc);
+                        return (
+                          <DropdownMenuCheckboxItem
+                            key={loc}
+                            checked={isChecked}
+                            onSelect={(e) => e.preventDefault()}
+                            onCheckedChange={checked => {
+                              if (checked) {
+                                setSelectedLocations([...selectedLocations, loc]);
+                              } else {
+                                setSelectedLocations(selectedLocations.filter(item => item !== loc));
+                              }
+                            }}
+                            style={{ fontWeight: 400 }}
+                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs normal-case font-medium"
+                          >
+                            {loc}
+                          </DropdownMenuCheckboxItem>
+                        );
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 140, verticalAlign: 'middle' }}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-white hover:bg-white/10 focus:ring-0 focus:ring-offset-0 focus:outline-none shadow-none px-2 rounded-md transition-colors font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                      <span className="truncate">
+                        {selectedStatuses.length === 0
+                          ? 'Status'
+                          : selectedStatuses.length === 1
+                            ? selectedStatuses[0]
+                            : `Status (${selectedStatuses.length})`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-80 shrink-0" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[180px] max-h-[300px] overflow-y-auto p-0 z-50">
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedStatuses(['Present', 'Absent', 'Weekend', 'Holiday']);
+                          }}
+                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left normal-case"
+                          style={{ background: "none", flex: 1 }}
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedStatuses([]);
+                          }}
+                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right normal-case"
+                          style={{ background: "none", flex: 1 }}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      {['Present', 'Absent', 'Weekend', 'Holiday'].map(status => {
+                        const isChecked = selectedStatuses.includes(status);
+                        return (
+                          <DropdownMenuCheckboxItem
+                            key={status}
+                            checked={isChecked}
+                            onSelect={(e) => e.preventDefault()}
+                            onCheckedChange={checked => {
+                              if (checked) {
+                                setSelectedStatuses([...selectedStatuses, status]);
+                              } else {
+                                setSelectedStatuses(selectedStatuses.filter(item => item !== status));
+                              }
+                            }}
+                            style={{ fontWeight: 400 }}
+                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs normal-case font-medium"
+                          >
+                            {status}
+                          </DropdownMenuCheckboxItem>
+                        );
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Check In</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Check Out</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Hours</th>
@@ -1595,7 +1932,7 @@ export default function StaffMonthlyReport() {
             <tbody className="divide-y divide-gray-100 bg-white">
               {dateListInRange.length === 0 || filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-20 text-center text-gray-400 font-medium bg-white">
+                  <td colSpan={11} className="py-20 text-center text-gray-400 font-medium bg-white">
                     No employees found.
                   </td>
                 </tr>
@@ -1615,6 +1952,7 @@ export default function StaffMonthlyReport() {
                       let checkInText = '—';
                       let checkOutText = '—';
                       let hoursText = '—';
+                      let locDisplay = '—';
 
                       if (isWeekendDay) {
                         statusBadge = <span className="text-gray-400 text-xs">Weekend</span>;
@@ -1655,8 +1993,11 @@ export default function StaffMonthlyReport() {
                         const inLoc = useFirstLast ? c.firstPunchLocation : c.firstInLocation;
                         const outLoc = useFirstLast ? c.lastPunchLocation : c.lastOutLocation;
 
-                        if (inLoc) checkInText += ` (${inLoc})`;
-                        if (outLoc && c.firstPunch !== c.lastPunch) checkOutText += ` (${outLoc})`;
+                        if (inLoc && outLoc && inLoc !== outLoc && c.firstPunch !== c.lastPunch) {
+                          locDisplay = `${inLoc} / ${outLoc}`;
+                        } else {
+                          locDisplay = inLoc || outLoc || '—';
+                        }
 
                         hoursText = getDayHours(c);
                       }
@@ -1670,6 +2011,7 @@ export default function StaffMonthlyReport() {
                           <td className="px-4 py-2 font-medium text-gray-900 capitalize text-left">{emp.name.toLowerCase()}</td>
                           <td className="px-4 py-2 text-gray-500 text-left">{emp.emp_id ?? '—'}</td>
                           <td className="px-4 py-2 text-gray-500 text-left">{emp.department ?? '—'}</td>
+                          <td className="px-4 py-2 text-gray-500 text-left">{locDisplay}</td>
                           <td className="px-4 py-2 text-left">{statusBadge}</td>
                           <td className="px-4 py-2 text-gray-700 font-medium tabular-nums text-xs text-left">{checkInText}</td>
                           <td className="px-4 py-2 text-gray-700 font-medium tabular-nums text-xs text-left">{checkOutText}</td>
@@ -1681,7 +2023,7 @@ export default function StaffMonthlyReport() {
                   })}
                   {filtered.length > limit && (
                     <tr >
-                      <td colSpan={10} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
+                      <td colSpan={11} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
                         <div style={{}} className="flex items-center justify-center gap-4 w-full">
                           <span className="text-xs text-gray-500 font-medium text-center">
                             Showing {limit} of {filtered.length} records

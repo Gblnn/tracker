@@ -84,13 +84,19 @@ interface ManageEmployee {
     location?: string | null;
 }
 
-export default function EmployeeManage() {
+interface EmployeeManageProps {
+    refreshTrigger?: number;
+    onLoadingChange?: (loading: boolean) => void;
+}
+
+export default function EmployeeManage({ refreshTrigger, onLoadingChange }: EmployeeManageProps = {}) {
     const [employees, setEmployees] = useState<ManageEmployee[]>([]);
     const [employeeLocations, setEmployeeLocations] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+    const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
     const [selectedNationalities, setSelectedNationalities] = useState<string[]>([]);
 
@@ -99,7 +105,7 @@ export default function EmployeeManage() {
 
     useEffect(() => {
         setRenderLimit(100);
-    }, [search, selectedDepartments, selectedTypes, selectedNationalities]);
+    }, [search, selectedDepartments, selectedLocations, selectedTypes, selectedNationalities]);
 
     // Selection and bulk states
     const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -651,6 +657,17 @@ export default function EmployeeManage() {
         fetchDevices();
     }, [fetchEmployees, fetchDevices]);
 
+    useEffect(() => {
+        if (refreshTrigger && refreshTrigger > 0) {
+            fetchEmployees();
+            fetchDevices();
+        }
+    }, [refreshTrigger, fetchEmployees, fetchDevices]);
+
+    useEffect(() => {
+        onLoadingChange?.(loading || loadingDevices);
+    }, [loading, loadingDevices, onLoadingChange]);
+
     // Compile unique departments for filtering
     const uniqueDepartments = useMemo(() => {
         const depts = new Set<string>();
@@ -874,6 +891,16 @@ export default function EmployeeManage() {
         return Array.from(nats).sort();
     }, [employees]);
 
+    // Compile unique locations for filtering
+    const uniqueLocations = useMemo(() => {
+        const locSet = new Set<string>();
+        employees.forEach((emp) => {
+            const loc = employeeLocations[emp.device_user_id] ?? emp.location;
+            if (loc) locSet.add(loc);
+        });
+        return Array.from(locSet).sort();
+    }, [employees, employeeLocations]);
+
     // Filtered employees logic
     const filteredEmployees = useMemo(() => {
         return employees.filter((emp) => {
@@ -896,9 +923,14 @@ export default function EmployeeManage() {
                 selectedNationalities.length === 0 ||
                 (emp.nationality && selectedNationalities.includes(emp.nationality.toLowerCase()));
 
-            return matchesSearch && matchesDept && matchesType && matchesNationality;
+            const empLoc = employeeLocations[emp.device_user_id] ?? emp.location;
+            const matchesLocation =
+                selectedLocations.length === 0 ||
+                (empLoc && selectedLocations.includes(empLoc));
+
+            return matchesSearch && matchesDept && matchesType && matchesNationality && matchesLocation;
         });
-    }, [employees, search, selectedDepartments, selectedTypes, selectedNationalities]);
+    }, [employees, search, selectedDepartments, selectedLocations, selectedTypes, selectedNationalities, employeeLocations]);
 
     // Stats calculation commented out because cards are disabled
     /*
@@ -1091,7 +1123,7 @@ export default function EmployeeManage() {
                                 </EmptyMedia>
                                 <EmptyTitle>No employees found</EmptyTitle>
                                 <EmptyDescription>
-                                    {search || selectedDepartments.length > 0 || selectedTypes.length > 0 || selectedNationalities.length > 0
+                                    {search || selectedDepartments.length > 0 || selectedLocations.length > 0 || selectedTypes.length > 0 || selectedNationalities.length > 0
                                         ? 'No matching employees found with current filters.'
                                         : 'Get started by adding employee records.'}
                                 </EmptyDescription>
@@ -1122,7 +1154,73 @@ export default function EmployeeManage() {
                                 <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "240px" }}>Employee</th>
                                 <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "160px" }}>IDs</th>
                                 <th className=" px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "180px", border: "" }}>Biometrics</th>
-                                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "180px" }}>Location</th>
+                                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "180px" }}>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                                            <span className="truncate">
+                                                {selectedLocations.length === 0
+                                                    ? 'Location (All)'
+                                                    : selectedLocations.length === 1
+                                                        ? selectedLocations[0]
+                                                        : `Loc (${selectedLocations.length})`}
+                                            </span>
+                                            <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-[180px] max-h-[300px] overflow-y-auto p-0 z-50">
+                                            <div
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedLocations(uniqueLocations);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-855 cursor-pointer text-left"
+                                                    style={{ background: "none", flex: 1 }}
+                                                >
+                                                    Select All
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedLocations([]);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-855 cursor-pointer text-right"
+                                                    style={{ background: "none", flex: 1 }}
+                                                >
+                                                    Clear All
+                                                </button>
+                                            </div>
+                                            <div className="py-1">
+                                                {uniqueLocations.map(loc => {
+                                                    const isChecked = selectedLocations.includes(loc);
+                                                    return (
+                                                        <DropdownMenuCheckboxItem
+                                                            key={loc}
+                                                            checked={isChecked}
+                                                            onCheckedChange={(checked) => {
+                                                                if (checked) {
+                                                                    setSelectedLocations([...selectedLocations, loc]);
+                                                                } else {
+                                                                    setSelectedLocations(selectedLocations.filter(item => item !== loc));
+                                                                }
+                                                            }}
+                                                            onSelect={(e) => e.preventDefault()}
+                                                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                        >
+                                                            {loc}
+                                                        </DropdownMenuCheckboxItem>
+                                                    );
+                                                })}
+                                            </div>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </th>
                                 <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "200px" }}>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">

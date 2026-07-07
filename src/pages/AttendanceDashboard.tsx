@@ -38,12 +38,28 @@ type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'termi
 export default function AttendanceDashboard() {
   const [date, setDate] = useState<string>(todayISO());
   const [tab, setTab] = useState<Tab>('summary');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [tabLoading, setTabLoading] = useState(false);
 
   const { punches, employees, employeeSummaries, loading, refetch, useFirstLast, setUseFirstLast } = useAttendance(date);
   const [navVisible, setNavVisible] = useState(true);
   const { userData } = useAuth();
 
   const [dbCount, setDbCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    setTabLoading(false);
+  }, [tab]);
+
+  const isFetching = (tab === 'summary' || tab === 'log') ? loading : tabLoading;
+
+  const handleGlobalRefresh = () => {
+    if (tab === 'summary' || tab === 'log') {
+      refetch();
+    } else {
+      setRefreshTrigger(prev => prev + 1);
+    }
+  };
 
   const fetchDbCount = () => {
     supabase
@@ -141,7 +157,7 @@ export default function AttendanceDashboard() {
           </div>
         }
         fixed
-        extra={<RefreshButton />} />
+        extra={<RefreshButton onClick={handleGlobalRefresh} fetchingData={isFetching} />} />
 
       {/* ✅ CRITICAL FIX: minWidth + overflow hidden */}
       <div
@@ -374,38 +390,41 @@ export default function AttendanceDashboard() {
                 : null
             }
 
-            {loading ? (
-              <div style={{ margin: "auto" }}>
-                <Loader2 className="animate-spin" />
-              </div>
-            ) : tab === 'summary' ? (
-              <EmployeeTable summaries={employeeSummaries} date={date} useFirstLast={useFirstLast} />
-
+            {tab === 'summary' ? (
+              loading ? (
+                <div style={{ margin: "auto" }}>
+                  <Loader2 className="animate-spin" />
+                </div>
+              ) : (
+                <EmployeeTable summaries={employeeSummaries} date={date} useFirstLast={useFirstLast} />
+              )
+            ) : tab === 'log' ? (
+              loading ? (
+                <div style={{ margin: "auto" }}>
+                  <Loader2 className="animate-spin" />
+                </div>
+              ) : (
+                <PunchLog punches={punches} employees={employees} onEmployeeAdded={refetch} />
+              )
             ) : tab === 'transfers' ? (
               <TransferRequests embedMode={true} />
-            ) : tab === 'log' ? (
-              <PunchLog punches={punches} employees={employees} onEmployeeAdded={refetch} />
             ) : tab === 'devices' ? (
-              <DevicesMaster />
+              <DevicesMaster refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
             ) : tab === 'projects' ? (
-              <ProjectsMaster />
+              <ProjectsMaster refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
             ) : tab === 'finalize' ? (
               <TimesheetFinalizer />
             ) : tab === 'terminal' ? (
               <Terminal />
             ) : tab === 'data-management' ? (
               <DataManagement />
-            ) :
-              tab === 'add' ? (
-                <AddEmployee />
-              )
-                :
-                tab === 'manage' ? (
-                  <EmployeeManage />
-                ) :
-                  (
-                    <ReportsPage />
-                  )}
+            ) : tab === 'add' ? (
+              <AddEmployee />
+            ) : tab === 'manage' ? (
+              <EmployeeManage refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
+            ) : (
+              <ReportsPage refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
+            )}
           </div>
         </div>
       </div>

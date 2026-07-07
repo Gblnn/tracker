@@ -40,7 +40,12 @@ function formatLastSeen(iso: string | null): string {
 
 
 
-export default function DevicesMaster() {
+interface DevicesMasterProps {
+  refreshTrigger?: number;
+  onLoadingChange?: (loading: boolean) => void;
+}
+
+export default function DevicesMaster({ refreshTrigger, onLoadingChange }: DevicesMasterProps = {}) {
   const [devices, setDevices] = useState<Device[]>([]);
   const [projects, setProjects] = useState<Array<{ project_code: string; project_name: string }>>([]);
   const [lastPunchMap, setLastPunchMap] = useState<Record<string, string>>({});
@@ -239,6 +244,16 @@ export default function DevicesMaster() {
     }, 30000);
     return () => clearInterval(interval);
   }, [fetchDevices]);
+
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      fetchDevices(false);
+    }
+  }, [refreshTrigger, fetchDevices]);
+
+  useEffect(() => {
+    onLoadingChange?.(loading || refreshing);
+  }, [loading, refreshing, onLoadingChange]);
 
   function openEdit(device: Device) {
     setEditingDevice(device);

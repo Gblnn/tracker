@@ -100,7 +100,12 @@ const formatISOToTime = (isoStr: string | null): string => {
   }
 };
 
-export default function ProjectsMaster() {
+interface ProjectsMasterProps {
+  refreshTrigger?: number;
+  onLoadingChange?: (loading: boolean) => void;
+}
+
+export default function ProjectsMaster({ refreshTrigger, onLoadingChange }: ProjectsMasterProps = {}) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [employeesList, setEmployeesList] = useState<any[]>([]);
@@ -235,6 +240,16 @@ export default function ProjectsMaster() {
   useEffect(() => {
     loadData(false);
   }, [loadData]);
+
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      loadData(false);
+    }
+  }, [refreshTrigger, loadData]);
+
+  useEffect(() => {
+    onLoadingChange?.(loading || refreshing);
+  }, [loading, refreshing, onLoadingChange]);
 
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {

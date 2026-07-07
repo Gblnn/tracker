@@ -136,6 +136,32 @@ export default function Terminal() {
     }
   };
 
+  const [retryingAll, setRetryingAll] = useState(false);
+
+  const handleRetryAllDispatched = async () => {
+    const dispatchedTasks = tasks.filter(t => t.status === 'sent');
+    if (dispatchedTasks.length === 0) {
+      toast.error('No tasks are currently in dispatch status.');
+      return;
+    }
+
+    setRetryingAll(true);
+    try {
+      const { error } = await supabase
+        .from('device_commands')
+        .update({ status: 'pending' })
+        .eq('status', 'sent');
+
+      if (error) throw error;
+      toast.success(`Successfully reset ${dispatchedTasks.length} dispatch tasks back to pending.`);
+      fetchTasks();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to retry dispatched tasks.');
+    } finally {
+      setRetryingAll(false);
+    }
+  };
+
   const handleRetryTask = async (taskId: number) => {
     try {
       const { error } = await supabase
@@ -195,12 +221,28 @@ export default function Terminal() {
 
         {/* Confirmation dialog trigger */}
         {canEditAttendance && (
-          <ClearConfirmDialog
-            disabled={!hasCompleted || clearing}
-            clearing={clearing}
-            completedCount={completedCount}
-            onConfirm={clearCompletedTasks}
-          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRetryAllDispatched}
+              disabled={retryingAll || !tasks.some(t => t.status === 'sent')}
+              className="px-3 py-1.5 text-[11px] font-semibold bg-gray-900 border border-gray-800 disabled:opacity-30 disabled:hover:border-gray-800 disabled:hover:text-gray-400 hover:border-gray-700 hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-all disabled:cursor-not-allowed flex items-center gap-1.5"
+            >
+              {retryingAll ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Retrying...
+                </>
+              ) : (
+                'Retry Dispatched'
+              )}
+            </button>
+            <ClearConfirmDialog
+              disabled={!hasCompleted || clearing}
+              clearing={clearing}
+              completedCount={completedCount}
+              onConfirm={clearCompletedTasks}
+            />
+          </div>
         )}
       </div>
 
@@ -243,6 +285,7 @@ export default function Terminal() {
               </span>
               {canEditAttendance && task.status === 'sent' && (
                 <button
+                  style={{ padding: "0", background: "none" }}
                   onClick={() => handleRetryTask(task.id)}
                   className="text-indigo-400 hover:text-indigo-300 hover:underline text-[10px] uppercase font-semibold shrink-0 cursor-pointer"
                 >

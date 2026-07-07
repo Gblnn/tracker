@@ -234,7 +234,7 @@ export function useAttendance(date: string) {
     } finally {
       setLoading(false);
     }
-  }, [date, userData]);
+  }, [date, userData?.email, userData?.role]);
 
   // Initial fetch
   useEffect(() => {
