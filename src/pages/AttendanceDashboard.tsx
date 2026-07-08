@@ -201,7 +201,7 @@ export default function AttendanceDashboard() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                   <Directive bg={tab === 'summary' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('summary')} title="Dashboard" icon={<ChartLine size={16} />} />
 
-                  {/* <Directive bg={tab === 'transfers' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('transfers')} title="Transfers" icon={<ArrowRightLeft size={16} />} /> */}
+                  <Directive bg={tab === 'transfers' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('transfers')} title="Transfers" icon={<ArrowRightLeft size={16} />} />
 
                   {canEditAttendance && (
                     <Directive bg={tab === 'manage' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('manage')} title="Manage" icon={<UserCog size={16} />} />

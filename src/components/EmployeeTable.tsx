@@ -4,7 +4,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, Loader2, Search, User, X } from 'lucide-react';
+import { ChevronDown, Loader2, Search, User, X, Check } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { supabase } from '../lib/supabase';
@@ -234,7 +234,8 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
 
   return (
     <div className="flex flex-col h-auto overflow-hidden animate-fade-in" style={{ border: "", width: "100%" }}>
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(4px); }
           to { opacity: 1; transform: translateY(0); }
@@ -247,7 +248,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
         (
           // Stat Cards
           <div style={{ width: "100%", display: "flex", justifyContent: "space-between", padding: "0.75rem", gap: "0.75rem", borderBottom: "1px solid rgba(100 100 100/ 0.1)" }}>
-            
+
             <div style={{ display: "flex", flex: 1, background: "rgba(100 100 100/ 0.05)", borderRadius: "0.5rem", padding: "0.75rem", flexFlow: "column", height: "9.5rem", minWidth: 0, justifyContent: "center", alignItems: "center" }}>
               <p style={{ fontSize: "1rem", fontWeight: 500, color: "grey", marginBottom: "0.25rem" }}>Total</p>
               <h1 style={{ fontWeight: 600, fontSize: "2.5rem" }}>
@@ -645,7 +646,16 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                       </div>
                     </td>
                     <td className="px-4 py-3 text-gray-500">{emp.department ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500">{emp.location ?? '—'}</td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {emp.isVerified ? (
+                        <div className="flex items-center gap-1 text-emerald-700" style={{ display: "flex", alignItems: "center", gap: "0.25rem", justifyContent: "flex-start" }}>
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>{emp.location}</span>
+                        </div>
+                      ) : (
+                        emp.location ?? '—'
+                      )}
+                    </td>
                     <td className="px-4 py-3 tabular-nums text-gray-700">{formatTime(emp.firstIn)}</td>
                     <td className="px-4 py-3 tabular-nums text-gray-700">{formatTime(emp.lastOut)}</td>
                     <td className="px-4 py-4" style={{ border: "", display: "flex", justifyContent: "center", alignItems: "center", }}>
@@ -709,7 +719,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                         <span className="text-xs text-gray-500 font-medium text-center">
                           Showing {renderLimit} of {filteredSummaries.length} employees
                         </span>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => setRenderLimit(prev => prev + 100)}
                           className="text-xs font-semibold h-9 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors shadow-xs px-4 text-gray-700 cursor-pointer"

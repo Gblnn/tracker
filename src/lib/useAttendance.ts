@@ -9,6 +9,7 @@ export function useAttendance(date: string) {
   const [useFirstLast, setUseFirstLast] = useState<boolean>(true);
   const [punches, setPunches] = useState<Punch[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [transfers, setTransfers] = useState<any[]>([]);
   const [primaryLocations, setPrimaryLocations] = useState<Record<string, string>>({});
   const [devicesMap, setDevicesMap] = useState<Record<string, { serial_no?: string; start_time: string | null; end_time: string | null; location: string | null; project_code?: string | null }>>({});
   const [loading, setLoading] = useState(true);
@@ -40,7 +41,8 @@ export function useAttendance(date: string) {
       const [
         { data: punchData, error: punchError },
         { data: empData, error: empError },
-        { data: devData, error: devError }
+        { data: devData, error: devError },
+        { data: transData, error: transError }
       ] = await Promise.all([
         supabase
           .from('punches')
@@ -49,12 +51,14 @@ export function useAttendance(date: string) {
           .lte('punch_time', end)
           .order('punch_time', { ascending: false }),
         supabase.from('employees').select('*').order('name', { ascending: true }),
-        supabase.from('devices').select('serial_no, location, start_time, end_time, project_code')
+        supabase.from('devices').select('serial_no, location, start_time, end_time, project_code'),
+        supabase.from('transfers').select('*')
       ]);
 
       if (punchError) throw punchError;
       if (empError) throw empError;
       if (devError) throw devError;
+      if (transError) throw transError;
 
       // 1. Determine if focal point filter is active
       let focalProjectCodes: string[] = [];
@@ -245,6 +249,7 @@ export function useAttendance(date: string) {
       setPrimaryLocations(primLocs);
       setPunches(filteredPunches);
       setEmployees(filteredEmployees);
+      setTransfers(transData || []);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load data');
     } finally {
@@ -390,13 +395,21 @@ export function useAttendance(date: string) {
       }
     }
 
+    const empTrans = transfers.filter((t: any) => t.emp_id === emp.emp_id || t.emp_id === String(emp.id));
+    let verifiedLocation: string | null = null;
+    if (empTrans.length > 0) {
+      empTrans.sort((a: any, b: any) => new Date(b.transfer_date).getTime() - new Date(a.transfer_date).getTime() || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      verifiedLocation = empTrans[0].to_project;
+    }
+
     return {
       ...emp,
       totalPunches: empPunches.length,
       firstIn: firstInPunch?.punch_time ?? null,
       lastOut: lastOutPunch?.punch_time ?? null,
       isPresent: empPunches.length > 0,
-      location: latestLocation || primaryLocation || emp.location || null,
+      location: verifiedLocation || latestLocation || primaryLocation || emp.location || null,
+      isVerified: !!verifiedLocation,
       remarks,
     };
   });

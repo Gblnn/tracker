@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
-import { ChevronDown, Fingerprint, Loader2, Plus, Scan, Search, SquareCheck, Upload, Users, X } from 'lucide-react';
+import { ChevronDown, Check, Fingerprint, Loader2, Plus, Scan, Search, SquareCheck, Upload, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
@@ -22,6 +22,7 @@ import { Avatar } from '../components/Avatar';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '../components/ui/empty';
 import { parsePunchLocation, parseLocationGeofence } from '../lib/geofence';
 import { supabase } from '../lib/supabase';
+import { useAuth } from "@/components/AuthProvider";
 
 
 interface Device {
@@ -92,8 +93,10 @@ interface EmployeeManageProps {
 }
 
 export default function EmployeeManage({ refreshTrigger, onLoadingChange }: EmployeeManageProps = {}) {
+    const { userData } = useAuth();
     const [employees, setEmployees] = useState<ManageEmployee[]>([]);
     const [employeeLocations, setEmployeeLocations] = useState<Record<string, string>>({});
+    const [verifiedLocations, setVerifiedLocations] = useState<Record<number, string>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
@@ -523,13 +526,26 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
         setLoading(true);
         setError(null);
         try {
-            const [empRes, devRes] = await Promise.all([
+            const [empRes, devRes, transRes] = await Promise.all([
                 supabase.from('employees').select('*').order('name', { ascending: true }),
-                supabase.from('devices').select('serial_no, location')
+                supabase.from('devices').select('serial_no, location, project_code'),
+                supabase.from('transfers').select('*')
             ]);
 
             if (empRes.error) throw empRes.error;
             if (devRes.error) throw devRes.error;
+            if (transRes.error) throw transRes.error;
+
+            const loadedTransfers = transRes?.data || [];
+            const verifiedLocsMap: Record<number, string> = {};
+            (empRes.data || []).forEach(emp => {
+                const empTrans = loadedTransfers.filter(t => t.emp_id === emp.emp_id || t.emp_id === String(emp.id));
+                if (empTrans.length > 0) {
+                    empTrans.sort((a, b) => new Date(b.transfer_date).getTime() - new Date(a.transfer_date).getTime() || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                    verifiedLocsMap[emp.id] = empTrans[0].to_project;
+                }
+            });
+            setVerifiedLocations(verifiedLocsMap);
 
             const devData = devRes.data || [];
             const deviceMap = Object.fromEntries(
@@ -546,7 +562,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             if (punchError) throw punchError;
 
             // Fetch all projects to build a project_name to location display name mapping
-            const { data: projData } = await supabase.from('projects').select('project_name, project_location');
+            const { data: projData } = await supabase.from('projects').select('project_name, project_location, project_code, focal_point_email');
             const projLocationMap: Record<string, string> = {};
             (projData ?? []).forEach(p => {
                 const { name } = parseLocationGeofence(p.project_location);
@@ -577,23 +593,106 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
 
             setEmployeeLocations(empLocs);
 
-            setEmployees(empRes.data || []);
+            // Determine if focal point filter is active
+            let focalProjectCodes: string[] = [];
+            let focalProjectLocations: string[] = [];
+            let isFocalFiltered = false;
+
+            if (userData?.role !== 'admin' && userData?.email) {
+                const focalProjects = (projData ?? []).filter(p => p.focal_point_email === userData.email);
+
+                if (focalProjects.length > 0) {
+                    focalProjectCodes = focalProjects.map(p => p.project_code).filter(Boolean);
+                    focalProjectLocations = focalProjects
+                        .map(p => parseLocationGeofence(p.project_location).name.toLowerCase().trim())
+                        .filter(Boolean);
+                    isFocalFiltered = true;
+                }
+            }
+
+            let filteredEmployees = empRes.data || [];
+            if (isFocalFiltered) {
+                // 1. Resolve matching project device serials
+                const projectDeviceSerials = devData
+                    .filter(d => d.project_code && focalProjectCodes.includes(d.project_code))
+                    .map(d => d.serial_no);
+
+                // 2. Resolve associated employee IDs
+                const allowedEmpIds = new Set<number>();
+                const allowedDeviceUserIds = new Set<string>();
+
+                if (projectDeviceSerials.length > 0) {
+                    // Fetch employee IDs from device_commands on project devices
+                    const { data: cmdData } = await supabase
+                        .from('device_commands')
+                        .select('employee_id')
+                        .in('device_serial', projectDeviceSerials);
+
+                    if (cmdData) {
+                        cmdData.forEach(c => {
+                            if (c.employee_id) allowedEmpIds.add(c.employee_id);
+                        });
+                    }
+
+                    // Fetch employee device_user_ids from punches on project devices
+                    const { data: punchUserIds } = await supabase
+                        .from('punches')
+                        .select('user_id')
+                        .in('device_serial', projectDeviceSerials)
+                        .limit(5000);
+
+                    if (punchUserIds) {
+                        punchUserIds.forEach(p => {
+                            if (p.user_id) allowedDeviceUserIds.add(p.user_id);
+                        });
+                    }
+                }
+
+                // 3. Filter employees list
+                filteredEmployees = filteredEmployees.filter(emp => {
+                    const hasCommand = allowedEmpIds.has(emp.id);
+                    const hasPunch = allowedDeviceUserIds.has(emp.device_user_id);
+                    const hasLocationMatch = emp.location && focalProjectLocations.includes(emp.location.toLowerCase().trim());
+                    // Also check if their most recent calculated location (from empLocs) matches focal location
+                    const calculatedLoc = empLocs[emp.device_user_id];
+                    const hasCalculatedLocMatch = calculatedLoc && focalProjectLocations.includes(calculatedLoc.toLowerCase().trim());
+                    return hasCommand || hasPunch || hasLocationMatch || hasCalculatedLocMatch;
+                });
+            }
+
+            setEmployees(filteredEmployees);
         } catch (e: any) {
             setError(e.message || 'Failed to load employees');
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [userData?.email, userData?.role]);
 
     const fetchDevices = useCallback(async () => {
         setLoadingDevices(true);
         const { data, error: err } = await supabase
             .from('devices')
-            .select('id, serial_no, location, last_seen')
+            .select('id, serial_no, location, last_seen, project_code')
             .order('id', { ascending: true });
-        if (!err) setDevices(data ?? []);
+        if (!err) {
+            let devList = data ?? [];
+            if (userData?.role !== 'admin' && userData?.email) {
+                const { data: focalProjects } = await supabase
+                    .from('projects')
+                    .select('project_code')
+                    .eq('focal_point_email', userData.email);
+
+                if (focalProjects && focalProjects.length > 0) {
+                    const codes = focalProjects.map(p => p.project_code).filter(Boolean);
+                    devList = devList.filter(d => d.project_code && codes.includes(d.project_code));
+                } else {
+                    devList = [];
+                }
+            }
+            setDevices(devList);
+        }
         setLoadingDevices(false);
-    }, []);
+    }, [userData?.email, userData?.role]);
 
 
 
@@ -948,19 +1047,19 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const uniqueLocations = useMemo(() => {
         const locSet = new Set<string>();
         employees.forEach((emp) => {
-            const loc = employeeLocations[emp.device_user_id] ?? emp.location;
+            const loc = (verifiedLocations[emp.id] || employeeLocations[emp.device_user_id]) ?? emp.location;
             if (loc) locSet.add(loc);
         });
         const sorted = Array.from(locSet).sort();
         const hasBlank = employees.some(emp => {
-            const loc = employeeLocations[emp.device_user_id] ?? emp.location;
+            const loc = (verifiedLocations[emp.id] || employeeLocations[emp.device_user_id]) ?? emp.location;
             return !loc || loc.trim() === '';
         });
         if (hasBlank) {
             sorted.push('(Blank)');
         }
         return sorted;
-    }, [employees, employeeLocations]);
+    }, [employees, employeeLocations, verifiedLocations]);
 
     // Filtered employees logic
     const filteredEmployees = useMemo(() => {
@@ -984,7 +1083,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 selectedNationalities.length === 0 ||
                 (emp.nationality && selectedNationalities.includes(emp.nationality.toLowerCase()));
 
-            const empLoc = employeeLocations[emp.device_user_id] ?? emp.location;
+            const empLoc = (verifiedLocations[emp.id] || employeeLocations[emp.device_user_id]) ?? emp.location;
             const matchesLocation =
                 selectedLocations.length === 0 ||
                 (empLoc && selectedLocations.includes(empLoc)) ||
@@ -992,7 +1091,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
 
             return matchesSearch && matchesDept && matchesType && matchesNationality && matchesLocation;
         });
-    }, [employees, search, selectedDepartments, selectedLocations, selectedTypes, selectedNationalities, employeeLocations]);
+    }, [employees, search, selectedDepartments, selectedLocations, selectedTypes, selectedNationalities, employeeLocations, verifiedLocations]);
 
     // Stats calculation commented out because cards are disabled
     /*
@@ -1030,7 +1129,8 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
 
     return (
         <div className="flex flex-col h-full overflow-hidden bg-white animate-fade-in" style={{ width: "100%" }}>
-            <style dangerouslySetInnerHTML={{ __html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @keyframes fadeIn {
                   from { opacity: 0; transform: translateY(4px); }
                   to { opacity: 1; transform: translateY(0); }
@@ -1111,7 +1211,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                 Change Type
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1 border-gray-100" />
-                             <DropdownMenuItem
+                            <DropdownMenuItem
                                 style={{ fontWeight: 500 }}
                                 onClick={() => setIsBulkPushOpen(true)}
                                 className="rounded-md focus:bg-gray-50 cursor-pointer text-indigo-600 focus:text-indigo-700 font-semibold"
@@ -1582,7 +1682,15 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                     </td>
                                     {/* Location */}
                                     <td className="px-4 py-3 text-gray-500 font-medium">
-                                        {employeeLocations[emp.device_user_id] ?? emp.location ?? '—'}
+                                        {verifiedLocations[emp.id] ? (
+                                            <div className="flex items-center gap-1 text-emerald-700"
+                                                style={{ display: "flex", alignItems: "center", gap: "0.25rem", justifyContent: "flex-start" }}>
+                                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                                <span>{verifiedLocations[emp.id]}</span>
+                                            </div>
+                                        ) : (
+                                            employeeLocations[emp.device_user_id] ?? emp.location ?? '—'
+                                        )}
                                     </td>
                                     {/* Dept and Designation */}
                                     <td className="px-4 py-3">
@@ -1915,7 +2023,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                             className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all shrink-0 ${isChecked
                                                                 ? 'bg-indigo-700 border-indigo-700 text-white'
                                                                 : 'border-gray-300 bg-white'
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {isChecked && (
                                                                 <svg className="w-2 h-2 fill-current" viewBox="0 0 20 20">
@@ -2250,7 +2358,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                             className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all shrink-0 ${isChecked
                                                                 ? 'bg-indigo-700 border-indigo-700 text-white'
                                                                 : 'border-gray-300 bg-white'
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {isChecked && (
                                                                 <svg className="w-2 h-2 fill-current" viewBox="0 0 20 20">
@@ -2522,7 +2630,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                             className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked
                                                                 ? 'bg-indigo-600 border-indigo-600 text-white'
                                                                 : 'border-gray-300 bg-white'
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {isChecked && (
                                                                 <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 20 20">
