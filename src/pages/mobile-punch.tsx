@@ -2,7 +2,7 @@ import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { supabase } from "@/lib/supabase";
-import { findProjectForCoordinates } from "@/lib/geofence";
+import { findProjectForCoordinates, parseLocationGeofence } from "@/lib/geofence";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
