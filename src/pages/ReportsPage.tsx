@@ -477,6 +477,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
   const [month, setMonth] = useState(today.getMonth());
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [punches, setPunches] = useState<PunchDetail[]>([]);
+  const [transfers, setTransfers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
@@ -603,34 +604,54 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
     }
 
     try {
-      const { data: empData, error: eErr } = await supabase.from('employees')
-        .select('id, device_user_id, name, department, emp_type, emp_id')
-        .order('name', { ascending: true });
+      const [
+        { data: empData, error: eErr },
+        { data: devData, error: dErr },
+        { data: transData, error: tErr }
+      ] = await Promise.all([
+        supabase.from('employees')
+          .select('id, device_user_id, name, department, emp_type, emp_id, location')
+          .order('name', { ascending: true }),
+        supabase.from('devices').select('serial_no, project_code, location'),
+        supabase.from('transfers').select('*')
+      ]);
 
       if (eErr) {
         setError(eErr.message);
         setLoading(false);
         return;
       }
+      if (dErr) {
+        setError(dErr?.message || 'Failed to fetch devices');
+        setLoading(false);
+        return;
+      }
+      if (tErr) {
+        setError(tErr?.message || 'Failed to fetch transfers');
+        setLoading(false);
+        return;
+      }
+      setTransfers(transData || []);
 
       // 1. Determine if focal point filter is active
       let focalProjectCodes: string[] = [];
+      let focalProjectLocations: string[] = [];
       let isFocalFiltered = false;
 
       if (userData?.role !== 'admin' && userData?.email) {
         const { data: focalProjects } = await supabase
           .from('projects')
-          .select('project_code')
+          .select('project_code, project_location')
           .eq('focal_point_email', userData.email);
 
         if (focalProjects && focalProjects.length > 0) {
           focalProjectCodes = focalProjects.map(p => p.project_code);
+          focalProjectLocations = focalProjects
+            .map(p => parseLocationGeofence(p.project_location).name.toLowerCase().trim())
+            .filter(Boolean);
           isFocalFiltered = true;
         }
       }
-
-      // Fetch all devices to get their project code mappings
-      const { data: devData } = await supabase.from('devices').select('serial_no, project_code, location');
 
       const projectDeviceSerials = (devData ?? [])
         .filter(d => d.project_code && focalProjectCodes.includes(d.project_code))
@@ -667,7 +688,22 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
       }
 
       const filteredEmployees = isFocalFiltered
-        ? (empData || []).filter(emp => allowedEmpIds.has(emp.id) || allowedDeviceUserIds.has(emp.device_user_id))
+        ? (empData || []).filter(emp => {
+            const hasCommand = allowedEmpIds.has(emp.id);
+            const hasPunch = allowedDeviceUserIds.has(emp.device_user_id);
+            
+            // Resolve verified transfer location
+            const empTrans = (transData || []).filter(t => t.emp_id === emp.emp_id || t.emp_id === String(emp.id));
+            let verifiedLoc = '';
+            if (empTrans.length > 0) {
+              empTrans.sort((a: any, b: any) => new Date(b.transfer_date).getTime() - new Date(a.transfer_date).getTime() || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+              verifiedLoc = empTrans[0].to_project;
+            }
+
+            const hasLocationMatch = emp.location && focalProjectLocations.includes(emp.location.toLowerCase().trim());
+            const hasVerifiedMatch = verifiedLoc && focalProjectLocations.includes(verifiedLoc.toLowerCase().trim());
+            return hasCommand || hasPunch || hasLocationMatch || hasVerifiedMatch;
+          })
         : (empData || []);
 
       let allPunches: any[] = [];
@@ -840,35 +876,71 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
   }, [employees]);
 
   const employeeLocations = useMemo(() => {
-    const map: Record<string, Set<string>> = {};
+    // 1. Compile the most frequent and latest punch location for each employee in the selected month
+    const userLocationCounts: Record<string, Record<string, number>> = {};
+    const latestPunchLoc: Record<string, string> = {};
+    
     for (const p of punches) {
       if (!p.location) continue;
-      if (!map[p.user_id]) {
-        map[p.user_id] = new Set();
+      
+      if (!userLocationCounts[p.user_id]) {
+        userLocationCounts[p.user_id] = {};
       }
-      map[p.user_id].add(p.location);
+      userLocationCounts[p.user_id][p.location] = (userLocationCounts[p.user_id][p.location] || 0) + 1;
+      
+      latestPunchLoc[p.user_id] = p.location;
     }
+
+    const primLocs: Record<string, string> = {};
+    Object.entries(userLocationCounts).forEach(([userId, counts]) => {
+      let mostFrequentLoc = '';
+      let maxCount = 0;
+      Object.entries(counts).forEach(([loc, count]) => {
+        if (count > maxCount) {
+          maxCount = count;
+          mostFrequentLoc = loc;
+        }
+      });
+      if (mostFrequentLoc) {
+        primLocs[userId] = mostFrequentLoc;
+      }
+    });
+
     const result: Record<string, string> = {};
-    for (const [uid, locSet] of Object.entries(map)) {
-      result[uid] = Array.from(locSet).sort().join(', ');
-    }
+    employees.forEach(emp => {
+      const uid = emp.device_user_id;
+
+      // 2. Resolve verified transfer location
+      const empTrans = transfers.filter((t: any) => t.emp_id === emp.emp_id || t.emp_id === String(emp.id));
+      let verifiedLoc = '';
+      if (empTrans.length > 0) {
+        empTrans.sort((a: any, b: any) => new Date(b.transfer_date).getTime() - new Date(a.transfer_date).getTime() || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        verifiedLoc = empTrans[0].to_project;
+      }
+
+      // 3. Precedence: verified transfer -> latest punch location -> most frequent punch location -> default employee location
+      const finalLoc = verifiedLoc || latestPunchLoc[uid] || primLocs[uid] || emp.location || '';
+      result[uid] = finalLoc;
+    });
     return result;
-  }, [punches]);
+  }, [punches, employees, transfers]);
 
   const locations = useMemo(() => {
-    const locSet = new Set(punches.map(p => p.location).filter(Boolean) as string[]);
+    const locSet = new Set<string>();
+    employees.forEach(emp => {
+      const loc = employeeLocations[emp.device_user_id];
+      if (loc) locSet.add(loc);
+    });
     const sorted = Array.from(locSet).sort();
-
-    // Check if any employee has no punches/locations
-    const hasBlank = employees.some(e => {
-      const locs = employeeLocations[e.device_user_id];
-      return !locs || locs.trim() === '';
+    const hasBlank = employees.some(emp => {
+      const loc = employeeLocations[emp.device_user_id];
+      return !loc || loc.trim() === '';
     });
     if (hasBlank) {
       sorted.push('(Blank)');
     }
     return sorted;
-  }, [punches, employees, employeeLocations]);
+  }, [employees, employeeLocations]);
 
   const filtered = useMemo(() => {
     let list = employees;
@@ -883,31 +955,13 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
       });
     }
     if (selectedLocations.length > 0) {
-      if (reportView === 'daily') {
-        list = list.filter(e => {
-          const c = matrix[e.device_user_id]?.[selectedDailyDate];
-          if (!c || !c.isPresent) {
-            return selectedLocations.includes('(Blank)');
-          }
-          const inLoc = useFirstLast ? c.firstPunchLocation : c.firstInLocation;
-          const outLoc = useFirstLast ? c.lastPunchLocation : c.lastOutLocation;
-          const hasInLoc = inLoc && inLoc.trim() !== '';
-          const hasOutLoc = outLoc && outLoc.trim() !== '';
-          if (selectedLocations.includes('(Blank)') && !hasInLoc && !hasOutLoc) {
-            return true;
-          }
-          return (inLoc && selectedLocations.includes(inLoc)) || (outLoc && selectedLocations.includes(outLoc));
-        });
-      } else {
-        list = list.filter(e => {
-          const locs = employeeLocations[e.device_user_id];
-          if (!locs || locs.trim() === '') {
-            return selectedLocations.includes('(Blank)');
-          }
-          const employeeLocArray = locs.split(', ');
-          return employeeLocArray.some(loc => selectedLocations.includes(loc)) || (selectedLocations.includes('(Blank)') && (!locs || locs.trim() === ''));
-        });
-      }
+      list = list.filter(e => {
+        const loc = employeeLocations[e.device_user_id];
+        if (!loc || loc.trim() === '') {
+          return selectedLocations.includes('(Blank)');
+        }
+        return selectedLocations.includes(loc);
+      });
     }
     if (reportView === 'daily' && selectedStatuses.length > 0) {
       list = list.filter(e => {

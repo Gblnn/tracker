@@ -6,11 +6,12 @@ import RefreshButton from "@/components/refresh-button";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { parseLocationGeofence, parsePunchLocation } from "@/lib/geofence";
 import { supabase } from "@/lib/supabase";
-import { ArrowRight, ArrowRightLeft, Loader2, Plus, Search, User, X, PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowRight, ArrowRightLeft, Loader2, Plus, Search, User, X, PanelLeftClose, PanelLeftOpen, SquareCheck, ChevronDown } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
+import { useEffect, useState, useMemo } from "react";
 import ReactTimeAgo from "react-time-ago";
 import { toast } from "sonner";
 
@@ -61,6 +62,16 @@ export default function TransferRequests({ embedMode = false }: Props) {
   const [selectedTransfer, setSelectedTransfer] = useState<Transfer | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [employeeMasterVisible, setEmployeeMasterVisible] = useState(true);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<number>>(new Set());
+  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [selectedEmpPrefixes, setSelectedEmpPrefixes] = useState<string[]>([]);
+  const [selectedTransferPrefixes, setSelectedTransferPrefixes] = useState<string[]>([]);
+  const [selectedFromProjects, setSelectedFromProjects] = useState<string[]>([]);
+  const [selectedToProjects, setSelectedToProjects] = useState<string[]>([]);
+  const [filterCreatedDate, setFilterCreatedDate] = useState<string>("");
 
   const fetchTransfers = async (isManual = false) => {
     try {
@@ -176,66 +187,253 @@ export default function TransferRequests({ embedMode = false }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!transferDate || !fromProject || !toProject || !initiator || !selectedEmployeeId) {
-      toast.error("Please select an employee and fill in all required fields.");
-      return;
-    }
 
-    setSubmitting(true);
-    try {
-      // Find the employee object to get the preferred identifier (we use emp_id or string(id))
-      const targetEmp = employees.find(emp => String(emp.id) === selectedEmployeeId);
-      const dbEmpId = targetEmp ? (targetEmp.emp_id || String(targetEmp.id)) : selectedEmployeeId;
+    if (isBulkMode) {
+      if (!transferDate || !toProject || !initiator || selectedEmployeeIds.size === 0) {
+        toast.error("Please fill in all required fields and select at least one employee.");
+        return;
+      }
 
-      const { error } = await supabase
-        .from("transfers")
-        .insert({
-          transfer_date: transferDate,
-          from_project: fromProject,
-          to_project: toProject,
-          initiator: initiator,
-          acceptor: acceptor,
-          emp_id: dbEmpId
+      setSubmitting(true);
+      try {
+        const insertBatch = Array.from(selectedEmployeeIds).map(id => {
+          const emp = employees.find(e => e.id === id);
+          const empLoc = employeeLocations[id] || "";
+          const dbEmpId = emp ? (emp.emp_id || String(emp.id)) : String(id);
+
+          return {
+            transfer_date: transferDate,
+            from_project: empLoc && empLoc !== "—" ? empLoc : "Un-Mapped",
+            to_project: toProject,
+            initiator: initiator,
+            acceptor: acceptor,
+            emp_id: dbEmpId
+          };
         });
 
-      if (error) throw error;
+        const { error } = await supabase.from("transfers").insert(insertBatch);
+        if (error) throw error;
 
-      toast.success("Transfer recorded successfully!");
-      setModalOpen(false);
-      fetchTransfers();
-    } catch (err: any) {
-      console.error("Error creating transfer:", err);
-      toast.error(err.message || "Failed to submit transfer.");
-    } finally {
-      setSubmitting(false);
+        toast.success(`Successfully recorded transfers for ${selectedEmployeeIds.size} employees!`);
+        setModalOpen(false);
+        setIsSelectionMode(false);
+        setSelectedEmployeeIds(new Set());
+        fetchTransfers();
+      } catch (err: any) {
+        console.error("Error bulk creating transfers:", err);
+        toast.error(err.message || "Failed to submit bulk transfers.");
+      } finally {
+        setSubmitting(false);
+      }
+    } else {
+      if (!transferDate || !fromProject || !toProject || !initiator || !selectedEmployeeId) {
+        toast.error("Please select an employee and fill in all required fields.");
+        return;
+      }
+
+      setSubmitting(true);
+      try {
+        const targetEmp = employees.find(emp => String(emp.id) === selectedEmployeeId);
+        const dbEmpId = targetEmp ? (targetEmp.emp_id || String(targetEmp.id)) : selectedEmployeeId;
+
+        const { error } = await supabase
+          .from("transfers")
+          .insert({
+            transfer_date: transferDate,
+            from_project: fromProject,
+            to_project: toProject,
+            initiator: initiator,
+            acceptor: acceptor,
+            emp_id: dbEmpId
+          });
+
+        if (error) throw error;
+
+        toast.success("Transfer recorded successfully!");
+        setModalOpen(false);
+        fetchTransfers();
+      } catch (err: any) {
+        console.error("Error creating transfer:", err);
+        toast.error(err.message || "Failed to submit transfer.");
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
 
-  const filteredTransfers = transfers.filter((t) => {
-    const q = searchQuery.toLowerCase();
-    const emp = employees.find(e => e.emp_id === t.emp_id || String(e.id) === t.emp_id);
-    const empName = emp ? emp.name.toLowerCase() : "";
-    return (
-      empName.includes(q) ||
-      (t.from_project || "").toLowerCase().includes(q) ||
-      (t.to_project || "").toLowerCase().includes(q) ||
-      (t.initiator || "").toLowerCase().includes(q) ||
-      (t.acceptor || "").toLowerCase().includes(q)
-    );
-  });
+  const empCodePrefixes = useMemo(() => {
+    const prefixes = new Set<string>();
+    employees.forEach((emp) => {
+      if (emp.emp_id && emp.emp_id.length >= 2) {
+        prefixes.add(emp.emp_id.slice(0, 2).toUpperCase());
+      }
+    });
+    return Array.from(prefixes).sort();
+  }, [employees]);
 
-  const filteredEmployees = employees.filter((emp) => {
-    const q = searchEmployeeQuery.toLowerCase();
-    const loc = employeeLocations[emp.id] || "";
-    return (
-      emp.name.toLowerCase().includes(q) ||
-      (emp.emp_id || "").toLowerCase().includes(q) ||
-      (emp.department || "").toLowerCase().includes(q) ||
-      loc.toLowerCase().includes(q)
-    );
-  });
+  const transferPrefixes = useMemo(() => {
+    const prefixes = new Set<string>();
+    transfers.forEach((t) => {
+      if (t.emp_id && t.emp_id.length >= 2) {
+        prefixes.add(t.emp_id.slice(0, 2).toUpperCase());
+      } else {
+        const emp = employees.find(e => e.emp_id === t.emp_id || String(e.id) === t.emp_id);
+        if (emp && emp.emp_id && emp.emp_id.length >= 2) {
+          prefixes.add(emp.emp_id.slice(0, 2).toUpperCase());
+        }
+      }
+    });
+    return Array.from(prefixes).sort();
+  }, [transfers, employees]);
+
+  const uniqueFromProjects = useMemo(() => {
+    return [...new Set(transfers.map(t => t.from_project).filter(Boolean) as string[])].sort();
+  }, [transfers]);
+
+  const uniqueToProjects = useMemo(() => {
+    return [...new Set(transfers.map(t => t.to_project).filter(Boolean) as string[])].sort();
+  }, [transfers]);
+
+  const filteredTransfers = useMemo(() => {
+    return transfers.filter((t) => {
+      const q = searchQuery.toLowerCase();
+      const emp = employees.find(e => e.emp_id === t.emp_id || String(e.id) === t.emp_id);
+      const empName = emp ? emp.name.toLowerCase() : "";
+
+      const matchesSearch = (
+        empName.includes(q) ||
+        (t.emp_id || "").toLowerCase().includes(q) ||
+        (t.from_project || "").toLowerCase().includes(q) ||
+        (t.to_project || "").toLowerCase().includes(q) ||
+        (t.initiator || "").toLowerCase().includes(q) ||
+        (t.acceptor || "").toLowerCase().includes(q)
+      );
+
+      // Prefix check
+      const empIdVal = emp?.emp_id || t.emp_id || "";
+      const matchesPrefix = selectedTransferPrefixes.length === 0 ||
+        (empIdVal && empIdVal.length >= 2 && selectedTransferPrefixes.includes(empIdVal.slice(0, 2).toUpperCase()));
+
+      // From project check
+      const matchesFrom = selectedFromProjects.length === 0 ||
+        (t.from_project && selectedFromProjects.includes(t.from_project));
+
+      // To project check
+      const matchesTo = selectedToProjects.length === 0 ||
+        (t.to_project && selectedToProjects.includes(t.to_project));
+
+      // Date check
+      let matchesDate = true;
+      if (filterCreatedDate) {
+        const createdDate = new Date(t.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' }); // YYYY-MM-DD
+        const filterDateFormatted = new Date(filterCreatedDate).toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' });
+        matchesDate = (createdDate === filterDateFormatted);
+      }
+
+      return matchesSearch && matchesPrefix && matchesFrom && matchesTo && matchesDate;
+    });
+  }, [transfers, employees, searchQuery, selectedTransferPrefixes, selectedFromProjects, selectedToProjects, filterCreatedDate]);
+
+  const uniqueDepartments = useMemo(() => {
+    const depts = [...new Set(employees.map(emp => emp.department).filter(Boolean) as string[])].sort();
+    const hasBlank = employees.some(emp => !emp.department || emp.department.trim() === '');
+    if (hasBlank) {
+      depts.push('(Blank)');
+    }
+    return depts;
+  }, [employees]);
+
+  const uniqueLocations = useMemo(() => {
+    const locSet = new Set<string>();
+    employees.forEach(emp => {
+      const loc = employeeLocations[emp.id];
+      if (loc && loc !== "—") {
+        locSet.add(loc);
+      }
+    });
+    const sorted = Array.from(locSet).sort();
+    const hasBlank = employees.some(emp => {
+      const loc = employeeLocations[emp.id];
+      return !loc || loc === "—" || loc.trim() === '';
+    });
+    if (hasBlank) {
+      sorted.push('(Blank)');
+    }
+    return sorted;
+  }, [employees, employeeLocations]);
+
+  const filteredEmployees = useMemo(() => {
+    return employees.filter((emp) => {
+      const q = searchEmployeeQuery.toLowerCase();
+      const loc = employeeLocations[emp.id] || "";
+
+      const matchesSearch = (
+        emp.name.toLowerCase().includes(q) ||
+        (emp.emp_id || "").toLowerCase().includes(q) ||
+        (emp.department || "").toLowerCase().includes(q) ||
+        loc.toLowerCase().includes(q)
+      );
+
+      const deptVal = emp.department || "";
+      const matchesDept = selectedDepartments.length === 0 ||
+        (deptVal && selectedDepartments.includes(deptVal)) ||
+        ((!deptVal || deptVal.trim() === "") && selectedDepartments.includes('(Blank)'));
+
+      const locVal = loc === "—" ? "" : loc;
+      const matchesLoc = selectedLocations.length === 0 ||
+        (locVal && selectedLocations.includes(locVal)) ||
+        ((!locVal || locVal.trim() === "") && selectedLocations.includes('(Blank)'));
+
+      const empIdVal = emp.emp_id || "";
+      const matchesPrefix = selectedEmpPrefixes.length === 0 ||
+        (empIdVal && empIdVal.length >= 2 && selectedEmpPrefixes.includes(empIdVal.slice(0, 2).toUpperCase()));
+
+      return matchesSearch && matchesDept && matchesLoc && matchesPrefix;
+    });
+  }, [employees, searchEmployeeQuery, employeeLocations, selectedDepartments, selectedLocations, selectedEmpPrefixes]);
+
+  const toggleSelectEmployee = (id: number) => {
+    setSelectedEmployeeIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const allFilteredSelected = filteredEmployees.length > 0 && filteredEmployees.every(emp => selectedEmployeeIds.has(emp.id));
+
+  const handleSelectAllToggle = () => {
+    if (allFilteredSelected) {
+      setSelectedEmployeeIds(prev => {
+        const next = new Set(prev);
+        filteredEmployees.forEach(emp => next.delete(emp.id));
+        return next;
+      });
+    } else {
+      setSelectedEmployeeIds(prev => {
+        const next = new Set(prev);
+        filteredEmployees.forEach(emp => next.add(emp.id));
+        return next;
+      });
+    }
+  };
+
+  const handleBulkTransferClick = () => {
+    setIsBulkMode(true);
+    setFromProject("Multiple Locations");
+    setToProject("");
+    setTransferDate(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Muscat" }));
+    setInitiator(userData?.name || userData?.email || "");
+    setAcceptor("");
+    setModalOpen(true);
+  };
 
   const handleNewTransfer = () => {
+    setIsBulkMode(false);
     const today = new Date().toISOString().split("T")[0];
     setTransferDate(today);
     setFromProject("");
@@ -247,6 +445,7 @@ export default function TransferRequests({ embedMode = false }: Props) {
   };
 
   const handleStartTransfer = (emp: Employee) => {
+    setIsBulkMode(false);
     const today = new Date().toISOString().split("T")[0];
     setTransferDate(today);
     setSelectedEmployeeId(String(emp.id));
@@ -314,6 +513,7 @@ export default function TransferRequests({ embedMode = false }: Props) {
           {/* Header */}
           <div style={{
             display: "flex",
+            justifyContent: "space-between",
             alignItems: "center",
             padding: "1rem",
             borderBottom: "1px solid #f3f4f6",
@@ -321,8 +521,54 @@ export default function TransferRequests({ embedMode = false }: Props) {
             boxSizing: "border-box"
           }}>
             <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#111827", display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setIsSelectionMode(!isSelectionMode);
+                  setSelectedEmployeeIds(new Set());
+                }}
+                style={{
+                  height: "1.75rem",
+                  width: "1.75rem",
+                  padding: 0,
+                  borderRadius: "0.375rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: isSelectionMode ? "rgba(79, 70, 229, 0.1)" : "transparent"
+                }}
+                title="Toggle Selection Mode"
+              >
+                <SquareCheck className={`w-4.5 h-4.5 ${isSelectionMode ? "text-indigo-600" : "text-gray-500"} hover:text-indigo-600 transition-colors`} />
+              </Button>
               Employee Master
             </h3>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+
+              <span style={{ fontSize: "0.725rem", fontWeight: 500, backgroundColor: "rgba(100, 100, 100, 0.08)", padding: "0.18rem 0.5rem", borderRadius: "0.25rem" }}>
+                {filteredEmployees.length} {filteredEmployees.length === 1 ? 'employee' : 'employees'}
+              </span>
+              {isSelectionMode && selectedEmployeeIds.size > 0 && (
+                <Button
+                  onClick={handleBulkTransferClick}
+                  size="sm"
+                  style={{
+                    height: "1.75rem",
+                    padding: "0 0.6rem",
+                    fontSize: "0.75rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.25rem",
+                    backgroundColor: "#4f46e5",
+                    color: "white"
+                  }}
+                >
+                  <ArrowRightLeft className="w-3.5 h-3.5" />
+                  Transfer Selected ({selectedEmployeeIds.size})
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Employee List */}
@@ -331,119 +577,351 @@ export default function TransferRequests({ embedMode = false }: Props) {
               <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
                 <Loader2 className="animate-spin w-6 h-6 text-blue-900" />
               </div>
-            ) : filteredEmployees.length === 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af", gap: "0.5rem", padding: "2rem" }}>
-                <User className="w-12 h-12 text-gray-200" />
-                <span style={{ fontSize: "0.85rem" }}>No employees found</span>
-              </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow style={{ backgroundColor: "#f9fafb" }}>
-                    <TableHead style={{ padding: "0.5rem 0.75rem", width: "280px" }}>
-                      <div className="relative flex items-center group w-full" style={{ position: "relative" }}>
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" style={{ position: "absolute", left: "0.6rem", top: "50%", transform: "translateY(-50%)", width: "0.8rem", height: "0.8rem", color: "#9ca3af" }} />
-                        <input
-                          type="text"
-                          placeholder="Search Employee..."
-                          value={searchEmployeeQuery}
-                          onChange={(e) => setSearchEmployeeQuery(e.target.value)}
-                          className="w-full pl-8 pr-6 py-1.5 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors tracking-wide text-gray-700"
-                          style={{
-                            width: "100%",
-                            paddingLeft: "2rem",
-                            paddingRight: "1.5rem",
-                            paddingTop: "0.35rem",
-                            paddingBottom: "0.35rem",
-                            fontSize: "0.75rem",
-                            backgroundColor: "white",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "0.375rem",
-                            outline: "none",
-                            fontWeight: "400"
-                          }}
-                        />
-                        {searchEmployeeQuery && (
-                          <button
-                            type="button"
-                            onClick={() => setSearchEmployeeQuery('')}
-                            style={{ position: "absolute", right: "0.5rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead style={{ fontWeight: 600, color: "#374151", verticalAlign: "middle" }}>Department</TableHead>
-                    <TableHead style={{ fontWeight: 600, color: "#374151", verticalAlign: "middle" }}>Location</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredEmployees.map((emp, idx) => {
-                    const empTrans = transfers.filter(t => t.emp_id === emp.emp_id || t.emp_id === String(emp.id));
-                    const hasTransfer = empTrans.length > 0;
-                    const loc = employeeLocations[emp.id] || "—";
-                    return (
-                      <TableRow
-                        key={emp.id}
-                        onClick={() => handleStartTransfer(emp)}
-                        style={{ transition: "background 0.2s", cursor: "pointer" }}
-                        className="hover:bg-gray-50"
-                      >
-                        <TableCell>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                            <Avatar size="md" name={emp.name} index={idx} />
-                            <div style={{ display: "flex", flexDirection: "column" }}>
-                              <span style={{ fontWeight: 500, color: "#111827", textTransform: "capitalize", textAlign: "left" }}>{emp.name.toLowerCase()}</span>
-                              <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>{emp.emp_id || emp.device_user_id}</span>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell style={{ fontSize: "0.85rem", color: "#4b5563" }}>
-                          {emp.department || "—"}
-                        </TableCell>
-                        <TableCell>
-                          {hasTransfer ? (
-                            <div style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "0.25rem",
-                              backgroundColor: "#eff6ff",
-                              color: "#1e40af",
-                              border: "1px solid #bfdbfe",
-                              padding: "0.2rem 0.5rem",
-                              borderRadius: "9999px",
+              <table className="w-full text-sm">
+                <thead style={{ position: "sticky", top: 0, zIndex: 20, backgroundColor: "#f9fafb" }}>
+                  <tr style={{ backgroundColor: "#f9fafb" }} className="border-b border-gray-100">
+                    {isSelectionMode && (
+                      <th style={{ width: "40px", padding: "0.5rem 0.25rem", verticalAlign: "middle" }} className="text-left font-medium text-gray-500 text-xs uppercase tracking-wide">
+                        <div style={{ display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center" }}>
+                          <Checkbox
+                            checked={allFilteredSelected}
+                            onCheckedChange={handleSelectAllToggle}
+                            className="w-4 h-4 rounded border-gray-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 data-[state=checked]:text-white cursor-pointer"
+                          />
+                        </div>
+                      </th>
+                    )}
+                    <th style={{ padding: "0.5rem 0.75rem", width: "340px" }} className="text-left font-medium text-gray-500 text-xs uppercase tracking-wide">
+                      <div className="flex items-center gap-2 w-full">
+                        <div className="relative flex items-center group flex-1" style={{ position: "relative" }}>
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" style={{ position: "absolute", left: "0.6rem", top: "50%", transform: "translateY(-50%)", width: "0.8rem", height: "0.8rem", color: "#9ca3af" }} />
+                          <input
+                            type="text"
+                            placeholder="Search Employee..."
+                            value={searchEmployeeQuery}
+                            onChange={(e) => setSearchEmployeeQuery(e.target.value)}
+                            className="w-full pl-8 pr-6 py-1.5 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors tracking-wide text-gray-700"
+                            style={{
+                              width: "100%",
+                              paddingLeft: "2rem",
+                              paddingRight: "1.5rem",
+                              paddingTop: "0.35rem",
+                              paddingBottom: "0.35rem",
                               fontSize: "0.75rem",
-                              fontWeight: 500
-                            }}>
-                              <span style={{ display: "inline-block", width: "6px", height: "6px", backgroundColor: "#3b82f6", borderRadius: "50%" }}></span>
-                              {loc}
-                              <span style={{ fontSize: "0.65rem", color: "#60a5fa", marginLeft: "0.2rem" }}>(Assigned)</span>
-                            </div>
-                          ) : (
-                            <div style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "0.25rem",
-                              backgroundColor: "#f3f4f6",
-                              color: "#374151",
+                              backgroundColor: "white",
                               border: "1px solid #e5e7eb",
-                              padding: "0.2rem 0.5rem",
-                              borderRadius: "9999px",
-                              fontSize: "0.75rem",
-                              fontWeight: 500
-                            }}>
-                              <span style={{ display: "inline-block", width: "6px", height: "6px", backgroundColor: "#9ca3af", borderRadius: "50%" }}></span>
-                              {loc}
-
-                            </div>
+                              borderRadius: "0.375rem",
+                              outline: "none",
+                              fontWeight: "400"
+                            }}
+                          />
+                          {searchEmployeeQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setSearchEmployeeQuery('')}
+                              style={{ position: "absolute", right: "0.5rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
                           )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className={`h-8 text-xs border transition-colors px-2 rounded-md font-semibold flex items-center gap-1 outline-none uppercase tracking-wide shrink-0 ${selectedEmpPrefixes.length > 0 ? "bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"}`}>
+                            <span className="truncate">
+                              {selectedEmpPrefixes.length === 0
+                                ? 'ID (All)'
+                                : selectedEmpPrefixes.length === 1
+                                  ? `ID: ${selectedEmpPrefixes[0]}`
+                                  : `ID (${selectedEmpPrefixes.length})`}
+                            </span>
+                            <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-0.5" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-[180px] max-h-[300px] overflow-y-auto p-0 z-50 bg-white border border-gray-200 rounded-lg shadow-md">
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                            >
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setSelectedEmpPrefixes(empCodePrefixes);
+                                }}
+                                className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left border-none bg-transparent"
+                                style={{ flex: 1 }}
+                              >
+                                All
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setSelectedEmpPrefixes([]);
+                                }}
+                                className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right border-none bg-transparent"
+                                style={{ flex: 1 }}
+                              >
+                                Clear
+                              </button>
+                            </div>
+                            <div className="py-1">
+                              {empCodePrefixes.map(prefix => {
+                                const isChecked = selectedEmpPrefixes.includes(prefix);
+                                return (
+                                  <DropdownMenuCheckboxItem
+                                    key={prefix}
+                                    checked={isChecked}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedEmpPrefixes([...selectedEmpPrefixes, prefix]);
+                                      } else {
+                                        setSelectedEmpPrefixes(selectedEmpPrefixes.filter(item => item !== prefix));
+                                      }
+                                    }}
+                                    onSelect={(e) => e.preventDefault()}
+                                    className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                  >
+                                    {prefix}
+                                  </DropdownMenuCheckboxItem>
+                                );
+                              })}
+                            </div>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </th>
+                    <th style={{ fontWeight: 600, color: "#374151", verticalAlign: "middle", width: "160px", padding: "0.25rem" }} className="text-left font-medium text-gray-500 text-xs uppercase tracking-wide">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-700 hover:bg-gray-100 transition-colors px-2 rounded-md font-semibold w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                          <span className="truncate">
+                            {selectedDepartments.length === 0
+                              ? 'Dept (All)'
+                              : selectedDepartments.length === 1
+                                ? selectedDepartments[0]
+                                : `Dept (${selectedDepartments.length})`}
+                          </span>
+                          <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[180px] max-h-[300px] overflow-y-auto p-0 z-50 bg-white border border-gray-200 rounded-lg shadow-md">
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedDepartments(uniqueDepartments);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left border-none bg-transparent"
+                              style={{ flex: 1 }}
+                            >
+                              All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedDepartments([]);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right border-none bg-transparent"
+                              style={{ flex: 1 }}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                          <div className="py-1">
+                            {uniqueDepartments.map(dept => {
+                              const isChecked = selectedDepartments.includes(dept);
+                              return (
+                                <DropdownMenuCheckboxItem
+                                  key={dept}
+                                  checked={isChecked}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedDepartments([...selectedDepartments, dept]);
+                                    } else {
+                                      setSelectedDepartments(selectedDepartments.filter(item => item !== dept));
+                                    }
+                                  }}
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                >
+                                  {dept}
+                                </DropdownMenuCheckboxItem>
+                              );
+                            })}
+                          </div>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </th>
+                    <th style={{ fontWeight: 600, color: "#374151", verticalAlign: "middle", width: "160px", padding: "0.25rem" }} className="text-left font-medium text-gray-500 text-xs uppercase tracking-wide">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-700 hover:bg-gray-100 transition-colors px-2 rounded-md font-semibold w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                          <span className="truncate">
+                            {selectedLocations.length === 0
+                              ? 'Loc (All)'
+                              : selectedLocations.length === 1
+                                ? selectedLocations[0]
+                                : `Loc (${selectedLocations.length})`}
+                          </span>
+                          <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[180px] max-h-[300px] overflow-y-auto p-0 z-50 bg-white border border-gray-200 rounded-lg shadow-md">
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedLocations(uniqueLocations);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left border-none bg-transparent"
+                              style={{ flex: 1 }}
+                            >
+                              All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedLocations([]);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right border-none bg-transparent"
+                              style={{ flex: 1 }}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                          <div className="py-1">
+                            {uniqueLocations.map(loc => {
+                              const isChecked = selectedLocations.includes(loc);
+                              return (
+                                <DropdownMenuCheckboxItem
+                                  key={loc}
+                                  checked={isChecked}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedLocations([...selectedLocations, loc]);
+                                    } else {
+                                      setSelectedLocations(selectedLocations.filter(item => item !== loc));
+                                    }
+                                  }}
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                >
+                                  {loc}
+                                </DropdownMenuCheckboxItem>
+                              );
+                            })}
+                          </div>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filteredEmployees.length === 0 ? (
+                    <tr>
+                      <td colSpan={isSelectionMode ? 4 : 3} style={{ padding: "3rem 1rem", textAlign: "center", color: "#9ca3af" }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+                          <User className="w-12 h-12 text-gray-200" />
+                          <span style={{ fontSize: "0.85rem" }}>No employees found</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredEmployees.map((emp, idx) => {
+                      const empTrans = transfers.filter(t => t.emp_id === emp.emp_id || t.emp_id === String(emp.id));
+                      const hasTransfer = empTrans.length > 0;
+                      const loc = employeeLocations[emp.id] || "—";
+                      return (
+                        <tr
+                          key={emp.id}
+                          onClick={() => {
+                            if (isSelectionMode) {
+                              toggleSelectEmployee(emp.id);
+                            } else {
+                              handleStartTransfer(emp);
+                            }
+                          }}
+                          style={{ transition: "background 0.2s", cursor: "pointer" }}
+                          className="hover:bg-gray-50 border-b border-gray-100"
+                        >
+                          {isSelectionMode && (
+                            <td style={{ width: "40px", padding: "0.5rem 0.25rem" }} onClick={(e) => e.stopPropagation()} className="px-4 py-3">
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <Checkbox
+                                  checked={selectedEmployeeIds.has(emp.id)}
+                                  onCheckedChange={() => toggleSelectEmployee(emp.id)}
+                                  className="w-4 h-4 rounded border-gray-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 data-[state=checked]:text-white cursor-pointer"
+                                />
+                              </div>
+                            </td>
+                          )}
+                          <td className="px-4 py-3">
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                              <Avatar size="md" name={emp.name} index={idx} />
+                              <div style={{ display: "flex", flexDirection: "column" }}>
+                                <span style={{ fontWeight: 500, color: "#111827", textTransform: "capitalize", textAlign: "left" }}>{emp.name.toLowerCase()}</span>
+                                <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>{emp.emp_id || emp.device_user_id}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ fontSize: "0.85rem", color: "#4b5563" }} className="px-4 py-3">
+                            {emp.department || "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            {hasTransfer ? (
+                              <div style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "0.25rem",
+                                backgroundColor: "#eff6ff",
+                                color: "#1e40af",
+                                border: "1px solid #bfdbfe",
+                                padding: "0.2rem 0.5rem",
+                                borderRadius: "9999px",
+                                fontSize: "0.75rem",
+                                fontWeight: 500
+                              }}>
+                                <span style={{ display: "inline-block", width: "6px", height: "6px", backgroundColor: "#3b82f6", borderRadius: "50%" }}></span>
+                                {loc}
+                                <span style={{ fontSize: "0.65rem", color: "#60a5fa", marginLeft: "0.2rem" }}>(Assigned)</span>
+                              </div>
+                            ) : (
+                              <div style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "0.25rem",
+                                backgroundColor: "#f3f4f6",
+                                color: "#374151",
+                                border: "1px solid #e5e7eb",
+                                padding: "0.2rem 0.5rem",
+                                borderRadius: "9999px",
+                                fontSize: "0.75rem",
+                                fontWeight: 500
+                              }}>
+                                <span style={{ display: "inline-block", width: "6px", height: "6px", backgroundColor: "#9ca3af", borderRadius: "50%" }}></span>
+                                {loc}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             )}
           </div>
         </div>
@@ -518,114 +996,344 @@ export default function TransferRequests({ embedMode = false }: Props) {
               <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
                 <Loader2 className="animate-spin w-6 h-6 text-blue-900" />
               </div>
-            ) : filteredTransfers.length === 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#6b7280", gap: "0.5rem" }}>
-                <ArrowRightLeft className="w-12 h-12 text-gray-200" />
-                <h4 style={{ fontWeight: 600, color: "#374151" }}>No transfers found</h4>
-                <p style={{ fontSize: "0.8rem" }}>Create a new transfer request to get started.</p>
-              </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow style={{ backgroundColor: "#f9fafb" }}>
-                    <TableHead style={{ padding: "0.5rem 0.75rem", width: "280px" }}>
-                      <div className="relative flex items-center group w-full" style={{ position: "relative" }}>
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" style={{ position: "absolute", left: "0.6rem", top: "50%", transform: "translateY(-50%)", width: "0.8rem", height: "0.8rem", color: "#9ca3af" }} />
-                        <input
-                          type="text"
-                          placeholder="Search Employee..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full pl-8 pr-6 py-1.5 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors tracking-wide text-gray-700"
-                          style={{
-                            width: "100%",
-                            paddingLeft: "2rem",
-                            paddingRight: "1.5rem",
-                            paddingTop: "0.35rem",
-                            paddingBottom: "0.35rem",
-                            fontSize: "0.75rem",
-                            backgroundColor: "white",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "0.375rem",
-                            outline: "none",
-                            fontWeight: "400"
-                          }}
-                        />
-                        {searchQuery && (
-                          <button 
-                            type="button"
-                            onClick={() => setSearchQuery('')} 
-                            style={{ position: "absolute", right: "0.5rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        )}
+              <table className="w-full text-sm">
+                <thead style={{ position: "sticky", top: 0, zIndex: 20, backgroundColor: "#f9fafb" }}>
+                  <tr style={{ backgroundColor: "#f9fafb" }} className="border-b border-gray-100">
+                    <th style={{ padding: "0.5rem 0.75rem", width: "340px" }} className="text-left font-medium text-gray-500 text-xs uppercase tracking-wide">
+                      <div className="flex items-center gap-2 w-full">
+                        <div className="relative flex items-center group flex-1" style={{ position: "relative" }}>
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" style={{ position: "absolute", left: "0.6rem", top: "50%", transform: "translateY(-50%)", width: "0.8rem", height: "0.8rem", color: "#9ca3af" }} />
+                          <input
+                            type="text"
+                            placeholder="Search Employee..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-8 pr-6 py-1.5 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors tracking-wide text-gray-700"
+                            style={{
+                              width: "100%",
+                              paddingLeft: "2rem",
+                              paddingRight: "1.5rem",
+                              paddingTop: "0.35rem",
+                              paddingBottom: "0.35rem",
+                              fontSize: "0.75rem",
+                              backgroundColor: "white",
+                              border: "1px solid #e5e7eb",
+                              borderRadius: "0.375rem",
+                              outline: "none",
+                              fontWeight: "400"
+                            }}
+                          />
+                          {searchQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setSearchQuery('')}
+                              style={{ position: "absolute", right: "0.5rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className={`h-8 text-xs border transition-colors px-2 rounded-md font-semibold flex items-center gap-1 outline-none uppercase tracking-wide shrink-0 ${selectedTransferPrefixes.length > 0 ? "bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"}`}>
+                            <span className="truncate">
+                              {selectedTransferPrefixes.length === 0
+                                ? 'ID (All)'
+                                : selectedTransferPrefixes.length === 1
+                                  ? `ID: ${selectedTransferPrefixes[0]}`
+                                  : `ID (${selectedTransferPrefixes.length})`}
+                            </span>
+                            <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-0.5" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-[180px] max-h-[300px] overflow-y-auto p-0 z-50 bg-white border border-gray-200 rounded-lg shadow-md">
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                            >
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setSelectedTransferPrefixes(transferPrefixes);
+                                }}
+                                className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left border-none bg-transparent"
+                                style={{ flex: 1 }}
+                              >
+                                All
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setSelectedTransferPrefixes([]);
+                                }}
+                                className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right border-none bg-transparent"
+                                style={{ flex: 1 }}
+                              >
+                                Clear
+                              </button>
+                            </div>
+                            <div className="py-1">
+                              {transferPrefixes.map(prefix => {
+                                const isChecked = selectedTransferPrefixes.includes(prefix);
+                                return (
+                                  <DropdownMenuCheckboxItem
+                                    key={prefix}
+                                    checked={isChecked}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedTransferPrefixes([...selectedTransferPrefixes, prefix]);
+                                      } else {
+                                        setSelectedTransferPrefixes(selectedTransferPrefixes.filter(item => item !== prefix));
+                                      }
+                                    }}
+                                    onSelect={(e) => e.preventDefault()}
+                                    className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                  >
+                                    {prefix}
+                                  </DropdownMenuCheckboxItem>
+                                );
+                              })}
+                            </div>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                    </TableHead>
-                    <TableHead style={{ fontWeight: 600, color: "#374151" }}>Route</TableHead>
+                    </th>
+                    <th style={{ fontWeight: 600, color: "#374151", verticalAlign: "middle", width: "150px", padding: "0.25rem" }} className="text-left font-medium text-gray-500 text-xs uppercase tracking-wide">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-700 hover:bg-gray-100 transition-colors px-2 rounded-md font-semibold w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                          <span className="truncate">
+                            {selectedFromProjects.length === 0
+                              ? 'From (All)'
+                              : selectedFromProjects.length === 1
+                                ? selectedFromProjects[0]
+                                : `From (${selectedFromProjects.length})`}
+                          </span>
+                          <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[180px] max-h-[300px] overflow-y-auto p-0 z-50 bg-white border border-gray-200 rounded-lg shadow-md">
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedFromProjects(uniqueFromProjects);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left border-none bg-transparent"
+                              style={{ flex: 1 }}
+                            >
+                              All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedFromProjects([]);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right border-none bg-transparent"
+                              style={{ flex: 1 }}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                          <div className="py-1">
+                            {uniqueFromProjects.map(proj => {
+                              const isChecked = selectedFromProjects.includes(proj);
+                              return (
+                                <DropdownMenuCheckboxItem
+                                  key={proj}
+                                  checked={isChecked}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedFromProjects([...selectedFromProjects, proj]);
+                                    } else {
+                                      setSelectedFromProjects(selectedFromProjects.filter(item => item !== proj));
+                                    }
+                                  }}
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                >
+                                  {proj}
+                                </DropdownMenuCheckboxItem>
+                              );
+                            })}
+                          </div>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </th>
+                    <th style={{ fontWeight: 600, color: "#374151", verticalAlign: "middle", width: "150px", padding: "0.25rem" }} className="text-left font-medium text-gray-500 text-xs uppercase tracking-wide">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-700 hover:bg-gray-100 transition-colors px-2 rounded-md font-semibold w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                          <span className="truncate">
+                            {selectedToProjects.length === 0
+                              ? 'To (All)'
+                              : selectedToProjects.length === 1
+                                ? selectedToProjects[0]
+                                : `To (${selectedToProjects.length})`}
+                          </span>
+                          <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[180px] max-h-[300px] overflow-y-auto p-0 z-50 bg-white border border-gray-200 rounded-lg shadow-md">
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedToProjects(uniqueToProjects);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left border-none bg-transparent"
+                              style={{ flex: 1 }}
+                            >
+                              All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedToProjects([]);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right border-none bg-transparent"
+                              style={{ flex: 1 }}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                          <div className="py-1">
+                            {uniqueToProjects.map(proj => {
+                              const isChecked = selectedToProjects.includes(proj);
+                              return (
+                                <DropdownMenuCheckboxItem
+                                  key={proj}
+                                  checked={isChecked}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedToProjects([...selectedToProjects, proj]);
+                                    } else {
+                                      setSelectedToProjects(selectedToProjects.filter(item => item !== proj));
+                                    }
+                                  }}
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                >
+                                  {proj}
+                                </DropdownMenuCheckboxItem>
+                              );
+                            })}
+                          </div>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </th>
                     {!employeeMasterVisible && (
                       <>
-                        <TableHead style={{ fontWeight: 600, color: "#374151" }}>Initiator</TableHead>
-                        <TableHead style={{ fontWeight: 600, color: "#374151" }}>Acceptor</TableHead>
+                        <th style={{ fontWeight: 600, color: "#374151" }} className="text-left font-medium text-gray-500 text-xs uppercase tracking-wide px-4 py-2">Initiator</th>
+                        <th style={{ fontWeight: 600, color: "#374151" }} className="text-left font-medium text-gray-500 text-xs uppercase tracking-wide px-4 py-2">Acceptor</th>
                       </>
                     )}
-                    <TableHead style={{ fontWeight: 600, color: "#374151" }}>Created At</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTransfers.map((t, idx) => {
-                    const emp = employees.find(e => e.emp_id === t.emp_id || String(e.id) === t.emp_id);
-                    return (
-                      <TableRow 
-                        key={t.id} 
-                        onClick={() => handleShowTransferDetail(t)}
-                        style={{ transition: "background 0.2s", cursor: "pointer" }}
-                        className="hover:bg-gray-50"
-                      >
-                        <TableCell>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                            <Avatar size="md" name={emp ? emp.name : "Unknown Employee"} index={idx} />
-                            <div style={{ display: "flex", flexDirection: "column" }}>
-                              <span style={{ fontWeight: 500, color: "#111827", textTransform: "capitalize" }}>{emp ? emp.name.toLowerCase() : "Unknown Employee"}</span>
-                              <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>{t.emp_id || "—"}</span>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 500 }}>
-                            <span style={{ color: "#4b5563" }}>{t.from_project}</span>
-                            <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
-                            <span style={{ color: "#1e3a8a" }}>{t.to_project}</span>
-                          </div>
-                        </TableCell>
-                        {!employeeMasterVisible && (
-                          <>
-                            <TableCell>
-                              <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem" }}>
-                                <User className="w-3.5 h-3.5 text-gray-400" />
-                                <span>{t.initiator}</span>
+                    <th style={{ fontWeight: 600, color: "#374151", verticalAlign: "middle", width: "200px", padding: "0.25rem" }} className="text-left font-medium text-gray-500 text-xs uppercase tracking-wide">
+                      <div className="flex items-center gap-1 justify-between w-full px-2">
+                        <span className="truncate text-xs font-semibold text-gray-500 uppercase tracking-wide">Created At</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.15rem" }} onClick={(e) => e.stopPropagation()}>
+                          <DatePicker
+                            value={filterCreatedDate}
+                            onChange={setFilterCreatedDate}
+                            placeholder="All Dates"
+                            className="h-7 text-[10px] w-[100px] px-1.5 py-0 border border-gray-200 rounded bg-white hover:bg-gray-50 font-semibold"
+                          />
+                          {filterCreatedDate && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setFilterCreatedDate('');
+                              }}
+                              className="text-gray-400 hover:text-gray-600 p-0.5 bg-transparent border-none cursor-pointer"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filteredTransfers.length === 0 ? (
+                    <tr>
+                      <td colSpan={employeeMasterVisible ? 4 : 6} style={{ padding: "3rem 1rem", textAlign: "center", color: "#9ca3af" }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+                          <ArrowRightLeft className="w-12 h-12 text-gray-200" />
+                          <h4 style={{ fontWeight: 600, color: "#374151", fontSize: "0.85rem" }}>No transfers found</h4>
+                          <span style={{ fontSize: "0.8rem" }}>Try adjusting your search query or filters.</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredTransfers.map((t, idx) => {
+                      const emp = employees.find(e => e.emp_id === t.emp_id || String(e.id) === t.emp_id);
+                      return (
+                        <tr
+                          key={t.id}
+                          onClick={() => handleShowTransferDetail(t)}
+                          style={{ transition: "background 0.2s", cursor: "pointer" }}
+                          className="hover:bg-gray-50 border-b border-gray-100"
+                        >
+                          <td className="px-4 py-3 text-gray-500">
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                              <Avatar size="md" name={emp ? emp.name : "Unknown Employee"} index={idx} />
+                              <div style={{ display: "flex", flexDirection: "column" }}>
+                                <span style={{ fontWeight: 500, color: "#111827", textTransform: "capitalize" }}>{emp ? emp.name.toLowerCase() : "Unknown Employee"}</span>
+                                <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>{t.emp_id || "—"}</span>
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              {t.acceptor ? (
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 font-medium text-gray-700">
+                            {t.from_project}
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 font-medium text-indigo-700">
+                            {t.to_project}
+                          </td>
+                          {!employeeMasterVisible && (
+                            <>
+                              <td className="px-4 py-3 text-gray-500">
                                 <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem" }}>
-                                  <User className="w-3.5 h-3.5 text-indigo-400" />
-                                  <span style={{ color: "#4f46e5", fontWeight: 500 }}>{t.acceptor}</span>
+                                  <User className="w-3.5 h-3.5 text-gray-400" />
+                                  <span>{t.initiator}</span>
                                 </div>
-                              ) : (
-                                <span style={{ color: "#9ca3af", fontStyle: "italic", fontSize: "0.8rem" }}>Pending acceptance</span>
-                              )}
-                            </TableCell>
-                          </>
-                        )}
-                        <TableCell style={{ fontSize: "0.8rem", color: "#6b7280" }}>
-                          <ReactTimeAgo date={new Date(t.created_at)} locale="en-US" />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                              </td>
+                              <td className="px-4 py-3 text-gray-500">
+                                {t.acceptor ? (
+                                  <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem" }}>
+                                    <User className="w-3.5 h-3.5 text-indigo-400" />
+                                    <span style={{ color: "#4f46e5", fontWeight: 500 }}>{t.acceptor}</span>
+                                  </div>
+                                ) : (
+                                  <span style={{ color: "#9ca3af", fontStyle: "italic", fontSize: "0.8rem" }}>Pending acceptance</span>
+                                )}
+                              </td>
+                            </>
+                          )}
+                          <td style={{ fontSize: "0.8rem", color: "#6b7280" }} className="px-4 py-3">
+                            <ReactTimeAgo date={new Date(t.created_at)} locale="en-US" />
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             )}
           </div>
         </div>
@@ -642,33 +1350,62 @@ export default function TransferRequests({ embedMode = false }: Props) {
         <form onSubmit={handleSubmit} style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderBottom: "1px solid #f3f4f6", paddingBottom: "0.75rem" }}>
             <ArrowRightLeft className="w-5 h-5 text-blue-900" />
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#111827" }}>Record New Transfer</h3>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#111827" }}>
+              {isBulkMode ? `Record Bulk Transfer (${selectedEmployeeIds.size} Employees)` : "Record New Transfer"}
+            </h3>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-            <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Select Employee *</label>
-            <select
-              required
-              value={selectedEmployeeId}
-              onChange={(e) => handleEmployeeChange(e.target.value)}
-              style={{
-                height: "2.25rem",
-                borderRadius: "0.375rem",
+          {isBulkMode ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Selected Employees ({selectedEmployeeIds.size})</label>
+              <div style={{
+                maxHeight: "100px",
+                overflowY: "auto",
+                padding: "0.5rem 0.75rem",
                 border: "1px solid #e5e7eb",
-                padding: "0 0.5rem",
-                fontSize: "0.85rem",
-                backgroundColor: "white",
-                outline: "none"
-              }}
-            >
-              <option value="">-- Choose Employee --</option>
-              {employees.map(emp => (
-                <option key={emp.id} value={String(emp.id)}>
-                  {emp.name} ({emp.emp_id || emp.device_user_id})
-                </option>
-              ))}
-            </select>
-          </div>
+                borderRadius: "0.375rem",
+                backgroundColor: "#f9fafb",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.25rem"
+              }}>
+                {Array.from(selectedEmployeeIds).map(id => {
+                  const emp = employees.find(e => e.id === id);
+                  return (
+                    <div key={id} style={{ fontSize: "0.75rem", fontWeight: 500, color: "#374151", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                      <span style={{ width: "4px", height: "4px", backgroundColor: "#4f46e5", borderRadius: "50%" }}></span>
+                      {emp?.name} <span style={{ color: "#6b7280", fontSize: "0.7rem" }}>({emp?.emp_id || emp?.device_user_id})</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Select Employee *</label>
+              <select
+                required
+                value={selectedEmployeeId}
+                onChange={(e) => handleEmployeeChange(e.target.value)}
+                style={{
+                  height: "2.25rem",
+                  borderRadius: "0.375rem",
+                  border: "1px solid #e5e7eb",
+                  padding: "0 0.5rem",
+                  fontSize: "0.85rem",
+                  backgroundColor: "white",
+                  outline: "none"
+                }}
+              >
+                <option value="">-- Choose Employee --</option>
+                {employees.map(emp => (
+                  <option key={emp.id} value={String(emp.id)}>
+                    {emp.name} ({emp.emp_id || emp.device_user_id})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
             <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Transfer Date *</label>
@@ -684,17 +1421,20 @@ export default function TransferRequests({ embedMode = false }: Props) {
               <Input
                 type="text"
                 required
-                placeholder="Select or type..."
+                disabled={isBulkMode}
+                placeholder={isBulkMode ? "Auto-resolved per employee" : "Select or type..."}
                 value={fromProject}
                 onChange={(e) => setFromProject(e.target.value)}
                 list="from-project-list"
-                style={{ fontSize: "0.85rem" }}
+                style={{ fontSize: "0.85rem", backgroundColor: isBulkMode ? "#f3f4f6" : "white" }}
               />
-              <datalist id="from-project-list">
-                {projects.map((p, idx) => (
-                  <option key={idx} value={p.project_name} />
-                ))}
-              </datalist>
+              {!isBulkMode && (
+                <datalist id="from-project-list">
+                  {projects.map((p, idx) => (
+                    <option key={idx} value={p.project_name} />
+                  ))}
+                </datalist>
+              )}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
               <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>To Project *</label>

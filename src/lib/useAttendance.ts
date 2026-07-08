@@ -397,9 +397,11 @@ export function useAttendance(date: string) {
 
     const empTrans = transfers.filter((t: any) => t.emp_id === emp.emp_id || t.emp_id === String(emp.id));
     let verifiedLocation: string | null = null;
+    let verifiedBy: string | null = null;
     if (empTrans.length > 0) {
       empTrans.sort((a: any, b: any) => new Date(b.transfer_date).getTime() - new Date(a.transfer_date).getTime() || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       verifiedLocation = empTrans[0].to_project;
+      verifiedBy = empTrans[0].acceptor || empTrans[0].initiator || null;
     }
 
     return {
@@ -410,6 +412,7 @@ export function useAttendance(date: string) {
       isPresent: empPunches.length > 0,
       location: verifiedLocation || latestLocation || primaryLocation || emp.location || null,
       isVerified: !!verifiedLocation,
+      verifiedBy,
       remarks,
     };
   });

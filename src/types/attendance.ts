@@ -22,6 +22,8 @@ export interface Employee {
   emp_id: string;
   location?: string | null;
   isVerified?: boolean;
+  emp_type?: string | null;
+  verifiedBy?: string | null;
 }
 
 export interface EmployeeSummary extends Employee {

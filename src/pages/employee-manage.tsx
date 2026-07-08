@@ -552,12 +552,19 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 devData.map(d => [d.serial_no, d.location])
             );
 
-            // Fetch the latest 2000 punches to determine the most recent location for each employee
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth();
+            const pad = (n: number) => String(n).padStart(2, '0');
+            const startOfMonthStr = `${year}-${pad(month + 1)}-01T00:00:00`;
+
+            // Fetch the punches for the current month to determine the most frequent location for each employee
             const { data: punchData, error: punchError } = await supabase
                 .from('punches')
                 .select('user_id, device_serial, mobile_location')
+                .gte('punch_time', startOfMonthStr)
                 .order('punch_time', { ascending: false })
-                .limit(2000);
+                .limit(10000);
 
             if (punchError) throw punchError;
 
@@ -571,8 +578,10 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 }
             });
 
-            // Map each user to their most recent location
-            const empLocs: Record<string, string> = {};
+            // Map each user to their most frequent and latest punch locations
+            const latestPunchLocs: Record<string, string> = {};
+            const userLocationCounts: Record<string, Record<string, number>> = {};
+            
             if (punchData) {
                 punchData.forEach(p => {
                     const devLoc = deviceMap[p.device_serial];
@@ -584,12 +593,44 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                         }
                     }
                     const isRealLocation = loc && loc !== '—' && loc !== 'Un-Mapped';
-                    // Only set if not already set, so we keep the most recent punch location
-                    if (isRealLocation && !empLocs[p.user_id]) {
-                        empLocs[p.user_id] = loc;
+                    if (isRealLocation) {
+                        if (!userLocationCounts[p.user_id]) {
+                            userLocationCounts[p.user_id] = {};
+                        }
+                        userLocationCounts[p.user_id][loc] = (userLocationCounts[p.user_id][loc] || 0) + 1;
+                        
+                        // Since punches query is DESC (newest first), the first punch we find for a user is their latest.
+                        if (!latestPunchLocs[p.user_id]) {
+                            latestPunchLocs[p.user_id] = loc;
+                        }
                     }
                 });
             }
+
+            const primLocs: Record<string, string> = {};
+            Object.entries(userLocationCounts).forEach(([userId, counts]) => {
+                let mostFrequentLoc = '';
+                let maxCount = 0;
+                Object.entries(counts).forEach(([loc, count]) => {
+                    if (count > maxCount) {
+                        maxCount = count;
+                        mostFrequentLoc = loc;
+                    }
+                });
+                if (mostFrequentLoc) {
+                    primLocs[userId] = mostFrequentLoc;
+                }
+            });
+
+            // Combine latest punch location and most frequent punch location
+            const empLocs: Record<string, string> = {};
+            (empRes.data || []).forEach(emp => {
+                const uid = emp.device_user_id;
+                const locVal = latestPunchLocs[uid] || primLocs[uid] || '';
+                if (locVal) {
+                    empLocs[uid] = locVal;
+                }
+            });
 
             setEmployeeLocations(empLocs);
 
@@ -654,7 +695,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     const hasPunch = allowedDeviceUserIds.has(emp.device_user_id);
                     const hasLocationMatch = emp.location && focalProjectLocations.includes(emp.location.toLowerCase().trim());
                     // Also check if their most recent calculated location (from empLocs) matches focal location
-                    const calculatedLoc = empLocs[emp.device_user_id];
+                    const calculatedLoc = verifiedLocsMap[emp.id] || empLocs[emp.device_user_id];
                     const hasCalculatedLocMatch = calculatedLoc && focalProjectLocations.includes(calculatedLoc.toLowerCase().trim());
                     return hasCommand || hasPunch || hasLocationMatch || hasCalculatedLocMatch;
                 });
