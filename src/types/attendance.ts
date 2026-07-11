@@ -24,6 +24,12 @@ export interface Employee {
   isVerified?: boolean;
   emp_type?: string | null;
   verifiedBy?: string | null;
+  assignedLocation?: string | null;
+  project?: string | null;
+  company?: string | null;
+  civil_id?: string | null;
+  designation?: string | null;
+  nationality?: string | null;
 }
 
 export interface EmployeeSummary extends Employee {

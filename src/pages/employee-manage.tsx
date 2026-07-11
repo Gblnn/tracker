@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
-import { ChevronDown, Check, Fingerprint, Loader2, Plus, Scan, Search, SquareCheck, Upload, Users, X } from 'lucide-react';
+import { ChevronDown, Check, Download, Fingerprint, Loader2, Plus, Scan, Search, SquareCheck, Upload, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
@@ -85,6 +85,9 @@ interface ManageEmployee {
     face_templates?: Record<string, any> | null;
     created_at?: string;
     location?: string | null;
+    project?: string | null;
+    company?: string | null;
+    civil_id?: string | null;
 }
 
 interface EmployeeManageProps {
@@ -104,13 +107,15 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
     const [selectedNationalities, setSelectedNationalities] = useState<string[]>([]);
+    const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+    const [selectedEmpPrefixes, setSelectedEmpPrefixes] = useState<string[]>([]);
 
     // Pagination / Rendering Limit state
     const [renderLimit, setRenderLimit] = useState(100);
 
     useEffect(() => {
         setRenderLimit(100);
-    }, [search, selectedDepartments, selectedLocations, selectedTypes, selectedNationalities]);
+    }, [search, selectedDepartments, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedEmpPrefixes]);
 
     // Selection and bulk states
     const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -119,6 +124,8 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [bulkDeptValue, setBulkDeptValue] = useState('');
     const [isBulkTypeOpen, setIsBulkTypeOpen] = useState(false);
     const [bulkTypeValue, setBulkTypeValue] = useState<'staff' | 'worker'>('staff');
+    const [isBulkCompanyOpen, setIsBulkCompanyOpen] = useState(false);
+    const [bulkCompanyValue, setBulkCompanyValue] = useState('');
     const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
 
     // Bulk push states
@@ -160,6 +167,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [editEmpType, setEditEmpType] = useState<'staff' | 'worker'>('staff');
     const [editNationality, setEditNationality] = useState('');
     const [editDesignation, setEditDesignation] = useState('');
+    const [editCompany, setEditCompany] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Selective individual push/fetch states and handler
@@ -346,6 +354,41 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
         }
     };
 
+    const handleExportExcel = () => {
+        try {
+            if (filteredEmployees.length === 0) {
+                toast.error('No employee records available to export.');
+                return;
+            }
+
+            // Map employees list to excel friendly format
+            const exportData = filteredEmployees.map((emp) => ({
+                'Device User ID': emp.device_user_id,
+                'Name': emp.name,
+                'Employee ID': emp.emp_id || '',
+                'Type': emp.emp_type || '',
+                'Department': emp.department || '',
+                'Designation': emp.designation || '',
+                'Nationality': emp.nationality || '',
+                'Email': emp.email || '',
+                'Project': emp.project || '',
+                'Company': emp.company || '',
+                'Civil ID': emp.civil_id || '',
+            }));
+
+            // Create workbook and worksheet
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Employees');
+
+            // Generate buffer and save
+            XLSX.writeFile(workbook, `Employees_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+            toast.success('Employee list exported successfully.');
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to export Excel file.');
+        }
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -368,19 +411,19 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
 
                 const employeesList: any[] = [];
                 const localDuplicates: any[] = [];
-                const seenExcelPins = new Set();
+                const seenExcelEmpIds = new Set();
 
                 for (let i = 0; i < rows.length; i++) {
                     const row = rows[i];
 
                     const name = findValue(row, ['name', 'employeename', 'emp_name', 'employee_name', 'full_name', 'fullname']);
-                    const pin = findValue(row, ['device_user_id', 'deviceuserid', 'pin', 'userid', 'user_id', 'device_id', 'deviceid']);
+                    const emp_id = findValue(row, ['emp_id', 'empid', 'hr_id', 'hrid', 'employee_id', 'employeeid', 'id']);
 
-                    if (!name || !pin) {
+                    if (!name || !emp_id) {
                         continue; // Skip invalid rows
                     }
 
-                    const emp_id = findValue(row, ['emp_id', 'empid', 'hr_id', 'hrid', 'employee_id', 'employeeid', 'id']);
+                    const pin = findValue(row, ['device_user_id', 'deviceuserid', 'pin', 'userid', 'user_id', 'device_id', 'deviceid']);
                     const rawType = findValue(row, ['emp_type', 'emptype', 'employee_type', 'employeetype', 'type']) || '';
                     let emp_type: 'staff' | 'worker' = 'staff';
                     if (rawType.toLowerCase().startsWith('work')) {
@@ -391,6 +434,9 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     const designation = findValue(row, ['designation', 'design', 'job_title', 'jobtitle', 'role']);
                     const nationality = findValue(row, ['nationality', 'nation', 'country']);
                     const email = findValue(row, ['email', 'email_address', 'emailaddress']);
+                    const project = findValue(row, ['project', 'proj', 'project_name', 'projectname', 'assigned_project', 'assignedproject']);
+                    const company = findValue(row, ['company', 'comp', 'company_name', 'companyname', 'employer']);
+                    const civil_id = findValue(row, ['civil_id', 'civilid', 'civil_number', 'civilnumber', 'id_number', 'idnumber', 'national_id', 'nationalid']);
 
                     const newEmp = {
                         device_user_id: pin,
@@ -400,38 +446,80 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                         department,
                         designation,
                         nationality,
-                        email
+                        email,
+                        project,
+                        company,
+                        civil_id
                     };
 
-                    if (seenExcelPins.has(pin)) {
+                    if (seenExcelEmpIds.has(emp_id.trim().toLowerCase())) {
                         localDuplicates.push(newEmp);
                     } else {
-                        seenExcelPins.add(pin);
+                        seenExcelEmpIds.add(emp_id.trim().toLowerCase());
                         employeesList.push(newEmp);
                     }
                 }
 
                 if (employeesList.length === 0) {
-                    toast.error('No valid employee rows found. Each row must have a Name and Device User ID/PIN.');
+                    toast.error('No valid employee rows found. Each row must have a Name and Employee ID.');
                     handleResetUpload();
                     return;
                 }
 
-                // Check for duplicates locally against already loaded employees
-                const existingPins = new Set(employees.map(emp => emp.device_user_id));
-                const dbDuplicates = employeesList.filter(emp => existingPins.has(emp.device_user_id));
-                const newEmployees = employeesList.filter(emp => !existingPins.has(emp.device_user_id));
-                const allDuplicates = [...localDuplicates, ...dbDuplicates];
+                // Check for duplicates locally against already loaded employees (matching by emp_id)
+                const dbEmpMap = new Map(
+                    employees
+                        .filter(emp => emp.emp_id)
+                        .map(emp => [emp.emp_id!.trim().toLowerCase(), emp])
+                );
+                
+                const helperIsValueChanged = (excelVal: any, dbVal: any) => {
+                    const normExcel = excelVal === undefined || excelVal === null ? '' : String(excelVal).trim();
+                    const normDb = dbVal === undefined || dbVal === null ? '' : String(dbVal).trim();
+                    return normExcel !== normDb;
+                };
 
-                if (newEmployees.length === 0) {
-                    toast.error(`All ${employeesList.length} employees in the Excel file are already registered.`);
+                const newEmployees: any[] = [];
+                const updatedEmployees: any[] = [];
+                const unchangedEmployees: any[] = [];
+
+                for (const excelEmp of employeesList) {
+                    const dbEmp = dbEmpMap.get(excelEmp.emp_id.trim().toLowerCase());
+                    if (!dbEmp) {
+                        newEmployees.push({ ...excelEmp, action: 'create' });
+                    } else {
+                        // Check if any field changed
+                        const isChanged = 
+                            helperIsValueChanged(excelEmp.name, dbEmp.name) ||
+                            helperIsValueChanged(excelEmp.device_user_id, dbEmp.device_user_id) ||
+                            helperIsValueChanged(excelEmp.emp_type, dbEmp.emp_type) ||
+                            helperIsValueChanged(excelEmp.department, dbEmp.department) ||
+                            helperIsValueChanged(excelEmp.designation, dbEmp.designation) ||
+                            helperIsValueChanged(excelEmp.nationality, dbEmp.nationality) ||
+                            helperIsValueChanged(excelEmp.email, dbEmp.email) ||
+                            helperIsValueChanged(excelEmp.project, dbEmp.project) ||
+                            helperIsValueChanged(excelEmp.company, dbEmp.company) ||
+                            helperIsValueChanged(excelEmp.civil_id, dbEmp.civil_id);
+
+                        if (isChanged) {
+                            updatedEmployees.push({ ...excelEmp, action: 'update', dbId: dbEmp.id });
+                        } else {
+                            unchangedEmployees.push(excelEmp);
+                        }
+                    }
+                }
+
+                const allDuplicates = [...localDuplicates, ...unchangedEmployees];
+
+                if (newEmployees.length === 0 && updatedEmployees.length === 0) {
+                    toast.error(`All ${employeesList.length} employees in the Excel file are already registered and up-to-date.`);
                     handleResetUpload();
                     return;
                 }
 
-                setParsedEmployees(newEmployees);
+                setParsedEmployees([...newEmployees, ...updatedEmployees]);
                 setDuplicateEmployees(allDuplicates);
-                setUploadTotalCount(newEmployees.length);
+                setUploadTotalCount(newEmployees.length + updatedEmployees.length);
                 setUploadCurrentIndex(0);
                 setUploadState('preview');
             } catch (err: any) {
@@ -452,43 +540,76 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
         try {
             for (let i = 0; i < parsedEmployees.length; i++) {
                 const emp = parsedEmployees[i];
+                let success = false;
+                let employeeId = null;
+                let employeeName = null;
 
-                // 1. Double check DB duplicate before insert to avoid conflicts
-                const { data: existing } = await supabase
-                    .from('employees')
-                    .select('id')
-                    .eq('device_user_id', emp.device_user_id)
-                    .maybeSingle();
+                if (emp.action === 'update') {
+                    // Update existing employee record
+                    // Strip the temporary 'action' and 'dbId' fields before saving to DB
+                    const { action, dbId, ...updateFields } = emp;
 
-                if (existing) {
-                    newDuplicates.push(emp);
-                    setUploadCurrentIndex(i + 1);
-                    continue;
+                    const { data: updatedData, error: updateErr } = await supabase
+                        .from('employees')
+                        .update(updateFields)
+                        .eq('id', dbId)
+                        .select('id, device_user_id, name')
+                        .maybeSingle();
+
+                    if (updateErr) {
+                        toast.error(`Failed to update ${emp.name}: ${updateErr.message}`);
+                    } else if (updatedData) {
+                        success = true;
+                        employeeId = updatedData.id;
+                        employeeName = updatedData.name;
+                    }
+                } else {
+                    // Insert new employee record
+                    // Double check DB duplicate before insert to avoid conflicts
+                    const { data: existing } = await supabase
+                        .from('employees')
+                        .select('id')
+                        .eq('emp_id', emp.emp_id)
+                        .maybeSingle();
+
+                    if (existing) {
+                        newDuplicates.push(emp);
+                        setUploadCurrentIndex(i + 1);
+                        continue;
+                    }
+
+                    // Strip action field from new employee object
+                    const { action, ...insertFields } = emp;
+
+                    const { data: insertedData, error: insertErr } = await supabase
+                        .from('employees')
+                        .insert(insertFields)
+                        .select('id, device_user_id, name')
+                        .single();
+
+                    if (insertErr) {
+                        toast.error(`Failed to import ${emp.name}: ${insertErr.message}`);
+                    } else if (insertedData) {
+                        success = true;
+                        employeeId = insertedData.id;
+                        employeeName = insertedData.name;
+                    }
                 }
 
-                // 2. Insert employee one by one
-                const { data: insertedData, error: insertErr } = await supabase
-                    .from('employees')
-                    .insert(emp)
-                    .select('id, device_user_id, name')
-                    .single();
-
-                if (insertErr) {
-                    toast.error(`Failed to import ${emp.name}: ${insertErr.message}`);
-                } else if (insertedData && uploadPushToDevices && uploadSelectedDevices.size > 0) {
-                    // 3. If push to devices is active, queue commands for this user
+                // Queue device commands if option selected and db op succeeded
+                if (success && employeeId && uploadPushToDevices && uploadSelectedDevices.size > 0) {
                     const commands = [...uploadSelectedDevices].map(serial => ({
                         device_serial: serial,
-                        command: buildAddUserCommand(Date.now() + Math.floor(Math.random() * 100000), insertedData.device_user_id, insertedData.name),
+                        command: buildAddUserCommand(Date.now() + Math.floor(Math.random() * 100000), emp.device_user_id, employeeName || emp.name),
                         command_type: 'ADD_USER',
-                        employee_id: insertedData.id,
+                        employee_id: employeeId,
                         status: 'pending',
                     }));
 
                     try {
                         await insertCommandsSequentially(commands);
                     } catch (cmdErr: any) {
-                        console.error(`Failed to queue commands for ${insertedData.name}: ${cmdErr.message}`);
+                        console.error(`Failed to queue commands for ${employeeName || emp.name}: ${cmdErr.message}`);
                     }
                 }
 
@@ -518,6 +639,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [addEmpType, setAddEmpType] = useState<'staff' | 'worker'>('staff');
     const [addNationality, setAddNationality] = useState('');
     const [addDesignation, setAddDesignation] = useState('');
+    const [addCompany, setAddCompany] = useState('');
     const [devices, setDevices] = useState<Device[]>([]);
     const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set());
     const [loadingDevices, setLoadingDevices] = useState(false);
@@ -545,7 +667,6 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     verifiedLocsMap[emp.id] = empTrans[0].to_project;
                 }
             });
-            setVerifiedLocations(verifiedLocsMap);
 
             const devData = devRes.data || [];
             const deviceMap = Object.fromEntries(
@@ -577,6 +698,19 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     projLocationMap[p.project_name.toLowerCase().trim()] = name;
                 }
             });
+
+            // Normalize transfer locations and set verifiedLocations state
+            Object.keys(verifiedLocsMap).forEach((idKey) => {
+                const id = Number(idKey);
+                let toProj = verifiedLocsMap[id];
+                if (toProj) {
+                    const key = toProj.toLowerCase().trim();
+                    if (projLocationMap[key]) {
+                        verifiedLocsMap[id] = projLocationMap[key];
+                    }
+                }
+            });
+            setVerifiedLocations(verifiedLocsMap);
 
             // Map each user to their most frequent and latest punch locations
             const latestPunchLocs: Record<string, string> = {};
@@ -766,6 +900,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     emp_type: addEmpType,
                     nationality: addNationality || null,
                     designation: addDesignation.trim() || null,
+                    company: addCompany.trim() || null,
                 })
                 .select()
                 .single();
@@ -799,6 +934,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             setAddEmpType('staff');
             setAddNationality('');
             setAddDesignation('');
+            setAddCompany('');
             setSelectedDevices(new Set());
             setIsAdding(false);
             fetchEmployees();
@@ -831,7 +967,12 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
         employees.forEach((emp) => {
             if (emp.department) depts.add(emp.department);
         });
-        return Array.from(depts).sort();
+        const sorted = Array.from(depts).sort();
+        const hasBlank = employees.some(emp => !emp.department || emp.department.trim() === '');
+        if (hasBlank) {
+            sorted.push('(Blank)');
+        }
+        return sorted;
     }, [employees]);
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -854,6 +995,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     emp_type: editEmpType,
                     nationality: editNationality || null,
                     designation: editDesignation.trim() || null,
+                    company: editCompany.trim() || null,
                 })
                 .eq('id', editingEmployee.id);
 
@@ -889,6 +1031,31 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             fetchEmployees();
         } catch (error: any) {
             toast.error(error.message || 'Failed to bulk update department');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleBulkCompanySubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (selectedEmployeeIds.size === 0) return;
+        setIsSubmitting(true);
+        try {
+            const { error: err } = await supabase
+                .from('employees')
+                .update({ company: bulkCompanyValue.trim() || null })
+                .in('id', Array.from(selectedEmployeeIds));
+
+            if (err) throw err;
+
+            toast.success(`Successfully updated company for ${selectedEmployeeIds.size} employee(s)`);
+            setIsBulkCompanyOpen(false);
+            setBulkCompanyValue('');
+            setSelectedEmployeeIds(new Set());
+            setIsSelectionMode(false);
+            fetchEmployees();
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to bulk update company');
         } finally {
             setIsSubmitting(false);
         }
@@ -1075,6 +1242,17 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             setIsBulkPushing(false);
         }
     };
+    // Compile unique emp_id prefixes for filtering
+    const empCodePrefixes = useMemo(() => {
+        const prefixes = new Set<string>();
+        employees.forEach((emp) => {
+            if (emp.emp_id && emp.emp_id.length >= 2) {
+                prefixes.add(emp.emp_id.slice(0, 2).toUpperCase());
+            }
+        });
+        return Array.from(prefixes).sort();
+    }, [employees]);
+
     // Compile unique nationalities for filtering
     const uniqueNationalities = useMemo(() => {
         const nats = new Set<string>();
@@ -1082,6 +1260,18 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             if (emp.nationality) nats.add(emp.nationality.toLowerCase());
         });
         return Array.from(nats).sort();
+    }, [employees]);
+
+    // Compile unique companies for filtering
+    const uniqueCompanies = useMemo(() => {
+        const compSet = new Set<string>();
+        employees.forEach((emp) => {
+            if (emp.company && emp.company.trim()) compSet.add(emp.company.trim());
+        });
+        const sorted = Array.from(compSet).sort();
+        const hasBlank = employees.some(emp => !emp.company || emp.company.trim() === '');
+        if (hasBlank) sorted.push('(Blank)');
+        return sorted;
     }, [employees]);
 
     // Compile unique locations for filtering
@@ -1114,7 +1304,8 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
 
             const matchesDept =
                 selectedDepartments.length === 0 ||
-                (emp.department && selectedDepartments.includes(emp.department));
+                (emp.department && selectedDepartments.includes(emp.department)) ||
+                ((!emp.department || emp.department.trim() === '') && selectedDepartments.includes('(Blank)'));
 
             const matchesType =
                 selectedTypes.length === 0 ||
@@ -1130,9 +1321,18 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 (empLoc && selectedLocations.includes(empLoc)) ||
                 ((!empLoc || empLoc.trim() === '') && selectedLocations.includes('(Blank)'));
 
-            return matchesSearch && matchesDept && matchesType && matchesNationality && matchesLocation;
+            const matchesCompany =
+                selectedCompanies.length === 0 ||
+                (emp.company && emp.company.trim() && selectedCompanies.includes(emp.company.trim())) ||
+                ((!emp.company || emp.company.trim() === '') && selectedCompanies.includes('(Blank)'));
+
+            const matchesPrefix =
+                selectedEmpPrefixes.length === 0 ||
+                (emp.emp_id && emp.emp_id.length >= 2 && selectedEmpPrefixes.includes(emp.emp_id.slice(0, 2).toUpperCase()));
+
+            return matchesSearch && matchesDept && matchesType && matchesNationality && matchesLocation && matchesCompany && matchesPrefix;
         });
-    }, [employees, search, selectedDepartments, selectedLocations, selectedTypes, selectedNationalities, employeeLocations, verifiedLocations]);
+    }, [employees, search, selectedDepartments, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedEmpPrefixes, employeeLocations, verifiedLocations]);
 
     // Stats calculation commented out because cards are disabled
     /*
@@ -1251,6 +1451,12 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                             >
                                 Change Type
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => setIsBulkCompanyOpen(true)}
+                                className="rounded-md focus:bg-gray-50 cursor-pointer"
+                            >
+                                Change Company
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1 border-gray-100" />
                             <DropdownMenuItem
                                 style={{ fontWeight: 500 }}
@@ -1286,6 +1492,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                         setAddEmpType('staff');
                         setAddNationality('');
                         setAddDesignation('');
+                        setAddCompany('');
                         setSelectedDevices(new Set());
                     }}
                     className="h-10 px-4 rounded-xl text-xs font-medium bg-gray-900 text-white hover:bg-gray-800 transition-colors flex items-center gap-1.5 shrink-0"
@@ -1311,6 +1518,14 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 >
                     <Upload className="w-4 h-4" />
                 </Button>
+                <Button
+                    onClick={handleExportExcel}
+                    variant="outline"
+                    className="h-10 w-10 p-0 rounded-xl bg-gray-50 border-none text-gray-500 hover:bg-gray-100 transition-colors shrink-0 flex items-center justify-center"
+                    title="Export Employees to Excel"
+                >
+                    <Download className="w-4 h-4" />
+                </Button>
             </div>
 
             {/* Error State */}
@@ -1322,7 +1537,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
 
             {/* Table Section */}
             <div className="overflow-auto flex-1" style={{ width: "100%" }}>
-                {loading ? (
+                {loading && employees.length === 0 ? (
                     <div className="flex items-center justify-center gap-2 h-full text-gray-400 text-sm">
                         <Loader2 className="w-5 h-full animate-spin" />
                         Loading employees…
@@ -1336,7 +1551,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                 </EmptyMedia>
                                 <EmptyTitle>No employees found</EmptyTitle>
                                 <EmptyDescription>
-                                    {search || selectedDepartments.length > 0 || selectedLocations.length > 0 || selectedTypes.length > 0 || selectedNationalities.length > 0
+                                    {search || selectedDepartments.length > 0 || selectedLocations.length > 0 || selectedTypes.length > 0 || selectedNationalities.length > 0 || selectedCompanies.length > 0 || selectedEmpPrefixes.length > 0
                                         ? 'No matching employees found with current filters.'
                                         : 'Get started by adding employee records.'}
                                 </EmptyDescription>
@@ -1365,7 +1580,73 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                 </th>
                                 <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "20px" }}>#</th>
                                 <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "240px" }}>Employee</th>
-                                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "160px" }}>IDs</th>
+                                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "160px" }}>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger className={`h-8 text-xs border transition-colors px-2 rounded-md font-semibold flex items-center gap-1 outline-none uppercase tracking-wide w-full shrink-0 ${selectedEmpPrefixes.length > 0 ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100' : 'bg-transparent border-0 text-gray-500 hover:bg-gray-100'}`}>
+                                            <span className="truncate">
+                                                {selectedEmpPrefixes.length === 0
+                                                    ? 'IDs (All)'
+                                                    : selectedEmpPrefixes.length === 1
+                                                        ? `ID: ${selectedEmpPrefixes[0]}`
+                                                        : `IDs (${selectedEmpPrefixes.length})`}
+                                            </span>
+                                            <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-0.5" />
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-[180px] max-h-[300px] overflow-y-auto p-0 z-50">
+                                            <div
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedEmpPrefixes(empCodePrefixes);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left bg-transparent border-none"
+                                                    style={{ flex: 1 }}
+                                                >
+                                                    All
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedEmpPrefixes([]);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right bg-transparent border-none"
+                                                    style={{ flex: 1 }}
+                                                >
+                                                    Clear
+                                                </button>
+                                            </div>
+                                            <div className="py-1">
+                                                {empCodePrefixes.map(prefix => {
+                                                    const isChecked = selectedEmpPrefixes.includes(prefix);
+                                                    return (
+                                                        <DropdownMenuCheckboxItem
+                                                            key={prefix}
+                                                            checked={isChecked}
+                                                            onCheckedChange={(checked) => {
+                                                                if (checked) {
+                                                                    setSelectedEmpPrefixes([...selectedEmpPrefixes, prefix]);
+                                                                } else {
+                                                                    setSelectedEmpPrefixes(selectedEmpPrefixes.filter(item => item !== prefix));
+                                                                }
+                                                            }}
+                                                            onSelect={(e) => e.preventDefault()}
+                                                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                        >
+                                                            {prefix}
+                                                        </DropdownMenuCheckboxItem>
+                                                    );
+                                                })}
+                                            </div>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </th>
                                 <th className=" px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "180px", border: "" }}>Biometrics</th>
                                 <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "180px" }}>
                                     <DropdownMenu>
@@ -1648,6 +1929,73 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                         </div>
                                     </div>
                                 </th>
+                                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "140px" }}>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                                            <span className="truncate">
+                                                {selectedCompanies.length === 0
+                                                    ? 'Company (All)'
+                                                    : selectedCompanies.length === 1
+                                                        ? selectedCompanies[0]
+                                                        : `Co. (${selectedCompanies.length})`}
+                                            </span>
+                                            <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
+                                            <div
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedCompanies(uniqueCompanies);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-left"
+                                                    style={{ background: "none", flex: 1 }}
+                                                >
+                                                    Select All
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedCompanies([]);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-right"
+                                                    style={{ background: "none", flex: 1 }}
+                                                >
+                                                    Clear All
+                                                </button>
+                                            </div>
+                                            <div className="py-1">
+                                                {uniqueCompanies.map(comp => {
+                                                    const isChecked = selectedCompanies.includes(comp);
+                                                    return (
+                                                        <DropdownMenuCheckboxItem
+                                                            key={comp}
+                                                            checked={isChecked}
+                                                            onCheckedChange={(checked) => {
+                                                                if (checked) {
+                                                                    setSelectedCompanies([...selectedCompanies, comp]);
+                                                                } else {
+                                                                    setSelectedCompanies(selectedCompanies.filter(item => item !== comp));
+                                                                }
+                                                            }}
+                                                            onSelect={(e) => e.preventDefault()}
+                                                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                        >
+                                                            {comp}
+                                                        </DropdownMenuCheckboxItem>
+                                                    );
+                                                })}
+                                            </div>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </th>
                                 {/* <th className="text-right px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Actions</th> */}
                             </tr>
                         </thead>
@@ -1667,6 +2015,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             setEditEmpType(emp.emp_type || 'staff');
                                             setEditNationality(emp.nationality || '');
                                             setEditDesignation(emp.designation || '');
+                                            setEditCompany(emp.company || '');
                                         }
                                     }}
                                     key={emp.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
@@ -1754,6 +2103,10 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             <div className="text-xs text-gray-500">{emp.nationality ?? '—'}</div>
                                         </div>
                                     </td>
+                                    {/* Company */}
+                                    <td className="px-4 py-3 text-xs text-gray-700 font-medium">
+                                        {emp.company ?? '—'}
+                                    </td>
                                     {/* Actions */}
                                     {/* <td className="px-4 py-3 text-right">
                                         <button
@@ -1767,6 +2120,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                 setEditEmpType(emp.emp_type || 'staff');
                                                 setEditNationality(emp.nationality || '');
                                                 setEditDesignation(emp.designation || '');
+                                                setEditCompany(emp.company || '');
                                             }}
                                             className="text-gray-400 hover:text-indigo-600 transition-colors p-1"
                                             title="Edit Employee"
@@ -1934,6 +2288,16 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                 </SelectContent>
                                             </Select>
                                         </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-555 block">Company</label>
+                                        <Input
+                                            type="text"
+                                            value={editCompany}
+                                            onChange={(e) => setEditCompany(e.target.value)}
+                                            placeholder="e.g. Acme Corp"
+                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
+                                        />
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-semibold text-gray-555 block">Email</label>
@@ -2318,6 +2682,16 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             </Select>
                                         </div>
                                     </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-555 block">Company</label>
+                                        <Input
+                                            type="text"
+                                            value={addCompany}
+                                            onChange={(e) => setAddCompany(e.target.value)}
+                                            placeholder="e.g. Acme Corp"
+                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="p-6 border-t border-gray-50 bg-white shrink-0 flex gap-3 w-full">
@@ -2494,6 +2868,43 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                             </Button>
                             <Button style={{ flex: 1 }} type="submit" disabled={isSubmitting}>
                                 {isSubmitting ? 'Updating...' : 'Update Department'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bulk Change Company Dialog */}
+            <Dialog open={isBulkCompanyOpen} onOpenChange={(open) => { if (!open) setIsBulkCompanyOpen(false); }}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Bulk Update Company</DialogTitle>
+                        <DialogDescription>
+                            Enter a new company for the {selectedEmployeeIds.size} selected employee(s).
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleBulkCompanySubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-gray-600 block">Company</label>
+                            <Input
+                                type="text"
+                                value={bulkCompanyValue}
+                                onChange={(e) => setBulkCompanyValue(e.target.value)}
+                                placeholder="e.g. Acme Corp"
+                            />
+                        </div>
+                        <DialogFooter className="pt-4">
+                            <Button
+                                style={{ flex: 1 }}
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsBulkCompanyOpen(false)}
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button style={{ flex: 1 }} type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? 'Updating...' : 'Update Company'}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -2764,16 +3175,32 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                         <div className="space-y-4 my-2">
                             {/* Summary Info */}
                             <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 flex gap-4 text-xs font-medium">
-                                <div className="flex-1">
-                                    <span className="text-gray-400 block mb-0.5">New Employees</span>
-                                    <span className="text-gray-950 text-lg font-bold">{parsedEmployees.length}</span>
-                                </div>
-                                {duplicateEmployees.length > 0 && (
-                                    <div className="flex-1 border-l border-slate-200 pl-4">
-                                        <span className="text-amber-600 block mb-0.5">Already Registered (Skipped)</span>
-                                        <span className="text-amber-700 text-lg font-bold">{duplicateEmployees.length}</span>
-                                    </div>
-                                )}
+                                {(() => {
+                                    const newCount = parsedEmployees.filter(emp => emp.action === 'create').length;
+                                    const updateCount = parsedEmployees.filter(emp => emp.action === 'update').length;
+                                    return (
+                                        <>
+                                            {newCount > 0 && (
+                                                <div className="flex-1">
+                                                    <span className="text-emerald-600 block mb-0.5">New Employees</span>
+                                                    <span className="text-emerald-700 text-lg font-bold">{newCount}</span>
+                                                </div>
+                                            )}
+                                            {updateCount > 0 && (
+                                                <div className={`flex-1 ${newCount > 0 ? 'border-l border-slate-200 pl-4' : ''}`}>
+                                                    <span className="text-blue-600 block mb-0.5">To Update</span>
+                                                    <span className="text-blue-700 text-lg font-bold">{updateCount}</span>
+                                                </div>
+                                            )}
+                                            {duplicateEmployees.length > 0 && (
+                                                <div className="flex-1 border-l border-slate-200 pl-4">
+                                                    <span className="text-gray-500 block mb-0.5">Skipped / Unchanged</span>
+                                                    <span className="text-gray-655 text-lg font-bold">{duplicateEmployees.length}</span>
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
                             </div>
 
                             {/* Preview list */}
@@ -2787,6 +3214,10 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                 <th className="px-3 py-2">Name</th>
                                                 <th className="px-3 py-2">Type</th>
                                                 <th className="px-3 py-2">Department</th>
+                                                <th className="px-3 py-2">Project</th>
+                                                <th className="px-3 py-2">Company</th>
+                                                <th className="px-3 py-2">Civil ID</th>
+                                                <th className="px-3 py-2">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-50 bg-white">
@@ -2796,6 +3227,20 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                     <td className="px-3 py-2 capitalize font-medium text-gray-900">{emp.name.toLowerCase()}</td>
                                                     <td className="px-3 py-2 uppercase font-semibold text-[10px] text-gray-400">{emp.emp_type}</td>
                                                     <td className="px-3 py-2">{emp.department || '—'}</td>
+                                                    <td className="px-3 py-2 text-gray-500">{emp.project || '—'}</td>
+                                                    <td className="px-3 py-2 text-gray-500">{emp.company || '—'}</td>
+                                                    <td className="px-3 py-2 font-mono text-gray-500">{emp.civil_id || '—'}</td>
+                                                    <td className="px-3 py-2">
+                                                        {emp.action === 'create' ? (
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-705 border border-emerald-100">
+                                                                New
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-705 border border-blue-100">
+                                                                Update
+                                                            </span>
+                                                        )}
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -2812,7 +3257,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                         onChange={(e) => setUploadPushToDevices(e.target.checked)}
                                         className="w-4 h-4 rounded accent-indigo-600"
                                     />
-                                    Also push these new employees to attendance devices
+                                    Also push these new/updated employees to attendance devices
                                 </label>
 
                                 {uploadPushToDevices && (
@@ -2898,7 +3343,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                             <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mb-1" />
                             <div className="w-full text-center">
                                 <span className="text-sm font-semibold text-gray-850 block mb-1">
-                                    Importing employees ({uploadCurrentIndex} of {uploadTotalCount})
+                                    Processing employees ({uploadCurrentIndex} of {uploadTotalCount})
                                 </span>
                                 <span className="text-xs text-gray-400">
                                     {uploadTotalCount - uploadCurrentIndex} remaining...
@@ -2922,8 +3367,8 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                 <SquareCheck className="w-6 h-6 text-emerald-600" />
                             </div>
                             <div className="text-center">
-                                <span className="text-sm font-semibold text-gray-800 block mb-0.5">Import completed successfully!</span>
-                                <span className="text-xs text-gray-400">Added {uploadTotalCount} employees into the database.</span>
+                                <span className="text-sm font-semibold text-gray-800 block mb-0.5">Import & update completed successfully!</span>
+                                <span className="text-xs text-gray-400">Processed {uploadTotalCount} employee records (added new and updated existing).</span>
                             </div>
                         </div>
                     )}
@@ -2957,7 +3402,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                     disabled={uploadPushToDevices && uploadSelectedDevices.size === 0}
                                     className="bg-indigo-600 text-white hover:bg-indigo-700 font-semibold"
                                 >
-                                    Import {parsedEmployees.length} Employees
+                                    Import & Update {parsedEmployees.length} Employees
                                 </Button>
                             </>
                         )}

@@ -50,6 +50,8 @@ export function ResponsiveModal({
     width: "100%",
     display: "flex",
     flexDirection: "column",
+    minHeight: 0,
+    maxHeight: "90vh",
     padding: "0",
     gap: "0",
     ...contentStyle,
@@ -57,6 +59,8 @@ export function ResponsiveModal({
 
   const mobileBodyStyle: CSSProperties = {
     width: "100%",
+    flex: 1,
+    minHeight: 0,
     display: "flex",
     flexDirection: "column",
     paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
@@ -66,6 +70,10 @@ export function ResponsiveModal({
   const desktopContentStyle: CSSProperties = {
     width: "100%",
     maxWidth: "650px",
+    maxHeight: "85vh",
+    minHeight: 0,
+    display: "flex",
+    flexDirection: "column",
     ...(hideHeader ? { padding: "0", gap: "0" } : { padding: "2rem" }),
     ...contentStyle,
   };

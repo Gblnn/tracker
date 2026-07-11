@@ -3,10 +3,11 @@ import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRightLeft, BarChart3, ChartLine, Check, Database, FileCheck, FolderKanban, Laptop2, LayoutGrid, List, Loader2, Sidebar, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
+import { ArrowRightLeft, BarChart3, ChartLine, Check, Database, FileCheck, FolderKanban, Laptop2, LayoutGrid, List, Loader2, Sidebar, Table, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
+import DetailedBreakdown from '../components/DetailedBreakdown';
 import { useAttendance } from '../lib/useAttendance';
 import { todayISO } from '../lib/utilis';
 import AddEmployee from './AddEmployee';
@@ -33,7 +34,7 @@ const formatSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management' | 'analytics' | 'transfers' | 'projects' | 'finalize';
+type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management' | 'analytics' | 'transfers' | 'projects' | 'finalize' | 'breakdown';
 
 export default function AttendanceDashboard() {
   const [date, setDate] = useState<string>(todayISO());
@@ -126,6 +127,7 @@ export default function AttendanceDashboard() {
     const options = [
       { value: 'summary', label: 'Dashboard', icon: <LayoutGrid color="darkblue" className="w-4 h-4" /> },
       { value: 'transfers', label: 'Transfers', icon: <ArrowRightLeft color="darkblue" className="w-4 h-4" /> },
+      { value: 'breakdown', label: 'Detailed Breakdown', icon: <Table color="darkblue" className="w-4 h-4" /> },
       { value: 'analytics', label: 'Analytics', icon: <BarChart3 color="darkblue" className="w-4 h-4" /> },
       { value: 'manage', label: 'Manage', icon: <UserPlus color="darkblue" className="w-4 h-4" /> },
       { value: 'log', label: 'Punch Log', icon: <List color="darkblue" className="w-4 h-4" /> },
@@ -201,7 +203,9 @@ export default function AttendanceDashboard() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                   <Directive bg={tab === 'summary' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('summary')} title="Dashboard" icon={<ChartLine size={16} />} />
 
-                  <Directive bg={tab === 'transfers' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('transfers')} title="Transfers" icon={<ArrowRightLeft size={16} />} />
+                   <Directive bg={tab === 'transfers' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('transfers')} title="Transfers" icon={<ArrowRightLeft size={16} />} />
+
+                  <Directive bg={tab === 'breakdown' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('breakdown')} title="Detailed Breakdown" icon={<Table size={16} />} />
 
                   {canEditAttendance && (
                     <Directive bg={tab === 'manage' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('manage')} title="Manage" icon={<UserCog size={16} />} />
@@ -332,7 +336,7 @@ export default function AttendanceDashboard() {
 
 
             {
-              tab === 'summary' || tab === 'log' ? (
+              tab === 'summary' || tab === 'log' || tab === 'breakdown' ? (
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   {tab === 'summary' && (
                     <button
@@ -397,6 +401,14 @@ export default function AttendanceDashboard() {
                 </div>
               ) : (
                 <EmployeeTable summaries={employeeSummaries} date={date} useFirstLast={useFirstLast} />
+              )
+            ) : tab === 'breakdown' ? (
+              loading ? (
+                <div style={{ margin: "auto" }}>
+                  <Loader2 className="animate-spin" />
+                </div>
+              ) : (
+                <DetailedBreakdown summaries={employeeSummaries} date={date} />
               )
             ) : tab === 'log' ? (
               loading ? (

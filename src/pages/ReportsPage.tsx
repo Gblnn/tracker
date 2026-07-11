@@ -604,14 +604,29 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
     }
 
     try {
+      let empData: Employee[] | null = null;
+      let eErr: any = null;
+
+      const empWithLocation = await supabase.from('employees')
+        .select('id, device_user_id, name, department, emp_type, emp_id, location')
+        .order('name', { ascending: true });
+
+      if (empWithLocation.error && /employees\.location/i.test(empWithLocation.error.message || '')) {
+        const empWithoutLocation = await supabase.from('employees')
+          .select('id, device_user_id, name, department, emp_type, emp_id')
+          .order('name', { ascending: true });
+
+        empData = (empWithoutLocation.data || []).map((emp: any) => ({ ...emp, location: null }));
+        eErr = empWithoutLocation.error;
+      } else {
+        empData = (empWithLocation.data as Employee[] | null) || [];
+        eErr = empWithLocation.error;
+      }
+
       const [
-        { data: empData, error: eErr },
         { data: devData, error: dErr },
         { data: transData, error: tErr }
       ] = await Promise.all([
-        supabase.from('employees')
-          .select('id, device_user_id, name, department, emp_type, emp_id, location')
-          .order('name', { ascending: true }),
         supabase.from('devices').select('serial_no, project_code, location'),
         supabase.from('transfers').select('*')
       ]);

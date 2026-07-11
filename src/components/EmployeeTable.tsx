@@ -4,7 +4,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Check, ChevronDown, Loader2, Search, User, X } from 'lucide-react';
+import { Check, ChevronDown, Loader2, MapPin, Search, User, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { supabase } from '../lib/supabase';
@@ -23,17 +23,19 @@ interface EmployeeTableProps {
 export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useFirstLast = true }: EmployeeTableProps) {
   const [search, setSearch] = useState('');
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [selectedAssignedLocations, setSelectedAssignedLocations] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedEmpPrefixes, setSelectedEmpPrefixes] = useState<string[]>([]);
   const [selectedEmpTypes, setSelectedEmpTypes] = useState<string[]>([]);
-  const [showTotalDetails, setShowTotalDetails] = useState(false);
+  const [totalPage, setTotalPage] = useState<0 | 1 | 2>(0);
+  const [splitLocationColumns, setSplitLocationColumns] = useState(false);
   const [loading] = useState(false);
   const [renderLimit, setRenderLimit] = useState(100);
 
   useEffect(() => {
     setRenderLimit(100);
-  }, [search, selectedLocations, selectedDepartments, selectedStatuses, selectedEmpPrefixes, selectedEmpTypes]);
+  }, [search, selectedLocations, selectedAssignedLocations, selectedDepartments, selectedStatuses, selectedEmpPrefixes, selectedEmpTypes]);
 
 
   const uniqueLocations = useMemo(() => {
@@ -47,6 +49,42 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
 
     const sorted = Array.from(locations).sort();
     const hasBlank = summaries.some(emp => !emp.location || emp.location.trim() === '');
+    if (hasBlank) {
+      sorted.push('(Blank)');
+    }
+    return sorted;
+  }, [summaries]);
+
+  const uniqueAssignedLocations = useMemo(() => {
+    const locations = new Set<string>();
+
+    summaries.forEach((emp) => {
+      if (emp.assignedLocation) {
+        locations.add(emp.assignedLocation);
+      }
+    });
+
+    const sorted = Array.from(locations).sort();
+    const hasBlank = summaries.some(emp => !emp.assignedLocation || emp.assignedLocation.trim() === '');
+    if (hasBlank) {
+      sorted.push('(Blank)');
+    }
+    return sorted;
+  }, [summaries]);
+
+  const uniqueMergedLocations = useMemo(() => {
+    const locations = new Set<string>();
+    summaries.forEach((emp) => {
+      const mergedLoc = emp.isVerified ? emp.assignedLocation : (emp.location || emp.assignedLocation || null);
+      if (mergedLoc) {
+        locations.add(mergedLoc);
+      }
+    });
+    const sorted = Array.from(locations).sort();
+    const hasBlank = summaries.some(emp => {
+      const mergedLoc = emp.isVerified ? emp.assignedLocation : (emp.location || emp.assignedLocation || null);
+      return !mergedLoc || mergedLoc.trim() === '';
+    });
     if (hasBlank) {
       sorted.push('(Blank)');
     }
@@ -90,10 +128,20 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
         emp.name.toLowerCase().includes(search.toLowerCase()) ||
         (emp.emp_id && emp.emp_id.toLowerCase().includes(search.toLowerCase()));
 
-      const matchesLocation =
-        selectedLocations.length === 0 ||
-        (emp.location && selectedLocations.includes(emp.location)) ||
-        ((!emp.location || emp.location.trim() === '') && selectedLocations.includes('(Blank)'));
+      const mergedLoc = emp.isVerified ? emp.assignedLocation : (emp.location || emp.assignedLocation || null);
+
+      const matchesLocation = splitLocationColumns
+        ? (selectedLocations.length === 0 ||
+          (emp.location && selectedLocations.includes(emp.location)) ||
+          ((!emp.location || emp.location.trim() === '') && selectedLocations.includes('(Blank)')))
+        : (selectedLocations.length === 0 ||
+          (mergedLoc && selectedLocations.includes(mergedLoc)) ||
+          ((!mergedLoc || mergedLoc.trim() === '') && selectedLocations.includes('(Blank)')));
+
+      const matchesAssignedLocation = !splitLocationColumns ||
+        selectedAssignedLocations.length === 0 ||
+        (emp.assignedLocation && selectedAssignedLocations.includes(emp.assignedLocation)) ||
+        ((!emp.assignedLocation || emp.assignedLocation.trim() === '') && selectedAssignedLocations.includes('(Blank)'));
 
       const matchesDepartment =
         selectedDepartments.length === 0 ||
@@ -113,9 +161,9 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
         (emp.emp_type && selectedEmpTypes.includes(emp.emp_type)) ||
         ((!emp.emp_type || emp.emp_type.trim() === '') && selectedEmpTypes.includes('(Blank)'));
 
-      return matchesSearch && matchesLocation && matchesDepartment && matchesStatus && matchesPrefix && matchesEmpType;
+      return matchesSearch && matchesLocation && matchesAssignedLocation && matchesDepartment && matchesStatus && matchesPrefix && matchesEmpType;
     });
-  }, [summaries, search, selectedLocations, selectedDepartments, selectedStatuses, selectedEmpPrefixes, selectedEmpTypes]);
+  }, [summaries, search, selectedLocations, selectedAssignedLocations, selectedDepartments, selectedStatuses, selectedEmpPrefixes, selectedEmpTypes, splitLocationColumns]);
 
   // Call the callback whenever filteredSummaries changes
   useEffect(() => {
@@ -148,6 +196,20 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
       value: count
     }));
   }, [prefixCounts]);
+
+  const projectChartData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredSummaries.forEach(emp => {
+      const loc = emp.location || 'UN-MAPPED';
+      counts[loc] = (counts[loc] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([project, count]) => ({
+        name: project,
+        value: count
+      }));
+  }, [filteredSummaries]);
 
   const activeDate = date || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' });
   const yearMonth = useMemo(() => activeDate.substring(0, 7), [activeDate]);
@@ -340,12 +402,12 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
               alignItems: "stretch"
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "0.25rem", zIndex: 20 }}>
-                <p style={{ fontSize: "1rem", fontWeight: 500, color: "grey", margin: 0, paddingLeft: "0.25rem" }}>
-                  Total {showTotalDetails && <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#111827", marginLeft: "0.25rem" }}>({stats.total})</span>}
+                <p style={{ fontSize: "1.05rem", fontWeight: 600, color: "#111827", margin: 0, paddingLeft: "0.25rem" }}>
+                  {totalPage === 0 ? "Total" : totalPage === 1 ? `Total (${stats.total}) - ID` : `Total (${stats.total}) - Project`}
                 </p>
                 <button
                   type="button"
-                  onClick={() => setShowTotalDetails(!showTotalDetails)}
+                  onClick={() => setTotalPage(prev => (prev === 0 ? 1 : prev === 1 ? 2 : 0))}
                   style={{
                     background: "rgba(0,0,0,0.05)",
                     border: "none",
@@ -361,9 +423,9 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                     letterSpacing: "0.025em"
                   }}
                   className="hover:opacity-80 transition-opacity"
-                  title={showTotalDetails ? "Show grand total" : "Show category breakdown"}
+                  title="Cycle view"
                 >
-                  {showTotalDetails ? "Total" : "Categories"}
+                  {totalPage === 0 ? "Categories" : totalPage === 1 ? "Projects" : "Total"}
                 </button>
               </div>
 
@@ -373,8 +435,8 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                 </div>
               ) : (
                 <div className="card-state-container">
-                  {/* Chart Pane */}
-                  <div className={`card-state-pane ${showTotalDetails ? "card-state-pane-active" : "card-state-pane-inactive"}`} style={{ display: "flex", flexDirection: "column" }}>
+                  {/* Category Chart Pane */}
+                  <div className={`card-state-pane ${totalPage === 1 ? "card-state-pane-active" : "card-state-pane-inactive"}`} style={{ display: "flex", flexDirection: "column" }}>
                     <div style={{ width: "100%", height: "100%", minHeight: 0 }}>
                       {prefixChartData.length === 0 ? (
                         <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", color: "#9ca3af" }}>
@@ -407,7 +469,50 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                             />
                             <Bar dataKey="value" radius={[3, 3, 0, 0]}>
                               {prefixChartData.map((index) => (
-                                <Cell key={`cell-${index}`} fill="#4f46e5" fillOpacity={0.8} />
+                                <Cell key={`cell-id-${index}`} fill="#4f46e5" fillOpacity={0.8} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Project Chart Pane */}
+                  <div className={`card-state-pane ${totalPage === 2 ? "card-state-pane-active" : "card-state-pane-inactive"}`} style={{ display: "flex", flexDirection: "column" }}>
+                    <div style={{ width: "100%", height: "100%", minHeight: 0 }}>
+                      {projectChartData.length === 0 ? (
+                        <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", color: "#9ca3af" }}>
+                          No data
+                        </div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={projectChartData} margin={{ top: 10, right: 5, left: 5, bottom: 0 }}>
+                            <XAxis
+                              dataKey="name"
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fontSize: 9, fill: "#6b7280", fontWeight: 500 }}
+                            />
+                            <Tooltip
+                              cursor={{ fill: 'transparent' }}
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const data = payload[0].payload;
+                                  return (
+                                    <div style={{ background: "white", padding: "0.25rem 0.5rem", border: "1px solid #e5e7eb", borderRadius: "0.25rem", fontSize: "0.75rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", zIndex: 50 }}>
+                                      <p style={{ fontWeight: 600, margin: 0, color: "#10b981" }}>{data.name}</p>
+                                      <p style={{ margin: 0, color: "#374151" }}>Employees: {data.value}</p>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                              wrapperStyle={{ outline: 'none' }}
+                            />
+                            <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                              {projectChartData.map((index) => (
+                                <Cell key={`cell-proj-${index}`} fill="#10b981" fillOpacity={0.8} />
                               ))}
                             </Bar>
                           </BarChart>
@@ -417,7 +522,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                   </div>
 
                   {/* Total Number Pane */}
-                  <div className={`card-state-pane ${!showTotalDetails ? "card-state-pane-active" : "card-state-pane-inactive"}`} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div className={`card-state-pane ${totalPage === 0 ? "card-state-pane-active" : "card-state-pane-inactive"}`} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <h1 style={{ fontWeight: 600, fontSize: "2.5rem", margin: 0 }}>
                       {stats.total}
                     </h1>
@@ -777,72 +882,174 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                 </DropdownMenu>
               </th>
 
-              <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "160px" }}>
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
-                    <span className="truncate">
-                      {selectedLocations.length === 0
-                        ? 'Location (All)'
-                        : selectedLocations.length === 1
-                          ? selectedLocations[0]
-                          : `Loc (${selectedLocations.length})`}
-                    </span>
-                    <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
-                    >
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setSelectedLocations(uniqueLocations);
-                        }}
-                        className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left"
-                        style={{ background: "none", flex: 1 }}
+              {splitLocationColumns && (
+                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "160px" }}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                      <span className="truncate">
+                        {selectedAssignedLocations.length === 0
+                          ? 'Assigned (All)'
+                          : selectedAssignedLocations.length === 1
+                            ? selectedAssignedLocations[0]
+                            : `Assigned (${selectedAssignedLocations.length})`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
                       >
-                        Select All
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setSelectedLocations([]);
-                        }}
-                        className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right"
-                        style={{ background: "none", flex: 1 }}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedAssignedLocations(uniqueAssignedLocations);
+                          }}
+                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left"
+                          style={{ background: "none", flex: 1 }}
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedAssignedLocations([]);
+                          }}
+                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right"
+                          style={{ background: "none", flex: 1 }}
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                      <div className="py-1">
+                        {uniqueAssignedLocations.map(loc => {
+                          const isChecked = selectedAssignedLocations.includes(loc);
+                          return (
+                            <DropdownMenuCheckboxItem
+                              key={loc}
+                              checked={isChecked}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedAssignedLocations([...selectedAssignedLocations, loc]);
+                                } else {
+                                  setSelectedAssignedLocations(selectedAssignedLocations.filter(item => item !== loc));
+                                }
+                              }}
+                              onSelect={(e) => e.preventDefault()}
+                              className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                            >
+                              {loc}
+                            </DropdownMenuCheckboxItem>
+                          );
+                        })}
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </th>
+              )}
+
+              <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "210px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", justifyContent: "space-between" }}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                      <span className="truncate">
+                        {selectedLocations.length === 0
+                          ? 'Location (All)'
+                          : selectedLocations.length === 1
+                            ? selectedLocations[0]
+                            : `Loc (${selectedLocations.length})`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
                       >
-                        Clear All
-                      </button>
-                    </div>
-                    <div className="py-1">
-                      {uniqueLocations.map(loc => {
-                        const isChecked = selectedLocations.includes(loc);
-                        return (
-                          <DropdownMenuCheckboxItem
-                            key={loc}
-                            checked={isChecked}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedLocations([...selectedLocations, loc]);
-                              } else {
-                                setSelectedLocations(selectedLocations.filter(item => item !== loc));
-                              }
-                            }}
-                            onSelect={(e) => e.preventDefault()}
-                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                          >
-                            {loc}
-                          </DropdownMenuCheckboxItem>
-                        );
-                      })}
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedLocations(splitLocationColumns ? uniqueLocations : uniqueMergedLocations);
+                          }}
+                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left"
+                          style={{ background: "none", flex: 1 }}
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedLocations([]);
+                          }}
+                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right"
+                          style={{ background: "none", flex: 1 }}
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                      <div className="py-1">
+                        {(splitLocationColumns ? uniqueLocations : uniqueMergedLocations).map(loc => {
+                          const isChecked = selectedLocations.includes(loc);
+                          return (
+                            <DropdownMenuCheckboxItem
+                              key={loc}
+                              checked={isChecked}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedLocations([...selectedLocations, loc]);
+                                } else {
+                                  setSelectedLocations(selectedLocations.filter(item => item !== loc));
+                                }
+                              }}
+                              onSelect={(e) => e.preventDefault()}
+                              className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                            >
+                              {loc}
+                            </DropdownMenuCheckboxItem>
+                          );
+                        })}
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSplitLocationColumns(prev => !prev);
+                      setSelectedLocations([]);
+                      setSelectedAssignedLocations([]);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "0.25rem",
+                      borderRadius: "0.25rem",
+
+                      cursor: "pointer",
+                      height: "1.75rem",
+                      width: "1.75rem",
+                      boxSizing: "border-box",
+                      transition: "all 0.15s ease-in-out",
+                      flexShrink: 0
+                    }}
+                    className={splitLocationColumns
+                      ? "bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100"
+                      : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                    }
+                    title={splitLocationColumns ? "Merge Assigned & Actual Locations" : "Split Assigned & Actual Locations"}
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </th>
 
               <th style={{ width: "200px" }} className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">
@@ -932,7 +1139,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
           <tbody className="divide-y divide-gray-50">
             {filteredSummaries.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-20 text-center text-gray-400 font-medium">
+                <td colSpan={splitLocationColumns ? 9 : 8} className="py-20 text-center text-gray-400 font-medium">
                   {search ? `No results found for "${search}"` : 'No matching employees found.'}
                 </td>
               </tr>
@@ -961,21 +1168,46 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-500">{emp.department ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {emp.isVerified ? (
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                          <div className="flex items-center gap-1 text-emerald-700" style={{ display: "flex", alignItems: "center", gap: "0.25rem", justifyContent: "flex-start" }}>
-                            <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            <span style={{ fontWeight: 500 }}>{emp.location}</span>
+                    {/* Assigned Location */}
+                    {splitLocationColumns && (
+                      <td className="px-4 py-3 text-gray-500">
+                        {emp.isVerified ? (
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                            <div className="flex items-center gap-1 text-emerald-700" style={{ display: "flex", alignItems: "center", gap: "0.25rem", justifyContent: "flex-start" }}>
+                              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span style={{ fontWeight: 500 }}>{emp.assignedLocation}</span>
+                            </div>
+                            {emp.verifiedBy && (
+                              <span style={{ fontSize: "0.65rem", color: "#6b7280", paddingLeft: "1.1rem", display: "flex", justifyContent: "center", alignItems: "center", gap: "0.25rem" }}>
+                                by {emp.verifiedBy}
+                              </span>
+                            )}
                           </div>
-                          {emp.verifiedBy && (
-                            <span style={{ fontSize: "0.65rem", color: "#6b7280", paddingLeft: "1.1rem", display: "flex", justifyContent: "center", alignItems: "center", gap: "0.25rem" }}>
-                              {emp.verifiedBy}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
+                        ) : (
+                          emp.assignedLocation ?? '—'
+                        )}
+                      </td>
+                    )}
+                    {/* Punch Location / Merged Location */}
+                    <td className="px-4 py-3 text-gray-500">
+                      {splitLocationColumns ? (
                         emp.location ?? '—'
+                      ) : (
+                        emp.isVerified ? (
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                            <div className="flex items-center gap-1 text-emerald-700" style={{ display: "flex", alignItems: "center", gap: "0.25rem", justifyContent: "flex-start" }}>
+                              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span style={{ fontWeight: 500 }}>{emp.assignedLocation}</span>
+                            </div>
+                            {emp.verifiedBy && (
+                              <span style={{ fontSize: "0.65rem", color: "#6b7280", paddingLeft: "1.1rem", display: "flex", justifyContent: "center", alignItems: "center", gap: "0.25rem" }}>
+                                by {emp.verifiedBy}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          emp.location || emp.assignedLocation || '—'
+                        )
                       )}
                     </td>
 

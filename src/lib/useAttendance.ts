@@ -14,7 +14,7 @@ export function useAttendance(date: string) {
   const [devicesMap, setDevicesMap] = useState<Record<string, { serial_no?: string; start_time: string | null; end_time: string | null; location: string | null; project_code?: string | null }>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [projLocationMap, setProjLocationMap] = useState<Record<string, string>>({});
   const filterRef = useRef<{
     isFocalFiltered: boolean;
     projectDeviceSerials: string[];
@@ -169,13 +169,14 @@ export function useAttendance(date: string) {
 
       // Fetch all projects to build a project_name to location display name mapping
       const { data: projData } = await supabase.from('projects').select('project_name, project_location');
-      const projLocationMap: Record<string, string> = {};
+      const tempProjLocationMap: Record<string, string> = {};
       (projData ?? []).forEach(p => {
         const { name } = parseLocationGeofence(p.project_location);
         if (p.project_name && name) {
-          projLocationMap[p.project_name.toLowerCase().trim()] = name;
+          tempProjLocationMap[p.project_name.toLowerCase().trim()] = name;
         }
       });
+      setProjLocationMap(tempProjLocationMap);
 
       // 6. Filter punches list
       const punchesWithLocation = (punchData ?? []).map(p => {
@@ -183,8 +184,8 @@ export function useAttendance(date: string) {
         let { location, coordinates } = parsePunchLocation(p.mobile_location, devLoc);
         if (location) {
           const key = location.toLowerCase().trim();
-          if (projLocationMap[key]) {
-            location = projLocationMap[key];
+          if (tempProjLocationMap[key]) {
+            location = tempProjLocationMap[key];
           }
         }
         return {
@@ -222,8 +223,12 @@ export function useAttendance(date: string) {
       // Count location frequencies for the current month
       const userLocationCounts: Record<string, Record<string, number>> = {};
       (historicalPunchData ?? []).forEach(p => {
-        const loc = devMap[p.device_serial]?.location;
+        let loc = devMap[p.device_serial]?.location;
         if (loc) {
+          const key = loc.toLowerCase().trim();
+          if (tempProjLocationMap[key]) {
+            loc = tempProjLocationMap[key];
+          }
           if (!userLocationCounts[p.user_id]) {
             userLocationCounts[p.user_id] = {};
           }
@@ -404,13 +409,22 @@ export function useAttendance(date: string) {
       verifiedBy = empTrans[0].acceptor || empTrans[0].initiator || null;
     }
 
+    let assignedLoc = verifiedLocation || emp.location || null;
+    if (assignedLoc) {
+      const key = assignedLoc.toLowerCase().trim();
+      if (projLocationMap[key]) {
+        assignedLoc = projLocationMap[key];
+      }
+    }
+
     return {
       ...emp,
       totalPunches: empPunches.length,
       firstIn: firstInPunch?.punch_time ?? null,
       lastOut: lastOutPunch?.punch_time ?? null,
       isPresent: empPunches.length > 0,
-      location: verifiedLocation || latestLocation || primaryLocation || emp.location || null,
+      location: latestLocation || primaryLocation || null,
+      assignedLocation: assignedLoc,
       isVerified: !!verifiedLocation,
       verifiedBy,
       remarks,
