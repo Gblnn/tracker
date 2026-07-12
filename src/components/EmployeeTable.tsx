@@ -4,7 +4,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Check, ChevronDown, Loader2, MapPin, Search, User, X } from 'lucide-react';
+import { Check, ChevronDown, Loader2, MapPinCheck, Search, User, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { supabase } from '../lib/supabase';
@@ -96,7 +96,12 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
     summaries.forEach((emp) => {
       if (emp.department) depts.add(emp.department);
     });
-    return Array.from(depts).sort();
+    const sorted = Array.from(depts).sort();
+    const hasBlank = summaries.some(emp => !emp.department || emp.department.trim() === '');
+    if (hasBlank) {
+      sorted.push('(Blank)');
+    }
+    return sorted;
   }, [summaries]);
 
   const empCodePrefixes = useMemo(() => {
@@ -145,7 +150,8 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
 
       const matchesDepartment =
         selectedDepartments.length === 0 ||
-        (emp.department && selectedDepartments.includes(emp.department));
+        (emp.department && selectedDepartments.includes(emp.department)) ||
+        ((!emp.department || emp.department.trim() === '') && selectedDepartments.includes('(Blank)'));
 
       const matchesStatus =
         selectedStatuses.length === 0 ||
@@ -882,8 +888,27 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                 </DropdownMenu>
               </th>
 
-              {splitLocationColumns && (
-                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "160px" }}>
+              <th
+                className="text-left py-1 font-medium text-xs tracking-wide"
+                style={{
+                  width: splitLocationColumns ? '160px' : '0px',
+                  minWidth: splitLocationColumns ? '160px' : '0px',
+                  maxWidth: splitLocationColumns ? '160px' : '0px',
+                  paddingLeft: splitLocationColumns ? '0.25rem' : '0px',
+                  paddingRight: splitLocationColumns ? '0.25rem' : '0px',
+                  overflow: 'hidden',
+                  transition: 'width 260ms ease, min-width 260ms ease, max-width 260ms ease, padding 260ms ease'
+                }}
+              >
+                <div
+                  style={{
+                    opacity: splitLocationColumns ? 1 : 0,
+                    transform: splitLocationColumns ? 'translateX(0)' : 'translateX(-8px)',
+                    pointerEvents: splitLocationColumns ? 'auto' : 'none',
+                    transition: 'opacity 180ms ease, transform 220ms ease',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
                   <DropdownMenu>
                     <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
                       <span className="truncate">
@@ -949,8 +974,8 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                       </div>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                </th>
-              )}
+                </div>
+              </th>
 
               <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "210px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", justifyContent: "space-between" }}>
@@ -1047,7 +1072,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                     }
                     title={splitLocationColumns ? "Merge Assigned & Actual Locations" : "Split Assigned & Actual Locations"}
                   >
-                    <MapPin className="w-3.5 h-3.5" />
+                    <MapPinCheck className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </th>
@@ -1139,7 +1164,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
           <tbody className="divide-y divide-gray-50">
             {filteredSummaries.length === 0 ? (
               <tr>
-                <td colSpan={splitLocationColumns ? 9 : 8} className="py-20 text-center text-gray-400 font-medium">
+                <td colSpan={9} className="py-20 text-center text-gray-400 font-medium">
                   {search ? `No results found for "${search}"` : 'No matching employees found.'}
                 </td>
               </tr>
@@ -1169,8 +1194,27 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                     </td>
                     <td className="px-4 py-3 text-gray-500">{emp.department ?? '—'}</td>
                     {/* Assigned Location */}
-                    {splitLocationColumns && (
-                      <td className="px-4 py-3 text-gray-500">
+                    <td
+                      className="py-3 text-gray-500"
+                      style={{
+                        width: splitLocationColumns ? '160px' : '0px',
+                        minWidth: splitLocationColumns ? '160px' : '0px',
+                        maxWidth: splitLocationColumns ? '160px' : '0px',
+                        paddingLeft: splitLocationColumns ? '1rem' : '0px',
+                        paddingRight: splitLocationColumns ? '1rem' : '0px',
+                        overflow: 'hidden',
+                        transition: 'width 260ms ease, min-width 260ms ease, max-width 260ms ease, padding 260ms ease'
+                      }}
+                    >
+                      <div
+                        style={{
+                          opacity: splitLocationColumns ? 1 : 0,
+                          transform: splitLocationColumns ? 'translateX(0)' : 'translateX(-8px)',
+                          pointerEvents: splitLocationColumns ? 'auto' : 'none',
+                          transition: 'opacity 180ms ease, transform 220ms ease',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
                         {emp.isVerified ? (
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                             <div className="flex items-center gap-1 text-emerald-700" style={{ display: "flex", alignItems: "center", gap: "0.25rem", justifyContent: "flex-start" }}>
@@ -1186,8 +1230,8 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                         ) : (
                           emp.assignedLocation ?? '—'
                         )}
-                      </td>
-                    )}
+                      </div>
+                    </td>
                     {/* Punch Location / Merged Location */}
                     <td className="px-4 py-3 text-gray-500">
                       {splitLocationColumns ? (
@@ -1269,7 +1313,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                 ))}
                 {filteredSummaries.length > renderLimit && (
                   <tr>
-                    <td colSpan={7} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-50">
+                    <td colSpan={9} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-50">
                       <div className="flex items-center justify-center gap-4 w-full">
                         <span className="text-xs text-gray-500 font-medium text-center">
                           Showing {renderLimit} of {filteredSummaries.length} employees

@@ -61,6 +61,7 @@ interface DaySummary {
 type AttendanceMatrix = Record<string, Record<string, DaySummary>>;
 
 type ReportType = 'inout' | 'pa' | 'hourly' | 'location_inout';
+type ReportView = 'monthly' | 'daily' | 'individual' | 'location';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -504,7 +505,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
   const [reportType, setReportType] = useState<ReportType>('inout');
   const [useFirstLast, setUseFirstLast] = useState(true);
   const [pdfLoading, setPdfLoading] = useState(false);
-  const [reportView, setReportView] = useState<'monthly' | 'daily' | 'individual'>('monthly');
+  const [reportView, setReportView] = useState<ReportView>('monthly');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [selectedDailyDate, setSelectedDailyDate] = useState<string>(() => todayISO());
   const [empSearch, setEmpSearch] = useState("");
@@ -942,6 +943,57 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
     return result;
   }, [punches, employees, transfers]);
 
+  const transferHistoryByUser = useMemo(() => {
+    const byUser: Record<string, Array<{ transferDate: string; createdAt: string; toProject: string }>> = {};
+
+    employees.forEach(emp => {
+      byUser[emp.device_user_id] = [];
+    });
+
+    transfers.forEach((t: any) => {
+      if (!t?.to_project) return;
+      const matchedEmp = employees.find(emp => t.emp_id === emp.emp_id || t.emp_id === String(emp.id));
+      if (!matchedEmp) return;
+      if (!byUser[matchedEmp.device_user_id]) {
+        byUser[matchedEmp.device_user_id] = [];
+      }
+      byUser[matchedEmp.device_user_id].push({
+        transferDate: t.transfer_date,
+        createdAt: t.created_at,
+        toProject: t.to_project,
+      });
+    });
+
+    Object.values(byUser).forEach((list) => {
+      list.sort((a, b) => {
+        const dateDiff = new Date(a.transferDate).getTime() - new Date(b.transferDate).getTime();
+        if (dateDiff !== 0) return dateDiff;
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      });
+    });
+
+    return byUser;
+  }, [employees, transfers]);
+
+  const getTransferLocationForDate = useCallback((emp: Employee, dateKey: string) => {
+    const history = transferHistoryByUser[emp.device_user_id] || [];
+    const endOfDayTime = new Date(`${dateKey}T23:59:59`).getTime();
+
+    let resolvedLocation = (emp.location || '').trim();
+
+    for (const record of history) {
+      const transferTime = new Date(`${record.transferDate}T23:59:59`).getTime();
+      if (Number.isNaN(transferTime)) continue;
+      if (transferTime <= endOfDayTime) {
+        resolvedLocation = record.toProject;
+      } else {
+        break;
+      }
+    }
+
+    return resolvedLocation || '—';
+  }, [transferHistoryByUser]);
+
   const locations = useMemo(() => {
     const locSet = new Set<string>();
     employees.forEach(emp => {
@@ -1239,6 +1291,34 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
       return;
     }
 
+    if (reportView === 'location') {
+      if (!selectedEmp) return;
+      rows.push([`Staff Location Monthly Report — ${selectedEmp.name}`]);
+      rows.push([`Period: ${monthLabel(month, year)}`]);
+      rows.push([]);
+      rows.push(['Date', 'Day', 'Location']);
+
+      dayList.forEach((d) => {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const dateStr = `${year}-${pad(month + 1)}-${pad(d)}`;
+        const dateObj = new Date(year, month, d);
+        const displayDate = dateObj.toLocaleDateString('en-OM', { day: '2-digit', month: 'short', year: 'numeric' });
+        const displayDayName = getDayName(year, month, d);
+
+        rows.push([
+          displayDate,
+          displayDayName,
+          getTransferLocationForDate(selectedEmp, dateStr)
+        ]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [{ wch: 12 }, { wch: 12 }, { wch: 28 }];
+      XLSX.utils.book_append_sheet(wb, ws, `Location_Report`);
+      XLSX.writeFile(wb, `Location_${selectedEmp.name.replace(/\s+/g, '_')}_${year}_${String(month + 1).padStart(2, '0')}.xlsx`);
+      return;
+    }
+
     if (reportView === 'daily') {
       rows.push([`Staff Daily Attendance Report`]);
       rows.push([`Date: ${selectedDailyDate}`]);
@@ -1451,8 +1531,9 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
 
     const isDaily = reportView === 'daily';
     const isIndividual = reportView === 'individual';
+    const isLocationView = reportView === 'location';
     const colWidth = reportType === 'location_inout' ? 240 : reportType === 'inout' ? 92 : 46;
-    const totalWidth = isDaily || isIndividual ? 960 : 584 + (days * colWidth);
+    const totalWidth = isDaily || isIndividual || isLocationView ? 960 : 584 + (days * colWidth);
     const offscreen = document.createElement("div");
     offscreen.style.cssText =
       `position:fixed;top:0;left:-${totalWidth + 1000}px;` +
@@ -1467,6 +1548,8 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
       ? `Staff Daily Attendance Report — Date: ${selectedDailyDate}`
       : isIndividual
         ? `Individual Attendance Report — ${selectedEmp?.name} — ${monthLabel(month, year)}`
+        : isLocationView
+          ? `Location Report — ${selectedEmp?.name} — ${monthLabel(month, year)}`
         : `Staff Attendance Report — ${monthLabel(month, year)}`;
     title.style.cssText = `margin: 0; font-size: 22px; font-weight: 600; color: #111827;`;
 
@@ -1476,6 +1559,8 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
       ? `${filtered.length} staff  ·  Location: ${locText}`
       : isIndividual
         ? `Department: ${selectedEmp?.department || '—'}  ·  Emp ID: ${selectedEmp?.emp_id || '—'}`
+        : isLocationView
+          ? `Department: ${selectedEmp?.department || '—'}  ·  Emp ID: ${selectedEmp?.emp_id || '—'}`
         : `${filtered.length} staff  ·  ${workDays} working days  ·  Location: ${locText}`;
     subtitle.style.cssText = `margin-top: 6px; font-size: 13px; color: #4b5563;`;
 
@@ -1548,6 +1633,8 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
         ? `Staff_Daily_Attendance_${selectedDailyDate}.pdf`
         : isIndividual
           ? `Individual_Attendance_${selectedEmp?.name?.replace(/\s+/g, '_')}_${year}_${String(month + 1).padStart(2, '0')}.pdf`
+          : isLocationView
+            ? `Location_Report_${selectedEmp?.name?.replace(/\s+/g, '_')}_${year}_${String(month + 1).padStart(2, '0')}.pdf`
           : `Staff_Attendance_${year}_${String(month + 1).padStart(2, '0')}.pdf`);
     } catch (err) {
       console.error("Failed to generate PDF:", err);
@@ -1588,7 +1675,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
           {/* Report View Selector */}
           <Select
             value={reportView}
-            onValueChange={(val: 'monthly' | 'daily' | 'individual') => setReportView(val)}
+            onValueChange={(val: ReportView) => setReportView(val)}
           >
             <SelectTrigger className="h-8 text-xs w-[145px] bg-white border-gray-200 rounded-lg">
               <SelectValue placeholder="Monthly Report" />
@@ -1597,11 +1684,12 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
               <SelectItem style={{ justifyContent: "flex-start" }} value="monthly">Monthly Report</SelectItem>
               <SelectItem style={{ justifyContent: "flex-start" }} value="daily">Daily Report</SelectItem>
               <SelectItem style={{ justifyContent: "flex-start" }} value="individual">Individual Report</SelectItem>
+              <SelectItem style={{ justifyContent: "flex-start" }} value="location">Location Report</SelectItem>
             </SelectContent>
           </Select>
 
           {/* Employee Selector for Individual View */}
-          {reportView === 'individual' && (
+          {(reportView === 'individual' || reportView === 'location') && (
             <Popover open={openEmpSelect} onOpenChange={setOpenEmpSelect}>
               <PopoverTrigger asChild>
                 <button
@@ -1766,7 +1854,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
           )}
 
           {/* Pills */}
-          {reportView !== 'individual' && (
+          {reportView !== 'individual' && reportView !== 'location' && (
             <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
               {filtered.length} employees
             </span>
@@ -2389,6 +2477,45 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
             )}
           </table>
         </div>
+      ) : reportView === 'location' ? (
+        /* ── LOCATION REPORT VIEW ── */
+        <div ref={tableAreaRef} className="flex-1 overflow-auto border-t border-gray-200 animate-fade-in">
+          <table className="w-full text-sm text-left border-collapse">
+            <thead className="bg-[#111827] text-white sticky top-0 z-10">
+              <tr style={{ height: "2.5rem" }}>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 130 }}>Date</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 100 }}>Day</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Location</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {!selectedEmp ? (
+                <tr>
+                  <td colSpan={3} className="py-20 text-center text-gray-400 font-medium bg-white">
+                    No employee selected.
+                  </td>
+                </tr>
+              ) : (
+                dayList.map((d) => {
+                  const pad = (n: number) => String(n).padStart(2, '0');
+                  const dateStr = `${year}-${pad(month + 1)}-${pad(d)}`;
+                  const dateObj = new Date(year, month, d);
+                  const displayDate = dateObj.toLocaleDateString('en-OM', { day: '2-digit', month: 'short', year: 'numeric' });
+                  const displayDayName = getDayName(year, month, d);
+                  const locationText = getTransferLocationForDate(selectedEmp, dateStr);
+
+                  return (
+                    <tr key={d} style={{ height: ROW_H }} className="hover:bg-gray-50/50 transition-colors border-b border-gray-100">
+                      <td className="px-4 py-2 text-gray-500 font-medium text-xs text-left">{displayDate}</td>
+                      <td className="px-4 py-2 text-gray-500 text-left capitalize">{displayDayName.toLowerCase()}</td>
+                      <td className="px-4 py-2 text-gray-800 font-medium text-left">{locationText}</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       ) : (
         /*
          * Two-panel layout:
@@ -2798,9 +2925,11 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
       )}
 
       {/* ── Legend ── */}
-      <div className="text-center text-[10px] text-gray-300 py-1 flex-shrink-0">
-        — = Friday off · A = Absent · H = Holiday · Green = In · Orange = Out · All times GMT+4
-      </div>
+      {(reportView !== 'location') && (
+        <div className="text-center text-[10px] text-gray-300 py-1 flex-shrink-0">
+          — = Friday off · A = Absent · H = Holiday · Green = In · Orange = Out · All times GMT+4
+        </div>
+      )}
 
       {/* Holiday Dialog */}
       <ResponsiveModal

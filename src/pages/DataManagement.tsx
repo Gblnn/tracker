@@ -591,11 +591,11 @@ export default function DataManagement() {
                       </td>
                       <td style={{ fontWeight: "500" }} className="px-4 py-2.5 text-center font-mono text-indigo-650">
                         <div>{formatSize(item.sizeBytes)}</div>
-                        {item.templateSize > 0 && (
+                        {/* {item.templateSize > 0 && (
                           <div style={{ fontSize: '9px', fontWeight: 'normal', color: '#6b7280', fontFamily: 'sans-serif', textTransform: 'none', marginTop: '2px' }}>
                             (incl. templates {formatSize(item.templateSize)})
                           </div>
-                        )}
+                        )} */}
                       </td>
                       <td style={{ border: "", display: "flex" }} className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
