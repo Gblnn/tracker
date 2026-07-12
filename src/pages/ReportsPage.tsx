@@ -571,6 +571,8 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
   const rightRef = useRef<HTMLDivElement>(null);
   const leftRef = useRef<HTMLDivElement>(null);
   const tableAreaRef = useRef<HTMLDivElement>(null);
+  const dayHeaderDragRef = useRef({ isDragging: false, startX: 0, startScrollLeft: 0 });
+  const [isDayHeaderDragging, setIsDayHeaderDragging] = useState(false);
 
   const days = daysInMonth(year, month);
   const dayList = useMemo(() => Array.from({ length: days }, (_, i) => i + 1), [days]);
@@ -1128,6 +1130,33 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
     r.addEventListener('scroll', sync);
     return () => r.removeEventListener('scroll', sync);
   }, [loading]);
+
+  const handleDayHeaderPointerDown = useCallback((event: any) => {
+    if (event.button !== 0 || !rightRef.current) return;
+    dayHeaderDragRef.current = {
+      isDragging: true,
+      startX: event.clientX,
+      startScrollLeft: rightRef.current.scrollLeft,
+    };
+    setIsDayHeaderDragging(true);
+    event.currentTarget?.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  }, []);
+
+  const handleDayHeaderPointerMove = useCallback((event: any) => {
+    if (!dayHeaderDragRef.current.isDragging || !rightRef.current) return;
+    const deltaX = event.clientX - dayHeaderDragRef.current.startX;
+    rightRef.current.scrollLeft = dayHeaderDragRef.current.startScrollLeft - deltaX;
+  }, []);
+
+  const handleDayHeaderPointerUp = useCallback((event: any) => {
+    if (!dayHeaderDragRef.current.isDragging) return;
+    dayHeaderDragRef.current.isDragging = false;
+    setIsDayHeaderDragging(false);
+    if (event.currentTarget?.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }, []);
 
   // ── Month nav ──────────────────────────────────────────────────────────────
   function prevMonth() { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); }
@@ -2673,7 +2702,13 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                   )
                 ))}
               </colgroup>
-              <thead>
+              <thead
+                style={{ cursor: isDayHeaderDragging ? 'grabbing' : 'grab', userSelect: isDayHeaderDragging ? 'none' : 'auto' }}
+                onPointerDown={handleDayHeaderPointerDown}
+                onPointerMove={handleDayHeaderPointerMove}
+                onPointerUp={handleDayHeaderPointerUp}
+                onPointerCancel={handleDayHeaderPointerUp}
+              >
                 {/* Row 1: day number + weekday */}
                 <tr style={{ background: '#111827', color: '#fff', position: 'sticky', top: 0, zIndex: 5, height: HEAD_R1 }}>
                   {dayList.map(d => {

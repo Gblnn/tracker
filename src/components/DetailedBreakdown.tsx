@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import type { EmployeeSummary } from '../types/attendance';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Filter, CheckCircle2, XCircle } from 'lucide-react';
@@ -11,6 +11,9 @@ interface DetailedBreakdownProps {
 
 export default function DetailedBreakdown({ summaries }: DetailedBreakdownProps) {
   const [selectedDepts, setSelectedDepts] = useState<string[]>(['CIVIL', 'MED', 'LSD', 'STAFF']);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const headerDragRef = useRef({ isDragging: false, startX: 0, startScrollLeft: 0 });
+  const [isHeaderDragging, setIsHeaderDragging] = useState(false);
 
   // Drilldown modal state
   const [drilldown, setDrilldown] = useState<{
@@ -249,12 +252,52 @@ export default function DetailedBreakdown({ summaries }: DetailedBreakdownProps)
 
   const drilldownEmployees = drilldown ? getDrilldownEmployees(drilldown) : [];
 
+  const handleHeaderPointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    if (event.button !== 0 || !tableScrollRef.current) return;
+
+    const target = event.target as HTMLElement;
+    if (target.closest('button, input, a, [role="button"], [role="menuitem"]')) {
+      return;
+    }
+
+    headerDragRef.current = {
+      isDragging: true,
+      startX: event.clientX,
+      startScrollLeft: tableScrollRef.current.scrollLeft,
+    };
+    setIsHeaderDragging(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  }, []);
+
+  const handleHeaderPointerMove = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    if (!headerDragRef.current.isDragging || !tableScrollRef.current) return;
+    const deltaX = event.clientX - headerDragRef.current.startX;
+    tableScrollRef.current.scrollLeft = headerDragRef.current.startScrollLeft - deltaX;
+  }, []);
+
+  const handleHeaderPointerUp = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    if (!headerDragRef.current.isDragging) return;
+    headerDragRef.current.isDragging = false;
+    setIsHeaderDragging(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }, []);
+
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 w-full h-full">
       {/* Responsive scrollable table container */}
-      <div className="flex-1 overflow-auto min-h-0 w-full relative">
+      <div ref={tableScrollRef} className="flex-1 overflow-auto min-h-0 w-full relative">
         <table className="w-full border-separate border-spacing-0 text-left text-xs text-gray-600 min-w-[700px]">
-          <thead className="sticky top-0 z-30 bg-slate-100">
+          <thead
+            className="sticky top-0 z-30 bg-slate-100"
+            style={{ cursor: isHeaderDragging ? 'grabbing' : 'grab', userSelect: isHeaderDragging ? 'none' : 'auto' }}
+            onPointerDown={handleHeaderPointerDown}
+            onPointerMove={handleHeaderPointerMove}
+            onPointerUp={handleHeaderPointerUp}
+            onPointerCancel={handleHeaderPointerUp}
+          >
             <tr>
               {/* Sticky header for first column */}
               <th
