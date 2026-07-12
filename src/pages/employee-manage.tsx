@@ -81,6 +81,7 @@ interface ManageEmployee {
     emp_type: 'staff' | 'worker' | null;
     nationality: string | null;
     designation: string | null;
+    shift?: 'day' | 'night' | null;
     fingerprint_templates?: Record<string, any> | null;
     face_templates?: Record<string, any> | null;
     created_at?: string;
@@ -111,6 +112,8 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
     const [selectedNationalities, setSelectedNationalities] = useState<string[]>([]);
     const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+    const [selectedShifts, setSelectedShifts] = useState<Array<'day' | 'night'>>([]);
+    const [selectedBiometricFilters, setSelectedBiometricFilters] = useState<Array<'Finger' | 'Face' | 'No Finger' | 'No face' | 'None'>>([]);
     const [selectedEmpPrefixes, setSelectedEmpPrefixes] = useState<string[]>([]);
 
     // Pagination / Rendering Limit state
@@ -118,7 +121,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
 
     useEffect(() => {
         setRenderLimit(100);
-    }, [search, selectedDepartments, selectedDesignations, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedEmpPrefixes]);
+    }, [search, selectedDepartments, selectedDesignations, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedShifts, selectedBiometricFilters, selectedEmpPrefixes]);
 
     // Selection and bulk states
     const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -131,6 +134,8 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [bulkCompanyValue, setBulkCompanyValue] = useState('');
     const [isBulkDesignationOpen, setIsBulkDesignationOpen] = useState(false);
     const [bulkDesignationValue, setBulkDesignationValue] = useState('');
+    const [isBulkShiftOpen, setIsBulkShiftOpen] = useState(false);
+    const [bulkShiftValue, setBulkShiftValue] = useState<'day' | 'night'>('day');
     const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
 
     // Bulk push states
@@ -170,6 +175,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [editEmail, setEditEmail] = useState('');
     const [editEmpId, setEditEmpId] = useState('');
     const [editEmpType, setEditEmpType] = useState<'staff' | 'worker'>('staff');
+    const [editShift, setEditShift] = useState<'day' | 'night'>('day');
     const [editNationality, setEditNationality] = useState('');
     const [editDesignation, setEditDesignation] = useState('');
     const [editCompany, setEditCompany] = useState('');
@@ -381,6 +387,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 'Name': emp.name,
                 'Employee ID': emp.emp_id || '',
                 'Type': emp.emp_type || '',
+                'Shift': emp.shift || 'day',
                 'Department': emp.department || '',
                 'Designation': emp.designation || '',
                 'Nationality': emp.nationality || '',
@@ -443,6 +450,8 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     if (rawType.toLowerCase().startsWith('work')) {
                         emp_type = 'worker';
                     }
+                    const rawShift = (findValue(row, ['shift', 'work_shift', 'duty_shift']) || '').toLowerCase().trim();
+                    const shift: 'day' | 'night' = rawShift === 'night' ? 'night' : 'day';
 
                     const department = findValue(row, ['department', 'dept', 'department_name', 'dept_name']);
                     const designation = findValue(row, ['designation', 'design', 'job_title', 'jobtitle', 'role']);
@@ -457,6 +466,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                         name,
                         emp_id,
                         emp_type,
+                        shift,
                         department,
                         designation,
                         nationality,
@@ -507,6 +517,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                             helperIsValueChanged(excelEmp.name, dbEmp.name) ||
                             helperIsValueChanged(excelEmp.device_user_id, dbEmp.device_user_id) ||
                             helperIsValueChanged(excelEmp.emp_type, dbEmp.emp_type) ||
+                            helperIsValueChanged(excelEmp.shift, dbEmp.shift || 'day') ||
                             helperIsValueChanged(excelEmp.department, dbEmp.department) ||
                             helperIsValueChanged(excelEmp.designation, dbEmp.designation) ||
                             helperIsValueChanged(excelEmp.nationality, dbEmp.nationality) ||
@@ -652,6 +663,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [addEmail, setAddEmail] = useState('');
     const [addEmpId, setAddEmpId] = useState('');
     const [addEmpType, setAddEmpType] = useState<'staff' | 'worker'>('staff');
+    const [addShift, setAddShift] = useState<'day' | 'night'>('day');
     const [addNationality, setAddNationality] = useState('');
     const [addDesignation, setAddDesignation] = useState('');
     const [addCompany, setAddCompany] = useState('');
@@ -913,6 +925,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     email: addEmail.trim() || null,
                     emp_id: addEmpId.trim() || null,
                     emp_type: addEmpType,
+                    shift: addShift,
                     nationality: addNationality || null,
                     designation: addDesignation.trim() || null,
                     company: addCompany.trim() || null,
@@ -947,6 +960,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             setAddEmail('');
             setAddEmpId('');
             setAddEmpType('staff');
+            setAddShift('day');
             setAddNationality('');
             setAddDesignation('');
             setAddCompany('');
@@ -1022,6 +1036,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     email: editEmail.trim() || null,
                     emp_id: editEmpId.trim() || null,
                     emp_type: editEmpType,
+                    shift: editShift,
                     nationality: editNationality || null,
                     designation: editDesignation.trim() || null,
                     company: editCompany.trim() || null,
@@ -1134,6 +1149,31 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             fetchEmployees();
         } catch (error: any) {
             toast.error(error.message || 'Failed to bulk update employee type');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleBulkShiftSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (selectedEmployeeIds.size === 0) return;
+        setIsSubmitting(true);
+        try {
+            const { error: err } = await supabase
+                .from('employees')
+                .update({ shift: bulkShiftValue })
+                .in('id', Array.from(selectedEmployeeIds));
+
+            if (err) throw err;
+
+            toast.success(`Successfully updated shift for ${selectedEmployeeIds.size} employee(s)`);
+            setIsBulkShiftOpen(false);
+            setBulkShiftValue('day');
+            setSelectedEmployeeIds(new Set());
+            setIsSelectionMode(false);
+            fetchEmployees();
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to bulk update shift');
         } finally {
             setIsSubmitting(false);
         }
@@ -1328,6 +1368,16 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
         return sorted;
     }, [employees]);
 
+    const uniqueShifts = useMemo(() => {
+        const shiftSet = new Set<'day' | 'night'>();
+        employees.forEach((emp) => {
+            const shiftVal = (emp.shift || 'day').toLowerCase();
+            if (shiftVal === 'night') shiftSet.add('night');
+            else shiftSet.add('day');
+        });
+        return Array.from(shiftSet).sort();
+    }, [employees]);
+
     // Compile unique locations for filtering
     const uniqueLocations = useMemo(() => {
         const locSet = new Set<string>();
@@ -1385,13 +1435,31 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 (emp.company && emp.company.trim() && selectedCompanies.includes(emp.company.trim())) ||
                 ((!emp.company || emp.company.trim() === '') && selectedCompanies.includes('(Blank)'));
 
+            const shiftValue: 'day' | 'night' = (emp.shift || 'day') === 'night' ? 'night' : 'day';
+            const matchesShift =
+                selectedShifts.length === 0 ||
+                selectedShifts.includes(shiftValue);
+
+            const hasFinger = !!(emp.fingerprint_templates && Object.keys(emp.fingerprint_templates).length > 0);
+            const hasFace = !!(emp.face_templates && Object.keys(emp.face_templates).length > 0);
+            const matchesBiometric =
+                selectedBiometricFilters.length === 0 ||
+                selectedBiometricFilters.some((rule) => {
+                    if (rule === 'Finger') return hasFinger;
+                    if (rule === 'Face') return hasFace;
+                    if (rule === 'No Finger') return !hasFinger;
+                    if (rule === 'No face') return !hasFace;
+                    if (rule === 'None') return !hasFinger && !hasFace;
+                    return false;
+                });
+
             const matchesPrefix =
                 selectedEmpPrefixes.length === 0 ||
                 (emp.emp_id && emp.emp_id.length >= 2 && selectedEmpPrefixes.includes(emp.emp_id.slice(0, 2).toUpperCase()));
 
-            return matchesSearch && matchesDept && matchesDesignation && matchesType && matchesNationality && matchesLocation && matchesCompany && matchesPrefix;
+            return matchesSearch && matchesDept && matchesDesignation && matchesType && matchesNationality && matchesLocation && matchesCompany && matchesShift && matchesBiometric && matchesPrefix;
         });
-    }, [employees, search, selectedDepartments, selectedDesignations, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedEmpPrefixes, employeeLocations, verifiedLocations]);
+    }, [employees, search, selectedDepartments, selectedDesignations, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedShifts, selectedBiometricFilters, selectedEmpPrefixes, employeeLocations, verifiedLocations]);
 
     // Stats calculation commented out because cards are disabled
     /*
@@ -1523,6 +1591,12 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                             >
                                 Change Designation
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => setIsBulkShiftOpen(true)}
+                                className="rounded-md focus:bg-gray-50 cursor-pointer"
+                            >
+                                Change Shift
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1 border-gray-100" />
                             <DropdownMenuItem
                                 style={{ fontWeight: 500 }}
@@ -1556,6 +1630,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                         setAddEmail('');
                         setAddEmpId('');
                         setAddEmpType('staff');
+                        setAddShift('day');
                         setAddNationality('');
                         setAddDesignation('');
                         setAddCompany('');
@@ -1617,7 +1692,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                 </EmptyMedia>
                                 <EmptyTitle>No employees found</EmptyTitle>
                                 <EmptyDescription>
-                                    {search || selectedDepartments.length > 0 || selectedDesignations.length > 0 || selectedLocations.length > 0 || selectedTypes.length > 0 || selectedNationalities.length > 0 || selectedCompanies.length > 0 || selectedEmpPrefixes.length > 0
+                                    {search || selectedDepartments.length > 0 || selectedDesignations.length > 0 || selectedLocations.length > 0 || selectedTypes.length > 0 || selectedNationalities.length > 0 || selectedCompanies.length > 0 || selectedShifts.length > 0 || selectedBiometricFilters.length > 0 || selectedEmpPrefixes.length > 0
                                         ? 'No matching employees found with current filters.'
                                         : 'Get started by adding employee records.'}
                                 </EmptyDescription>
@@ -1713,7 +1788,73 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </th>
-                                <th className=" px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "180px", border: "" }}>Biometrics</th>
+                                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "180px" }}>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                                            <span className="truncate">
+                                                {selectedBiometricFilters.length === 0
+                                                    ? 'Biometrics (All)'
+                                                    : selectedBiometricFilters.length === 1
+                                                        ? selectedBiometricFilters[0]
+                                                        : `Bio (${selectedBiometricFilters.length})`}
+                                            </span>
+                                            <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
+                                            <div
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedBiometricFilters(['Finger', 'Face', 'No Finger', 'No face', 'None']);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-left"
+                                                    style={{ background: "none", flex: 1 }}
+                                                >
+                                                    Select All
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedBiometricFilters([]);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-right"
+                                                    style={{ background: "none", flex: 1 }}
+                                                >
+                                                    Clear All
+                                                </button>
+                                            </div>
+                                            <div className="py-1">
+                                                {(['Finger', 'Face', 'No Finger', 'No face', 'None'] as const).map((item) => {
+                                                    const isChecked = selectedBiometricFilters.includes(item);
+                                                    return (
+                                                        <DropdownMenuCheckboxItem
+                                                            key={item}
+                                                            checked={isChecked}
+                                                            onCheckedChange={(checked) => {
+                                                                if (checked) {
+                                                                    setSelectedBiometricFilters([...selectedBiometricFilters, item]);
+                                                                } else {
+                                                                    setSelectedBiometricFilters(selectedBiometricFilters.filter(v => v !== item));
+                                                                }
+                                                            }}
+                                                            onSelect={(e) => e.preventDefault()}
+                                                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                        >
+                                                            {item}
+                                                        </DropdownMenuCheckboxItem>
+                                                    );
+                                                })}
+                                            </div>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </th>
                                 <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "180px" }}>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
@@ -2063,6 +2204,73 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </th>
+                                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "110px" }}>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                                            <span className="truncate">
+                                                {selectedShifts.length === 0
+                                                    ? 'Shift (All)'
+                                                    : selectedShifts.length === 1
+                                                        ? selectedShifts[0].toUpperCase()
+                                                        : `Shift (${selectedShifts.length})`}
+                                            </span>
+                                            <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-[160px] max-h-[220px] overflow-y-auto p-0 z-50">
+                                            <div
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedShifts(uniqueShifts);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-left"
+                                                    style={{ background: "none", flex: 1 }}
+                                                >
+                                                    Select All
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedShifts([]);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-right"
+                                                    style={{ background: "none", flex: 1 }}
+                                                >
+                                                    Clear All
+                                                </button>
+                                            </div>
+                                            <div className="py-1">
+                                                {uniqueShifts.map((shift) => {
+                                                    const isChecked = selectedShifts.includes(shift);
+                                                    return (
+                                                        <DropdownMenuCheckboxItem
+                                                            key={shift}
+                                                            checked={isChecked}
+                                                            onCheckedChange={(checked) => {
+                                                                if (checked) {
+                                                                    setSelectedShifts([...selectedShifts, shift]);
+                                                                } else {
+                                                                    setSelectedShifts(selectedShifts.filter(v => v !== shift));
+                                                                }
+                                                            }}
+                                                            onSelect={(e) => e.preventDefault()}
+                                                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs uppercase"
+                                                        >
+                                                            {shift}
+                                                        </DropdownMenuCheckboxItem>
+                                                    );
+                                                })}
+                                            </div>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </th>
                                 <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "200px" }}>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
@@ -2147,6 +2355,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             setEditEmail(emp.email || '');
                                             setEditEmpId(emp.emp_id || '');
                                             setEditEmpType(emp.emp_type || 'staff');
+                                            setEditShift(emp.shift || 'day');
                                             setEditNationality(emp.nationality || '');
                                             setEditDesignation(emp.designation || '');
                                             setEditCompany(emp.company || '');
@@ -2236,6 +2445,15 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             </span>
                                             <div className="text-xs text-gray-500">{emp.nationality ?? '—'}</div>
                                         </div>
+                                    </td>
+                                    {/* Shift */}
+                                    <td className="px-4 py-3">
+                                        <span className={`inline-flex items-center w-fit px-2 py-0.5 rounded-full text-xs font-medium ${((emp.shift || 'day') === 'night')
+                                            ? 'bg-slate-100 text-slate-700'
+                                            : 'bg-emerald-50 text-emerald-700'
+                                            }`}>
+                                            {(emp.shift || 'day').toUpperCase()}
+                                        </span>
                                     </td>
                                     {/* Company */}
                                     <td className="px-4 py-3 text-xs text-gray-700 font-medium">
@@ -2407,6 +2625,20 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                 </SelectContent>
                                             </Select>
                                         </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Shift</label>
+                                            <Select value={editShift} onValueChange={(e) => setEditShift(e as 'day' | 'night')}>
+                                                <SelectTrigger className="text-sm bg-gray-50 border-gray-100 rounded-xl">
+                                                    <SelectValue placeholder="Select Shift" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="day">Day</SelectItem>
+                                                    <SelectItem value="night">Night</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
                                             <label className="text-xs font-semibold text-gray-555 block">Nationality</label>
                                             <Select value={editNationality} onValueChange={(e) => setEditNationality(e)}>
@@ -2801,6 +3033,20 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             </Select>
                                         </div>
                                         <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Shift</label>
+                                            <Select value={addShift} onValueChange={(e) => setAddShift(e as 'day' | 'night')}>
+                                                <SelectTrigger className="text-xs bg-gray-50 border-gray-100 rounded-xl h-10 w-full focus:bg-white transition-all">
+                                                    <SelectValue placeholder="Select Shift" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
+                                                    <SelectItem value="day" className="rounded-md focus:bg-gray-50 cursor-pointer">Day</SelectItem>
+                                                    <SelectItem value="night" className="rounded-md focus:bg-gray-50 cursor-pointer">Night</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
                                             <label className="text-xs font-semibold text-gray-555 block">Nationality</label>
                                             <Select value={addNationality} onValueChange={(e) => setAddNationality(e)}>
                                                 <SelectTrigger className="text-xs bg-gray-50 border-gray-100 rounded-xl h-10 w-full focus:bg-white transition-all">
@@ -3116,6 +3362,46 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                             </Button>
                             <Button style={{ flex: 1 }} type="submit" disabled={isSubmitting}>
                                 {isSubmitting ? 'Updating...' : 'Update Designation'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bulk Change Shift Dialog */}
+            <Dialog open={isBulkShiftOpen} onOpenChange={(open) => { if (!open) setIsBulkShiftOpen(false); }}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Bulk Update Shift</DialogTitle>
+                        <DialogDescription>
+                            Select the new shift for the {selectedEmployeeIds.size} selected employee(s).
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleBulkShiftSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-gray-600 block">Shift</label>
+                            <Select value={bulkShiftValue} onValueChange={(e) => setBulkShiftValue(e as 'day' | 'night')}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select Shift" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="day">Day</SelectItem>
+                                    <SelectItem value="night">Night</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <DialogFooter className="pt-4">
+                            <Button
+                                style={{ flex: 1 }}
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsBulkShiftOpen(false)}
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button style={{ flex: 1 }} type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? 'Updating...' : 'Update Shift'}
                             </Button>
                         </DialogFooter>
                     </form>

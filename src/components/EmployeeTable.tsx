@@ -5,7 +5,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Check, ChevronDown, Loader2, MapPinCheck, Search, User, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { supabase } from '../lib/supabase';
 import { formatTime } from '../lib/utilis';
@@ -20,6 +20,49 @@ interface EmployeeTableProps {
   useFirstLast?: boolean;
 }
 
+function RollingDigit({ next, direction, durationMs }: { next: string; direction: 'up' | 'down'; durationMs: number }) {
+  const [prev, setPrev] = useState(next);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (next === prev) return;
+    setIsAnimating(true);
+    const timer = setTimeout(() => {
+      setPrev(next);
+      setIsAnimating(false);
+    }, durationMs);
+    return () => clearTimeout(timer);
+  }, [next, prev, durationMs]);
+
+  const prevClass = isAnimating ? (direction === 'up' ? 'roll-prev-up' : 'roll-prev-down') : 'roll-idle-prev';
+  const nextClass = isAnimating ? (direction === 'up' ? 'roll-next-up' : 'roll-next-down') : 'roll-idle-next';
+
+  return (
+    <span className="rolling-digit-window" style={{ ['--roll-ms' as any]: `${durationMs}ms` }}>
+      <span className={`rolling-digit-prev ${prevClass}`}>{/\d/.test(prev) ? prev : next}</span>
+      <span className={`rolling-digit-next ${nextClass}`}>{next}</span>
+    </span>
+  );
+}
+
+function RollingNumber({ value, durationMs = 620 }: { value: number; durationMs?: number }) {
+  const prevValueRef = useRef(value);
+  const direction: 'up' | 'down' = value >= prevValueRef.current ? 'up' : 'down';
+  const digits = String(Math.max(0, value)).split('');
+
+  useEffect(() => {
+    prevValueRef.current = value;
+  }, [value]);
+
+  return (
+    <span className="rolling-number" aria-label={`${value}`}>
+      {digits.map((digit, i) => (
+        <RollingDigit key={i} next={digit} direction={direction} durationMs={durationMs} />
+      ))}
+    </span>
+  );
+}
+
 export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useFirstLast = true }: EmployeeTableProps) {
   const [search, setSearch] = useState('');
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
@@ -28,6 +71,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedEmpPrefixes, setSelectedEmpPrefixes] = useState<string[]>([]);
   const [selectedEmpTypes, setSelectedEmpTypes] = useState<string[]>([]);
+  const [onlyWithRemarks, setOnlyWithRemarks] = useState(false);
   const [totalPage, setTotalPage] = useState<0 | 1 | 2>(0);
   const [splitLocationColumns, setSplitLocationColumns] = useState(false);
   const [loading] = useState(false);
@@ -35,7 +79,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
 
   useEffect(() => {
     setRenderLimit(100);
-  }, [search, selectedLocations, selectedAssignedLocations, selectedDepartments, selectedStatuses, selectedEmpPrefixes, selectedEmpTypes]);
+  }, [search, selectedLocations, selectedAssignedLocations, selectedDepartments, selectedStatuses, selectedEmpPrefixes, selectedEmpTypes, onlyWithRemarks]);
 
 
   const uniqueLocations = useMemo(() => {
@@ -167,9 +211,11 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
         (emp.emp_type && selectedEmpTypes.includes(emp.emp_type)) ||
         ((!emp.emp_type || emp.emp_type.trim() === '') && selectedEmpTypes.includes('(Blank)'));
 
-      return matchesSearch && matchesLocation && matchesAssignedLocation && matchesDepartment && matchesStatus && matchesPrefix && matchesEmpType;
+      const matchesRemarks = !onlyWithRemarks || !!(emp.remarks && emp.remarks.length > 0);
+
+      return matchesSearch && matchesLocation && matchesAssignedLocation && matchesDepartment && matchesStatus && matchesPrefix && matchesEmpType && matchesRemarks;
     });
-  }, [summaries, search, selectedLocations, selectedAssignedLocations, selectedDepartments, selectedStatuses, selectedEmpPrefixes, selectedEmpTypes, splitLocationColumns]);
+  }, [summaries, search, selectedLocations, selectedAssignedLocations, selectedDepartments, selectedStatuses, selectedEmpPrefixes, selectedEmpTypes, onlyWithRemarks, splitLocationColumns]);
 
   // Call the callback whenever filteredSummaries changes
   useEffect(() => {
@@ -389,6 +435,54 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
           pointer-events: none;
           z-index: 0;
         }
+        .rolling-number {
+          display: inline-flex;
+          align-items: baseline;
+          font-variant-numeric: tabular-nums;
+          line-height: 1;
+        }
+        .rolling-digit-window {
+          position: relative;
+          display: inline-flex;
+          width: 0.62em;
+          height: 1em;
+          line-height: 1em;
+          overflow: hidden;
+        }
+        .rolling-digit-prev,
+        .rolling-digit-next {
+          position: absolute;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          text-align: center;
+          line-height: 1em;
+          will-change: transform, opacity;
+        }
+        .rolling-digit-prev { top: 0; }
+        .rolling-digit-next { top: 0; }
+        .roll-idle-prev { transform: translateY(0%); opacity: 0; }
+        .roll-idle-next { transform: translateY(0%); opacity: 1; }
+        @keyframes digitPrevUp {
+          from { transform: translateY(0%); opacity: 1; }
+          to { transform: translateY(-100%); opacity: 0; }
+        }
+        @keyframes digitNextUp {
+          from { transform: translateY(100%); opacity: 1; }
+          to { transform: translateY(0%); opacity: 1; }
+        }
+        @keyframes digitPrevDown {
+          from { transform: translateY(0%); opacity: 1; }
+          to { transform: translateY(100%); opacity: 0; }
+        }
+        @keyframes digitNextDown {
+          from { transform: translateY(-100%); opacity: 1; }
+          to { transform: translateY(0%); opacity: 1; }
+        }
+        .roll-prev-up { animation: digitPrevUp var(--roll-ms) cubic-bezier(0.22, 0.61, 0.36, 1) forwards; }
+        .roll-next-up { animation: digitNextUp var(--roll-ms) cubic-bezier(0.22, 0.61, 0.36, 1) forwards; }
+        .roll-prev-down { animation: digitPrevDown var(--roll-ms) cubic-bezier(0.22, 0.61, 0.36, 1) forwards; }
+        .roll-next-down { animation: digitNextDown var(--roll-ms) cubic-bezier(0.22, 0.61, 0.36, 1) forwards; }
       ` }} />
       {
         (
@@ -530,7 +624,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                   {/* Total Number Pane */}
                   <div className={`card-state-pane ${totalPage === 0 ? "card-state-pane-active" : "card-state-pane-inactive"}`} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <h1 style={{ fontWeight: 600, fontSize: "2.5rem", margin: 0 }}>
-                      {stats.total}
+                      <RollingNumber value={stats.total} durationMs={680} />
                     </h1>
                   </div>
                 </div>
@@ -541,7 +635,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "0.25rem" }}>
                 <p className='text-gray-500' style={{ fontSize: "1rem", fontWeight: 500, marginLeft: "0.5rem" }}>Present</p>
                 <h1 className='text-teal-600' style={{ fontWeight: 600, fontSize: "1.75rem", marginRight: "0.5rem" }}>
-                  {loading ? <Loader2 className='animate-spin w-4 h-4' /> : stats.present}
+                  {loading ? <Loader2 className='animate-spin w-4 h-4' /> : <RollingNumber value={stats.present} durationMs={680} />}
                 </h1>
               </div>
               <div style={{ width: "100%", flex: 1, minHeight: 0 }}>
@@ -603,7 +697,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "0.25rem" }}>
                 <p className='text-gray-500' style={{ fontSize: "1rem", fontWeight: 500, marginLeft: "0.5rem" }}>Absent</p>
                 <h1 style={{ fontWeight: 600, fontSize: "1.75rem", color: "#F43F5E", marginRight: "0.5rem" }}>
-                  {loading ? <Loader2 className='animate-spin w-4 h-4' /> : stats.absent}
+                  {loading ? <Loader2 className='animate-spin w-4 h-4' /> : <RollingNumber value={stats.absent} durationMs={680} />}
                 </h1>
               </div>
               <div style={{ width: "100%", flex: 1, minHeight: 0 }}>
@@ -1158,7 +1252,14 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                   </DropdownMenuContent>
                 </DropdownMenu>
               </th>
-              <th style={{ width: "220px" }} className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Remarks</th>
+              <th
+                style={{ width: "220px" }}
+                className={`text-left px-4 py-3 font-medium text-xs uppercase tracking-wide cursor-pointer select-none transition-colors ${onlyWithRemarks ? 'text-amber-700 bg-amber-50/60' : 'text-gray-500 hover:bg-gray-100'}`}
+                onClick={() => setOnlyWithRemarks(prev => !prev)}
+                title="Toggle only rows with remarks"
+              >
+                Remarks {onlyWithRemarks ? '' : ''}
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
