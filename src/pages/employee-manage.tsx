@@ -104,6 +104,9 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+    const [selectedDesignations, setSelectedDesignations] = useState<string[]>([]);
+    const [deptDesignationFilterTab, setDeptDesignationFilterTab] = useState<'department' | 'designation'>('department');
+    const [typeNationalityFilterTab, setTypeNationalityFilterTab] = useState<'type' | 'nationality'>('type');
     const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
     const [selectedNationalities, setSelectedNationalities] = useState<string[]>([]);
@@ -115,7 +118,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
 
     useEffect(() => {
         setRenderLimit(100);
-    }, [search, selectedDepartments, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedEmpPrefixes]);
+    }, [search, selectedDepartments, selectedDesignations, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedEmpPrefixes]);
 
     // Selection and bulk states
     const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -126,6 +129,8 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [bulkTypeValue, setBulkTypeValue] = useState<'staff' | 'worker'>('staff');
     const [isBulkCompanyOpen, setIsBulkCompanyOpen] = useState(false);
     const [bulkCompanyValue, setBulkCompanyValue] = useState('');
+    const [isBulkDesignationOpen, setIsBulkDesignationOpen] = useState(false);
+    const [bulkDesignationValue, setBulkDesignationValue] = useState('');
     const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
 
     // Bulk push states
@@ -339,6 +344,14 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [uploadFileName, setUploadFileName] = useState('');
     const [uploadCurrentIndex, setUploadCurrentIndex] = useState(0);
     const [uploadTotalCount, setUploadTotalCount] = useState(0);
+    const [uploadPreviewPage, setUploadPreviewPage] = useState(1);
+
+    const uploadPreviewPageSize = 50;
+    const uploadPreviewPageCount = Math.max(1, Math.ceil(parsedEmployees.length / uploadPreviewPageSize));
+    const paginatedPreviewEmployees = useMemo(() => {
+        const startIndex = (uploadPreviewPage - 1) * uploadPreviewPageSize;
+        return parsedEmployees.slice(startIndex, startIndex + uploadPreviewPageSize);
+    }, [parsedEmployees, uploadPreviewPage]);
 
     const handleResetUpload = () => {
         setUploadState('idle');
@@ -347,6 +360,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
         setUploadFileName('');
         setUploadCurrentIndex(0);
         setUploadTotalCount(0);
+        setUploadPreviewPage(1);
         setUploadPushToDevices(false);
         setUploadSelectedDevices(new Set());
         if (fileInputRef.current) {
@@ -521,6 +535,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 setDuplicateEmployees(allDuplicates);
                 setUploadTotalCount(newEmployees.length + updatedEmployees.length);
                 setUploadCurrentIndex(0);
+                setUploadPreviewPage(1);
                 setUploadState('preview');
             } catch (err: any) {
                 toast.error(err.message || 'Failed to parse Excel file.');
@@ -974,6 +989,20 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
         }
         return sorted;
     }, [employees]);
+
+    const uniqueDesignations = useMemo(() => {
+        const designations = new Set<string>();
+        employees.forEach((emp) => {
+            if (emp.designation && emp.designation.trim()) designations.add(emp.designation.trim());
+        });
+        const sorted = Array.from(designations).sort();
+        const hasBlank = employees.some(emp => !emp.designation || emp.designation.trim() === '');
+        if (hasBlank) {
+            sorted.push('(Blank)');
+        }
+        return sorted;
+    }, [employees]);
+
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingEmployee) return;
@@ -1056,6 +1085,31 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             fetchEmployees();
         } catch (error: any) {
             toast.error(error.message || 'Failed to bulk update company');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleBulkDesignationSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (selectedEmployeeIds.size === 0) return;
+        setIsSubmitting(true);
+        try {
+            const { error: err } = await supabase
+                .from('employees')
+                .update({ designation: bulkDesignationValue.trim() || null })
+                .in('id', Array.from(selectedEmployeeIds));
+
+            if (err) throw err;
+
+            toast.success(`Successfully updated designation for ${selectedEmployeeIds.size} employee(s)`);
+            setIsBulkDesignationOpen(false);
+            setBulkDesignationValue('');
+            setSelectedEmployeeIds(new Set());
+            setIsSelectionMode(false);
+            fetchEmployees();
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to bulk update designation');
         } finally {
             setIsSubmitting(false);
         }
@@ -1307,6 +1361,11 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 (emp.department && selectedDepartments.includes(emp.department)) ||
                 ((!emp.department || emp.department.trim() === '') && selectedDepartments.includes('(Blank)'));
 
+            const matchesDesignation =
+                selectedDesignations.length === 0 ||
+                (emp.designation && selectedDesignations.includes(emp.designation.trim())) ||
+                ((!emp.designation || emp.designation.trim() === '') && selectedDesignations.includes('(Blank)'));
+
             const matchesType =
                 selectedTypes.length === 0 ||
                 (emp.emp_type && selectedTypes.includes(emp.emp_type));
@@ -1330,9 +1389,9 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 selectedEmpPrefixes.length === 0 ||
                 (emp.emp_id && emp.emp_id.length >= 2 && selectedEmpPrefixes.includes(emp.emp_id.slice(0, 2).toUpperCase()));
 
-            return matchesSearch && matchesDept && matchesType && matchesNationality && matchesLocation && matchesCompany && matchesPrefix;
+            return matchesSearch && matchesDept && matchesDesignation && matchesType && matchesNationality && matchesLocation && matchesCompany && matchesPrefix;
         });
-    }, [employees, search, selectedDepartments, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedEmpPrefixes, employeeLocations, verifiedLocations]);
+    }, [employees, search, selectedDepartments, selectedDesignations, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedEmpPrefixes, employeeLocations, verifiedLocations]);
 
     // Stats calculation commented out because cards are disabled
     /*
@@ -1457,6 +1516,12 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                             >
                                 Change Company
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => setIsBulkDesignationOpen(true)}
+                                className="rounded-md focus:bg-gray-50 cursor-pointer"
+                            >
+                                Change Designation
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1 border-gray-100" />
                             <DropdownMenuItem
                                 style={{ fontWeight: 500 }}
@@ -1551,7 +1616,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                 </EmptyMedia>
                                 <EmptyTitle>No employees found</EmptyTitle>
                                 <EmptyDescription>
-                                    {search || selectedDepartments.length > 0 || selectedLocations.length > 0 || selectedTypes.length > 0 || selectedNationalities.length > 0 || selectedCompanies.length > 0 || selectedEmpPrefixes.length > 0
+                                    {search || selectedDepartments.length > 0 || selectedDesignations.length > 0 || selectedLocations.length > 0 || selectedTypes.length > 0 || selectedNationalities.length > 0 || selectedCompanies.length > 0 || selectedEmpPrefixes.length > 0
                                         ? 'No matching employees found with current filters.'
                                         : 'Get started by adding employee records.'}
                                 </EmptyDescription>
@@ -1715,19 +1780,21 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </th>
-                                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "200px" }}>
+                                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "150px" }}>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
                                             <span className="truncate">
-                                                {selectedDepartments.length === 0
+                                                {selectedDepartments.length === 0 && selectedDesignations.length === 0
                                                     ? 'Department (All)'
-                                                    : selectedDepartments.length === 1
+                                                    : selectedDepartments.length + selectedDesignations.length === 1
                                                         ? selectedDepartments[0]
-                                                        : `Dept (${selectedDepartments.length})`}
+                                                            ? `Dept: ${selectedDepartments[0]}`
+                                                            : `Desig: ${selectedDesignations[0]}`
+                                                        : `Dept/Desig (${selectedDepartments.length + selectedDesignations.length})`}
                                             </span>
                                             <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
+                                        <DropdownMenuContent className="w-[240px] max-h-[320px] overflow-hidden p-0 z-50">
                                             <div
                                                 onClick={(e) => e.stopPropagation()}
                                                 className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
@@ -1738,6 +1805,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                         e.preventDefault();
                                                         e.stopPropagation();
                                                         setSelectedDepartments(uniqueDepartments);
+                                                        setSelectedDesignations(uniqueDesignations);
                                                     }}
                                                     className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-left"
                                                     style={{ background: "none", flex: 1 }}
@@ -1750,6 +1818,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                         e.preventDefault();
                                                         e.stopPropagation();
                                                         setSelectedDepartments([]);
+                                                        setSelectedDesignations([]);
                                                     }}
                                                     className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-right"
                                                     style={{ background: "none", flex: 1 }}
@@ -1757,179 +1826,243 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                     Clear All
                                                 </button>
                                             </div>
-                                            <div className="py-1">
-                                                {uniqueDepartments.map(dept => {
-                                                    const isChecked = selectedDepartments.includes(dept);
-                                                    return (
-                                                        <DropdownMenuCheckboxItem
-                                                            key={dept}
-                                                            checked={isChecked}
-                                                            onCheckedChange={(checked) => {
-                                                                if (checked) {
-                                                                    setSelectedDepartments([...selectedDepartments, dept]);
-                                                                } else {
-                                                                    setSelectedDepartments(selectedDepartments.filter(item => item !== dept));
-                                                                }
-                                                            }}
-                                                            onSelect={(e) => e.preventDefault()}
-                                                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                            <div onClick={(e) => e.stopPropagation()} className="p-2 pb-1">
+                                                <Tabs
+                                                    value={deptDesignationFilterTab}
+                                                    onValueChange={(value) => setDeptDesignationFilterTab(value as 'department' | 'designation')}
+                                                    className="w-full"
+                                                >
+                                                    <TabsList style={{ border: "", padding: "0.25rem 0.5rem" }} className="grid grid-cols-2 h-10 rounded-xl bg-gray-100/80 w-full relative">
+                                                        <TabsTrigger
+                                                            style={{ margin: 0 }}
+                                                            value="department"
+                                                            className="relative text-xs font-semibold rounded-lg text-gray-500 data-[state=active]:text-gray-900 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none focus-visible:ring-0 cursor-pointer z-10"
                                                         >
-                                                            {dept}
-                                                        </DropdownMenuCheckboxItem>
-                                                    );
-                                                })}
+                                                            <span className="relative z-10">Department</span>
+                                                            {deptDesignationFilterTab === 'department' && (
+                                                                <motion.div
+                                                                    layoutId="activeTabBackgroundDeptDesigFilter"
+                                                                    className="absolute inset-0 bg-white rounded-lg shadow-xs z-0"
+                                                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                                                />
+                                                            )}
+                                                        </TabsTrigger>
+                                                        <TabsTrigger
+                                                            style={{ margin: 0 }}
+                                                            value="designation"
+                                                            className="relative text-xs font-semibold rounded-lg text-gray-500 data-[state=active]:text-gray-900 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none focus-visible:ring-0 cursor-pointer z-10"
+                                                        >
+                                                            <span className="relative z-10">Designation</span>
+                                                            {deptDesignationFilterTab === 'designation' && (
+                                                                <motion.div
+                                                                    layoutId="activeTabBackgroundDeptDesigFilter"
+                                                                    className="absolute inset-0 bg-white rounded-lg shadow-xs z-0"
+                                                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                                                />
+                                                            )}
+                                                        </TabsTrigger>
+                                                    </TabsList>
+
+                                                    <TabsContent value="department" className="mt-2 max-h-[220px] overflow-y-auto pr-1">
+                                                        <div className="py-1">
+                                                            {uniqueDepartments.map(dept => {
+                                                                const isChecked = selectedDepartments.includes(dept);
+                                                                return (
+                                                                    <DropdownMenuCheckboxItem
+                                                                        key={dept}
+                                                                        checked={isChecked}
+                                                                        onCheckedChange={(checked) => {
+                                                                            if (checked) {
+                                                                                setSelectedDepartments([...selectedDepartments, dept]);
+                                                                            } else {
+                                                                                setSelectedDepartments(selectedDepartments.filter(item => item !== dept));
+                                                                            }
+                                                                        }}
+                                                                        onSelect={(e) => e.preventDefault()}
+                                                                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                                    >
+                                                                        {dept}
+                                                                    </DropdownMenuCheckboxItem>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </TabsContent>
+
+                                                    <TabsContent value="designation" className="mt-2 max-h-[220px] overflow-y-auto pr-1">
+                                                        <div className="py-1">
+                                                            {uniqueDesignations.map(designation => {
+                                                                const isChecked = selectedDesignations.includes(designation);
+                                                                return (
+                                                                    <DropdownMenuCheckboxItem
+                                                                        key={designation}
+                                                                        checked={isChecked}
+                                                                        onCheckedChange={(checked) => {
+                                                                            if (checked) {
+                                                                                setSelectedDesignations([...selectedDesignations, designation]);
+                                                                            } else {
+                                                                                setSelectedDesignations(selectedDesignations.filter(item => item !== designation));
+                                                                            }
+                                                                        }}
+                                                                        onSelect={(e) => e.preventDefault()}
+                                                                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                                    >
+                                                                        {designation}
+                                                                    </DropdownMenuCheckboxItem>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </TabsContent>
+                                                </Tabs>
                                             </div>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </th>
-                                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "280px" }}>
-                                    <div className="flex gap-1 items-center w-full">
-                                        <div className="flex-1 min-w-0">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
-                                                    <span className="truncate">
-                                                        {selectedTypes.length === 0
-                                                            ? 'Type (All)'
-                                                            : selectedTypes.length === 1
-                                                                ? selectedTypes[0].toUpperCase()
-                                                                : `Type (${selectedTypes.length})`}
-                                                    </span>
-                                                    <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-[140px] max-h-[300px] overflow-y-auto p-0 z-50">
-                                                    <div
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
-                                                    >
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                setSelectedTypes(['staff', 'worker']);
-                                                            }}
-                                                            className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-left"
-                                                            style={{ background: "none", flex: 1 }}
+                                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "150px" }}>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                                            <span className="truncate">
+                                                {selectedTypes.length === 0 && selectedNationalities.length === 0
+                                                    ? 'Type/Nat (All)'
+                                                    : selectedTypes.length + selectedNationalities.length === 1
+                                                        ? selectedTypes[0]
+                                                            ? `Type: ${selectedTypes[0].toUpperCase()}`
+                                                            : `Nat: ${selectedNationalities[0].toUpperCase()}`
+                                                        : `Type/Nat (${selectedTypes.length + selectedNationalities.length})`}
+                                            </span>
+                                            <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-[240px] max-h-[320px] overflow-hidden p-0 z-50">
+                                            <div
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedTypes(['staff', 'worker']);
+                                                        setSelectedNationalities(uniqueNationalities);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-left"
+                                                    style={{ background: "none", flex: 1 }}
+                                                >
+                                                    Select All
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedTypes([]);
+                                                        setSelectedNationalities([]);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-right"
+                                                    style={{ background: "none", flex: 1 }}
+                                                >
+                                                    Clear All
+                                                </button>
+                                            </div>
+                                            <div onClick={(e) => e.stopPropagation()} className="p-2 pb-1">
+                                                <Tabs
+                                                    value={typeNationalityFilterTab}
+                                                    onValueChange={(value) => setTypeNationalityFilterTab(value as 'type' | 'nationality')}
+                                                    className="w-full"
+                                                >
+                                                    <TabsList style={{ border: "", padding: "0.25rem 0.5rem" }} className="grid grid-cols-2 h-10 rounded-xl bg-gray-100/80 w-full relative">
+                                                        <TabsTrigger
+                                                            style={{ margin: 0 }}
+                                                            value="type"
+                                                            className="relative text-xs font-semibold rounded-lg text-gray-500 data-[state=active]:text-gray-900 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none focus-visible:ring-0 cursor-pointer z-10"
                                                         >
-                                                            All
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                setSelectedTypes([]);
-                                                            }}
-                                                            className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-right"
-                                                            style={{ background: "none", flex: 1 }}
+                                                            <span className="relative z-10">Type</span>
+                                                            {typeNationalityFilterTab === 'type' && (
+                                                                <motion.div
+                                                                    layoutId="activeTabBackgroundTypeNatFilter"
+                                                                    className="absolute inset-0 bg-white rounded-lg shadow-xs z-0"
+                                                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                                                />
+                                                            )}
+                                                        </TabsTrigger>
+                                                        <TabsTrigger
+                                                            style={{ margin: 0 }}
+                                                            value="nationality"
+                                                            className="relative text-xs font-semibold rounded-lg text-gray-500 data-[state=active]:text-gray-900 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none focus-visible:ring-0 cursor-pointer z-10"
                                                         >
-                                                            Clear
-                                                        </button>
-                                                    </div>
-                                                    <div className="py-1">
-                                                        <DropdownMenuCheckboxItem
-                                                            checked={selectedTypes.includes('staff')}
-                                                            onCheckedChange={(checked) => {
-                                                                if (checked) {
-                                                                    setSelectedTypes([...selectedTypes, 'staff']);
-                                                                } else {
-                                                                    setSelectedTypes(selectedTypes.filter(t => t !== 'staff'));
-                                                                }
-                                                            }}
-                                                            onSelect={(e) => e.preventDefault()}
-                                                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                                                        >
-                                                            STAFF
-                                                        </DropdownMenuCheckboxItem>
-                                                        <DropdownMenuCheckboxItem
-                                                            checked={selectedTypes.includes('worker')}
-                                                            onCheckedChange={(checked) => {
-                                                                if (checked) {
-                                                                    setSelectedTypes([...selectedTypes, 'worker']);
-                                                                } else {
-                                                                    setSelectedTypes(selectedTypes.filter(t => t !== 'worker'));
-                                                                }
-                                                            }}
-                                                            onSelect={(e) => e.preventDefault()}
-                                                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                                                        >
-                                                            WORKER
-                                                        </DropdownMenuCheckboxItem>
-                                                    </div>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
+                                                            <span className="relative z-10">Nationality</span>
+                                                            {typeNationalityFilterTab === 'nationality' && (
+                                                                <motion.div
+                                                                    layoutId="activeTabBackgroundTypeNatFilter"
+                                                                    className="absolute inset-0 bg-white rounded-lg shadow-xs z-0"
+                                                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                                                />
+                                                            )}
+                                                        </TabsTrigger>
+                                                    </TabsList>
 
-                                        <div className="flex-1 min-w-0">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
-                                                    <span className="truncate">
-                                                        {selectedNationalities.length === 0
-                                                            ? 'Nationality (All)'
-                                                            : selectedNationalities.length === 1
-                                                                ? selectedNationalities[0].toUpperCase()
-                                                                : `Nat (${selectedNationalities.length})`}
-                                                    </span>
-                                                    <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
-                                                    <div
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
-                                                    >
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                setSelectedNationalities(uniqueNationalities);
-                                                            }}
-                                                            className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-left"
-                                                            style={{ background: "none", flex: 1 }}
-                                                        >
-                                                            Select All
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                setSelectedNationalities([]);
-                                                            }}
-                                                            className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-right"
-                                                            style={{ background: "none", flex: 1 }}
-                                                        >
-                                                            Clear All
-                                                        </button>
-                                                    </div>
-                                                    <div className="py-1">
-                                                        {uniqueNationalities.map(nat => {
-                                                            const isChecked = selectedNationalities.includes(nat);
-                                                            return (
-                                                                <DropdownMenuCheckboxItem
-                                                                    key={nat}
-                                                                    checked={isChecked}
-                                                                    onCheckedChange={(checked) => {
-                                                                        if (checked) {
-                                                                            setSelectedNationalities([...selectedNationalities, nat]);
-                                                                        } else {
-                                                                            setSelectedNationalities(selectedNationalities.filter(item => item !== nat));
-                                                                        }
-                                                                    }}
-                                                                    onSelect={(e) => e.preventDefault()}
-                                                                    className="rounded-md focus:bg-gray-50 cursor-pointer text-xs uppercase"
-                                                                >
-                                                                    {nat}
-                                                                </DropdownMenuCheckboxItem>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </div>
+                                                    <TabsContent value="type" className="mt-2 max-h-[220px] overflow-y-auto pr-1">
+                                                        <div className="py-1">
+                                                            <DropdownMenuCheckboxItem
+                                                                checked={selectedTypes.includes('staff')}
+                                                                onCheckedChange={(checked) => {
+                                                                    if (checked) {
+                                                                        setSelectedTypes([...selectedTypes, 'staff']);
+                                                                    } else {
+                                                                        setSelectedTypes(selectedTypes.filter(t => t !== 'staff'));
+                                                                    }
+                                                                }}
+                                                                onSelect={(e) => e.preventDefault()}
+                                                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                            >
+                                                                STAFF
+                                                            </DropdownMenuCheckboxItem>
+                                                            <DropdownMenuCheckboxItem
+                                                                checked={selectedTypes.includes('worker')}
+                                                                onCheckedChange={(checked) => {
+                                                                    if (checked) {
+                                                                        setSelectedTypes([...selectedTypes, 'worker']);
+                                                                    } else {
+                                                                        setSelectedTypes(selectedTypes.filter(t => t !== 'worker'));
+                                                                    }
+                                                                }}
+                                                                onSelect={(e) => e.preventDefault()}
+                                                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                                            >
+                                                                WORKER
+                                                            </DropdownMenuCheckboxItem>
+                                                        </div>
+                                                    </TabsContent>
+
+                                                    <TabsContent value="nationality" className="mt-2 max-h-[220px] overflow-y-auto pr-1">
+                                                        <div className="py-1">
+                                                            {uniqueNationalities.map(nat => {
+                                                                const isChecked = selectedNationalities.includes(nat);
+                                                                return (
+                                                                    <DropdownMenuCheckboxItem
+                                                                        key={nat}
+                                                                        checked={isChecked}
+                                                                        onCheckedChange={(checked) => {
+                                                                            if (checked) {
+                                                                                setSelectedNationalities([...selectedNationalities, nat]);
+                                                                            } else {
+                                                                                setSelectedNationalities(selectedNationalities.filter(item => item !== nat));
+                                                                            }
+                                                                        }}
+                                                                        onSelect={(e) => e.preventDefault()}
+                                                                        className="rounded-md focus:bg-gray-50 cursor-pointer text-xs uppercase"
+                                                                    >
+                                                                        {nat}
+                                                                    </DropdownMenuCheckboxItem>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </TabsContent>
+                                                </Tabs>
+                                            </div>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </th>
-                                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "140px" }}>
+                                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "200px" }}>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
                                             <span className="truncate">
@@ -2091,7 +2224,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                     </td>
                                     {/* Type and Nationality */}
                                     <td className="px-4 py-3">
-                                        <div style={{ display: "flex", flexFlow: "column", gap: "4px" }}>
+                                        <div style={{ display: "flex", flexFlow: "column", gap: "4px", justifyContent: "center", alignItems: "center" }}>
                                             <span className={`inline-flex items-center w-fit px-2 py-0.5 rounded-full text-xs font-medium ${emp.emp_type === 'staff'
                                                 ? 'bg-blue-50 text-blue-700'
                                                 : emp.emp_type === 'worker'
@@ -2951,6 +3084,43 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 </DialogContent>
             </Dialog>
 
+            {/* Bulk Change Designation Dialog */}
+            <Dialog open={isBulkDesignationOpen} onOpenChange={(open) => { if (!open) setIsBulkDesignationOpen(false); }}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Bulk Update Designation</DialogTitle>
+                        <DialogDescription>
+                            Enter a new designation for the {selectedEmployeeIds.size} selected employee(s).
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleBulkDesignationSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-gray-600 block">Designation</label>
+                            <Input
+                                type="text"
+                                value={bulkDesignationValue}
+                                onChange={(e) => setBulkDesignationValue(e.target.value)}
+                                placeholder="e.g. Supervisor, Technician"
+                            />
+                        </div>
+                        <DialogFooter className="pt-4">
+                            <Button
+                                style={{ flex: 1 }}
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsBulkDesignationOpen(false)}
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button style={{ flex: 1 }} type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? 'Updating...' : 'Update Designation'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
             {/* Bulk Delete Dialog */}
             <Dialog open={isBulkDeleteOpen} onOpenChange={(open) => { if (!open) setIsBulkDeleteOpen(false); }}>
                 <DialogContent className="sm:max-w-[425px]">
@@ -3204,33 +3374,41 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                             </div>
 
                             {/* Preview list */}
-                            <div>
-                                <h4 className="text-xs font-semibold text-gray-700 mb-2">Employees Preview (showing up to 5)</h4>
-                                <div className="border border-gray-100 rounded-xl overflow-hidden max-h-[160px] overflow-y-auto">
-                                    <table className="w-full text-left text-xs text-gray-600">
-                                        <thead className="bg-gray-50 sticky top-0 border-b border-gray-100 font-semibold text-gray-500">
+                            <div className="min-w-0">
+                                <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                    <h4 className="text-xs font-semibold text-gray-700">Employees Preview</h4>
+                                    <span className="text-[11px] text-gray-500">
+                                        Showing {parsedEmployees.length === 0 ? 0 : ((uploadPreviewPage - 1) * uploadPreviewPageSize) + 1}
+                                        {' '}-{' '}
+                                        {Math.min(uploadPreviewPage * uploadPreviewPageSize, parsedEmployees.length)} of {parsedEmployees.length}
+                                    </span>
+                                </div>
+                                <div className="min-w-0 w-full overflow-hidden rounded-xl border border-gray-100">
+                                    <div className="max-h-[240px] overflow-y-auto">
+                                        <table className="w-full table-fixed text-left text-xs text-gray-600">
+                                        <thead className="sticky top-0 border-b border-gray-100 bg-gray-50 font-semibold text-gray-500">
                                             <tr>
-                                                <th className="px-3 py-2">Device User ID</th>
-                                                <th className="px-3 py-2">Name</th>
-                                                <th className="px-3 py-2">Type</th>
-                                                <th className="px-3 py-2">Department</th>
-                                                <th className="px-3 py-2">Project</th>
-                                                <th className="px-3 py-2">Company</th>
-                                                <th className="px-3 py-2">Civil ID</th>
-                                                <th className="px-3 py-2">Action</th>
+                                                <th className="w-[18%] px-2 py-2 sm:px-3">User ID</th>
+                                                <th className="w-[28%] px-2 py-2 sm:px-3">Name</th>
+                                                <th className="w-[12%] px-2 py-2 sm:px-3">Type</th>
+                                                <th className="w-[22%] px-2 py-2 sm:px-3">Department</th>
+                                                <th className="hidden px-2 py-2 sm:table-cell sm:w-[20%] sm:px-3">Project</th>
+                                                <th className="hidden px-2 py-2 md:table-cell md:w-[20%] md:px-3">Company</th>
+                                                <th className="hidden px-2 py-2 lg:table-cell lg:w-[18%] lg:px-3">Civil ID</th>
+                                                <th className="w-[20%] px-2 py-2 text-right sm:w-[14%] sm:px-3">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-50 bg-white">
-                                            {parsedEmployees.slice(0, 5).map((emp, index) => (
+                                            {paginatedPreviewEmployees.map((emp, index) => (
                                                 <tr key={index}>
-                                                    <td className="px-3 py-2 font-mono text-gray-900">{emp.device_user_id}</td>
-                                                    <td className="px-3 py-2 capitalize font-medium text-gray-900">{emp.name.toLowerCase()}</td>
-                                                    <td className="px-3 py-2 uppercase font-semibold text-[10px] text-gray-400">{emp.emp_type}</td>
-                                                    <td className="px-3 py-2">{emp.department || '—'}</td>
-                                                    <td className="px-3 py-2 text-gray-500">{emp.project || '—'}</td>
-                                                    <td className="px-3 py-2 text-gray-500">{emp.company || '—'}</td>
-                                                    <td className="px-3 py-2 font-mono text-gray-500">{emp.civil_id || '—'}</td>
-                                                    <td className="px-3 py-2">
+                                                    <td className="break-words px-2 py-2 font-mono text-[11px] text-gray-900 sm:px-3">{emp.device_user_id || '—'}</td>
+                                                    <td className="break-words px-2 py-2 text-[11px] font-medium capitalize text-gray-900 sm:px-3">{emp.name.toLowerCase()}</td>
+                                                    <td className="px-2 py-2 text-[10px] font-semibold uppercase text-gray-400 sm:px-3">{emp.emp_type}</td>
+                                                    <td className="break-words px-2 py-2 text-[11px] sm:px-3">{emp.department || '—'}</td>
+                                                    <td className="hidden break-words px-2 py-2 text-[11px] text-gray-500 sm:table-cell sm:px-3">{emp.project || '—'}</td>
+                                                    <td className="hidden break-words px-2 py-2 text-[11px] text-gray-500 md:table-cell md:px-3">{emp.company || '—'}</td>
+                                                    <td className="hidden break-words px-2 py-2 font-mono text-[11px] text-gray-500 lg:table-cell lg:px-3">{emp.civil_id || '—'}</td>
+                                                    <td className="px-2 py-2 text-right sm:px-3">
                                                         {emp.action === 'create' ? (
                                                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-705 border border-emerald-100">
                                                                 New
@@ -3244,8 +3422,34 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                 </tr>
                                             ))}
                                         </tbody>
-                                    </table>
+                                        </table>
+                                    </div>
                                 </div>
+                                {uploadPreviewPageCount > 1 && (
+                                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <span className="text-[11px] text-gray-500">Page {uploadPreviewPage} of {uploadPreviewPageCount}</span>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setUploadPreviewPage((prev) => Math.max(1, prev - 1))}
+                                                disabled={uploadPreviewPage === 1}
+                                            >
+                                                Previous
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setUploadPreviewPage((prev) => Math.min(uploadPreviewPageCount, prev + 1))}
+                                                disabled={uploadPreviewPage === uploadPreviewPageCount}
+                                            >
+                                                Next
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Push to Devices Toggle Option */}

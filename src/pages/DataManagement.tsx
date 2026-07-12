@@ -50,6 +50,16 @@ function getEmployeeTemplatesSize(emp: Employee): number {
   return totalBytes;
 }
 
+function getEmployeeTemplatesCount(emp: Employee): number {
+  const fingerprintCount = emp.fingerprint_templates
+    ? Object.values(emp.fingerprint_templates).filter((val: any) => val && val.template).length
+    : 0;
+  const faceCount = emp.face_templates
+    ? Object.values(emp.face_templates).filter((val: any) => val && val.template).length
+    : 0;
+  return fingerprintCount + faceCount;
+}
+
 interface CompactPunch {
   user_id: string;
 }
@@ -336,10 +346,12 @@ export default function DataManagement() {
     let list = employees.map(emp => {
       const count = counts[emp.device_user_id] || 0;
       const templateSize = getEmployeeTemplatesSize(emp);
+      const templateCount = getEmployeeTemplatesCount(emp);
       const sizeBytes = count * ROW_SIZE_BYTES + templateSize;
       return {
         emp,
         count,
+        templateCount,
         templateSize,
         sizeBytes,
         percentOfTotal: matchedPunchesCount > 0 ? parseFloat(((count / matchedPunchesCount) * 100).toFixed(2)) : 0
@@ -359,6 +371,7 @@ export default function DataManagement() {
             department: 'Unmapped / Orphaned'
           },
           count,
+          templateCount: 0,
           templateSize: 0,
           sizeBytes,
           percentOfTotal: matchedPunchesCount > 0 ? parseFloat(((count / matchedPunchesCount) * 100).toFixed(2)) : 0
@@ -531,6 +544,7 @@ export default function DataManagement() {
                 </th>
 
                 <th className="px-4 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider w-32">Punches Count</th>
+                <th className="px-4 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider w-40">Templates</th>
                 <th className="px-4 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider w-40">Estimated Space</th>
                 <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider">Database Share</th>
               </tr>
@@ -538,14 +552,14 @@ export default function DataManagement() {
             <tbody className="divide-y divide-gray-150 bg-white">
               {recordsLoading ? (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center text-gray-405">
+                  <td colSpan={6} className="py-20 text-center text-gray-405">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-650" />
                     Loading and aggregating database space records…
                   </td>
                 </tr>
               ) : paginatedList.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center text-gray-405">
+                  <td colSpan={6} className="py-20 text-center text-gray-405">
                     No employees found matching the filters.
                   </td>
                 </tr>
@@ -568,6 +582,12 @@ export default function DataManagement() {
                       </td>
                       <td className="px-4 py-2.5 text-center font-semibold text-gray-805">
                         {item.count.toLocaleString()}
+                      </td>
+                      <td style={{ fontWeight: "500" }} className="px-4 py-2.5 text-center font-mono text-gray-700">
+                        <div>{formatSize(item.templateSize)}</div>
+                        <div style={{ fontSize: '9px', fontWeight: 'normal', color: '#6b7280', fontFamily: 'sans-serif', textTransform: 'none', marginTop: '2px' }}>
+                          {item.templateCount} template{item.templateCount === 1 ? '' : 's'}
+                        </div>
                       </td>
                       <td style={{ fontWeight: "500" }} className="px-4 py-2.5 text-center font-mono text-indigo-650">
                         <div>{formatSize(item.sizeBytes)}</div>
