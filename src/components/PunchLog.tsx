@@ -9,6 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ChevronDown, MapPin, Search, UserPlus, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
 import { formatTime, PUNCH_TYPE_LABELS, VERIFY_LABELS } from '../lib/utilis';
@@ -360,14 +361,23 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
                 </td>
               </tr>
             ) : (
-              filtered.map((punch) => {
-                const emp = empMap[punch.user_id];
-                const name = emp?.name ?? punch.user_id;
-                const idx = empIndex[punch.user_id] ?? 0;
-                const isIn = punch.punch_type === 0;
+              <AnimatePresence initial={false}>
+                {filtered.map((punch) => {
+                  const emp = empMap[punch.user_id];
+                  const name = emp?.name ?? punch.user_id;
+                  const idx = empIndex[punch.user_id] ?? 0;
+                  const isIn = punch.punch_type === 0;
 
-                return (
-                  <tr key={punch.id} className="hover:bg-gray-50 transition-colors">
+                  return (
+                    <motion.tr
+                      key={punch.id}
+                      layout="position"
+                      initial={{ opacity: 0, y: -12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -12 }}
+                      transition={{ duration: 0.35, ease: "easeOut" }}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5" style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
                         <Avatar size={"md"} name={name} index={idx} />
@@ -436,9 +446,10 @@ export function PunchLog({ punches, employees, onFilteredPunchesChange, onEmploy
                         )}
                       </div>
                     </td>
-                  </tr>
-                );
-              })
+                  </motion.tr>
+                  );
+                })}
+              </AnimatePresence>
             )}
           </tbody>
         </table>

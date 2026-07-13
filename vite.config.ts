@@ -31,11 +31,47 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: "**/*",
+      includeAssets: ["favicon.ico", "stardox-bg.png", "manifest.json"],
       workbox: {
-        // OCR engine files are large; increase the precache limit so they are available offline.
-        maximumFileSizeToCacheInBytes: 15 * 1024 * 1024,
-        globPatterns: ["**/*"],
+        // Precache only core application shell files (JS, CSS, HTML, manifests, icons)
+        globPatterns: ["**/*.{js,css,html,webmanifest,png,svg,ico}"],
+        globIgnores: [
+          "ocr/**/*",
+          "Passport.pdf",
+          "Screenshots/**/*",
+          "Offer-Letter.docx",
+          "offer.rtf",
+          "sohar_star_letter_head.png",
+          "letter-head.png"
+        ],
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        runtimeCaching: [
+          {
+            urlPattern: /.*(?:ocr|Passport|Offer-Letter|offer\.rtf).*/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "large-assets",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "images-cache",
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+              },
+            }
+          }
+        ]
       },
     }),
   ],

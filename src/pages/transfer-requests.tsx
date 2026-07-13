@@ -12,6 +12,7 @@ import { ArrowRight, ArrowRightLeft, Loader2, Plus, Search, User, X, PanelLeftCl
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { useEffect, useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import ReactTimeAgo from "react-time-ago";
 import { toast } from "sonner";
 
@@ -1293,15 +1294,21 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                       </td>
                     </tr>
                   ) : (
-                    filteredTransfers.map((t, idx) => {
-                      const emp = employees.find(e => e.emp_id === t.emp_id || String(e.id) === t.emp_id);
-                      return (
-                        <tr
-                          key={t.id}
-                          onClick={() => handleShowTransferDetail(t)}
-                          style={{ transition: "background 0.2s", cursor: "pointer" }}
-                          className="hover:bg-gray-50 border-b border-gray-100"
-                        >
+                    <AnimatePresence initial={false}>
+                      {filteredTransfers.map((t, idx) => {
+                        const emp = employees.find(e => e.emp_id === t.emp_id || String(e.id) === t.emp_id);
+                        return (
+                          <motion.tr
+                            key={t.id}
+                            layout="position"
+                            initial={{ opacity: 0, y: -12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -12 }}
+                            transition={{ duration: 0.35, ease: "easeOut" }}
+                            onClick={() => handleShowTransferDetail(t)}
+                            style={{ cursor: "pointer" }}
+                            className="hover:bg-gray-50 border-b border-gray-100"
+                          >
                           <td className="px-4 py-3 text-gray-500">
                             <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                               <Avatar size="md" name={emp ? emp.name : "Unknown Employee"} index={idx} />
@@ -1340,9 +1347,10 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                           <td style={{ fontSize: "0.8rem", color: "#6b7280" }} className="px-4 py-3">
                             <ReactTimeAgo date={new Date(t.created_at)} locale="en-US" />
                           </td>
-                        </tr>
-                      );
-                    })
+                          </motion.tr>
+                        );
+                      })}
+                    </AnimatePresence>
                   )}
                 </tbody>
               </table>
