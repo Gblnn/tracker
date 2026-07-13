@@ -372,11 +372,27 @@ export function useAttendance(date: string) {
     const firstInDevice = firstInPunch ? devicesMap[firstInPunch.device_serial] : null;
     const lastOutDevice = lastOutPunch ? devicesMap[lastOutPunch.device_serial] : null;
 
+    const fallbackStartTime = chronologicalPunches
+      .map((p) => devicesMap[p.device_serial]?.start_time)
+      .find((t) => !!t && t.includes(':')) || null;
+
+    const fallbackEndTime = chronologicalPunches
+      .map((p) => devicesMap[p.device_serial]?.end_time)
+      .find((t) => !!t && t.includes(':')) || null;
+
+    const expectedStartTime = (firstInDevice?.start_time && firstInDevice.start_time.includes(':'))
+      ? firstInDevice.start_time
+      : fallbackStartTime;
+
+    const expectedEndTime = (lastOutDevice?.end_time && lastOutDevice.end_time.includes(':'))
+      ? lastOutDevice.end_time
+      : fallbackEndTime;
+
     const remarks: string[] = [];
 
-    if (firstInPunch && firstInDevice?.start_time && firstInDevice.start_time.includes(':')) {
+    if (firstInPunch && expectedStartTime) {
       const punchTimeParts = getLocalTimeParts(firstInPunch.punch_time);
-      const [startHour, startMin] = firstInDevice.start_time.split(':').map(Number);
+      const [startHour, startMin] = expectedStartTime.split(':').map(Number);
       if (punchTimeParts) {
         const punchMins = punchTimeParts.hour * 60 + punchTimeParts.minute;
         const startMins = startHour * 60 + startMin;
@@ -387,9 +403,9 @@ export function useAttendance(date: string) {
       }
     }
 
-    if (lastOutPunch && lastOutDevice?.end_time && lastOutDevice.end_time.includes(':')) {
+    if (lastOutPunch && expectedEndTime) {
       const punchTimeParts = getLocalTimeParts(lastOutPunch.punch_time);
-      const [endHour, endMin] = lastOutDevice.end_time.split(':').map(Number);
+      const [endHour, endMin] = expectedEndTime.split(':').map(Number);
       if (punchTimeParts) {
         const punchMins = punchTimeParts.hour * 60 + punchTimeParts.minute;
         const endMins = endHour * 60 + endMin;

@@ -419,7 +419,7 @@ export default function AttendanceDashboard() {
                 <PunchLog punches={punches} employees={employees} onEmployeeAdded={refetch} />
               )
             ) : tab === 'transfers' ? (
-              <TransferRequests embedMode={true} />
+              <TransferRequests embedMode={true} refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
             ) : tab === 'devices' ? (
               <DevicesMaster refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
             ) : tab === 'projects' ? (

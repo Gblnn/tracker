@@ -17,6 +17,8 @@ import { toast } from "sonner";
 
 interface Props {
   embedMode?: boolean;
+  refreshTrigger?: number;
+  onLoadingChange?: (loading: boolean) => void;
 }
 
 interface Transfer {
@@ -39,7 +41,7 @@ interface Employee {
   location?: string | null;
 }
 
-export default function TransferRequests({ embedMode = false }: Props) {
+export default function TransferRequests({ embedMode = false, refreshTrigger, onLoadingChange }: Props = {}) {
   const { userData } = useAuth();
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -168,6 +170,16 @@ export default function TransferRequests({ embedMode = false }: Props) {
   useEffect(() => {
     fetchTransfers();
   }, []);
+
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      fetchTransfers(true);
+    }
+  }, [refreshTrigger]);
+
+  useEffect(() => {
+    onLoadingChange?.(loading || refreshing);
+  }, [loading, refreshing, onLoadingChange]);
 
 
 
@@ -475,7 +487,7 @@ export default function TransferRequests({ embedMode = false }: Props) {
           title="Transfers"
           extra={
             <RefreshButton
-              fetchingData={refreshing}
+              fetchingData={refreshing || loading}
               onClick={() => fetchTransfers(true)}
             />
           }
@@ -573,7 +585,7 @@ export default function TransferRequests({ embedMode = false }: Props) {
 
           {/* Employee List */}
           <div style={{ flex: 1, overflowY: "auto" }}>
-            {loading ? (
+            {loading && employees.length === 0 ? (
               <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
                 <Loader2 className="animate-spin w-6 h-6 text-blue-900" />
               </div>
@@ -992,7 +1004,7 @@ export default function TransferRequests({ embedMode = false }: Props) {
 
           {/* Transfers Table */}
           <div style={{ flex: 1, overflowY: "auto" }}>
-            {loading ? (
+            {loading && transfers.length === 0 ? (
               <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
                 <Loader2 className="animate-spin w-6 h-6 text-blue-900" />
               </div>
