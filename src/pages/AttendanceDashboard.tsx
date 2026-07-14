@@ -423,7 +423,7 @@ export default function AttendanceDashboard() {
             ) : tab === 'devices' ? (
               <DevicesMaster refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
             ) : tab === 'projects' ? (
-              <ProjectsMaster refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
+              <ProjectsMaster refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} employeeSummaries={employeeSummaries} />
             ) : tab === 'finalize' ? (
               <TimesheetFinalizer />
             ) : tab === 'terminal' ? (

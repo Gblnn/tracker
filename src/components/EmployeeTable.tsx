@@ -1322,11 +1322,11 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                               <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                               <span style={{ fontWeight: 500 }}>{emp.assignedLocation}</span>
                             </div>
-                            {emp.verifiedBy && (
+                            {/* {emp.verifiedBy && (
                               <span style={{ fontSize: "0.65rem", color: "#6b7280", paddingLeft: "1.1rem", display: "flex", justifyContent: "center", alignItems: "center", gap: "0.25rem" }}>
                                 by {emp.verifiedBy}
                               </span>
-                            )}
+                            )} */}
                           </div>
                         ) : (
                           emp.assignedLocation ?? '—'

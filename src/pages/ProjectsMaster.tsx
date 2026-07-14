@@ -2,11 +2,13 @@ import { useAuth } from '@/components/AuthProvider';
 import CustomDropDown from '@/components/custom-dropdown';
 import { ResponsiveModal } from '@/components/responsive-modal';
 import {
+  ChartBarIcon,
   Check,
   ChevronDown,
   Compass,
   FolderKanban,
   Laptop2,
+  List,
   Loader2,
   MoreVertical,
   Pencil,
@@ -19,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatLocationGeofence, parseLocationGeofence } from '../lib/geofence';
 import { supabase } from '../lib/supabase';
 
@@ -100,18 +103,24 @@ const formatISOToTime = (isoStr: string | null): string => {
   }
 };
 
+import type { EmployeeSummary } from '../types/attendance';
+
 interface ProjectsMasterProps {
   refreshTrigger?: number;
   onLoadingChange?: (loading: boolean) => void;
+  employeeSummaries?: EmployeeSummary[];
 }
 
-export default function ProjectsMaster({ refreshTrigger, onLoadingChange }: ProjectsMasterProps = {}) {
+export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employeeSummaries }: ProjectsMasterProps = {}) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [employeesList, setEmployeesList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Attendance Mode States
+  const [showAttendanceStats, setShowAttendanceStats] = useState(false);
 
   // Modal / Dialog States
   const [isAdding, setIsAdding] = useState(false);
@@ -219,10 +228,10 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange }: Proj
         .order('serial_no', { ascending: true });
       if (devErr) throw devErr;
 
-      // Fetch employees for focal point assignment
+      // Fetch employees for focal point assignment (selecting location as well)
       const { data: empData, error: empErr } = await supabase
         .from('employees')
-        .select('id, name, email, emp_id, device_user_id')
+        .select('id, name, email, emp_id, device_user_id, location')
         .order('name', { ascending: true });
       if (empErr) console.warn("Could not load employees for focal point:", empErr.message);
 
@@ -240,6 +249,43 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange }: Proj
   useEffect(() => {
     loadData(false);
   }, [loadData]);
+
+  const getProjectAttendanceStats = useCallback((projectCode: string, projectName: string, projectLocation: string | null) => {
+    let present = 0;
+    let absent = 0;
+
+    const summaries = employeeSummaries || [];
+    const codeLower = projectCode ? projectCode.toLowerCase().trim() : '';
+    const nameLower = projectName ? projectName.toLowerCase().trim() : '';
+    const geoName = projectLocation ? parseLocationGeofence(projectLocation).name.toLowerCase().trim() : '';
+
+    summaries.forEach(emp => {
+      // Resolve the employee's location the exact same way as EmployeeTable
+      const mergedLoc = emp.isVerified ? emp.assignedLocation : (emp.location || emp.assignedLocation || null);
+      const locKey = mergedLoc ? mergedLoc.toLowerCase().trim() : '';
+
+      // Check if employee is assigned to this project using multiple fallbacks
+      const matches =
+        (locKey && (
+          locKey === codeLower ||
+          locKey === nameLower ||
+          (geoName && locKey === geoName) ||
+          (geoName && nameLower.includes(locKey)) ||
+          (locKey && nameLower.includes(locKey)) ||
+          (geoName && geoName.includes(locKey))
+        ));
+
+      if (matches) {
+        if (emp.isPresent) {
+          present++;
+        } else {
+          absent++;
+        }
+      }
+    });
+
+    return { present, absent };
+  }, [employeeSummaries]);
 
   useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
@@ -787,6 +833,17 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange }: Proj
             )}
 
             <button
+              onClick={() => setShowAttendanceStats(prev => !prev)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ${showAttendanceStats
+                ? ''
+                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              title="Toggle Project Attendance Mode"
+            >
+              <span>{showAttendanceStats ? <List className='w-4 h-4' /> : <ChartBarIcon className='w-4 h-4' />}</span>
+            </button>
+
+            <button
               onClick={() => loadData(true)}
               disabled={loading || refreshing}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
@@ -839,7 +896,7 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange }: Proj
                           {project.project_code}
                         </span>
 
-                        {canEditAttendance && (
+                        {canEditAttendance && !showAttendanceStats && (
                           <CustomDropDown
                             trigger={<button className="action-btn" onClick={(e) => e.stopPropagation()}><MoreVertical size={14} /></button>}
                             option1Text="Edit"
@@ -852,200 +909,294 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange }: Proj
                         )}
                       </div>
 
-                      <h3 className="project-title">{project.project_name}</h3>
+                      {!showAttendanceStats && (
+                        <h3 className="project-title">{project.project_name}</h3>
+                      )}
                     </div>
 
-                    {/* Middle Part: Metadata Grid */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '12px 0' }}>
-                      <div style={{ justifyContent: "space-between", alignItems: "center", width: "100%" }} className="meta-item flex items-center justify-between flex-wrap gap-2">
-                        {(() => {
-                          const { name: displayName, geofence } = parseLocationGeofence(project.project_location);
+                    <AnimatePresence mode="wait">
+                      {showAttendanceStats ? (
+                        /* Attendance Summary View */
+                        (() => {
+                          const stats = getProjectAttendanceStats(project.project_code, project.project_name, project.project_location);
+                          const total = stats.present + stats.absent;
+                          const percentPresent = total > 0 ? Math.round((stats.present / total) * 100) : 0;
+
                           return (
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                              <span className="truncate max-w-[150px]" title={displayName || "No location set"}>
-                                {displayName || <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: 300 }}>No location set</span>}
+                            <motion.div
+                              key="attendance"
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -8 }}
+                              transition={{ duration: 0.18, ease: "easeInOut" }}
+                              style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between', gap: '1rem', marginTop: '0.75rem' }}
+                            >
+                              <h3 className="project-title" style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#1e293b' }}>{project.project_name}</h3>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'space-between' }}>
+                                {/* Numbers block */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.35rem 0.6rem', backgroundColor: '#f0fdf4', borderRadius: '6px', border: '1px solid #dcfce7' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 500, color: '#166534' }}>Present</span>
+                                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#15803d' }}>{stats.present}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.35rem 0.6rem', backgroundColor: '#fef2f2', borderRadius: '6px', border: '1px solid #fee2e2' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 500, color: '#991b1b' }}>Absent</span>
+                                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#b91c1c' }}>{stats.absent}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.35rem 0.6rem', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 500, color: '#475569' }}>Total</span>
+                                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>{total}</span>
+                                  </div>
+                                </div>
+
+                                {/* Donut Progress Ring */}
+                                <div style={{ position: 'relative', width: '80px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  <svg width="80" height="80" viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)' }}>
+                                    <path
+                                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                      fill="none"
+                                      stroke="#f1f5f9"
+                                      strokeWidth="3.5"
+                                    />
+                                    {total > 0 && (
+                                      <path
+                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                        fill="none"
+                                        stroke="#10b981"
+                                        strokeWidth="3.5"
+                                        strokeDasharray={`${percentPresent}, 100`}
+                                        strokeLinecap="round"
+                                        style={{ transition: 'stroke-dasharray 0.4s ease-out' }}
+                                      />
+                                    )}
+                                  </svg>
+                                  <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b', lineHeight: '1' }}>
+                                      {percentPresent}%
+                                    </span>
+                                    <span style={{ fontSize: '8px', color: '#64748b', fontWeight: 500, marginTop: '1px' }}>
+                                      Present
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Attendance Rate Bar */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#64748b', fontWeight: 500 }}>
+                                  <span>Attendance Rate</span>
+                                  <span>{percentPresent}%</span>
+                                </div>
+                                <div style={{ width: '100%', height: '5px', backgroundColor: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                                  <div style={{ width: `${percentPresent}%`, height: '100%', backgroundColor: '#10b981', borderRadius: '3px', transition: 'width 0.4s ease-out' }} />
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })()
+                      ) : (
+                        <motion.div
+                          key="details"
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 8 }}
+                          transition={{ duration: 0.18, ease: "easeInOut" }}
+                          style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
+                        >
+                          {/* Middle Part: Metadata Grid */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '12px 0' }}>
+                            <div style={{ justifyContent: "space-between", alignItems: "center", width: "100%" }} className="meta-item flex items-center justify-between flex-wrap gap-2">
+                              {(() => {
+                                const { name: displayName, geofence } = parseLocationGeofence(project.project_location);
+                                return (
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                                    <span className="truncate max-w-[150px]" title={displayName || "No location set"}>
+                                      {displayName || <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: 300 }}>No location set</span>}
+                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                      {geofence ? (
+                                        <button
+                                          onClick={() => openGeofenceModal(project)}
+                                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 transition-colors cursor-pointer"
+                                          title={`Geofence Active:\nLat: ${geofence.lat}\nLng: ${geofence.lng}\nRadius: ${geofence.radius}m\nClick to modify.`}
+                                        >
+                                          <Scan className="w-2.5 h-2.5 text-emerald-600" />
+                                          Active
+                                        </button>
+                                      ) : (
+                                        canEditAttendance && (
+                                          <button
+                                            onClick={() => openGeofenceModal(project)}
+                                            className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer bg-transparent border-0 outline-none p-0"
+                                          >
+                                            Set Geofence
+                                          </button>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+
+                            <div className="meta-item">
+                              <span>
+                                Shift:{' '}
+                                <strong style={{ color: '#0f172a' }}>
+                                  {project.project_in_time ? formatISOToTime(project.project_in_time) : '08:00'}
+                                </strong>
+                                {' '}-{' '}
+                                <strong style={{ color: '#0f172a' }}>
+                                  {project.project_out_time ? formatISOToTime(project.project_out_time) : '17:00'}
+                                </strong>
                               </span>
-                              <div className="flex items-center gap-1.5">
-                                {geofence ? (
+                            </div>
+
+                            {/* Focal Point Information */}
+                            <div className="meta-item flex flex-col gap-0.5 border-t border-gray-100/80 pt-2 mt-1">
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                <span className="text-[9px] uppercase tracking-wider font-semibold text-gray-400">Timesheet Focal Point</span>
+                                {canEditAttendance && (
                                   <button
-                                    onClick={() => openGeofenceModal(project)}
-                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 transition-colors cursor-pointer"
-                                    title={`Geofence Active:\nLat: ${geofence.lat}\nLng: ${geofence.lng}\nRadius: ${geofence.radius}m\nClick to modify.`}
+                                    onClick={() => openFocalPointModal(project)}
+                                    className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer bg-transparent border-0 outline-none p-0"
                                   >
-                                    <Scan className="w-2.5 h-2.5 text-emerald-600" />
-                                    Active
+                                    {project.focal_point_name ? 'Edit' : 'Assign'}
                                   </button>
-                                ) : (
-                                  canEditAttendance && (
-                                    <button
-                                      onClick={() => openGeofenceModal(project)}
-                                      className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer bg-transparent border-0 outline-none p-0"
-                                    >
-                                      Set Geofence
-                                    </button>
-                                  )
                                 )}
                               </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-
-                      <div className="meta-item">
-
-                        <span>
-                          Shift:{' '}
-                          <strong style={{ color: '#0f172a' }}>
-                            {project.project_in_time ? formatISOToTime(project.project_in_time) : '08:00'}
-                          </strong>
-                          {' '}-{' '}
-                          <strong style={{ color: '#0f172a' }}>
-                            {project.project_out_time ? formatISOToTime(project.project_out_time) : '17:00'}
-                          </strong>
-                        </span>
-                      </div>
-
-                      {/* Focal Point Information */}
-                      <div className="meta-item flex flex-col gap-0.5 border-t border-gray-100/80 pt-2 mt-1">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                          <span className="text-[9px] uppercase tracking-wider font-semibold text-gray-400">Timesheet Focal Point</span>
-                          {canEditAttendance && (
-                            <button
-                              onClick={() => openFocalPointModal(project)}
-                              className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer bg-transparent border-0 outline-none p-0"
-                            >
-                              {project.focal_point_name ? 'Edit' : 'Assign'}
-                            </button>
-                          )}
-                        </div>
-                        {project.focal_point_name ? (
-                          <div className="flex flex-col text-xs text-gray-700">
-                            <span className="font-semibold text-gray-900">{project.focal_point_name}</span>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              {project.focal_point_id && <span className="text-[10px] text-gray-400 font-mono bg-gray-100/60 px-1 py-0.2 rounded">{project.focal_point_id}</span>}
-                              {project.focal_point_email && <span className="text-[10px] text-gray-500 truncate" title={project.focal_point_email}>{project.focal_point_email}</span>}
+                              {project.focal_point_name ? (
+                                <div className="flex flex-col text-xs text-gray-700">
+                                  <span className="font-semibold text-gray-900">{project.focal_point_name}</span>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    {project.focal_point_id && <span className="text-[10px] text-gray-400 font-mono bg-gray-100/60 px-1 py-0.2 rounded">{project.focal_point_id}</span>}
+                                    {project.focal_point_email && <span className="text-[10px] text-gray-500 truncate" title={project.focal_point_email}>{project.focal_point_email}</span>}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-400 italic font-light">Not Assigned</span>
+                              )}
                             </div>
                           </div>
-                        ) : (
-                          <span className="text-xs text-gray-400 italic font-light">Not Assigned</span>
-                        )}
-                      </div>
-                    </div>
 
-                    {/* Bottom Part: Devices list */}
-                    <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: 'auto' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Laptop2 className="w-3.5 h-3.5 text-gray-400" />
-                          Devices ({assignedDevices.length})
-                        </span>
+                          {/* Bottom Part: Devices list */}
+                          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: 'auto' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Laptop2 className="w-3.5 h-3.5 text-gray-400" />
+                                Devices ({assignedDevices.length})
+                              </span>
 
-                        {canEditAttendance && !isAllocatingThis && (
-                          <button
-                            style={{ padding: "0.1rem 0.5rem", display: "flex" }}
-                            onClick={() => {
-                              setAllocatingProjectId(project.project_code);
-                              setSelectedDeviceSerial('');
-                            }}
-                            className="link-btn"
-                          >
-                            Link
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Allocate dropdown */}
-                      {isAllocatingThis && (
-                        <div style={{
-                          background: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '8px',
-                          padding: '6px',
-                          display: 'flex',
-                          gap: '6px',
-                          marginBottom: '8px',
-                          alignItems: 'center'
-                        }}>
-                          <select
-                            value={selectedDeviceSerial}
-                            onChange={(e) => setSelectedDeviceSerial(e.target.value)}
-                            style={{
-                              flex: 1,
-                              fontSize: '11px',
-                              padding: '4px',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '4px',
-                              background: '#fff',
-                              fontFamily: 'monospace',
-                              outline: 'none'
-                            }}
-                          >
-                            <option value="">-- Select --</option>
-                            {unallocatedDevices.map(d => (
-                              <option key={d.id} value={d.serial_no}>
-                                {d.serial_no}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            onClick={() => handleAllocateDevice(project.project_code)}
-                            disabled={!selectedDeviceSerial || allocating !== null}
-                            style={{
-                              background: '#4f46e5',
-                              color: '#fff',
-                              border: 'none',
-                              padding: '4px 8px',
-                              fontSize: '11px',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontWeight: 500
-                            }}
-                          >
-                            {allocating === selectedDeviceSerial ? 'Linking…' : 'Link'}
-                          </button>
-                          <button
-                            onClick={() => setAllocatingProjectId(null)}
-                            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '2px' }}
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Device tags */}
-                      {assignedDevices.length === 0 ? (
-                        <div style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
-                          No devices linked.
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '60px', overflowY: 'auto' }}>
-                          {assignedDevices.map(d => (
-                            <span key={d.id} className="device-badge">
-                              <span>{d.serial_no}</span>
-                              {canEditAttendance && (
+                              {canEditAttendance && !isAllocatingThis && (
                                 <button
-                                  onClick={() => handleDeallocateDevice(d.serial_no)}
-                                  disabled={allocating !== null}
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#94a3b8',
-                                    cursor: 'pointer',
-                                    padding: 0,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
+                                  style={{ padding: "0.1rem 0.5rem", display: "flex" }}
+                                  onClick={() => {
+                                    setAllocatingProjectId(project.project_code);
+                                    setSelectedDeviceSerial('');
                                   }}
-                                  title="Unlink Device"
+                                  className="link-btn"
                                 >
-                                  <X className="w-2.5 h-2.5 hover:text-red-500" />
+                                  Link
                                 </button>
                               )}
-                            </span>
-                          ))}
-                        </div>
+                            </div>
+
+                            {/* Allocate dropdown */}
+                            {isAllocatingThis && (
+                              <div style={{
+                                background: '#f8fafc',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '8px',
+                                padding: '6px',
+                                display: 'flex',
+                                gap: '6px',
+                                marginBottom: '8px',
+                                alignItems: 'center'
+                              }}>
+                                <select
+                                  value={selectedDeviceSerial}
+                                  onChange={(e) => setSelectedDeviceSerial(e.target.value)}
+                                  style={{
+                                    flex: 1,
+                                    fontSize: '11px',
+                                    padding: '4px',
+                                    border: '1px solid #cbd5e1',
+                                    borderRadius: '4px',
+                                    background: '#fff',
+                                    fontFamily: 'monospace',
+                                    outline: 'none'
+                                  }}
+                                >
+                                  <option value="">-- Select --</option>
+                                  {unallocatedDevices.map(d => (
+                                    <option key={d.id} value={d.serial_no}>
+                                      {d.serial_no}
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  onClick={() => handleAllocateDevice(project.project_code)}
+                                  disabled={!selectedDeviceSerial || allocating !== null}
+                                  style={{
+                                    background: '#4f46e5',
+                                    color: '#fff',
+                                    border: 'none',
+                                    padding: '4px 8px',
+                                    fontSize: '11px',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontWeight: 500
+                                  }}
+                                >
+                                  {allocating === selectedDeviceSerial ? 'Linking…' : 'Link'}
+                                </button>
+                                <button
+                                  onClick={() => setAllocatingProjectId(null)}
+                                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '2px' }}
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Device tags */}
+                            {assignedDevices.length === 0 ? (
+                              <div style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
+                                No devices linked.
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '60px', overflowY: 'auto' }}>
+                                {assignedDevices.map(d => (
+                                  <span key={d.id} className="device-badge">
+                                    <span>{d.serial_no}</span>
+                                    {canEditAttendance && (
+                                      <button
+                                        onClick={() => handleDeallocateDevice(d.serial_no)}
+                                        disabled={allocating !== null}
+                                        style={{
+                                          background: 'none',
+                                          border: 'none',
+                                          color: '#94a3b8',
+                                          cursor: 'pointer',
+                                          padding: 0,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center'
+                                        }}
+                                        title="Unlink Device"
+                                      >
+                                        <X className="w-2.5 h-2.5 hover:text-red-500" />
+                                      </button>
+                                    )}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
                       )}
-                    </div>
+                    </AnimatePresence>
                   </div>
                 );
               })}

@@ -98,6 +98,21 @@ const buildTimestamp = (dateStr: string, timeStr: string) => {
   return `${dateStr}T${timeStr}:00+04:00`;
 };
 
+const calculateTotalHours = (punchIn: string, punchOut: string) => {
+  if (!punchIn || !punchOut) return '—';
+  try {
+    const [inH, inM] = punchIn.split(':').map(Number);
+    const [outH, outM] = punchOut.split(':').map(Number);
+    if (isNaN(inH) || isNaN(inM) || isNaN(outH) || isNaN(outM)) return '—';
+    let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
+    if (diffMin < 0) diffMin += 24 * 60;
+    const hours = diffMin / 60;
+    return `${hours.toFixed(2)} hrs`;
+  } catch {
+    return '—';
+  }
+};
+
 const getVerifyTypeLabel = (punch: Punch | null): string => {
   if (!punch) return 'Manual Input';
   if (punch.mobile_location || (punch.raw && punch.raw.includes('MOBILE'))) {
@@ -958,6 +973,7 @@ export default function TimesheetFinalizer() {
                   </th>
                   <th style={{ width: '100px' }}>Punch In</th>
                   <th style={{ width: '100px' }}>Punch Out</th>
+                  <th style={{ width: '100px', textAlign: 'center' }}>Total Hours</th>
                   <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '160px' }}>
                     <DropdownMenu>
                       <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
@@ -1049,7 +1065,7 @@ export default function TimesheetFinalizer() {
               <tbody>
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-20 text-center text-gray-400 font-medium bg-white">
+                    <td colSpan={9} className="py-20 text-center text-gray-400 font-medium bg-white">
                       No matching records found.
                     </td>
                   </tr>
@@ -1124,6 +1140,11 @@ export default function TimesheetFinalizer() {
                               disabled={isLocked || !canEditAttendance || !!row.original_out_punch}
                               className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                             />
+                          </td>
+
+                          {/* Total Hours */}
+                          <td style={{ fontSize: '12px', fontWeight: 600, color: '#334155', textAlign: 'center' }}>
+                            {calculateTotalHours(row.punch_in, row.punch_out)}
                           </td>
 
                           {/* Project Allocation Select */}
@@ -1237,7 +1258,7 @@ export default function TimesheetFinalizer() {
                     })}
                     {filteredEmployees.length > renderLimit && (
                       <tr>
-                        <td colSpan={8} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
+                        <td colSpan={9} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
                           <div className="flex items-center justify-center gap-4 w-full">
                             <span className="text-xs text-gray-500 font-medium text-center">
                               Showing {renderLimit} of {filteredEmployees.length} records
