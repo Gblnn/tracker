@@ -56,9 +56,10 @@ export default function IndexDropDown(props: Props) {
   const applyPressure = async () => {
     toast.loading("Applying pressure to force update...", { id: "pressure" });
     try {
-      // 1. Perform 35 concurrent requests to simulate phonebook-like load on PWA cache
+      // 1. Perform 10 staggered requests to simulate load safely without triggering WAF
       const fetches = [];
-      for (let i = 0; i < 35; i++) {
+      for (let i = 0; i < 10; i++) {
+        await new Promise(resolve => setTimeout(resolve, 50));
         fetches.push(
           fetch(`/manifest.json?t=${Date.now()}-${i}`, { cache: "no-store" })
             .then(() => { })
