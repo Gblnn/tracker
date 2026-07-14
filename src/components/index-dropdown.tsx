@@ -1,5 +1,5 @@
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import { Bug, LoaderCircle, LogOut, RefreshCcw, UserX } from "lucide-react";
+import { Bug, LoaderCircle, LogOut, UserX, Zap } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,10 +29,45 @@ export default function IndexDropDown(props:Props) {
   const [bugDialog, setBugDialog] = useState(false);
   const [issue, setIssue] = useState("");
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [updateAvailable, setUpdateAvailable] = useState<boolean>(() => {
-    try { return typeof window !== 'undefined' && localStorage.getItem('sw:update-available') === '1'; } catch (e) { return false; }
-  });
 
+  const applyPressure = async () => {
+    toast.loading("Applying pressure to force update...", { id: "pressure" });
+    try {
+      // 1. Perform 35 concurrent requests to simulate phonebook-like load on PWA cache
+      const fetches = [];
+      for (let i = 0; i < 35; i++) {
+        fetches.push(
+          fetch(`/?t=${Date.now()}-${i}`, { cache: "no-store" })
+            .then(() => {})
+            .catch(() => {})
+        );
+      }
+      await Promise.all(fetches);
+
+      // 2. Trigger updates on registrations
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.update()));
+      }
+
+      // 3. Delete browser caches
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+
+      toast.success("Pressure applied successfully! Reloading...", { id: "pressure" });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    } catch (e) {
+      console.error("Apply pressure failed:", e);
+      toast.error("Failed to apply pressure, reloading anyway...", { id: "pressure" });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    }
+  };
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
 
@@ -53,28 +88,6 @@ export default function IndexDropDown(props:Props) {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       clearInterval(checkInterval);
-    };
-  }, []);
-
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === 'sw:update-available') {
-        setUpdateAvailable(e.newValue === '1');
-      }
-    };
-    window.addEventListener('storage', onStorage);
-
-    // Also listen to BroadcastChannel in case the flag is set without storage event
-    const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('sw-update') : null;
-    if (bc) {
-      bc.onmessage = (ev) => {
-        if (ev?.data?.type === 'NEW_VERSION_AVAILABLE') setUpdateAvailable(true);
-      };
-    }
-
-    return () => {
-      window.removeEventListener('storage', onStorage);
-      try { if (bc) bc.close(); } catch (e) {}
     };
   }, []);
 
@@ -151,9 +164,6 @@ export default function IndexDropDown(props:Props) {
             overflow: "hidden",
           }}
         >
-          {updateAvailable && (
-            <span style={{ position: 'absolute', top: 6, right: 6, width: 10, height: 10, borderRadius: 999, background: 'crimson', boxShadow: '0 0 0 3px rgba(255,0,0,0.06)' }} />
-          )}
           {isOnline && (
             <div
               style={{
@@ -214,50 +224,13 @@ export default function IndexDropDown(props:Props) {
 
           <div className="h-px bg-border my-1" />
 
-          {typeof window !== 'undefined' && (localStorage.getItem('sw:update-available') === '1') && (
-            <DropdownMenuItem
-              onClick={async () => {
-                try {
-                  const reg = await navigator.serviceWorker.getRegistration();
-                  if (reg?.waiting) {
-                    const onControllerChange = () => { window.location.reload(); };
-                    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
-                    try { localStorage.removeItem('sw:update-available'); } catch (e) {}
-                    try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) {}
-                  } else {
-                    const regs = await navigator.serviceWorker.getRegistrations();
-                    await Promise.all(regs.map(r => r.update()));
-                    toast.success('Checked for updates');
-                  }
-                } catch (e) {
-                  console.error('Apply update failed', e);
-                  toast.error('Failed to apply update');
-                }
-              }}
-              className="cursor-pointer"
-              style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}
-            >
-              <LoaderCircle className="mr-2 h-4 w-4 text-primary" />
-              <span>Apply update</span>
-            </DropdownMenuItem>
-          )}
-
           <DropdownMenuItem
-            onClick={async () => {
-              try {
-                const regs = await navigator.serviceWorker.getRegistrations();
-                await Promise.all(regs.map(r => r.update()));
-                toast.success('Checked for updates');
-              } catch (e) {
-                console.error('Update check failed', e);
-                toast.error('Update check failed');
-              }
-            }}
+            onClick={applyPressure}
             className="cursor-pointer"
             style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}
           >
-            <RefreshCcw color="mediumslateblue" className="mr-2 h-4 w-4 text-primary" />
-            <span>Check for updates</span>
+            <Zap className="mr-2 h-4 w-4 text-amber-500 fill-amber-500" />
+            <span>Apply Pressure</span>
           </DropdownMenuItem>
 
           <DropdownMenuItem

@@ -202,72 +202,7 @@ export default function Index() {
     cacheFuelLogs();
   }, [userData?.email]);
 
-  // Prompt user when a new service worker version is available
-  // const [ setNewVersionAvailable] = useState(false);
 
-  // useEffect(() => {
-  //   const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('sw-update') : null;
-
-  //   // const notifyAvailable = () => {
-  //   //   try { localStorage.setItem('sw:update-available', '1'); } catch (e) { }
-  //   //   setNewVersionAvailable(true);
-  //   // };
-
-  //   // const onWindowEvent = () => notifyAvailable();
-  //   window.addEventListener('sw:new-version-available', onWindowEvent);
-
-  //   if (bc) {
-  //     bc.onmessage = (ev) => {
-  //       if (ev?.data?.type === 'NEW_VERSION_AVAILABLE') notifyAvailable();
-  //     };
-  //   }
-
-  //   // Initialize from persisted flag so dismiss doesn't remove user's ability to update later
-  //   try {
-  //     if (localStorage.getItem('sw:update-available') === '1') setNewVersionAvailable(true);
-  //   } catch (e) { }
-
-  //   return () => {
-  //     window.removeEventListener('sw:new-version-available', onWindowEvent);
-  //     try { if (bc) bc.close(); } catch (e) { }
-  //   };
-  // }, []);
-
-  // const applyUpdate = async () => {
-
-  //   try {
-  //     const reg = await navigator.serviceWorker.getRegistration();
-  //     if (reg?.waiting) {
-  //       // Listen for controllerchange to reload when the new SW takes over
-  //       const onControllerChange = () => {
-  //         try { localStorage.removeItem('sw:update-available'); } catch (e) { }
-  //         window.location.reload();
-  //       };
-  //       navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
-  //       try { localStorage.removeItem('sw:update-available'); } catch (e) { }
-  //       try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
-  //     } else {
-  //       // No waiting worker — trigger an update check
-  //       const r = await navigator.serviceWorker.getRegistration();
-  //       await r?.update();
-  //       window.location.reload();
-  //     }
-  //   } catch (e) {
-  //     console.error('Failed to apply update', e);
-  //     try { localStorage.removeItem('sw:update-available'); } catch (err) { }
-  //     window.location.reload();
-  //   }
-  // };
-
-  // const forceCheckForUpdate = async () => {
-  //   try {
-  //     const regs = await navigator.serviceWorker.getRegistrations();
-  //     await Promise.all(regs.map(r => r.update()));
-  //     toast.success('Checked for updates');
-  //   } catch (e) {
-  //     toast.error('Update check failed');
-  //   }
-  // };
 
   // Helper function to check module access
   const hasModuleAccess = (moduleId: string) => {
@@ -352,7 +287,7 @@ export default function Index() {
         fixed
         editMode={userData?.editor === true ? true : false}
         title="Starboard"
-        subtitle={"1.66"}
+        subtitle={"1.67"}
         icon={<img src="/stardox-bg.png" style={{ width: "2rem" }} alt="Starboard" />}
         noback
         extra={

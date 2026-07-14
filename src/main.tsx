@@ -35,35 +35,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   </BrowserRouter>
 );
 
-// Service worker registration and update checks
+// Service worker registration
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js');
-
-      // Notify when a new service worker version is installed and waiting
-      const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('sw-update') : null;
-      const handleUpdateFound = () => {
-        const installing = registration.installing;
-        if (!installing) return;
-        installing.addEventListener('statechange', () => {
-          if (installing.state === 'installed') {
-            if (navigator.serviceWorker.controller) {
-              // window event for backward compatibility
-              window.dispatchEvent(new CustomEvent('sw:new-version-available'));
-              // Broadcast to other tabs
-              try { bc?.postMessage({ type: 'NEW_VERSION_AVAILABLE' }); } catch (e) { /* ignore */ }
-            }
-          }
-        });
-      };
-
-      registration.addEventListener('updatefound', handleUpdateFound);
-
-      // Periodically check for updates (every 30 minutes)
-      setInterval(() => {
-        registration.update().catch(() => {});
-      }, 1000 * 60 * 30);
+      await navigator.serviceWorker.register('/sw.js');
     } catch (err) {
       console.error('SW registration failed:', err);
     }
