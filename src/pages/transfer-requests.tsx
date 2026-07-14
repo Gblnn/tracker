@@ -485,7 +485,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", overflow: "hidden", backgroundColor: "#f9fafb" }}>
+    <div className="animate-fade-in" style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", overflow: "hidden", backgroundColor: "#f9fafb" }}>
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(4px); }

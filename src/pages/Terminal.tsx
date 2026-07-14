@@ -207,7 +207,20 @@ export default function Terminal() {
   if (tasks.length === 0) {
     return (
       <div style={{ display: 'flex', alignItems: "center", justifyContent: "center", fontSize: "0.8rem", userSelect: "text", WebkitUserSelect: "text" }} className="w-full h-full flex-1 bg-[#090d10] text-gray-300 p-6 text-left select-text">
-        {tasksLoading ? <Loader2 className='animate-spin' /> : "no active tasks."}
+        <style>{`
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .animate-fade-in {
+            animation: fadeIn 0.35s ease-out forwards;
+          }
+        `}</style>
+        {tasksLoading ? (
+          <Loader2 className='animate-spin' />
+        ) : (
+          <div className="animate-fade-in">no active tasks.</div>
+        )}
       </div>
     );
   }
@@ -217,6 +230,16 @@ export default function Terminal() {
 
   return (
     <div style={{ border: "", alignItems: "flex-start", justifyContent: "flex-start", fontSize: "0.8rem", userSelect: "text", WebkitUserSelect: "text" }} className="w-full h-full flex-1 bg-[#090d10] text-gray-300 p-6 text-left flex flex-col gap-2 overflow-hidden select-text font-mono">
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.35s ease-out forwards;
+        }
+      `}</style>
+      <div className="animate-fade-in flex flex-col gap-2 w-full h-full overflow-hidden">
       {/* Clear Terminal action bar */}
       <div style={{ justifyContent: "space-between" }} className="flex justify-between items-center w-full border-b border-gray-800 pb-3 mb-2 shrink-0">
         <span style={{ border: "1px solid rgba(100 100 100/ 0.5)", padding: "0.1rem 0.35rem", borderRadius: "0.25rem", fontWeight: "500" }} className="text-gray-500 text-xs uppercase tracking-wider font-semibold">All Tasks</span>
@@ -297,6 +320,7 @@ export default function Terminal() {
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );
