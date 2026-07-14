@@ -75,6 +75,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
   const [selectedFromProjects, setSelectedFromProjects] = useState<string[]>([]);
   const [selectedToProjects, setSelectedToProjects] = useState<string[]>([]);
   const [filterCreatedDate, setFilterCreatedDate] = useState<string>("");
+  const [renderLimit, setRenderLimit] = useState(50);
 
   const fetchTransfers = async (isManual = false) => {
     try {
@@ -181,6 +182,10 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
   useEffect(() => {
     onLoadingChange?.(loading || refreshing);
   }, [loading, refreshing, onLoadingChange]);
+
+  useEffect(() => {
+    setRenderLimit(50);
+  }, [searchQuery, selectedTransferPrefixes, selectedFromProjects, selectedToProjects, filterCreatedDate]);
 
 
 
@@ -1307,64 +1312,95 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                       </td>
                     </tr>
                   ) : (
-                    <AnimatePresence initial={false}>
-                      {filteredTransfers.map((t, idx) => {
-                        const emp = employees.find(e => e.emp_id === t.emp_id || String(e.id) === t.emp_id);
-                        const isNew = (Date.now() - new Date(t.created_at).getTime()) < 20000; // 20s threshold for highlighting new entry
+                    <>
+                      <AnimatePresence initial={false}>
+                        {filteredTransfers.slice(0, renderLimit).map((t, idx) => {
+                          const emp = employees.find(e => e.emp_id === t.emp_id || String(e.id) === t.emp_id);
+                          const isNew = (Date.now() - new Date(t.created_at).getTime()) < 20000; // 20s threshold for highlighting new entry
 
-                        return (
-                          <motion.tr
-                            key={t.id}
-                            initial={{ opacity: 0, y: -12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -12 }}
-                            transition={{ duration: 0.35, ease: "easeOut" }}
-                            onClick={() => handleShowTransferDetail(t)}
-                            style={{ cursor: "pointer" }}
-                            className={`${isNew ? "transfer-row-new" : ""} hover:bg-gray-50 border-b border-gray-100`}
-                          >
-                            <td className="px-4 py-3 text-gray-500">
-                              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                                <Avatar size="md" name={emp ? emp.name : "Unknown Employee"} index={idx} />
-                                <div style={{ display: "flex", flexDirection: "column" }}>
-                                  <span style={{ fontWeight: 500, color: "#111827", textTransform: "capitalize" }}>{emp ? emp.name.toLowerCase() : "Unknown Employee"}</span>
-                                  <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>{t.emp_id || "—"}</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-gray-500 font-medium text-gray-700">
-                              {t.from_project}
-                            </td>
-                            <td className="px-4 py-3 text-gray-500 font-medium text-indigo-700">
-                              {t.to_project}
-                            </td>
-                            {!employeeMasterVisible && (
-                              <>
-                                <td className="px-4 py-3 text-gray-500">
-                                  <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem" }}>
-                                    <User className="w-3.5 h-3.5 text-gray-400" />
-                                    <span>{t.initiator}</span>
+                          return (
+                            <motion.tr
+                              key={t.id}
+                              initial={{ opacity: 0, y: -12 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -12 }}
+                              transition={{ duration: 0.35, ease: "easeOut" }}
+                              onClick={() => handleShowTransferDetail(t)}
+                              style={{ cursor: "pointer" }}
+                              className={`${isNew ? "transfer-row-new" : ""} hover:bg-gray-50 border-b border-gray-100`}
+                            >
+                              <td className="px-4 py-3 text-gray-500">
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                                  <Avatar size="md" name={emp ? emp.name : "Unknown Employee"} index={idx} />
+                                  <div style={{ display: "flex", flexDirection: "column" }}>
+                                    <span style={{ fontWeight: 500, color: "#111827", textTransform: "capitalize" }}>{emp ? emp.name.toLowerCase() : "Unknown Employee"}</span>
+                                    <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>{t.emp_id || "—"}</span>
                                   </div>
-                                </td>
-                                <td className="px-4 py-3 text-gray-500">
-                                  {t.acceptor ? (
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-gray-500 font-medium text-gray-700">
+                                {t.from_project}
+                              </td>
+                              <td className="px-4 py-3 text-gray-500 font-medium text-indigo-700">
+                                {t.to_project}
+                              </td>
+                              {!employeeMasterVisible && (
+                                <>
+                                  <td className="px-4 py-3 text-gray-500">
                                     <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem" }}>
-                                      <User className="w-3.5 h-3.5 text-indigo-400" />
-                                      <span style={{ color: "#4f46e5", fontWeight: 500 }}>{t.acceptor}</span>
+                                      <User className="w-3.5 h-3.5 text-gray-400" />
+                                      <span>{t.initiator}</span>
                                     </div>
-                                  ) : (
-                                    <span style={{ color: "#9ca3af", fontStyle: "italic", fontSize: "0.8rem" }}>Pending acceptance</span>
-                                  )}
-                                </td>
-                              </>
-                            )}
-                            <td style={{ fontSize: "0.8rem", color: "#6b7280" }} className="px-4 py-3">
-                              <ReactTimeAgo date={new Date(t.created_at)} locale="en-US" />
-                            </td>
-                          </motion.tr>
-                        );
-                      })}
-                    </AnimatePresence>
+                                  </td>
+                                  <td className="px-4 py-3 text-gray-500">
+                                    {t.acceptor ? (
+                                      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem" }}>
+                                        <User className="w-3.5 h-3.5 text-indigo-400" />
+                                        <span style={{ color: "#4f46e5", fontWeight: 500 }}>{t.acceptor}</span>
+                                      </div>
+                                    ) : (
+                                      <span style={{ color: "#9ca3af", fontStyle: "italic", fontSize: "0.8rem" }}>Pending acceptance</span>
+                                    )}
+                                  </td>
+                                </>
+                              )}
+                              <td style={{ fontSize: "0.8rem", color: "#6b7280" }} className="px-4 py-3">
+                                <ReactTimeAgo date={new Date(t.created_at)} locale="en-US" />
+                              </td>
+                            </motion.tr>
+                          );
+                        })}
+                      </AnimatePresence>
+                      {filteredTransfers.length > renderLimit && (
+                        <tr>
+                          <td colSpan={employeeMasterVisible ? 4 : 6} style={{ padding: '12px', textAlign: 'center', background: '#ffffff', position: 'sticky', bottom: 0, zIndex: 10, borderTop: '1px solid #f3f4f6', boxShadow: '0 -2px 10px rgba(0,0,0,0.02)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                              <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>
+                                Showing {renderLimit} of {filteredTransfers.length} transfers
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setRenderLimit(prev => prev + 50)}
+                                style={{
+                                  padding: '5px 12px',
+                                  background: '#0f172a',
+                                  color: '#ffffff',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  borderRadius: '6px',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  transition: 'background 0.15s ease'
+                                }}
+                                className="hover:bg-slate-800"
+                              >
+                                Load More
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   )}
                 </tbody>
               </table>
