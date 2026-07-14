@@ -69,6 +69,8 @@ interface TimesheetRow {
   isEdited: boolean;
   original_in_punch?: Punch | null;
   original_out_punch?: Punch | null;
+  status?: string;
+  isApproved?: boolean;
 }
 
 const getYesterdayString = () => {
@@ -304,59 +306,45 @@ export default function TimesheetFinalizer() {
         ? (existingRows || []).filter(row => row.project_code && focalProjectCodes.includes(row.project_code))
         : (existingRows || []);
 
-      const isDayLocked = filteredExistingRows && filteredExistingRows.length > 0;
+      // Calculate global lock: locked if all employees have a matching timesheet database record
+      const isDayLocked = filteredExistingRows.length > 0 && filteredEmployees.every(emp =>
+        filteredExistingRows.some(row => row.employee_code === emp.device_user_id)
+      );
       setIsLocked(isDayLocked);
 
-      if (isDayLocked) {
-        // Find locked metadata from the first record
+      // Find locked metadata from the first record if any
+      if (filteredExistingRows.length > 0) {
         const sampleRow = filteredExistingRows[0];
         setLockedBy(sampleRow.attested_by && sampleRow.attested_by.includes('@') ? sampleRow.attested_by : 'Biometric System');
-
-        // Map locked rows
-        const existingRowsMap = Object.fromEntries(
-          filteredExistingRows.map(r => [r.employee_code, r])
-        );
-        const initialRows: Record<string, TimesheetRow> = {};
-        filteredEmployees.forEach(emp => {
-          const matched = existingRowsMap[emp.device_user_id];
-          if (matched) {
-            initialRows[emp.device_user_id] = {
-              employee_code: emp.device_user_id,
-              employee_name: emp.name,
-              department: emp.department,
-              punch_in: extractTime(matched.punch_in),
-              punch_out: extractTime(matched.punch_out),
-              project_code: matched.project_code ?? '',
-              overtime: matched.overtime ?? 0,
-              remarks: matched.remarks ?? '',
-              verify_type: matched.verify_type || 'Manual Input',
-              attested_by: matched.attested_by || '',
-              isEdited: matched.verify_type === 'Manual Input'
-            };
-          } else {
-            // Absent/No log
-            initialRows[emp.device_user_id] = {
-              employee_code: emp.device_user_id,
-              employee_name: emp.name,
-              department: emp.department,
-              punch_in: '',
-              punch_out: '',
-              project_code: '',
-              overtime: 0,
-              remarks: '',
-              verify_type: 'Manual Input',
-              attested_by: userData?.email || 'Timekeeper',
-              isEdited: false
-            };
-          }
-        });
-        setRows(initialRows);
       } else {
-        // Unlock states: Build initial guesses from raw punches
         setLockedBy(null);
+      }
 
-        const initialRows: Record<string, TimesheetRow> = {};
-        filteredEmployees.forEach(emp => {
+      // Map loaded rows
+      const existingRowsMap = Object.fromEntries(
+        filteredExistingRows.map(r => [r.employee_code, r])
+      );
+      const initialRows: Record<string, TimesheetRow> = {};
+      filteredEmployees.forEach(emp => {
+        const matched = existingRowsMap[emp.device_user_id];
+        if (matched) {
+          initialRows[emp.device_user_id] = {
+            employee_code: emp.device_user_id,
+            employee_name: emp.name,
+            department: emp.department,
+            punch_in: extractTime(matched.punch_in),
+            punch_out: extractTime(matched.punch_out),
+            project_code: matched.project_code ?? '',
+            overtime: matched.overtime ?? 0,
+            remarks: matched.remarks ?? '',
+            verify_type: matched.verify_type || 'Manual Input',
+            attested_by: matched.attested_by || '',
+            isEdited: matched.verify_type === 'Manual Input',
+            status: matched.status || (matched.overtime > 0 ? 'present with OT' : (matched.punch_in || matched.punch_out ? 'present' : 'absent')),
+            isApproved: true
+          };
+        } else {
+          // Guess initial values from raw punches
           const empPunches = punchGroups[emp.device_user_id] || [];
 
           let firstPunch: Punch | null = null;
@@ -417,6 +405,10 @@ export default function TimesheetFinalizer() {
             }
           }
 
+          const defaultStatus = (inTime || outTime)
+            ? (autoOvertime > 0 ? 'present with OT' : 'present')
+            : 'absent';
+
           initialRows[emp.device_user_id] = {
             employee_code: emp.device_user_id,
             employee_name: emp.name,
@@ -430,11 +422,13 @@ export default function TimesheetFinalizer() {
             attested_by: resolvedAttestedBy,
             isEdited: false,
             original_in_punch: firstPunch,
-            original_out_punch: lastPunch
+            original_out_punch: lastPunch,
+            status: defaultStatus,
+            isApproved: false
           };
-        });
-        setRows(initialRows);
-      }
+        }
+      });
+      setRows(initialRows);
     } catch (err: any) {
       setError(err.message || 'Failed to load timesheet finalizer data.');
     } finally {
@@ -452,13 +446,61 @@ export default function TimesheetFinalizer() {
       const updated = { ...current, [key]: value };
 
       // Set isEdited flag if user modifies main fields
-      if (key === 'punch_in' || key === 'punch_out' || key === 'overtime' || key === 'project_code') {
+      if (key === 'punch_in' || key === 'punch_out' || key === 'overtime' || key === 'project_code' || key === 'status') {
         updated.isEdited = true;
         updated.verify_type = 'Manual Input';
         updated.attested_by = userData?.email || 'Timekeeper';
       }
 
-      // Automatically recalculate overtime on input change
+      // Automatically handle status adjustments
+      if (key === 'status') {
+        const statusVal = value as 'present' | 'absent' | 'present with OT';
+        if (statusVal === 'absent') {
+          updated.punch_in = '';
+          updated.punch_out = '';
+          updated.overtime = 0;
+          updated.remarks = 'Absent';
+        } else if (statusVal === 'present') {
+          if (!current.punch_in && !current.punch_out) {
+            updated.punch_in = '08:00';
+            updated.punch_out = '17:00';
+          }
+          if (current.remarks === 'Absent') {
+            updated.remarks = '';
+          }
+          updated.overtime = 0;
+        } else if (statusVal === 'present with OT') {
+          if (!current.punch_in && !current.punch_out) {
+            updated.punch_in = '08:00';
+            updated.punch_out = '17:00';
+          }
+          if (current.remarks === 'Absent') {
+            updated.remarks = '';
+          }
+          const inTime = updated.punch_in;
+          const outTime = updated.punch_out;
+          const emp = employeesMap[userId];
+          if (inTime && outTime && emp?.emp_type !== 'staff') {
+            const [inH, inM] = inTime.split(':').map(Number);
+            const [outH, outM] = outTime.split(':').map(Number);
+            let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
+            if (diffMin < 0) diffMin += 24 * 60;
+            const hours = diffMin / 60;
+            if (hours > 8) {
+              const rawOT = hours - 8;
+              updated.overtime = roundOT
+                ? Math.round(rawOT * 2) / 2
+                : parseFloat(rawOT.toFixed(1));
+            } else {
+              updated.overtime = 1.0;
+            }
+          } else {
+            updated.overtime = emp?.emp_type !== 'staff' ? 1.0 : 0;
+          }
+        }
+      }
+
+      // Automatically recalculate overtime on input change and sync status
       if (key === 'punch_in' || key === 'punch_out') {
         const inTime = key === 'punch_in' ? value : current.punch_in;
         const outTime = key === 'punch_out' ? value : current.punch_out;
@@ -466,27 +508,137 @@ export default function TimesheetFinalizer() {
         const emp = employeesMap[userId];
         const isStaff = emp?.emp_type === 'staff';
 
-        if (inTime && outTime && !isStaff) {
-          const [inH, inM] = inTime.split(':').map(Number);
-          const [outH, outM] = outTime.split(':').map(Number);
-          let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
-          if (diffMin < 0) diffMin += 24 * 60;
-          const hours = diffMin / 60;
-          if (hours > 8) {
-            const rawOT = hours - 8;
-            updated.overtime = roundOT
-              ? Math.round(rawOT * 2) / 2
-              : parseFloat(rawOT.toFixed(1));
+        if (inTime && outTime) {
+          if (!isStaff) {
+            const [inH, inM] = inTime.split(':').map(Number);
+            const [outH, outM] = outTime.split(':').map(Number);
+            let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
+            if (diffMin < 0) diffMin += 24 * 60;
+            const hours = diffMin / 60;
+            if (hours > 8) {
+              const rawOT = hours - 8;
+              updated.overtime = roundOT
+                ? Math.round(rawOT * 2) / 2
+                : parseFloat(rawOT.toFixed(1));
+              updated.status = 'present with OT';
+            } else {
+              updated.overtime = 0;
+              updated.status = 'present';
+            }
           } else {
             updated.overtime = 0;
+            updated.status = 'present';
           }
-        } else {
+        } else if (inTime || outTime) {
+          updated.status = 'present';
           updated.overtime = 0;
+        } else {
+          updated.status = 'absent';
+          updated.overtime = 0;
+          updated.remarks = 'Absent';
+        }
+      }
+
+      if (key === 'overtime') {
+        const otVal = value as number;
+        if (otVal > 0) {
+          updated.status = 'present with OT';
+        } else {
+          updated.status = (updated.punch_in || updated.punch_out) ? 'present' : 'absent';
         }
       }
 
       return { ...prev, [userId]: updated };
     });
+  };
+
+  const handleApproveRow = async (userId: string) => {
+    const r = rows[userId];
+    if (!r) return;
+
+    if (!canEditAttendance) {
+      toast.error('You do not have clearance to approve attendance.');
+      return;
+    }
+
+    if (r.status !== 'absent' && !r.project_code) {
+      toast.error(`Please select a project for ${r.employee_name} before approving.`);
+      return;
+    }
+
+    toast.loading(`Approving ${r.employee_name}...`, { id: `approve-${userId}` });
+    try {
+      const inTimestamp = buildTimestamp(date, r.punch_in);
+      const outTimestamp = buildTimestamp(date, r.punch_out);
+
+      const payload = {
+        date: date,
+        project_code: r.project_code || null,
+        employee_code: r.employee_code,
+        punch_in: inTimestamp,
+        punch_out: outTimestamp,
+        overtime: r.overtime,
+        verify_type: r.verify_type,
+        attested_by: r.attested_by,
+        remarks: r.remarks.startsWith('Custom: ')
+          ? (r.remarks.substring(8).trim() || null)
+          : (r.remarks.trim() || null),
+        status: r.status || null,
+        last_updated: new Date().toISOString()
+      };
+
+      const { error: delErr } = await supabase
+        .from('timesheet')
+        .delete()
+        .eq('date', date)
+        .eq('employee_code', userId);
+      if (delErr) throw delErr;
+
+      const { error: insErr } = await supabase
+        .from('timesheet')
+        .insert(payload);
+      if (insErr) throw insErr;
+
+      setRows(prev => ({
+        ...prev,
+        [userId]: { ...prev[userId], isApproved: true }
+      }));
+
+      toast.success(`${r.employee_name} approved successfully!`, { id: `approve-${userId}` });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || `Failed to approve ${r.employee_name}.`, { id: `approve-${userId}` });
+    }
+  };
+
+  const handleRevokeRow = async (userId: string) => {
+    const r = rows[userId];
+    if (!r) return;
+
+    if (!canEditAttendance) {
+      toast.error('You do not have clearance to revoke approvals.');
+      return;
+    }
+
+    toast.loading(`Revoking approval for ${r.employee_name}...`, { id: `revoke-${userId}` });
+    try {
+      const { error: delErr } = await supabase
+        .from('timesheet')
+        .delete()
+        .eq('date', date)
+        .eq('employee_code', userId);
+      if (delErr) throw delErr;
+
+      setRows(prev => ({
+        ...prev,
+        [userId]: { ...prev[userId], isApproved: false }
+      }));
+
+      toast.success(`Approval for ${r.employee_name} revoked.`, { id: `revoke-${userId}` });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || `Failed to revoke approval.`, { id: `revoke-${userId}` });
+    }
   };
 
   const handleFinalize = async () => {
@@ -499,7 +651,7 @@ export default function TimesheetFinalizer() {
     try {
       // 1. Construct payloads for insertion
       const payloads = Object.values(rows)
-        .filter(r => r.punch_in || r.punch_out || r.remarks || r.isEdited) // Only save active logs
+        .filter(r => r.punch_in || r.punch_out || r.remarks || r.isEdited || r.status)
         .map(r => {
           const inTimestamp = buildTimestamp(date, r.punch_in);
           const outTimestamp = buildTimestamp(date, r.punch_out);
@@ -516,6 +668,7 @@ export default function TimesheetFinalizer() {
             remarks: r.remarks.startsWith('Custom: ')
               ? (r.remarks.substring(8).trim() || null)
               : (r.remarks.trim() || null),
+            status: r.status || null,
             last_updated: new Date().toISOString()
           };
         });
@@ -971,6 +1124,7 @@ export default function TimesheetFinalizer() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </th>
+                  <th style={{ width: '150px' }}>Status</th>
                   <th style={{ width: '100px' }}>Punch In</th>
                   <th style={{ width: '100px' }}>Punch Out</th>
                   <th style={{ width: '100px', textAlign: 'center' }}>Total Hours</th>
@@ -1060,12 +1214,13 @@ export default function TimesheetFinalizer() {
                   <th style={{ width: '90px' }}>Overtime</th>
                   <th>Source</th>
                   <th style={{ width: '200px' }}>Remarks</th>
+                  <th style={{ width: '130px', textAlign: 'center' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-20 text-center text-gray-400 font-medium bg-white">
+                    <td colSpan={11} className="py-20 text-center text-gray-400 font-medium bg-white">
                       No matching records found.
                     </td>
                   </tr>
@@ -1120,13 +1275,31 @@ export default function TimesheetFinalizer() {
                             </div>
                           </td>
 
+                          {/* Status Select */}
+                          <td>
+                            <Select
+                              value={row.status || 'absent'}
+                              onValueChange={(val) => updateRow(emp.device_user_id, 'status', val)}
+                              disabled={isLocked || row.isApproved || !canEditAttendance}
+                            >
+                              <SelectTrigger className="w-[140px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
+                                <SelectValue placeholder="Status" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border border-slate-200 z-50">
+                                <SelectItem value="present" className="text-xs cursor-pointer focus:bg-slate-50">Present</SelectItem>
+                                <SelectItem value="absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
+                                <SelectItem value="present with OT" className="text-xs cursor-pointer focus:bg-slate-50">Present with OT</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+
                           {/* Punch In Input */}
                           <td>
                             <Input
                               type="time"
                               value={row.punch_in}
                               onChange={(e) => updateRow(emp.device_user_id, 'punch_in', e.target.value)}
-                              disabled={isLocked || !canEditAttendance || !!row.original_in_punch}
+                              disabled={isLocked || row.isApproved || !canEditAttendance || !!row.original_in_punch}
                               className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                             />
                           </td>
@@ -1137,7 +1310,7 @@ export default function TimesheetFinalizer() {
                               type="time"
                               value={row.punch_out}
                               onChange={(e) => updateRow(emp.device_user_id, 'punch_out', e.target.value)}
-                              disabled={isLocked || !canEditAttendance || !!row.original_out_punch}
+                              disabled={isLocked || row.isApproved || !canEditAttendance || !!row.original_out_punch}
                               className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                             />
                           </td>
@@ -1152,7 +1325,7 @@ export default function TimesheetFinalizer() {
                             <Select
                               value={row.project_code || 'UNASSIGNED'}
                               onValueChange={(val) => updateRow(emp.device_user_id, 'project_code', val === 'UNASSIGNED' ? '' : val)}
-                              disabled={isLocked || !canEditAttendance}
+                              disabled={isLocked || row.isApproved || !canEditAttendance}
                             >
                               <SelectTrigger className="w-[150px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
                                 <SelectValue placeholder="Choose Project" />
@@ -1181,7 +1354,7 @@ export default function TimesheetFinalizer() {
                                 value={row.overtime}
                                 onChange={(e) => updateRow(emp.device_user_id, 'overtime', parseFloat(e.target.value) || 0)}
                                 className="table-input"
-                                disabled={isLocked || !canEditAttendance}
+                                disabled={isLocked || row.isApproved || !canEditAttendance}
                                 style={{ width: '70px', fontFamily: 'monospace' }}
                               />
                             )}
@@ -1226,7 +1399,7 @@ export default function TimesheetFinalizer() {
                                     updateRow(emp.device_user_id, 'remarks', val);
                                   }
                                 }}
-                                disabled={isLocked || !canEditAttendance}
+                                disabled={isLocked || row.isApproved || !canEditAttendance}
                               >
                                 <SelectTrigger className="w-[150px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
                                   <SelectValue placeholder="No Remark" />
@@ -1246,11 +1419,43 @@ export default function TimesheetFinalizer() {
                                   value={row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks}
                                   onChange={(e) => updateRow(emp.device_user_id, 'remarks', 'Custom: ' + e.target.value)}
                                   placeholder="Type custom remark..."
-                                  disabled={isLocked || !canEditAttendance}
+                                  disabled={isLocked || row.isApproved || !canEditAttendance}
                                   className="h-8 text-xs w-[150px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500"
                                 />
                               )}
                             </div>
+                          </td>
+
+                          {/* Approval Actions */}
+                          <td style={{ textAlign: 'center' }}>
+                            {row.isApproved ? (
+                              <div className="flex items-center justify-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                  Approved
+                                </span>
+                                {!isLocked && canEditAttendance && (
+                                  <button
+                                    onClick={() => handleRevokeRow(emp.device_user_id)}
+                                    disabled={saving}
+                                    className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
+                                    title="Revoke individual approval"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              canEditAttendance && (
+                                <button
+                                  onClick={() => handleApproveRow(emp.device_user_id)}
+                                  disabled={isLocked || saving}
+                                  className="px-2 py-1 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100/80 rounded transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  Approve
+                                </button>
+                              )
+                            )}
                           </td>
 
                         </tr>
@@ -1258,7 +1463,7 @@ export default function TimesheetFinalizer() {
                     })}
                     {filteredEmployees.length > renderLimit && (
                       <tr>
-                        <td colSpan={9} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
+                        <td colSpan={11} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
                           <div className="flex items-center justify-center gap-4 w-full">
                             <span className="text-xs text-gray-500 font-medium text-center">
                               Showing {renderLimit} of {filteredEmployees.length} records
