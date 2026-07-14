@@ -19,10 +19,11 @@ import {
   ChevronDown,
   Loader2,
   Lock,
+  RefreshCw,
   Search,
+  Stamp,
   Unlock,
-  X,
-  RefreshCw
+  X
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -822,7 +823,8 @@ export default function TimesheetFinalizer() {
         }
         
         .timesheet-table {
-          width: 100%;
+          width: max-content;
+          min-width: 100%;
           border-collapse: collapse;
           text-align: left;
           font-size: 13px;
@@ -931,6 +933,42 @@ export default function TimesheetFinalizer() {
         .btn-unlock:hover {
           background: #f8fafc;
           border-color: #94a3b8;
+        }
+        .timesheet-table td.sticky-action {
+          position: sticky;
+          right: 0;
+          background-color: #ffffff;
+          z-index: 5;
+          box-shadow: -2px 0 5px -2px rgba(0,0,0,0.05), inset 1px 0 0 #f1f5f9;
+        }
+        .timesheet-table tr:hover td.sticky-action {
+          background-color: #fafafb !important;
+        }
+        .timesheet-table th.sticky-action {
+          position: sticky;
+          right: 0;
+          top: 0;
+          z-index: 15;
+          background-color: #f8fafc;
+          box-shadow: -2px 0 5px -2px rgba(0,0,0,0.05), inset 1px 0 0 #e2e8f0, inset 0 -1px 0 #e2e8f0;
+        }
+        .timesheet-table td.sticky-name {
+          position: sticky;
+          left: 0;
+          background-color: #ffffff;
+          z-index: 5;
+          box-shadow: 2px 0 5px -2px rgba(0,0,0,0.05);
+        }
+        .timesheet-table tr:hover td.sticky-name {
+          background-color: #fafafb !important;
+        }
+        .timesheet-table th.sticky-name {
+          position: sticky;
+          left: 0;
+          top: 0;
+          z-index: 15;
+          background-color: #f8fafc;
+          box-shadow: 2px 0 5px -2px rgba(0,0,0,0.05), inset 0 -1px 0 #e2e8f0;
         }
       `}</style>
 
@@ -1056,7 +1094,7 @@ export default function TimesheetFinalizer() {
             <table className="timesheet-table">
               <thead>
                 <tr>
-                  <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: '280px' }}>
+                  <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs uppercase tracking-wide sticky-name" style={{ width: '300px' }}>
                     <div className="relative flex items-center group w-full">
                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-darkblue transition-colors" />
                       <input
@@ -1074,7 +1112,7 @@ export default function TimesheetFinalizer() {
                       )}
                     </div>
                   </th>
-                  <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '220px' }}>
+                  <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '210px' }}>
                     <DropdownMenu>
                       <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
                         <span className="truncate">
@@ -1124,10 +1162,10 @@ export default function TimesheetFinalizer() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </th>
-                  <th style={{ width: '150px' }}>Status</th>
+
                   <th style={{ width: '100px' }}>Punch In</th>
                   <th style={{ width: '100px' }}>Punch Out</th>
-                  <th style={{ width: '100px', textAlign: 'center' }}>Total Hours</th>
+                  <th style={{ width: '100px', textAlign: 'center' }}>Total</th>
                   <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '160px' }}>
                     <DropdownMenu>
                       <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
@@ -1212,9 +1250,10 @@ export default function TimesheetFinalizer() {
                     </DropdownMenu>
                   </th>
                   <th style={{ width: '90px' }}>Overtime</th>
-                  <th>Source</th>
+                  <th style={{ width: '150px' }}>Status</th>
+                  <th style={{ width: '250px' }}>Source</th>
                   <th style={{ width: '200px' }}>Remarks</th>
-                  <th style={{ width: '130px', textAlign: 'center' }}>Action</th>
+                  <th className="sticky-action" style={{ width: '130px', textAlign: 'center' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -1233,12 +1272,12 @@ export default function TimesheetFinalizer() {
                       return (
                         <tr key={emp.device_user_id}>
                           {/* Employee Info */}
-                          <td>
+                          <td className="sticky-name">
                             <div>
                               <div style={{ fontWeight: 600, color: '#0f172a', textTransform: "uppercase" }}>{emp.name.toLowerCase()}</div>
                               <div style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
                                 <span style={{ fontFamily: 'monospace', background: '#f1f5f9', padding: '1px 4px', borderRadius: '4px' }}>
-                                  ID: {emp.device_user_id}
+                                  {emp.device_user_id}
                                 </span>
                                 <span>·</span>
                                 <span style={{ textTransform: 'capitalize' }}>
@@ -1275,23 +1314,7 @@ export default function TimesheetFinalizer() {
                             </div>
                           </td>
 
-                          {/* Status Select */}
-                          <td>
-                            <Select
-                              value={row.status || 'absent'}
-                              onValueChange={(val) => updateRow(emp.device_user_id, 'status', val)}
-                              disabled={isLocked || row.isApproved || !canEditAttendance}
-                            >
-                              <SelectTrigger className="w-[140px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
-                                <SelectValue placeholder="Status" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border border-slate-200 z-50">
-                                <SelectItem value="present" className="text-xs cursor-pointer focus:bg-slate-50">Present</SelectItem>
-                                <SelectItem value="absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
-                                <SelectItem value="present with OT" className="text-xs cursor-pointer focus:bg-slate-50">Present with OT</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </td>
+
 
                           {/* Punch In Input */}
                           <td>
@@ -1359,13 +1382,30 @@ export default function TimesheetFinalizer() {
                               />
                             )}
                           </td>
+                          {/* Status Select */}
+                          <td>
+                            <Select
+                              value={row.status || 'absent'}
+                              onValueChange={(val) => updateRow(emp.device_user_id, 'status', val)}
+                              disabled={isLocked || row.isApproved || !canEditAttendance}
+                            >
+                              <SelectTrigger className="w-[140px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
+                                <SelectValue placeholder="Status" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border border-slate-200 z-50">
+                                <SelectItem value="present" className="text-xs cursor-pointer focus:bg-slate-50">Present</SelectItem>
+                                <SelectItem value="absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
+                                <SelectItem value="present with OT" className="text-xs cursor-pointer focus:bg-slate-50">Present with OT</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
 
                           {/* Source/Attestation Badge */}
                           <td>
                             {row.isEdited ? (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                                 <span style={{ fontSize: "0.7rem", background: "slateblue", color: 'white', border: "none", fontWeight: 500 }} className="source-badge source-manual">Manual</span>
-                                <span className='text-indigo-800' style={{ fontFamily: "monospace", fontSize: '11px', color: '', wordBreak: 'break-all', fontWeight: 500 }} title={row.attested_by}>
+                                <span className='text-indigo-800' style={{ fontFamily: "monospace", fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }} title={row.attested_by}>
                                   {row.attested_by}
                                 </span>
                               </div>
@@ -1427,9 +1467,9 @@ export default function TimesheetFinalizer() {
                           </td>
 
                           {/* Approval Actions */}
-                          <td style={{ textAlign: 'center' }}>
+                          <td className="sticky-action" style={{ textAlign: 'center' }}>
                             {row.isApproved ? (
-                              <div className="flex items-center justify-center gap-1.5">
+                              <div style={{}} className="flex items-center justify-center gap-1.5">
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                   <Check className="w-3.5 h-3.5 text-emerald-600" />
                                   Approved
@@ -1447,13 +1487,16 @@ export default function TimesheetFinalizer() {
                               </div>
                             ) : (
                               canEditAttendance && (
-                                <button
-                                  onClick={() => handleApproveRow(emp.device_user_id)}
-                                  disabled={isLocked || saving}
-                                  className="px-2 py-1 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100/80 rounded transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  Approve
-                                </button>
+                                <div className="flex items-center justify-center">
+                                  <button
+                                    onClick={() => handleApproveRow(emp.device_user_id)}
+                                    disabled={isLocked || saving}
+                                    className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    <Stamp className='w-4 h-4' />
+                                    Approve
+                                  </button>
+                                </div>
                               )
                             )}
                           </td>

@@ -481,6 +481,19 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", overflow: "hidden", backgroundColor: "#f9fafb" }}>
+      <style>{`
+        @keyframes transferHighlight {
+          0% {
+            background-color: rgba(79, 70, 229, 0.15);
+          }
+          100% {
+            background-color: transparent;
+          }
+        }
+        .transfer-row-new {
+          animation: transferHighlight 3s ease-out forwards;
+        }
+      `}</style>
       {!embedMode && (
         <Back
           blurBG
@@ -909,7 +922,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                               }}>
                                 <span style={{ display: "inline-block", width: "6px", height: "6px", backgroundColor: "#3b82f6", borderRadius: "50%" }}></span>
                                 {loc}
-                                <span style={{ fontSize: "0.65rem", color: "#60a5fa", marginLeft: "0.2rem" }}>(Assigned)</span>
+
                               </div>
                             ) : (
                               <div style={{
@@ -1297,56 +1310,57 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                     <AnimatePresence initial={false}>
                       {filteredTransfers.map((t, idx) => {
                         const emp = employees.find(e => e.emp_id === t.emp_id || String(e.id) === t.emp_id);
+                        const isNew = (Date.now() - new Date(t.created_at).getTime()) < 20000; // 20s threshold for highlighting new entry
+
                         return (
                           <motion.tr
                             key={t.id}
-                            layout="position"
                             initial={{ opacity: 0, y: -12 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -12 }}
                             transition={{ duration: 0.35, ease: "easeOut" }}
                             onClick={() => handleShowTransferDetail(t)}
                             style={{ cursor: "pointer" }}
-                            className="hover:bg-gray-50 border-b border-gray-100"
+                            className={`${isNew ? "transfer-row-new" : ""} hover:bg-gray-50 border-b border-gray-100`}
                           >
-                          <td className="px-4 py-3 text-gray-500">
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                              <Avatar size="md" name={emp ? emp.name : "Unknown Employee"} index={idx} />
-                              <div style={{ display: "flex", flexDirection: "column" }}>
-                                <span style={{ fontWeight: 500, color: "#111827", textTransform: "capitalize" }}>{emp ? emp.name.toLowerCase() : "Unknown Employee"}</span>
-                                <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>{t.emp_id || "—"}</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-gray-500 font-medium text-gray-700">
-                            {t.from_project}
-                          </td>
-                          <td className="px-4 py-3 text-gray-500 font-medium text-indigo-700">
-                            {t.to_project}
-                          </td>
-                          {!employeeMasterVisible && (
-                            <>
-                              <td className="px-4 py-3 text-gray-500">
-                                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem" }}>
-                                  <User className="w-3.5 h-3.5 text-gray-400" />
-                                  <span>{t.initiator}</span>
+                            <td className="px-4 py-3 text-gray-500">
+                              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                                <Avatar size="md" name={emp ? emp.name : "Unknown Employee"} index={idx} />
+                                <div style={{ display: "flex", flexDirection: "column" }}>
+                                  <span style={{ fontWeight: 500, color: "#111827", textTransform: "capitalize" }}>{emp ? emp.name.toLowerCase() : "Unknown Employee"}</span>
+                                  <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>{t.emp_id || "—"}</span>
                                 </div>
-                              </td>
-                              <td className="px-4 py-3 text-gray-500">
-                                {t.acceptor ? (
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 font-medium text-gray-700">
+                              {t.from_project}
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 font-medium text-indigo-700">
+                              {t.to_project}
+                            </td>
+                            {!employeeMasterVisible && (
+                              <>
+                                <td className="px-4 py-3 text-gray-500">
                                   <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem" }}>
-                                    <User className="w-3.5 h-3.5 text-indigo-400" />
-                                    <span style={{ color: "#4f46e5", fontWeight: 500 }}>{t.acceptor}</span>
+                                    <User className="w-3.5 h-3.5 text-gray-400" />
+                                    <span>{t.initiator}</span>
                                   </div>
-                                ) : (
-                                  <span style={{ color: "#9ca3af", fontStyle: "italic", fontSize: "0.8rem" }}>Pending acceptance</span>
-                                )}
-                              </td>
-                            </>
-                          )}
-                          <td style={{ fontSize: "0.8rem", color: "#6b7280" }} className="px-4 py-3">
-                            <ReactTimeAgo date={new Date(t.created_at)} locale="en-US" />
-                          </td>
+                                </td>
+                                <td className="px-4 py-3 text-gray-500">
+                                  {t.acceptor ? (
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem" }}>
+                                      <User className="w-3.5 h-3.5 text-indigo-400" />
+                                      <span style={{ color: "#4f46e5", fontWeight: 500 }}>{t.acceptor}</span>
+                                    </div>
+                                  ) : (
+                                    <span style={{ color: "#9ca3af", fontStyle: "italic", fontSize: "0.8rem" }}>Pending acceptance</span>
+                                  )}
+                                </td>
+                              </>
+                            )}
+                            <td style={{ fontSize: "0.8rem", color: "#6b7280" }} className="px-4 py-3">
+                              <ReactTimeAgo date={new Date(t.created_at)} locale="en-US" />
+                            </td>
                           </motion.tr>
                         );
                       })}

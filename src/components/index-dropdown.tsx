@@ -327,12 +327,12 @@ export default function IndexDropDown(props: Props) {
       <ResponsiveModal
         open={changelogOpen}
         onOpenChange={setChangelogOpen}
-        title="Application Change Log"
+        title="Change Log"
         description="See what's new in this version"
       >
         <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-            <h2 className="text-lg font-bold text-gray-900">Version History</h2>
+          <div style={{ justifyContent: "space-between" }} className="flex items-center justify-between border-b border-gray-100 pb-2">
+            <h2 className="text-sm font-bold text-gray-900">Version History</h2>
             <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-full">v1.67 (Latest)</span>
           </div>
 
