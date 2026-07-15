@@ -86,7 +86,6 @@ const clearanceDepartmentRows: string[] = [
   "Finance department",
   "Director ( Operations )",
   "HR Department",
-
 ];
 
 type FieldType = "text" | "textarea" | "number" | "date";
@@ -1167,10 +1166,10 @@ export default function EmployeeClearanceForm() {
             : "rgba(15 23 42/ 3%)",
         borderRadius: "0.5rem",
         border: `1px solid ${draggedFieldIndex === index
-            ? "rgba(0 0 139/ 30%)"
-            : field.enabled
-              ? "rgba(15 23 42/ 12%)"
-              : "rgba(15 23 42/ 8%)"
+          ? "rgba(0 0 139/ 30%)"
+          : field.enabled
+            ? "rgba(15 23 42/ 12%)"
+            : "rgba(15 23 42/ 8%)"
           }`,
         opacity: draggedFieldIndex === index ? 0.6 : field.enabled ? 1 : 0.6,
         cursor: "grab",
