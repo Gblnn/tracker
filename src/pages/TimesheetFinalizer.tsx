@@ -25,7 +25,7 @@ import {
   Unlock,
   X
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { parsePunchLocation } from '../lib/geofence';
 import { supabase } from '../lib/supabase';
@@ -72,6 +72,8 @@ interface TimesheetRow {
   original_out_punch?: Punch | null;
   status?: string;
   isApproved?: boolean;
+  approval?: boolean;
+  inDatabase?: boolean;
 }
 
 const getYesterdayString = () => {
@@ -135,6 +137,15 @@ export default function TimesheetFinalizer() {
   const [isLocked, setIsLocked] = useState(false);
   const [lockedBy, setLockedBy] = useState<string | null>(null);
 
+  const [punchMode, setPunchMode] = useState<'first_last' | 'check_in_out'>('first_last');
+  const [punchGroups, setPunchGroups] = useState<Record<string, Punch[]>>({});
+  const [deviceProjectMap, setDeviceProjectMap] = useState<Record<string, string>>({});
+
+  const punchModeRef = useRef(punchMode);
+  useEffect(() => {
+    punchModeRef.current = punchMode;
+  }, [punchMode]);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -174,6 +185,10 @@ export default function TimesheetFinalizer() {
     }
   }, [userData]);
 
+  const canUserEdit = useMemo(() => {
+    return canEditAttendance || isFocalFiltered;
+  }, [canEditAttendance, isFocalFiltered]);
+
   const employeesMap = useMemo(() => {
     return Object.fromEntries(employees.map(e => [e.device_user_id, e]));
   }, [employees]);
@@ -184,6 +199,133 @@ export default function TimesheetFinalizer() {
   useEffect(() => {
     setRenderLimit(100);
   }, [search, punchFilter, selectedProjects]);
+
+  const guessRow = useCallback((
+    emp: Employee,
+    empPunches: Punch[],
+    mode: 'first_last' | 'check_in_out',
+    currentProjects: Project[],
+    currentDeviceProjectMap: Record<string, string>
+  ) => {
+    let firstPunch: Punch | null = null;
+    let lastPunch: Punch | null = null;
+    let computedProject = '';
+
+    if (empPunches.length > 0) {
+      if (mode === 'first_last') {
+        firstPunch = empPunches[0];
+        if (empPunches.length > 1) {
+          const last = empPunches[empPunches.length - 1];
+          const diffMs = new Date(last.punch_time).getTime() - new Date(firstPunch.punch_time).getTime();
+          if (diffMs > 5 * 60 * 1000) { // 5 minutes threshold
+            lastPunch = last;
+          }
+        }
+      } else {
+        const checkInPunches = empPunches.filter(p => p.punch_type === 0);
+        const checkOutPunches = empPunches.filter(p => p.punch_type === 1);
+        firstPunch = checkInPunches.length > 0 ? checkInPunches[0] : null;
+        const lastOutPunch = checkOutPunches.length > 0 ? checkOutPunches[checkOutPunches.length - 1] : null;
+
+        if (firstPunch && lastOutPunch) {
+          const diffMs = new Date(lastOutPunch.punch_time).getTime() - new Date(firstPunch.punch_time).getTime();
+          if (diffMs > 5 * 60 * 1000) {
+            lastPunch = lastOutPunch;
+          }
+        } else if (lastOutPunch) {
+          lastPunch = lastOutPunch;
+        }
+      }
+    }
+
+    if (firstPunch) {
+      const isMobilePunch = firstPunch.mobile_location || (firstPunch.raw && firstPunch.raw.includes('MOBILE'));
+
+      if (isMobilePunch) {
+        computedProject = '';
+        if (firstPunch.mobile_location) {
+          const { location: projName } = parsePunchLocation(firstPunch.mobile_location, undefined);
+          if (projName && projName !== '—' && projName !== 'Un-Mapped') {
+            const matchedProj = (currentProjects || []).find(p => p.project_name.toLowerCase().trim() === projName.toLowerCase().trim());
+            if (matchedProj) {
+              computedProject = matchedProj.project_code;
+            }
+          }
+        }
+      } else {
+        computedProject = currentDeviceProjectMap[firstPunch.device_serial] || '';
+      }
+    }
+
+    const inTime = firstPunch ? extractTime(firstPunch.punch_time) : '';
+    const outTime = lastPunch ? extractTime(lastPunch.punch_time) : '';
+
+    // Auto overtime check (shift hours > 8)
+    let autoOvertime = 0;
+    if (inTime && outTime && emp.emp_type !== 'staff') {
+      const [inH, inM] = inTime.split(':').map(Number);
+      const [outH, outM] = outTime.split(':').map(Number);
+      let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
+      if (diffMin < 0) diffMin += 24 * 60; // overnight shift check
+      const hours = diffMin / 60;
+      if (hours > 8) {
+        autoOvertime = parseFloat((hours - 8).toFixed(1));
+      }
+    }
+
+    let resolvedAttestedBy = firstPunch ? firstPunch.device_serial : (userData?.email || 'Timekeeper');
+    if (firstPunch && (firstPunch.mobile_location || (firstPunch.raw && firstPunch.raw.includes('MOBILE')))) {
+      const { location: projName } = parsePunchLocation(firstPunch.mobile_location, undefined);
+      if (projName === 'Un-Mapped') {
+        resolvedAttestedBy = 'Un-Mapped';
+      } else {
+        resolvedAttestedBy = projName || 'Mobile';
+      }
+    }
+
+    const defaultStatus = (inTime || outTime)
+      ? (autoOvertime > 0 ? 'present with OT' : 'present')
+      : 'absent';
+
+    return {
+      employee_code: emp.device_user_id,
+      employee_name: emp.name,
+      department: emp.department,
+      punch_in: inTime,
+      punch_out: outTime,
+      project_code: computedProject,
+      overtime: autoOvertime,
+      remarks: '',
+      verify_type: firstPunch ? getVerifyTypeLabel(firstPunch) : 'Manual Input',
+      attested_by: resolvedAttestedBy,
+      isEdited: false,
+      original_in_punch: firstPunch,
+      original_out_punch: lastPunch,
+      status: defaultStatus,
+      isApproved: false
+    };
+  }, [userData?.email]);
+
+  const handleModeChange = (newMode: 'first_last' | 'check_in_out') => {
+    setPunchMode(newMode);
+    setRows(prev => {
+      const next = { ...prev };
+      employees.forEach(emp => {
+        const row = next[emp.device_user_id];
+        if (row && !row.isEdited && !row.isApproved && !row.inDatabase) {
+          const empPunches = punchGroups[emp.device_user_id] || [];
+          next[emp.device_user_id] = {
+            ...guessRow(emp, empPunches, newMode, projects, deviceProjectMap),
+            isApproved: false,
+            approval: false,
+            inDatabase: false
+          };
+        }
+      });
+      return next;
+    });
+    // toast.success(`Switched to ${newMode === 'first_last' ? 'First In / Last Out' : 'Check In / Check Out'} logic.`);
+  };
 
   const loadTimesheet = useCallback(async () => {
     setLoading(true);
@@ -268,9 +410,10 @@ export default function TimesheetFinalizer() {
       setEmployees(filteredEmployees);
       setProjects(filteredProjects);
 
-      const deviceProjectMap = Object.fromEntries(
+      const devProjMap = Object.fromEntries(
         (devData || []).map(d => [d.serial_no, d.project_code])
       );
+      setDeviceProjectMap(devProjMap);
 
       // 2. Fetch raw punches for the selected date
       const start = `${date}T00:00:00`;
@@ -288,13 +431,14 @@ export default function TimesheetFinalizer() {
         : (punchesData || []);
 
       // Group punches by employee device_user_id
-      const punchGroups: Record<string, Punch[]> = {};
+      const pGroups: Record<string, Punch[]> = {};
       filteredPunches.forEach((p: Punch) => {
-        if (!punchGroups[p.user_id]) {
-          punchGroups[p.user_id] = [];
+        if (!pGroups[p.user_id]) {
+          pGroups[p.user_id] = [];
         }
-        punchGroups[p.user_id].push(p);
+        pGroups[p.user_id].push(p);
       });
+      setPunchGroups(pGroups);
 
       // 3. Fetch existing finalized timesheet rows
       const { data: existingRows, error: existingErr } = await supabase
@@ -308,8 +452,9 @@ export default function TimesheetFinalizer() {
         : (existingRows || []);
 
       // Calculate global lock: locked if all employees have a matching timesheet database record
+      // For focal points, it's locked if a record exists. For admin, locked if record exists AND approval !== false.
       const isDayLocked = filteredExistingRows.length > 0 && filteredEmployees.every(emp =>
-        filteredExistingRows.some(row => row.employee_code === emp.device_user_id)
+        filteredExistingRows.some(row => row.employee_code === emp.device_user_id && (isFocalFiltered ? true : row.approval !== false))
       );
       setIsLocked(isDayLocked);
 
@@ -342,90 +487,18 @@ export default function TimesheetFinalizer() {
             attested_by: matched.attested_by || '',
             isEdited: matched.verify_type === 'Manual Input',
             status: matched.status || (matched.overtime > 0 ? 'present with OT' : (matched.punch_in || matched.punch_out ? 'present' : 'absent')),
-            isApproved: true
+            isApproved: isFocalFiltered ? true : (matched.approval !== false),
+            approval: matched.approval !== false,
+            inDatabase: true
           };
         } else {
           // Guess initial values from raw punches
-          const empPunches = punchGroups[emp.device_user_id] || [];
-
-          let firstPunch: Punch | null = null;
-          let lastPunch: Punch | null = null;
-          let computedProject = '';
-
-          if (empPunches.length > 0) {
-            firstPunch = empPunches[0];
-            const isMobilePunch = firstPunch.mobile_location || (firstPunch.raw && firstPunch.raw.includes('MOBILE'));
-
-            if (isMobilePunch) {
-              computedProject = '';
-              if (firstPunch.mobile_location) {
-                const { location: projName } = parsePunchLocation(firstPunch.mobile_location, undefined);
-                if (projName && projName !== '—' && projName !== 'Un-Mapped') {
-                  const matchedProj = (projects || []).find(p => p.project_name.toLowerCase().trim() === projName.toLowerCase().trim());
-                  if (matchedProj) {
-                    computedProject = matchedProj.project_code;
-                  }
-                }
-              }
-            } else {
-              computedProject = deviceProjectMap[firstPunch.device_serial] || '';
-            }
-
-            if (empPunches.length > 1) {
-              const last = empPunches[empPunches.length - 1];
-              const diffMs = new Date(last.punch_time).getTime() - new Date(firstPunch.punch_time).getTime();
-              if (diffMs > 5 * 60 * 1000) { // 5 minutes threshold
-                lastPunch = last;
-              }
-            }
-          }
-
-          const inTime = firstPunch ? extractTime(firstPunch.punch_time) : '';
-          const outTime = lastPunch ? extractTime(lastPunch.punch_time) : '';
-
-          // Auto overtime check (shift hours > 8)
-          let autoOvertime = 0;
-          if (inTime && outTime && emp.emp_type !== 'staff') {
-            const [inH, inM] = inTime.split(':').map(Number);
-            const [outH, outM] = outTime.split(':').map(Number);
-            let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
-            if (diffMin < 0) diffMin += 24 * 60; // overnight shift check
-            const hours = diffMin / 60;
-            if (hours > 8) {
-              autoOvertime = parseFloat((hours - 8).toFixed(1));
-            }
-          }
-
-          let resolvedAttestedBy = firstPunch ? firstPunch.device_serial : (userData?.email || 'Timekeeper');
-          if (firstPunch && (firstPunch.mobile_location || (firstPunch.raw && firstPunch.raw.includes('MOBILE')))) {
-            const { location: projName } = parsePunchLocation(firstPunch.mobile_location, undefined);
-            if (projName === 'Un-Mapped') {
-              resolvedAttestedBy = 'Un-Mapped';
-            } else {
-              resolvedAttestedBy = projName || 'Mobile';
-            }
-          }
-
-          const defaultStatus = (inTime || outTime)
-            ? (autoOvertime > 0 ? 'present with OT' : 'present')
-            : 'absent';
-
+          const empPunches = pGroups[emp.device_user_id] || [];
           initialRows[emp.device_user_id] = {
-            employee_code: emp.device_user_id,
-            employee_name: emp.name,
-            department: emp.department,
-            punch_in: inTime,
-            punch_out: outTime,
-            project_code: computedProject,
-            overtime: autoOvertime,
-            remarks: '',
-            verify_type: firstPunch ? getVerifyTypeLabel(firstPunch) : 'Manual Input',
-            attested_by: resolvedAttestedBy,
-            isEdited: false,
-            original_in_punch: firstPunch,
-            original_out_punch: lastPunch,
-            status: defaultStatus,
-            isApproved: false
+            ...guessRow(emp, empPunches, punchModeRef.current, filteredProjects, devProjMap),
+            isApproved: false,
+            approval: false,
+            inDatabase: false
           };
         }
       });
@@ -557,17 +630,21 @@ export default function TimesheetFinalizer() {
     const r = rows[userId];
     if (!r) return;
 
-    if (!canEditAttendance) {
-      toast.error('You do not have clearance to approve attendance.');
+    if (!canUserEdit) {
+      toast.error('You do not have clearance to modify attendance.');
       return;
     }
 
     if (r.status !== 'absent' && !r.project_code) {
-      toast.error(`Please select a project for ${r.employee_name} before approving.`);
+      toast.error(`Please select a project for ${r.employee_name} before finalizing.`);
       return;
     }
 
-    toast.loading(`Approving ${r.employee_name}...`, { id: `approve-${userId}` });
+    const actionLabel = isFocalFiltered ? 'Verify' : 'Approve';
+    const actionText = isFocalFiltered ? 'verifying' : 'approving';
+    const actionPastText = isFocalFiltered ? 'verified' : 'approved';
+
+    toast.loading(`${actionLabel}ing ${r.employee_name}...`, { id: `approve-${userId}` });
     try {
       const inTimestamp = buildTimestamp(date, r.punch_in);
       const outTimestamp = buildTimestamp(date, r.punch_out);
@@ -585,7 +662,8 @@ export default function TimesheetFinalizer() {
           ? (r.remarks.substring(8).trim() || null)
           : (r.remarks.trim() || null),
         status: r.status || null,
-        last_updated: new Date().toISOString()
+        last_updated: new Date().toISOString(),
+        approval: !isFocalFiltered
       };
 
       const { error: delErr } = await supabase
@@ -602,13 +680,18 @@ export default function TimesheetFinalizer() {
 
       setRows(prev => ({
         ...prev,
-        [userId]: { ...prev[userId], isApproved: true }
+        [userId]: { 
+          ...prev[userId], 
+          isApproved: true,
+          approval: !isFocalFiltered,
+          inDatabase: true
+        }
       }));
 
-      toast.success(`${r.employee_name} approved successfully!`, { id: `approve-${userId}` });
+      toast.success(`${r.employee_name} ${actionPastText} successfully!`, { id: `approve-${userId}` });
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || `Failed to approve ${r.employee_name}.`, { id: `approve-${userId}` });
+      toast.error(err.message || `Failed to ${actionText} ${r.employee_name}.`, { id: `approve-${userId}` });
     }
   };
 
@@ -616,12 +699,19 @@ export default function TimesheetFinalizer() {
     const r = rows[userId];
     if (!r) return;
 
-    if (!canEditAttendance) {
-      toast.error('You do not have clearance to revoke approvals.');
+    if (!canUserEdit) {
+      toast.error('You do not have clearance to revoke this action.');
       return;
     }
 
-    toast.loading(`Revoking approval for ${r.employee_name}...`, { id: `revoke-${userId}` });
+    if (isFocalFiltered && r.approval) {
+      toast.error('Cannot revoke a record that has already been approved by the admin.');
+      return;
+    }
+
+    const actionText = isFocalFiltered ? 'verification' : 'approval';
+
+    toast.loading(`Revoking ${actionText} for ${r.employee_name}...`, { id: `revoke-${userId}` });
     try {
       const { error: delErr } = await supabase
         .from('timesheet')
@@ -632,23 +722,24 @@ export default function TimesheetFinalizer() {
 
       setRows(prev => ({
         ...prev,
-        [userId]: { ...prev[userId], isApproved: false }
+        [userId]: { ...prev[userId], isApproved: false, inDatabase: false }
       }));
 
-      toast.success(`Approval for ${r.employee_name} revoked.`, { id: `revoke-${userId}` });
+      toast.success(`Verification/Approval for ${r.employee_name} revoked.`, { id: `revoke-${userId}` });
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || `Failed to revoke approval.`, { id: `revoke-${userId}` });
+      toast.error(err.message || `Failed to revoke ${actionText}.`, { id: `revoke-${userId}` });
     }
   };
 
   const handleFinalize = async () => {
-    if (!canEditAttendance) {
+    if (!canUserEdit) {
       toast.error('You do not have clearance to finalize timesheets.');
       return;
     }
 
     setSaving(true);
+    const actionPastText = isFocalFiltered ? 'verified' : 'finalized and locked';
     try {
       // 1. Construct payloads for insertion
       const payloads = Object.values(rows)
@@ -670,7 +761,8 @@ export default function TimesheetFinalizer() {
               ? (r.remarks.substring(8).trim() || null)
               : (r.remarks.trim() || null),
             status: r.status || null,
-            last_updated: new Date().toISOString()
+            last_updated: new Date().toISOString(),
+            approval: !isFocalFiltered
           };
         });
 
@@ -692,7 +784,7 @@ export default function TimesheetFinalizer() {
         .insert(payloads);
       if (insErr) throw insErr;
 
-      toast.success(`Timesheets for ${date} finalized and locked for payroll!`);
+      toast.success(`Timesheets for ${date} ${actionPastText} for payroll!`);
       loadTimesheet();
     } catch (err: any) {
       toast.error(err.message || 'Failed to finalize timesheet.');
@@ -702,7 +794,7 @@ export default function TimesheetFinalizer() {
   };
 
   const handleUnlock = async () => {
-    if (!canEditAttendance) {
+    if (!canUserEdit) {
       toast.error('You do not have clearance to unlock timesheets.');
       return;
     }
@@ -1015,14 +1107,49 @@ export default function TimesheetFinalizer() {
           </div>
 
           {/* Action Buttons */}
-          {canEditAttendance && (
+          {canUserEdit && (
             isLocked ? (
               <button disabled={loading || saving} className="btn-unlock" onClick={handleUnlock}>
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Unlock size={14} />}
-                Unlock Timesheet
+                {isFocalFiltered ? 'Unlock Project Timesheet' : 'Unlock Timesheet'}
               </button>
             ) : (
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {/* Animated Toggle for In/Out Logic */}
+                <div
+                  onClick={() => handleModeChange(punchMode === 'first_last' ? 'check_in_out' : 'first_last')}
+                  className="h-8 select-none border border-slate-300 bg-white hover:bg-slate-50 active:bg-slate-100 rounded-lg flex items-center justify-center cursor-pointer font-medium text-[12px] text-slate-700 relative overflow-hidden transition-all duration-200 shrink-0 animate-fade-in"
+                  style={{ width: "9rem" }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      handleModeChange(punchMode === 'first_last' ? 'check_in_out' : 'first_last');
+                    }
+                  }}
+                >
+                  <div
+                    className="absolute inset-0 flex items-center justify-center transition-all duration-300 transform"
+                    style={{
+                      opacity: punchMode === 'first_last' ? 1 : 0,
+                      transform: punchMode === 'first_last' ? 'translateY(0)' : 'translateY(-15px)',
+                      pointerEvents: punchMode === 'first_last' ? 'auto' : 'none'
+                    }}
+                  >
+                    First In / Last Out
+                  </div>
+                  <div
+                    className="absolute inset-0 flex items-center justify-center transition-all duration-300 transform"
+                    style={{
+                      opacity: punchMode === 'first_last' ? 0 : 1,
+                      transform: punchMode === 'first_last' ? 'translateY(15px)' : 'translateY(0)',
+                      pointerEvents: punchMode === 'first_last' ? 'none' : 'auto'
+                    }}
+                  >
+                    Check In / Check Out
+                  </div>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -1071,7 +1198,7 @@ export default function TimesheetFinalizer() {
                 </button>
                 <button disabled={loading || saving} style={{ fontSize: "0.8rem", fontWeight: 500 }} className="btn-finalize" onClick={handleFinalize}>
                   {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                  Approve & Finalize Day
+                  {isFocalFiltered ? 'Verify & Finalize Day' : 'Approve & Finalize Day'}
                 </button>
               </div>
             )
@@ -1094,7 +1221,7 @@ export default function TimesheetFinalizer() {
             <table className="timesheet-table">
               <thead>
                 <tr>
-                  <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs uppercase tracking-wide sticky-name" style={{ width: '300px' }}>
+                  <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs uppercase tracking-wide sticky-name" style={{ width: '320px' }}>
                     <div className="relative flex items-center group w-full">
                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-darkblue transition-colors" />
                       <input
@@ -1162,13 +1289,13 @@ export default function TimesheetFinalizer() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </th>
-
                   <th style={{ width: '100px' }}>Punch In</th>
                   <th style={{ width: '100px' }}>Punch Out</th>
                   <th style={{ width: '100px', textAlign: 'center' }}>Total</th>
+                  <th style={{ width: '90px' }}>Overtime</th>
                   <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '160px' }}>
                     <DropdownMenu>
-                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
+                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-550 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
                         <span className="truncate">
                           {selectedProjects.length === 0
                             ? 'Project (All)'
@@ -1249,10 +1376,9 @@ export default function TimesheetFinalizer() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </th>
-                  <th style={{ width: '90px' }}>Overtime</th>
                   <th style={{ width: '150px' }}>Status</th>
-                  <th style={{ width: '250px' }}>Source</th>
                   <th style={{ width: '200px' }}>Remarks</th>
+                  <th style={{ width: '250px' }}>Source</th>
                   <th className="sticky-action" style={{ width: '130px', textAlign: 'center' }}>Action</th>
                 </tr>
               </thead>
@@ -1322,7 +1448,7 @@ export default function TimesheetFinalizer() {
                               type="time"
                               value={row.punch_in}
                               onChange={(e) => updateRow(emp.device_user_id, 'punch_in', e.target.value)}
-                              disabled={isLocked || row.isApproved || !canEditAttendance || !!row.original_in_punch}
+                              disabled={isLocked || row.isApproved || !canUserEdit || !!row.original_in_punch}
                               className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                             />
                           </td>
@@ -1333,7 +1459,7 @@ export default function TimesheetFinalizer() {
                               type="time"
                               value={row.punch_out}
                               onChange={(e) => updateRow(emp.device_user_id, 'punch_out', e.target.value)}
-                              disabled={isLocked || row.isApproved || !canEditAttendance || !!row.original_out_punch}
+                              disabled={isLocked || row.isApproved || !canUserEdit || !!row.original_out_punch}
                               className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                             />
                           </td>
@@ -1341,27 +1467,6 @@ export default function TimesheetFinalizer() {
                           {/* Total Hours */}
                           <td style={{ fontSize: '12px', fontWeight: 600, color: '#334155', textAlign: 'center' }}>
                             {calculateTotalHours(row.punch_in, row.punch_out)}
-                          </td>
-
-                          {/* Project Allocation Select */}
-                          <td>
-                            <Select
-                              value={row.project_code || 'UNASSIGNED'}
-                              onValueChange={(val) => updateRow(emp.device_user_id, 'project_code', val === 'UNASSIGNED' ? '' : val)}
-                              disabled={isLocked || row.isApproved || !canEditAttendance}
-                            >
-                              <SelectTrigger className="w-[150px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
-                                <SelectValue placeholder="Choose Project" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border border-slate-200 z-50">
-                                <SelectItem value="UNASSIGNED" className="text-xs cursor-pointer focus:bg-slate-50">-- Choose Project --</SelectItem>
-                                {projects.map(p => (
-                                  <SelectItem key={p.project_code} value={p.project_code} className="text-xs cursor-pointer focus:bg-slate-50">
-                                    {p.project_code}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
                           </td>
 
                           {/* Overtime Input */}
@@ -1377,17 +1482,38 @@ export default function TimesheetFinalizer() {
                                 value={row.overtime}
                                 onChange={(e) => updateRow(emp.device_user_id, 'overtime', parseFloat(e.target.value) || 0)}
                                 className="table-input"
-                                disabled={isLocked || row.isApproved || !canEditAttendance}
+                                disabled={isLocked || row.isApproved || !canUserEdit}
                                 style={{ width: '70px', fontFamily: 'monospace' }}
                               />
                             )}
+                          </td>
+
+                          {/* Project Allocation Select */}
+                          <td>
+                            <Select
+                              value={row.project_code || 'UNASSIGNED'}
+                              onValueChange={(val) => updateRow(emp.device_user_id, 'project_code', val === 'UNASSIGNED' ? '' : val)}
+                              disabled={isLocked || row.isApproved || !canUserEdit}
+                            >
+                              <SelectTrigger className="w-[150px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
+                                <SelectValue placeholder="Choose Project" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border border-slate-200 z-50">
+                                <SelectItem value="UNASSIGNED" className="text-xs cursor-pointer focus:bg-slate-50">-- Choose Project --</SelectItem>
+                                {projects.map(p => (
+                                  <SelectItem key={p.project_code} value={p.project_code} className="text-xs cursor-pointer focus:bg-slate-50">
+                                    {p.project_code}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </td>
                           {/* Status Select */}
                           <td>
                             <Select
                               value={row.status || 'absent'}
                               onValueChange={(val) => updateRow(emp.device_user_id, 'status', val)}
-                              disabled={isLocked || row.isApproved || !canEditAttendance}
+                              disabled={isLocked || row.isApproved || !canUserEdit}
                             >
                               <SelectTrigger className="w-[140px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
                                 <SelectValue placeholder="Status" />
@@ -1398,25 +1524,6 @@ export default function TimesheetFinalizer() {
                                 <SelectItem value="present with OT" className="text-xs cursor-pointer focus:bg-slate-50">Present with OT</SelectItem>
                               </SelectContent>
                             </Select>
-                          </td>
-
-                          {/* Source/Attestation Badge */}
-                          <td>
-                            {row.isEdited ? (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                <span style={{ fontSize: "0.7rem", background: "slateblue", color: 'white', border: "none", fontWeight: 500 }} className="source-badge source-manual">Manual</span>
-                                <span className='text-indigo-800' style={{ fontFamily: "monospace", fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }} title={row.attested_by}>
-                                  {row.attested_by}
-                                </span>
-                              </div>
-                            ) : (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                <span style={{ fontSize: "0.7rem", background: "teal", color: "white", fontWeight: 500 }} className="source-badge source-auto">Biometric</span>
-                                <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>
-                                  {row.verify_type}
-                                </span>
-                              </div>
-                            )}
                           </td>
 
                           {/* Remarks Input */}
@@ -1439,7 +1546,7 @@ export default function TimesheetFinalizer() {
                                     updateRow(emp.device_user_id, 'remarks', val);
                                   }
                                 }}
-                                disabled={isLocked || row.isApproved || !canEditAttendance}
+                                disabled={isLocked || row.isApproved || !canUserEdit}
                               >
                                 <SelectTrigger className="w-[150px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
                                   <SelectValue placeholder="No Remark" />
@@ -1459,44 +1566,116 @@ export default function TimesheetFinalizer() {
                                   value={row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks}
                                   onChange={(e) => updateRow(emp.device_user_id, 'remarks', 'Custom: ' + e.target.value)}
                                   placeholder="Type custom remark..."
-                                  disabled={isLocked || row.isApproved || !canEditAttendance}
+                                  disabled={isLocked || row.isApproved || !canUserEdit}
                                   className="h-8 text-xs w-[150px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500"
                                 />
                               )}
                             </div>
                           </td>
 
-                          {/* Approval Actions */}
-                          <td className="sticky-action" style={{ textAlign: 'center' }}>
-                            {row.isApproved ? (
-                              <div style={{}} className="flex items-center justify-center gap-1.5">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                  Approved
+                          {/* Source/Attestation Badge */}
+                          <td>
+                            {row.isEdited ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                <span style={{ fontSize: "0.7rem", background: "slateblue", color: 'white', border: "none", fontWeight: 500 }} className="source-badge source-manual">Manual</span>
+                                <span className='text-indigo-800' style={{ fontFamily: "monospace", fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }} title={row.attested_by}>
+                                  {row.attested_by}
                                 </span>
-                                {!isLocked && canEditAttendance && (
-                                  <button
-                                    onClick={() => handleRevokeRow(emp.device_user_id)}
-                                    disabled={saving}
-                                    className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
-                                    title="Revoke individual approval"
-                                  >
-                                    <X className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
                               </div>
                             ) : (
-                              canEditAttendance && (
-                                <div className="flex items-center justify-center">
-                                  <button
-                                    onClick={() => handleApproveRow(emp.device_user_id)}
-                                    disabled={isLocked || saving}
-                                    className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    <Stamp className='w-4 h-4' />
-                                    Approve
-                                  </button>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                <span style={{ fontSize: "0.7rem", background: "teal", color: "white", fontWeight: 500 }} className="source-badge source-auto">Biometric</span>
+                                <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>
+                                  {row.verify_type}
+                                </span>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Approval Actions */}
+                          <td className="sticky-action" style={{ textAlign: 'center' }}>
+                            {isFocalFiltered ? (
+                              // Focal Point View
+                              row.isApproved ? (
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <span style={{ height: "1.6rem" }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-teal-200 bg-teal-50 text-teal-700">
+                                    <Check className="w-3.5 h-3.5" />
+                                    Verified
+                                  </span>
+                                  {!isLocked && canUserEdit && !row.approval && (
+                                    <button
+                                      onClick={() => handleRevokeRow(emp.device_user_id)}
+                                      disabled={saving}
+                                      className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
+                                      title="Revoke verification"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
                                 </div>
+                              ) : (
+                                canUserEdit && (
+                                  <div className="flex items-center justify-center">
+                                    <button
+                                      onClick={() => handleApproveRow(emp.device_user_id)}
+                                      disabled={isLocked || saving}
+                                      className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-teal-600 hover:bg-teal-700 text-white flex items-center gap-1"
+                                    >
+                                      <Stamp className='w-4 h-4' />
+                                      Verify
+                                    </button>
+                                  </div>
+                                )
+                              )
+                            ) : (
+                              // Admin View
+                              row.isApproved ? (
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <span style={{ height: "1.6rem" }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-blue-200 bg-blue-50 text-blue-700">
+                                    <Check className="w-3.5 h-3.5" />
+                                    Approved
+                                  </span>
+                                  {!isLocked && canUserEdit && (
+                                    <button
+                                      onClick={() => handleRevokeRow(emp.device_user_id)}
+                                      disabled={saving}
+                                      className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
+                                      title="Revoke approval"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                canUserEdit && (
+                                  <div className="flex flex-col items-center justify-center gap-1.5">
+                                    {row.inDatabase && (
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border border-amber-200 bg-amber-50 text-amber-700 uppercase tracking-wider">
+                                        Verified
+                                      </span>
+                                    )}
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        onClick={() => handleApproveRow(emp.device_user_id)}
+                                        disabled={isLocked || saving}
+                                        className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1"
+                                      >
+                                        <Stamp className='w-4 h-4' />
+                                        Approve
+                                      </button>
+                                      {row.inDatabase && !isLocked && (
+                                        <button
+                                          onClick={() => handleRevokeRow(emp.device_user_id)}
+                                          disabled={saving}
+                                          className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
+                                          title="Reject/Revoke verification"
+                                        >
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                )
                               )
                             )}
                           </td>

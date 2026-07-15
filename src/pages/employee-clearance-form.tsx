@@ -79,14 +79,14 @@ const tableCellStyle = {
 const clearanceDepartmentRows: string[] = [
   "Site Store",
   "Site Admin",
-  "Project / Site Manager",
+  "Project / HOD",
   "General Store",
   "IT Department",
   "Corporate admin",
   "Finance department",
   "Director ( Operations )",
   "HR Department",
-  
+
 ];
 
 type FieldType = "text" | "textarea" | "number" | "date";
@@ -173,13 +173,13 @@ export default function EmployeeClearanceForm() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [selectedFormTemplate, setSelectedFormTemplate] = useState<FormTemplateId>("employee_clearance");
   const [printRefNoOverride, setPrintRefNoOverride] = useState<string | null>(null);
-  const getNextReferenceNumber = (existingLetters: Array<{refNo?: string}>) => {
+  const getNextReferenceNumber = (existingLetters: Array<{ refNo?: string }>) => {
     const now = new Date();
     const month = String(now.getMonth() + 1).padStart(2, "0");
     const year = now.getFullYear().toString().slice(-2);
 
     const numbers = existingLetters
-      .map((letter: {refNo?: string}) => {
+      .map((letter: { refNo?: string }) => {
         const match = letter.refNo?.match(/^SSU\/HR\/(\d{2})\/(\d{2})-(\d+)$/);
         if (!match) return 0;
         const [, refMonth, refYear, runningNumber] = match;
@@ -387,10 +387,10 @@ export default function EmployeeClearanceForm() {
   };
 
   const [fieldConfig, setFieldConfig] = useState<FieldConfig[]>(defaultFieldConfig);
-  
+
   // PDF generation progress
   const [pdfProgress, setPdfProgress] = useState(0);
-  
+
   const [fieldConfigDialogVisible, setFieldConfigDialogVisible] = useState(false);
   const [newFieldName, setNewFieldName] = useState("");
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
@@ -407,7 +407,7 @@ export default function EmployeeClearanceForm() {
   const fieldListScrollRef = useRef<HTMLDivElement>(null);
   const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialFieldConfigLoad = useRef(true);
-  
+
   // Role editor dialog state
   const [roleEditorDialogVisible, setRoleEditorDialogVisible] = useState(false);
   const [editingRoleIndex, setEditingRoleIndex] = useState<number | null>(null);
@@ -415,12 +415,12 @@ export default function EmployeeClearanceForm() {
   const previewScale =
     screenWidth < 960
       ? Math.min(
-          1,
-          Math.max(
-            0.32,
-            (screenWidth - PREVIEW_MOBILE_GUTTER) / PREVIEW_BASE_WIDTH
-          )
+        1,
+        Math.max(
+          0.32,
+          (screenWidth - PREVIEW_MOBILE_GUTTER) / PREVIEW_BASE_WIDTH
         )
+      )
       : 1;
   const previewRefNo = printRefNoOverride || formData.refNo;
   const selectedTemplateMeta = FORM_TEMPLATE_OPTIONS.find(
@@ -614,7 +614,7 @@ export default function EmployeeClearanceForm() {
       const rect = container.getBoundingClientRect();
       const scrollThreshold = 50; // pixels from edge to trigger scroll
       const scrollSpeed = 10;
-      
+
       // Clear any existing interval
       if (autoScrollIntervalRef.current) {
         clearInterval(autoScrollIntervalRef.current);
@@ -632,8 +632,8 @@ export default function EmployeeClearanceForm() {
         }, 20);
       }
       // Scroll down if near bottom
-      else if (rect.bottom - e.clientY < scrollThreshold && 
-               container.scrollTop < container.scrollHeight - container.clientHeight) {
+      else if (rect.bottom - e.clientY < scrollThreshold &&
+        container.scrollTop < container.scrollHeight - container.clientHeight) {
         autoScrollIntervalRef.current = setInterval(() => {
           if (container.scrollTop < container.scrollHeight - container.clientHeight) {
             container.scrollTop += scrollSpeed;
@@ -671,7 +671,7 @@ export default function EmployeeClearanceForm() {
     }
 
     const fieldId = newFieldName.toLowerCase().replace(/\s+/g, "_");
-    
+
     // Check if field already exists
     if (fieldConfig.some((f) => f.id === fieldId)) {
       message.error("A field with this name already exists");
@@ -734,11 +734,11 @@ export default function EmployeeClearanceForm() {
       prev.map((field) =>
         field.id === editingFieldId
           ? {
-              ...field,
-              label: editingFieldLabel.trim(),
-              type: editingFieldType,
-              rows: editingFieldType === "textarea" ? field.rows ?? 4 : undefined,
-            }
+            ...field,
+            label: editingFieldLabel.trim(),
+            type: editingFieldType,
+            rows: editingFieldType === "textarea" ? field.rows ?? 4 : undefined,
+          }
           : field
       )
     );
@@ -758,7 +758,7 @@ export default function EmployeeClearanceForm() {
       setOfferLetters(offerLettersCache);
       if (!formData.refNo) {
         const nextRef = getNextReferenceNumber(offerLettersCache);
-        setFormData(prev => ({...prev, refNo: nextRef}));
+        setFormData(prev => ({ ...prev, refNo: nextRef }));
       }
     }
 
@@ -775,7 +775,7 @@ export default function EmployeeClearanceForm() {
         const nextRef = getNextReferenceNumber(
           data.map((letter: any) => ({ refNo: letter.refNo }))
         );
-        setFormData(prev => ({...prev, refNo: nextRef}));
+        setFormData(prev => ({ ...prev, refNo: nextRef }));
       }
 
       const mergedLetters = [...data];
@@ -819,7 +819,7 @@ export default function EmployeeClearanceForm() {
 
       // Get a fresh reference number for the new letter
       const nextRef = getNextReferenceNumber(offerLetters);
-      
+
       const newLetter = cleanDataForFirestore({
         ...formData,
         refNo: nextRef,  // Use the new reference number
@@ -1063,7 +1063,7 @@ export default function EmployeeClearanceForm() {
 
   // const handleAddToShortlist = async () => {
   //   if (selectedLetters.length === 0) return;
-    
+
   //   setAddingToShortlist(true);
   //   try {
   //     const batch = writeBatch(db);
@@ -1163,16 +1163,15 @@ export default function EmployeeClearanceForm() {
         background: draggedFieldIndex === index
           ? "rgba(0 0 139/ 10%)"
           : field.enabled
-          ? "rgba(255 255 255/ 90%)"
-          : "rgba(15 23 42/ 3%)",
+            ? "rgba(255 255 255/ 90%)"
+            : "rgba(15 23 42/ 3%)",
         borderRadius: "0.5rem",
-        border: `1px solid ${
-          draggedFieldIndex === index
+        border: `1px solid ${draggedFieldIndex === index
             ? "rgba(0 0 139/ 30%)"
             : field.enabled
-            ? "rgba(15 23 42/ 12%)"
-            : "rgba(15 23 42/ 8%)"
-        }`,
+              ? "rgba(15 23 42/ 12%)"
+              : "rgba(15 23 42/ 8%)"
+          }`,
         opacity: draggedFieldIndex === index ? 0.6 : field.enabled ? 1 : 0.6,
         cursor: "grab",
         transition: "all 0.2s ease",
@@ -1589,7 +1588,7 @@ export default function EmployeeClearanceForm() {
       borderRight: "1.5px solid rgba(0 0 0/ 85%)",
       borderBottom: "1.5px solid rgba(0 0 0/ 85%)",
       padding: "3px 7px 7px 7px",
-      paddingBottom:"1rem",
+      paddingBottom: "1rem",
       fontSize: "0.68rem",
       fontWeight: 600,
       textTransform: "uppercase",
@@ -1608,12 +1607,12 @@ export default function EmployeeClearanceForm() {
         style={{
           width: "100%",
           marginBottom: "0.55rem",
-          
+
           display: "grid",
           gridTemplateColumns: "1fr 0.4fr 1.2fr 1.4fr 1.2fr",
           borderTop: "1.5px solid rgba(0 0 0/ 85%)",
           borderLeft: "1.5px solid rgba(0 0 0/ 85%)",
-         
+
         }}
       >
         <div style={metaCellStyle}>DOC NO: {employeeClearanceDocNo}</div>
@@ -1908,8 +1907,8 @@ export default function EmployeeClearanceForm() {
 
       <div
         style={{
-          
-        
+
+
           width: PREVIEW_BASE_WIDTH * previewScale,
           height: 1100 * previewScale,
           margin: "0 auto 4rem",
@@ -1918,7 +1917,7 @@ export default function EmployeeClearanceForm() {
         <div
           ref={tableRef}
           style={{
-            
+
             width: `${PREVIEW_BASE_WIDTH}px`,
             maxWidth: `${PREVIEW_BASE_WIDTH}px`,
             boxSizing: "border-box",
@@ -1941,11 +1940,11 @@ export default function EmployeeClearanceForm() {
             transformOrigin: "top left",
           }}
         >
-          <br/><br/><br/><br/><br/>
+          <br /><br /><br /><br /><br />
           <div style={{ flex: 1, overflowY: "hidden", overflowX: "hidden" }}>
             {renderSelectedFormBody()}
           </div>
-        
+
         </div>
       </div>
     </div>
@@ -1982,7 +1981,7 @@ export default function EmployeeClearanceForm() {
       <div
         style={{
           padding: "",
-          background:"rgba(100 100 100/ 8%)",
+          background: "rgba(100 100 100/ 8%)",
           // background:
           //   "linear-gradient(rgba(18 18 80/ 65%), rgba(100 100 100/ 0%))",
           height: "100svh",
@@ -2023,7 +2022,7 @@ export default function EmployeeClearanceForm() {
             //     </p>
             //   )
             // }
-        
+
             extra={
               <div
                 style={{
@@ -2042,14 +2041,14 @@ export default function EmployeeClearanceForm() {
                     background: pdfLoading
                       ? "linear-gradient(145deg, rgba(21, 12, 112, 0.94), rgba(24, 12, 125, 0.9) 45%, rgba(13, 7, 88, 0.95))"
                       : "linear-gradient(145deg, rgba(15, 5, 130, 0.96), rgba(25, 12, 170, 0.94) 45%, rgba(12, 3, 105, 0.98))",
-                      boxShadow:
+                    boxShadow:
                       "inset 0 1px 0 rgba(255,255,255,0.62), inset 0 -10px 16px rgba(8,30,120,0.5), 0 10px 22px rgba(4,16,60,0.4), 0 0 18px rgba(52,110,255,0.24), 0 0 0 1px rgba(160,204,255,0.18)",
                     color: "white",
                     border: "none",
                     borderRadius: "0.5rem",
                     cursor: pdfLoading ? "not-allowed" : "pointer",
                     opacity: pdfLoading ? 0.7 : 1,
-                  
+
                     position: "relative",
                     overflow: "hidden",
                   }}
@@ -2107,7 +2106,7 @@ export default function EmployeeClearanceForm() {
                 border: "",
                 justifyContent: "center",
                 paddingTop: "5rem",
-              
+
               }}
             >
               <div className="" style={{ width: "100%", display: "flex", justifyContent: "center" }}>
@@ -2549,7 +2548,7 @@ export default function EmployeeClearanceForm() {
         onOpenChange={handleFieldConfigDialogChange}
         title="Manage Fields"
         contentStyle={{ maxWidth: "760px" }}
-      
+
       >
         <div
           style={{
@@ -2645,7 +2644,7 @@ export default function EmployeeClearanceForm() {
         open={addCustomFieldDialogVisible}
         onOpenChange={setAddCustomFieldDialogVisible}
         title="Add Custom Field"
-        // description="Create a new field to add to your clearance form"
+      // description="Create a new field to add to your clearance form"
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           <div>
