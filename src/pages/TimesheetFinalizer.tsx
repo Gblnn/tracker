@@ -649,6 +649,10 @@ export default function TimesheetFinalizer() {
       const inTimestamp = buildTimestamp(date, r.punch_in);
       const outTimestamp = buildTimestamp(date, r.punch_out);
 
+      const newAttestedBy = (isFocalFiltered || !r.attested_by || !r.attested_by.includes('@'))
+        ? (userData?.email || r.attested_by)
+        : r.attested_by;
+
       const payload = {
         date: date,
         project_code: r.project_code || null,
@@ -657,7 +661,7 @@ export default function TimesheetFinalizer() {
         punch_out: outTimestamp,
         overtime: r.overtime,
         verify_type: r.verify_type,
-        attested_by: r.attested_by,
+        attested_by: newAttestedBy,
         remarks: r.remarks.startsWith('Custom: ')
           ? (r.remarks.substring(8).trim() || null)
           : (r.remarks.trim() || null),
@@ -684,7 +688,8 @@ export default function TimesheetFinalizer() {
           ...prev[userId], 
           isApproved: true,
           approval: !isFocalFiltered,
-          inDatabase: true
+          inDatabase: true,
+          attested_by: newAttestedBy
         }
       }));
 
@@ -748,6 +753,10 @@ export default function TimesheetFinalizer() {
           const inTimestamp = buildTimestamp(date, r.punch_in);
           const outTimestamp = buildTimestamp(date, r.punch_out);
 
+          const newAttestedBy = (isFocalFiltered || !r.attested_by || !r.attested_by.includes('@'))
+            ? (userData?.email || r.attested_by)
+            : r.attested_by;
+
           return {
             date: date,
             project_code: r.project_code || null,
@@ -756,7 +765,7 @@ export default function TimesheetFinalizer() {
             punch_out: outTimestamp,
             overtime: r.overtime,
             verify_type: r.verify_type,
-            attested_by: r.attested_by,
+            attested_by: newAttestedBy,
             remarks: r.remarks.startsWith('Custom: ')
               ? (r.remarks.substring(8).trim() || null)
               : (r.remarks.trim() || null),
@@ -1597,20 +1606,27 @@ export default function TimesheetFinalizer() {
                             {isFocalFiltered ? (
                               // Focal Point View
                               row.isApproved ? (
-                                <div className="flex items-center justify-center gap-1.5">
-                                  <span style={{ height: "1.6rem" }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-teal-200 bg-teal-50 text-teal-700">
-                                    <Check className="w-3.5 h-3.5" />
-                                    Verified
-                                  </span>
-                                  {!isLocked && canUserEdit && !row.approval && (
-                                    <button
-                                      onClick={() => handleRevokeRow(emp.device_user_id)}
-                                      disabled={saving}
-                                      className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
-                                      title="Revoke verification"
-                                    >
-                                      <X className="w-3.5 h-3.5" />
-                                    </button>
+                                <div className="flex flex-col items-center justify-center gap-0.5">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <span style={{ height: "1.6rem" }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-teal-200 bg-teal-50 text-teal-700">
+                                      <Check className="w-3.5 h-3.5" />
+                                      Verified
+                                    </span>
+                                    {!isLocked && canUserEdit && !row.approval && (
+                                      <button
+                                        onClick={() => handleRevokeRow(emp.device_user_id)}
+                                        disabled={saving}
+                                        className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
+                                        title="Revoke verification"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                  {row.attested_by && row.attested_by.includes('@') && (
+                                    <span className="text-[9px] text-gray-500 font-mono" title={row.attested_by}>
+                                      by {row.attested_by.split('@')[0]}
+                                    </span>
                                   )}
                                 </div>
                               ) : (
@@ -1630,29 +1646,55 @@ export default function TimesheetFinalizer() {
                             ) : (
                               // Admin View
                               row.isApproved ? (
-                                <div className="flex items-center justify-center gap-1.5">
-                                  <span style={{ height: "1.6rem" }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-blue-200 bg-blue-50 text-blue-700">
-                                    <Check className="w-3.5 h-3.5" />
-                                    Approved
-                                  </span>
-                                  {!isLocked && canUserEdit && (
-                                    <button
-                                      onClick={() => handleRevokeRow(emp.device_user_id)}
-                                      disabled={saving}
-                                      className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
-                                      title="Revoke approval"
-                                    >
-                                      <X className="w-3.5 h-3.5" />
-                                    </button>
+                                <div className="flex flex-col items-center justify-center gap-0.5">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <span style={{ height: "1.6rem" }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-blue-200 bg-blue-50 text-blue-700">
+                                      <Check className="w-3.5 h-3.5" />
+                                      Approved
+                                    </span>
+                                    {!isLocked && canUserEdit && (
+                                      <button
+                                        onClick={() => handleRevokeRow(emp.device_user_id)}
+                                        disabled={saving}
+                                        className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
+                                        title="Revoke approval"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                  {row.attested_by && row.attested_by.includes('@') && (
+                                    <span className="text-[9px] text-gray-500 font-mono" title={row.attested_by}>
+                                      by {row.attested_by.split('@')[0]}
+                                    </span>
                                   )}
                                 </div>
                               ) : (
                                 canUserEdit && (
                                   <div className="flex flex-col items-center justify-center gap-1.5">
                                     {row.inDatabase && (
-                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border border-amber-200 bg-amber-50 text-amber-700 uppercase tracking-wider">
-                                        Verified
-                                      </span>
+                                      <div className="flex flex-col items-center justify-center gap-0.5">
+                                        <div className="flex items-center justify-center gap-1">
+                                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border border-amber-200 bg-amber-50 text-amber-700 uppercase tracking-wider">
+                                            Verified
+                                          </span>
+                                          {!isLocked && (
+                                            <button
+                                              onClick={() => handleRevokeRow(emp.device_user_id)}
+                                              disabled={saving}
+                                              className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
+                                              title="Reject/Revoke verification"
+                                            >
+                                              <X className="w-3.5 h-3.5" />
+                                            </button>
+                                          )}
+                                        </div>
+                                        {row.attested_by && row.attested_by.includes('@') && (
+                                          <span className="text-[9px] text-gray-500 font-mono" title={row.attested_by}>
+                                            by {row.attested_by.split('@')[0]}
+                                          </span>
+                                        )}
+                                      </div>
                                     )}
                                     <div className="flex items-center gap-1">
                                       <button
@@ -1663,16 +1705,6 @@ export default function TimesheetFinalizer() {
                                         <Stamp className='w-4 h-4' />
                                         Approve
                                       </button>
-                                      {row.inDatabase && !isLocked && (
-                                        <button
-                                          onClick={() => handleRevokeRow(emp.device_user_id)}
-                                          disabled={saving}
-                                          className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
-                                          title="Reject/Revoke verification"
-                                        >
-                                          <X className="w-3.5 h-3.5" />
-                                        </button>
-                                      )}
                                     </div>
                                   </div>
                                 )

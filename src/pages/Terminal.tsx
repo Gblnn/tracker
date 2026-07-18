@@ -240,87 +240,87 @@ export default function Terminal() {
         }
       `}</style>
       <div className="animate-fade-in flex flex-col gap-2 w-full h-full overflow-hidden">
-      {/* Clear Terminal action bar */}
-      <div style={{ justifyContent: "space-between" }} className="flex justify-between items-center w-full border-b border-gray-800 pb-3 mb-2 shrink-0">
-        <span style={{ border: "1px solid rgba(100 100 100/ 0.5)", padding: "0.1rem 0.35rem", borderRadius: "0.25rem", fontWeight: "500" }} className="text-gray-500 text-xs uppercase tracking-wider font-semibold">All Tasks</span>
+        {/* Clear Terminal action bar */}
+        <div style={{ justifyContent: "space-between" }} className="flex justify-between items-center w-full border-b border-gray-800 pb-3 mb-2 shrink-0">
+          <span style={{ border: "1px solid rgba(100 100 100/ 0.5)", padding: "0.1rem 0.35rem", borderRadius: "0.25rem", fontWeight: "500" }} className="text-gray-500 text-xs uppercase tracking-wider font-semibold">All Tasks</span>
 
-        {/* Confirmation dialog trigger */}
-        {canEditAttendance && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleRetryAllDispatched}
-              disabled={retryingAll || !tasks.some(t => t.status === 'sent')}
-              className="px-3 py-1.5 text-[11px] font-semibold bg-gray-900 border border-gray-800 disabled:opacity-30 disabled:hover:border-gray-800 disabled:hover:text-gray-400 hover:border-gray-700 hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-all disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              {retryingAll ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Retrying...
-                </>
-              ) : (
-                'Retry Dispatched'
-              )}
-            </button>
-            <ClearConfirmDialog
-              disabled={!hasCompleted || clearing}
-              clearing={clearing}
-              completedCount={completedCount}
-              onConfirm={clearCompletedTasks}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Scrollable tasks list */}
-      <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "flex-start", userSelect: "text", WebkitUserSelect: "text" }} className="flex-1 w-full overflow-y-auto flex flex-col gap-2 pr-1 select-text">
-        {tasks.map((task) => {
-          let statusTag = '';
-          let colorClass = '';
-
-          if (task.status === 'pending') {
-            statusTag = '[PENDING]';
-            colorClass = 'text-amber-500';
-          } else if (task.status === 'sent') {
-            statusTag = '[DISPATCH]';
-            colorClass = 'text-blue-400';
-          } else if (task.status === 'acknowledged') {
-            statusTag = '[SUCCESS]';
-            colorClass = 'text-emerald-400';
-          } else if (task.status === 'error') {
-            statusTag = '[FAILED]  ';
-            colorClass = 'text-rose-500';
-          }
-
-          const employeeInfo = task.employees
-            ? ` ${task.employees.name} (${task.employees.device_user_id})`
-            : '';
-
-          const deviceLocation = deviceLocationMap[task.device_serial]
-            ? `(${deviceLocationMap[task.device_serial]})`
-            : '';
-
-          return (
-            <div key={task.id} className="flex gap-2 font-mono select-text" style={{ userSelect: "text", WebkitUserSelect: "text" }}>
-              <span className="text-gray-500 shrink-0 select-text font-normal" style={{ color: "#556877", userSelect: "text", WebkitUserSelect: "text" }}>
-                [{formatTime(task.created_at)}]
-              </span>
-              <span className={`${colorClass} font-semibold shrink-0 select-text`} style={{ userSelect: "text", WebkitUserSelect: "text" }}>{statusTag}</span>
-              <span className="select-text" style={{ userSelect: "text", WebkitUserSelect: "text" }}>
-                Task #{task.id}: {task.command_type} {employeeInfo} to device {task.device_serial} {deviceLocation}
-              </span>
-              {canEditAttendance && task.status === 'sent' && (
-                <button
-                  style={{ padding: "0", background: "none" }}
-                  onClick={() => handleRetryTask(task.id)}
-                  className="text-indigo-400 hover:text-indigo-300 hover:underline text-[10px] uppercase font-semibold shrink-0 cursor-pointer"
-                >
-                  [Retry]
-                </button>
-              )}
+          {/* Confirmation dialog trigger */}
+          {canEditAttendance && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRetryAllDispatched}
+                disabled={retryingAll || !tasks.some(t => t.status === 'sent')}
+                className="px-3 py-1.5 text-[11px] font-semibold bg-gray-900 border border-gray-800 disabled:opacity-30 disabled:hover:border-gray-800 disabled:hover:text-gray-400 hover:border-gray-700 hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-all disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                {retryingAll ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Retrying...
+                  </>
+                ) : (
+                  'Retry Dispatched'
+                )}
+              </button>
+              <ClearConfirmDialog
+                disabled={!hasCompleted || clearing}
+                clearing={clearing}
+                completedCount={completedCount}
+                onConfirm={clearCompletedTasks}
+              />
             </div>
-          );
-        })}
-      </div>
+          )}
+        </div>
+
+        {/* Scrollable tasks list */}
+        <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "flex-start", userSelect: "text", WebkitUserSelect: "text" }} className="flex-1 w-full overflow-y-auto flex flex-col gap-2 pr-1 select-text">
+          {tasks.map((task) => {
+            let statusTag = '';
+            let colorClass = '';
+
+            if (task.status === 'pending') {
+              statusTag = '[PENDING]';
+              colorClass = 'text-amber-500';
+            } else if (task.status === 'sent') {
+              statusTag = '[DISPATCH]';
+              colorClass = 'text-blue-400';
+            } else if (task.status === 'acknowledged') {
+              statusTag = '[SUCCESS]';
+              colorClass = 'text-emerald-400';
+            } else if (task.status === 'error') {
+              statusTag = '[FAILED]  ';
+              colorClass = 'text-rose-500';
+            }
+
+            const employeeInfo = task.employees
+              ? ` ${task.employees.name} (${task.employees.device_user_id})`
+              : '';
+
+            const deviceLocation = deviceLocationMap[task.device_serial]
+              ? `(${deviceLocationMap[task.device_serial]})`
+              : '';
+
+            return (
+              <div key={task.id} className="flex gap-2 font-mono select-text" style={{ userSelect: "text", WebkitUserSelect: "text" }}>
+                <span className="text-gray-500 shrink-0 select-text font-normal" style={{ color: "#556877", userSelect: "text", WebkitUserSelect: "text", width: "9rem" }}>
+                  [{formatTime(task.created_at)}]
+                </span>
+                <span className={`${colorClass} font-semibold shrink-0 select-text`} style={{ userSelect: "text", WebkitUserSelect: "text" }}>{statusTag}</span>
+                <span className="select-text" style={{ userSelect: "text", WebkitUserSelect: "text" }}>
+                  Task #{task.id}: {task.command_type} {employeeInfo} to device {task.device_serial} {deviceLocation}
+                </span>
+                {canEditAttendance && task.status === 'sent' && (
+                  <button
+                    style={{ padding: "0", background: "none" }}
+                    onClick={() => handleRetryTask(task.id)}
+                    className="text-indigo-400 hover:text-indigo-300 hover:underline text-[10px] uppercase font-semibold shrink-0 cursor-pointer"
+                  >
+                    [Retry]
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

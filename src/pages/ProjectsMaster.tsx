@@ -234,10 +234,10 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
         .order('serial_no', { ascending: true });
       if (devErr) throw devErr;
 
-      // Fetch employees for focal point assignment (selecting location as well)
+      // Fetch employees for focal point assignment
       const { data: empData, error: empErr } = await supabase
         .from('employees')
-        .select('id, name, email, emp_id, device_user_id, location')
+        .select('id, name, email, emp_id, device_user_id')
         .order('name', { ascending: true });
       if (empErr) console.warn("Could not load employees for focal point:", empErr.message);
 
