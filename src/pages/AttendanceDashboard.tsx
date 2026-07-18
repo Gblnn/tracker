@@ -4,7 +4,7 @@ import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRightLeft, BarChart3, Calendar, ChartLine, Check, Database, FileCheck, FolderKanban, Laptop2, LayoutGrid, List, Loader2, Sidebar, Table, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
 import DetailedBreakdown from '../components/DetailedBreakdown';
@@ -42,6 +42,7 @@ export default function AttendanceDashboard() {
   const [tab, setTab] = useState<Tab>('summary');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [tabLoading, setTabLoading] = useState(false);
+  const [terminalHasPendingTasks, setTerminalHasPendingTasks] = useState(false);
 
   const { punches, employees, employeeSummaries, loading, refetch, useFirstLast, setUseFirstLast } = useAttendance(date);
   const [navVisible, setNavVisible] = useState(true);
@@ -62,6 +63,21 @@ export default function AttendanceDashboard() {
       setRefreshTrigger(prev => prev + 1);
     }
   };
+
+  const fetchTerminalPendingStatus = useCallback(async () => {
+    try {
+      const { count, error } = await supabase
+        .from('device_commands')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['pending', 'sent']);
+
+      if (!error) {
+        setTerminalHasPendingTasks((count ?? 0) > 0);
+      }
+    } catch {
+      // Keep the last known state if the check fails.
+    }
+  }, []);
 
   const fetchDbCount = () => {
     supabase
@@ -132,7 +148,7 @@ export default function AttendanceDashboard() {
         if (opt.value === 'manage') return permissions.attendance_manage === true;
         if (opt.value === 'reports') return permissions.attendance_reports === true;
         if (opt.value === 'projects') return permissions.attendance_projects === true;
-        if (opt.value === 'terminal') return permissions.attendance_terminal === true;
+        if (opt.value === 'terminal') return permissions.attendance_manage === true;
         if (opt.value === 'finalize') return permissions.attendance_finalize === true;
         if (opt.value === 'leave-log') return permissions.attendance_leave_log === true;
         return true;
@@ -156,22 +172,44 @@ export default function AttendanceDashboard() {
   }, [viewOptions, tab]);
 
   useEffect(() => {
-    if (canEditAttendance) {
-      fetchDbCount();
-    }
-  }, [canEditAttendance]);
+    fetchDbCount();
+  }, []);
 
   useEffect(() => {
-    if (canEditAttendance && tab === 'data-management') {
+    if (tab === 'data-management') {
       fetchDbCount();
     }
-  }, [tab, canEditAttendance]);
+  }, [tab]);
 
   useEffect(() => {
-    if (canEditAttendance && !loading) {
+    if (!loading) {
       fetchDbCount();
     }
-  }, [loading, canEditAttendance]);
+  }, [loading]);
+
+  useEffect(() => {
+    fetchTerminalPendingStatus();
+
+    const channel = supabase
+      .channel('attendance_dashboard_terminal_pending')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'device_commands' },
+        () => {
+          fetchTerminalPendingStatus();
+        }
+      )
+      .subscribe();
+
+    const intervalId = window.setInterval(() => {
+      fetchTerminalPendingStatus();
+    }, 5000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.clearInterval(intervalId);
+    };
+  }, [fetchTerminalPendingStatus]);
 
 
 
@@ -269,7 +307,7 @@ export default function AttendanceDashboard() {
                   )}
 
                   {isAllowed('terminal') && (
-                    <Directive bg={tab === 'terminal' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('terminal')} title="Terminal" icon={<TerminalIcon size={16} />} />
+                    <Directive bg={tab === 'terminal' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('terminal')} title="Terminal" icon={<TerminalIcon size={16} />} loading={terminalHasPendingTasks} />
                   )}
 
                   {isAllowed('finalize') && (
@@ -277,11 +315,10 @@ export default function AttendanceDashboard() {
                   )}
                 </div>
 
-                {canEditAttendance && (
                   <div style={{ width: "100%", paddingTop: "0.2rem", flexShrink: 0 }}>
                     <motion.div
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setTab('data-management')}
+                      whileTap={canEditAttendance ? { scale: 0.98 } : undefined}
+                      onClick={canEditAttendance ? () => setTab('data-management') : undefined}
                       style={{
                         display: "flex",
                         flexDirection: "column",
@@ -293,7 +330,7 @@ export default function AttendanceDashboard() {
                         borderRadius: "0.5rem",
 
                         transition: "all 0.2s ease",
-                        cursor: "pointer",
+                        cursor: canEditAttendance ? "pointer" : "default",
                         position: "relative",
                         overflow: "hidden",
                         boxShadow: tab === 'data-management' ? "0 2px 10px rgba(0, 150, 136, 0.08)" : "0 2px 10px rgba(15, 23, 42, 0.04)",
@@ -350,7 +387,6 @@ export default function AttendanceDashboard() {
                       )}
                     </motion.div>
                   </div>
-                )}
               </div>
             </motion.div>
           )}

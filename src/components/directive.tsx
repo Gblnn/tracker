@@ -156,7 +156,6 @@ export default function Directive(props: Props) {
             <div style={{ flexShrink: 0 }}>
               <LoaderCircle
                 className="animate-spin"
-                color="mediumslateblue"
                 width={"1.25rem"}
               />
             </div>

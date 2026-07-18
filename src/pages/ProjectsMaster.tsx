@@ -207,6 +207,11 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
     }
   }, [userData]);
 
+  useEffect(() => {
+    // Editors default to project details view; read-only users are kept in attendance-only mode.
+    setShowAttendanceStats(!canEditAttendance);
+  }, [canEditAttendance]);
+
   const previewLat = parseFloat(form.geofence_lat);
   const previewLng = parseFloat(form.geofence_lng);
   const showMapPreview = !isNaN(previewLat) && previewLat >= -90 && previewLat <= 90 && !isNaN(previewLng) && previewLng >= -180 && previewLng <= 180;
@@ -831,16 +836,18 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
               </button>
             )}
 
-            <button
-              onClick={() => setShowAttendanceStats(prev => !prev)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ${showAttendanceStats
-                ? ''
-                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                }`}
-              title="Toggle Project Attendance Mode"
-            >
-              <span>{showAttendanceStats ? <List className='w-4 h-4' /> : <ChartBarIcon className='w-4 h-4' />}</span>
-            </button>
+            {canEditAttendance && (
+              <button
+                onClick={() => setShowAttendanceStats(prev => !prev)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ${showAttendanceStats
+                  ? 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                title="Toggle Project Attendance Mode"
+              >
+                <span>{showAttendanceStats ? <List className='w-4 h-4' /> : <ChartBarIcon className='w-4 h-4' />}</span>
+              </button>
+            )}
 
             <button
               onClick={() => loadData(true)}

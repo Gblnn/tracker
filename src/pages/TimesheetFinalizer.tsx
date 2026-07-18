@@ -79,6 +79,8 @@ interface TimesheetRow {
   inDatabase?: boolean;
 }
 
+type SourceFilter = 'ALL' | 'MANUAL' | 'LEAVE_LOG' | 'DEVICE' | 'NO_SOURCE';
+
 const getYesterdayString = () => {
   const yesterday = new Date(Date.now() - 86400000);
   const yyyy = yesterday.getFullYear();
@@ -164,6 +166,16 @@ const parseAttestedBy = (attestedBy: string | null | undefined, isApproved: bool
   };
 };
 
+const getSourceCategory = (row: TimesheetRow): Exclude<SourceFilter, 'ALL'> => {
+  if (row.isEdited) return 'MANUAL';
+
+  const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
+  if (machineCode === 'Leave Log') return 'LEAVE_LOG';
+
+  const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
+  return hasDevice ? 'DEVICE' : 'NO_SOURCE';
+};
+
 const getVerificationBadge = (row: TimesheetRow) => {
   if (!row.inDatabase && !row.isApproved) return null;
   const { verifier } = parseAttestedBy(row.attested_by, !!row.isApproved);
@@ -237,6 +249,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
   const [search, setSearch] = useState('');
   const [punchFilter, setPunchFilter] = useState<'ALL' | 'NO_IN' | 'NO_OUT' | 'BOTH'>('ALL');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('ALL');
   const [roundOT, setRoundOT] = useState(false);
   const [focalProjectCodes, setFocalProjectCodes] = useState<string[]>([]);
   const [isFocalFiltered, setIsFocalFiltered] = useState(false);
@@ -1002,9 +1015,14 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
 
       if (!matchesProject) return false;
 
+      if (sourceFilter !== 'ALL') {
+        const category = getSourceCategory(row);
+        if (category !== sourceFilter) return false;
+      }
+
       return true;
     });
-  }, [employees, rows, search, punchFilter, selectedProjects]);
+  }, [employees, rows, search, punchFilter, selectedProjects, sourceFilter]);
 
   return (
     <div className="bg-white animate-fade-in" style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -1539,7 +1557,66 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                   </th>
                   <th style={{ width: '150px' }}>Status</th>
                   <th style={{ width: '200px' }}>Remarks</th>
-                  <th style={{ width: '250px' }}>Source</th>
+                  <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '250px' }}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-550 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
+                        <span className="truncate">
+                          {sourceFilter === 'ALL'
+                            ? 'Source (All)'
+                            : sourceFilter === 'MANUAL'
+                              ? 'Source (Manual)'
+                              : sourceFilter === 'LEAVE_LOG'
+                                ? 'Source (Leave Log)'
+                                : sourceFilter === 'DEVICE'
+                                  ? 'Source (Device)'
+                                  : 'Source (No Source)'}
+                        </span>
+                        <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[190px] p-1 bg-white border border-slate-200 z-50">
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={sourceFilter === 'ALL'}
+                          onCheckedChange={() => setSourceFilter('ALL')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          All Sources
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={sourceFilter === 'MANUAL'}
+                          onCheckedChange={() => setSourceFilter('MANUAL')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Manual
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={sourceFilter === 'LEAVE_LOG'}
+                          onCheckedChange={() => setSourceFilter('LEAVE_LOG')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Leave Log
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={sourceFilter === 'DEVICE'}
+                          onCheckedChange={() => setSourceFilter('DEVICE')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Device
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={sourceFilter === 'NO_SOURCE'}
+                          onCheckedChange={() => setSourceFilter('NO_SOURCE')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          No Source
+                        </DropdownMenuCheckboxItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </th>
                   <th className="sticky-action" style={{ width: '130px', textAlign: 'center' }}>Action</th>
                 </tr>
               </thead>

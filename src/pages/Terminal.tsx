@@ -136,33 +136,6 @@ export default function Terminal() {
     }
   };
 
-  const [retryingAll, setRetryingAll] = useState(false);
-
-  const handleRetryAllDispatched = async () => {
-    const dispatchedTasks = tasks.filter(t => t.status === 'sent');
-    if (dispatchedTasks.length === 0) {
-      toast.error('No tasks are currently in dispatch status.');
-      return;
-    }
-
-    setRetryingAll(true);
-    try {
-      for (const t of dispatchedTasks) {
-        const { error } = await supabase
-          .from('device_commands')
-          .update({ status: 'pending' })
-          .eq('id', t.id);
-        if (error) throw error;
-        await new Promise(resolve => setTimeout(resolve, 80));
-      }
-      toast.success(`Successfully queued ${dispatchedTasks.length} dispatch tasks back to pending.`);
-      fetchTasks();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to retry dispatched tasks.');
-    } finally {
-      setRetryingAll(false);
-    }
-  };
 
   const handleRetryTask = async (taskId: number) => {
     try {
@@ -247,20 +220,7 @@ export default function Terminal() {
           {/* Confirmation dialog trigger */}
           {canEditAttendance && (
             <div className="flex items-center gap-2">
-              <button
-                onClick={handleRetryAllDispatched}
-                disabled={retryingAll || !tasks.some(t => t.status === 'sent')}
-                className="px-3 py-1.5 text-[11px] font-semibold bg-gray-900 border border-gray-800 disabled:opacity-30 disabled:hover:border-gray-800 disabled:hover:text-gray-400 hover:border-gray-700 hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-all disabled:cursor-not-allowed flex items-center gap-1.5"
-              >
-                {retryingAll ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Retrying...
-                  </>
-                ) : (
-                  'Retry Dispatched'
-                )}
-              </button>
+              
               <ClearConfirmDialog
                 disabled={!hasCompleted || clearing}
                 clearing={clearing}
@@ -354,7 +314,7 @@ function ClearConfirmDialog({
         disabled={disabled}
         className="px-3 py-1.5 text-[11px] font-semibold bg-gray-900 border border-gray-800 disabled:opacity-30 disabled:hover:border-gray-800 disabled:hover:text-gray-400 hover:border-gray-700 hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-all disabled:cursor-not-allowed"
       >
-        {clearing ? 'Clearing...' : 'Clear Terminal'}
+        {clearing ? 'Clearing...' : 'Clear All Tasks'}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

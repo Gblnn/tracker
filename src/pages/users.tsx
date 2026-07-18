@@ -92,7 +92,6 @@ const ATTENDANCE_BREAKDOWN_KEY = "attendance_breakdown";
 const ATTENDANCE_MANAGE_KEY = "attendance_manage";
 const ATTENDANCE_REPORTS_KEY = "attendance_reports";
 const ATTENDANCE_PROJECTS_KEY = "attendance_projects";
-const ATTENDANCE_TERMINAL_KEY = "attendance_terminal";
 const ATTENDANCE_FINALIZE_KEY = "attendance_finalize";
 const ATTENDANCE_LEAVE_LOG_KEY = "attendance_leave_log";
 
@@ -104,7 +103,6 @@ const ATTENDANCE_SUBOPTIONS = [
   { key: ATTENDANCE_REPORTS_KEY, label: 'Reports Page' },
   { key: ATTENDANCE_PROJECTS_KEY, label: 'Projects Page' },
   { key: ATTENDANCE_LEAVE_LOG_KEY, label: 'Leave Log Page' },
-  { key: ATTENDANCE_TERMINAL_KEY, label: 'Terminal Page' },
   { key: ATTENDANCE_FINALIZE_KEY, label: 'Finalize Timesheets' },
 ];
 
@@ -844,7 +842,6 @@ export default function Users() {
         updated[ATTENDANCE_MANAGE_KEY] = false;
         updated[ATTENDANCE_REPORTS_KEY] = false;
         updated[ATTENDANCE_PROJECTS_KEY] = false;
-        updated[ATTENDANCE_TERMINAL_KEY] = false;
         updated[ATTENDANCE_FINALIZE_KEY] = false;
         updated[ATTENDANCE_LEAVE_LOG_KEY] = false;
       }
@@ -875,7 +872,6 @@ export default function Users() {
         updated[ATTENDANCE_MANAGE_KEY] = false;
         updated[ATTENDANCE_REPORTS_KEY] = false;
         updated[ATTENDANCE_PROJECTS_KEY] = false;
-        updated[ATTENDANCE_TERMINAL_KEY] = false;
         updated[ATTENDANCE_FINALIZE_KEY] = false;
         updated[ATTENDANCE_LEAVE_LOG_KEY] = false;
       }

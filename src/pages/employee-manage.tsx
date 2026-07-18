@@ -130,12 +130,45 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [selectedBiometricFilters, setSelectedBiometricFilters] = useState<Array<'Finger' | 'Face' | 'No Finger' | 'No face' | 'None'>>([]);
     const [selectedEmpPrefixes, setSelectedEmpPrefixes] = useState<string[]>([]);
 
+    const canEditAttendance = useMemo(() => {
+        try {
+            const permissions = JSON.parse(userData?.clearance || "{}") as Record<string, boolean>;
+            const hasStructuredClearance = Object.keys(permissions).length > 0;
+            const hasAttendanceModule = permissions.attendance === true;
+            const hasAttendanceEdit = permissions.attendance_edit === true;
+            const hasExplicitEditBlock = permissions.attendance_edit === false;
+
+            if (hasAttendanceModule) {
+                return hasAttendanceEdit;
+            }
+
+            if (permissions.attendance === false || hasExplicitEditBlock) {
+                return false;
+            }
+
+            if (userData?.role === "admin" || userData?.role === "site_admin") {
+                return !hasStructuredClearance;
+            }
+
+            return false;
+        } catch {
+            return userData?.role === "admin" || userData?.role === "site_admin";
+        }
+    }, [userData]);
+
     // Pagination / Rendering Limit state
     const [renderLimit, setRenderLimit] = useState(100);
 
     useEffect(() => {
         setRenderLimit(100);
     }, [search, selectedDepartments, selectedDesignations, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedShifts, selectedStatuses, selectedBiometricFilters, selectedEmpPrefixes]);
+
+    useEffect(() => {
+        if (!canEditAttendance) {
+            setIsSelectionMode(false);
+            setSelectedEmployeeIds(new Set());
+        }
+    }, [canEditAttendance]);
 
     // Selection and bulk states
     const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -1545,21 +1578,23 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             {/* Toolbar: Search and Filters */}
             <div className="flex items-center gap-3 px-3 py-3 border-b border-gray-100 bg-white sticky top-0 z-20" style={{ width: "100%" }}>
                 {/* Selection toggle button on the left */}
-                <Button
-                    style={{ border: "none" }}
-                    variant="outline"
-                    onClick={() => {
-                        setIsSelectionMode(!isSelectionMode);
-                        setSelectedEmployeeIds(new Set());
-                    }}
-                    className={`h-10 w-10 p-0 rounded-xl shrink-0 transition-all ${isSelectionMode
-                        ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100/80 hover:text-indigo-700 shadow-xs'
-                        : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700'
-                        }`}
-                    title="Toggle Selection Mode"
-                >
-                    <SquareCheck className="w-4 h-4" />
-                </Button>
+                {canEditAttendance && (
+                    <Button
+                        style={{ border: "none" }}
+                        variant="outline"
+                        onClick={() => {
+                            setIsSelectionMode(!isSelectionMode);
+                            setSelectedEmployeeIds(new Set());
+                        }}
+                        className={`h-10 w-10 p-0 rounded-xl shrink-0 transition-all ${isSelectionMode
+                            ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100/80 hover:text-indigo-700 shadow-xs'
+                            : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                            }`}
+                        title="Toggle Selection Mode"
+                    >
+                        <SquareCheck className="w-4 h-4" />
+                    </Button>
+                )}
 
                 <div className="relative flex-1 group">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-darkblue transition-colors" />
@@ -1582,10 +1617,10 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 <div
                     className="overflow-hidden transition-all duration-300 ease-in-out flex items-center shrink-0"
                     style={{
-                        width: isSelectionMode ? "150px" : "0px",
-                        opacity: isSelectionMode ? 1 : 0,
-                        marginLeft: isSelectionMode ? "8px" : "0px",
-                        pointerEvents: isSelectionMode ? "auto" : "none"
+                        width: canEditAttendance && isSelectionMode ? "150px" : "0px",
+                        opacity: canEditAttendance && isSelectionMode ? 1 : 0,
+                        marginLeft: canEditAttendance && isSelectionMode ? "8px" : "0px",
+                        pointerEvents: canEditAttendance && isSelectionMode ? "auto" : "none"
                     }}
                 >
                     <DropdownMenu>
@@ -1649,31 +1684,29 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-
-
-
-
-                <Button
-                    onClick={() => {
-                        setIsAdding(true);
-                        setAddActiveTab('profile');
-                        setAddName('');
-                        setAddDeviceUserId('');
-                        setAddDept('');
-                        setAddEmail('');
-                        setAddEmpId('');
-                        setAddEmpType('staff');
-                        setAddShift('day');
-                        setAddNationality('');
-                        setAddDesignation('');
-                        setAddCompany('');
-                        setSelectedDevices(new Set());
-                    }}
-                    className="h-10 px-4 rounded-xl text-xs font-medium bg-gray-900 text-white hover:bg-gray-800 transition-colors flex items-center gap-1.5 shrink-0"
-                >
-                    <Plus className="w-3.5 h-3.5" />
-                    Add Employee
-                </Button>
+                {canEditAttendance && (
+                    <Button
+                        onClick={() => {
+                            setIsAdding(true);
+                            setAddActiveTab('profile');
+                            setAddName('');
+                            setAddDeviceUserId('');
+                            setAddDept('');
+                            setAddEmail('');
+                            setAddEmpId('');
+                            setAddEmpType('staff');
+                            setAddShift('day');
+                            setAddNationality('');
+                            setAddDesignation('');
+                            setAddCompany('');
+                            setSelectedDevices(new Set());
+                        }}
+                        className="h-10 px-4 rounded-xl text-xs font-medium bg-gray-900 text-white hover:bg-gray-800 transition-colors flex items-center gap-1.5 shrink-0"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add Employee
+                    </Button>
+                )}
                 <input
                     type="file"
                     ref={fileInputRef}
@@ -1681,17 +1714,19 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     className="hidden"
                     onChange={handleFileChange}
                 />
-                <Button
-                    onClick={() => {
-                        handleResetUpload();
-                        setUploadModalOpen(true);
-                    }}
-                    variant="outline"
-                    className="h-10 w-10 p-0 rounded-xl bg-gray-50 border-none text-gray-500 hover:bg-gray-100 transition-colors shrink-0 flex items-center justify-center"
-                    title="Upload Employees from Excel"
-                >
-                    <Upload className="w-4 h-4" />
-                </Button>
+                {canEditAttendance && (
+                    <Button
+                        onClick={() => {
+                            handleResetUpload();
+                            setUploadModalOpen(true);
+                        }}
+                        variant="outline"
+                        className="h-10 w-10 p-0 rounded-xl bg-gray-50 border-none text-gray-500 hover:bg-gray-100 transition-colors shrink-0 flex items-center justify-center"
+                        title="Upload Employees from Excel"
+                    >
+                        <Upload className="w-4 h-4" />
+                    </Button>
+                )}
                 <Button
                     onClick={handleExportExcel}
                     variant="outline"
@@ -2447,7 +2482,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                     onClick={() => {
                                         if (isSelectionMode) {
                                             toggleSelectEmployee(emp.id);
-                                        } else {
+                                        } else if (canEditAttendance) {
                                             setEditingEmployee(emp);
                                             setEditName(emp.name);
                                             setEditDeviceUserId(emp.device_user_id);
@@ -2462,7 +2497,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             setEditCompany(emp.company || '');
                                         }
                                     }}
-                                    key={emp.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
+                                    key={emp.id} className={`hover:bg-gray-50 transition-colors ${isSelectionMode || canEditAttendance ? 'cursor-pointer' : 'cursor-default'}`}>
                                     <td
                                         className="transition-[width,opacity] duration-200 ease-in-out overflow-hidden p-0"
                                         style={{

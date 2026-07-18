@@ -259,14 +259,57 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
   const leaveTypes = ['Annual Leave', 'Sick Leave', 'Unpaid Leave', 'Casual Leave', 'Emergency Leave'];
 
   return (
-    <div className="p-6 flex flex-col flex-1 overflow-hidden">
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        height: '100%',
+        width: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
+        boxSizing: 'border-box',
+      }}
+      className="p-6"
+    >
       
       {/* Header and Controls */}
-      <div className="flex justify-between items-center mb-5 shrink-0">
+      {/* <div style={{ width: '100%', minWidth: 0 }} className="flex justify-between items-center mb-5 shrink-0">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-slate-900">Leave Logs</h2>
           <p className="text-sm text-slate-500">Log and manage employee leaves and returns</p>
         </div>
+
+        
+      </div> */}
+
+      {/* Filters Bar */}
+      <div style={{ width: '100%', minWidth: 0 }} className="flex gap-3 mb-4 shrink-0 flex-wrap">
+        <div className="relative flex-1 min-w-[240px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input
+          style={{ paddingLeft: '2.25rem', background:"rgba(100 100 100/ 0.05)", border:"none" }}
+            type="text"
+            placeholder="Search employee name or code..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
+          />
+        </div>
+
+        
+
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[120px] h-9">
+            <SelectValue placeholder="All" />
+          </SelectTrigger>
+          <SelectContent className="bg-white border border-slate-200">
+            <SelectItem value="ALL_TYPES">All</SelectItem>
+            {leaveTypes.map(t => (
+              <SelectItem key={t} value={t}>{t}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {canEditLeaves && (
           <Button
@@ -279,32 +322,6 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
         )}
       </div>
 
-      {/* Filters Bar */}
-      <div className="flex gap-3 mb-4 shrink-0 flex-wrap">
-        <div className="relative flex-1 min-w-[240px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            type="text"
-            placeholder="Search employee name or code..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9"
-          />
-        </div>
-
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px] h-9">
-            <SelectValue placeholder="All Leave Types" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border border-slate-200">
-            <SelectItem value="ALL_TYPES">All Leave Types</SelectItem>
-            {leaveTypes.map(t => (
-              <SelectItem key={t} value={t}>{t}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Error State */}
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm mb-4 shrink-0">
@@ -313,7 +330,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
       )}
 
       {/* Main Table List */}
-      <div className="flex-1 overflow-y-auto bg-white rounded-xl border border-slate-200 min-h-0">
+      <div style={{ width: '100%', minWidth: 0 }} className="flex-1 overflow-y-auto bg-white rounded-xl border border-slate-200 min-h-0">
         {loading ? (
           <div className="flex justify-center items-center h-48 gap-2 text-slate-500 text-sm">
             <Loader2 className="animate-spin w-4 h-4 text-slate-400" />
@@ -382,185 +399,194 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
 
       {/* Log Leave Modal using Shadcn Dialog */}
       <Dialog open={isAdding} onOpenChange={setIsAdding}>
-        <DialogContent className="sm:max-w-md bg-white border border-slate-200">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-slate-650" />
-              Log Employee Leave
-            </DialogTitle>
-            <DialogDescription>
-              Record leave parameters and dates for the employee.
-            </DialogDescription>
+        <DialogContent className="sm:max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl">
+          <DialogHeader className="border-b border-slate-100 px-6 py-4 text-left">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100">
+                <Calendar className="h-4 w-4 text-slate-500" />
+              </div>
+              <div>
+                <DialogTitle className="text-sm font-semibold text-slate-900">
+                  Log Leave
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500">
+                  Record an employee leave period and return timeline.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
-          {addError && (
-            <div className="text-xs text-red-700 bg-red-50 border border-red-100 rounded-lg p-2.5">
-              {addError}
-            </div>
-          )}
+          <div className="space-y-5 px-6 py-5">
+            {addError && (
+              <div className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                {addError}
+              </div>
+            )}
 
-          <div className="space-y-4 py-2">
-            
-            {/* Searchable Employee Selector */}
-            <div className="relative employee-dropdown-container">
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Select Employee <span className="text-red-500">*</span>
-              </label>
-              <button
-                type="button"
-                onClick={() => setOpenEmpSelect(!openEmpSelect)}
-                className="h-9 text-xs w-full bg-white border border-slate-200 rounded-md px-3 flex items-center justify-between shadow-sm hover:bg-slate-50 transition-colors text-left"
-              >
-                <span className="truncate text-slate-700 capitalize">
-                  {selectedEmp ? `${selectedEmp.name.toLowerCase()} (Code: ${selectedEmp.device_user_id})` : "Choose Employee..."}
-                </span>
-                <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
-              </button>
+            <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+              <div className="mb-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Employee</p>
+                <p className="text-xs text-slate-400">Choose the employee you want to place on leave.</p>
+              </div>
 
-              {openEmpSelect && (
-                <div className="absolute left-0 right-0 mt-1 p-0 bg-white border border-slate-200 shadow-md rounded-md z-[100] max-h-[300px] overflow-hidden flex flex-col">
-                  {/* Search Input Area */}
-                  <div className="p-2 border-b border-slate-100 bg-slate-50/50">
-                    <div className="flex items-center gap-1.5 px-2 py-1 bg-white border border-slate-200 rounded-md">
-                      <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <input
-                        type="text"
-                        placeholder="Search name or ID..."
-                        value={empSearch}
-                        onChange={(e) => setEmpSearch(e.target.value)}
-                        className="text-xs bg-transparent border-0 outline-none w-full p-0 focus:ring-0 placeholder:text-slate-400 normal-case"
-                        autoFocus
-                      />
-                      {empSearch && (
-                        <button
-                          type="button"
-                          onClick={() => setEmpSearch("")}
-                          className="text-slate-400 hover:text-slate-650"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
+              <div className="relative employee-dropdown-container">
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                  Select Employee <span className="text-rose-500">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setOpenEmpSelect(!openEmpSelect)}
+                  className="flex h-10 w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 text-left text-sm shadow-sm transition-colors hover:bg-slate-50"
+                >
+                  <span className="truncate text-slate-700 capitalize">
+                    {selectedEmp ? `${selectedEmp.name.toLowerCase()} (${selectedEmp.device_user_id})` : 'Choose employee...'}
+                  </span>
+                  <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
+                </button>
+
+                {openEmpSelect && (
+                  <div className="absolute left-0 right-0 z-[100] mt-2 flex max-h-[320px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                    <div style={{border:"", width:"100%"}} className="border-b border-slate-100 bg-slate-50/70 p-2.5">
+                      <div  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2">
+                        <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Search name or ID..."
+                          value={empSearch}
+                          onChange={(e) => setEmpSearch(e.target.value)}
+                          className="w-full border-0 bg-transparent p-0 text-xs outline-none placeholder:text-slate-400 normal-case"
+                          autoFocus
+                        />
+                        {empSearch && (
+                          <button
+                            type="button"
+                            onClick={() => setEmpSearch('')}
+                            className="text-slate-400 transition-colors hover:text-slate-600"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{width:"100%"}} className="max-h-[220px] overflow-y-auto py-1.5">
+                      {selectableEmployees.length === 0 ? (
+                        <div className="px-3 py-5 text-center text-xs font-medium text-slate-400">
+                          No results found
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            style={{marginBottom:"0.5rem", borderRadius:"0"}}
+                            onClick={() => {
+                              setAddForm(f => ({ ...f, emp_id: '' }));
+                              setOpenEmpSelect(false);
+                              setEmpSearch('');
+                            }}
+                            className="w-full bg-transparent px-3 py-2 text-left text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+                          >
+                            Clear selection
+                          </button>
+                          {selectableEmployees.map((emp) => {
+                            const isSelected = addForm.emp_id === emp.device_user_id;
+                            const empVal = emp.device_user_id || emp.emp_id;
+                            return (
+                              <div
+                                key={emp.device_user_id}
+                          
+                                onClick={() => {
+                                  setAddForm(f => ({ ...f, emp_id: empVal }));
+                                  setOpenEmpSelect(false);
+                                  setEmpSearch('');
+                                }}
+                                className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-xs font-medium capitalize transition-colors ${
+                                  isSelected ? 'bg-slate-100 text-slate-900' : 'bg-transparent hover:bg-slate-50'
+                                }`}
+                              >
+                                <div style={{width:"100%"}} className="min-w-0 truncate text-left">
+                                  <div className="truncate">{emp.name.toLowerCase()}</div>
+                                  <div className="truncate text-[10px] font-normal text-slate-400 normal-case">
+                                    Device ID: {emp.device_user_id}
+                                  </div>
+                                </div>
+                                {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-slate-700" />}
+                              </div>
+                            );
+                          })}
+                        </>
                       )}
                     </div>
                   </div>
+                )}
+              </div>
+            </div>
 
-                  {/* List Area */}
-                  <div className="overflow-y-auto py-1 max-h-[200px]">
-                    {selectableEmployees.length === 0 ? (
-                      <div className="px-3 py-4 text-center text-xs text-slate-400 font-medium">
-                        No results found
-                      </div>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAddForm(f => ({ ...f, emp_id: '' }));
-                            setOpenEmpSelect(false);
-                            setEmpSearch("");
-                          }}
-                          className="w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 bg-transparent text-red-600 font-semibold"
-                        >
-                          -- Clear Selection --
-                        </button>
-                        {selectableEmployees.map((emp) => {
-                          const isSelected = addForm.emp_id === emp.device_user_id;
-                          const empVal = emp.device_user_id || emp.emp_id;
-                          return (
-                            <button
-                              key={emp.device_user_id}
-                              type="button"
-                              onClick={() => {
-                                setAddForm(f => ({ ...f, emp_id: empVal }));
-                                setOpenEmpSelect(false);
-                                setEmpSearch("");
-                              }}
-                              className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between capitalize font-medium ${
-                                isSelected ? "bg-indigo-50 text-indigo-900" : "hover:bg-slate-50 bg-transparent"
-                              }`}
-                            >
-                              <div className="truncate text-left">
-                                <div>{emp.name.toLowerCase()}</div>
-                                <div className="text-[10px] text-slate-400 font-normal normal-case">
-                                  ID: {emp.device_user_id}
-                                </div>
-                              </div>
-                              {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600" />}
-                            </button>
-                          );
-                        })}
-                      </>
-                    )}
-                  </div>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                  Leave Type <span className="text-rose-500">*</span>
+                </label>
+                <Select
+                  value={addForm.status}
+                  onValueChange={(val) => setAddForm(f => ({ ...f, status: val }))}
+                >
+                  <SelectTrigger className="h-10 w-full rounded-lg border-slate-200 bg-white text-sm shadow-sm">
+                    <SelectValue placeholder="Select leave type" />
+                  </SelectTrigger>
+                  <SelectContent className="border border-slate-200 bg-white">
+                    {leaveTypes.map(t => (
+                      <SelectItem key={t} value={t} className="text-sm">{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                    Start Date <span className="text-rose-500">*</span>
+                  </label>
+                  <Input
+                    type="date"
+                    value={addForm.from}
+                    onChange={(e) => setAddForm(f => ({ ...f, from: e.target.value }))}
+                    className="h-10 rounded-lg border-slate-200 text-sm shadow-sm"
+                  />
                 </div>
-              )}
-            </div>
-
-            {/* Leave Type Select */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Leave Type / Status <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={addForm.status}
-                onValueChange={(val) => setAddForm(f => ({ ...f, status: val }))}
-              >
-                <SelectTrigger className="w-full h-9 text-xs">
-                  <SelectValue placeholder="Select leave type" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border border-slate-200">
-                  {leaveTypes.map(t => (
-                    <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Dates Inputs */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Start Date <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="date"
-                  value={addForm.from}
-                  onChange={(e) => setAddForm(f => ({ ...f, from: e.target.value }))}
-                  className="h-9 text-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Return Date <span className="text-slate-400">(Optional)</span>
-                </label>
-                <Input
-                  type="date"
-                  value={addForm.till}
-                  onChange={(e) => setAddForm(f => ({ ...f, till: e.target.value }))}
-                  className="h-9 text-xs"
-                />
-                <span className="block mt-1 text-[9px] text-slate-450 leading-none">
-                  Leave blank for perpetual leave
-                </span>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                    Return Date <span className="text-slate-400">(Optional)</span>
+                  </label>
+                  <Input
+                    type="date"
+                    value={addForm.till}
+                    onChange={(e) => setAddForm(f => ({ ...f, till: e.target.value }))}
+                    className="h-10 rounded-lg border-slate-200 text-sm shadow-sm"
+                  />
+                  <span className="mt-1.5 block text-[10px] leading-none text-slate-400">
+                    Leave blank if the employee is on open-ended leave.
+                  </span>
+                </div>
               </div>
             </div>
-
           </div>
 
-          <DialogFooter className="border-t border-slate-100 pt-3 flex gap-2">
+          <DialogFooter className="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50 px-6 py-4 sm:justify-end">
             <Button
-              variant="outline"
+              variant="ghost"
               type="button"
               onClick={() => setIsAdding(false)}
-              className="h-9 text-xs border border-slate-200"
+              className="h-10 flex-1 rounded-lg text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-800"
             >
               Cancel
             </Button>
             <Button
               onClick={handleAdd}
               disabled={saving}
-              className="h-9 text-xs bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center gap-1.5"
+              className="h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-900 text-sm text-white hover:bg-slate-800 disabled:opacity-50"
             >
-              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {saving ? 'Logging…' : 'Log Leave'}
             </Button>
           </DialogFooter>

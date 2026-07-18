@@ -77,6 +77,32 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
   const [filterCreatedDate, setFilterCreatedDate] = useState<string>("");
   const [renderLimit, setRenderLimit] = useState(50);
 
+  const canEditAttendance = useMemo(() => {
+    try {
+      const permissions = JSON.parse(userData?.clearance || "{}") as Record<string, boolean>;
+      const hasStructuredClearance = Object.keys(permissions).length > 0;
+      const hasAttendanceModule = permissions.attendance === true;
+      const hasAttendanceEdit = permissions.attendance_edit === true;
+      const hasExplicitEditBlock = permissions.attendance_edit === false;
+
+      if (hasAttendanceModule) {
+        return hasAttendanceEdit;
+      }
+
+      if (permissions.attendance === false || hasExplicitEditBlock) {
+        return false;
+      }
+
+      if (userData?.role === "admin" || userData?.role === "site_admin") {
+        return !hasStructuredClearance;
+      }
+
+      return false;
+    } catch {
+      return userData?.role === "admin" || userData?.role === "site_admin";
+    }
+  }, [userData]);
+
   const fetchTransfers = async (isManual = false) => {
     try {
       if (isManual) setRefreshing(true);
@@ -441,6 +467,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
   };
 
   const handleBulkTransferClick = () => {
+    if (!canEditAttendance) return;
     setIsBulkMode(true);
     setFromProject("Multiple Locations");
     setToProject("");
@@ -451,6 +478,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
   };
 
   const handleNewTransfer = () => {
+    if (!canEditAttendance) return;
     setIsBulkMode(false);
     const today = new Date().toISOString().split("T")[0];
     setTransferDate(today);
@@ -463,6 +491,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
   };
 
   const handleStartTransfer = (emp: Employee) => {
+    if (!canEditAttendance) return;
     setIsBulkMode(false);
     const today = new Date().toISOString().split("T")[0];
     setTransferDate(today);
@@ -587,7 +616,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
               <span style={{ fontSize: "0.725rem", fontWeight: 500, backgroundColor: "rgba(100, 100, 100, 0.08)", padding: "0.18rem 0.5rem", borderRadius: "0.25rem" }}>
                 {filteredEmployees.length} {filteredEmployees.length === 1 ? 'employee' : 'employees'}
               </span>
-              {isSelectionMode && selectedEmployeeIds.size > 0 && (
+              {canEditAttendance && isSelectionMode && selectedEmployeeIds.size > 0 && (
                 <Button
                   onClick={handleBulkTransferClick}
                   size="sm"
@@ -888,11 +917,11 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                           onClick={() => {
                             if (isSelectionMode) {
                               toggleSelectEmployee(emp.id);
-                            } else {
+                            } else if (canEditAttendance) {
                               handleStartTransfer(emp);
                             }
                           }}
-                          style={{ transition: "background 0.2s", cursor: "pointer" }}
+                          style={{ transition: "background 0.2s", cursor: isSelectionMode || canEditAttendance ? "pointer" : "default" }}
                           className="hover:bg-gray-50 border-b border-gray-100"
                         >
                           {isSelectionMode && (
@@ -1009,23 +1038,25 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
               LOG
             </h3>
 
-            <Button
-              onClick={handleNewTransfer}
-              size="sm"
-              style={{
-                height: "1.75rem",
-                padding: "0 0.6rem",
-                fontSize: "0.75rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.25rem",
-                backgroundColor: "black",
-                color: "white"
-              }}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              New Transfer
-            </Button>
+            {canEditAttendance && (
+              <Button
+                onClick={handleNewTransfer}
+                size="sm"
+                style={{
+                  height: "1.75rem",
+                  padding: "0 0.6rem",
+                  fontSize: "0.75rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.25rem",
+                  backgroundColor: "black",
+                  color: "white"
+                }}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                New Transfer
+              </Button>
+            )}
           </div>
 
           {/* Transfers Table */}
