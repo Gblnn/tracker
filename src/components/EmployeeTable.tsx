@@ -355,6 +355,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' });
     const currentYearMonth = todayStr.substring(0, 7);
 
+    const [yr, mo] = yearMonth.split('-').map(Number);
     for (let d = 1; d <= lastDay; d++) {
       const isFuture = (yearMonth > currentYearMonth) ||
         (yearMonth === currentYearMonth && d > parseInt(todayStr.split('-')[2]));
@@ -362,8 +363,12 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
       const presentCount = daysData[d].size;
       const absentCount = totalStaff - presentCount;
 
+      const dateObj = new Date(yr, mo - 1, d);
+      const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+
       dataList.push({
         day: d,
+        dayName: dayName,
         name: `Day ${d}`,
         present: isFuture ? null : presentCount,
         absent: isFuture ? null : absentCount,
@@ -678,7 +683,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                             const data = payload[0].payload;
                             return (
                               <div style={{ background: "white", padding: "0.25rem 0.5rem", border: "1px solid #e5e7eb", borderRadius: "0.25rem", fontSize: "0.75rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-                                <p style={{ fontWeight: 600, margin: 0 }}>Day {data.day}</p>
+                                <p style={{ fontWeight: 600, margin: 0 }}>Day {data.day} ({data.dayName})</p>
                                 <p style={{ color: "#009688", margin: 0 }}>Present: {data.present}</p>
                               </div>
                             );
@@ -740,7 +745,7 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                             const data = payload[0].payload;
                             return (
                               <div style={{ background: "white", padding: "0.25rem 0.5rem", border: "1px solid #e5e7eb", borderRadius: "0.25rem", fontSize: "0.75rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-                                <p style={{ fontWeight: 600, margin: 0 }}>Day {data.day}</p>
+                                <p style={{ fontWeight: 600, margin: 0 }}>Day {data.day} ({data.dayName})</p>
                                 <p style={{ color: "#F43F5E", margin: 0 }}>Absent: {data.absent}</p>
                               </div>
                             );

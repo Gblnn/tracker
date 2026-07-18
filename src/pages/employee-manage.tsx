@@ -71,6 +71,18 @@ const NATIONALITIES = [
     'bahraini',
 ];
 
+const EMPLOYEE_STATUSES = ['active', 'inactive', 'leave', 'long leave', 'cancel'] as const;
+
+type EmployeeStatus = typeof EMPLOYEE_STATUSES[number];
+
+function normalizeEmployeeStatus(value: string | null | undefined): EmployeeStatus {
+    const normalized = value?.trim().toLowerCase();
+    if (normalized && EMPLOYEE_STATUSES.includes(normalized as EmployeeStatus)) {
+        return normalized as EmployeeStatus;
+    }
+    return 'active';
+}
+
 interface ManageEmployee {
     id: number;
     device_user_id: string;
@@ -89,6 +101,7 @@ interface ManageEmployee {
     project?: string | null;
     company?: string | null;
     civil_id?: string | null;
+    status?: EmployeeStatus | null;
 }
 
 interface EmployeeManageProps {
@@ -113,6 +126,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [selectedNationalities, setSelectedNationalities] = useState<string[]>([]);
     const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
     const [selectedShifts, setSelectedShifts] = useState<Array<'day' | 'night'>>([]);
+    const [selectedStatuses, setSelectedStatuses] = useState<EmployeeStatus[]>([]);
     const [selectedBiometricFilters, setSelectedBiometricFilters] = useState<Array<'Finger' | 'Face' | 'No Finger' | 'No face' | 'None'>>([]);
     const [selectedEmpPrefixes, setSelectedEmpPrefixes] = useState<string[]>([]);
 
@@ -121,7 +135,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
 
     useEffect(() => {
         setRenderLimit(100);
-    }, [search, selectedDepartments, selectedDesignations, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedShifts, selectedBiometricFilters, selectedEmpPrefixes]);
+    }, [search, selectedDepartments, selectedDesignations, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedShifts, selectedStatuses, selectedBiometricFilters, selectedEmpPrefixes]);
 
     // Selection and bulk states
     const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -176,6 +190,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [editEmpId, setEditEmpId] = useState('');
     const [editEmpType, setEditEmpType] = useState<'staff' | 'worker'>('staff');
     const [editShift, setEditShift] = useState<'day' | 'night'>('day');
+    const [editStatus, setEditStatus] = useState<EmployeeStatus>('active');
     const [editNationality, setEditNationality] = useState('');
     const [editDesignation, setEditDesignation] = useState('');
     const [editCompany, setEditCompany] = useState('');
@@ -388,6 +403,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 'Employee ID': emp.emp_id || '',
                 'Type': emp.emp_type || '',
                 'Shift': emp.shift || 'day',
+                'Status': emp.status || 'active',
                 'Department': emp.department || '',
                 'Designation': emp.designation || '',
                 'Nationality': emp.nationality || '',
@@ -664,6 +680,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [addEmpId, setAddEmpId] = useState('');
     const [addEmpType, setAddEmpType] = useState<'staff' | 'worker'>('staff');
     const [addShift, setAddShift] = useState<'day' | 'night'>('day');
+    const [addStatus, setAddStatus] = useState<EmployeeStatus>('active');
     const [addNationality, setAddNationality] = useState('');
     const [addDesignation, setAddDesignation] = useState('');
     const [addCompany, setAddCompany] = useState('');
@@ -926,6 +943,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     emp_id: addEmpId.trim() || null,
                     emp_type: addEmpType,
                     shift: addShift,
+                    status: normalizeEmployeeStatus(addStatus),
                     nationality: addNationality || null,
                     designation: addDesignation.trim() || null,
                     company: addCompany.trim() || null,
@@ -961,6 +979,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             setAddEmpId('');
             setAddEmpType('staff');
             setAddShift('day');
+            setAddStatus('active');
             setAddNationality('');
             setAddDesignation('');
             setAddCompany('');
@@ -1037,6 +1056,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     emp_id: editEmpId.trim() || null,
                     emp_type: editEmpType,
                     shift: editShift,
+                    status: normalizeEmployeeStatus(editStatus),
                     nationality: editNationality || null,
                     designation: editDesignation.trim() || null,
                     company: editCompany.trim() || null,
@@ -1378,6 +1398,14 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
         return Array.from(shiftSet).sort();
     }, [employees]);
 
+    const uniqueStatuses = useMemo(() => {
+        const statusSet = new Set<EmployeeStatus>();
+        employees.forEach((emp) => {
+            statusSet.add(normalizeEmployeeStatus(emp.status));
+        });
+        return EMPLOYEE_STATUSES.filter((status) => statusSet.has(status));
+    }, [employees]);
+
     // Compile unique locations for filtering
     const uniqueLocations = useMemo(() => {
         const locSet = new Set<string>();
@@ -1440,6 +1468,11 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 selectedShifts.length === 0 ||
                 selectedShifts.includes(shiftValue);
 
+            const statusValue = normalizeEmployeeStatus(emp.status);
+            const matchesStatus =
+                selectedStatuses.length === 0 ||
+                selectedStatuses.includes(statusValue);
+
             const hasFinger = !!(emp.fingerprint_templates && Object.keys(emp.fingerprint_templates).length > 0);
             const hasFace = !!(emp.face_templates && Object.keys(emp.face_templates).length > 0);
             const matchesBiometric =
@@ -1457,9 +1490,9 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 selectedEmpPrefixes.length === 0 ||
                 (emp.emp_id && emp.emp_id.length >= 2 && selectedEmpPrefixes.includes(emp.emp_id.slice(0, 2).toUpperCase()));
 
-            return matchesSearch && matchesDept && matchesDesignation && matchesType && matchesNationality && matchesLocation && matchesCompany && matchesShift && matchesBiometric && matchesPrefix;
+            return matchesSearch && matchesDept && matchesDesignation && matchesType && matchesNationality && matchesLocation && matchesCompany && matchesShift && matchesStatus && matchesBiometric && matchesPrefix;
         });
-    }, [employees, search, selectedDepartments, selectedDesignations, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedShifts, selectedBiometricFilters, selectedEmpPrefixes, employeeLocations, verifiedLocations]);
+    }, [employees, search, selectedDepartments, selectedDesignations, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedShifts, selectedStatuses, selectedBiometricFilters, selectedEmpPrefixes, employeeLocations, verifiedLocations]);
 
     // Stats calculation commented out because cards are disabled
     /*
@@ -2271,6 +2304,73 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </th>
+                                <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "120px" }}>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                                            <span className="truncate">
+                                                {selectedStatuses.length === 0
+                                                    ? 'Status (All)'
+                                                    : selectedStatuses.length === 1
+                                                        ? selectedStatuses[0].toUpperCase()
+                                                        : `Status (${selectedStatuses.length})`}
+                                            </span>
+                                            <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-[170px] max-h-[220px] overflow-y-auto p-0 z-50">
+                                            <div
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedStatuses(uniqueStatuses);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-left"
+                                                    style={{ background: "none", flex: 1 }}
+                                                >
+                                                    Select All
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedStatuses([]);
+                                                    }}
+                                                    className="text-[10px] font-semibold text-gray-500 hover:text-gray-850 cursor-pointer text-right"
+                                                    style={{ background: "none", flex: 1 }}
+                                                >
+                                                    Clear All
+                                                </button>
+                                            </div>
+                                            <div className="py-1">
+                                                {uniqueStatuses.map((status) => {
+                                                    const isChecked = selectedStatuses.includes(status);
+                                                    return (
+                                                        <DropdownMenuCheckboxItem
+                                                            key={status}
+                                                            checked={isChecked}
+                                                            onCheckedChange={(checked) => {
+                                                                if (checked) {
+                                                                    setSelectedStatuses([...selectedStatuses, status]);
+                                                                } else {
+                                                                    setSelectedStatuses(selectedStatuses.filter((value) => value !== status));
+                                                                }
+                                                            }}
+                                                            onSelect={(e) => e.preventDefault()}
+                                                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs uppercase"
+                                                        >
+                                                            {status}
+                                                        </DropdownMenuCheckboxItem>
+                                                    );
+                                                })}
+                                            </div>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </th>
                                 <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "200px" }}>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
@@ -2356,6 +2456,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             setEditEmpId(emp.emp_id || '');
                                             setEditEmpType(emp.emp_type || 'staff');
                                             setEditShift(emp.shift || 'day');
+                                            setEditStatus(normalizeEmployeeStatus(emp.status));
                                             setEditNationality(emp.nationality || '');
                                             setEditDesignation(emp.designation || '');
                                             setEditCompany(emp.company || '');
@@ -2454,6 +2555,26 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             }`}>
                                             {(emp.shift || 'day').toUpperCase()}
                                         </span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        {(() => {
+                                            const status = normalizeEmployeeStatus(emp.status);
+                                            return (
+                                        <span style={{textTransform:"capitalize"}} className={`inline-flex items-center w-fit px-2 py-0.5 rounded-full text-xs font-medium ${
+                                            status === 'active'
+                                                ? 'bg-teal-50 text-teal-700'
+                                                : status === 'inactive'
+                                                    ? 'bg-rose-50 text-rose-700'
+                                                    : status === 'leave'
+                                                        ? 'bg-amber-50 text-amber-700'
+                                                        : status === 'long leave'
+                                                            ? 'bg-orange-50 text-orange-700'
+                                                            : 'bg-rose-50 text-rose-700'
+                                        }`}>
+                                            {status}
+                                        </span>
+                                            );
+                                        })()}
                                     </td>
                                     {/* Company */}
                                     <td className="px-4 py-3 text-xs text-gray-700 font-medium">
@@ -2639,6 +2760,19 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Status</label>
+                                            <Select value={editStatus} onValueChange={(value) => setEditStatus(value as EmployeeStatus)}>
+                                                <SelectTrigger className="text-sm bg-gray-50 border-gray-100 rounded-xl">
+                                                    <SelectValue placeholder="Select Status" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {EMPLOYEE_STATUSES.map((status) => (
+                                                        <SelectItem key={status} value={status}>{status.toUpperCase()}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                         <div className="space-y-1.5">
                                             <label className="text-xs font-semibold text-gray-555 block">Nationality</label>
                                             <Select value={editNationality} onValueChange={(e) => setEditNationality(e)}>
@@ -3046,6 +3180,19 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-gray-555 block">Status</label>
+                                            <Select value={addStatus} onValueChange={(value) => setAddStatus(value as EmployeeStatus)}>
+                                                <SelectTrigger className="text-xs bg-gray-50 border-gray-100 rounded-xl h-10 w-full focus:bg-white transition-all">
+                                                    <SelectValue placeholder="Select Status" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
+                                                    {EMPLOYEE_STATUSES.map((status) => (
+                                                        <SelectItem key={status} value={status} className="rounded-md focus:bg-gray-50 cursor-pointer">{status.toUpperCase()}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                         <div className="space-y-1.5">
                                             <label className="text-xs font-semibold text-gray-555 block">Nationality</label>
                                             <Select value={addNationality} onValueChange={(e) => setAddNationality(e)}>

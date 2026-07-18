@@ -3,7 +3,7 @@ import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRightLeft, BarChart3, ChartLine, Check, Database, FileCheck, FolderKanban, Laptop2, LayoutGrid, List, Loader2, Sidebar, Table, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
+import { ArrowRightLeft, BarChart3, Calendar, ChartLine, Check, Database, FileCheck, FolderKanban, Laptop2, LayoutGrid, List, Loader2, Sidebar, Table, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
@@ -19,6 +19,7 @@ import ReportsPage from './ReportsPage';
 import Terminal from './Terminal';
 import TimesheetFinalizer from './TimesheetFinalizer';
 import TransferRequests from './transfer-requests';
+import LeaveLog from './LeaveLog';
 
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '../lib/supabase';
@@ -34,7 +35,7 @@ const formatSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management' | 'analytics' | 'transfers' | 'projects' | 'finalize' | 'breakdown';
+type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management' | 'analytics' | 'transfers' | 'projects' | 'finalize' | 'breakdown' | 'leave-log';
 
 export default function AttendanceDashboard() {
   const [date, setDate] = useState<string>(todayISO());
@@ -99,11 +100,60 @@ export default function AttendanceDashboard() {
     }
   }, [userData]);
 
+  const viewOptions = useMemo(() => {
+    let permissions: Record<string, boolean> = {};
+    try {
+      permissions = JSON.parse(userData?.clearance || "{}");
+    } catch {
+      // Fallback
+    }
+
+    const options = [
+      { value: 'summary', label: 'Dashboard', icon: <LayoutGrid color="darkblue" className="w-4 h-4" /> },
+      { value: 'transfers', label: 'Transfers', icon: <ArrowRightLeft color="darkblue" className="w-4 h-4" /> },
+      { value: 'breakdown', label: 'Detailed Breakdown', icon: <Table color="darkblue" className="w-4 h-4" /> },
+      { value: 'analytics', label: 'Analytics', icon: <BarChart3 color="darkblue" className="w-4 h-4" /> },
+      { value: 'manage', label: 'Manage', icon: <UserPlus color="darkblue" className="w-4 h-4" /> },
+      { value: 'log', label: 'Punch Log', icon: <List color="darkblue" className="w-4 h-4" /> },
+      { value: 'reports', label: 'Reports', icon: <TrendingUp color="darkblue" className="w-4 h-4" /> },
+      { value: 'devices', label: 'Devices', icon: <Laptop2 color="darkblue" className="w-4 h-4" /> },
+      { value: 'projects', label: 'Projects', icon: <FolderKanban color="darkblue" className="w-4 h-4" /> },
+      { value: 'finalize', label: 'Finalize Timesheets', icon: <FileCheck color="darkblue" className="w-4 h-4" /> },
+      { value: 'leave-log', label: 'Leave Log', icon: <Calendar color="darkblue" className="w-4 h-4" /> },
+      { value: 'terminal', label: 'Terminal', icon: <TerminalIcon color="darkblue" className="w-4 h-4" /> },
+      { value: 'data-management', label: 'Data Management', icon: <Database color="darkblue" className="w-4 h-4" /> },
+    ];
+
+    const hasStructuredClearance = Object.keys(permissions).length > 0;
+    if (hasStructuredClearance) {
+      return options.filter(opt => {
+        if (opt.value === 'transfers') return permissions.attendance_transfers === true;
+        if (opt.value === 'breakdown') return permissions.attendance_breakdown === true;
+        if (opt.value === 'manage') return permissions.attendance_manage === true;
+        if (opt.value === 'reports') return permissions.attendance_reports === true;
+        if (opt.value === 'projects') return permissions.attendance_projects === true;
+        if (opt.value === 'terminal') return permissions.attendance_terminal === true;
+        if (opt.value === 'finalize') return permissions.attendance_finalize === true;
+        if (opt.value === 'leave-log') return permissions.attendance_leave_log === true;
+        return true;
+      });
+    }
+
+    if (!canEditAttendance) {
+      return options.filter(opt => opt.value !== 'manage' && opt.value !== 'finalize' && opt.value !== 'leave-log');
+    }
+    return options;
+  }, [canEditAttendance, userData?.clearance]);
+
+  const isAllowed = (tabValue: Tab) => {
+    return viewOptions.some(opt => opt.value === tabValue);
+  };
+
   useEffect(() => {
-    if (!canEditAttendance && tab === 'manage') {
+    if (!isAllowed(tab)) {
       setTab('summary');
     }
-  }, [canEditAttendance, tab]);
+  }, [viewOptions, tab]);
 
   useEffect(() => {
     if (canEditAttendance) {
@@ -123,26 +173,7 @@ export default function AttendanceDashboard() {
     }
   }, [loading, canEditAttendance]);
 
-  const viewOptions = useMemo(() => {
-    const options = [
-      { value: 'summary', label: 'Dashboard', icon: <LayoutGrid color="darkblue" className="w-4 h-4" /> },
-      { value: 'transfers', label: 'Transfers', icon: <ArrowRightLeft color="darkblue" className="w-4 h-4" /> },
-      { value: 'breakdown', label: 'Detailed Breakdown', icon: <Table color="darkblue" className="w-4 h-4" /> },
-      { value: 'analytics', label: 'Analytics', icon: <BarChart3 color="darkblue" className="w-4 h-4" /> },
-      { value: 'manage', label: 'Manage', icon: <UserPlus color="darkblue" className="w-4 h-4" /> },
-      { value: 'log', label: 'Punch Log', icon: <List color="darkblue" className="w-4 h-4" /> },
-      { value: 'reports', label: 'Reports', icon: <TrendingUp color="darkblue" className="w-4 h-4" /> },
-      { value: 'devices', label: 'Devices', icon: <Laptop2 color="darkblue" className="w-4 h-4" /> },
-      { value: 'projects', label: 'Projects', icon: <FolderKanban color="darkblue" className="w-4 h-4" /> },
-      { value: 'finalize', label: 'Finalize Timesheets', icon: <FileCheck color="darkblue" className="w-4 h-4" /> },
-      { value: 'terminal', label: 'Terminal', icon: <TerminalIcon color="darkblue" className="w-4 h-4" /> },
-      { value: 'data-management', label: 'Data Management', icon: <Database color="darkblue" className="w-4 h-4" /> },
-    ];
-    if (!canEditAttendance) {
-      return options.filter(opt => opt.value !== 'manage' && opt.value !== 'finalize');
-    }
-    return options;
-  }, [canEditAttendance]);
+
 
   const activeViewLabel = useMemo(
     () => viewOptions.find(opt => opt.value === tab)?.label,
@@ -198,41 +229,56 @@ export default function AttendanceDashboard() {
                 height: "100%"
               }}
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", flex: 1 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem", flex: 1, minHeight: 0 }}>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                  <Directive bg={tab === 'summary' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('summary')} title="Dashboard" icon={<ChartLine size={16} />} />
-
-                   <Directive bg={tab === 'transfers' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('transfers')} title="Transfers" icon={<ArrowRightLeft size={16} />} />
-
-                  <Directive bg={tab === 'breakdown' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('breakdown')} title="Detailed Breakdown" icon={<Table size={16} />} />
-
-                  {canEditAttendance && (
-                    <Directive bg={tab === 'manage' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('manage')} title="Manage" icon={<UserCog size={16} />} />
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", flex: 1, overflowY: "auto", minHeight: 0 }}>
+                  {isAllowed('summary') && (
+                    <Directive bg={tab === 'summary' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('summary')} title="Dashboard" icon={<ChartLine size={16} />} />
                   )}
 
-                  {/* <Directive bg={tab === 'add' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize='0.9rem' onClick={() => { setTab('add') }} title={"Add Employee"} icon={<UserPlus size={16} />} /> */}
-
-                  <Directive bg={tab === 'log' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('log')} title="Punch Log" icon={<List size={16} />} />
-
-                  <Directive bg={tab === 'reports' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('reports')} title="Reports" icon={<TrendingUp size={16} />} />
-
-                  <Directive bg={tab === 'devices' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('devices')} title="Devices" icon={<Laptop2 size={16} />} />
-
-                  {canEditAttendance && (
-                    <Directive bg={tab === 'projects' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('projects')} title="Projects" icon={<FolderKanban size={16} />} />
+                  {isAllowed('transfers') && (
+                    <Directive bg={tab === 'transfers' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('transfers')} title="Transfers" icon={<ArrowRightLeft size={16} />} />
                   )}
 
+                  {isAllowed('breakdown') && (
+                    <Directive bg={tab === 'breakdown' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('breakdown')} title="Detailed Breakdown" icon={<Table size={16} />} />
+                  )}
 
-                  <Directive bg={tab === 'terminal' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('terminal')} title="Terminal" icon={<TerminalIcon size={16} />} />
+                  {isAllowed('manage') && (
+                    <Directive bg={tab === 'manage' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('manage')} title="Manage" icon={<UserCog size={16} />} />
+                  )}
 
-                  {canEditAttendance && (
-                    <Directive bg={tab === 'finalize' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} height='3rem' titleSize="0.9rem" onClick={() => setTab('finalize')} title="Finalize" icon={<Check size={16} />} />
+                  {isAllowed('log') && (
+                    <Directive bg={tab === 'log' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('log')} title="Punch Log" icon={<List size={16} />} />
+                  )}
+
+                  {isAllowed('reports') && (
+                    <Directive bg={tab === 'reports' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('reports')} title="Reports" icon={<TrendingUp size={16} />} />
+                  )}
+
+                  {isAllowed('devices') && (
+                    <Directive bg={tab === 'devices' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('devices')} title="Devices" icon={<Laptop2 size={16} />} />
+                  )}
+
+                  {isAllowed('projects') && (
+                    <Directive bg={tab === 'projects' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('projects')} title="Projects" icon={<FolderKanban size={16} />} />
+                  )}
+
+                  {isAllowed('leave-log') && (
+                    <Directive bg={tab === 'leave-log' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('leave-log')} title="Leave Log" icon={<Calendar size={16} />} />
+                  )}
+
+                  {isAllowed('terminal') && (
+                    <Directive bg={tab === 'terminal' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('terminal')} title="Terminal" icon={<TerminalIcon size={16} />} />
+                  )}
+
+                  {isAllowed('finalize') && (
+                    <Directive bg={tab === 'finalize' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('finalize')} title="Finalize" icon={<Check size={16} />} />
                   )}
                 </div>
 
                 {canEditAttendance && (
-                  <div style={{ marginTop: "auto", width: "100%" }}>
+                  <div style={{ width: "100%", paddingTop: "0.2rem", flexShrink: 0 }}>
                     <motion.div
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setTab('data-management')}
@@ -425,7 +471,9 @@ export default function AttendanceDashboard() {
             ) : tab === 'projects' ? (
               <ProjectsMaster refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} employeeSummaries={employeeSummaries} />
             ) : tab === 'finalize' ? (
-              <TimesheetFinalizer />
+              <TimesheetFinalizer refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
+            ) : tab === 'leave-log' ? (
+              <LeaveLog refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
             ) : tab === 'terminal' ? (
               <Terminal />
             ) : tab === 'data-management' ? (

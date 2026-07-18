@@ -15,8 +15,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  AlertCircle,
+  Calendar,
   Check,
   ChevronDown,
+  Laptop2,
   Loader2,
   Lock,
   RefreshCw,
@@ -129,7 +132,80 @@ const getVerifyTypeLabel = (punch: Punch | null): string => {
   return 'Password';
 };
 
-export default function TimesheetFinalizer() {
+const parseAttestedBy = (attestedBy: string | null | undefined, isApproved: boolean) => {
+  const str = attestedBy || '';
+  if (str.includes('|')) {
+    const parts = str.split('|');
+    return {
+      verifier: parts[0] || null,
+      approver: parts[1] || null,
+      machineCode: parts[2] || null
+    };
+  }
+  if (str.includes('@')) {
+    if (isApproved) {
+      return {
+        verifier: null,
+        approver: str,
+        machineCode: null
+      };
+    } else {
+      return {
+        verifier: str,
+        approver: null,
+        machineCode: null
+      };
+    }
+  }
+  return {
+    verifier: null,
+    approver: null,
+    machineCode: str || null
+  };
+};
+
+const getVerificationBadge = (row: TimesheetRow) => {
+  if (!row.inDatabase && !row.isApproved) return null;
+  const { verifier } = parseAttestedBy(row.attested_by, !!row.isApproved);
+  const displayText = verifier || (row.inDatabase ? 'Verified' : null);
+  if (!displayText) return null;
+  return (
+    <span style={{ borderBottom: "2px solid #0d9488", gap: "0.25rem" }} className="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold text-teal-800 bg-teal-50/50 rounded-t-[3px]">
+      <Check size={12} />
+      {displayText}
+    </span>
+  );
+};
+
+const getApprovalBadge = (row: TimesheetRow) => {
+  if (!row.isApproved) return null;
+  const { approver } = parseAttestedBy(row.attested_by, !!row.isApproved);
+  const displayText = approver || 'Approved';
+  if (!displayText) return null;
+  return (
+    <span style={{ borderBottom: "2px solid #4f46e5", gap: "0.25rem" }} className="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold text-indigo-800 bg-indigo-50/50 rounded-t-[3px]">
+      <Stamp size={12} />
+      {displayText}
+    </span>
+  );
+};
+
+const getSaveAttestedBy = (currentAttestedBy: string, userEmail: string | null | undefined, isFocal: boolean) => {
+  const { verifier, approver, machineCode } = parseAttestedBy(currentAttestedBy, false);
+  const email = userEmail || '';
+  if (isFocal) {
+    return `${email}|${approver || ''}|${machineCode || ''}`;
+  } else {
+    return `${verifier || ''}|${email}|${machineCode || ''}`;
+  }
+};
+
+interface TimesheetFinalizerProps {
+  refreshTrigger?: number;
+  onLoadingChange?: (loading: boolean) => void;
+}
+
+export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: TimesheetFinalizerProps = {}) {
   const [date, setDate] = useState<string>(getYesterdayString());
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -148,6 +224,14 @@ export default function TimesheetFinalizer() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Synchronize loading with parent via onLoadingChange
+  useEffect(() => {
+    if (onLoadingChange) {
+      onLoadingChange(loading);
+    }
+  }, [loading, onLoadingChange]);
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
@@ -273,7 +357,7 @@ export default function TimesheetFinalizer() {
       }
     }
 
-    let resolvedAttestedBy = firstPunch ? firstPunch.device_serial : (userData?.email || 'Timekeeper');
+    let resolvedAttestedBy = firstPunch ? firstPunch.device_serial : 'Timekeeper';
     if (firstPunch && (firstPunch.mobile_location || (firstPunch.raw && firstPunch.raw.includes('MOBILE')))) {
       const { location: projName } = parsePunchLocation(firstPunch.mobile_location, undefined);
       if (projName === 'Un-Mapped') {
@@ -447,6 +531,47 @@ export default function TimesheetFinalizer() {
         .eq('date', date);
       if (existingErr) throw existingErr;
 
+      // 4. Fetch leave logs
+      const { data: leavesData, error: leavesErr } = await supabase
+        .from('leave_log')
+        .select('*')
+        .lte('from', date);
+      if (leavesErr) throw leavesErr;
+
+      // Filter perpetual leaves and fetch their punches
+      const perpetualEmpIds = (leavesData || [])
+        .filter(l => l.till === null)
+        .map(l => l.emp_id);
+
+      let punchesAfterLeaveStart: any[] = [];
+      if (perpetualEmpIds.length > 0) {
+        const minFromDate = (leavesData || [])
+          .filter(l => l.till === null)
+          .reduce((min, l) => l.from < min ? l.from : min, date);
+
+        const { data: punchCheckData } = await supabase
+          .from('punches')
+          .select('user_id, punch_time')
+          .in('user_id', perpetualEmpIds)
+          .gte('punch_time', `${minFromDate}T00:00:00`)
+          .lte('punch_time', `${date}T23:59:59`);
+        punchesAfterLeaveStart = punchCheckData || [];
+      }
+
+      const activeLeaves = (leavesData || []).filter(l => {
+        if (l.from > date) return false;
+        if (l.till !== null) {
+          return l.till >= date;
+        } else {
+          const hasPunched = punchesAfterLeaveStart.some(p => {
+            if (p.user_id !== l.emp_id) return false;
+            const punchDate = new Date(p.punch_time).toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' });
+            return punchDate >= l.from && punchDate <= date;
+          });
+          return !hasPunched;
+        }
+      });
+
       const filteredExistingRows = isFocalFiltered
         ? (existingRows || []).filter(row => row.project_code && focalProjectCodes.includes(row.project_code))
         : (existingRows || []);
@@ -494,8 +619,18 @@ export default function TimesheetFinalizer() {
         } else {
           // Guess initial values from raw punches
           const empPunches = pGroups[emp.device_user_id] || [];
+          const guessed = guessRow(emp, empPunches, punchModeRef.current, filteredProjects, devProjMap);
+
+          // Check if employee is on leave on this date
+          const employeeLeave = activeLeaves.find(l => l.emp_id === emp.device_user_id);
+          if (employeeLeave && guessed.status === 'absent') {
+            guessed.remarks = employeeLeave.status; // e.g. "Annual Leave", "Sick Leave"
+            guessed.verify_type = 'Manual Input';
+            guessed.attested_by = 'Leave Log';
+          }
+
           initialRows[emp.device_user_id] = {
-            ...guessRow(emp, empPunches, punchModeRef.current, filteredProjects, devProjMap),
+            ...guessed,
             isApproved: false,
             approval: false,
             inDatabase: false
@@ -507,12 +642,13 @@ export default function TimesheetFinalizer() {
       setError(err.message || 'Failed to load timesheet finalizer data.');
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   }, [date, userData?.email]);
 
   useEffect(() => {
     loadTimesheet();
-  }, [loadTimesheet]);
+  }, [loadTimesheet, refreshTrigger]);
 
   const updateRow = (userId: string, key: keyof TimesheetRow, value: any) => {
     setRows(prev => {
@@ -640,6 +776,14 @@ export default function TimesheetFinalizer() {
       return;
     }
 
+    const { machineCode } = parseAttestedBy(r.attested_by, !!r.isApproved);
+    const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
+    const hasNoSource = !r.isEdited && !hasDevice;
+    if (hasNoSource) {
+      toast.error(`Cannot verify/approve ${r.employee_name} because it has no biometric source.`);
+      return;
+    }
+
     const actionLabel = isFocalFiltered ? 'Verify' : 'Approve';
     const actionText = isFocalFiltered ? 'verifying' : 'approving';
     const actionPastText = isFocalFiltered ? 'verified' : 'approved';
@@ -649,9 +793,7 @@ export default function TimesheetFinalizer() {
       const inTimestamp = buildTimestamp(date, r.punch_in);
       const outTimestamp = buildTimestamp(date, r.punch_out);
 
-      const newAttestedBy = (isFocalFiltered || !r.attested_by || !r.attested_by.includes('@'))
-        ? (userData?.email || r.attested_by)
-        : r.attested_by;
+      const newAttestedBy = getSaveAttestedBy(r.attested_by, userData?.email, isFocalFiltered);
 
       const payload = {
         date: date,
@@ -684,8 +826,8 @@ export default function TimesheetFinalizer() {
 
       setRows(prev => ({
         ...prev,
-        [userId]: { 
-          ...prev[userId], 
+        [userId]: {
+          ...prev[userId],
           isApproved: true,
           approval: !isFocalFiltered,
           inDatabase: true,
@@ -746,6 +888,18 @@ export default function TimesheetFinalizer() {
     setSaving(true);
     const actionPastText = isFocalFiltered ? 'verified' : 'finalized and locked';
     try {
+      const hasNoSourceRows = Object.values(rows).some(r => {
+        const { machineCode } = parseAttestedBy(r.attested_by, !!r.isApproved);
+        const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
+        return !r.isEdited && !hasDevice;
+      });
+
+      if (hasNoSourceRows) {
+        toast.error("Cannot finalize. Some records have no biometric source. Please review items labeled 'No Source'.");
+        setSaving(false);
+        return;
+      }
+
       // 1. Construct payloads for insertion
       const payloads = Object.values(rows)
         .filter(r => r.punch_in || r.punch_out || r.remarks || r.isEdited || r.status)
@@ -753,9 +907,7 @@ export default function TimesheetFinalizer() {
           const inTimestamp = buildTimestamp(date, r.punch_in);
           const outTimestamp = buildTimestamp(date, r.punch_out);
 
-          const newAttestedBy = (isFocalFiltered || !r.attested_by || !r.attested_by.includes('@'))
-            ? (userData?.email || r.attested_by)
-            : r.attested_by;
+          const newAttestedBy = getSaveAttestedBy(r.attested_by, userData?.email, isFocalFiltered);
 
           return {
             date: date,
@@ -1215,7 +1367,7 @@ export default function TimesheetFinalizer() {
         </div>
 
         {/* Loading Indicator */}
-        {loading ? (
+        {loading && isInitialLoad ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '80px 0', gap: '8px', color: '#94a3b8', fontSize: '13px', border: "1px solid rgba(100 100 100/ 0.15)", height: "100%", borderRadius: "12px" }}>
             <Loader2 className="animate-spin" size={20} />
             Loading Daily Shifts…
@@ -1226,7 +1378,7 @@ export default function TimesheetFinalizer() {
           </div>
         ) : (
           /* Shift Review Table */
-          <div className="table-scroll-container animate-fade-in">
+          <div className="table-scroll-container animate-fade-in" style={{ opacity: loading ? 0.65 : 1, transition: 'opacity 0.15s ease' }}>
             <table className="timesheet-table">
               <thead>
                 <tr>
@@ -1542,7 +1694,7 @@ export default function TimesheetFinalizer() {
                                 value={
                                   row.remarks === ''
                                     ? 'NONE'
-                                    : (row.remarks === 'Forgot to Punch' || row.remarks === 'Absent' || row.remarks === 'Sick Leave')
+                                    : (row.remarks === 'Forgot to Punch' || row.remarks === 'Absent' || row.remarks === 'Sick Leave' || row.remarks === 'Annual Leave' || row.remarks === 'Unpaid Leave' || row.remarks === 'Casual Leave' || row.remarks === 'Emergency Leave')
                                       ? row.remarks
                                       : 'CUSTOM'
                                 }
@@ -1564,12 +1716,16 @@ export default function TimesheetFinalizer() {
                                   <SelectItem value="NONE" className="text-xs cursor-pointer focus:bg-slate-50">No Remark</SelectItem>
                                   <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
                                   <SelectItem value="Sick Leave" className="text-xs cursor-pointer focus:bg-slate-50">Sick Leave</SelectItem>
+                                  <SelectItem value="Annual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Annual Leave</SelectItem>
+                                  <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
+                                  <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
+                                  <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
                                   <SelectItem value="Absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
                                   <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
                                 </SelectContent>
                               </Select>
 
-                              {(row.remarks !== '' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Absent' && row.remarks !== 'Sick Leave') && (
+                              {(row.remarks !== '' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Absent' && row.remarks !== 'Sick Leave' && row.remarks !== 'Annual Leave' && row.remarks !== 'Unpaid Leave' && row.remarks !== 'Casual Leave' && row.remarks !== 'Emergency Leave') && (
                                 <Input
                                   type="text"
                                   value={row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks}
@@ -1593,7 +1749,32 @@ export default function TimesheetFinalizer() {
                               </div>
                             ) : (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                <span style={{ fontSize: "0.7rem", background: "teal", color: "white", fontWeight: 500 }} className="source-badge source-auto">Biometric</span>
+                                {(() => {
+                                  const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
+                                  const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
+                                  if (machineCode === 'Leave Log') {
+                                    return (
+                                      <span style={{ fontSize: "0.7rem", background: "#6366f1", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px" }} className="source-badge source-leave" title={row.attested_by}>
+                                        <Calendar className="w-3 h-3 shrink-0" />
+                                        Leave Log
+                                      </span>
+                                    );
+                                  } else if (hasDevice) {
+                                    return (
+                                      <span style={{ fontSize: "0.7rem", background: "teal", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px" }} className="source-badge source-auto" title={row.attested_by}>
+                                        <Laptop2 className="w-3 h-3 shrink-0" />
+                                        {machineCode}
+                                      </span>
+                                    );
+                                  } else {
+                                    return (
+                                      <span style={{ fontSize: "0.7rem", background: "slategray", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px" }} className="source-badge source-nosource" title={row.attested_by || "No source found"}>
+                                        <AlertCircle className="w-3 h-3 shrink-0" />
+                                        No Source
+                                      </span>
+                                    );
+                                  }
+                                })()}
                                 <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>
                                   {row.verify_type}
                                 </span>
@@ -1603,15 +1784,16 @@ export default function TimesheetFinalizer() {
 
                           {/* Approval Actions */}
                           <td className="sticky-action" style={{ textAlign: 'center' }}>
-                            {isFocalFiltered ? (
-                              // Focal Point View
-                              row.isApproved ? (
-                                <div className="flex flex-col items-center justify-center gap-0.5">
+                            {(() => {
+                              const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
+                              const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
+                              const hasNoSource = !row.isEdited && !hasDevice;
+
+                              return isFocalFiltered ? (
+                                // Focal Point View
+                                row.isApproved ? (
                                   <div className="flex items-center justify-center gap-1.5">
-                                    <span style={{ height: "1.6rem" }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-teal-200 bg-teal-50 text-teal-700">
-                                      <Check className="w-3.5 h-3.5" />
-                                      Verified
-                                    </span>
+                                    {getVerificationBadge(row)}
                                     {!isLocked && canUserEdit && !row.approval && (
                                       <button
                                         onClick={() => handleRevokeRow(emp.device_user_id)}
@@ -1623,61 +1805,46 @@ export default function TimesheetFinalizer() {
                                       </button>
                                     )}
                                   </div>
-                                  {row.attested_by && row.attested_by.includes('@') && (
-                                    <span className="text-[9px] text-gray-500 font-mono" title={row.attested_by}>
-                                      by {row.attested_by.split('@')[0]}
-                                    </span>
-                                  )}
-                                </div>
-                              ) : (
-                                canUserEdit && (
-                                  <div className="flex items-center justify-center">
-                                    <button
-                                      onClick={() => handleApproveRow(emp.device_user_id)}
-                                      disabled={isLocked || saving}
-                                      className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-teal-600 hover:bg-teal-700 text-white flex items-center gap-1"
-                                    >
-                                      <Stamp className='w-4 h-4' />
-                                      Verify
-                                    </button>
-                                  </div>
-                                )
-                              )
-                            ) : (
-                              // Admin View
-                              row.isApproved ? (
-                                <div className="flex flex-col items-center justify-center gap-0.5">
-                                  <div className="flex items-center justify-center gap-1.5">
-                                    <span style={{ height: "1.6rem" }} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-blue-200 bg-blue-50 text-blue-700">
-                                      <Check className="w-3.5 h-3.5" />
-                                      Approved
-                                    </span>
-                                    {!isLocked && canUserEdit && (
+                                ) : (
+                                  canUserEdit && (
+                                    <div className="flex items-center justify-center">
                                       <button
-                                        onClick={() => handleRevokeRow(emp.device_user_id)}
-                                        disabled={saving}
-                                        className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
-                                        title="Revoke approval"
+                                        onClick={() => handleApproveRow(emp.device_user_id)}
+                                        disabled={isLocked || saving || hasNoSource}
+                                        title={hasNoSource ? "Cannot verify item with no biometric source" : undefined}
+                                        className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-teal-600 hover:bg-teal-700 text-white flex items-center gap-1"
                                       >
-                                        <X className="w-3.5 h-3.5" />
+                                        <Stamp className='w-4 h-4' />
+                                        Verify
                                       </button>
-                                    )}
-                                  </div>
-                                  {row.attested_by && row.attested_by.includes('@') && (
-                                    <span className="text-[9px] text-gray-500 font-mono" title={row.attested_by}>
-                                      by {row.attested_by.split('@')[0]}
-                                    </span>
-                                  )}
-                                </div>
+                                    </div>
+                                  )
+                                )
                               ) : (
-                                canUserEdit && (
+                                // Admin View
+                                row.isApproved ? (
                                   <div className="flex flex-col items-center justify-center gap-1.5">
-                                    {row.inDatabase && (
-                                      <div className="flex flex-col items-center justify-center gap-0.5">
-                                        <div className="flex items-center justify-center gap-1">
-                                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border border-amber-200 bg-amber-50 text-amber-700 uppercase tracking-wider">
-                                            Verified
-                                          </span>
+                                    {getVerificationBadge(row)}
+                                    <div className="flex items-center justify-center gap-1.5">
+                                      {getApprovalBadge(row)}
+                                      {!isLocked && canUserEdit && (
+                                        <button
+                                          onClick={() => handleRevokeRow(emp.device_user_id)}
+                                          disabled={saving}
+                                          className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
+                                          title="Revoke approval"
+                                        >
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  canUserEdit && (
+                                    <div className="flex flex-col items-center justify-center gap-1.5">
+                                      {row.inDatabase && (
+                                        <div className="flex items-center justify-center gap-1.5">
+                                          {getVerificationBadge(row)}
                                           {!isLocked && (
                                             <button
                                               onClick={() => handleRevokeRow(emp.device_user_id)}
@@ -1689,27 +1856,23 @@ export default function TimesheetFinalizer() {
                                             </button>
                                           )}
                                         </div>
-                                        {row.attested_by && row.attested_by.includes('@') && (
-                                          <span className="text-[9px] text-gray-500 font-mono" title={row.attested_by}>
-                                            by {row.attested_by.split('@')[0]}
-                                          </span>
-                                        )}
+                                      )}
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          onClick={() => handleApproveRow(emp.device_user_id)}
+                                          disabled={isLocked || saving || hasNoSource}
+                                          title={hasNoSource ? "Cannot approve item with no biometric source" : undefined}
+                                          className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1"
+                                        >
+                                          <Stamp className='w-4 h-4' />
+                                          Approve
+                                        </button>
                                       </div>
-                                    )}
-                                    <div className="flex items-center gap-1">
-                                      <button
-                                        onClick={() => handleApproveRow(emp.device_user_id)}
-                                        disabled={isLocked || saving}
-                                        className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1"
-                                      >
-                                        <Stamp className='w-4 h-4' />
-                                        Approve
-                                      </button>
                                     </div>
-                                  </div>
+                                  )
                                 )
-                              )
-                            )}
+                              );
+                            })()}
                           </td>
 
                         </tr>

@@ -87,6 +87,26 @@ const MODULES = [
 const OFFER_LETTERS_EDIT_KEY = "offer_letters_edit";
 const TICKETS_HANDLER_KEY = "tickets_handler";
 const ATTENDANCE_EDIT_KEY = "attendance_edit";
+const ATTENDANCE_TRANSFERS_KEY = "attendance_transfers";
+const ATTENDANCE_BREAKDOWN_KEY = "attendance_breakdown";
+const ATTENDANCE_MANAGE_KEY = "attendance_manage";
+const ATTENDANCE_REPORTS_KEY = "attendance_reports";
+const ATTENDANCE_PROJECTS_KEY = "attendance_projects";
+const ATTENDANCE_TERMINAL_KEY = "attendance_terminal";
+const ATTENDANCE_FINALIZE_KEY = "attendance_finalize";
+const ATTENDANCE_LEAVE_LOG_KEY = "attendance_leave_log";
+
+const ATTENDANCE_SUBOPTIONS = [
+  { key: ATTENDANCE_EDIT_KEY, label: 'Editing Privileges' },
+  { key: ATTENDANCE_TRANSFERS_KEY, label: 'Transfers Page' },
+  { key: ATTENDANCE_BREAKDOWN_KEY, label: 'Detailed Breakdown' },
+  { key: ATTENDANCE_MANAGE_KEY, label: 'Employee Management' },
+  { key: ATTENDANCE_REPORTS_KEY, label: 'Reports Page' },
+  { key: ATTENDANCE_PROJECTS_KEY, label: 'Projects Page' },
+  { key: ATTENDANCE_LEAVE_LOG_KEY, label: 'Leave Log Page' },
+  { key: ATTENDANCE_TERMINAL_KEY, label: 'Terminal Page' },
+  { key: ATTENDANCE_FINALIZE_KEY, label: 'Finalize Timesheets' },
+];
 
 const countEnabledModules = (permissions: Record<string, boolean>) =>
   MODULES.filter((module) => permissions[module.id] === true).length;
@@ -586,63 +606,68 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
                         style={{
                           overflow: "hidden",
                           borderTop: "1px solid rgba(100, 100, 100, 0.14)",
+                          display: "flex",
+                          flexDirection: "column",
                         }}
                       >
-                        <motion.div
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => onToggleModule(ATTENDANCE_EDIT_KEY)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "0.75rem 1rem",
-                            margin: "0.45rem",
-                            borderRadius: "0.6rem",
-                            background: modulePermissions[ATTENDANCE_EDIT_KEY]
-                              ? "rgba(0, 0, 0, 0.08)"
-                              : "rgba(100, 100, 100, 0.05)",
-                            cursor: "pointer",
-                            transition: "all 0.2s",
-                          }}
-                        >
-                          <span
+                        {ATTENDANCE_SUBOPTIONS.map((subopt) => (
+                          <motion.div
+                            key={subopt.key}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => onToggleModule(subopt.key)}
                             style={{
-                              fontSize: "0.9rem",
-                              color: modulePermissions[ATTENDANCE_EDIT_KEY]
-                                ? "inherit"
-                                : "rgba(100, 100, 100, 0.8)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              padding: "0.75rem 1rem",
+                              margin: "0.45rem",
+                              borderRadius: "0.6rem",
+                              background: modulePermissions[subopt.key]
+                                ? "rgba(0, 0, 0, 0.08)"
+                                : "rgba(100, 100, 100, 0.05)",
+                              cursor: "pointer",
+                              transition: "all 0.2s",
                             }}
                           >
-                            Editing Privileges
-                          </span>
-                          <div
-                            style={{
-                              width: "2.25rem",
-                              height: "1.35rem",
-                              borderRadius: "0.7rem",
-                              background: modulePermissions[ATTENDANCE_EDIT_KEY]
-                                ? "black"
-                                : "rgba(100, 100, 100, 0.2)",
-                              position: "relative",
-                              transition: "all 0.3s",
-                            }}
-                          >
+                            <span
+                              style={{
+                                fontSize: "0.9rem",
+                                color: modulePermissions[subopt.key]
+                                  ? "inherit"
+                                  : "rgba(100, 100, 100, 0.8)",
+                              }}
+                            >
+                              {subopt.label}
+                            </span>
                             <div
                               style={{
-                                width: "1.1rem",
-                                height: "1.1rem",
-                                borderRadius: "50%",
-                                background: "white",
-                                position: "absolute",
-                                top: "0.125rem",
-                                left: modulePermissions[ATTENDANCE_EDIT_KEY]
-                                  ? "1.025rem"
-                                  : "0.125rem",
+                                width: "2.25rem",
+                                height: "1.35rem",
+                                borderRadius: "0.7rem",
+                                background: modulePermissions[subopt.key]
+                                  ? "black"
+                                  : "rgba(100, 100, 100, 0.2)",
+                                position: "relative",
                                 transition: "all 0.3s",
                               }}
-                            />
-                          </div>
-                        </motion.div>
+                            >
+                              <div
+                                style={{
+                                  width: "1.1rem",
+                                  height: "1.1rem",
+                                  borderRadius: "50%",
+                                  background: "white",
+                                  position: "absolute",
+                                  top: "0.125rem",
+                                  left: modulePermissions[subopt.key]
+                                    ? "1.025rem"
+                                    : "0.125rem",
+                                  transition: "all 0.3s",
+                                }}
+                              />
+                            </div>
+                          </motion.div>
+                        ))}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -814,6 +839,14 @@ export default function Users() {
       }
       if (moduleId === "attendance" && !nextValue) {
         updated[ATTENDANCE_EDIT_KEY] = false;
+        updated[ATTENDANCE_TRANSFERS_KEY] = false;
+        updated[ATTENDANCE_BREAKDOWN_KEY] = false;
+        updated[ATTENDANCE_MANAGE_KEY] = false;
+        updated[ATTENDANCE_REPORTS_KEY] = false;
+        updated[ATTENDANCE_PROJECTS_KEY] = false;
+        updated[ATTENDANCE_TERMINAL_KEY] = false;
+        updated[ATTENDANCE_FINALIZE_KEY] = false;
+        updated[ATTENDANCE_LEAVE_LOG_KEY] = false;
       }
 
       return updated;
@@ -837,6 +870,14 @@ export default function Users() {
       }
       if (moduleId === "attendance" && !nextValue) {
         updated[ATTENDANCE_EDIT_KEY] = false;
+        updated[ATTENDANCE_TRANSFERS_KEY] = false;
+        updated[ATTENDANCE_BREAKDOWN_KEY] = false;
+        updated[ATTENDANCE_MANAGE_KEY] = false;
+        updated[ATTENDANCE_REPORTS_KEY] = false;
+        updated[ATTENDANCE_PROJECTS_KEY] = false;
+        updated[ATTENDANCE_TERMINAL_KEY] = false;
+        updated[ATTENDANCE_FINALIZE_KEY] = false;
+        updated[ATTENDANCE_LEAVE_LOG_KEY] = false;
       }
 
       return updated;
