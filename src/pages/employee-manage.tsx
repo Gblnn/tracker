@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
-import { ChevronDown, Check, Download, Fingerprint, Loader2, Plus, Scan, Search, SquareCheck, Upload, Users, X } from 'lucide-react';
+import { ChevronDown, Check, Download, Fingerprint, Loader2, Plus, Scan, Search, SquareCheck, Upload, Users, X, StickyNotes } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
@@ -129,6 +129,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [selectedStatuses, setSelectedStatuses] = useState<EmployeeStatus[]>([]);
     const [selectedBiometricFilters, setSelectedBiometricFilters] = useState<Array<'Finger' | 'Face' | 'No Finger' | 'No face' | 'None'>>([]);
     const [selectedEmpPrefixes, setSelectedEmpPrefixes] = useState<string[]>([]);
+    const [showDuplicateNamesOnly, setShowDuplicateNamesOnly] = useState(false);
 
     const canEditAttendance = useMemo(() => {
         try {
@@ -545,7 +546,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                         .filter(emp => emp.emp_id)
                         .map(emp => [emp.emp_id!.trim().toLowerCase(), emp])
                 );
-                
+
                 const helperIsValueChanged = (excelVal: any, dbVal: any) => {
                     const normExcel = excelVal === undefined || excelVal === null ? '' : String(excelVal).trim();
                     const normDb = dbVal === undefined || dbVal === null ? '' : String(dbVal).trim();
@@ -562,7 +563,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                         newEmployees.push({ ...excelEmp, action: 'create' });
                     } else {
                         // Check if any field changed
-                        const isChanged = 
+                        const isChanged =
                             helperIsValueChanged(excelEmp.name, dbEmp.name) ||
                             helperIsValueChanged(excelEmp.device_user_id, dbEmp.device_user_id) ||
                             helperIsValueChanged(excelEmp.emp_type, dbEmp.emp_type) ||
@@ -792,7 +793,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             // Map each user to their most frequent and latest punch locations
             const latestPunchLocs: Record<string, string> = {};
             const userLocationCounts: Record<string, Record<string, number>> = {};
-            
+
             if (punchData) {
                 punchData.forEach(p => {
                     const devLoc = deviceMap[p.device_serial];
@@ -809,7 +810,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                             userLocationCounts[p.user_id] = {};
                         }
                         userLocationCounts[p.user_id][loc] = (userLocationCounts[p.user_id][loc] || 0) + 1;
-                        
+
                         // Since punches query is DESC (newest first), the first punch we find for a user is their latest.
                         if (!latestPunchLocs[p.user_id]) {
                             latestPunchLocs[p.user_id] = loc;
@@ -1458,6 +1459,22 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     }, [employees, employeeLocations, verifiedLocations]);
 
     // Filtered employees logic
+    const duplicateNameKeys = useMemo(() => {
+        const counts = new Map<string, number>();
+
+        employees.forEach((emp) => {
+            const key = emp.name.trim().toLowerCase();
+            if (!key) return;
+            counts.set(key, (counts.get(key) || 0) + 1);
+        });
+
+        return new Set(
+            Array.from(counts.entries())
+                .filter(([, count]) => count > 1)
+                .map(([key]) => key)
+        );
+    }, [employees]);
+
     const filteredEmployees = useMemo(() => {
         return employees.filter((emp) => {
             const nameMatch = emp.name.toLowerCase().includes(search.toLowerCase());
@@ -1523,9 +1540,13 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 selectedEmpPrefixes.length === 0 ||
                 (emp.emp_id && emp.emp_id.length >= 2 && selectedEmpPrefixes.includes(emp.emp_id.slice(0, 2).toUpperCase()));
 
-            return matchesSearch && matchesDept && matchesDesignation && matchesType && matchesNationality && matchesLocation && matchesCompany && matchesShift && matchesStatus && matchesBiometric && matchesPrefix;
+            const matchesDuplicateName =
+                !showDuplicateNamesOnly ||
+                duplicateNameKeys.has(emp.name.trim().toLowerCase());
+
+            return matchesSearch && matchesDept && matchesDesignation && matchesType && matchesNationality && matchesLocation && matchesCompany && matchesShift && matchesStatus && matchesBiometric && matchesPrefix && matchesDuplicateName;
         });
-    }, [employees, search, selectedDepartments, selectedDesignations, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedShifts, selectedStatuses, selectedBiometricFilters, selectedEmpPrefixes, employeeLocations, verifiedLocations]);
+    }, [employees, search, selectedDepartments, selectedDesignations, selectedLocations, selectedTypes, selectedNationalities, selectedCompanies, selectedShifts, selectedStatuses, selectedBiometricFilters, selectedEmpPrefixes, employeeLocations, verifiedLocations, showDuplicateNamesOnly, duplicateNameKeys]);
 
     // Stats calculation commented out because cards are disabled
     /*
@@ -1599,7 +1620,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 <div className="relative flex-1 group">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-darkblue transition-colors" />
                     <input
-                    style={{fontSize:"1rem"}}
+                        style={{ fontSize: "1rem" }}
                         type="text"
                         placeholder="Search name, HR ID, Device ID, or designation..."
                         value={search}
@@ -1760,7 +1781,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                 </EmptyMedia>
                                 <EmptyTitle>No employees found</EmptyTitle>
                                 <EmptyDescription>
-                                    {search || selectedDepartments.length > 0 || selectedDesignations.length > 0 || selectedLocations.length > 0 || selectedTypes.length > 0 || selectedNationalities.length > 0 || selectedCompanies.length > 0 || selectedShifts.length > 0 || selectedBiometricFilters.length > 0 || selectedEmpPrefixes.length > 0
+                                    {search || selectedDepartments.length > 0 || selectedDesignations.length > 0 || selectedLocations.length > 0 || selectedTypes.length > 0 || selectedNationalities.length > 0 || selectedCompanies.length > 0 || selectedShifts.length > 0 || selectedBiometricFilters.length > 0 || selectedEmpPrefixes.length > 0 || showDuplicateNamesOnly
                                         ? 'No matching employees found with current filters.'
                                         : 'Get started by adding employee records.'}
                                 </EmptyDescription>
@@ -1787,7 +1808,22 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                         />
                                     </div>
                                 </th>
-                                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "20px" }}>#</th>
+                                <th className="text-left px-2 py-2 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "88px" }}>
+                                    <div className="flex items-center gap-1">
+                                        <span>#</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowDuplicateNamesOnly((prev) => !prev)}
+                                            className={`h-6 px-2 rounded-md border text-[10px] tracking-normal normal-case transition-colors cursor-pointer ${showDuplicateNamesOnly
+                                                ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                                                : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                                }`}
+                                            title="Filter duplicate names"
+                                        >
+                                            <StickyNotes size={12} />
+                                        </button>
+                                    </div>
+                                </th>
                                 <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide" style={{ width: "240px" }}>Employee</th>
                                 <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: "160px" }}>
                                     <DropdownMenu>
@@ -2595,19 +2631,18 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                         {(() => {
                                             const status = normalizeEmployeeStatus(emp.status);
                                             return (
-                                        <span style={{textTransform:"capitalize"}} className={`inline-flex items-center w-fit px-2 py-0.5 rounded-full text-xs font-medium ${
-                                            status === 'active'
-                                                ? 'bg-teal-50 text-teal-700'
-                                                : status === 'inactive'
-                                                    ? 'bg-rose-50 text-rose-700'
-                                                    : status === 'leave'
-                                                        ? 'bg-amber-50 text-amber-700'
-                                                        : status === 'long leave'
-                                                            ? 'bg-orange-50 text-orange-700'
-                                                            : 'bg-rose-50 text-rose-700'
-                                        }`}>
-                                            {status}
-                                        </span>
+                                                <span style={{ textTransform: "capitalize" }} className={`inline-flex items-center w-fit px-2 py-0.5 rounded-full text-xs font-medium ${status === 'active'
+                                                    ? 'bg-teal-50 text-teal-700'
+                                                    : status === 'inactive'
+                                                        ? 'bg-rose-50 text-rose-700'
+                                                        : status === 'leave'
+                                                            ? 'bg-amber-50 text-amber-700'
+                                                            : status === 'long leave'
+                                                                ? 'bg-orange-50 text-orange-700'
+                                                                : 'bg-rose-50 text-rose-700'
+                                                    }`}>
+                                                    {status}
+                                                </span>
                                             );
                                         })()}
                                     </td>
@@ -3855,42 +3890,42 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                 <div className="min-w-0 w-full overflow-hidden rounded-xl border border-gray-100">
                                     <div className="max-h-[240px] overflow-y-auto">
                                         <table className="w-full table-fixed text-left text-xs text-gray-600">
-                                        <thead className="sticky top-0 border-b border-gray-100 bg-gray-50 font-semibold text-gray-500">
-                                            <tr>
-                                                <th className="w-[18%] px-2 py-2 sm:px-3">User ID</th>
-                                                <th className="w-[28%] px-2 py-2 sm:px-3">Name</th>
-                                                <th className="w-[12%] px-2 py-2 sm:px-3">Type</th>
-                                                <th className="w-[22%] px-2 py-2 sm:px-3">Department</th>
-                                                <th className="hidden px-2 py-2 sm:table-cell sm:w-[20%] sm:px-3">Project</th>
-                                                <th className="hidden px-2 py-2 md:table-cell md:w-[20%] md:px-3">Company</th>
-                                                <th className="hidden px-2 py-2 lg:table-cell lg:w-[18%] lg:px-3">Civil ID</th>
-                                                <th className="w-[20%] px-2 py-2 text-right sm:w-[14%] sm:px-3">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-50 bg-white">
-                                            {paginatedPreviewEmployees.map((emp, index) => (
-                                                <tr key={index}>
-                                                    <td className="break-words px-2 py-2 font-mono text-[11px] text-gray-900 sm:px-3">{emp.device_user_id || '—'}</td>
-                                                    <td className="break-words px-2 py-2 text-[11px] font-medium capitalize text-gray-900 sm:px-3">{emp.name.toLowerCase()}</td>
-                                                    <td className="px-2 py-2 text-[10px] font-semibold uppercase text-gray-400 sm:px-3">{emp.emp_type}</td>
-                                                    <td className="break-words px-2 py-2 text-[11px] sm:px-3">{emp.department || '—'}</td>
-                                                    <td className="hidden break-words px-2 py-2 text-[11px] text-gray-500 sm:table-cell sm:px-3">{emp.project || '—'}</td>
-                                                    <td className="hidden break-words px-2 py-2 text-[11px] text-gray-500 md:table-cell md:px-3">{emp.company || '—'}</td>
-                                                    <td className="hidden break-words px-2 py-2 font-mono text-[11px] text-gray-500 lg:table-cell lg:px-3">{emp.civil_id || '—'}</td>
-                                                    <td className="px-2 py-2 text-right sm:px-3">
-                                                        {emp.action === 'create' ? (
-                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-705 border border-emerald-100">
-                                                                New
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-705 border border-blue-100">
-                                                                Update
-                                                            </span>
-                                                        )}
-                                                    </td>
+                                            <thead className="sticky top-0 border-b border-gray-100 bg-gray-50 font-semibold text-gray-500">
+                                                <tr>
+                                                    <th className="w-[18%] px-2 py-2 sm:px-3">User ID</th>
+                                                    <th className="w-[28%] px-2 py-2 sm:px-3">Name</th>
+                                                    <th className="w-[12%] px-2 py-2 sm:px-3">Type</th>
+                                                    <th className="w-[22%] px-2 py-2 sm:px-3">Department</th>
+                                                    <th className="hidden px-2 py-2 sm:table-cell sm:w-[20%] sm:px-3">Project</th>
+                                                    <th className="hidden px-2 py-2 md:table-cell md:w-[20%] md:px-3">Company</th>
+                                                    <th className="hidden px-2 py-2 lg:table-cell lg:w-[18%] lg:px-3">Civil ID</th>
+                                                    <th className="w-[20%] px-2 py-2 text-right sm:w-[14%] sm:px-3">Action</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-50 bg-white">
+                                                {paginatedPreviewEmployees.map((emp, index) => (
+                                                    <tr key={index}>
+                                                        <td className="break-words px-2 py-2 font-mono text-[11px] text-gray-900 sm:px-3">{emp.device_user_id || '—'}</td>
+                                                        <td className="break-words px-2 py-2 text-[11px] font-medium capitalize text-gray-900 sm:px-3">{emp.name.toLowerCase()}</td>
+                                                        <td className="px-2 py-2 text-[10px] font-semibold uppercase text-gray-400 sm:px-3">{emp.emp_type}</td>
+                                                        <td className="break-words px-2 py-2 text-[11px] sm:px-3">{emp.department || '—'}</td>
+                                                        <td className="hidden break-words px-2 py-2 text-[11px] text-gray-500 sm:table-cell sm:px-3">{emp.project || '—'}</td>
+                                                        <td className="hidden break-words px-2 py-2 text-[11px] text-gray-500 md:table-cell md:px-3">{emp.company || '—'}</td>
+                                                        <td className="hidden break-words px-2 py-2 font-mono text-[11px] text-gray-500 lg:table-cell lg:px-3">{emp.civil_id || '—'}</td>
+                                                        <td className="px-2 py-2 text-right sm:px-3">
+                                                            {emp.action === 'create' ? (
+                                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-705 border border-emerald-100">
+                                                                    New
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-705 border border-blue-100">
+                                                                    Update
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
                                         </table>
                                     </div>
                                 </div>

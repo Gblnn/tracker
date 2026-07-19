@@ -5,8 +5,12 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -26,9 +30,10 @@ import {
   Search,
   Stamp,
   Unlock,
-  X
+  X,
+  SquareCheck,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
 import { toast } from 'sonner';
 import { parsePunchLocation } from '../lib/geofence';
 import { supabase } from '../lib/supabase';
@@ -58,6 +63,25 @@ interface Project {
   project_code: string;
   project_name: string;
 }
+
+const normalizeString = (str: string) => {
+  if (!str) return '';
+  return str.toLowerCase().replace(/[^a-z0-9]/g, '');
+};
+
+const findProjectCode = (currentProject: string | null | undefined, projectList: Project[]): string => {
+  if (!currentProject || currentProject === 'No Project Assigned') return '';
+
+  const normCp = normalizeString(currentProject);
+  const match = projectList.find(p => {
+    const normCode = normalizeString(p.project_code);
+    const normName = normalizeString(p.project_name);
+    return normCode.includes(normCp) || normCp.includes(normCode) ||
+      normName.includes(normCp) || normCp.includes(normName);
+  });
+
+  return match ? match.project_code : '';
+};
 
 interface TimesheetRow {
   employee_code: string;
@@ -212,6 +236,381 @@ const getSaveAttestedBy = (currentAttestedBy: string, userEmail: string | null |
   }
 };
 
+const TimesheetRowComponent = memo(({
+  emp,
+  row,
+  isSelected,
+  isSelectionMode,
+  isLocked,
+  canUserEdit,
+  projects,
+  isFocalFiltered,
+  saving,
+  onRowSelect,
+  onUpdateRow,
+  onApproveRow,
+  onRevokeRow
+}: {
+  emp: Employee;
+  row: TimesheetRow;
+  isSelected: boolean;
+  isSelectionMode: boolean;
+  isLocked: boolean;
+  canUserEdit: boolean;
+  projects: Project[];
+  isFocalFiltered: boolean;
+  saving: boolean;
+  onRowSelect: (userId: string) => void;
+  onUpdateRow: (userId: string, key: keyof TimesheetRow, value: any) => void;
+  onApproveRow: (userId: string) => void;
+  onRevokeRow: (userId: string) => void;
+}) => {
+  return (
+    <tr>
+      <td
+        className="sticky-checkbox transition-[width,opacity] duration-200 ease-in-out overflow-hidden"
+        style={{
+          width: isSelectionMode ? "48px" : "0px",
+          minWidth: isSelectionMode ? "48px" : "0px",
+          maxWidth: isSelectionMode ? "48px" : "0px",
+          opacity: isSelectionMode ? 1 : 0,
+          pointerEvents: isSelectionMode ? "auto" : "none",
+          textAlign: 'center',
+          padding: '0'
+        }}
+      >
+        <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onRowSelect(emp.device_user_id)}
+            onClick={(e) => e.stopPropagation()}
+            className="w-4 h-4 rounded border border-slate-400 bg-white data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 data-[state=checked]:text-white focus-visible:ring-indigo-500 cursor-pointer shrink-0"
+          />
+        </div>
+      </td>
+      {/* Employee Info */}
+      <td className="sticky-name transition-[left] duration-200 ease-in-out" style={{ left: isSelectionMode ? '48px' : '0' }} onClick={() => {
+        if (isSelectionMode) {
+          onRowSelect(emp.device_user_id);
+        }
+      }}>
+        <div>
+          <div style={{ fontWeight: 600, color: '#0f172a', textTransform: "uppercase" }}>{emp.name.toLowerCase()}</div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+            <span style={{ fontFamily: 'monospace', background: '#f1f5f9', padding: '1px 4px', borderRadius: '4px' }}>
+              {emp.device_user_id}
+            </span>
+            <span>·</span>
+            <span style={{ textTransform: 'capitalize' }}>
+              {emp.emp_type || 'undefined'}
+            </span>
+          </div>
+        </div>
+      </td>
+
+      {/* Source/Attestation Badge */}
+      <td>
+        {row.isEdited ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <span style={{ fontSize: "0.7rem", background: "slate-600", color: 'white', border: "none", fontWeight: 500 }} className="source-badge source-manual">Manual</span>
+            <span className='text-indigo-800' style={{ fontFamily: "monospace", fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }} title={row.attested_by}>
+              {row.attested_by}
+            </span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {(() => {
+              const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
+              const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
+              if (machineCode === 'Leave Log') {
+                return (
+                  <span style={{ fontSize: "0.7rem", background: "#6366f1", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px" }} className="source-badge source-leave" title={row.attested_by}>
+                    <Calendar className="w-3 h-3 shrink-0" />
+                    Leave Log
+                  </span>
+                );
+              } else if (hasDevice) {
+                return (
+                  <span style={{ fontSize: "0.7rem", background: "teal", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px" }} className="source-badge source-auto" title={row.attested_by}>
+                    <Laptop2 className="w-3 h-3 shrink-0" />
+                    {machineCode}
+                  </span>
+                );
+              } else {
+                return (
+                  <span style={{ fontSize: "0.7rem", background: "slategray", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px" }} className="source-badge source-nosource" title={row.attested_by || "No source found"}>
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    No Source
+                  </span>
+                );
+              }
+            })()}
+            <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>
+              {row.verify_type}
+            </span>
+          </div>
+        )}
+      </td>
+
+      {/* Punches Tracker */}
+      <td>
+        <div style={{ display: 'flex', flexFlow: 'column', gap: '4px' }}>
+          {row.original_in_punch ? (
+            <div style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <span className='bg-teal-100 text-teal-600' style={{ fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px', width: "1.75rem", textAlign: "center" }}>IN</span>
+              <span>{extractTime(row.original_in_punch.punch_time)}</span>
+              <span style={{ color: '#94a3b8', fontSize: '10px' }}>({row.original_in_punch.device_serial})</span>
+            </div>
+          ) : (
+            <span className='text-rose-500' style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 500 }}>No clock in</span>
+          )}
+
+          {row.original_out_punch ? (
+            <div style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <span className='text-rose-500' style={{ background: '#fee2e2', color: '#b91c1c', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px', width: "1.75rem", textAlign: "center" }}>OUT</span>
+              <span>{extractTime(row.original_out_punch.punch_time)}</span>
+              <span style={{ color: '#94a3b8', fontSize: '10px' }}>({row.original_out_punch.device_serial})</span>
+            </div>
+          ) : (
+            row.original_in_punch ? (
+              <span style={{ fontSize: '11px', color: '#f59e0b', fontStyle: 'italic', fontWeight: 500 }}>No clock out</span>
+            ) : null
+          )}
+        </div>
+      </td>
+
+      {/* Punch In Input */}
+      <td>
+        <Input
+          type="time"
+          value={row.punch_in}
+          onChange={(e) => onUpdateRow(emp.device_user_id, 'punch_in', e.target.value)}
+          disabled={isLocked || row.isApproved || !canUserEdit || !!row.original_in_punch}
+          className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
+        />
+      </td>
+
+      {/* Punch Out Input */}
+      <td>
+        <Input
+          type="time"
+          value={row.punch_out}
+          onChange={(e) => onUpdateRow(emp.device_user_id, 'punch_out', e.target.value)}
+          disabled={isLocked || row.isApproved || !canUserEdit || !!row.original_out_punch}
+          className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
+        />
+      </td>
+
+      {/* Total Hours */}
+      <td style={{ fontSize: '12px', fontWeight: 600, color: '#334155', textAlign: 'center' }}>
+        {calculateTotalHours(row.punch_in, row.punch_out)}
+      </td>
+
+      {/* Overtime Input */}
+      <td>
+        {emp.emp_type === 'staff' ? (
+          <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', paddingLeft: '12px' }}>—</span>
+        ) : (
+          <input
+            type="number"
+            step="0.5"
+            min="0"
+            max="24"
+            value={row.overtime}
+            onChange={(e) => onUpdateRow(emp.device_user_id, 'overtime', parseFloat(e.target.value) || 0)}
+            className="table-input"
+            disabled={isLocked || row.isApproved || !canUserEdit}
+            style={{ width: '70px', fontFamily: 'monospace' }}
+          />
+        )}
+      </td>
+
+      {/* Project Allocation Select */}
+      <td>
+        <Select
+          value={row.project_code || 'UNASSIGNED'}
+          onValueChange={(val) => onUpdateRow(emp.device_user_id, 'project_code', val === 'UNASSIGNED' ? '' : val)}
+          disabled={isLocked || row.isApproved || !canUserEdit}
+        >
+          <SelectTrigger className="w-[150px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
+            <SelectValue placeholder="Choose Project" />
+          </SelectTrigger>
+          <SelectContent className="bg-white border border-slate-200 z-50">
+            <SelectItem value="UNASSIGNED" className="text-xs cursor-pointer focus:bg-slate-50">-- Choose Project --</SelectItem>
+            {projects.map(p => (
+              <SelectItem key={p.project_code} value={p.project_code} className="text-xs cursor-pointer focus:bg-slate-50">
+                {p.project_code}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </td>
+
+      {/* Status Select */}
+      <td>
+        <Select
+          value={row.status || 'absent'}
+          onValueChange={(val) => onUpdateRow(emp.device_user_id, 'status', val)}
+          disabled={isLocked || row.isApproved || !canUserEdit}
+        >
+          <SelectTrigger className="w-[140px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent className="bg-white border border-slate-200 z-50">
+            <SelectItem value="present" className="text-xs cursor-pointer focus:bg-slate-50">Present</SelectItem>
+            <SelectItem value="absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
+            <SelectItem value="present with OT" className="text-xs cursor-pointer focus:bg-slate-50">Present with OT</SelectItem>
+          </SelectContent>
+        </Select>
+      </td>
+
+      {/* Remarks Input */}
+      <td>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <Select
+            value={
+              row.remarks === ''
+                ? 'NONE'
+                : (row.remarks === 'Forgot to Punch' || row.remarks === 'Absent' || row.remarks === 'Sick Leave' || row.remarks === 'Annual Leave' || row.remarks === 'Unpaid Leave' || row.remarks === 'Casual Leave' || row.remarks === 'Emergency Leave')
+                  ? row.remarks
+                  : 'CUSTOM'
+            }
+            onValueChange={(val) => {
+              if (val === 'NONE') {
+                onUpdateRow(emp.device_user_id, 'remarks', '');
+              } else if (val === 'CUSTOM') {
+                onUpdateRow(emp.device_user_id, 'remarks', 'Custom: ');
+              } else {
+                onUpdateRow(emp.device_user_id, 'remarks', val);
+              }
+            }}
+            disabled={isLocked || row.isApproved || !canUserEdit}
+          >
+            <SelectTrigger className="w-[150px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
+              <SelectValue placeholder="No Remark" />
+            </SelectTrigger>
+            <SelectContent className="bg-white border border-slate-200 z-50">
+              <SelectItem value="NONE" className="text-xs cursor-pointer focus:bg-slate-50">No Remark</SelectItem>
+              <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
+              <SelectItem value="Sick Leave" className="text-xs cursor-pointer focus:bg-slate-50">Sick Leave</SelectItem>
+              <SelectItem value="Annual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Annual Leave</SelectItem>
+              <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
+              <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
+              <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
+              <SelectItem value="Absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
+              <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {(row.remarks !== '' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Absent' && row.remarks !== 'Sick Leave' && row.remarks !== 'Annual Leave' && row.remarks !== 'Unpaid Leave' && row.remarks !== 'Casual Leave' && row.remarks !== 'Emergency Leave') && (
+            <Input
+              type="text"
+              value={row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks}
+              onChange={(e) => onUpdateRow(emp.device_user_id, 'remarks', 'Custom: ' + e.target.value)}
+              placeholder="Type custom remark..."
+              disabled={isLocked || row.isApproved || !canUserEdit}
+              className="h-8 text-xs w-[150px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500"
+            />
+          )}
+        </div>
+      </td>
+
+      {/* Approval Actions */}
+      <td className="sticky-action" style={{ textAlign: 'center' }}>
+        {(() => {
+          const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
+          const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
+          const hasNoSource = !row.isEdited && !hasDevice;
+
+          return isFocalFiltered ? (
+            // Focal Point View
+            row.isApproved ? (
+              <div className="flex items-center justify-center gap-1.5">
+                {getVerificationBadge(row)}
+                {!isLocked && canUserEdit && !row.approval && (
+                  <button
+                    onClick={() => onRevokeRow(emp.device_user_id)}
+                    disabled={saving}
+                    className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
+                    title="Revoke verification"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              canUserEdit && (
+                <div className="flex items-center justify-center">
+                  <button
+                    onClick={() => onApproveRow(emp.device_user_id)}
+                    disabled={isLocked || saving || hasNoSource}
+                    title={hasNoSource ? "Cannot verify item with no biometric source" : undefined}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-teal-600 hover:bg-teal-700 text-white flex items-center gap-1"
+                  >
+                    <Stamp className='w-4 h-4' />
+                    Verify
+                  </button>
+                </div>
+              )
+            )
+          ) : (
+            // Admin View
+            row.isApproved ? (
+              <div className="flex flex-col items-center justify-center gap-1.5">
+                {getVerificationBadge(row)}
+                <div className="flex items-center justify-center gap-1.5">
+                  {getApprovalBadge(row)}
+                  {!isLocked && canUserEdit && (
+                    <button
+                      onClick={() => onRevokeRow(emp.device_user_id)}
+                      disabled={saving}
+                      className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
+                      title="Revoke approval"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              canUserEdit && (
+                <div className="flex flex-col items-center justify-center gap-1.5">
+                  {row.inDatabase && (
+                    <div className="flex items-center justify-center gap-1.5">
+                      {getVerificationBadge(row)}
+                      {!isLocked && (
+                        <button
+                          onClick={() => onRevokeRow(emp.device_user_id)}
+                          disabled={saving}
+                          className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
+                          title="Reject/Revoke verification"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onApproveRow(emp.device_user_id)}
+                      disabled={isLocked || saving || hasNoSource}
+                      title={hasNoSource ? "Cannot approve item with no biometric source" : undefined}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-white-800 hover:bg-white-800 text-black flex items-center gap-1"
+                    >
+                      <Stamp className='w-4 h-4 text-indigo-600' />
+                      Approve
+                    </button>
+                  </div>
+                </div>
+              )
+            )
+          );
+        })()}
+      </td>
+    </tr>
+  );
+});
+
 interface TimesheetFinalizerProps {
   refreshTrigger?: number;
   onLoadingChange?: (loading: boolean) => void;
@@ -228,6 +627,30 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
   const [punchMode, setPunchMode] = useState<'first_last' | 'check_in_out'>('first_last');
   const [punchGroups, setPunchGroups] = useState<Record<string, Punch[]>>({});
   const [deviceProjectMap, setDeviceProjectMap] = useState<Record<string, string>>({});
+  const [employeeAssignedProjects, setEmployeeAssignedProjects] = useState<Record<string, string>>({});
+
+  // Selection and bulk states
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+
+  const [isBulkPunchInOpen, setIsBulkPunchInOpen] = useState(false);
+  const [bulkPunchInValue, setBulkPunchInValue] = useState('');
+
+  const [isBulkPunchOutOpen, setIsBulkPunchOutOpen] = useState(false);
+  const [bulkPunchOutValue, setBulkPunchOutValue] = useState('');
+
+  const [isBulkOvertimeOpen, setIsBulkOvertimeOpen] = useState(false);
+  const [bulkOvertimeValue, setBulkOvertimeValue] = useState(0);
+
+  const [isBulkProjectOpen, setIsBulkProjectOpen] = useState(false);
+  const [bulkProjectValue, setBulkProjectValue] = useState('');
+
+  const [isBulkStatusOpen, setIsBulkStatusOpen] = useState(false);
+  const [bulkStatusValue, setBulkStatusValue] = useState<'present' | 'absent' | 'present with OT'>('present');
+
+  const [isBulkRemarksOpen, setIsBulkRemarksOpen] = useState(false);
+  const [bulkRemarksValue, setBulkRemarksValue] = useState('');
+  const [bulkCustomRemarksValue, setBulkCustomRemarksValue] = useState('');
 
   const punchModeRef = useRef(punchMode);
   useEffect(() => {
@@ -302,7 +725,8 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
     empPunches: Punch[],
     mode: 'first_last' | 'check_in_out',
     currentProjects: Project[],
-    currentDeviceProjectMap: Record<string, string>
+    currentDeviceProjectMap: Record<string, string>,
+    assignedProjectsMap: Record<string, string>
   ) => {
     let firstPunch: Punch | null = null;
     let lastPunch: Punch | null = null;
@@ -352,6 +776,8 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
       } else {
         computedProject = currentDeviceProjectMap[firstPunch.device_serial] || '';
       }
+    } else {
+      computedProject = assignedProjectsMap[emp.emp_id] || '';
     }
 
     const inTime = firstPunch ? extractTime(firstPunch.punch_time) : '';
@@ -412,7 +838,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         if (row && !row.isEdited && !row.isApproved && !row.inDatabase) {
           const empPunches = punchGroups[emp.device_user_id] || [];
           next[emp.device_user_id] = {
-            ...guessRow(emp, empPunches, newMode, projects, deviceProjectMap),
+            ...guessRow(emp, empPunches, newMode, projects, deviceProjectMap, employeeAssignedProjects),
             isApproved: false,
             approval: false,
             inDatabase: false
@@ -428,20 +854,33 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
     setLoading(true);
     setError(null);
     try {
-      // 1. Fetch employees, projects, and devices (to map serials to project codes)
+      // 1. Fetch employees, projects, devices, and latest employee project mappings (to map serials and latest assigned projects)
       const [
         { data: empData, error: empErr },
         { data: projData, error: projErr },
-        { data: devData, error: devErr }
+        { data: devData, error: devErr },
+        { data: latestProjData, error: latestProjErr }
       ] = await Promise.all([
         supabase.from('employees').select('id, device_user_id, name, department, emp_id, emp_type').order('name'),
         supabase.from('projects').select('project_code, project_name').order('project_code'),
-        supabase.from('devices').select('serial_no, project_code')
+        supabase.from('devices').select('serial_no, project_code'),
+        supabase.from('v_employee_latest_project').select('emp_id, current_project')
       ]);
 
       if (empErr) throw empErr;
       if (projErr) throw projErr;
       if (devErr) throw devErr;
+      if (latestProjErr) throw latestProjErr;
+
+      const assignedProjMap: Record<string, string> = {};
+      if (latestProjData) {
+        latestProjData.forEach(item => {
+          if (item.emp_id && item.current_project) {
+            assignedProjMap[item.emp_id] = findProjectCode(item.current_project, projData || []);
+          }
+        });
+      }
+      setEmployeeAssignedProjects(assignedProjMap);
 
       // 1. Determine if focal point filter is active
       let focalProjectCodes: string[] = [];
@@ -632,7 +1071,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         } else {
           // Guess initial values from raw punches
           const empPunches = pGroups[emp.device_user_id] || [];
-          const guessed = guessRow(emp, empPunches, punchModeRef.current, filteredProjects, devProjMap);
+          const guessed = guessRow(emp, empPunches, punchModeRef.current, filteredProjects, devProjMap, assignedProjMap);
 
           // Check if employee is on leave on this date
           const employeeLeave = activeLeaves.find(l => l.emp_id === emp.device_user_id);
@@ -663,9 +1102,10 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
     loadTimesheet();
   }, [loadTimesheet, refreshTrigger]);
 
-  const updateRow = (userId: string, key: keyof TimesheetRow, value: any) => {
+  const updateRow = useCallback((userId: string, key: keyof TimesheetRow, value: any) => {
     setRows(prev => {
       const current = prev[userId];
+      if (!current) return prev;
       const updated = { ...current, [key]: value };
 
       // Set isEdited flag if user modifies main fields
@@ -683,6 +1123,10 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
           updated.punch_out = '';
           updated.overtime = 0;
           updated.remarks = 'Absent';
+          const emp = employeesMap[userId];
+          if (emp) {
+            updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
+          }
         } else if (statusVal === 'present') {
           if (!current.punch_in && !current.punch_out) {
             updated.punch_in = '08:00';
@@ -759,6 +1203,10 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
           updated.status = 'absent';
           updated.overtime = 0;
           updated.remarks = 'Absent';
+          const emp = employeesMap[userId];
+          if (emp) {
+            updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
+          }
         }
       }
 
@@ -773,9 +1221,155 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
 
       return { ...prev, [userId]: updated };
     });
+  }, [employeesMap, employeeAssignedProjects, roundOT, userData?.email]);
+
+  const handleRowSelect = useCallback((userId: string) => {
+    setSelectedRowIds(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleBulkUpdate = (field: keyof TimesheetRow, value: any) => {
+    if (selectedRowIds.size === 0) {
+      toast.error('No rows selected.');
+      return;
+    }
+
+    setRows(prev => {
+      const next = { ...prev };
+      selectedRowIds.forEach(userId => {
+        const current = next[userId];
+        if (!current) return;
+
+        let updated = { ...current, [field]: value };
+
+        // Set isEdited flag if user modifies main fields
+        if (field === 'punch_in' || field === 'punch_out' || field === 'overtime' || field === 'project_code' || field === 'status' || field === 'remarks') {
+          updated.isEdited = true;
+          updated.verify_type = 'Manual Input';
+          updated.attested_by = userData?.email || 'Timekeeper';
+        }
+
+        // Automatically handle status adjustments
+        if (field === 'status') {
+          const statusVal = value as 'present' | 'absent' | 'present with OT';
+          if (statusVal === 'absent') {
+            updated.punch_in = '';
+            updated.punch_out = '';
+            updated.overtime = 0;
+            updated.remarks = 'Absent';
+            const emp = employeesMap[userId];
+            if (emp) {
+              updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
+            }
+          } else if (statusVal === 'present') {
+            if (!current.punch_in && !current.punch_out) {
+              updated.punch_in = '08:00';
+              updated.punch_out = '17:00';
+            }
+            if (current.remarks === 'Absent') {
+              updated.remarks = '';
+            }
+            updated.overtime = 0;
+          } else if (statusVal === 'present with OT') {
+            if (!current.punch_in && !current.punch_out) {
+              updated.punch_in = '08:00';
+              updated.punch_out = '17:00';
+            }
+            if (current.remarks === 'Absent') {
+              updated.remarks = '';
+            }
+            const inTime = updated.punch_in;
+            const outTime = updated.punch_out;
+            const emp = employeesMap[userId];
+            if (inTime && outTime && emp?.emp_type !== 'staff') {
+              const [inH, inM] = inTime.split(':').map(Number);
+              const [outH, outM] = outTime.split(':').map(Number);
+              let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
+              if (diffMin < 0) diffMin += 24 * 60;
+              const hours = diffMin / 60;
+              if (hours > 8) {
+                const rawOT = hours - 8;
+                updated.overtime = roundOT
+                  ? Math.round(rawOT * 2) / 2
+                  : parseFloat(rawOT.toFixed(1));
+              } else {
+                updated.overtime = 1.0;
+              }
+            } else {
+              updated.overtime = emp?.emp_type !== 'staff' ? 1.0 : 0;
+            }
+          }
+        }
+
+        // Automatically recalculate overtime on input change and sync status
+        if (field === 'punch_in' || field === 'punch_out') {
+          const inTime = field === 'punch_in' ? value : current.punch_in;
+          const outTime = field === 'punch_out' ? value : current.punch_out;
+
+          const emp = employeesMap[userId];
+          const isStaff = emp?.emp_type === 'staff';
+
+          if (inTime && outTime) {
+            if (!isStaff) {
+              const [inH, inM] = inTime.split(':').map(Number);
+              const [outH, outM] = outTime.split(':').map(Number);
+              let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
+              if (diffMin < 0) diffMin += 24 * 60;
+              const hours = diffMin / 60;
+              if (hours > 8) {
+                const rawOT = hours - 8;
+                updated.overtime = roundOT
+                  ? Math.round(rawOT * 2) / 2
+                  : parseFloat(rawOT.toFixed(1));
+                updated.status = 'present with OT';
+              } else {
+                updated.overtime = 0;
+                updated.status = 'present';
+              }
+            } else {
+              updated.overtime = 0;
+              updated.status = 'present';
+            }
+          } else if (inTime || outTime) {
+            updated.status = 'present';
+            updated.overtime = 0;
+          } else {
+            updated.status = 'absent';
+            updated.overtime = 0;
+            updated.remarks = 'Absent';
+            if (emp) {
+              updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
+            }
+          }
+        }
+
+        if (field === 'overtime') {
+          const otVal = value as number;
+          if (otVal > 0) {
+            updated.status = 'present with OT';
+          } else {
+            updated.status = (updated.punch_in || updated.punch_out) ? 'present' : 'absent';
+          }
+        }
+
+        next[userId] = updated;
+      });
+      return next;
+    });
+
+    toast.success(`Bulk updated selected rows.`);
+    setSelectedRowIds(new Set());
+    setIsSelectionMode(false);
   };
 
-  const handleApproveRow = async (userId: string) => {
+  const handleApproveRow = useCallback(async (userId: string) => {
     const r = rows[userId];
     if (!r) return;
 
@@ -853,9 +1447,9 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
       console.error(err);
       toast.error(err.message || `Failed to ${actionText} ${r.employee_name}.`, { id: `approve-${userId}` });
     }
-  };
+  }, [rows, date, isFocalFiltered, focalProjectCodes, userData?.email, canUserEdit]);
 
-  const handleRevokeRow = async (userId: string) => {
+  const handleRevokeRow = useCallback(async (userId: string) => {
     const r = rows[userId];
     if (!r) return;
 
@@ -890,7 +1484,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
       console.error(err);
       toast.error(err.message || `Failed to revoke ${actionText}.`, { id: `revoke-${userId}` });
     }
-  };
+  }, [rows, date, isFocalFiltered, canUserEdit]);
 
   const handleFinalize = async () => {
     if (!canUserEdit) {
@@ -1241,6 +1835,23 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
           background-color: #f8fafc;
           box-shadow: 2px 0 5px -2px rgba(0,0,0,0.05), inset 0 -1px 0 #e2e8f0;
         }
+        .timesheet-table td.sticky-checkbox {
+          position: sticky;
+          left: 0;
+          background-color: #ffffff;
+          z-index: 5;
+        }
+        .timesheet-table tr:hover td.sticky-checkbox {
+          background-color: #fafafb !important;
+        }
+        .timesheet-table th.sticky-checkbox {
+          position: sticky;
+          left: 0;
+          top: 0;
+          z-index: 15;
+          background-color: #f8fafc;
+          box-shadow: inset 0 -1px 0 #e2e8f0;
+        }
       `}</style>
 
       <div className="finalizer-container">
@@ -1259,6 +1870,23 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                 <ChevronLeft size={16} />
               </button> */}
 
+              {canUserEdit && !isLocked && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSelectionMode(!isSelectionMode);
+                    setSelectedRowIds(new Set());
+                  }}
+                  className={`h-8 w-8 p-0 rounded-lg flex items-center justify-center border transition-all cursor-pointer ${isSelectionMode
+                    ? 'bg-indigo-50 border-indigo-200 text-indigo-600 shadow-sm'
+                    : 'bg-white border-slate-300 text-slate-555 hover:bg-slate-50 hover:text-slate-700'
+                    }`}
+                  title="Toggle Selection Mode"
+                >
+                  <SquareCheck className="w-4 h-4" />
+                </button>
+              )}
+
               <DatePicker
 
                 value={date}
@@ -1271,9 +1899,78 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                 {filteredEmployees.length} rows
               </span>
 
-              {/* <button className="nav-btn" onClick={() => changeDate(1)} disabled={loading || saving}>
-                <ChevronRight size={16} />
-              </button> */}
+
+
+              {isSelectionMode && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      disabled={selectedRowIds.size === 0}
+                      className="h-8 px-3 select-none border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed active:bg-slate-100 rounded-lg flex items-center justify-center cursor-pointer font-medium text-[12px] text-slate-700 gap-1.5 shrink-0"
+                    >
+                      <span>Selected ({selectedRowIds.size})</span>
+                      <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[180px] bg-white border border-slate-200 z-50 p-1">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setBulkPunchInValue('');
+                        setIsBulkPunchInOpen(true);
+                      }}
+                      className="text-xs cursor-pointer focus:bg-slate-50 rounded-md p-2"
+                    >
+                      Allocate Punch In
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setBulkPunchOutValue('');
+                        setIsBulkPunchOutOpen(true);
+                      }}
+                      className="text-xs cursor-pointer focus:bg-slate-50 rounded-md p-2"
+                    >
+                      Allocate Punch Out
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setBulkOvertimeValue(0);
+                        setIsBulkOvertimeOpen(true);
+                      }}
+                      className="text-xs cursor-pointer focus:bg-slate-50 rounded-md p-2"
+                    >
+                      Allocate Overtime
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setBulkProjectValue('');
+                        setIsBulkProjectOpen(true);
+                      }}
+                      className="text-xs cursor-pointer focus:bg-slate-50 rounded-md p-2"
+                    >
+                      Allocate Project
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setBulkStatusValue('present');
+                        setIsBulkStatusOpen(true);
+                      }}
+                      className="text-xs cursor-pointer focus:bg-slate-50 rounded-md p-2"
+                    >
+                      Allocate Status
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setBulkRemarksValue('');
+                        setBulkCustomRemarksValue('');
+                        setIsBulkRemarksOpen(true);
+                      }}
+                      className="text-xs cursor-pointer focus:bg-slate-50 rounded-md p-2"
+                    >
+                      Allocate Remarks
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
 
             {/* Lock Status Details */}
@@ -1395,12 +2092,40 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
             {error}
           </div>
         ) : (
-          /* Shift Review Table */
           <div className="table-scroll-container animate-fade-in" style={{ opacity: loading ? 0.65 : 1, transition: 'opacity 0.15s ease' }}>
             <table className="timesheet-table">
               <thead>
                 <tr>
-                  <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs uppercase tracking-wide sticky-name" style={{ width: '320px' }}>
+                  <th
+                    className="sticky-checkbox transition-[width,opacity] duration-200 ease-in-out overflow-hidden"
+                    style={{
+                      width: isSelectionMode ? "48px" : "0px",
+                      minWidth: isSelectionMode ? "48px" : "0px",
+                      maxWidth: isSelectionMode ? "48px" : "0px",
+                      opacity: isSelectionMode ? 1 : 0,
+                      pointerEvents: isSelectionMode ? "auto" : "none",
+                      textAlign: 'center',
+                      padding: '0'
+                    }}
+                  >
+                    <div className="w-12 h-10 flex items-center justify-center overflow-hidden">
+                      <Checkbox
+                        checked={
+                          filteredEmployees.length > 0 &&
+                          filteredEmployees.every(emp => selectedRowIds.has(emp.device_user_id))
+                        }
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedRowIds(new Set(filteredEmployees.map(emp => emp.device_user_id)));
+                          } else {
+                            setSelectedRowIds(new Set());
+                          }
+                        }}
+                        className="w-4 h-4 rounded border border-slate-400 bg-white data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 data-[state=checked]:text-white focus-visible:ring-indigo-500 cursor-pointer shrink-0"
+                      />
+                    </div>
+                  </th>
+                  <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs uppercase tracking-wide sticky-name transition-[left] duration-200 ease-in-out" style={{ width: '320px', left: isSelectionMode ? '48px' : '0' }}>
                     <div className="relative flex items-center group w-full">
                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-darkblue transition-colors" />
                       <input
@@ -1418,9 +2143,69 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                       )}
                     </div>
                   </th>
+                  <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '250px' }}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-550 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
+                        <span className="truncate">
+                          {sourceFilter === 'ALL'
+                            ? 'Source (All)'
+                            : sourceFilter === 'MANUAL'
+                              ? 'Source (Manual)'
+                              : sourceFilter === 'LEAVE_LOG'
+                                ? 'Source (Leave Log)'
+                                : sourceFilter === 'DEVICE'
+                                  ? 'Source (Device)'
+                                  : 'Source (No Source)'}
+                        </span>
+                        <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[190px] p-1 bg-white border border-slate-200 z-50">
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={sourceFilter === 'ALL'}
+                          onCheckedChange={() => setSourceFilter('ALL')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          All Sources
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={sourceFilter === 'MANUAL'}
+                          onCheckedChange={() => setSourceFilter('MANUAL')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Manual
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={sourceFilter === 'LEAVE_LOG'}
+                          onCheckedChange={() => setSourceFilter('LEAVE_LOG')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Leave Log
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={sourceFilter === 'DEVICE'}
+                          onCheckedChange={() => setSourceFilter('DEVICE')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Device
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={sourceFilter === 'NO_SOURCE'}
+                          onCheckedChange={() => setSourceFilter('NO_SOURCE')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          No Source
+                        </DropdownMenuCheckboxItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </th>
                   <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '210px' }}>
                     <DropdownMenu>
-                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-500 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
+                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-550 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
                         <span className="truncate">
                           {punchFilter === 'ALL'
                             ? 'Punches (All)'
@@ -1474,7 +2259,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                   <th style={{ width: '90px' }}>Overtime</th>
                   <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '160px' }}>
                     <DropdownMenu>
-                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-550 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
+                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
                         <span className="truncate">
                           {selectedProjects.length === 0
                             ? 'Project (All)'
@@ -1557,73 +2342,13 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                   </th>
                   <th style={{ width: '150px' }}>Status</th>
                   <th style={{ width: '200px' }}>Remarks</th>
-                  <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '250px' }}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-550 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
-                        <span className="truncate">
-                          {sourceFilter === 'ALL'
-                            ? 'Source (All)'
-                            : sourceFilter === 'MANUAL'
-                              ? 'Source (Manual)'
-                              : sourceFilter === 'LEAVE_LOG'
-                                ? 'Source (Leave Log)'
-                                : sourceFilter === 'DEVICE'
-                                  ? 'Source (Device)'
-                                  : 'Source (No Source)'}
-                        </span>
-                        <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[190px] p-1 bg-white border border-slate-200 z-50">
-                        <DropdownMenuCheckboxItem
-                          style={{ justifyContent: "flex-start" }}
-                          checked={sourceFilter === 'ALL'}
-                          onCheckedChange={() => setSourceFilter('ALL')}
-                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                        >
-                          All Sources
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          style={{ justifyContent: "flex-start" }}
-                          checked={sourceFilter === 'MANUAL'}
-                          onCheckedChange={() => setSourceFilter('MANUAL')}
-                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                        >
-                          Manual
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          style={{ justifyContent: "flex-start" }}
-                          checked={sourceFilter === 'LEAVE_LOG'}
-                          onCheckedChange={() => setSourceFilter('LEAVE_LOG')}
-                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                        >
-                          Leave Log
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          style={{ justifyContent: "flex-start" }}
-                          checked={sourceFilter === 'DEVICE'}
-                          onCheckedChange={() => setSourceFilter('DEVICE')}
-                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                        >
-                          Device
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          style={{ justifyContent: "flex-start" }}
-                          checked={sourceFilter === 'NO_SOURCE'}
-                          onCheckedChange={() => setSourceFilter('NO_SOURCE')}
-                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                        >
-                          No Source
-                        </DropdownMenuCheckboxItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </th>
                   <th className="sticky-action" style={{ width: '130px', textAlign: 'center' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="py-20 text-center text-gray-400 font-medium bg-white">
+                    <td colSpan={12} className="py-20 text-center text-gray-400 font-medium bg-white">
                       No matching records found.
                     </td>
                   </tr>
@@ -1634,330 +2359,27 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                       if (!row) return null;
 
                       return (
-                        <tr key={emp.device_user_id}>
-                          {/* Employee Info */}
-                          <td className="sticky-name">
-                            <div>
-                              <div style={{ fontWeight: 600, color: '#0f172a', textTransform: "uppercase" }}>{emp.name.toLowerCase()}</div>
-                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                                <span style={{ fontFamily: 'monospace', background: '#f1f5f9', padding: '1px 4px', borderRadius: '4px' }}>
-                                  {emp.device_user_id}
-                                </span>
-                                <span>·</span>
-                                <span style={{ textTransform: 'capitalize' }}>
-                                  {emp.emp_type || 'undefined'}
-                                </span>
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* Punches Tracker */}
-                          <td>
-                            <div style={{ display: 'flex', flexFlow: 'column', gap: '4px' }}>
-                              {row.original_in_punch ? (
-                                <div style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                  <span className='bg-teal-100 text-teal-600' style={{ fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px', width: "1.75rem", textAlign: "center" }}>IN</span>
-                                  <span>{extractTime(row.original_in_punch.punch_time)}</span>
-                                  <span style={{ color: '#94a3b8', fontSize: '10px' }}>({row.original_in_punch.device_serial})</span>
-                                </div>
-                              ) : (
-                                <span className='text-rose-500' style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 500 }}>No clock in</span>
-                              )}
-
-                              {row.original_out_punch ? (
-                                <div style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                  <span className='text-rose-500' style={{ background: '#fee2e2', color: '#b91c1c', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px', width: "1.75rem", textAlign: "center" }}>OUT</span>
-                                  <span>{extractTime(row.original_out_punch.punch_time)}</span>
-                                  <span style={{ color: '#94a3b8', fontSize: '10px' }}>({row.original_out_punch.device_serial})</span>
-                                </div>
-                              ) : (
-                                row.original_in_punch ? (
-                                  <span style={{ fontSize: '11px', color: '#f59e0b', fontStyle: 'italic', fontWeight: 500 }}>No clock out</span>
-                                ) : null
-                              )}
-                            </div>
-                          </td>
-
-
-
-                          {/* Punch In Input */}
-                          <td>
-                            <Input
-                              type="time"
-                              value={row.punch_in}
-                              onChange={(e) => updateRow(emp.device_user_id, 'punch_in', e.target.value)}
-                              disabled={isLocked || row.isApproved || !canUserEdit || !!row.original_in_punch}
-                              className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
-                            />
-                          </td>
-
-                          {/* Punch Out Input */}
-                          <td>
-                            <Input
-                              type="time"
-                              value={row.punch_out}
-                              onChange={(e) => updateRow(emp.device_user_id, 'punch_out', e.target.value)}
-                              disabled={isLocked || row.isApproved || !canUserEdit || !!row.original_out_punch}
-                              className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
-                            />
-                          </td>
-
-                          {/* Total Hours */}
-                          <td style={{ fontSize: '12px', fontWeight: 600, color: '#334155', textAlign: 'center' }}>
-                            {calculateTotalHours(row.punch_in, row.punch_out)}
-                          </td>
-
-                          {/* Overtime Input */}
-                          <td>
-                            {emp.emp_type === 'staff' ? (
-                              <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', paddingLeft: '12px' }}>—</span>
-                            ) : (
-                              <input
-                                type="number"
-                                step="0.5"
-                                min="0"
-                                max="24"
-                                value={row.overtime}
-                                onChange={(e) => updateRow(emp.device_user_id, 'overtime', parseFloat(e.target.value) || 0)}
-                                className="table-input"
-                                disabled={isLocked || row.isApproved || !canUserEdit}
-                                style={{ width: '70px', fontFamily: 'monospace' }}
-                              />
-                            )}
-                          </td>
-
-                          {/* Project Allocation Select */}
-                          <td>
-                            <Select
-                              value={row.project_code || 'UNASSIGNED'}
-                              onValueChange={(val) => updateRow(emp.device_user_id, 'project_code', val === 'UNASSIGNED' ? '' : val)}
-                              disabled={isLocked || row.isApproved || !canUserEdit}
-                            >
-                              <SelectTrigger className="w-[150px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
-                                <SelectValue placeholder="Choose Project" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border border-slate-200 z-50">
-                                <SelectItem value="UNASSIGNED" className="text-xs cursor-pointer focus:bg-slate-50">-- Choose Project --</SelectItem>
-                                {projects.map(p => (
-                                  <SelectItem key={p.project_code} value={p.project_code} className="text-xs cursor-pointer focus:bg-slate-50">
-                                    {p.project_code}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </td>
-                          {/* Status Select */}
-                          <td>
-                            <Select
-                              value={row.status || 'absent'}
-                              onValueChange={(val) => updateRow(emp.device_user_id, 'status', val)}
-                              disabled={isLocked || row.isApproved || !canUserEdit}
-                            >
-                              <SelectTrigger className="w-[140px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
-                                <SelectValue placeholder="Status" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border border-slate-200 z-50">
-                                <SelectItem value="present" className="text-xs cursor-pointer focus:bg-slate-50">Present</SelectItem>
-                                <SelectItem value="absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
-                                <SelectItem value="present with OT" className="text-xs cursor-pointer focus:bg-slate-50">Present with OT</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </td>
-
-                          {/* Remarks Input */}
-                          <td>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <Select
-                                value={
-                                  row.remarks === ''
-                                    ? 'NONE'
-                                    : (row.remarks === 'Forgot to Punch' || row.remarks === 'Absent' || row.remarks === 'Sick Leave' || row.remarks === 'Annual Leave' || row.remarks === 'Unpaid Leave' || row.remarks === 'Casual Leave' || row.remarks === 'Emergency Leave')
-                                      ? row.remarks
-                                      : 'CUSTOM'
-                                }
-                                onValueChange={(val) => {
-                                  if (val === 'NONE') {
-                                    updateRow(emp.device_user_id, 'remarks', '');
-                                  } else if (val === 'CUSTOM') {
-                                    updateRow(emp.device_user_id, 'remarks', 'Custom: ');
-                                  } else {
-                                    updateRow(emp.device_user_id, 'remarks', val);
-                                  }
-                                }}
-                                disabled={isLocked || row.isApproved || !canUserEdit}
-                              >
-                                <SelectTrigger className="w-[150px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
-                                  <SelectValue placeholder="No Remark" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border border-slate-200 z-50">
-                                  <SelectItem value="NONE" className="text-xs cursor-pointer focus:bg-slate-50">No Remark</SelectItem>
-                                  <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
-                                  <SelectItem value="Sick Leave" className="text-xs cursor-pointer focus:bg-slate-50">Sick Leave</SelectItem>
-                                  <SelectItem value="Annual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Annual Leave</SelectItem>
-                                  <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
-                                  <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
-                                  <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
-                                  <SelectItem value="Absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
-                                  <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
-                                </SelectContent>
-                              </Select>
-
-                              {(row.remarks !== '' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Absent' && row.remarks !== 'Sick Leave' && row.remarks !== 'Annual Leave' && row.remarks !== 'Unpaid Leave' && row.remarks !== 'Casual Leave' && row.remarks !== 'Emergency Leave') && (
-                                <Input
-                                  type="text"
-                                  value={row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks}
-                                  onChange={(e) => updateRow(emp.device_user_id, 'remarks', 'Custom: ' + e.target.value)}
-                                  placeholder="Type custom remark..."
-                                  disabled={isLocked || row.isApproved || !canUserEdit}
-                                  className="h-8 text-xs w-[150px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500"
-                                />
-                              )}
-                            </div>
-                          </td>
-
-                          {/* Source/Attestation Badge */}
-                          <td>
-                            {row.isEdited ? (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                <span style={{ fontSize: "0.7rem", background: "slateblue", color: 'white', border: "none", fontWeight: 500 }} className="source-badge source-manual">Manual</span>
-                                <span className='text-indigo-800' style={{ fontFamily: "monospace", fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }} title={row.attested_by}>
-                                  {row.attested_by}
-                                </span>
-                              </div>
-                            ) : (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                {(() => {
-                                  const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
-                                  const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
-                                  if (machineCode === 'Leave Log') {
-                                    return (
-                                      <span style={{ fontSize: "0.7rem", background: "#6366f1", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px" }} className="source-badge source-leave" title={row.attested_by}>
-                                        <Calendar className="w-3 h-3 shrink-0" />
-                                        Leave Log
-                                      </span>
-                                    );
-                                  } else if (hasDevice) {
-                                    return (
-                                      <span style={{ fontSize: "0.7rem", background: "teal", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px" }} className="source-badge source-auto" title={row.attested_by}>
-                                        <Laptop2 className="w-3 h-3 shrink-0" />
-                                        {machineCode}
-                                      </span>
-                                    );
-                                  } else {
-                                    return (
-                                      <span style={{ fontSize: "0.7rem", background: "slategray", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px" }} className="source-badge source-nosource" title={row.attested_by || "No source found"}>
-                                        <AlertCircle className="w-3 h-3 shrink-0" />
-                                        No Source
-                                      </span>
-                                    );
-                                  }
-                                })()}
-                                <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>
-                                  {row.verify_type}
-                                </span>
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Approval Actions */}
-                          <td className="sticky-action" style={{ textAlign: 'center' }}>
-                            {(() => {
-                              const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
-                              const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
-                              const hasNoSource = !row.isEdited && !hasDevice;
-
-                              return isFocalFiltered ? (
-                                // Focal Point View
-                                row.isApproved ? (
-                                  <div className="flex items-center justify-center gap-1.5">
-                                    {getVerificationBadge(row)}
-                                    {!isLocked && canUserEdit && !row.approval && (
-                                      <button
-                                        onClick={() => handleRevokeRow(emp.device_user_id)}
-                                        disabled={saving}
-                                        className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
-                                        title="Revoke verification"
-                                      >
-                                        <X className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                  </div>
-                                ) : (
-                                  canUserEdit && (
-                                    <div className="flex items-center justify-center">
-                                      <button
-                                        onClick={() => handleApproveRow(emp.device_user_id)}
-                                        disabled={isLocked || saving || hasNoSource}
-                                        title={hasNoSource ? "Cannot verify item with no biometric source" : undefined}
-                                        className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-teal-600 hover:bg-teal-700 text-white flex items-center gap-1"
-                                      >
-                                        <Stamp className='w-4 h-4' />
-                                        Verify
-                                      </button>
-                                    </div>
-                                  )
-                                )
-                              ) : (
-                                // Admin View
-                                row.isApproved ? (
-                                  <div className="flex flex-col items-center justify-center gap-1.5">
-                                    {getVerificationBadge(row)}
-                                    <div className="flex items-center justify-center gap-1.5">
-                                      {getApprovalBadge(row)}
-                                      {!isLocked && canUserEdit && (
-                                        <button
-                                          onClick={() => handleRevokeRow(emp.device_user_id)}
-                                          disabled={saving}
-                                          className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
-                                          title="Revoke approval"
-                                        >
-                                          <X className="w-3.5 h-3.5" />
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  canUserEdit && (
-                                    <div className="flex flex-col items-center justify-center gap-1.5">
-                                      {row.inDatabase && (
-                                        <div className="flex items-center justify-center gap-1.5">
-                                          {getVerificationBadge(row)}
-                                          {!isLocked && (
-                                            <button
-                                              onClick={() => handleRevokeRow(emp.device_user_id)}
-                                              disabled={saving}
-                                              className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200"
-                                              title="Reject/Revoke verification"
-                                            >
-                                              <X className="w-3.5 h-3.5" />
-                                            </button>
-                                          )}
-                                        </div>
-                                      )}
-                                      <div className="flex items-center gap-1">
-                                        <button
-                                          onClick={() => handleApproveRow(emp.device_user_id)}
-                                          disabled={isLocked || saving || hasNoSource}
-                                          title={hasNoSource ? "Cannot approve item with no biometric source" : undefined}
-                                          className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1"
-                                        >
-                                          <Stamp className='w-4 h-4' />
-                                          Approve
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )
-                                )
-                              );
-                            })()}
-                          </td>
-
-                        </tr>
+                        <TimesheetRowComponent
+                          key={emp.device_user_id}
+                          emp={emp}
+                          row={row}
+                          isSelected={selectedRowIds.has(emp.device_user_id)}
+                          isSelectionMode={isSelectionMode}
+                          isLocked={isLocked}
+                          canUserEdit={canUserEdit}
+                          projects={projects}
+                          isFocalFiltered={isFocalFiltered}
+                          saving={saving}
+                          onRowSelect={handleRowSelect}
+                          onUpdateRow={updateRow}
+                          onApproveRow={handleApproveRow}
+                          onRevokeRow={handleRevokeRow}
+                        />
                       );
                     })}
                     {filteredEmployees.length > renderLimit && (
                       <tr>
-                        <td colSpan={11} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
+                        <td colSpan={12} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
                           <div className="flex items-center justify-center gap-4 w-full">
                             <span className="text-xs text-gray-500 font-medium text-center">
                               Showing {renderLimit} of {filteredEmployees.length} records
@@ -1995,6 +2417,326 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         )}
 
       </div>
+
+      {/* Bulk Allocate Punch In Dialog */}
+      <Dialog open={isBulkPunchInOpen} onOpenChange={(open) => { if (!open) setIsBulkPunchInOpen(false); }}>
+        <DialogContent className="sm:max-w-[425px] bg-white z-[100]">
+          <DialogHeader>
+            <DialogTitle>Bulk Update Punch In</DialogTitle>
+            <DialogDescription>
+              Select a new Punch In time for the {selectedRowIds.size} selected employee(s).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-gray-600 block">Punch In Time</label>
+              <Input
+                type="time"
+                value={bulkPunchInValue}
+                onChange={(e) => setBulkPunchInValue(e.target.value)}
+                className="h-9"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsBulkPunchInOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                handleBulkUpdate('punch_in', bulkPunchInValue);
+                setIsBulkPunchInOpen(false);
+              }}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              Update Punch In
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Allocate Punch Out Dialog */}
+      <Dialog open={isBulkPunchOutOpen} onOpenChange={(open) => { if (!open) setIsBulkPunchOutOpen(false); }}>
+        <DialogContent className="sm:max-w-[425px] bg-white z-[100]">
+          <DialogHeader>
+            <DialogTitle>Bulk Update Punch Out</DialogTitle>
+            <DialogDescription>
+              Select a new Punch Out time for the {selectedRowIds.size} selected employee(s).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-gray-600 block">Punch Out Time</label>
+              <Input
+                type="time"
+                value={bulkPunchOutValue}
+                onChange={(e) => setBulkPunchOutValue(e.target.value)}
+                className="h-9"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsBulkPunchOutOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                handleBulkUpdate('punch_out', bulkPunchOutValue);
+                setIsBulkPunchOutOpen(false);
+              }}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              Update Punch Out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Allocate Overtime Dialog */}
+      <Dialog open={isBulkOvertimeOpen} onOpenChange={(open) => { if (!open) setIsBulkOvertimeOpen(false); }}>
+        <DialogContent className="sm:max-w-[425px] bg-white z-[100]">
+          <DialogHeader>
+            <DialogTitle>Bulk Update Overtime</DialogTitle>
+            <DialogDescription>
+              Enter overtime hours for the {selectedRowIds.size} selected employee(s).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-gray-600 block">Overtime Hours</label>
+              <Input
+                type="number"
+                step="0.5"
+                min="0"
+                max="24"
+                value={bulkOvertimeValue}
+                onChange={(e) => setBulkOvertimeValue(parseFloat(e.target.value) || 0)}
+                className="h-9"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsBulkOvertimeOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                handleBulkUpdate('overtime', bulkOvertimeValue);
+                setIsBulkOvertimeOpen(false);
+              }}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              Update Overtime
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Allocate Project Dialog */}
+      <Dialog open={isBulkProjectOpen} onOpenChange={(open) => { if (!open) setIsBulkProjectOpen(false); }}>
+        <DialogContent className="sm:max-w-[425px] bg-white z-[100]">
+          <DialogHeader>
+            <DialogTitle>Bulk Update Project</DialogTitle>
+            <DialogDescription>
+              Select a project to allocate for the {selectedRowIds.size} selected employee(s).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-gray-600 block">Project Allocation</label>
+              <Select
+                value={bulkProjectValue || 'UNASSIGNED'}
+                onValueChange={(val) => setBulkProjectValue(val === 'UNASSIGNED' ? '' : val)}
+              >
+                <SelectTrigger className="w-full text-xs h-9 bg-white border border-slate-300">
+                  <SelectValue placeholder="Choose Project" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border border-slate-200 z-[120]">
+                  <SelectItem value="UNASSIGNED" className="text-xs cursor-pointer focus:bg-slate-50">-- Choose Project --</SelectItem>
+                  {projects.map(p => (
+                    <SelectItem key={p.project_code} value={p.project_code} className="text-xs cursor-pointer focus:bg-slate-50">
+                      {p.project_code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsBulkProjectOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                handleBulkUpdate('project_code', bulkProjectValue);
+                setIsBulkProjectOpen(false);
+              }}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              Update Project
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Allocate Status Dialog */}
+      <Dialog open={isBulkStatusOpen} onOpenChange={(open) => { if (!open) setIsBulkStatusOpen(false); }}>
+        <DialogContent className="sm:max-w-[425px] bg-white z-[100]">
+          <DialogHeader>
+            <DialogTitle>Bulk Update Status</DialogTitle>
+            <DialogDescription>
+              Select status for the {selectedRowIds.size} selected employee(s).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-gray-600 block">Status</label>
+              <Select
+                value={bulkStatusValue}
+                onValueChange={(val: any) => setBulkStatusValue(val)}
+              >
+                <SelectTrigger className="w-full text-xs h-9 bg-white border border-slate-300">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border border-slate-200 z-[120]">
+                  <SelectItem value="present" className="text-xs cursor-pointer focus:bg-slate-50">Present</SelectItem>
+                  <SelectItem value="absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
+                  <SelectItem value="present with OT" className="text-xs cursor-pointer focus:bg-slate-50">Present with OT</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsBulkStatusOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                handleBulkUpdate('status', bulkStatusValue);
+                setIsBulkStatusOpen(false);
+              }}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              Update Status
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Allocate Remarks Dialog */}
+      <Dialog open={isBulkRemarksOpen} onOpenChange={(open) => { if (!open) setIsBulkRemarksOpen(false); }}>
+        <DialogContent className="sm:max-w-[425px] bg-white z-[100]">
+          <DialogHeader>
+            <DialogTitle>Bulk Update Remarks</DialogTitle>
+            <DialogDescription>
+              Set remark for the {selectedRowIds.size} selected employee(s).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-gray-600 block">Remark</label>
+              <Select
+                value={
+                  bulkRemarksValue === ''
+                    ? 'NONE'
+                    : (bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Absent' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Annual Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave')
+                      ? bulkRemarksValue
+                      : 'CUSTOM'
+                }
+                onValueChange={(val) => {
+                  if (val === 'NONE') {
+                    setBulkRemarksValue('');
+                  } else if (val === 'CUSTOM') {
+                    setBulkRemarksValue('Custom: ');
+                  } else {
+                    setBulkRemarksValue(val);
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full text-xs h-9 bg-white border border-slate-300">
+                  <SelectValue placeholder="No Remark" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border border-slate-200 z-[120]">
+                  <SelectItem value="NONE" className="text-xs cursor-pointer focus:bg-slate-50">No Remark</SelectItem>
+                  <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
+                  <SelectItem value="Sick Leave" className="text-xs cursor-pointer focus:bg-slate-50">Sick Leave</SelectItem>
+                  <SelectItem value="Annual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Annual Leave</SelectItem>
+                  <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
+                  <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
+                  <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
+                  <SelectItem value="Absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
+                  <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {bulkRemarksValue.startsWith('Custom: ') && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-600 block">Custom Remark</label>
+                <Input
+                  type="text"
+                  value={bulkCustomRemarksValue}
+                  onChange={(e) => setBulkCustomRemarksValue(e.target.value)}
+                  placeholder="Type custom remark..."
+                  className="h-9"
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsBulkRemarksOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                const finalRemark = bulkRemarksValue.startsWith('Custom: ')
+                  ? 'Custom: ' + bulkCustomRemarksValue
+                  : bulkRemarksValue;
+                handleBulkUpdate('remarks', finalRemark);
+                setIsBulkRemarksOpen(false);
+              }}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              Update Remarks
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
