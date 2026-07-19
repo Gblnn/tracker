@@ -520,7 +520,7 @@ const TimesheetRowComponent = memo(({
         {(() => {
           const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
           const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
-          const hasNoSource = !row.isEdited && !hasDevice;
+          const hasNoSource = row.status !== 'absent' && !row.isEdited && !hasDevice;
 
           return isFocalFiltered ? (
             // Focal Point View
@@ -1385,7 +1385,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
 
     const { machineCode } = parseAttestedBy(r.attested_by, !!r.isApproved);
     const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
-    const hasNoSource = !r.isEdited && !hasDevice;
+    const hasNoSource = r.status !== 'absent' && !r.isEdited && !hasDevice;
     if (hasNoSource) {
       toast.error(`Cannot verify/approve ${r.employee_name} because it has no biometric source.`);
       return;
@@ -1498,7 +1498,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
       const hasNoSourceRows = Object.values(rows).some(r => {
         const { machineCode } = parseAttestedBy(r.attested_by, !!r.isApproved);
         const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
-        return !r.isEdited && !hasDevice;
+        return r.status !== 'absent' && !r.isEdited && !hasDevice;
       });
 
       if (hasNoSourceRows) {
