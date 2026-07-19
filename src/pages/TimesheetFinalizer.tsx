@@ -62,6 +62,8 @@ interface Punch {
 interface Project {
   project_code: string;
   project_name: string;
+  project_in_time?: string | null;
+  project_out_time?: string | null;
 }
 
 const normalizeString = (str: string) => {
@@ -312,8 +314,8 @@ const TimesheetRowComponent = memo(({
       <td>
         {row.isEdited ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-            <span style={{ fontSize: "0.7rem", background: "slate-600", color: 'white', border: "none", fontWeight: 500 }} className="source-badge source-manual">Manual</span>
-            <span className='text-indigo-800' style={{ fontFamily: "monospace", fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }} title={row.attested_by}>
+            <span style={{ fontSize: "0.7rem", background: "#4f46e5", color: 'white', border: "none", fontWeight: 500, display: "inline-flex", alignItems: "center", padding: "1px 6px", borderRadius: "3px" }} className="source-badge source-manual">Manual</span>
+            <span className='text-indigo-800' style={{ fontSize: '11px', whiteSpace: 'nowrap', fontWeight: 500 }} title={row.attested_by}>
               {row.attested_by}
             </span>
           </div>
@@ -345,38 +347,33 @@ const TimesheetRowComponent = memo(({
                 );
               }
             })()}
-            <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>
+            <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500 }}>
               {row.verify_type}
             </span>
           </div>
         )}
       </td>
 
-      {/* Punches Tracker */}
+      {/* Status Select */}
       <td>
-        <div style={{ display: 'flex', flexFlow: 'column', gap: '4px' }}>
-          {row.original_in_punch ? (
-            <div style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <span className='bg-teal-100 text-teal-600' style={{ fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px', width: "1.75rem", textAlign: "center" }}>IN</span>
-              <span>{extractTime(row.original_in_punch.punch_time)}</span>
-              <span style={{ color: '#94a3b8', fontSize: '10px' }}>({row.original_in_punch.device_serial})</span>
-            </div>
-          ) : (
-            <span className='text-rose-500' style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 500 }}>No clock in</span>
-          )}
-
-          {row.original_out_punch ? (
-            <div style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <span className='text-rose-500' style={{ background: '#fee2e2', color: '#b91c1c', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', fontSize: '9px', width: "1.75rem", textAlign: "center" }}>OUT</span>
-              <span>{extractTime(row.original_out_punch.punch_time)}</span>
-              <span style={{ color: '#94a3b8', fontSize: '10px' }}>({row.original_out_punch.device_serial})</span>
-            </div>
-          ) : (
-            row.original_in_punch ? (
-              <span style={{ fontSize: '11px', color: '#f59e0b', fontStyle: 'italic', fontWeight: 500 }}>No clock out</span>
-            ) : null
-          )}
-        </div>
+        <Select
+          value={row.status || 'no status'}
+          onValueChange={(val) => onUpdateRow(emp.device_user_id, 'status', val)}
+          disabled={isLocked || row.isApproved || !canUserEdit}
+        >
+          <SelectTrigger className={`w-[140px] text-xs h-8 bg-white border focus:ring-1 ${(!row.status || row.status === 'no status')
+              ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
+              : 'border-slate-300 focus:ring-indigo-500'
+            }`}>
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent className="bg-white border border-slate-200 z-50">
+            <SelectItem value="no status" className="text-xs cursor-pointer focus:bg-slate-50">No Status</SelectItem>
+            <SelectItem value="present" className="text-xs cursor-pointer focus:bg-slate-50">Present</SelectItem>
+            <SelectItem value="absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
+            <SelectItem value="present with OT" className="text-xs cursor-pointer focus:bg-slate-50">Present with OT</SelectItem>
+          </SelectContent>
+        </Select>
       </td>
 
       {/* Punch In Input */}
@@ -386,7 +383,7 @@ const TimesheetRowComponent = memo(({
           value={row.punch_in}
           onChange={(e) => onUpdateRow(emp.device_user_id, 'punch_in', e.target.value)}
           disabled={isLocked || row.isApproved || !canUserEdit || !!row.original_in_punch}
-          className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
+          className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-555 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
         />
       </td>
 
@@ -397,7 +394,7 @@ const TimesheetRowComponent = memo(({
           value={row.punch_out}
           onChange={(e) => onUpdateRow(emp.device_user_id, 'punch_out', e.target.value)}
           disabled={isLocked || row.isApproved || !canUserEdit || !!row.original_out_punch}
-          className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
+          className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-555 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
         />
       </td>
 
@@ -432,7 +429,10 @@ const TimesheetRowComponent = memo(({
           onValueChange={(val) => onUpdateRow(emp.device_user_id, 'project_code', val === 'UNASSIGNED' ? '' : val)}
           disabled={isLocked || row.isApproved || !canUserEdit}
         >
-          <SelectTrigger className="w-[150px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
+          <SelectTrigger className={`w-[150px] text-xs h-8 bg-white border focus:ring-1 ${(row.status !== 'absent' && row.status !== 'no status' && (!row.project_code || row.project_code === '' || row.project_code === 'UNASSIGNED'))
+              ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
+              : 'border-slate-300 focus:ring-indigo-500'
+            }`}>
             <SelectValue placeholder="Choose Project" />
           </SelectTrigger>
           <SelectContent className="bg-white border border-slate-200 z-50">
@@ -446,24 +446,6 @@ const TimesheetRowComponent = memo(({
         </Select>
       </td>
 
-      {/* Status Select */}
-      <td>
-        <Select
-          value={row.status || 'absent'}
-          onValueChange={(val) => onUpdateRow(emp.device_user_id, 'status', val)}
-          disabled={isLocked || row.isApproved || !canUserEdit}
-        >
-          <SelectTrigger className="w-[140px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border border-slate-200 z-50">
-            <SelectItem value="present" className="text-xs cursor-pointer focus:bg-slate-50">Present</SelectItem>
-            <SelectItem value="absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
-            <SelectItem value="present with OT" className="text-xs cursor-pointer focus:bg-slate-50">Present with OT</SelectItem>
-          </SelectContent>
-        </Select>
-      </td>
-
       {/* Remarks Input */}
       <td>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -471,7 +453,7 @@ const TimesheetRowComponent = memo(({
             value={
               row.remarks === ''
                 ? 'NONE'
-                : (row.remarks === 'Forgot to Punch' || row.remarks === 'Absent' || row.remarks === 'Sick Leave' || row.remarks === 'Annual Leave' || row.remarks === 'Unpaid Leave' || row.remarks === 'Casual Leave' || row.remarks === 'Emergency Leave')
+                : (row.remarks === 'Present' || row.remarks === 'Forgot to Punch' || row.remarks === 'Sick Leave' || row.remarks === 'Unpaid Leave' || row.remarks === 'Casual Leave' || row.remarks === 'Emergency Leave')
                   ? row.remarks
                   : 'CUSTOM'
             }
@@ -486,30 +468,36 @@ const TimesheetRowComponent = memo(({
             }}
             disabled={isLocked || row.isApproved || !canUserEdit}
           >
-            <SelectTrigger className="w-[150px] text-xs h-8 bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500">
+            <SelectTrigger className={`w-[150px] text-xs h-8 bg-white border focus:ring-1 ${(row.status === 'absent' && (!row.remarks || row.remarks.trim() === '' || row.remarks === 'Custom: '))
+                ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
+                : 'border-slate-300 focus:ring-indigo-500'
+              }`}>
               <SelectValue placeholder="No Remark" />
             </SelectTrigger>
             <SelectContent className="bg-white border border-slate-200 z-50">
               <SelectItem value="NONE" className="text-xs cursor-pointer focus:bg-slate-50">No Remark</SelectItem>
+
               <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
               <SelectItem value="Sick Leave" className="text-xs cursor-pointer focus:bg-slate-50">Sick Leave</SelectItem>
-              <SelectItem value="Annual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Annual Leave</SelectItem>
               <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
               <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
               <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
-              <SelectItem value="Absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
+
               <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
             </SelectContent>
           </Select>
 
-          {(row.remarks !== '' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Absent' && row.remarks !== 'Sick Leave' && row.remarks !== 'Annual Leave' && row.remarks !== 'Unpaid Leave' && row.remarks !== 'Casual Leave' && row.remarks !== 'Emergency Leave') && (
+          {(row.remarks !== '' && row.remarks !== 'Present' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Sick Leave' && row.remarks !== 'Unpaid Leave' && row.remarks !== 'Casual Leave' && row.remarks !== 'Emergency Leave') && (
             <Input
               type="text"
               value={row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks}
               onChange={(e) => onUpdateRow(emp.device_user_id, 'remarks', 'Custom: ' + e.target.value)}
               placeholder="Type custom remark..."
               disabled={isLocked || row.isApproved || !canUserEdit}
-              className="h-8 text-xs w-[150px] bg-white border border-slate-300 focus:ring-1 focus:ring-indigo-500"
+              className={`h-8 text-xs w-[150px] bg-white border focus:ring-1 ${(row.status === 'absent' && (row.remarks === 'Custom: ' || row.remarks.trim() === 'Custom:'))
+                  ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
+                  : 'border-slate-300 focus:ring-indigo-500'
+                }`}
             />
           )}
         </div>
@@ -520,15 +508,18 @@ const TimesheetRowComponent = memo(({
         {(() => {
           const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
           const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
-          const hasNoSource = row.status !== 'absent' && !row.isEdited && !hasDevice;
-          const hasNoRemarksForAbsent = row.status === 'absent' && (!row.remarks || row.remarks.trim() === '' || row.remarks === 'Custom: ');
+          const hasNoSource = row.status !== 'absent' && row.status !== 'no status' && !row.isEdited && !hasDevice;
+          const isAbsentWithoutRemark = row.status === 'absent' && (!row.remarks || row.remarks.trim() === '' || row.remarks === 'Custom: ');
+          const isNoStatus = !row.status || row.status === 'no status';
 
-          const isDisabled = isLocked || saving || hasNoSource || hasNoRemarksForAbsent;
+          const isDisabled = isLocked || saving || hasNoSource || isAbsentWithoutRemark || isNoStatus;
           const tooltip = hasNoSource
             ? "Cannot verify item with no biometric source"
-            : hasNoRemarksForAbsent
-            ? "Cannot verify: Absent employee must have a remark/reason selected"
-            : undefined;
+            : isNoStatus
+              ? "Cannot verify: Please select status (Present / Absent)"
+              : isAbsentWithoutRemark
+                ? "Cannot verify: Absent employee must have a remark/reason selected"
+                : undefined;
 
           return isFocalFiltered ? (
             // Focal Point View
@@ -654,7 +645,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
   const [bulkProjectValue, setBulkProjectValue] = useState('');
 
   const [isBulkStatusOpen, setIsBulkStatusOpen] = useState(false);
-  const [bulkStatusValue, setBulkStatusValue] = useState<'present' | 'absent' | 'present with OT'>('present');
+  const [bulkStatusValue, setBulkStatusValue] = useState<'present' | 'absent' | 'present with OT' | 'no status'>('no status');
 
   const [isBulkRemarksOpen, setIsBulkRemarksOpen] = useState(false);
   const [bulkRemarksValue, setBulkRemarksValue] = useState('');
@@ -678,7 +669,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
-  const [punchFilter, setPunchFilter] = useState<'ALL' | 'NO_IN' | 'NO_OUT' | 'BOTH'>('ALL');
+  const [punchFilter] = useState<'ALL' | 'NO_IN' | 'NO_OUT' | 'BOTH'>('ALL');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('ALL');
   const [roundOT, setRoundOT] = useState(false);
@@ -816,7 +807,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
 
     const defaultStatus = (inTime || outTime)
       ? (autoOvertime > 0 ? 'present with OT' : 'present')
-      : 'absent';
+      : 'no status';
 
     return {
       employee_code: emp.device_user_id,
@@ -870,7 +861,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         { data: latestProjData, error: latestProjErr }
       ] = await Promise.all([
         supabase.from('employees').select('id, device_user_id, name, department, emp_id, emp_type').order('name'),
-        supabase.from('projects').select('project_code, project_name').order('project_code'),
+        supabase.from('projects').select('project_code, project_name, project_in_time, project_out_time').order('project_code'),
         supabase.from('devices').select('serial_no, project_code'),
         supabase.from('v_employee_latest_project').select('emp_id, current_project')
       ]);
@@ -944,7 +935,11 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
       }
 
       const filteredEmployees = isFocalFiltered
-        ? (empData || []).filter(emp => allowedEmpIds.has(emp.id) || allowedDeviceUserIds.has(emp.device_user_id))
+        ? (empData || []).filter(emp =>
+          allowedEmpIds.has(emp.id) ||
+          allowedDeviceUserIds.has(emp.device_user_id) ||
+          (emp.emp_id && assignedProjMap[emp.emp_id] && focalProjectCodes.includes(assignedProjMap[emp.emp_id]))
+        )
         : (empData || []);
 
       const filteredProjects = isFocalFiltered
@@ -1071,7 +1066,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
             verify_type: matched.verify_type || 'Manual Input',
             attested_by: matched.attested_by || '',
             isEdited: matched.verify_type === 'Manual Input',
-            status: matched.status || (matched.overtime > 0 ? 'present with OT' : (matched.punch_in || matched.punch_out ? 'present' : 'absent')),
+            status: matched.status || (matched.overtime > 0 ? 'present with OT' : (matched.punch_in || matched.punch_out ? 'present' : 'no status')),
             isApproved: isFocalFiltered ? true : (matched.approval !== false),
             approval: matched.approval !== false,
             inDatabase: true
@@ -1125,52 +1120,58 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
 
       // Automatically handle status adjustments
       if (key === 'status') {
-        const statusVal = value as 'present' | 'absent' | 'present with OT';
+        const statusVal = value as 'present' | 'absent' | 'present with OT' | 'no status';
         if (statusVal === 'absent') {
           updated.punch_in = '';
           updated.punch_out = '';
           updated.overtime = 0;
-          updated.remarks = 'Absent';
+          updated.remarks = '';
           const emp = employeesMap[userId];
           if (emp) {
             updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
           }
-        } else if (statusVal === 'present') {
-          if (!current.punch_in && !current.punch_out) {
-            updated.punch_in = '08:00';
-            updated.punch_out = '17:00';
-          }
-          if (current.remarks === 'Absent') {
-            updated.remarks = '';
-          }
+        } else if (statusVal === 'no status') {
+          updated.punch_in = '';
+          updated.punch_out = '';
           updated.overtime = 0;
-        } else if (statusVal === 'present with OT') {
+          updated.remarks = '';
+        } else if (statusVal === 'present' || statusVal === 'present with OT') {
+          const emp = employeesMap[userId];
+          const projCode = current.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
+          const targetProj = projects.find(p => p.project_code === projCode);
+          const inTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
+          const outTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
+
           if (!current.punch_in && !current.punch_out) {
-            updated.punch_in = '08:00';
-            updated.punch_out = '17:00';
+            updated.punch_in = inTime;
+            updated.punch_out = outTime;
           }
           if (current.remarks === 'Absent') {
             updated.remarks = '';
           }
-          const inTime = updated.punch_in;
-          const outTime = updated.punch_out;
-          const emp = employeesMap[userId];
-          if (inTime && outTime && emp?.emp_type !== 'staff') {
-            const [inH, inM] = inTime.split(':').map(Number);
-            const [outH, outM] = outTime.split(':').map(Number);
-            let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
-            if (diffMin < 0) diffMin += 24 * 60;
-            const hours = diffMin / 60;
-            if (hours > 8) {
-              const rawOT = hours - 8;
-              updated.overtime = roundOT
-                ? Math.round(rawOT * 2) / 2
-                : parseFloat(rawOT.toFixed(1));
-            } else {
-              updated.overtime = 1.0;
-            }
+
+          if (statusVal === 'present') {
+            updated.overtime = 0;
           } else {
-            updated.overtime = emp?.emp_type !== 'staff' ? 1.0 : 0;
+            const inTimeVal = updated.punch_in;
+            const outTimeVal = updated.punch_out;
+            if (inTimeVal && outTimeVal && emp?.emp_type !== 'staff') {
+              const [inH, inM] = inTimeVal.split(':').map(Number);
+              const [outH, outM] = outTimeVal.split(':').map(Number);
+              let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
+              if (diffMin < 0) diffMin += 24 * 60;
+              const hours = diffMin / 60;
+              if (hours > 8) {
+                const rawOT = hours - 8;
+                updated.overtime = roundOT
+                  ? Math.round(rawOT * 2) / 2
+                  : parseFloat(rawOT.toFixed(1));
+              } else {
+                updated.overtime = 1.0;
+              }
+            } else {
+              updated.overtime = emp?.emp_type !== 'staff' ? 1.0 : 0;
+            }
           }
         }
       }
@@ -1210,7 +1211,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         } else {
           updated.status = 'absent';
           updated.overtime = 0;
-          updated.remarks = 'Absent';
+          updated.remarks = '';
           const emp = employeesMap[userId];
           if (emp) {
             updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
@@ -1229,7 +1230,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
 
       return { ...prev, [userId]: updated };
     });
-  }, [employeesMap, employeeAssignedProjects, roundOT, userData?.email]);
+  }, [employeesMap, employeeAssignedProjects, roundOT, userData?.email, projects]);
 
   const handleRowSelect = useCallback((userId: string) => {
     setSelectedRowIds(prev => {
@@ -1266,52 +1267,58 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
 
         // Automatically handle status adjustments
         if (field === 'status') {
-          const statusVal = value as 'present' | 'absent' | 'present with OT';
+          const statusVal = value as 'present' | 'absent' | 'present with OT' | 'no status';
           if (statusVal === 'absent') {
             updated.punch_in = '';
             updated.punch_out = '';
             updated.overtime = 0;
-            updated.remarks = 'Absent';
+            updated.remarks = '';
             const emp = employeesMap[userId];
             if (emp) {
               updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
             }
-          } else if (statusVal === 'present') {
-            if (!current.punch_in && !current.punch_out) {
-              updated.punch_in = '08:00';
-              updated.punch_out = '17:00';
-            }
-            if (current.remarks === 'Absent') {
-              updated.remarks = '';
-            }
+          } else if (statusVal === 'no status') {
+            updated.punch_in = '';
+            updated.punch_out = '';
             updated.overtime = 0;
-          } else if (statusVal === 'present with OT') {
+            updated.remarks = '';
+          } else if (statusVal === 'present' || statusVal === 'present with OT') {
+            const emp = employeesMap[userId];
+            const projCode = current.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
+            const targetProj = projects.find(p => p.project_code === projCode);
+            const inTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
+            const outTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
+
             if (!current.punch_in && !current.punch_out) {
-              updated.punch_in = '08:00';
-              updated.punch_out = '17:00';
+              updated.punch_in = inTime;
+              updated.punch_out = outTime;
             }
             if (current.remarks === 'Absent') {
               updated.remarks = '';
             }
-            const inTime = updated.punch_in;
-            const outTime = updated.punch_out;
-            const emp = employeesMap[userId];
-            if (inTime && outTime && emp?.emp_type !== 'staff') {
-              const [inH, inM] = inTime.split(':').map(Number);
-              const [outH, outM] = outTime.split(':').map(Number);
-              let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
-              if (diffMin < 0) diffMin += 24 * 60;
-              const hours = diffMin / 60;
-              if (hours > 8) {
-                const rawOT = hours - 8;
-                updated.overtime = roundOT
-                  ? Math.round(rawOT * 2) / 2
-                  : parseFloat(rawOT.toFixed(1));
-              } else {
-                updated.overtime = 1.0;
-              }
+
+            if (statusVal === 'present') {
+              updated.overtime = 0;
             } else {
-              updated.overtime = emp?.emp_type !== 'staff' ? 1.0 : 0;
+              const inTimeVal = updated.punch_in;
+              const outTimeVal = updated.punch_out;
+              if (inTimeVal && outTimeVal && emp?.emp_type !== 'staff') {
+                const [inH, inM] = inTimeVal.split(':').map(Number);
+                const [outH, outM] = outTimeVal.split(':').map(Number);
+                let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
+                if (diffMin < 0) diffMin += 24 * 60;
+                const hours = diffMin / 60;
+                if (hours > 8) {
+                  const rawOT = hours - 8;
+                  updated.overtime = roundOT
+                    ? Math.round(rawOT * 2) / 2
+                    : parseFloat(rawOT.toFixed(1));
+                } else {
+                  updated.overtime = 1.0;
+                }
+              } else {
+                updated.overtime = emp?.emp_type !== 'staff' ? 1.0 : 0;
+              }
             }
           }
         }
@@ -1351,7 +1358,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
           } else {
             updated.status = 'absent';
             updated.overtime = 0;
-            updated.remarks = 'Absent';
+            updated.remarks = '';
             if (emp) {
               updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
             }
@@ -1386,6 +1393,11 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
       return;
     }
 
+    if (!r.status || r.status === 'no status') {
+      toast.error(`Please select a status for ${r.employee_name} before verifying.`);
+      return;
+    }
+
     if (r.status !== 'absent' && !r.project_code) {
       toast.error(`Please select a project for ${r.employee_name} before finalizing.`);
       return;
@@ -1398,7 +1410,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
 
     const { machineCode } = parseAttestedBy(r.attested_by, !!r.isApproved);
     const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
-    const hasNoSource = r.status !== 'absent' && !r.isEdited && !hasDevice;
+    const hasNoSource = r.status !== 'absent' && r.status !== 'no status' && !r.isEdited && !hasDevice;
     if (hasNoSource) {
       toast.error(`Cannot verify/approve ${r.employee_name} because it has no biometric source.`);
       return;
@@ -1511,11 +1523,21 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
       const hasNoSourceRows = Object.values(rows).some(r => {
         const { machineCode } = parseAttestedBy(r.attested_by, !!r.isApproved);
         const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
-        return r.status !== 'absent' && !r.isEdited && !hasDevice;
+        return r.status !== 'absent' && r.status !== 'no status' && !r.isEdited && !hasDevice;
       });
 
       if (hasNoSourceRows) {
         toast.error("Cannot finalize. Some records have no biometric source. Please review items labeled 'No Source'.");
+        setSaving(false);
+        return;
+      }
+
+      const hasNoStatusRows = Object.values(rows).some(r => {
+        return !r.status || r.status === 'no status';
+      });
+
+      if (hasNoStatusRows) {
+        toast.error("Cannot finalize. Some records do not have a status selected.");
         setSaving(false);
         return;
       }
@@ -2226,56 +2248,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </th>
-                  <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '210px' }}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-550 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
-                        <span className="truncate">
-                          {punchFilter === 'ALL'
-                            ? 'Punches (All)'
-                            : punchFilter === 'NO_IN'
-                              ? 'No Clock In'
-                              : punchFilter === 'NO_OUT'
-                                ? 'No Clock Out'
-                                : 'In & Out Present'}
-                        </span>
-                        <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[180px] p-1 bg-white border border-slate-200 z-50">
-                        <DropdownMenuCheckboxItem
-                          style={{ justifyContent: "flex-start" }}
-                          checked={punchFilter === 'ALL'}
-                          onCheckedChange={() => setPunchFilter('ALL')}
-                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                        >
-                          All Punches
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          style={{ justifyContent: "flex-start" }}
-                          checked={punchFilter === 'NO_IN'}
-                          onCheckedChange={() => setPunchFilter('NO_IN')}
-                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                        >
-                          No Clock In
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          style={{ justifyContent: "flex-start" }}
-                          checked={punchFilter === 'NO_OUT'}
-                          onCheckedChange={() => setPunchFilter('NO_OUT')}
-                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                        >
-                          No Clock Out
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          style={{ justifyContent: "flex-start" }}
-                          checked={punchFilter === 'BOTH'}
-                          onCheckedChange={() => setPunchFilter('BOTH')}
-                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                        >
-                          In & Out Present
-                        </DropdownMenuCheckboxItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </th>
+                  <th style={{ width: '140px' }}>Status</th>
                   <th style={{ width: '100px' }}>Punch In</th>
                   <th style={{ width: '100px' }}>Punch Out</th>
                   <th style={{ width: '100px', textAlign: 'center' }}>Total</th>
@@ -2363,7 +2336,6 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </th>
-                  <th style={{ width: '150px' }}>Status</th>
                   <th style={{ width: '200px' }}>Remarks</th>
                   <th className="sticky-action" style={{ width: '130px', textAlign: 'center' }}>Action</th>
                 </tr>
@@ -2371,7 +2343,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
               <tbody>
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="py-20 text-center text-gray-400 font-medium bg-white">
+                    <td colSpan={11} className="py-20 text-center text-gray-400 font-medium bg-white">
                       No matching records found.
                     </td>
                   </tr>
@@ -2402,7 +2374,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                     })}
                     {filteredEmployees.length > renderLimit && (
                       <tr>
-                        <td colSpan={12} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
+                        <td colSpan={11} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
                           <div className="flex items-center justify-center gap-4 w-full">
                             <span className="text-xs text-gray-500 font-medium text-center">
                               Showing {renderLimit} of {filteredEmployees.length} records
@@ -2646,6 +2618,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border border-slate-200 z-[120]">
+                  <SelectItem value="no status" className="text-xs cursor-pointer focus:bg-slate-50">No Status</SelectItem>
                   <SelectItem value="present" className="text-xs cursor-pointer focus:bg-slate-50">Present</SelectItem>
                   <SelectItem value="absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
                   <SelectItem value="present with OT" className="text-xs cursor-pointer focus:bg-slate-50">Present with OT</SelectItem>
@@ -2692,7 +2665,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                 value={
                   bulkRemarksValue === ''
                     ? 'NONE'
-                    : (bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Absent' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Annual Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave')
+                    : (bulkRemarksValue === 'Present' || bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave')
                       ? bulkRemarksValue
                       : 'CUSTOM'
                 }
@@ -2713,11 +2686,9 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                   <SelectItem value="NONE" className="text-xs cursor-pointer focus:bg-slate-50">No Remark</SelectItem>
                   <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
                   <SelectItem value="Sick Leave" className="text-xs cursor-pointer focus:bg-slate-50">Sick Leave</SelectItem>
-                  <SelectItem value="Annual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Annual Leave</SelectItem>
                   <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
                   <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
                   <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
-                  <SelectItem value="Absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
                   <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
                 </SelectContent>
               </Select>

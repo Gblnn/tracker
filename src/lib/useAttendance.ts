@@ -4,6 +4,18 @@ import { useAuth } from '@/components/AuthProvider';
 import type { Punch, Employee, EmployeeSummary } from '../types/attendance';
 import { parsePunchLocation, parseLocationGeofence } from './geofence';
 
+const normalizeString = (str: string) => {
+  if (!str) return '';
+  return str.toLowerCase().replace(/[^a-z0-9]/g, '');
+};
+
+const findProjectCode = (currentProject: string | null | undefined, projectList: any[]): string => {
+  if (!currentProject || currentProject === 'No Project Assigned') return '';
+  const normCp = normalizeString(currentProject);
+  const found = projectList.find(p => normalizeString(p.project_name) === normCp || normalizeString(p.project_code) === normCp);
+  return found ? found.project_code : '';
+};
+
 export function useAttendance(date: string) {
   const { userData } = useAuth();
   const [useFirstLast, setUseFirstLast] = useState<boolean>(true);
@@ -42,7 +54,9 @@ export function useAttendance(date: string) {
         { data: punchData, error: punchError },
         { data: empData, error: empError },
         { data: devData, error: devError },
-        { data: transData, error: transError }
+        { data: transData, error: transError },
+        { data: allProjData, error: allProjErr },
+        { data: latestProjData, error: latestProjErr }
       ] = await Promise.all([
         supabase
           .from('punches')
@@ -52,13 +66,26 @@ export function useAttendance(date: string) {
           .order('punch_time', { ascending: false }),
         supabase.from('employees').select('*').order('name', { ascending: true }),
         supabase.from('devices').select('serial_no, location, start_time, end_time, project_code'),
-        supabase.from('transfers').select('*')
+        supabase.from('transfers').select('*'),
+        supabase.from('projects').select('project_code, project_name, project_location, focal_point_email'),
+        supabase.from('v_employee_latest_project').select('emp_id, current_project')
       ]);
 
       if (punchError) throw punchError;
       if (empError) throw empError;
       if (devError) throw devError;
       if (transError) throw transError;
+      if (allProjErr) throw allProjErr;
+      if (latestProjErr) throw latestProjErr;
+
+      const assignedProjMap: Record<string, string> = {};
+      if (latestProjData) {
+        latestProjData.forEach(item => {
+          if (item.emp_id && item.current_project) {
+            assignedProjMap[item.emp_id] = findProjectCode(item.current_project, allProjData || []);
+          }
+        });
+      }
 
       // 1. Determine if focal point filter is active
       let focalProjectCodes: string[] = [];
@@ -66,10 +93,7 @@ export function useAttendance(date: string) {
       let isFocalFiltered = false;
 
       if (userData?.role !== 'admin' && userData?.email) {
-        const { data: focalProjects } = await supabase
-          .from('projects')
-          .select('project_code, project_location')
-          .eq('focal_point_email', userData.email);
+        const focalProjects = (allProjData ?? []).filter(p => p.focal_point_email === userData.email);
 
         if (focalProjects && focalProjects.length > 0) {
           focalProjectCodes = focalProjects.map(p => p.project_code);
@@ -163,14 +187,14 @@ export function useAttendance(date: string) {
           const hasCommand = allowedEmpIds.has(emp.id);
           const hasPunch = allowedDeviceUserIds.has(emp.device_user_id);
           const hasLocationMatch = emp.location && focalProjectLocations.includes(emp.location.toLowerCase().trim());
-          return hasCommand || hasPunch || hasLocationMatch;
+          const hasProjectMatch = emp.emp_id && assignedProjMap[emp.emp_id] && focalProjectCodes.includes(assignedProjMap[emp.emp_id]);
+          return hasCommand || hasPunch || hasLocationMatch || hasProjectMatch;
         });
       }
 
-      // Fetch all projects to build a project_name to location display name mapping
-      const { data: projData } = await supabase.from('projects').select('project_name, project_location');
+      // Build a project_name to location display name mapping from fetched projects
       const tempProjLocationMap: Record<string, string> = {};
-      (projData ?? []).forEach(p => {
+      (allProjData ?? []).forEach(p => {
         const { name } = parseLocationGeofence(p.project_location);
         if (p.project_name && name) {
           tempProjLocationMap[p.project_name.toLowerCase().trim()] = name;

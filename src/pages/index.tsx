@@ -280,14 +280,13 @@ export default function Index() {
         </div> */}
 
       <Back
-
         //  fontFamily="'Britney', cursive"
         //  fontSize="1.5rem"
         blurBG
         fixed
         editMode={userData?.editor === true ? true : false}
         title="Starboard"
-        subtitle={"1.7"}
+        subtitle={"1.71"}
         icon={<img src="/stardox-bg.png" style={{ width: "2rem" }} alt="Starboard" />}
         noback
         extra={
