@@ -521,6 +521,14 @@ const TimesheetRowComponent = memo(({
           const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
           const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
           const hasNoSource = row.status !== 'absent' && !row.isEdited && !hasDevice;
+          const hasNoRemarksForAbsent = row.status === 'absent' && (!row.remarks || row.remarks.trim() === '' || row.remarks === 'Custom: ');
+
+          const isDisabled = isLocked || saving || hasNoSource || hasNoRemarksForAbsent;
+          const tooltip = hasNoSource
+            ? "Cannot verify item with no biometric source"
+            : hasNoRemarksForAbsent
+            ? "Cannot verify: Absent employee must have a remark/reason selected"
+            : undefined;
 
           return isFocalFiltered ? (
             // Focal Point View
@@ -543,8 +551,8 @@ const TimesheetRowComponent = memo(({
                 <div className="flex items-center justify-center">
                   <button
                     onClick={() => onApproveRow(emp.device_user_id)}
-                    disabled={isLocked || saving || hasNoSource}
-                    title={hasNoSource ? "Cannot verify item with no biometric source" : undefined}
+                    disabled={isDisabled}
+                    title={tooltip}
                     className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-teal-600 hover:bg-teal-700 text-white flex items-center gap-1"
                   >
                     <Stamp className='w-4 h-4' />
@@ -593,8 +601,8 @@ const TimesheetRowComponent = memo(({
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => onApproveRow(emp.device_user_id)}
-                      disabled={isLocked || saving || hasNoSource}
-                      title={hasNoSource ? "Cannot approve item with no biometric source" : undefined}
+                      disabled={isDisabled}
+                      title={tooltip}
                       className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-white-800 hover:bg-white-800 text-black flex items-center gap-1"
                     >
                       <Stamp className='w-4 h-4 text-indigo-600' />
@@ -1383,6 +1391,11 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
       return;
     }
 
+    if (r.status === 'absent' && (!r.remarks || r.remarks.trim() === '' || r.remarks === 'Custom: ')) {
+      toast.error(`Please select a remark/reason for ${r.employee_name} being absent.`);
+      return;
+    }
+
     const { machineCode } = parseAttestedBy(r.attested_by, !!r.isApproved);
     const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
     const hasNoSource = r.status !== 'absent' && !r.isEdited && !hasDevice;
@@ -1503,6 +1516,16 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
 
       if (hasNoSourceRows) {
         toast.error("Cannot finalize. Some records have no biometric source. Please review items labeled 'No Source'.");
+        setSaving(false);
+        return;
+      }
+
+      const hasNoRemarksAbsentRows = Object.values(rows).some(r => {
+        return r.status === 'absent' && (!r.remarks || r.remarks.trim() === '' || r.remarks === 'Custom: ');
+      });
+
+      if (hasNoRemarksAbsentRows) {
+        toast.error("Cannot finalize. All absent employees must have a reason selected in remarks.");
         setSaving(false);
         return;
       }
