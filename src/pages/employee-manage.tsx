@@ -71,7 +71,7 @@ const NATIONALITIES = [
     'bahraini',
 ];
 
-const EMPLOYEE_STATUSES = ['active', 'inactive', 'leave', 'long leave', 'cancel'] as const;
+const EMPLOYEE_STATUSES = ['active', 'inactive', 'leave', 'long leave', 'cancel', 'om50'] as const;
 
 type EmployeeStatus = typeof EMPLOYEE_STATUSES[number];
 
@@ -2631,7 +2631,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                         {(() => {
                                             const status = normalizeEmployeeStatus(emp.status);
                                             return (
-                                                <span style={{ textTransform: "capitalize" }} className={`inline-flex items-center w-fit px-2 py-0.5 rounded-full text-xs font-medium ${status === 'active'
+                                                <span style={{ textTransform: status === 'om50' ? 'none' : 'capitalize' }} className={`inline-flex items-center w-fit px-2 py-0.5 rounded-full text-xs font-medium ${status === 'active'
                                                     ? 'bg-teal-50 text-teal-700'
                                                     : status === 'inactive'
                                                         ? 'bg-rose-50 text-rose-700'
@@ -2639,9 +2639,11 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                             ? 'bg-amber-50 text-amber-700'
                                                             : status === 'long leave'
                                                                 ? 'bg-orange-50 text-orange-700'
-                                                                : 'bg-rose-50 text-rose-700'
+                                                                : status === 'om50'
+                                                                    ? 'bg-sky-50 text-sky-700'
+                                                                    : 'bg-rose-50 text-rose-700'
                                                     }`}>
-                                                    {status}
+                                                    {status === 'om50' ? 'OM50' : status}
                                                 </span>
                                             );
                                         })()}
