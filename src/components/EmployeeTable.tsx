@@ -18,6 +18,8 @@ interface EmployeeTableProps {
   onFilteredSummariesChange?: (summaries: EmployeeSummary[]) => void;
   date?: string;
   useFirstLast?: boolean;
+  activeCount?: number;
+  inactiveCount?: number;
 }
 
 function RollingDigit({ next, direction, durationMs }: { next: string; direction: 'up' | 'down'; durationMs: number }) {
@@ -63,7 +65,7 @@ function RollingNumber({ value, durationMs = 620 }: { value: number; durationMs?
   );
 }
 
-export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useFirstLast = true }: EmployeeTableProps) {
+export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useFirstLast = true, activeCount = 0, inactiveCount = 0 }: EmployeeTableProps) {
   const [search, setSearch] = useState('');
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedAssignedLocations, setSelectedAssignedLocations] = useState<string[]>([]);
@@ -627,10 +629,15 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
                   </div>
 
                   {/* Total Number Pane */}
-                  <div className={`card-state-pane ${totalPage === 0 ? "card-state-pane-active" : "card-state-pane-inactive"}`} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div className={`card-state-pane ${totalPage === 0 ? "card-state-pane-active" : "card-state-pane-inactive"}`} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                     <h1 style={{ fontWeight: 600, fontSize: "2.5rem", margin: 0 }}>
                       <RollingNumber value={stats.total} durationMs={680} />
                     </h1>
+                    <div style={{ fontSize: "0.72rem", color: "#4b5563", marginTop: "0.15rem", display: "flex", gap: "0.35rem", fontWeight: 500 }}>
+                      <span className="text-teal-600">Active: {activeCount}</span>
+                      <span className="text-gray-400">•</span>
+                      <span className="text-amber-700">Inactive: {inactiveCount}</span>
+                    </div>
                   </div>
                 </div>
               )}

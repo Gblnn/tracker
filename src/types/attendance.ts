@@ -30,6 +30,7 @@ export interface Employee {
   civil_id?: string | null;
   designation?: string | null;
   nationality?: string | null;
+  status?: string | null;
 }
 
 export interface EmployeeSummary extends Employee {

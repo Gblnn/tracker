@@ -612,11 +612,13 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
 
       const empWithLocation = await supabase.from('employees')
         .select('id, device_user_id, name, department, emp_type, emp_id, location')
+        .or('status.ilike.active,status.is.null')
         .order('name', { ascending: true });
 
       if (empWithLocation.error && /employees\.location/i.test(empWithLocation.error.message || '')) {
         const empWithoutLocation = await supabase.from('employees')
           .select('id, device_user_id, name, department, emp_type, emp_id')
+          .or('status.ilike.active,status.is.null')
           .order('name', { ascending: true });
 
         empData = (empWithoutLocation.data || []).map((emp: any) => ({ ...emp, location: null }));
@@ -1145,8 +1147,8 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
         const hoursStr = getDayHours(c);
         if (hoursStr !== '—') {
           const hours = parseFloat(hoursStr);
-          if (!isNaN(hours) && hours > 8) {
-            total += hours - 8;
+          if (!isNaN(hours) && hours > 10) {
+            total += hours - 10;
           }
         }
       }

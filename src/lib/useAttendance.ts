@@ -27,6 +27,8 @@ export function useAttendance(date: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [projLocationMap, setProjLocationMap] = useState<Record<string, string>>({});
+  const [activeCount, setActiveCount] = useState<number>(0);
+  const [inactiveCount, setInactiveCount] = useState<number>(0);
   const filterRef = useRef<{
     isFocalFiltered: boolean;
     projectDeviceSerials: string[];
@@ -180,10 +182,18 @@ export function useAttendance(date: string) {
         }
       }
 
-      // 5. Filter employee list
-      let filteredEmployees = empData ?? [];
+      // 5. Filter employee list (Active only, and calculate counts)
+      const allEmployees = empData ?? [];
+      const activeEmployees = allEmployees.filter(emp => {
+        const status = emp.status?.trim().toLowerCase();
+        return status === 'active' || !emp.status;
+      });
+      const currentActiveCount = activeEmployees.length;
+      const currentInactiveCount = allEmployees.length - currentActiveCount;
+
+      let filteredEmployees = activeEmployees;
       if (isFocalFiltered) {
-        filteredEmployees = (empData ?? []).filter(emp => {
+        filteredEmployees = activeEmployees.filter(emp => {
           const hasCommand = allowedEmpIds.has(emp.id);
           const hasPunch = allowedDeviceUserIds.has(emp.device_user_id);
           const hasLocationMatch = emp.location && focalProjectLocations.includes(emp.location.toLowerCase().trim());
@@ -191,6 +201,9 @@ export function useAttendance(date: string) {
           return hasCommand || hasPunch || hasLocationMatch || hasProjectMatch;
         });
       }
+
+      setActiveCount(currentActiveCount);
+      setInactiveCount(currentInactiveCount);
 
       // Build a project_name to location display name mapping from fetched projects
       const tempProjLocationMap: Record<string, string> = {};
@@ -486,7 +499,7 @@ export function useAttendance(date: string) {
         new Date(a.punch_time).getTime()
     )[0]
 
-  return { punches, employees, employeeSummaries, stats, location: latestPunch?.location ?? null, loading, error, refetch: fetchData, useFirstLast, setUseFirstLast };
+  return { punches, employees, employeeSummaries, stats, location: latestPunch?.location ?? null, loading, error, refetch: fetchData, useFirstLast, setUseFirstLast, activeCount, inactiveCount };
 }
 
 function getLocalTimeParts(iso: string): { hour: number; minute: number } | null {

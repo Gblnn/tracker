@@ -44,7 +44,7 @@ export default function AttendanceDashboard() {
   const [tabLoading, setTabLoading] = useState(false);
   const [terminalHasPendingTasks, setTerminalHasPendingTasks] = useState(false);
 
-  const { punches, employees, employeeSummaries, loading, refetch, useFirstLast, setUseFirstLast } = useAttendance(date);
+  const { punches, employees, employeeSummaries, loading, refetch, useFirstLast, setUseFirstLast, activeCount, inactiveCount } = useAttendance(date);
   const [navVisible, setNavVisible] = useState(true);
   const { userData } = useAuth();
 
@@ -482,7 +482,7 @@ export default function AttendanceDashboard() {
                   <Loader2 className="animate-spin" />
                 </div>
               ) : (
-                <EmployeeTable summaries={employeeSummaries} date={date} useFirstLast={useFirstLast} />
+                <EmployeeTable summaries={employeeSummaries} date={date} useFirstLast={useFirstLast} activeCount={activeCount} inactiveCount={inactiveCount} />
               )
             ) : tab === 'breakdown' ? (
               loading ? (

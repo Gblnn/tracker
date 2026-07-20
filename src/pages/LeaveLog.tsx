@@ -115,7 +115,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
         { data: empData, error: empErr },
         { data: leaveData, error: leaveErr }
       ] = await Promise.all([
-        supabase.from('employees').select('device_user_id, name, emp_id').order('name'),
+        supabase.from('employees').select('device_user_id, name, emp_id').or('status.ilike.active,status.is.null').order('name'),
         supabase.from('leave_log').select('*').order('created_at', { ascending: false })
       ]);
 

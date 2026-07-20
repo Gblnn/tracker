@@ -243,6 +243,7 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
       const { data: empData, error: empErr } = await supabase
         .from('employees')
         .select('id, name, email, emp_id, device_user_id')
+        .or('status.ilike.active,status.is.null')
         .order('name', { ascending: true });
       if (empErr) console.warn("Could not load employees for focal point:", empErr.message);
 

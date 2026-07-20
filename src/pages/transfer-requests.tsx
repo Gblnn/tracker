@@ -110,7 +110,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
 
       const [transRes, empsRes, devRes, punchRes, projRes] = await Promise.all([
         supabase.from("transfers").select("*").order("created_at", { ascending: false }),
-        supabase.from("employees").select("*").order("name", { ascending: true }),
+        supabase.from("employees").select("*").or("status.ilike.active,status.is.null").order("name", { ascending: true }),
         supabase.from("devices").select("serial_no, location"),
         supabase.from("punches").select("user_id, device_serial, mobile_location").order("punch_time", { ascending: false }).limit(2000),
         supabase.from("projects").select("project_name, project_location")
