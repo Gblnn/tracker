@@ -31,6 +31,7 @@ import {
   Unlock,
   X,
   SquareCheck,
+  Undo2,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
 import { toast } from 'sonner';
@@ -252,7 +253,8 @@ const TimesheetRowComponent = memo(({
   saving,
   onRowSelect,
   onUpdateRow,
-  onRevokeRow
+  onRevokeRow,
+  onUndoRow
 }: {
   emp: Employee;
   row: TimesheetRow;
@@ -266,6 +268,7 @@ const TimesheetRowComponent = memo(({
   onRowSelect: (userId: string) => void;
   onUpdateRow: (userId: string, key: keyof TimesheetRow, value: any) => void;
   onRevokeRow: (userId: string) => void;
+  onUndoRow: (userId: string) => void;
 }) => {
   const hasNoRedBorders = useMemo(() => {
     // 1. Status check
@@ -286,6 +289,18 @@ const TimesheetRowComponent = memo(({
 
     return true;
   }, [row.status, row.project_code, row.remarks]);
+
+  const deviceCode = useMemo(() => {
+    if (!row.original_in_punch || !row.original_out_punch) return '';
+    const inM = extractTime(row.original_in_punch.punch_time);
+    const outM = extractTime(row.original_out_punch.punch_time);
+    if (row.punch_in === inM && row.punch_out === outM) {
+      return row.original_in_punch.device_serial === row.original_out_punch.device_serial
+        ? row.original_in_punch.device_serial
+        : `${row.original_in_punch.device_serial}/${row.original_out_punch.device_serial}`;
+    }
+    return '';
+  }, [row.punch_in, row.punch_out, row.original_in_punch, row.original_out_punch]);
 
   return (
     <tr className={hasNoRedBorders ? 'green-row-highlight' : undefined}>
@@ -513,80 +528,96 @@ const TimesheetRowComponent = memo(({
       <td className="sticky-action">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px 6px' }}>
           {/* 1. Source Badge (Original & Unchanged - Full Width) */}
-          {(row.isApproved || row.isEdited) ? (() => {
-            const badgeBg = row.isApproved
-              ? (isFocalFiltered ? 'teal' : '#4f46e5')
-              : (hasNoRedBorders ? 'teal' : '#d97706');
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
+            {(row.isApproved || row.isEdited) ? (() => {
+              const badgeBg = row.isApproved
+                ? (isFocalFiltered ? 'teal' : '#4f46e5')
+                : (hasNoRedBorders ? 'teal' : '#d97706');
 
-            const badgeText = row.isApproved
-              ? (isFocalFiltered ? 'Verified' : 'Approved')
-              : (hasNoRedBorders ? 'Verified' : 'Manual');
+              const badgeText = row.isApproved
+                ? (isFocalFiltered ? 'Verified' : 'Approved')
+                : (hasNoRedBorders ? 'Verified' : 'Manual');
 
-            const isVerifiedState = row.isApproved
-              ? isFocalFiltered
-              : hasNoRedBorders;
+              const isVerifiedState = row.isApproved
+                ? isFocalFiltered
+                : hasNoRedBorders;
 
-            return (
-              <span
-                style={{
-                  fontSize: "0.7rem",
-                  background: badgeBg,
-                  color: 'white',
-                  border: "none",
-                  fontWeight: 500,
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "1px 6px",
-                  borderRadius: "3px"
-                }}
-                className="source-badge"
+              return (
+                <span
+                  style={{
+                    fontSize: "0.7rem",
+                    background: badgeBg,
+                    color: 'white',
+                    border: "none",
+                    fontWeight: 500,
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "1px 6px",
+                    borderRadius: "3px",
+                    flex: 1
+                  }}
+                  className="source-badge"
+                >
+                  {isVerifiedState ? (
+                    <span className="badge-text-fade" key="verified">
+                      <Check className="w-3 h-3 shrink-0" />
+                      Verified
+                    </span>
+                  ) : (
+                    <span className="badge-text-fade" key="non-verified">
+                      {badgeText}
+                    </span>
+                  )}
+                </span>
+              );
+            })() : (
+              (() => {
+                const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
+                const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
+                if (machineCode === 'Leave Log') {
+                  return (
+                    <span style={{ fontSize: "0.7rem", background: "#6366f1", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px", flex: 1 }} className="source-badge source-leave" title={row.attested_by}>
+                      <Calendar className="w-3 h-3 shrink-0" />
+                      Leave Log
+                    </span>
+                  );
+                } else if (hasDevice) {
+                  return (
+                    <span style={{ fontSize: "0.7rem", background: "teal", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px", flex: 1 }} className="source-badge source-auto" title={row.attested_by}>
+                      <Laptop2 className="w-3 h-3 shrink-0" />
+                      {machineCode}
+                    </span>
+                  );
+                } else {
+                  return (
+                    <span style={{ fontSize: "0.7rem", background: "slategray", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px", flex: 1 }} className="source-badge source-nosource" title={row.attested_by || "No source found"}>
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      No Source
+                    </span>
+                  );
+                }
+              })()
+            )}
+            
+            {row.isEdited && !isLocked && !row.isApproved && canUserEdit && (
+              <button
+                type="button"
+                onClick={() => onUndoRow(emp.device_user_id)}
+                disabled={saving}
+                className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all cursor-pointer border border-slate-200 bg-white flex items-center justify-center shrink-0"
+                title="Undo manual changes back to original"
+                style={{ width: "20px", height: "20px" }}
               >
-                {isVerifiedState ? (
-                  <span className="badge-text-fade" key="verified">
-                    <Check className="w-3 h-3 shrink-0" />
-                    Verified
-                  </span>
-                ) : (
-                  <span className="badge-text-fade" key="non-verified">
-                    {badgeText}
-                  </span>
-                )}
-              </span>
-            );
-          })() : (
-            (() => {
-              const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
-              const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
-              if (machineCode === 'Leave Log') {
-                return (
-                  <span style={{ fontSize: "0.7rem", background: "#6366f1", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px" }} className="source-badge source-leave" title={row.attested_by}>
-                    <Calendar className="w-3 h-3 shrink-0" />
-                    Leave Log
-                  </span>
-                );
-              } else if (hasDevice) {
-                return (
-                  <span style={{ fontSize: "0.7rem", background: "teal", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px" }} className="source-badge source-auto" title={row.attested_by}>
-                    <Laptop2 className="w-3 h-3 shrink-0" />
-                    {machineCode}
-                  </span>
-                );
-              } else {
-                return (
-                  <span style={{ fontSize: "0.7rem", background: "slategray", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px" }} className="source-badge source-nosource" title={row.attested_by || "No source found"}>
-                    <AlertCircle className="w-3 h-3 shrink-0" />
-                    No Source
-                  </span>
-                );
-              }
-            })()
-          )}
+                <Undo2 className="w-3 h-3" />
+              </button>
+            )}
+          </div>
 
           {/* 2. Attestation Details & Status/Actions inline underneath */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             {row.isEdited ? (
               <span className={hasNoRedBorders ? 'text-teal-600' : 'text-amber-700'} style={{ fontSize: '10px', whiteSpace: 'nowrap', fontWeight: 555 }} title={row.attested_by}>
-                {row.attested_by}
+                {row.attested_by}{deviceCode && ` (${deviceCode})`}
               </span>
             ) : (
               <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 500 }}>
@@ -656,6 +687,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [rows, setRows] = useState<Record<string, TimesheetRow>>({});
+  const initialRowsRef = useRef<Record<string, TimesheetRow>>({});
   const [isLocked, setIsLocked] = useState(false);
   const [lockedBy, setLockedBy] = useState<string | null>(null);
 
@@ -1132,6 +1164,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         }
       });
       setRows(initialRows);
+      initialRowsRef.current = initialRows;
     } catch (err: any) {
       setError(err.message || 'Failed to load timesheet finalizer data.');
     } finally {
@@ -1143,6 +1176,37 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
   useEffect(() => {
     loadTimesheet();
   }, [loadTimesheet, refreshTrigger]);
+
+  const handleUndoRow = useCallback((userId: string) => {
+    setRows(prev => {
+      const current = prev[userId];
+      if (!current) return prev;
+
+      const initial = initialRowsRef.current[userId];
+      if (initial && initial.inDatabase) {
+        return {
+          ...prev,
+          [userId]: { ...initial }
+        };
+      }
+
+      const emp = employeesMap[userId];
+      if (!emp) return prev;
+      const empPunches = punchGroups[userId] || [];
+      const guessed = guessRow(emp, empPunches, punchMode, projects, deviceProjectMap, employeeAssignedProjects);
+
+      return {
+        ...prev,
+        [userId]: {
+          ...guessed,
+          isApproved: false,
+          approval: false,
+          inDatabase: false
+        }
+      };
+    });
+    toast.success("Changes reverted to original.");
+  }, [employeesMap, punchGroups, punchMode, projects, deviceProjectMap, employeeAssignedProjects, guessRow]);
 
   const updateRow = useCallback((userId: string, key: keyof TimesheetRow, value: any) => {
     setRows(prev => {
@@ -1266,6 +1330,15 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         const otVal = value as number;
         if (otVal > 0) {
           updated.status = 'present with OT';
+          if (!current.punch_in && !current.punch_out) {
+            const emp = employeesMap[userId];
+            const projCode = current.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
+            const targetProj = projects.find(p => p.project_code === projCode);
+            const inTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
+            const outTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
+            updated.punch_in = inTime;
+            updated.punch_out = outTime;
+          }
         } else {
           updated.status = (updated.punch_in || updated.punch_out) ? 'present' : 'absent';
         }
@@ -1416,6 +1489,15 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
           const otVal = value as number;
           if (otVal > 0) {
             updated.status = 'present with OT';
+            if (!current.punch_in && !current.punch_out) {
+              const emp = employeesMap[userId];
+              const projCode = current.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
+              const targetProj = projects.find(p => p.project_code === projCode);
+              const inTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
+              const outTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
+              updated.punch_in = inTime;
+              updated.punch_out = outTime;
+            }
           } else {
             updated.status = (updated.punch_in || updated.punch_out) ? 'present' : 'absent';
           }
@@ -1518,7 +1600,25 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
           const inTimestamp = buildTimestamp(date, r.punch_in);
           const outTimestamp = buildTimestamp(date, r.punch_out);
 
-          const newAttestedBy = getSaveAttestedBy(r.attested_by, userData?.email, isFocalFiltered);
+          let newAttestedBy = getSaveAttestedBy(r.attested_by, userData?.email, isFocalFiltered);
+
+          if (r.original_in_punch && r.original_out_punch) {
+            const inM = extractTime(r.original_in_punch.punch_time);
+            const outM = extractTime(r.original_out_punch.punch_time);
+            if (r.punch_in === inM && r.punch_out === outM) {
+              const devCode = r.original_in_punch.device_serial === r.original_out_punch.device_serial
+                ? r.original_in_punch.device_serial
+                : `${r.original_in_punch.device_serial}/${r.original_out_punch.device_serial}`;
+              
+              const { verifier, approver } = parseAttestedBy(newAttestedBy, !isFocalFiltered);
+              const email = userData?.email || '';
+              if (isFocalFiltered) {
+                newAttestedBy = `${email}|${approver || ''}|${devCode}`;
+              } else {
+                newAttestedBy = `${verifier || ''}|${email}|${devCode}`;
+              }
+            }
+          }
 
           return {
             date: date,
@@ -2311,6 +2411,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                           onRowSelect={handleRowSelect}
                           onUpdateRow={updateRow}
                           onRevokeRow={handleRevokeRow}
+                          onUndoRow={handleUndoRow}
                         />
                       );
                     })}
