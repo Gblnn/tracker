@@ -12,7 +12,15 @@ const normalizeString = (str: string) => {
 const findProjectCode = (currentProject: string | null | undefined, projectList: any[]): string => {
   if (!currentProject || currentProject === 'No Project Assigned') return '';
   const normCp = normalizeString(currentProject);
-  const found = projectList.find(p => normalizeString(p.project_name) === normCp || normalizeString(p.project_code) === normCp);
+  const found = projectList.find(p => {
+    const normCode = normalizeString(p.project_code);
+    const normName = normalizeString(p.project_name);
+    const normLoc = p.project_location ? normalizeString(parseLocationGeofence(p.project_location).name) : '';
+    return normCode === normCp || normName === normCp || (normLoc && normLoc === normCp) ||
+      normCode.includes(normCp) || normCp.includes(normCode) ||
+      normName.includes(normCp) || normCp.includes(normName) ||
+      (normLoc && (normLoc.includes(normCp) || normCp.includes(normLoc)));
+  });
   return found ? found.project_code : '';
 };
 
@@ -88,6 +96,24 @@ export function useAttendance(date: string) {
           }
         });
       }
+
+      // Fallback/enrich with transfers table
+      const sortedTransfers = [...(transData || [])].sort((a: any, b: any) => 
+        new Date(a.transfer_date).getTime() - new Date(b.transfer_date).getTime() ||
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      sortedTransfers.forEach(item => {
+        const empCode = item.emp_id;
+        if (empCode && item.to_project) {
+          const resolvedCode = findProjectCode(item.to_project, allProjData || []);
+          if (resolvedCode) {
+            const matchedEmp = (empData || []).find(e => String(e.id) === String(empCode) || e.emp_id === empCode);
+            if (matchedEmp && matchedEmp.emp_id) {
+              assignedProjMap[matchedEmp.emp_id] = resolvedCode;
+            }
+          }
+        }
+      });
 
       // 1. Determine if focal point filter is active
       let focalProjectCodes: string[] = [];
@@ -188,18 +214,71 @@ export function useAttendance(date: string) {
         const status = emp.status?.trim().toLowerCase();
         return status === 'active' || !emp.status;
       });
-      const currentActiveCount = activeEmployees.length;
-      const currentInactiveCount = allEmployees.length - currentActiveCount;
+      let currentActiveCount = activeEmployees.length;
+      let currentInactiveCount = allEmployees.length - currentActiveCount;
 
       let filteredEmployees = activeEmployees;
+
       if (isFocalFiltered) {
         filteredEmployees = activeEmployees.filter(emp => {
           const hasCommand = allowedEmpIds.has(emp.id);
           const hasPunch = allowedDeviceUserIds.has(emp.device_user_id);
+          
+          // Resolve transfer details
+          const empTrans = (transData || []).filter(t => t.emp_id === emp.emp_id || t.emp_id === String(emp.id));
+          let verifiedLoc = '';
+          if (empTrans.length > 0) {
+            const sortedEmpTrans = [...empTrans].sort((a: any, b: any) => 
+              new Date(b.transfer_date).getTime() - new Date(a.transfer_date).getTime() || 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            );
+            verifiedLoc = sortedEmpTrans[0].to_project;
+          }
+          
           const hasLocationMatch = emp.location && focalProjectLocations.includes(emp.location.toLowerCase().trim());
+          const hasVerifiedMatch = verifiedLoc && focalProjectLocations.includes(verifiedLoc.toLowerCase().trim());
+          
           const hasProjectMatch = emp.emp_id && assignedProjMap[emp.emp_id] && focalProjectCodes.includes(assignedProjMap[emp.emp_id]);
-          return hasCommand || hasPunch || hasLocationMatch || hasProjectMatch;
+          
+          const verifiedLocCode = verifiedLoc ? findProjectCode(verifiedLoc, allProjData || []) : '';
+          const hasTransferProjectMatch = verifiedLocCode && focalProjectCodes.includes(verifiedLocCode);
+
+          return hasCommand || hasPunch || hasLocationMatch || hasVerifiedMatch || hasProjectMatch || hasTransferProjectMatch;
         });
+
+        currentActiveCount = filteredEmployees.length;
+
+        const filteredInactiveEmployees = allEmployees
+          .filter(emp => {
+            const status = emp.status?.trim().toLowerCase();
+            return status !== 'active' && !!emp.status;
+          })
+          .filter(emp => {
+            const hasCommand = allowedEmpIds.has(emp.id);
+            const hasPunch = allowedDeviceUserIds.has(emp.device_user_id);
+            
+            const empTrans = (transData || []).filter(t => t.emp_id === emp.emp_id || t.emp_id === String(emp.id));
+            let verifiedLoc = '';
+            if (empTrans.length > 0) {
+              const sortedEmpTrans = [...empTrans].sort((a: any, b: any) => 
+                new Date(b.transfer_date).getTime() - new Date(a.transfer_date).getTime() || 
+                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              );
+              verifiedLoc = sortedEmpTrans[0].to_project;
+            }
+            
+            const hasLocationMatch = emp.location && focalProjectLocations.includes(emp.location.toLowerCase().trim());
+            const hasVerifiedMatch = verifiedLoc && focalProjectLocations.includes(verifiedLoc.toLowerCase().trim());
+            
+            const hasProjectMatch = emp.emp_id && assignedProjMap[emp.emp_id] && focalProjectCodes.includes(assignedProjMap[emp.emp_id]);
+            
+            const verifiedLocCode = verifiedLoc ? findProjectCode(verifiedLoc, allProjData || []) : '';
+            const hasTransferProjectMatch = verifiedLocCode && focalProjectCodes.includes(verifiedLocCode);
+
+            return hasCommand || hasPunch || hasLocationMatch || hasVerifiedMatch || hasProjectMatch || hasTransferProjectMatch;
+          });
+
+        currentInactiveCount = filteredInactiveEmployees.length;
       }
 
       setActiveCount(currentActiveCount);

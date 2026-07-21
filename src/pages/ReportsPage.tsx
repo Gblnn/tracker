@@ -785,12 +785,17 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
           user_id: p.user_id,
           punch_time: p.punch_time,
           punch_type: p.punch_type,
+          device_serial: p.device_serial,
           location: resolvedLoc
         };
       });
 
+      const visibleDeviceUserIds = new Set(filteredEmployees.map(e => e.device_user_id).filter(Boolean));
       const filteredPunches = isFocalFiltered
-        ? mappedPunches.filter(p => allowedDeviceUserIds.has(p.user_id))
+        ? mappedPunches.filter(p => 
+            (p.user_id && visibleDeviceUserIds.has(p.user_id)) ||
+            (p.device_serial && projectDeviceSerials.includes(p.device_serial))
+          )
         : mappedPunches;
 
       setEmployees(filteredEmployees);

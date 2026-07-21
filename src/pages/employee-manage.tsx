@@ -865,6 +865,26 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
 
             let filteredEmployees = empRes.data || [];
             if (isFocalFiltered) {
+                const normalizeString = (str: string) => {
+                    if (!str) return '';
+                    return str.toLowerCase().replace(/[^a-z0-9]/g, '');
+                };
+
+                const findProjectCode = (currentProject: string | null | undefined, projectList: any[]): string => {
+                    if (!currentProject || currentProject === 'No Project Assigned') return '';
+                    const normCp = normalizeString(currentProject);
+                    const found = projectList.find(p => {
+                        const normCode = normalizeString(p.project_code);
+                        const normName = normalizeString(p.project_name);
+                        const normLoc = p.project_location ? normalizeString(parseLocationGeofence(p.project_location).name) : '';
+                        return normCode === normCp || normName === normCp || (normLoc && normLoc === normCp) ||
+                            normCode.includes(normCp) || normCp.includes(normCode) ||
+                            normName.includes(normCp) || normCp.includes(normName) ||
+                            (normLoc && (normLoc.includes(normCp) || normCp.includes(normLoc)));
+                    });
+                    return found ? found.project_code : '';
+                };
+
                 // 1. Resolve matching project device serials
                 const projectDeviceSerials = devData
                     .filter(d => d.project_code && focalProjectCodes.includes(d.project_code))
@@ -909,7 +929,11 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     // Also check if their most recent calculated location (from empLocs) matches focal location
                     const calculatedLoc = verifiedLocsMap[emp.id] || empLocs[emp.device_user_id];
                     const hasCalculatedLocMatch = calculatedLoc && focalProjectLocations.includes(calculatedLoc.toLowerCase().trim());
-                    return hasCommand || hasPunch || hasLocationMatch || hasCalculatedLocMatch;
+                    
+                    const resolvedProjCode = calculatedLoc ? findProjectCode(calculatedLoc, projData || []) : '';
+                    const hasProjectMatch = resolvedProjCode && focalProjectCodes.includes(resolvedProjCode);
+
+                    return hasCommand || hasPunch || hasLocationMatch || hasCalculatedLocMatch || hasProjectMatch;
                 });
             }
 
@@ -2838,10 +2862,15 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                 <SelectTrigger className="text-sm bg-gray-50 border-gray-100 rounded-xl">
                                                     <SelectValue placeholder="Select Status" />
                                                 </SelectTrigger>
-                                                <SelectContent>
-                                                    {EMPLOYEE_STATUSES.map((status) => (
-                                                        <SelectItem key={status} value={status}>{status.toUpperCase()}</SelectItem>
-                                                    ))}
+                                                <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
+                                                    {(() => {
+                                                        const allowed = ['cancel', 'om50', 'long leave'];
+                                                        const current = editStatus || 'active';
+                                                        const items = allowed.includes(current) ? allowed : [current, ...allowed];
+                                                        return items.map((status) => (
+                                                            <SelectItem key={status} value={status} className="rounded-md focus:bg-gray-50 cursor-pointer">{status.toUpperCase()}</SelectItem>
+                                                        ));
+                                                    })()}
                                                 </SelectContent>
                                             </Select>
                                         </div>

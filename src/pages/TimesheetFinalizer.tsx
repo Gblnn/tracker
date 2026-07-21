@@ -32,10 +32,11 @@ import {
   X,
   SquareCheck,
   Undo2,
+  Users,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
 import { toast } from 'sonner';
-import { parsePunchLocation } from '../lib/geofence';
+import { parsePunchLocation, parseLocationGeofence } from '../lib/geofence';
 import { supabase } from '../lib/supabase';
 
 
@@ -64,6 +65,7 @@ interface Project {
   project_name: string;
   project_in_time?: string | null;
   project_out_time?: string | null;
+  project_location?: string | null;
 }
 
 const normalizeString = (str: string) => {
@@ -78,8 +80,11 @@ const findProjectCode = (currentProject: string | null | undefined, projectList:
   const match = projectList.find(p => {
     const normCode = normalizeString(p.project_code);
     const normName = normalizeString(p.project_name);
-    return normCode.includes(normCp) || normCp.includes(normCode) ||
-      normName.includes(normCp) || normCp.includes(normName);
+    const normLoc = p.project_location ? normalizeString(parseLocationGeofence(p.project_location).name) : '';
+    return normCode === normCp || normName === normCp || (normLoc && normLoc === normCp) ||
+      normCode.includes(normCp) || normCp.includes(normCode) ||
+      normName.includes(normCp) || normCp.includes(normName) ||
+      (normLoc && (normLoc.includes(normCp) || normCp.includes(normLoc)));
   });
 
   return match ? match.project_code : '';
@@ -332,7 +337,7 @@ const TimesheetRowComponent = memo(({
         }
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div 
+          <div
             style={{
               width: '38px',
               height: '38px',
@@ -381,8 +386,8 @@ const TimesheetRowComponent = memo(({
           disabled={isLocked || row.isApproved || !canUserEdit}
         >
           <SelectTrigger className={`w-[140px] text-xs h-8 bg-white border focus:ring-1 ${(!row.status || row.status === 'no status')
-              ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
-              : 'border-slate-300 focus:ring-slate-300'
+            ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
+            : 'border-slate-300 focus:ring-slate-300'
             }`}>
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -451,8 +456,8 @@ const TimesheetRowComponent = memo(({
           disabled={isLocked || row.isApproved || !canUserEdit}
         >
           <SelectTrigger className={`w-[150px] text-xs h-8 bg-white border focus:ring-1 ${(row.status !== 'absent' && row.status !== 'no status' && (!row.project_code || row.project_code === '' || row.project_code === 'UNASSIGNED'))
-              ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
-              : 'border-slate-300 focus:ring-slate-300'
+            ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
+            : 'border-slate-300 focus:ring-slate-300'
             }`}>
             <SelectValue placeholder="Choose Project" />
           </SelectTrigger>
@@ -490,8 +495,8 @@ const TimesheetRowComponent = memo(({
             disabled={isLocked || row.isApproved || !canUserEdit}
           >
             <SelectTrigger className={`w-[150px] text-xs h-8 bg-white border focus:ring-1 ${(row.status === 'absent' && (!row.remarks || row.remarks.trim() === '' || row.remarks === 'Custom: '))
-                ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
-                : 'border-slate-300 focus:ring-slate-300'
+              ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
+              : 'border-slate-300 focus:ring-slate-300'
               }`}>
               <SelectValue placeholder="No Remark" />
             </SelectTrigger>
@@ -516,8 +521,8 @@ const TimesheetRowComponent = memo(({
               placeholder="Type custom remark..."
               disabled={isLocked || row.isApproved || !canUserEdit}
               className={`h-8 text-xs w-[150px] bg-white border focus:ring-1 ${(row.status === 'absent' && (row.remarks === 'Custom: ' || row.remarks.trim() === 'Custom:'))
-                  ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
-                  : 'border-slate-300 focus:ring-slate-300'
+                ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
+                : 'border-slate-300 focus:ring-slate-300'
                 }`}
             />
           )}
@@ -598,7 +603,7 @@ const TimesheetRowComponent = memo(({
                 }
               })()
             )}
-            
+
             {row.isEdited && !isLocked && !row.isApproved && canUserEdit && (
               <button
                 type="button"
@@ -624,7 +629,7 @@ const TimesheetRowComponent = memo(({
                 {row.verify_type}
               </span>
             )}
-            
+
             {!row.isApproved && getVerificationBadge(row)}
             {!row.isApproved && getApprovalBadge(row)}
 
@@ -700,10 +705,8 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
 
-  const [isBulkPunchInOpen, setIsBulkPunchInOpen] = useState(false);
+  const [isBulkPunchTimeOpen, setIsBulkPunchTimeOpen] = useState(false);
   const [bulkPunchInValue, setBulkPunchInValue] = useState('');
-
-  const [isBulkPunchOutOpen, setIsBulkPunchOutOpen] = useState(false);
   const [bulkPunchOutValue, setBulkPunchOutValue] = useState('');
 
   const [isBulkOvertimeOpen, setIsBulkOvertimeOpen] = useState(false);
@@ -740,6 +743,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
   const [punchFilter] = useState<'ALL' | 'NO_IN' | 'NO_OUT' | 'BOTH'>('ALL');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('ALL');
+  const [empTypeFilter, setEmpTypeFilter] = useState<'all' | 'staff' | 'worker'>('all');
   const [roundOT] = useState(true);
   const [focalProjectCodes, setFocalProjectCodes] = useState<string[]>([]);
   const [isFocalFiltered, setIsFocalFiltered] = useState(false);
@@ -932,7 +936,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         { data: latestProjData, error: latestProjErr }
       ] = await Promise.all([
         supabase.from('employees').select('id, device_user_id, name, department, emp_id, emp_type').or('status.ilike.active,status.is.null').order('name'),
-        supabase.from('projects').select('project_code, project_name, project_in_time, project_out_time').order('project_code'),
+        supabase.from('projects').select('project_code, project_name, project_in_time, project_out_time, project_location').order('project_code'),
         supabase.from('devices').select('serial_no, project_code'),
         supabase.from('v_employee_latest_project').select('emp_id, current_project')
       ]);
@@ -1036,8 +1040,12 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         .order('punch_time', { ascending: true });
       if (punchErr) throw punchErr;
 
+      const visibleDeviceUserIds = new Set(filteredEmployees.map(emp => emp.device_user_id).filter(Boolean));
       const filteredPunches = isFocalFiltered
-        ? (punchesData || []).filter(p => allowedDeviceUserIds.has(p.user_id) || (p.device_serial && projectDeviceSerials.includes(p.device_serial)))
+        ? (punchesData || []).filter(p => 
+            (p.user_id && visibleDeviceUserIds.has(p.user_id)) || 
+            (p.device_serial && projectDeviceSerials.includes(p.device_serial))
+          )
         : (punchesData || []);
 
       // Group punches by employee device_user_id
@@ -1513,6 +1521,85 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
     setIsSelectionMode(false);
   };
 
+  const handleBulkPunchTimeUpdate = (inTime: string, outTime: string) => {
+    if (selectedRowIds.size === 0) {
+      toast.error('No rows selected.');
+      return;
+    }
+
+    setRows(prev => {
+      const next = { ...prev };
+      selectedRowIds.forEach(userId => {
+        const current = next[userId];
+        if (!current) return;
+
+        let updated = { ...current };
+
+        const updateIn = inTime !== '';
+        const updateOut = outTime !== '';
+
+        if (!updateIn && !updateOut) return;
+
+        if (updateIn) {
+          updated.punch_in = inTime;
+        }
+        if (updateOut) {
+          updated.punch_out = outTime;
+        }
+
+        updated.isEdited = true;
+        updated.verify_type = 'Manual Input';
+        updated.attested_by = userData?.email || 'Timekeeper';
+
+        const currentIn = updated.punch_in;
+        const currentOut = updated.punch_out;
+
+        const emp = employeesMap[userId];
+        const isStaff = emp?.emp_type === 'staff';
+
+        if (currentIn && currentOut) {
+          if (!isStaff) {
+            const [inH, inM] = currentIn.split(':').map(Number);
+            const [outH, outM] = currentOut.split(':').map(Number);
+            let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
+            if (diffMin < 0) diffMin += 24 * 60;
+            const hours = diffMin / 60;
+            if (hours > 10) {
+              const rawOT = hours - 10;
+              updated.overtime = roundOT
+                ? Math.round(rawOT * 2) / 2
+                : parseFloat(rawOT.toFixed(1));
+              updated.status = 'present with OT';
+            } else {
+              updated.overtime = 0;
+              updated.status = 'present';
+            }
+          } else {
+            updated.overtime = 0;
+            updated.status = 'present';
+          }
+        } else if (currentIn || currentOut) {
+          updated.status = 'present';
+          updated.overtime = 0;
+        } else {
+          updated.status = 'absent';
+          updated.overtime = 0;
+          updated.remarks = '';
+          if (emp) {
+            updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
+          }
+        }
+
+        next[userId] = updated;
+      });
+      return next;
+    });
+
+    toast.success(`Bulk updated selected rows.`);
+    setSelectedRowIds(new Set());
+    setIsSelectionMode(false);
+  };
+
 
 
   const handleRevokeRow = useCallback(async (userId: string) => {
@@ -1609,7 +1696,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
               const devCode = r.original_in_punch.device_serial === r.original_out_punch.device_serial
                 ? r.original_in_punch.device_serial
                 : `${r.original_in_punch.device_serial}/${r.original_out_punch.device_serial}`;
-              
+
               const { verifier, approver } = parseAttestedBy(newAttestedBy, !isFocalFiltered);
               const email = userData?.email || '';
               if (isFocalFiltered) {
@@ -1718,9 +1805,15 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         if (category !== sourceFilter) return false;
       }
 
+      if (empTypeFilter !== 'all') {
+        const empType = emp.emp_type?.toLowerCase().trim();
+        if (empTypeFilter === 'staff' && empType !== 'staff') return false;
+        if (empTypeFilter === 'worker' && empType !== 'worker') return false;
+      }
+
       return true;
     });
-  }, [employees, rows, search, punchFilter, selectedProjects, sourceFilter]);
+  }, [employees, rows, search, punchFilter, selectedProjects, sourceFilter, empTypeFilter]);
 
   return (
     <div className="bg-white animate-fade-in" style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -2050,20 +2143,12 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                     <DropdownMenuItem
                       onClick={() => {
                         setBulkPunchInValue('');
-                        setIsBulkPunchInOpen(true);
-                      }}
-                      className="text-xs cursor-pointer focus:bg-slate-50 rounded-md p-2"
-                    >
-                      Allocate Punch In
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
                         setBulkPunchOutValue('');
-                        setIsBulkPunchOutOpen(true);
+                        setIsBulkPunchTimeOpen(true);
                       }}
                       className="text-xs cursor-pointer focus:bg-slate-50 rounded-md p-2"
                     >
-                      Allocate Punch Out
+                      Allocate Punch Time
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
@@ -2214,28 +2299,73 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                     </div>
                   </th>
                   <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs uppercase tracking-wide sticky-name transition-[left] duration-200 ease-in-out" style={{ width: '320px', left: isSelectionMode ? '48px' : '0' }}>
-                    <div className="relative flex items-center group w-full">
-                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-darkblue transition-colors" />
-                      <input
-                        type="text"
-                        placeholder="Search Employee..."
-                        value={search}
-                        style={{ fontSize: "0.8rem", fontWeight: "400" }}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-8 pr-6 py-1.5 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors tracking-wide text-gray-700 font-normal normal-case"
-                      />
-                      {search && (
-                        <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600">
-                          <X className="w-3 h-3" />
-                        </button>
-                      )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
+                      <div className="relative flex items-center group flex-1">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-darkblue transition-colors" />
+                        <input
+                          type="text"
+                          placeholder="Search Employee..."
+                          value={search}
+                          style={{ fontSize: "0.8rem", fontWeight: "400" }}
+                          onChange={(e) => setSearch(e.target.value)}
+                          className="w-full pl-8 pr-6 py-1.5 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-gray-400 transition-colors tracking-wide text-gray-700 font-normal normal-case"
+                        />
+                        {search && (
+                          <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600">
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className={`w-[30px] h-[30px] rounded-lg border flex items-center justify-center cursor-pointer transition-all shrink-0 focus:outline-none ${
+                              empTypeFilter === 'all'
+                                ? 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                                : empTypeFilter === 'staff'
+                                  ? 'border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                                  : 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                            }`}
+                            title={
+                              empTypeFilter === 'all'
+                                ? 'Filter: All Types'
+                                : empTypeFilter === 'staff'
+                                  ? 'Filter: Staff only'
+                                  : 'Filter: Workers only'
+                            }
+                          >
+                            <Users className="w-3.5 h-3.5" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-white border border-gray-100 shadow-xl rounded-lg z-[100] w-[130px] p-1">
+                          <DropdownMenuItem
+                            onClick={() => setEmpTypeFilter('all')}
+                            className={`text-xs cursor-pointer focus:bg-gray-50 rounded-md p-2 font-medium ${empTypeFilter === 'all' ? 'text-indigo-600 bg-indigo-50/50 font-semibold' : 'text-gray-700'}`}
+                          >
+                            ALL TYPES
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setEmpTypeFilter('staff')}
+                            className={`text-xs cursor-pointer focus:bg-gray-50 rounded-md p-2 font-medium ${empTypeFilter === 'staff' ? 'text-indigo-600 bg-indigo-50/50 font-semibold' : 'text-gray-700'}`}
+                          >
+                            STAFF ONLY
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setEmpTypeFilter('worker')}
+                            className={`text-xs cursor-pointer focus:bg-gray-50 rounded-md p-2 font-medium ${empTypeFilter === 'worker' ? 'text-indigo-600 bg-indigo-50/50 font-semibold' : 'text-gray-700'}`}
+                          >
+                            WORKERS ONLY
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </th>
 
                   <th style={{ width: '140px' }}>Status</th>
                   <th style={{ width: '100px' }}>Punch In</th>
                   <th style={{ width: '100px' }}>Punch Out</th>
-                  <th style={{ width: '100px', textAlign: 'center' }}>Total</th>
+                  <th style={{ width: '65px', textAlign: 'center' }}>Total</th>
                   <th style={{ width: '90px' }}>Overtime</th>
                   <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '160px' }}>
                     <DropdownMenu>
@@ -2456,16 +2586,16 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
 
       </div>
 
-      {/* Bulk Allocate Punch In Dialog */}
-      <Dialog open={isBulkPunchInOpen} onOpenChange={(open) => { if (!open) setIsBulkPunchInOpen(false); }}>
+      {/* Bulk Allocate Punch Time Dialog */}
+      <Dialog open={isBulkPunchTimeOpen} onOpenChange={(open) => { if (!open) setIsBulkPunchTimeOpen(false); }}>
         <DialogContent className="sm:max-w-[425px] bg-white z-[100]">
           <DialogHeader>
-            <DialogTitle>Bulk Update Punch In</DialogTitle>
+            <DialogTitle>Bulk Update Punch Time</DialogTitle>
             <DialogDescription>
-              Select a new Punch In time for the {selectedRowIds.size} selected employee(s).
+              Enter a new Punch In and/or Punch Out time for the {selectedRowIds.size} selected employee(s). Leaving either field blank will keep its original value.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
               <label className="text-xs font-medium text-gray-600 block">Punch In Time</label>
               <Input
@@ -2475,40 +2605,6 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                 className="h-9"
               />
             </div>
-          </div>
-          <DialogFooter className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsBulkPunchInOpen(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={() => {
-                handleBulkUpdate('punch_in', bulkPunchInValue);
-                setIsBulkPunchInOpen(false);
-              }}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
-            >
-              Update Punch In
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Bulk Allocate Punch Out Dialog */}
-      <Dialog open={isBulkPunchOutOpen} onOpenChange={(open) => { if (!open) setIsBulkPunchOutOpen(false); }}>
-        <DialogContent className="sm:max-w-[425px] bg-white z-[100]">
-          <DialogHeader>
-            <DialogTitle>Bulk Update Punch Out</DialogTitle>
-            <DialogDescription>
-              Select a new Punch Out time for the {selectedRowIds.size} selected employee(s).
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-xs font-medium text-gray-600 block">Punch Out Time</label>
               <Input
@@ -2523,7 +2619,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsBulkPunchOutOpen(false)}
+              onClick={() => setIsBulkPunchTimeOpen(false)}
               className="flex-1"
             >
               Cancel
@@ -2531,12 +2627,12 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
             <Button
               type="button"
               onClick={() => {
-                handleBulkUpdate('punch_out', bulkPunchOutValue);
-                setIsBulkPunchOutOpen(false);
+                handleBulkPunchTimeUpdate(bulkPunchInValue, bulkPunchOutValue);
+                setIsBulkPunchTimeOpen(false);
               }}
               className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
             >
-              Update Punch Out
+              Update Punch Time
             </Button>
           </DialogFooter>
         </DialogContent>

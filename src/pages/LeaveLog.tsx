@@ -44,7 +44,8 @@ interface Employee {
   name: string;
   emp_id: string;
   email?: string;
-  id?: number;
+  id: number;
+  status?: string | null;
 }
 
 interface LeaveLogProps {
@@ -115,7 +116,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
         { data: empData, error: empErr },
         { data: leaveData, error: leaveErr }
       ] = await Promise.all([
-        supabase.from('employees').select('device_user_id, name, emp_id').or('status.ilike.active,status.is.null').order('name'),
+        supabase.from('employees').select('id, device_user_id, name, emp_id, status').order('name'),
         supabase.from('leave_log').select('*').order('created_at', { ascending: false })
       ]);
 
@@ -191,6 +192,16 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
 
       if (insErr) throw insErr;
 
+      // Update employee status
+      const employee = employees.find(e => e.device_user_id === addForm.emp_id || e.emp_id === addForm.emp_id);
+      if (employee) {
+        const nextStatus = addForm.till ? 'Active' : 'Leave';
+        await supabase
+          .from('employees')
+          .update({ status: nextStatus })
+          .eq('id', employee.id);
+      }
+
       toast.success('Leave log recorded successfully.');
       setIsAdding(false);
       setAddForm({ emp_id: '', from: '', till: '', status: 'Annual Leave' });
@@ -203,7 +214,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number, empId: string) => {
     if (!canEditLeaves) {
       toast.error('You do not have permission to delete leave logs.');
       return;
@@ -221,11 +232,53 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
 
       if (delErr) throw delErr;
 
+      // Revert employee status to Active on delete
+      const employee = employees.find(e => e.device_user_id === empId || e.emp_id === empId);
+      if (employee) {
+        await supabase
+          .from('employees')
+          .update({ status: 'Active' })
+          .eq('id', employee.id);
+      }
+
       toast.success('Leave log deleted.', { id: `delete-leave-${id}` });
       loadData();
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Failed to delete leave log.', { id: `delete-leave-${id}` });
+    }
+  };
+
+  const handleSetReturnDate = async (id: number, empId: string, returnDate: string) => {
+    if (!canEditLeaves) {
+      toast.error('You do not have permission to edit leave logs.');
+      return;
+    }
+    toast.loading('Setting return date...', { id: `return-leave-${id}` });
+    try {
+      // 1. Update the leave log entry with the return date (till)
+      const { error: updErr } = await supabase
+        .from('leave_log')
+        .update({ till: returnDate })
+        .eq('id', id);
+
+      if (updErr) throw updErr;
+
+      // 2. Set employee status to Active
+      const employee = employees.find(e => e.device_user_id === empId || e.emp_id === empId);
+      if (employee) {
+        const { error: empErr } = await supabase
+          .from('employees')
+          .update({ status: 'Active' })
+          .eq('id', employee.id);
+        if (empErr) throw empErr;
+      }
+
+      toast.success('Return date set successfully. Employee status updated to Active.', { id: `return-leave-${id}` });
+      loadData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to set return date.', { id: `return-leave-${id}` });
     }
   };
 
@@ -239,9 +292,13 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
   }, [leaves, search, statusFilter]);
 
   const selectableEmployees = useMemo(() => {
-    if (!empSearch.trim()) return employees;
+    const activeEmps = employees.filter(emp => {
+      const status = emp.status?.trim().toLowerCase();
+      return status === 'active' || !emp.status;
+    });
+    if (!empSearch.trim()) return activeEmps;
     const q = empSearch.toLowerCase().trim();
-    return employees.filter(emp =>
+    return activeEmps.filter(emp =>
       (emp.name && emp.name.toLowerCase().includes(q)) ||
       (emp.emp_id && emp.emp_id.toLowerCase().includes(q)) ||
       (emp.device_user_id && emp.device_user_id.toLowerCase().includes(q))
@@ -372,9 +429,24 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
                     {record.till ? (
                       <span className="text-slate-600">{record.till}</span>
                     ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-orange-50 text-orange-800 text-[10px] font-semibold border border-orange-100">
-                        Perpetual Leave
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-orange-50 text-orange-800 text-[10px] font-semibold border border-orange-100">
+                          Perpetual Leave
+                        </span>
+                        {canEditLeaves && (
+                          <input
+                            type="date"
+                            onChange={async (e) => {
+                              const dateVal = e.target.value;
+                              if (dateVal) {
+                                await handleSetReturnDate(record.id, record.emp_id, dateVal);
+                              }
+                            }}
+                            className="text-xs border border-slate-200 rounded px-1.5 py-0.5 bg-white text-slate-600 cursor-pointer hover:border-slate-300 focus:outline-none"
+                            title="Set return date"
+                          />
+                        )}
+                      </div>
                     )}
                   </TableCell>
                   {canEditLeaves && (
@@ -382,7 +454,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(record.id)}
+                        onClick={() => handleDelete(record.id, record.emp_id)}
                         className="h-8 w-8 hover:text-red-650 hover:bg-red-50 text-slate-500 transition-colors"
                         title="Delete leave log"
                       >
