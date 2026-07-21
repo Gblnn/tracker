@@ -108,6 +108,8 @@ interface TimesheetRow {
   isApproved?: boolean;
   approval?: boolean;
   inDatabase?: boolean;
+  machine?: string | null;
+  verified_by?: string | null;
 }
 
 type SourceFilter = 'ALL' | 'MANUAL' | 'LEAVE_LOG' | 'DEVICE' | 'NO_SOURCE';
@@ -210,18 +212,6 @@ const getSourceCategory = (row: TimesheetRow): Exclude<SourceFilter, 'ALL'> => {
   return hasDevice ? 'DEVICE' : 'NO_SOURCE';
 };
 
-const getVerificationBadge = (row: TimesheetRow) => {
-  if (!row.inDatabase && !row.isApproved) return null;
-  const { verifier } = parseAttestedBy(row.attested_by, !!row.isApproved);
-  const displayText = verifier || (row.inDatabase ? 'Verified' : null);
-  if (!displayText) return null;
-  return (
-    <span style={{ borderBottom: "2px solid #0d9488", gap: "0.25rem" }} className="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold text-teal-800 bg-teal-50/50 rounded-t-[3px]">
-      <Check size={12} />
-      {displayText}
-    </span>
-  );
-};
 
 const getApprovalBadge = (row: TimesheetRow) => {
   if (!row.isApproved) return null;
@@ -236,13 +226,43 @@ const getApprovalBadge = (row: TimesheetRow) => {
   );
 };
 
-const getSaveAttestedBy = (currentAttestedBy: string, userEmail: string | null | undefined, isFocal: boolean) => {
-  const { verifier, approver, machineCode } = parseAttestedBy(currentAttestedBy, false);
+const getDbAttestedAndVerified = (r: TimesheetRow, userEmail: string | null | undefined) => {
   const email = userEmail || '';
-  if (isFocal) {
-    return `${email}|${approver || ''}|${machineCode || ''}`;
+  const devSerials: string[] = [];
+  if (r.original_in_punch) devSerials.push(r.original_in_punch.device_serial);
+  if (r.original_out_punch) devSerials.push(r.original_out_punch.device_serial);
+  const uniqueSerials = Array.from(new Set(devSerials)).filter(Boolean);
+  const deviceCode = uniqueSerials.join('/');
+
+  if (r.original_in_punch && r.original_out_punch) {
+    const inM = extractTime(r.original_in_punch.punch_time);
+    const outM = extractTime(r.original_out_punch.punch_time);
+    const isUnmodified = r.punch_in === inM && r.punch_out === outM;
+    if (isUnmodified) {
+      return {
+        attested_by: deviceCode || 'Timekeeper',
+        machine: deviceCode || null,
+        verified_by: null
+      };
+    } else {
+      return {
+        attested_by: deviceCode || 'Timekeeper',
+        machine: deviceCode || null,
+        verified_by: email || null
+      };
+    }
+  } else if (r.original_in_punch || r.original_out_punch) {
+    return {
+      attested_by: deviceCode || 'Timekeeper',
+      machine: deviceCode || null,
+      verified_by: email || null
+    };
   } else {
-    return `${verifier || ''}|${email}|${machineCode || ''}`;
+    return {
+      attested_by: email || 'Timekeeper',
+      machine: null,
+      verified_by: null
+    };
   }
 };
 
@@ -258,7 +278,6 @@ const TimesheetRowComponent = memo(({
   saving,
   onRowSelect,
   onUpdateRow,
-  onRevokeRow,
   onUndoRow
 }: {
   emp: Employee;
@@ -272,7 +291,6 @@ const TimesheetRowComponent = memo(({
   saving: boolean;
   onRowSelect: (userId: string) => void;
   onUpdateRow: (userId: string, key: keyof TimesheetRow, value: any) => void;
-  onRevokeRow: (userId: string) => void;
   onUndoRow: (userId: string) => void;
 }) => {
   const hasNoRedBorders = useMemo(() => {
@@ -280,10 +298,13 @@ const TimesheetRowComponent = memo(({
     const isStatusRed = !row.status || row.status === 'no status';
     if (isStatusRed) return false;
 
-    // 2. Project check (only when status is not absent/no status)
+    // 2. Project & Punch check (only when status is not absent/no status)
     if (row.status !== 'absent' && row.status !== 'no status') {
       const isProjectRed = !row.project_code || row.project_code === '' || row.project_code === 'UNASSIGNED';
       if (isProjectRed) return false;
+
+      // Both punch times must be filled
+      if (!row.punch_in || !row.punch_out) return false;
     }
 
     // 3. Remarks check (only when status is absent)
@@ -293,19 +314,39 @@ const TimesheetRowComponent = memo(({
     }
 
     return true;
-  }, [row.status, row.project_code, row.remarks]);
+  }, [row.status, row.project_code, row.remarks, row.punch_in, row.punch_out]);
 
   const deviceCode = useMemo(() => {
-    if (!row.original_in_punch || !row.original_out_punch) return '';
-    const inM = extractTime(row.original_in_punch.punch_time);
-    const outM = extractTime(row.original_out_punch.punch_time);
-    if (row.punch_in === inM && row.punch_out === outM) {
-      return row.original_in_punch.device_serial === row.original_out_punch.device_serial
-        ? row.original_in_punch.device_serial
-        : `${row.original_in_punch.device_serial}/${row.original_out_punch.device_serial}`;
+    // 1. If it's a complete match of biometric punches
+    if (row.original_in_punch && row.original_out_punch) {
+      const inM = extractTime(row.original_in_punch.punch_time);
+      const outM = extractTime(row.original_out_punch.punch_time);
+      if (row.punch_in === inM && row.punch_out === outM) {
+        return row.original_in_punch.device_serial === row.original_out_punch.device_serial
+          ? row.original_in_punch.device_serial
+          : `${row.original_in_punch.device_serial}/${row.original_out_punch.device_serial}`;
+      }
     }
+    // 2. If it's a partial match/incomplete biometric punch (e.g. only one punch exists, or one of them was modified by the user)
+    const devSerials: string[] = [];
+    if (row.original_in_punch) {
+      devSerials.push(row.original_in_punch.device_serial);
+    }
+    if (row.original_out_punch) {
+      devSerials.push(row.original_out_punch.device_serial);
+    }
+    const uniqueSerials = Array.from(new Set(devSerials)).filter(Boolean);
+    if (uniqueSerials.length > 0) {
+      return uniqueSerials.join('/');
+    }
+
+    // 3. Fallback: if loaded from database and matched.machine is set
+    if (row.machine) {
+      return row.machine;
+    }
+
     return '';
-  }, [row.punch_in, row.punch_out, row.original_in_punch, row.original_out_punch]);
+  }, [row.punch_in, row.punch_out, row.original_in_punch, row.original_out_punch, row.machine]);
 
   return (
     <tr className={hasNoRedBorders ? 'green-row-highlight' : undefined}>
@@ -383,7 +424,7 @@ const TimesheetRowComponent = memo(({
         <Select
           value={row.status || 'no status'}
           onValueChange={(val) => onUpdateRow(emp.device_user_id, 'status', val)}
-          disabled={isLocked || row.isApproved || !canUserEdit}
+          disabled={isLocked || !canUserEdit}
         >
           <SelectTrigger className={`w-[140px] text-xs h-8 bg-white border focus:ring-1 ${(!row.status || row.status === 'no status')
             ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
@@ -408,7 +449,13 @@ const TimesheetRowComponent = memo(({
           type="time"
           value={row.punch_in}
           onChange={(e) => onUpdateRow(emp.device_user_id, 'punch_in', e.target.value)}
-          disabled={isLocked || row.isApproved || !canUserEdit || !!row.original_in_punch}
+          disabled={isLocked || !canUserEdit || !!row.original_in_punch}
+          style={((row.status === 'present' || row.status === 'present with OT') && !row.punch_in) ? {
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(254, 242, 242, 0.3)'
+          } : undefined}
           className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-slate-300 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
         />
       </td>
@@ -419,7 +466,13 @@ const TimesheetRowComponent = memo(({
           type="time"
           value={row.punch_out}
           onChange={(e) => onUpdateRow(emp.device_user_id, 'punch_out', e.target.value)}
-          disabled={isLocked || row.isApproved || !canUserEdit || !!row.original_out_punch}
+          disabled={isLocked || !canUserEdit || !!row.original_out_punch}
+          style={((row.status === 'present' || row.status === 'present with OT') && !row.punch_out) ? {
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(254, 242, 242, 0.3)'
+          } : undefined}
           className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-slate-300 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
         />
       </td>
@@ -442,35 +495,37 @@ const TimesheetRowComponent = memo(({
             value={row.overtime}
             onChange={(e) => onUpdateRow(emp.device_user_id, 'overtime', parseFloat(e.target.value) || 0)}
             className="table-input"
-            disabled={isLocked || row.isApproved || !canUserEdit}
+            disabled={isLocked || !canUserEdit}
             style={{ width: '70px', fontFamily: 'monospace' }}
           />
         )}
       </td>
 
       {/* Project Allocation Select */}
-      <td>
-        <Select
-          value={row.project_code || 'UNASSIGNED'}
-          onValueChange={(val) => onUpdateRow(emp.device_user_id, 'project_code', val === 'UNASSIGNED' ? '' : val)}
-          disabled={isLocked || row.isApproved || !canUserEdit}
-        >
-          <SelectTrigger className={`w-[150px] text-xs h-8 bg-white border focus:ring-1 ${(row.status !== 'absent' && row.status !== 'no status' && (!row.project_code || row.project_code === '' || row.project_code === 'UNASSIGNED'))
-            ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
-            : 'border-slate-300 focus:ring-slate-300'
-            }`}>
-            <SelectValue placeholder="Choose Project" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border border-slate-200 z-50">
-            <SelectItem value="UNASSIGNED" className="text-xs cursor-pointer focus:bg-slate-50">-- Choose Project --</SelectItem>
-            {projects.map(p => (
-              <SelectItem key={p.project_code} value={p.project_code} className="text-xs cursor-pointer focus:bg-slate-50">
-                {p.project_code}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </td>
+      {!isFocalFiltered && (
+        <td>
+          <Select
+            value={row.project_code || 'UNASSIGNED'}
+            onValueChange={(val) => onUpdateRow(emp.device_user_id, 'project_code', val === 'UNASSIGNED' ? '' : val)}
+            disabled={isLocked || !canUserEdit}
+          >
+            <SelectTrigger className={`w-[150px] text-xs h-8 bg-white border focus:ring-1 ${(row.status !== 'absent' && row.status !== 'no status' && (!row.project_code || row.project_code === '' || row.project_code === 'UNASSIGNED'))
+              ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
+              : 'border-slate-300 focus:ring-slate-300'
+              }`}>
+              <SelectValue placeholder="Choose Project" />
+            </SelectTrigger>
+            <SelectContent className="bg-white border border-slate-200 z-50">
+              <SelectItem value="UNASSIGNED" className="text-xs cursor-pointer focus:bg-slate-50">-- Choose Project --</SelectItem>
+              {projects.map(p => (
+                <SelectItem key={p.project_code} value={p.project_code} className="text-xs cursor-pointer focus:bg-slate-50">
+                  {p.project_code}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </td>
+      )}
 
       {/* Remarks Input */}
       <td>
@@ -492,7 +547,7 @@ const TimesheetRowComponent = memo(({
                 onUpdateRow(emp.device_user_id, 'remarks', val);
               }
             }}
-            disabled={isLocked || row.isApproved || !canUserEdit}
+            disabled={isLocked || !canUserEdit}
           >
             <SelectTrigger className={`w-[150px] text-xs h-8 bg-white border focus:ring-1 ${(row.status === 'absent' && (!row.remarks || row.remarks.trim() === '' || row.remarks === 'Custom: '))
               ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
@@ -519,7 +574,7 @@ const TimesheetRowComponent = memo(({
               value={row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks}
               onChange={(e) => onUpdateRow(emp.device_user_id, 'remarks', 'Custom: ' + e.target.value)}
               placeholder="Type custom remark..."
-              disabled={isLocked || row.isApproved || !canUserEdit}
+              disabled={isLocked || !canUserEdit}
               className={`h-8 text-xs w-[150px] bg-white border focus:ring-1 ${(row.status === 'absent' && (row.remarks === 'Custom: ' || row.remarks.trim() === 'Custom:'))
                 ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
                 : 'border-slate-300 focus:ring-slate-300'
@@ -535,17 +590,17 @@ const TimesheetRowComponent = memo(({
           {/* 1. Source Badge (Original & Unchanged - Full Width) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
             {(row.isApproved || row.isEdited) ? (() => {
-              const badgeBg = row.isApproved
-                ? (isFocalFiltered ? 'teal' : '#4f46e5')
-                : (hasNoRedBorders ? 'teal' : '#d97706');
+              const badgeBg = isLocked
+                ? '#4f46e5'
+                : (row.isApproved || hasNoRedBorders ? 'teal' : '#d97706');
 
-              const badgeText = row.isApproved
-                ? (isFocalFiltered ? 'Verified' : 'Approved')
-                : (hasNoRedBorders ? 'Verified' : 'Manual');
+              const badgeText = isLocked
+                ? 'Approved'
+                : (row.isApproved || hasNoRedBorders ? 'Verified' : 'Manual');
 
-              const isVerifiedState = row.isApproved
-                ? isFocalFiltered
-                : hasNoRedBorders;
+              const isVerifiedState = isLocked
+                ? false
+                : (row.isApproved || hasNoRedBorders);
 
               return (
                 <span
@@ -604,13 +659,13 @@ const TimesheetRowComponent = memo(({
               })()
             )}
 
-            {row.isEdited && !isLocked && !row.isApproved && canUserEdit && (
+            {((row.isEdited || row.inDatabase || row.isApproved) && !isLocked && canUserEdit && !(isFocalFiltered && row.approval)) && (
               <button
                 type="button"
                 onClick={() => onUndoRow(emp.device_user_id)}
                 disabled={saving}
                 className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all cursor-pointer border border-slate-200 bg-white flex items-center justify-center shrink-0"
-                title="Undo manual changes back to original"
+                title={row.inDatabase ? (isFocalFiltered ? "Revoke verification" : "Revoke approval") : "Undo manual changes back to original"}
                 style={{ width: "20px", height: "20px" }}
               >
                 <Undo2 className="w-3 h-3" />
@@ -620,9 +675,17 @@ const TimesheetRowComponent = memo(({
 
           {/* 2. Attestation Details & Status/Actions inline underneath */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            {row.isEdited ? (
+            {(row.isEdited || row.verified_by) ? (
               <span className={hasNoRedBorders ? 'text-teal-600' : 'text-amber-700'} style={{ fontSize: '10px', whiteSpace: 'nowrap', fontWeight: 555 }} title={row.attested_by}>
-                {row.attested_by}{deviceCode && ` (${deviceCode})`}
+                {(() => {
+                  const displayEmail = row.verified_by || (() => {
+                    const { verifier, approver } = parseAttestedBy(row.attested_by, !!row.isApproved);
+                    return isFocalFiltered
+                      ? (verifier || row.attested_by)
+                      : (approver || verifier || row.attested_by);
+                  })();
+                  return displayEmail ? displayEmail.split('|').filter(Boolean).join(' | ') : 'Timekeeper';
+                })()}{deviceCode && ` (${deviceCode})`}
               </span>
             ) : (
               <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 500 }}>
@@ -630,51 +693,7 @@ const TimesheetRowComponent = memo(({
               </span>
             )}
 
-            {!row.isApproved && getVerificationBadge(row)}
-            {!row.isApproved && getApprovalBadge(row)}
-
-            {(() => {
-              return isFocalFiltered ? (
-                // Focal Point View
-                row.isApproved ? (
-                  !isLocked && canUserEdit && !row.approval && (
-                    <button
-                      onClick={() => onRevokeRow(emp.device_user_id)}
-                      disabled={saving}
-                      className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200 shrink-0"
-                      title="Revoke verification"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )
-                ) : null
-              ) : (
-                // Admin View
-                row.isApproved ? (
-                  !isLocked && canUserEdit && (
-                    <button
-                      onClick={() => onRevokeRow(emp.device_user_id)}
-                      disabled={saving}
-                      className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200 shrink-0"
-                      title="Revoke approval"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )
-                ) : (
-                  canUserEdit && row.inDatabase && !isLocked && (
-                    <button
-                      onClick={() => onRevokeRow(emp.device_user_id)}
-                      disabled={saving}
-                      className="p-1 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer border border-transparent hover:border-red-200 shrink-0"
-                      title="Reject/Revoke verification"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )
-                )
-              );
-            })()}
+            {isLocked && getApprovalBadge(row)}
           </div>
         </div>
       </td>
@@ -1042,10 +1061,10 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
 
       const visibleDeviceUserIds = new Set(filteredEmployees.map(emp => emp.device_user_id).filter(Boolean));
       const filteredPunches = isFocalFiltered
-        ? (punchesData || []).filter(p => 
-            (p.user_id && visibleDeviceUserIds.has(p.user_id)) || 
-            (p.device_serial && projectDeviceSerials.includes(p.device_serial))
-          )
+        ? (punchesData || []).filter(p =>
+          (p.user_id && visibleDeviceUserIds.has(p.user_id)) ||
+          (p.device_serial && projectDeviceSerials.includes(p.device_serial))
+        )
         : (punchesData || []);
 
       // Group punches by employee device_user_id
@@ -1144,11 +1163,13 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
             remarks: matched.remarks ?? '',
             verify_type: matched.verify_type || 'Manual Input',
             attested_by: matched.attested_by || '',
-            isEdited: matched.verify_type === 'Manual Input',
+            isEdited: matched.verify_type === 'Manual Input' || !!matched.verified_by,
             status: matched.status || (matched.overtime > 0 ? 'present with OT' : (matched.punch_in || matched.punch_out ? 'present' : 'no status')),
             isApproved: isFocalFiltered ? true : (matched.approval !== false),
             approval: matched.approval !== false,
-            inDatabase: true
+            inDatabase: true,
+            machine: matched.machine,
+            verified_by: matched.verified_by
           };
         } else {
           // Guess initial values from raw punches
@@ -1185,18 +1206,41 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
     loadTimesheet();
   }, [loadTimesheet, refreshTrigger]);
 
-  const handleUndoRow = useCallback((userId: string) => {
+  const handleUndoRow = useCallback(async (userId: string) => {
+    const currentVal = rows[userId];
+    if (!currentVal) return;
+
+    if (!canUserEdit) {
+      toast.error('You do not have clearance to modify this.');
+      return;
+    }
+
+    if (isFocalFiltered && currentVal.approval) {
+      toast.error('Cannot revoke a record that has already been approved by the admin.');
+      return;
+    }
+
+    if (currentVal.inDatabase) {
+      const actionText = isFocalFiltered ? 'verification' : 'approval';
+      toast.loading(`Revoking ${actionText} and reverting...`, { id: `undo-${userId}` });
+      try {
+        const { error: delErr } = await supabase
+          .from('timesheet')
+          .delete()
+          .eq('date', date)
+          .eq('employee_code', userId);
+        if (delErr) throw delErr;
+        toast.success(`Verification/Approval for ${currentVal.employee_name} revoked & reverted.`, { id: `undo-${userId}` });
+      } catch (err: any) {
+        console.error(err);
+        toast.error(err.message || `Failed to revoke ${actionText}.`, { id: `undo-${userId}` });
+        return;
+      }
+    }
+
     setRows(prev => {
       const current = prev[userId];
       if (!current) return prev;
-
-      const initial = initialRowsRef.current[userId];
-      if (initial && initial.inDatabase) {
-        return {
-          ...prev,
-          [userId]: { ...initial }
-        };
-      }
 
       const emp = employeesMap[userId];
       if (!emp) return prev;
@@ -1213,17 +1257,113 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         }
       };
     });
-    toast.success("Changes reverted to original.");
-  }, [employeesMap, punchGroups, punchMode, projects, deviceProjectMap, employeeAssignedProjects, guessRow]);
+
+    if (!currentVal.inDatabase) {
+      toast.success("Changes reverted to original.");
+    }
+  }, [rows, date, isFocalFiltered, canUserEdit, employeesMap, punchGroups, punchMode, projects, deviceProjectMap, employeeAssignedProjects, guessRow]);
+
+  const autoPostRowsBatch = useCallback(async (updatedRows: TimesheetRow[]) => {
+    if (!canUserEdit || updatedRows.length === 0) return;
+
+    const payloads = updatedRows
+      .filter(r => {
+        const isStatusRed = !r.status || r.status === 'no status';
+        if (isStatusRed) return false;
+
+        if (r.status !== 'absent' && r.status !== 'no status') {
+          const isProjectRed = !r.project_code || r.project_code === '' || r.project_code === 'UNASSIGNED';
+          if (isProjectRed) return false;
+
+          // Punch In & Out check
+          if (!r.punch_in || !r.punch_out) return false;
+        }
+
+        if (r.status === 'absent') {
+          const isRemarksRed = !r.remarks || r.remarks.trim() === '' || r.remarks === 'Custom: ' || r.remarks.trim() === 'Custom:';
+          if (isRemarksRed) return false;
+        }
+        return true;
+      })
+      .map(r => {
+        const inTimestamp = buildTimestamp(date, r.punch_in);
+        const outTimestamp = buildTimestamp(date, r.punch_out);
+        const dbFields = getDbAttestedAndVerified(r, userData?.email);
+
+        return {
+          date: date,
+          project_code: r.project_code || null,
+          employee_code: r.employee_code,
+          punch_in: inTimestamp,
+          punch_out: outTimestamp,
+          overtime: r.overtime,
+          verify_type: r.verify_type,
+          attested_by: dbFields.attested_by,
+          machine: dbFields.machine,
+          verified_by: dbFields.verified_by,
+          remarks: r.remarks.startsWith('Custom: ')
+            ? (r.remarks.substring(8).trim() || null)
+            : (r.remarks.trim() || null),
+          status: r.status || null,
+          last_updated: new Date().toISOString(),
+          approval: isFocalFiltered ? (r.approval && r.isApproved) : true,
+          focal_approval: isFocalFiltered ? (r.approval && r.isApproved) : null
+        };
+      });
+
+    if (payloads.length === 0) return;
+
+    try {
+      const employeeCodes = payloads.map(p => p.employee_code);
+      const { error: delErr } = await supabase
+        .from('timesheet')
+        .delete()
+        .eq('date', date)
+        .in('employee_code', employeeCodes);
+      if (delErr) throw delErr;
+
+      const { error: insErr } = await supabase
+        .from('timesheet')
+        .insert(payloads);
+      if (insErr) throw insErr;
+
+      setRows(prev => {
+        const next = { ...prev };
+        payloads.forEach(payload => {
+          const userId = payload.employee_code;
+          const curr = next[userId];
+          if (curr) {
+            next[userId] = {
+              ...curr,
+              inDatabase: true,
+              isApproved: true,
+              approval: !isFocalFiltered,
+              machine: payload.machine,
+              verified_by: payload.verified_by,
+              attested_by: payload.attested_by,
+              isEdited: payload.verify_type === 'Manual Input' || !!payload.verified_by
+            };
+          }
+        });
+        return next;
+      });
+
+      toast.success('Changes saved to timesheet.', { id: 'autosave' });
+    } catch (err: any) {
+      console.error('Batch auto-post failed:', err);
+      toast.error('Failed to auto-save changes.', { id: 'autosave' });
+    }
+  }, [date, isFocalFiltered, canUserEdit, userData?.email]);
 
   const updateRow = useCallback((userId: string, key: keyof TimesheetRow, value: any) => {
+    let updatedRow: TimesheetRow | null = null;
     setRows(prev => {
       const current = prev[userId];
       if (!current) return prev;
       const updated = { ...current, [key]: value };
 
       // Set isEdited flag if user modifies main fields
-      if (key === 'punch_in' || key === 'punch_out' || key === 'overtime' || key === 'project_code' || key === 'status') {
+      if (key === 'punch_in' || key === 'punch_out' || key === 'overtime' || key === 'project_code' || key === 'status' || key === 'remarks') {
         updated.isEdited = true;
         updated.verify_type = 'Manual Input';
         updated.attested_by = userData?.email || 'Timekeeper';
@@ -1352,9 +1492,14 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         }
       }
 
+      updatedRow = updated;
       return { ...prev, [userId]: updated };
     });
-  }, [employeesMap, employeeAssignedProjects, roundOT, userData?.email, projects]);
+
+    if (updatedRow) {
+      autoPostRowsBatch([updatedRow]);
+    }
+  }, [employeesMap, employeeAssignedProjects, roundOT, userData?.email, projects, autoPostRowsBatch]);
 
   const handleRowSelect = useCallback((userId: string) => {
     setSelectedRowIds(prev => {
@@ -1374,6 +1519,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
       return;
     }
 
+    const updatedRows: TimesheetRow[] = [];
     setRows(prev => {
       const next = { ...prev };
       selectedRowIds.forEach(userId => {
@@ -1512,6 +1658,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         }
 
         next[userId] = updated;
+        updatedRows.push(updated);
       });
       return next;
     });
@@ -1519,6 +1666,10 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
     toast.success(`Bulk updated selected rows.`);
     setSelectedRowIds(new Set());
     setIsSelectionMode(false);
+
+    if (updatedRows.length > 0) {
+      autoPostRowsBatch(updatedRows);
+    }
   };
 
   const handleBulkPunchTimeUpdate = (inTime: string, outTime: string) => {
@@ -1527,6 +1678,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
       return;
     }
 
+    const updatedRows: TimesheetRow[] = [];
     setRows(prev => {
       const next = { ...prev };
       selectedRowIds.forEach(userId => {
@@ -1591,6 +1743,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         }
 
         next[userId] = updated;
+        updatedRows.push(updated);
       });
       return next;
     });
@@ -1598,46 +1751,86 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
     toast.success(`Bulk updated selected rows.`);
     setSelectedRowIds(new Set());
     setIsSelectionMode(false);
+
+    if (updatedRows.length > 0) {
+      autoPostRowsBatch(updatedRows);
+    }
   };
 
 
-
-  const handleRevokeRow = useCallback(async (userId: string) => {
-    const r = rows[userId];
-    if (!r) return;
+  const handleBulkRevoke = useCallback(async () => {
+    if (selectedRowIds.size === 0) {
+      toast.error('No rows selected.');
+      return;
+    }
 
     if (!canUserEdit) {
-      toast.error('You do not have clearance to revoke this action.');
+      toast.error('You do not have clearance to modify this.');
       return;
     }
 
-    if (isFocalFiltered && r.approval) {
-      toast.error('Cannot revoke a record that has already been approved by the admin.');
+    const userIds = Array.from(selectedRowIds);
+
+    const recordsToRevoke = userIds.filter(userId => {
+      const r = rows[userId];
+      if (!r) return false;
+      if (isFocalFiltered && r.approval) return false;
+      return true;
+    });
+
+    if (recordsToRevoke.length === 0) {
+      toast.error('No revocable records selected.');
       return;
     }
 
-    const actionText = isFocalFiltered ? 'verification' : 'approval';
+    const recordsInDb = recordsToRevoke.filter(userId => rows[userId]?.inDatabase);
 
-    toast.loading(`Revoking ${actionText} for ${r.employee_name}...`, { id: `revoke-${userId}` });
-    try {
-      const { error: delErr } = await supabase
-        .from('timesheet')
-        .delete()
-        .eq('date', date)
-        .eq('employee_code', userId);
-      if (delErr) throw delErr;
-
-      setRows(prev => ({
-        ...prev,
-        [userId]: { ...prev[userId], isApproved: false, inDatabase: false }
-      }));
-
-      toast.success(`Verification/Approval for ${r.employee_name} revoked.`, { id: `revoke-${userId}` });
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || `Failed to revoke ${actionText}.`, { id: `revoke-${userId}` });
+    if (recordsInDb.length > 0) {
+      const actionText = isFocalFiltered ? 'verification' : 'approval';
+      toast.loading(`Revoking ${actionText} for ${recordsInDb.length} records...`, { id: 'bulk-revoke' });
+      try {
+        const { error: delErr } = await supabase
+          .from('timesheet')
+          .delete()
+          .eq('date', date)
+          .in('employee_code', recordsInDb);
+        if (delErr) throw delErr;
+        toast.success(`Verification/Approval for selected records revoked & reverted.`, { id: 'bulk-revoke' });
+      } catch (err: any) {
+        console.error(err);
+        toast.error(err.message || `Failed to revoke.`, { id: 'bulk-revoke' });
+        return;
+      }
     }
-  }, [rows, date, isFocalFiltered, canUserEdit]);
+
+    setRows(prev => {
+      const next = { ...prev };
+      recordsToRevoke.forEach(userId => {
+        const current = next[userId];
+        if (!current) return;
+
+        const emp = employeesMap[userId];
+        if (!emp) return;
+        const empPunches = punchGroups[userId] || [];
+        const guessed = guessRow(emp, empPunches, punchMode, projects, deviceProjectMap, employeeAssignedProjects);
+
+        next[userId] = {
+          ...guessed,
+          isApproved: false,
+          approval: false,
+          inDatabase: false
+        };
+      });
+      return next;
+    });
+
+    if (recordsInDb.length === 0) {
+      toast.success("Changes reverted to original.");
+    }
+
+    setSelectedRowIds(new Set());
+    setIsSelectionMode(false);
+  }, [selectedRowIds, rows, date, isFocalFiltered, canUserEdit, employeesMap, punchGroups, punchMode, projects, deviceProjectMap, employeeAssignedProjects, guessRow]);
 
   const handleFinalize = async () => {
     if (!canUserEdit) {
@@ -1680,32 +1873,23 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         return;
       }
 
+      const hasMissingPunchTimes = Object.values(rows).some(r => {
+        return (r.status === 'present' || r.status === 'present with OT') && (!r.punch_in || !r.punch_out);
+      });
+
+      if (hasMissingPunchTimes) {
+        toast.error("Cannot finalize. Some present employees do not have both punch in and punch out times.");
+        setSaving(false);
+        return;
+      }
+
       // 1. Construct payloads for insertion
       const payloads = Object.values(rows)
         .filter(r => r.punch_in || r.punch_out || r.remarks || r.isEdited || r.status)
         .map(r => {
           const inTimestamp = buildTimestamp(date, r.punch_in);
           const outTimestamp = buildTimestamp(date, r.punch_out);
-
-          let newAttestedBy = getSaveAttestedBy(r.attested_by, userData?.email, isFocalFiltered);
-
-          if (r.original_in_punch && r.original_out_punch) {
-            const inM = extractTime(r.original_in_punch.punch_time);
-            const outM = extractTime(r.original_out_punch.punch_time);
-            if (r.punch_in === inM && r.punch_out === outM) {
-              const devCode = r.original_in_punch.device_serial === r.original_out_punch.device_serial
-                ? r.original_in_punch.device_serial
-                : `${r.original_in_punch.device_serial}/${r.original_out_punch.device_serial}`;
-
-              const { verifier, approver } = parseAttestedBy(newAttestedBy, !isFocalFiltered);
-              const email = userData?.email || '';
-              if (isFocalFiltered) {
-                newAttestedBy = `${email}|${approver || ''}|${devCode}`;
-              } else {
-                newAttestedBy = `${verifier || ''}|${email}|${devCode}`;
-              }
-            }
-          }
+          const dbFields = getDbAttestedAndVerified(r, userData?.email);
 
           return {
             date: date,
@@ -1715,7 +1899,9 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
             punch_out: outTimestamp,
             overtime: r.overtime,
             verify_type: r.verify_type,
-            attested_by: newAttestedBy,
+            attested_by: dbFields.attested_by,
+            machine: dbFields.machine,
+            verified_by: dbFields.verified_by,
             remarks: r.remarks.startsWith('Custom: ')
               ? (r.remarks.substring(8).trim() || null)
               : (r.remarks.trim() || null),
@@ -2121,10 +2307,15 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                 disabled={loading || saving}
                 className="h-8 text-sm font-medium bg-white border border-slate-300 w-[160px] p-4"
               />
-
-              <span className="text-xs text-gray-550 bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-full font-medium shrink-0">
+              <span className="text-xs text-gray-555 bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-full font-medium shrink-0">
                 {filteredEmployees.length} rows
               </span>
+
+              {isFocalFiltered && focalProjectCodes.length > 0 && (
+                <span className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1.5 rounded-full font-medium shrink-0">
+                  Project: {focalProjectCodes.join(', ')}
+                </span>
+              )}
 
 
 
@@ -2186,6 +2377,12 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                       className="text-xs cursor-pointer focus:bg-slate-50 rounded-md p-2"
                     >
                       Allocate Remarks
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleBulkRevoke}
+                      className="text-xs cursor-pointer text-red-600 hover:text-red-700 focus:bg-red-50 focus:text-red-700 rounded-md p-2 font-medium"
+                    >
+                      Revoke Changes
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -2320,13 +2517,12 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                         <DropdownMenuTrigger asChild>
                           <button
                             type="button"
-                            className={`w-[30px] h-[30px] rounded-lg border flex items-center justify-center cursor-pointer transition-all shrink-0 focus:outline-none ${
-                              empTypeFilter === 'all'
+                            className={`w-[30px] h-[30px] rounded-lg border flex items-center justify-center cursor-pointer transition-all shrink-0 focus:outline-none ${empTypeFilter === 'all'
                                 ? 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
                                 : empTypeFilter === 'staff'
                                   ? 'border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
                                   : 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                            }`}
+                              }`}
                             title={
                               empTypeFilter === 'all'
                                 ? 'Filter: All Types'
@@ -2367,89 +2563,91 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                   <th style={{ width: '100px' }}>Punch Out</th>
                   <th style={{ width: '65px', textAlign: 'center' }}>Total</th>
                   <th style={{ width: '90px' }}>Overtime</th>
-                  <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '160px' }}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
-                        <span className="truncate">
-                          {selectedProjects.length === 0
-                            ? 'Project (All)'
-                            : selectedProjects.length === 1
-                              ? (selectedProjects[0] === 'UNASSIGNED' ? 'Unassigned' : selectedProjects[0])
-                              : `Proj (${selectedProjects.length})`}
-                        </span>
-                        <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50 bg-white border border-slate-200">
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
-                        >
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setSelectedProjects([...projects.map(p => p.project_code), 'UNASSIGNED']);
-                            }}
-                            className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left"
-                            style={{ background: "none", flex: 1 }}
+                  {!isFocalFiltered && (
+                    <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '160px' }}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
+                          <span className="truncate">
+                            {selectedProjects.length === 0
+                              ? 'Project (All)'
+                              : selectedProjects.length === 1
+                                ? (selectedProjects[0] === 'UNASSIGNED' ? 'Unassigned' : selectedProjects[0])
+                                : `Proj (${selectedProjects.length})`}
+                          </span>
+                          <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50 bg-white border border-slate-200">
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
                           >
-                            Select All
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setSelectedProjects([]);
-                            }}
-                            className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right"
-                            style={{ background: "none", flex: 1 }}
-                          >
-                            Clear All
-                          </button>
-                        </div>
-                        <div className="py-1">
-                          <DropdownMenuCheckboxItem
-                            style={{ justifyContent: "flex-start" }}
-                            checked={selectedProjects.includes('UNASSIGNED')}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedProjects([...selectedProjects, 'UNASSIGNED']);
-                              } else {
-                                setSelectedProjects(selectedProjects.filter(item => item !== 'UNASSIGNED'));
-                              }
-                            }}
-                            onSelect={(e) => e.preventDefault()}
-                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                          >
-                            Unassigned
-                          </DropdownMenuCheckboxItem>
-                          {projects.map(p => {
-                            const isChecked = selectedProjects.includes(p.project_code);
-                            return (
-                              <DropdownMenuCheckboxItem
-                                style={{ justifyContent: "flex-start" }}
-                                key={p.project_code}
-                                checked={isChecked}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedProjects([...selectedProjects, p.project_code]);
-                                  } else {
-                                    setSelectedProjects(selectedProjects.filter(item => item !== p.project_code));
-                                  }
-                                }}
-                                onSelect={(e) => e.preventDefault()}
-                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                              >
-                                {p.project_code}
-                              </DropdownMenuCheckboxItem>
-                            );
-                          })}
-                        </div>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </th>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedProjects([...projects.map(p => p.project_code), 'UNASSIGNED']);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left"
+                              style={{ background: "none", flex: 1 }}
+                            >
+                              Select All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedProjects([]);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right"
+                              style={{ background: "none", flex: 1 }}
+                            >
+                              Clear All
+                            </button>
+                          </div>
+                          <div className="py-1">
+                            <DropdownMenuCheckboxItem
+                              style={{ justifyContent: "flex-start" }}
+                              checked={selectedProjects.includes('UNASSIGNED')}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedProjects([...selectedProjects, 'UNASSIGNED']);
+                                } else {
+                                  setSelectedProjects(selectedProjects.filter(item => item !== 'UNASSIGNED'));
+                                }
+                              }}
+                              onSelect={(e) => e.preventDefault()}
+                              className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                            >
+                              Unassigned
+                            </DropdownMenuCheckboxItem>
+                            {projects.map(p => {
+                              const isChecked = selectedProjects.includes(p.project_code);
+                              return (
+                                <DropdownMenuCheckboxItem
+                                  style={{ justifyContent: "flex-start" }}
+                                  key={p.project_code}
+                                  checked={isChecked}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedProjects([...selectedProjects, p.project_code]);
+                                    } else {
+                                      setSelectedProjects(selectedProjects.filter(item => item !== p.project_code));
+                                    }
+                                  }}
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                >
+                                  {p.project_code}
+                                </DropdownMenuCheckboxItem>
+                              );
+                            })}
+                          </div>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </th>
+                  )}
                   <th style={{ width: '200px' }}>Remarks</th>
                   <th className="sticky-action text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '250px' }}>
                     <DropdownMenu>
@@ -2516,7 +2714,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
               <tbody>
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="py-20 text-center text-gray-400 font-medium bg-white">
+                    <td colSpan={isFocalFiltered ? 9 : 10} className="py-20 text-center text-gray-400 font-medium bg-white">
                       No matching records found.
                     </td>
                   </tr>
@@ -2540,14 +2738,13 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                           saving={saving}
                           onRowSelect={handleRowSelect}
                           onUpdateRow={updateRow}
-                          onRevokeRow={handleRevokeRow}
                           onUndoRow={handleUndoRow}
                         />
                       );
                     })}
                     {filteredEmployees.length > renderLimit && (
                       <tr>
-                        <td colSpan={10} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
+                        <td colSpan={isFocalFiltered ? 9 : 10} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
                           <div className="flex items-center justify-center gap-4 w-full">
                             <span className="text-xs text-gray-500 font-medium text-center">
                               Showing {renderLimit} of {filteredEmployees.length} records

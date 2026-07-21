@@ -3,7 +3,7 @@ import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRightLeft, BarChart3, Calendar, ChartLine, Check, Database, FileCheck, FolderKanban, Laptop2, LayoutGrid, List, Loader2, Sidebar, Table, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
+import { ArrowRightLeft, BarChart3, Calendar, ChartLine, Check, Database, FileCheck, FolderKanban, Laptop2, LayoutGrid, List, Loader2, PenLine, Sidebar, Table, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
@@ -221,9 +221,11 @@ export default function AttendanceDashboard() {
   return (
     <div style={{ height: "100svh", display: "flex", flexDirection: "column" }}>
       <Back
+
         customTitle={
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginLeft: "0.25rem" }}>
             <h1>Attendance</h1>
+            {canEditAttendance && <PenLine size={14} className="text-gray-400 opacity-80" />}
             {/* <p style={{ fontSize: "0.8rem", color: "green", background: "rgba(0 255 0/ 0.1)", padding: "0.05rem 0.5rem", borderRadius: "0.5rem", fontWeight: 500 }}>LIVE</p> */}
           </div>
         }
@@ -315,78 +317,78 @@ export default function AttendanceDashboard() {
                   )}
                 </div>
 
-                  <div style={{ width: "100%", paddingTop: "0.2rem", flexShrink: 0 }}>
-                    <motion.div
-                      whileTap={canEditAttendance ? { scale: 0.98 } : undefined}
-                      onClick={canEditAttendance ? () => setTab('data-management') : undefined}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        padding: "0.75rem",
-                        gap: "0.5rem",
-                        background: tab === 'data-management' ? "#E0F2F1" : "rgba(246, 248, 252, 0.78)",
-                        backdropFilter: "blur(10px)",
-                        WebkitBackdropFilter: "blur(10px)",
-                        borderRadius: "0.5rem",
+                <div style={{ width: "100%", paddingTop: "0.2rem", flexShrink: 0 }}>
+                  <motion.div
+                    whileTap={canEditAttendance ? { scale: 0.98 } : undefined}
+                    onClick={canEditAttendance ? () => setTab('data-management') : undefined}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      padding: "0.75rem",
+                      gap: "0.5rem",
+                      background: tab === 'data-management' ? "#E0F2F1" : "rgba(246, 248, 252, 0.78)",
+                      backdropFilter: "blur(10px)",
+                      WebkitBackdropFilter: "blur(10px)",
+                      borderRadius: "0.5rem",
 
-                        transition: "all 0.2s ease",
-                        cursor: canEditAttendance ? "pointer" : "default",
-                        position: "relative",
-                        overflow: "hidden",
-                        boxShadow: tab === 'data-management' ? "0 2px 10px rgba(0, 150, 136, 0.08)" : "0 2px 10px rgba(15, 23, 42, 0.04)",
-                      }}
-                    >
-                      {/* Top row: Icon & Title */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
-                        <div style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
-                          <Zap size={16} className={"text-teal-600"} />
-                        </div>
-                        <span
-                          style={{
-                            fontWeight: tab === 'data-management' ? 500 : 400,
-                            fontSize: "0.85rem",
-                            color: tab === 'data-management' ? "#004D40" : "#1F2937",
-                            flex: 1,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
-                          Usage
-                        </span>
-                        {dbCount === null && (
-                          <Loader2 size={12} className="animate-spin text-gray-400" />
-                        )}
+                      transition: "all 0.2s ease",
+                      cursor: canEditAttendance ? "pointer" : "default",
+                      position: "relative",
+                      overflow: "hidden",
+                      boxShadow: tab === 'data-management' ? "0 2px 10px rgba(0, 150, 136, 0.08)" : "0 2px 10px rgba(15, 23, 42, 0.04)",
+                    }}
+                  >
+                    {/* Top row: Icon & Title */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+                      <div style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
+                        <Zap size={16} className={"text-teal-600"} />
                       </div>
-
-                      {/* Middle row: Progress bar */}
-                      {dbCount !== null && (
-                        <div style={{ width: "100%", height: "5px", backgroundColor: tab === 'data-management' ? "#B2DFDB" : "#E5E7EB", borderRadius: "9999px", overflow: "hidden" }}>
-                          <div
-                            style={{
-                              width: `${Math.min(100, (dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100)}%`,
-                              height: "100%",
-                              background: ((dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100) > 85
-                                ? "linear-gradient(to right, #EF4444, #F43F5E)"
-                                : ((dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100) > 50
-                                  ? "linear-gradient(to right, #F59E0B, #F97316)"
-                                  : "linear-gradient(to right, #10B981, #14B8A6)",
-                              borderRadius: "9999px",
-                              transition: "width 0.5s ease-out"
-                            }}
-                          />
-                        </div>
+                      <span
+                        style={{
+                          fontWeight: tab === 'data-management' ? 500 : 400,
+                          fontSize: "0.85rem",
+                          color: tab === 'data-management' ? "#004D40" : "#1F2937",
+                          flex: 1,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        Usage
+                      </span>
+                      {dbCount === null && (
+                        <Loader2 size={12} className="animate-spin text-gray-400" />
                       )}
+                    </div>
 
-                      {/* Bottom row: Usage labels */}
-                      {dbCount !== null && (
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", color: tab === 'data-management' ? "#00695C" : "#6B7280", fontWeight: 500 }}>
-                          <span>{formatSize(dbCount * ROW_SIZE_BYTES)} / 500 MB</span>
-                          <span>{Math.min(100, parseFloat(((dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100).toFixed(2)))}%</span>
-                        </div>
-                      )}
-                    </motion.div>
-                  </div>
+                    {/* Middle row: Progress bar */}
+                    {dbCount !== null && (
+                      <div style={{ width: "100%", height: "5px", backgroundColor: tab === 'data-management' ? "#B2DFDB" : "#E5E7EB", borderRadius: "9999px", overflow: "hidden" }}>
+                        <div
+                          style={{
+                            width: `${Math.min(100, (dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100)}%`,
+                            height: "100%",
+                            background: ((dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100) > 85
+                              ? "linear-gradient(to right, #EF4444, #F43F5E)"
+                              : ((dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100) > 50
+                                ? "linear-gradient(to right, #F59E0B, #F97316)"
+                                : "linear-gradient(to right, #10B981, #14B8A6)",
+                            borderRadius: "9999px",
+                            transition: "width 0.5s ease-out"
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Bottom row: Usage labels */}
+                    {dbCount !== null && (
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", color: tab === 'data-management' ? "#00695C" : "#6B7280", fontWeight: 500 }}>
+                        <span>{formatSize(dbCount * ROW_SIZE_BYTES)} / 500 MB</span>
+                        <span>{Math.min(100, parseFloat(((dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100).toFixed(2)))}%</span>
+                      </div>
+                    )}
+                  </motion.div>
+                </div>
               </div>
             </motion.div>
           )}

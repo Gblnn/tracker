@@ -287,6 +287,7 @@ export default function Index() {
         editMode={userData?.editor === true ? true : false}
         title="Starboard"
         subtitle={"1.74"}
+
         icon={<img src="/stardox-bg.png" style={{ width: "2rem" }} alt="Starboard" />}
         noback
         extra={

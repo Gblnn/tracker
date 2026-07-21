@@ -311,9 +311,10 @@ interface FrozenRowProps {
   isHighlighted?: boolean;
   onClick?: () => void;
   highlightMode?: boolean;
+  isFocal?: boolean;
 }
 
-const FrozenRow = memo(({ emp, index, locationList, presenceCount, absentCount, overtimeCount, showOvertime, isHighlighted, onClick, highlightMode }: FrozenRowProps) => {
+const FrozenRow = memo(({ emp, index, locationList, presenceCount, absentCount, overtimeCount, showOvertime, isHighlighted, onClick, highlightMode, isFocal }: FrozenRowProps) => {
   return (
     <tr
       onClick={onClick}
@@ -325,13 +326,15 @@ const FrozenRow = memo(({ emp, index, locationList, presenceCount, absentCount, 
         {emp.name.toLowerCase()}
         {emp.emp_id && <div className="text-[11px] text-gray-400 font-normal">{emp.emp_id}</div>}
       </td>
-      <td
-        className="text-[13px] text-gray-500 bg-white px-2 truncate"
-        style={{ maxWidth: 170 }}
-        title={locationList}
-      >
-        {locationList}
-      </td>
+      {!isFocal && (
+        <td
+          className="text-[13px] text-gray-500 bg-white px-2 truncate"
+          style={{ maxWidth: 170 }}
+          title={locationList}
+        >
+          {locationList}
+        </td>
+      )}
       <td className="text-center text-[13px] font-semibold text-emerald-700" style={{ background: '#ecfdf5', height: ROW_H }}>
         {presenceCount}
       </td>
@@ -479,6 +482,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [punches, setPunches] = useState<PunchDetail[]>([]);
   const [transfers, setTransfers] = useState<any[]>([]);
+  const [isFocal, setIsFocal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
@@ -672,6 +676,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
           isFocalFiltered = true;
         }
       }
+      setIsFocal(isFocalFiltered);
 
       const projectDeviceSerials = (devData ?? [])
         .filter(d => d.project_code && focalProjectCodes.includes(d.project_code))
@@ -806,6 +811,18 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
       setLoading(false);
     }
   }, [year, month, days, reportView, selectedDailyDate, userData?.email, userData?.role]);
+
+  useEffect(() => {
+    if (isFocal && reportView === 'location') {
+      setReportView('monthly');
+    }
+  }, [isFocal, reportView]);
+
+  useEffect(() => {
+    if (isFocal && reportType === 'location_inout') {
+      setReportType('inout');
+    }
+  }, [isFocal, reportType]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -1273,8 +1290,10 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
           const inLoc = useFirstLast ? c.firstPunchLocation : c.firstInLocation;
           const outLoc = useFirstLast ? c.lastPunchLocation : c.lastOutLocation;
 
-          if (inLoc) checkInText += ` (${inLoc})`;
-          if (outLoc && c.firstPunch !== c.lastPunch) checkOutText += ` (${outLoc})`;
+          if (!isFocal) {
+            if (inLoc) checkInText += ` (${inLoc})`;
+            if (outLoc && c.firstPunch !== c.lastPunch) checkOutText += ` (${outLoc})`;
+          }
 
           hoursText = getDayHours(c);
           overtimeText = getOvertime(c, selectedEmp.emp_type);
@@ -1330,7 +1349,11 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
       rows.push([`Staff Daily Attendance Report`]);
       rows.push([`Date: ${selectedDailyDate}`]);
       rows.push([]);
-      rows.push(['Date', '#', 'Name', 'Emp ID', 'Department', 'Location', 'Status', 'Check In', 'Check Out', 'Hours', 'Overtime']);
+      const dailyHeaders = ['Date', '#', 'Name', 'Emp ID', 'Department', 'Location', 'Status', 'Check In', 'Check Out', 'Hours', 'Overtime'];
+      if (isFocal) {
+        dailyHeaders.splice(5, 1);
+      }
+      rows.push(dailyHeaders);
 
       dateListInRange.forEach((dateStr) => {
         const [y, m, d] = dateStr.split('-').map(Number);
@@ -1381,7 +1404,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
 
           const overtimeText = getOvertime(c, emp.emp_type);
 
-          rows.push([
+          const rowData = [
             displayDate,
             idx + 1,
             emp.name,
@@ -1393,12 +1416,20 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
             checkOutText,
             hoursText,
             overtimeText
-          ]);
+          ];
+          if (isFocal) {
+            rowData.splice(5, 1);
+          }
+          rows.push(rowData);
         });
       });
 
       const ws = XLSX.utils.aoa_to_sheet(rows);
-      ws['!cols'] = [{ wch: 12 }, { wch: 4 }, { wch: 25 }, { wch: 10 }, { wch: 18 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 8 }];
+      const colWidths = [{ wch: 12 }, { wch: 4 }, { wch: 25 }, { wch: 10 }, { wch: 18 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 8 }];
+      if (isFocal) {
+        colWidths.splice(5, 1);
+      }
+      ws['!cols'] = colWidths;
       XLSX.utils.book_append_sheet(wb, ws, `Daily_Report`);
       XLSX.writeFile(wb, `Daily_Attendance_${selectedDailyDate}.xlsx`);
       return;
@@ -1408,9 +1439,12 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
     rows.push([]);
 
     const monthName = new Date(year, month, 1).toLocaleDateString('en-OM', { month: 'long' });
-    const r1: string[] = ['#', 'Name', 'Emp ID', 'Location'];
-    const r2: string[] = ['', '', '', ''];
-    const r3: string[] = ['', '', '', ''];
+    const r1: string[] = ['#', 'Name', 'Emp ID'];
+    if (!isFocal) r1.push('Location');
+    const r2: string[] = ['', '', ''];
+    if (!isFocal) r2.push('');
+    const r3: string[] = ['', '', ''];
+    if (!isFocal) r3.push('');
     const colCount = reportType === 'inout' || reportType === 'location_inout' ? 2 : 1;
 
     for (let d = 1; d <= days; d++) {
@@ -1436,7 +1470,10 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
     rows.push(r1, r2, r3);
 
     filtered.forEach((emp, idx) => {
-      const row: (string | number)[] = [idx + 1, emp.name, emp.emp_id ?? '', employeeLocations[emp.device_user_id] || '—'];
+      const row: (string | number)[] = [idx + 1, emp.name, emp.emp_id ?? ''];
+      if (!isFocal) {
+        row.push(employeeLocations[emp.device_user_id] || '—');
+      }
       for (let d = 1; d <= days; d++) {
         const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const c = matrix[emp.device_user_id]?.[dateKey];
@@ -1691,7 +1728,9 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
               <SelectItem style={{ justifyContent: "flex-start" }} value="monthly">Monthly Report</SelectItem>
               <SelectItem style={{ justifyContent: "flex-start" }} value="daily">Daily Report</SelectItem>
               <SelectItem style={{ justifyContent: "flex-start" }} value="individual">Individual Report</SelectItem>
-              <SelectItem style={{ justifyContent: "flex-start" }} value="location">Location Report</SelectItem>
+              {!isFocal && (
+                <SelectItem style={{ justifyContent: "flex-start" }} value="location">Location Report</SelectItem>
+              )}
             </SelectContent>
           </Select>
 
@@ -1790,7 +1829,9 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem style={{ justifyContent: "flex-start" }} value="inout">In/Out Report</SelectItem>
-                <SelectItem style={{ justifyContent: "flex-start" }} value="location_inout">Location In/Out Report</SelectItem>
+                {!isFocal && (
+                  <SelectItem style={{ justifyContent: "flex-start" }} value="location_inout">Location In/Out Report</SelectItem>
+                )}
                 <SelectItem style={{ justifyContent: "flex-start" }} value="pa">P/A Matrix</SelectItem>
                 <SelectItem style={{ justifyContent: "flex-start" }} value="hourly">Hourly Report</SelectItem>
               </SelectContent>
@@ -2115,72 +2156,74 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </th>
-                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 180, verticalAlign: 'middle' }}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-white hover:bg-white/10 focus:ring-0 focus:ring-offset-0 focus:outline-none shadow-none px-2 rounded-md transition-colors font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
-                      <span className="truncate">
-                        {selectedLocations.length === 0
-                          ? 'Location (All)'
-                          : selectedLocations.length === 1
-                            ? selectedLocations[0]
-                            : `Location (${selectedLocations.length})`}
-                      </span>
-                      <ChevronDown className="h-4 w-4 opacity-80 shrink-0" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
-                      >
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setSelectedLocations(locations);
-                          }}
-                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left normal-case"
-                          style={{ background: "none", flex: 1 }}
+                {!isFocal && (
+                  <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 180, verticalAlign: 'middle' }}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-white hover:bg-white/10 focus:ring-0 focus:ring-offset-0 focus:outline-none shadow-none px-2 rounded-md transition-colors font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                        <span className="truncate">
+                          {selectedLocations.length === 0
+                            ? 'Location (All)'
+                            : selectedLocations.length === 1
+                              ? selectedLocations[0]
+                              : `Location (${selectedLocations.length})`}
+                        </span>
+                        <ChevronDown className="h-4 w-4 opacity-80 shrink-0" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
                         >
-                          Select All
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setSelectedLocations([]);
-                          }}
-                          className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right normal-case"
-                          style={{ background: "none", flex: 1 }}
-                        >
-                          Clear
-                        </button>
-                      </div>
-                      {locations.map(loc => {
-                        const isChecked = selectedLocations.includes(loc);
-                        return (
-                          <DropdownMenuCheckboxItem
-                            key={loc}
-                            checked={isChecked}
-                            onSelect={(e) => e.preventDefault()}
-                            onCheckedChange={checked => {
-                              if (checked) {
-                                setSelectedLocations([...selectedLocations, loc]);
-                              } else {
-                                setSelectedLocations(selectedLocations.filter(item => item !== loc));
-                              }
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedLocations(locations);
                             }}
-                            style={{ fontWeight: 400 }}
-                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs normal-case font-medium"
+                            className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left normal-case"
+                            style={{ background: "none", flex: 1 }}
                           >
-                            {loc}
-                          </DropdownMenuCheckboxItem>
-                        );
-                      })}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </th>
+                            Select All
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedLocations([]);
+                            }}
+                            className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right normal-case"
+                            style={{ background: "none", flex: 1 }}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                        {locations.map(loc => {
+                          const isChecked = selectedLocations.includes(loc);
+                          return (
+                            <DropdownMenuCheckboxItem
+                              key={loc}
+                              checked={isChecked}
+                              onSelect={(e) => e.preventDefault()}
+                              onCheckedChange={checked => {
+                                if (checked) {
+                                  setSelectedLocations([...selectedLocations, loc]);
+                                } else {
+                                  setSelectedLocations(selectedLocations.filter(item => item !== loc));
+                                }
+                              }}
+                              style={{ fontWeight: 400 }}
+                              className="rounded-md focus:bg-gray-50 cursor-pointer text-xs normal-case font-medium"
+                            >
+                              {loc}
+                            </DropdownMenuCheckboxItem>
+                          );
+                        })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </th>
+                )}
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 140, verticalAlign: 'middle' }}>
                   <DropdownMenu>
                     <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-white hover:bg-white/10 focus:ring-0 focus:ring-offset-0 focus:outline-none shadow-none px-2 rounded-md transition-colors font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide">
@@ -2256,7 +2299,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
             <tbody className="divide-y divide-gray-100 bg-white">
               {dateListInRange.length === 0 || filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="py-20 text-center text-gray-400 font-medium bg-white">
+                  <td colSpan={isFocal ? 10 : 11} className="py-20 text-center text-gray-400 font-medium bg-white">
                     No employees found.
                   </td>
                 </tr>
@@ -2335,7 +2378,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                           <td className="px-4 py-2 font-medium text-gray-900 capitalize text-left">{emp.name.toLowerCase()}</td>
                           <td className="px-4 py-2 text-gray-500 text-left">{emp.emp_id ?? '—'}</td>
                           <td className="px-4 py-2 text-gray-500 text-left">{emp.department ?? '—'}</td>
-                          <td className="px-4 py-2 text-gray-500 text-left">{locDisplay}</td>
+                          {!isFocal && <td className="px-4 py-2 text-gray-500 text-left">{locDisplay}</td>}
                           <td className="px-4 py-2 text-left">{statusBadge}</td>
                           <td className="px-4 py-2 text-gray-700 font-medium tabular-nums text-xs text-left">{checkInText}</td>
                           <td className="px-4 py-2 text-gray-700 font-medium tabular-nums text-xs text-left">{checkOutText}</td>
@@ -2347,7 +2390,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                   })}
                   {filtered.length > limit && (
                     <tr >
-                      <td colSpan={11} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
+                      <td colSpan={isFocal ? 10 : 11} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
                         <div style={{}} className="flex items-center justify-center gap-4 w-full">
                           <span className="text-xs text-gray-500 font-medium text-center">
                             Showing {limit} of {filtered.length} records
@@ -2446,8 +2489,10 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                     const inLoc = useFirstLast ? c.firstPunchLocation : c.firstInLocation;
                     const outLoc = useFirstLast ? c.lastPunchLocation : c.lastOutLocation;
 
-                    if (inLoc) checkInText += ` (${inLoc})`;
-                    if (outLoc && c.firstPunch !== c.lastPunch) checkOutText += ` (${outLoc})`;
+                    if (!isFocal) {
+                      if (inLoc) checkInText += ` (${inLoc})`;
+                      if (outLoc && c.firstPunch !== c.lastPunch) checkOutText += ` (${outLoc})`;
+                    }
 
                     hoursText = getDayHours(c);
                     overtimeText = getOvertime(c, selectedEmp.emp_type);
@@ -2543,11 +2588,11 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
               zIndex: 10,
             }}
           >
-            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: reportType === 'hourly' ? 636 : 584 }}>
+            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: (reportType === 'hourly' ? 636 : 584) - (isFocal ? 170 : 0) }}>
               <colgroup>
                 <col style={{ width: 28 }} />
                 <col style={{ width: 270 }} />
-                <col style={{ width: 170 }} />
+                {!isFocal && <col style={{ width: 170 }} />}
                 <col style={{ width: 52 }} />
                 <col style={{ width: 52 }} />
                 {reportType === 'hourly' && <col style={{ width: 52 }} />}
@@ -2649,73 +2694,75 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                       </DropdownMenu>
                     </div>
                   </th>
-                  <th className="text-[13px] font-medium text-left px-1 py-1" style={{ width: 170 }}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-white hover:bg-white/10 focus:ring-0 focus:ring-offset-0 focus:outline-none shadow-none px-2 rounded-md transition-colors font-medium w-full justify-between flex items-center outline-none">
-                        <span className="truncate">
-                          {selectedLocations.length === 0
-                            ? 'Location (All)'
-                            : selectedLocations.length === 1
-                              ? selectedLocations[0]
-                              : `Location (${selectedLocations.length})`}
-                        </span>
-                        <ChevronDown className="h-4 w-4 opacity-80 shrink-0" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
-                        >
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setSelectedLocations(locations);
-                            }}
-                            className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left"
-                            style={{ background: "none", flex: 1 }}
+                  {!isFocal && (
+                    <th className="text-[13px] font-medium text-left px-1 py-1" style={{ width: 170 }}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-white hover:bg-white/10 focus:ring-0 focus:ring-offset-0 focus:outline-none shadow-none px-2 rounded-md transition-colors font-medium w-full justify-between flex items-center outline-none">
+                          <span className="truncate">
+                            {selectedLocations.length === 0
+                              ? 'Location (All)'
+                              : selectedLocations.length === 1
+                                ? selectedLocations[0]
+                                : `Location (${selectedLocations.length})`}
+                          </span>
+                          <ChevronDown className="h-4 w-4 opacity-80 shrink-0" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[200px] max-h-[300px] overflow-y-auto p-0 z-50">
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
                           >
-                            Select All
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setSelectedLocations([]);
-                            }}
-                            className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right"
-                            style={{ background: "none", flex: 1 }}
-                          >
-                            Clear All
-                          </button>
-                        </div>
-                        <div className="py-1">
-                          {locations.map(loc => {
-                            const isChecked = selectedLocations.includes(loc);
-                            return (
-                              <DropdownMenuCheckboxItem
-                                key={loc}
-                                checked={isChecked}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedLocations([...selectedLocations, loc]);
-                                  } else {
-                                    setSelectedLocations(selectedLocations.filter(item => item !== loc));
-                                  }
-                                }}
-                                onSelect={(e) => e.preventDefault()}
-                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                              >
-                                {loc}
-                              </DropdownMenuCheckboxItem>
-                            );
-                          })}
-                        </div>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </th>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedLocations(locations);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left"
+                              style={{ background: "none", flex: 1 }}
+                            >
+                              Select All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedLocations([]);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right"
+                              style={{ background: "none", flex: 1 }}
+                            >
+                              Clear All
+                            </button>
+                          </div>
+                          <div className="py-1">
+                            {locations.map(loc => {
+                              const isChecked = selectedLocations.includes(loc);
+                              return (
+                                <DropdownMenuCheckboxItem
+                                  key={loc}
+                                  checked={isChecked}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedLocations([...selectedLocations, loc]);
+                                    } else {
+                                      setSelectedLocations(selectedLocations.filter(item => item !== loc));
+                                    }
+                                  }}
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                                >
+                                  {loc}
+                                </DropdownMenuCheckboxItem>
+                              );
+                            })}
+                          </div>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </th>
+                  )}
                   <th className="text-[13px] font-medium text-center p-0" style={{ background: '#065f46', width: 52 }}>
                     <DropdownMenu>
                       <DropdownMenuTrigger
@@ -2760,7 +2807,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                 <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: HEAD_R1, zIndex: 5, border: "", height: HEAD_R2 }}>
                   <th style={{ padding: '4px 0' }} />
                   <th style={{ padding: '4px 0' }} />
-                  <th style={{ padding: '4px 0' }} />
+                  {!isFocal && <th style={{ padding: '4px 0' }} />}
                   <th style={{ background: '#ecfdf5' }} />
                   <th style={{ background: '#fef2f2' }} />
                   {reportType === 'hourly' && <th style={{ background: '#fffbeb' }} />}
@@ -2769,7 +2816,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={reportType === 'hourly' ? 7 : 6} className="py-20 text-center text-gray-450 font-medium bg-white">
+                    <td colSpan={(reportType === 'hourly' ? 7 : 6) - (isFocal ? 1 : 0)} className="py-20 text-center text-gray-455 font-medium bg-white">
                       No employee found.
                     </td>
                   </tr>
@@ -2792,11 +2839,12 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                           }
                         }}
                         highlightMode={highlightMode}
+                        isFocal={isFocal}
                       />
                     ))}
                     {filtered.length > limit && (
                       <tr style={{ height: ROW_H }}>
-                        <td colSpan={reportType === 'hourly' ? 7 : 6} className="p-2 text-center bg-white/95 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150" style={{ height: ROW_H }}>
+                        <td colSpan={(reportType === 'hourly' ? 7 : 6) - (isFocal ? 1 : 0)} className="p-2 text-center bg-white/95 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150" style={{ height: ROW_H }}>
                           <div className="flex items-center justify-center gap-4 w-full h-full">
                             <span className="text-xs text-gray-500 font-medium whitespace-nowrap text-center">
                               Showing {limit} of {filtered.length} rows

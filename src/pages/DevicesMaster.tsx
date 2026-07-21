@@ -308,7 +308,8 @@ export default function DevicesMaster({ refreshTrigger, onLoadingChange }: Devic
 
   return (
     <div className="flex flex-col flex-1 h-full overflow-hidden bg-white animate-fade-in" style={{ width: "100%" }}>
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(4px); }
           to { opacity: 1; transform: translateY(0); }
@@ -320,7 +321,7 @@ export default function DevicesMaster({ refreshTrigger, onLoadingChange }: Devic
       {/* Toolbar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem 1rem", borderBottom: "1px solid rgba(100 100 100/ 0.1)", background: "white", flexShrink: 0, width: "100%" }}>
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-gray-900">All Devices</h2>
+
           <span className="text-[10px] font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200/50">
             {devices.length} registered
           </span>

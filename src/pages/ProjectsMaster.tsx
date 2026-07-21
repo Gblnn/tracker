@@ -118,6 +118,18 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery.trim()) return projects;
+    const q = searchQuery.toLowerCase().trim();
+    return projects.filter(p =>
+      (p.project_code && p.project_code.toLowerCase().includes(q)) ||
+      (p.project_name && p.project_name.toLowerCase().includes(q)) ||
+      (p.project_location && p.project_location.toLowerCase().includes(q)) ||
+      (p.focal_point_email && p.focal_point_email.toLowerCase().includes(q))
+    );
+  }, [projects, searchQuery]);
 
   // Attendance Mode States
   const [showAttendanceStats, setShowAttendanceStats] = useState(false);
@@ -820,9 +832,28 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
         {/* Header Toolbar */}
         <div style={{ width: "100%", justifyContent: "space-between", padding: "0rem 1rem" }} className="flex justify-between items-center mb-6" >
           <div className="flex items-center gap-2">
-            <h2>All Projects</h2>
-            <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
-              {projects.length} project(s)
+            <div style={{ width: '280px' }} className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 shrink-0" />
+              <input
+                type="text"
+                placeholder="Search projects..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ paddingLeft: '2.25rem', paddingRight: '2rem' }}
+                className="h-8 w-full border border-gray-200 rounded-lg text-xs outline-none focus:border-gray-500 transition-colors bg-white-400 font-normal"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full font-medium shrink-0">
+              {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'}
             </span>
           </div>
 
@@ -874,14 +905,14 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
             <Loader2 className="w-4 h-4 animate-spin" />
             Loading…
           </div>
-        ) : projects.length === 0 ? (
+        ) : filteredProjects.length === 0 ? (
           <div className="flex-1 flex items-center justify-center border border-dashed border-gray-200 rounded-2xl text-gray-400 text-sm m-4">
-            No projects registered. Click "Add Project" to register one.
+            {searchQuery ? "No projects match your search." : 'No projects registered. Click "Add Project" to register one.'}
           </div>
         ) : (
           <div style={{ border: "1px solid rgba(100 100 100/ 0.1)", width: "100%", borderRadius: "0.5rem", paddingTop: "1rem" }} className="flex-1 overflow-y-auto px-4 pb-8 animate-fade-in">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-1">
-              {projects.map((project) => {
+              {filteredProjects.map((project) => {
                 const assignedDevices = devicesByProject[project.project_code] || [];
                 const isAllocatingThis = allocatingProjectId === project.project_code;
 
