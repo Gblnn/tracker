@@ -273,7 +273,6 @@ const TimesheetRowComponent = memo(({
   isSelectionMode,
   isLocked,
   canUserEdit,
-  projects,
   isFocalFiltered,
   saving,
   onRowSelect,
@@ -286,7 +285,6 @@ const TimesheetRowComponent = memo(({
   isSelectionMode: boolean;
   isLocked: boolean;
   canUserEdit: boolean;
-  projects: Project[];
   isFocalFiltered: boolean;
   saving: boolean;
   onRowSelect: (userId: string) => void;
@@ -501,29 +499,12 @@ const TimesheetRowComponent = memo(({
         )}
       </td>
 
-      {/* Project Allocation Select */}
+      {/* Project Allocation Text */}
       {!isFocalFiltered && (
-        <td>
-          <Select
-            value={row.project_code || 'UNASSIGNED'}
-            onValueChange={(val) => onUpdateRow(emp.device_user_id, 'project_code', val === 'UNASSIGNED' ? '' : val)}
-            disabled={isLocked || !canUserEdit}
-          >
-            <SelectTrigger className={`w-[150px] text-xs h-8 bg-white border focus:ring-1 ${(row.status !== 'absent' && row.status !== 'no status' && (!row.project_code || row.project_code === '' || row.project_code === 'UNASSIGNED'))
-              ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
-              : 'border-slate-300 focus:ring-slate-300'
-              }`}>
-              <SelectValue placeholder="Choose Project" />
-            </SelectTrigger>
-            <SelectContent className="bg-white border border-slate-200 z-50">
-              <SelectItem value="UNASSIGNED" className="text-xs cursor-pointer focus:bg-slate-50">-- Choose Project --</SelectItem>
-              {projects.map(p => (
-                <SelectItem key={p.project_code} value={p.project_code} className="text-xs cursor-pointer focus:bg-slate-50">
-                  {p.project_code}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <td style={{ textAlign: 'center' }}>
+          <span className="text-xs font-medium text-slate-600">
+            {row.project_code || <span className="text-slate-400 font-normal italic">Unassigned</span>}
+          </span>
         </td>
       )}
 
@@ -760,10 +741,12 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
-  const [punchFilter] = useState<'ALL' | 'NO_IN' | 'NO_OUT' | 'BOTH'>('ALL');
+  const [punchInFilter, setPunchInFilter] = useState<'all' | 'null' | 'not_null'>('all');
+  const [punchOutFilter, setPunchOutFilter] = useState<'all' | 'null' | 'not_null'>('all');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('ALL');
   const [empTypeFilter, setEmpTypeFilter] = useState<'all' | 'staff' | 'worker'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'absent' | 'present with OT' | 'no status'>('all');
   const [roundOT] = useState(true);
   const [focalProjectCodes, setFocalProjectCodes] = useState<string[]>([]);
   const [isFocalFiltered, setIsFocalFiltered] = useState(false);
@@ -809,7 +792,7 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
 
   useEffect(() => {
     setRenderLimit(100);
-  }, [search, punchFilter, selectedProjects]);
+  }, [search, punchInFilter, punchOutFilter, selectedProjects]);
 
   const guessRow = useCallback((
     emp: Employee,
@@ -1974,9 +1957,17 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
 
       if (!matchesSearch) return false;
 
-      if (punchFilter === 'NO_IN' && row.original_in_punch) return false;
-      if (punchFilter === 'NO_OUT' && (!row.original_in_punch || row.original_out_punch)) return false;
-      if (punchFilter === 'BOTH' && (!row.original_in_punch || !row.original_out_punch)) return false;
+      if (punchInFilter !== 'all') {
+        const hasPunchIn = row.punch_in && row.punch_in.trim() !== '';
+        if (punchInFilter === 'null' && hasPunchIn) return false;
+        if (punchInFilter === 'not_null' && !hasPunchIn) return false;
+      }
+
+      if (punchOutFilter !== 'all') {
+        const hasPunchOut = row.punch_out && row.punch_out.trim() !== '';
+        if (punchOutFilter === 'null' && hasPunchOut) return false;
+        if (punchOutFilter === 'not_null' && !hasPunchOut) return false;
+      }
 
       // Filter by Project Allocation
       const matchesProject =
@@ -1997,9 +1988,14 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
         if (empTypeFilter === 'worker' && empType !== 'worker') return false;
       }
 
+      if (statusFilter !== 'all') {
+        const currentStatus = row.status || 'no status';
+        if (currentStatus !== statusFilter) return false;
+      }
+
       return true;
     });
-  }, [employees, rows, search, punchFilter, selectedProjects, sourceFilter, empTypeFilter]);
+  }, [employees, rows, search, punchInFilter, punchOutFilter, selectedProjects, sourceFilter, empTypeFilter, statusFilter]);
 
   return (
     <div className="bg-white animate-fade-in" style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -2520,10 +2516,10 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                           <button
                             type="button"
                             className={`w-[30px] h-[30px] rounded-lg border flex items-center justify-center cursor-pointer transition-all shrink-0 focus:outline-none ${empTypeFilter === 'all'
-                                ? 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
-                                : empTypeFilter === 'staff'
-                                  ? 'border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
-                                  : 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                              ? 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                              : empTypeFilter === 'staff'
+                                ? 'border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                                : 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
                               }`}
                             title={
                               empTypeFilter === 'all'
@@ -2560,9 +2556,146 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                     </div>
                   </th>
 
-                  <th style={{ width: '140px' }}>Status</th>
-                  <th style={{ width: '100px' }}>Punch In</th>
-                  <th style={{ width: '100px' }}>Punch Out</th>
+                  <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '140px' }}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
+                        <span className="truncate">
+                          {statusFilter === 'all'
+                            ? 'Status (All)'
+                            : statusFilter === 'present'
+                              ? 'Present'
+                              : statusFilter === 'absent'
+                                ? 'Absent'
+                                : statusFilter === 'present with OT'
+                                  ? 'Present with OT'
+                                  : 'No Status'}
+                        </span>
+                        <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[140px] p-1 bg-white border border-slate-200 z-50">
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={statusFilter === 'all'}
+                          onCheckedChange={() => setStatusFilter('all')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          All Statuses
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={statusFilter === 'present'}
+                          onCheckedChange={() => setStatusFilter('present')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Present
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={statusFilter === 'present with OT'}
+                          onCheckedChange={() => setStatusFilter('present with OT')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Present with OT
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={statusFilter === 'absent'}
+                          onCheckedChange={() => setStatusFilter('absent')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Absent
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={statusFilter === 'no status'}
+                          onCheckedChange={() => setStatusFilter('no status')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          No Status
+                        </DropdownMenuCheckboxItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </th>
+                  <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '110px' }}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
+                        <span className="truncate">
+                          {punchInFilter === 'all'
+                            ? 'Punch In (All)'
+                            : punchInFilter === 'null'
+                              ? 'In (Empty)'
+                              : 'In (Filled)'}
+                        </span>
+                        <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[120px] p-1 bg-white border border-slate-200 z-50">
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={punchInFilter === 'all'}
+                          onCheckedChange={() => setPunchInFilter('all')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          All
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={punchInFilter === 'null'}
+                          onCheckedChange={() => setPunchInFilter('null')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Empty
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={punchInFilter === 'not_null'}
+                          onCheckedChange={() => setPunchInFilter('not_null')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Filled
+                        </DropdownMenuCheckboxItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </th>
+                  <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '110px' }}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
+                        <span className="truncate">
+                          {punchOutFilter === 'all'
+                            ? 'Punch Out (All)'
+                            : punchOutFilter === 'null'
+                              ? 'Out (Empty)'
+                              : 'Out (Filled)'}
+                        </span>
+                        <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[120px] p-1 bg-white border border-slate-200 z-50">
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={punchOutFilter === 'all'}
+                          onCheckedChange={() => setPunchOutFilter('all')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          All
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={punchOutFilter === 'null'}
+                          onCheckedChange={() => setPunchOutFilter('null')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Empty
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={punchOutFilter === 'not_null'}
+                          onCheckedChange={() => setPunchOutFilter('not_null')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Filled
+                        </DropdownMenuCheckboxItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </th>
                   <th style={{ width: '65px', textAlign: 'center' }}>Total</th>
                   <th style={{ width: '90px' }}>Overtime</th>
                   {!isFocalFiltered && (
@@ -2735,7 +2868,6 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                           isSelectionMode={isSelectionMode}
                           isLocked={isLocked}
                           canUserEdit={canUserEdit}
-                          projects={projects}
                           isFocalFiltered={isFocalFiltered}
                           saving={saving}
                           onRowSelect={handleRowSelect}
