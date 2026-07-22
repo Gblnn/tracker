@@ -237,7 +237,7 @@ const getDbAttestedAndVerified = (r: TimesheetRow, userEmail: string | null | un
   if (r.original_in_punch && r.original_out_punch) {
     const inM = extractTime(r.original_in_punch.punch_time);
     const outM = extractTime(r.original_out_punch.punch_time);
-    const isUnmodified = r.punch_in === inM && r.punch_out === outM;
+    const isUnmodified = r.punch_in === inM && r.punch_out === outM && !r.isEdited;
     if (isUnmodified) {
       return {
         attested_by: deviceCode || 'Timekeeper',
@@ -680,9 +680,10 @@ const TimesheetRowComponent = memo(({
                 {(() => {
                   const displayEmail = row.verified_by || (() => {
                     const { verifier, approver } = parseAttestedBy(row.attested_by, !!row.isApproved);
+                    const fallback = row.attested_by?.includes('@') ? row.attested_by : null;
                     return isFocalFiltered
-                      ? (verifier || row.attested_by)
-                      : (approver || verifier || row.attested_by);
+                      ? (verifier || fallback)
+                      : (approver || verifier || fallback);
                   })();
                   return displayEmail ? displayEmail.split('|').filter(Boolean).join(' | ') : 'Timekeeper';
                 })()}{deviceCode && ` (${deviceCode})`}
