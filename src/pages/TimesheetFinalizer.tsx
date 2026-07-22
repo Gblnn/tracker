@@ -261,7 +261,7 @@ const getDbAttestedAndVerified = (r: TimesheetRow, userEmail: string | null | un
     return {
       attested_by: email || 'Timekeeper',
       machine: null,
-      verified_by: null
+      verified_by: email || null
     };
   }
 };
@@ -1301,13 +1301,12 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
           attested_by: dbFields.attested_by,
           machine: dbFields.machine,
           verified_by: dbFields.verified_by,
-          remarks: r.remarks.startsWith('Custom: ')
-            ? (r.remarks.substring(8).trim() || null)
-            : (r.remarks.trim() || null),
+          remarks: (r.remarks || '').startsWith('Custom: ')
+            ? ((r.remarks || '').substring(8).trim() || null)
+            : ((r.remarks || '').trim() || null),
           status: r.status || null,
           last_updated: new Date().toISOString(),
-          approval: isFocalFiltered ? (r.approval && r.isApproved) : true,
-          focal_approval: isFocalFiltered ? (r.approval && r.isApproved) : null
+          approval: !isFocalFiltered
         };
       });
 
@@ -1902,9 +1901,9 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
             attested_by: dbFields.attested_by,
             machine: dbFields.machine,
             verified_by: dbFields.verified_by,
-            remarks: r.remarks.startsWith('Custom: ')
-              ? (r.remarks.substring(8).trim() || null)
-              : (r.remarks.trim() || null),
+            remarks: (r.remarks || '').startsWith('Custom: ')
+              ? ((r.remarks || '').substring(8).trim() || null)
+              : ((r.remarks || '').trim() || null),
             status: r.status || null,
             last_updated: new Date().toISOString(),
             approval: !isFocalFiltered
@@ -2350,15 +2349,17 @@ export default function TimesheetFinalizer({ refreshTrigger, onLoadingChange }: 
                     >
                       Allocate Overtime
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setBulkProjectValue('');
-                        setIsBulkProjectOpen(true);
-                      }}
-                      className="text-xs cursor-pointer focus:bg-slate-50 rounded-md p-2"
-                    >
-                      Allocate Project
-                    </DropdownMenuItem>
+                    {!isFocalFiltered && (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setBulkProjectValue('');
+                          setIsBulkProjectOpen(true);
+                        }}
+                        className="text-xs cursor-pointer focus:bg-slate-50 rounded-md p-2"
+                      >
+                        Allocate Project
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       onClick={() => {
                         setBulkStatusValue('present');

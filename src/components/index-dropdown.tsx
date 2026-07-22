@@ -53,45 +53,7 @@ export default function IndexDropDown(props: Props) {
   const [issue, setIssue] = useState("");
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-  const applyPressure = async () => {
-    toast.loading("Applying pressure to force update...", { id: "pressure" });
-    try {
-      // 1. Perform 10 staggered requests to simulate load safely without triggering WAF
-      const fetches = [];
-      for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-        fetches.push(
-          fetch(`/manifest.json?t=${Date.now()}-${i}`, { cache: "no-store" })
-            .then(() => { })
-            .catch(() => { })
-        );
-      }
-      await Promise.all(fetches);
 
-      // 2. Trigger updates on registrations
-      if ("serviceWorker" in navigator) {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map(r => r.update()));
-      }
-
-      // 3. Delete browser caches
-      if ("caches" in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map(k => caches.delete(k)));
-      }
-
-      toast.success("Pressure applied successfully! Reloading...", { id: "pressure" });
-      setTimeout(() => {
-        window.location.reload();
-      }, 1200);
-    } catch (e) {
-      console.error("Apply pressure failed:", e);
-      toast.error("Failed to apply pressure, reloading anyway...", { id: "pressure" });
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
-    }
-  };
   const serviceId = "service_fixajl8";
   const templateId = "template_0f3zy3e";
 
@@ -249,12 +211,12 @@ export default function IndexDropDown(props: Props) {
             <div className="h-px bg-border my-1" />
 
             <DropdownMenuItem
-              onClick={applyPressure}
+              onClick={() => window.location.reload()}
               className="cursor-pointer"
               style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}
             >
               <RefreshCcw className="mr-2 h-4 w-4 text-teal-500" />
-              <span>Check for Updates</span>
+              <span>Force Reload</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem
