@@ -851,7 +851,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             let focalProjectLocations: string[] = [];
             let isFocalFiltered = false;
 
-            if (userData?.role !== 'admin' && userData?.email) {
+            if (userData?.role !== 'admin' && userData?.role !== 'site_admin' && userData?.email) {
                 const focalProjects = (projData ?? []).filter(p => p.focal_point_email === userData.email);
 
                 if (focalProjects.length > 0) {
@@ -953,7 +953,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             .order('id', { ascending: true });
         if (!err) {
             let devList = data ?? [];
-            if (userData?.role !== 'admin' && userData?.email) {
+            if (userData?.role !== 'admin' && userData?.role !== 'site_admin' && userData?.email) {
                 const { data: focalProjects } = await supabase
                     .from('projects')
                     .select('project_code')
@@ -962,8 +962,6 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 if (focalProjects && focalProjects.length > 0) {
                     const codes = focalProjects.map(p => p.project_code).filter(Boolean);
                     devList = devList.filter(d => d.project_code && codes.includes(d.project_code));
-                } else {
-                    devList = [];
                 }
             }
             setDevices(devList);
