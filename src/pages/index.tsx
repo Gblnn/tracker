@@ -235,6 +235,8 @@ export default function Index() {
       hasTransferRequests || hasSimCards || hasOffboarding || hasTickets || hasDocumentEditor;
   };
 
+  const hasTickets = admin || hasModuleAccess('tickets') || hasTicketHandler;
+
   // const getAccessibleModuleCount = () => {
   //   let count = 0;
   //   if (hasModuleAccess("records_master")) count++;
@@ -286,7 +288,7 @@ export default function Index() {
         fixed
         editMode={userData?.editor === true ? true : false}
         title="Starboard"
-        subtitle={"1.74"}
+        subtitle={"1.75"}
 
         icon={<img src="/stardox-bg.png" style={{ width: "2rem" }} alt="Starboard" />}
         noback
@@ -543,13 +545,15 @@ export default function Index() {
                   )}
 
 
-                  <GridTile
-                    title={hasTicketHandler ? "Tickets" : "IT Support"}
-                    description="Report Issues and track resolutions"
-                    icon={<Ticket width="2.5rem" />}
-                    onClick={() => navigate('/tickets')}
-                    badge={hasTicketHandler && openTicketsCount !== null && openTicketsCount > 0 ? openTicketsCount : undefined}
-                  />
+                  {hasTickets && (
+                    <GridTile
+                      title={hasTicketHandler ? "Tickets" : "IT Support"}
+                      description="Report Issues and track resolutions"
+                      icon={<Ticket width="2.5rem" />}
+                      onClick={() => navigate('/tickets')}
+                      badge={hasTicketHandler && openTicketsCount !== null && openTicketsCount > 0 ? openTicketsCount : undefined}
+                    />
+                  )}
 
 
                   {hasModuleAccess('manpower_requirements') && (

@@ -71,16 +71,18 @@ const NATIONALITIES = [
     'bahraini',
 ];
 
-const EMPLOYEE_STATUSES = ['active', 'inactive', 'leave', 'long leave', 'cancel', 'om50'] as const;
+const EMPLOYEE_STATUSES = ['Active', 'Inactive', 'Leave', 'Long Leave', 'Cancel', 'OM50'] as const;
 
 type EmployeeStatus = typeof EMPLOYEE_STATUSES[number];
 
 function normalizeEmployeeStatus(value: string | null | undefined): EmployeeStatus {
-    const normalized = value?.trim().toLowerCase();
-    if (normalized && EMPLOYEE_STATUSES.includes(normalized as EmployeeStatus)) {
-        return normalized as EmployeeStatus;
+    if (!value) return 'Active';
+    const clean = value.trim();
+    const found = EMPLOYEE_STATUSES.find(s => s.toLowerCase() === clean.toLowerCase());
+    if (found) {
+        return found;
     }
-    return 'active';
+    return 'Active';
 }
 
 interface ManageEmployee {
@@ -224,7 +226,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [editEmpId, setEditEmpId] = useState('');
     const [editEmpType, setEditEmpType] = useState<'staff' | 'worker'>('staff');
     const [editShift, setEditShift] = useState<'day' | 'night'>('day');
-    const [editStatus, setEditStatus] = useState<EmployeeStatus>('active');
+    const [editStatus, setEditStatus] = useState<EmployeeStatus>('Active');
     const [editNationality, setEditNationality] = useState('');
     const [editDesignation, setEditDesignation] = useState('');
     const [editCompany, setEditCompany] = useState('');
@@ -437,7 +439,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                 'Employee ID': emp.emp_id || '',
                 'Type': emp.emp_type || '',
                 'Shift': emp.shift || 'day',
-                'Status': emp.status || 'active',
+                'Status': emp.status || 'Active',
                 'Department': emp.department || '',
                 'Designation': emp.designation || '',
                 'Nationality': emp.nationality || '',
@@ -714,7 +716,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [addEmpId, setAddEmpId] = useState('');
     const [addEmpType, setAddEmpType] = useState<'staff' | 'worker'>('staff');
     const [addShift, setAddShift] = useState<'day' | 'night'>('day');
-    const [addStatus, setAddStatus] = useState<EmployeeStatus>('active');
+    const [addStatus, setAddStatus] = useState<EmployeeStatus>('Active');
     const [addNationality, setAddNationality] = useState('');
     const [addDesignation, setAddDesignation] = useState('');
     const [addCompany, setAddCompany] = useState('');
@@ -1035,7 +1037,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             setAddEmpId('');
             setAddEmpType('staff');
             setAddShift('day');
-            setAddStatus('active');
+            setAddStatus('Active');
             setAddNationality('');
             setAddDesignation('');
             setAddCompany('');
@@ -2653,19 +2655,19 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                         {(() => {
                                             const status = normalizeEmployeeStatus(emp.status);
                                             return (
-                                                <span style={{ textTransform: status === 'om50' ? 'none' : 'capitalize' }} className={`inline-flex items-center w-fit px-2 py-0.5 rounded-full text-xs font-medium ${status === 'active'
+                                                <span style={{ textTransform: status === 'OM50' ? 'none' : 'capitalize' }} className={`inline-flex items-center w-fit px-2 py-0.5 rounded-full text-xs font-medium ${status === 'Active'
                                                     ? 'bg-teal-50 text-teal-700'
-                                                    : status === 'inactive'
+                                                    : status === 'Inactive'
                                                         ? 'bg-rose-50 text-rose-700'
-                                                        : status === 'leave'
+                                                        : status === 'Leave'
                                                             ? 'bg-amber-50 text-amber-700'
-                                                            : status === 'long leave'
+                                                            : status === 'Long Leave'
                                                                 ? 'bg-orange-50 text-orange-700'
-                                                                : status === 'om50'
+                                                                : status === 'OM50'
                                                                     ? 'bg-sky-50 text-sky-700'
                                                                     : 'bg-rose-50 text-rose-700'
                                                     }`}>
-                                                    {status === 'om50' ? 'OM50' : status}
+                                                    {status === 'OM50' ? 'OM50' : status}
                                                 </span>
                                             );
                                         })()}
@@ -2862,8 +2864,8 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                 </SelectTrigger>
                                                 <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
                                                     {(() => {
-                                                        const allowed = ['cancel', 'om50', 'long leave'];
-                                                        const current = editStatus || 'active';
+                                                        const allowed: EmployeeStatus[] = ['Cancel', 'OM50', 'Long Leave'];
+                                                        const current = editStatus || 'Active';
                                                         const items = allowed.includes(current) ? allowed : [current, ...allowed];
                                                         return items.map((status) => (
                                                             <SelectItem key={status} value={status} className="rounded-md focus:bg-gray-50 cursor-pointer">{status.toUpperCase()}</SelectItem>
