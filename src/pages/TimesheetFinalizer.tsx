@@ -68,7 +68,28 @@ interface Project {
   project_in_time?: string | null;
   project_out_time?: string | null;
   project_location?: string | null;
+  focal_point_email?: string | null;
+  approver_email?: string | null;
 }
+
+const isProjectDualRole = (projectCode: string | null | undefined, projectsList: Project[], userEmail?: string | null): boolean => {
+  if (!projectCode) return false;
+  const p = projectsList.find(proj => proj.project_code === projectCode);
+  if (!p) return false;
+
+  if (p.focal_point_email && p.approver_email && p.focal_point_email.toLowerCase().trim() === p.approver_email.toLowerCase().trim()) {
+    return true;
+  }
+
+  if (userEmail && p.focal_point_email && p.approver_email) {
+    const userNorm = userEmail.toLowerCase().trim();
+    if (p.focal_point_email.toLowerCase().trim() === userNorm && p.approver_email.toLowerCase().trim() === userNorm) {
+      return true;
+    }
+  }
+
+  return false;
+};
 
 const normalizeString = (str: string) => {
   if (!str) return '';
@@ -236,7 +257,17 @@ const getDbAttestedAndVerified = (r: TimesheetRow, userEmail: string | null | un
   if (r.original_in_punch) devSerials.push(r.original_in_punch.device_serial);
   if (r.original_out_punch) devSerials.push(r.original_out_punch.device_serial);
   const uniqueSerials = Array.from(new Set(devSerials)).filter(Boolean);
-  const deviceCode = uniqueSerials.join('/');
+  
+  let deviceCode = uniqueSerials.join('/');
+  if (!deviceCode && r.machine && r.machine !== 'Un-Mapped' && r.machine !== 'Timekeeper') {
+    deviceCode = r.machine;
+  }
+  if (!deviceCode && r.attested_by && r.attested_by !== 'Timekeeper' && !r.attested_by.includes('@') && r.attested_by !== 'Un-Mapped') {
+    deviceCode = r.attested_by;
+  }
+
+  const finalMachine = deviceCode || r.machine || null;
+  const finalAttestedBy = deviceCode || r.attested_by || email || 'Timekeeper';
 
   if (r.original_in_punch && r.original_out_punch) {
     const inM = extractTime(r.original_in_punch.punch_time);
@@ -244,27 +275,27 @@ const getDbAttestedAndVerified = (r: TimesheetRow, userEmail: string | null | un
     const isUnmodified = r.punch_in === inM && r.punch_out === outM && !r.isEdited;
     if (isUnmodified) {
       return {
-        attested_by: deviceCode || 'Timekeeper',
-        machine: deviceCode || null,
+        attested_by: finalAttestedBy,
+        machine: finalMachine,
         verified_by: null
       };
     } else {
       return {
-        attested_by: deviceCode || 'Timekeeper',
-        machine: deviceCode || null,
+        attested_by: finalAttestedBy,
+        machine: finalMachine,
         verified_by: email || null
       };
     }
   } else if (r.original_in_punch || r.original_out_punch) {
     return {
-      attested_by: deviceCode || 'Timekeeper',
-      machine: deviceCode || null,
+      attested_by: finalAttestedBy,
+      machine: finalMachine,
       verified_by: email || null
     };
   } else {
     return {
-      attested_by: email || 'Timekeeper',
-      machine: null,
+      attested_by: finalAttestedBy,
+      machine: finalMachine,
       verified_by: email || null
     };
   }
@@ -286,6 +317,8 @@ const TimesheetRowComponent = memo(({
   onApproveRow,
   onReviewRow,
   onRevokeApproveRow,
+  isVerifying,
+  onVerifyBiometricRow,
 }: {
   emp: Employee;
   row: TimesheetRow;
@@ -302,7 +335,10 @@ const TimesheetRowComponent = memo(({
   onApproveRow: (userId: string) => void;
   onReviewRow: (userId: string) => void;
   onRevokeApproveRow: (userId: string) => void;
+  isVerifying?: boolean;
+  onVerifyBiometricRow?: (userId: string) => void;
 }) => {
+  const { userData } = useAuth();
   const hasNoRedBorders = useMemo(() => {
     // 1. Status check
     const isStatusRed = !row.status || row.status === 'no status';
@@ -431,7 +467,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Status Select */}
       <td style={{ textAlign: 'center' }}>
-        {(resolvedMode === 'approve' || isLocked || !canUserEdit || row.status === 'present' || row.status === 'present with OT') ? (
+        {(!canUserEdit || isLocked) ? (
           <span className={`text-xs font-semibold px-2 py-1 rounded inline-flex items-center justify-center ${row.status === 'present' ? 'text-emerald-700 bg-emerald-50/80 border border-emerald-200' :
             row.status === 'present with OT' ? 'text-indigo-700 bg-indigo-50/80 border border-indigo-200' :
               row.status === 'absent' ? 'text-rose-700 bg-rose-50/80 border border-rose-200' :
@@ -464,7 +500,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Punch In Input */}
       <td style={{ textAlign: 'center' }}>
-        {(resolvedMode === 'approve' || isLocked || !canUserEdit || !!row.original_in_punch) ? (
+        {(!canUserEdit || isLocked || !!row.original_in_punch) ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {row.punch_in || '—'}
           </span>
@@ -486,7 +522,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Punch Out Input */}
       <td style={{ textAlign: 'center' }}>
-        {(resolvedMode === 'approve' || isLocked || !canUserEdit || !!row.original_out_punch) ? (
+        {(!canUserEdit || isLocked || !!row.original_out_punch) ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {row.punch_out || '—'}
           </span>
@@ -513,7 +549,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Overtime Input */}
       <td style={{ textAlign: 'center' }}>
-        {(resolvedMode === 'approve' || isLocked || !canUserEdit || emp.emp_type === 'staff') ? (
+        {(!canUserEdit || isLocked || emp.emp_type === 'staff') ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {emp.emp_type === 'staff' ? '—' : (row.overtime ?? 0)}
           </span>
@@ -542,7 +578,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Remarks Input */}
       <td>
-        {(resolvedMode === 'approve' || isLocked || !canUserEdit) ? (
+        {(!canUserEdit || isLocked) ? (
           <span className="text-xs text-slate-800 font-medium px-2 py-1">
             {row.remarks ? (row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks) : '—'}
           </span>
@@ -602,7 +638,7 @@ const TimesheetRowComponent = memo(({
       </td>
 
       {/* Source & Actions */}
-      <td className="sticky-action" style={resolvedMode === 'approve' ? { right: '100px' } : undefined}>
+      <td className="sticky-action" style={(resolvedMode === 'approve' && !isFocalFiltered) ? { right: '100px' } : { right: '0' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px 6px' }}>
           {/* 1. Source Badge (Original & Unchanged - Full Width) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
@@ -652,73 +688,130 @@ const TimesheetRowComponent = memo(({
                   </span>
                 </span>
               );
-            })() : (
-              (() => {
-                const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
-                const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
-                if (machineCode === 'Leave Log') {
+            })() : (() => {
+              const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
+              const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
+              if (machineCode === 'Leave Log') {
+                return (
+                  <span style={{ fontSize: "0.7rem", background: "#6366f1", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px", flex: 1 }} className="source-badge source-leave" title={row.attested_by}>
+                    <Calendar className="w-3 h-3 shrink-0" />
+                    Leave Log
+                  </span>
+                );
+              } else if (hasDevice) {
+                return (
+                  <span style={{ fontSize: "0.7rem", background: "teal", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px", flex: 1 }} className="source-badge source-auto" title={row.attested_by}>
+                    <Laptop2 className="w-3 h-3 shrink-0" />
+                    {machineCode}
+                  </span>
+                );
+              } else {
+                return (
+                  <span style={{ fontSize: "0.7rem", background: "slategray", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px", flex: 1 }} className="source-badge source-nosource" title={row.attested_by || "No source found"}>
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    No Source
+                  </span>
+                );
+              }
+            })()}
+
+            {(() => {
+              if (isVerifying) {
+                return (
+                  <button
+                    type="button"
+                    disabled
+                    className="p-1 text-teal-600 bg-teal-50 rounded border border-teal-300 flex items-center justify-center shrink-0 shadow-2xs"
+                    style={{ width: "20px", height: "20px" }}
+                    title="Uploading and verifying record..."
+                  >
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  </button>
+                );
+              }
+
+              const isApproverOnlyMode = resolvedMode === 'approve' && !isFocalFiltered;
+
+              if (isApproverOnlyMode) {
+                if ((row.isApproved || !!row.approved_by) && !isLocked && canUserEdit) {
                   return (
-                    <span style={{ fontSize: "0.7rem", background: "#6366f1", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px", flex: 1 }} className="source-badge source-leave" title={row.attested_by}>
-                      <Calendar className="w-3 h-3 shrink-0" />
-                      Leave Log
-                    </span>
-                  );
-                } else if (hasDevice) {
-                  return (
-                    <span style={{ fontSize: "0.7rem", background: "teal", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px", flex: 1 }} className="source-badge source-auto" title={row.attested_by}>
-                      <Laptop2 className="w-3 h-3 shrink-0" />
-                      {machineCode}
-                    </span>
-                  );
-                } else {
-                  return (
-                    <span style={{ fontSize: "0.7rem", background: "slategray", color: "white", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", padding: "1px 6px", borderRadius: "3px", flex: 1 }} className="source-badge source-nosource" title={row.attested_by || "No source found"}>
-                      <AlertCircle className="w-3 h-3 shrink-0" />
-                      No Source
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onRevokeApproveRow(emp.device_user_id)}
+                      disabled={saving}
+                      className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all cursor-pointer border border-slate-200 bg-white flex items-center justify-center shrink-0"
+                      title="Revoke approval & revert to verified"
+                      style={{ width: "20px", height: "20px" }}
+                    >
+                      <Undo2 className="w-3 h-3" />
+                    </button>
                   );
                 }
-              })()
-            )}
+                return null;
+              }
 
-            {resolvedMode === 'approve' ? (
-              (row.isApproved || row.approved_by) && (
-                <button
-                  type="button"
-                  onClick={() => onRevokeApproveRow(emp.device_user_id)}
-                  disabled={saving}
-                  className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all cursor-pointer border border-slate-200 bg-white flex items-center justify-center shrink-0"
-                  title="Revoke approval back to verified state"
-                  style={{ width: "20px", height: "20px" }}
-                >
-                  <Undo2 className="w-3 h-3" />
-                </button>
-              )
-            ) : (
-              ((row.isEdited || row.inDatabase || row.isApproved) && !isLocked && canUserEdit && !(isFocalFiltered && row.approval)) && (
-                <button
-                  type="button"
-                  onClick={() => onUndoRow(emp.device_user_id)}
-                  disabled={saving}
-                  className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all cursor-pointer border border-slate-200 bg-white flex items-center justify-center shrink-0"
-                  title={row.inDatabase ? (isFocalFiltered ? "Revoke verification" : "Revoke approval") : "Undo manual changes back to original"}
-                  style={{ width: "20px", height: "20px" }}
-                >
-                  <Undo2 className="w-3 h-3" />
-                </button>
-              )
-            )}
+              const isSavedOrVerified = row.inDatabase || row.isVerified || row.isApproved || !!row.verified_by || !!row.approved_by;
+
+              if (isSavedOrVerified && !isLocked && canUserEdit) {
+                return (
+                  <button
+                    type="button"
+                    onClick={() => onUndoRow(emp.device_user_id)}
+                    disabled={saving}
+                    className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all cursor-pointer border border-slate-200 bg-white flex items-center justify-center shrink-0"
+                    title={row.inDatabase ? "Revoke verification & revert to original" : "Undo manual changes back to original"}
+                    style={{ width: "20px", height: "20px" }}
+                  >
+                    <Undo2 className="w-3 h-3" />
+                  </button>
+                );
+              }
+
+              const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
+              const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
+              const isBiometricFullyPopulated = (!!row.original_in_punch && !!row.original_out_punch) || (hasDevice && !!row.punch_in && !!row.punch_out);
+
+              if (isBiometricFullyPopulated && !isLocked && canUserEdit) {
+                return (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onVerifyBiometricRow) {
+                        onVerifyBiometricRow(emp.device_user_id);
+                      } else {
+                        onUpdateRow(emp.device_user_id, 'isEdited', true);
+                      }
+                    }}
+                    disabled={saving}
+                    className="p-1 text-white hover:text-white hover:bg-teal-700 rounded transition-all cursor-pointer bg-teal-600 flex items-center justify-center shrink-0 shadow-2xs"
+                    title="Verify record fully populated by biometric machine"
+                    style={{ width: "20px", height: "20px" }}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                );
+              }
+
+              return null;
+            })()}
           </div>
 
           {/* 2. Attestation Details & Status/Actions inline underneath */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            {(row.isEdited || row.verified_by || row.approved_by) ? (
+            {(row.isEdited || row.verified_by || row.approved_by || row.isVerified) ? (
               <span className={row.isApproved ? 'text-indigo-600 font-semibold' : (hasNoRedBorders ? 'text-teal-600' : 'text-amber-700')} style={{ fontSize: '10px', whiteSpace: 'nowrap', fontWeight: 555 }}>
                 {(() => {
                   const emails: string[] = [];
-                  if (row.verified_by) emails.push(row.verified_by);
-                  if (row.approved_by) emails.push(row.approved_by);
-                  const emailsText = emails.length > 0 ? emails.join(' | ') : 'Timekeeper';
+                  if (row.verified_by && row.verified_by.includes('@')) emails.push(row.verified_by);
+                  if (row.approved_by && row.approved_by.includes('@')) emails.push(row.approved_by);
+                  if (emails.length === 0 && row.attested_by && row.attested_by.includes('@')) {
+                    emails.push(row.attested_by);
+                  }
+                  if (emails.length === 0 && userData?.email) {
+                    emails.push(userData.email);
+                  }
+                  const uniqueEmails = Array.from(new Set(emails));
+                  const emailsText = uniqueEmails.length > 0 ? uniqueEmails.join(' | ') : (userData?.email || 'Timekeeper');
                   return deviceCode ? `${emailsText} (${deviceCode})` : emailsText;
                 })()}
               </span>
@@ -734,7 +827,7 @@ const TimesheetRowComponent = memo(({
       </td>
 
       {/* Approver Actions Column */}
-      {resolvedMode === 'approve' && (
+      {(resolvedMode === 'approve' && !isFocalFiltered) && (
         <td className="sticky-approver-action" style={{ width: '100px', minWidth: '100px', padding: '6px 8px', verticalAlign: 'middle' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {(() => {
@@ -786,47 +879,48 @@ const TimesheetRowComponent = memo(({
               );
             })()}
 
-            {row.approved_by !== 'review' ? (
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => onReviewRow(emp.device_user_id)}
-                style={{
+            {!row.isApproved && (
+              row.approved_by !== 'review' ? (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => onReviewRow(emp.device_user_id)}
+                  style={{
+                    fontSize: '0.65rem',
+                    fontWeight: 600,
+                    padding: '3px 8px',
+                    borderRadius: '4px',
+
+                    border: 'none',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    width: '100%',
+                    justifyContent: 'center',
+                    opacity: saving ? 0.6 : 1,
+                  }}
+                >
+                  <AlertCircle className="w-2.5 h-2.5" /> Review
+                </button>
+              ) : (
+                <span style={{
                   fontSize: '0.65rem',
                   fontWeight: 600,
                   padding: '3px 8px',
                   borderRadius: '4px',
-
-
+                  background: '#fed7aa',
+                  color: '#9a3412',
                   border: 'none',
-                  cursor: saving ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '10px',
+                  gap: '3px',
                   width: '100%',
                   justifyContent: 'center',
-                  opacity: saving ? 0.6 : 1,
-                }}
-              >
-                <AlertCircle className="w-2.5 h-2.5" /> Review
-              </button>
-            ) : (
-              <span style={{
-                fontSize: '0.65rem',
-                fontWeight: 600,
-                padding: '3px 8px',
-                borderRadius: '4px',
-                background: '#fed7aa',
-                color: '#9a3412',
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '3px',
-                width: '100%',
-                justifyContent: 'center',
-              }}>
-                <AlertCircle className="w-2.5 h-2.5" /> Review
-              </span>
+                }}>
+                  <AlertCircle className="w-2.5 h-2.5" /> Needs Review
+                </span>
+              )
             )}
           </div>
         </td>
@@ -914,6 +1008,7 @@ export default function TimesheetFinalizer({
   // History and Redo state for Undo / Redo actions
   const [history, setHistory] = useState<Record<string, TimesheetRow>[]>([]);
   const [redoStack, setRedoStack] = useState<Record<string, TimesheetRow>[]>([]);
+  const [verifyingRowIds, setVerifyingRowIds] = useState<Set<string>>(new Set());
 
   const pushHistory = useCallback((currentRows: Record<string, TimesheetRow>) => {
     setHistory(prev => [...prev.slice(-29), { ...currentRows }]);
@@ -944,8 +1039,11 @@ export default function TimesheetFinalizer({
       const hasStructuredClearance = Object.keys(permissions).length > 0;
       const isAdmin = userData?.role === "admin" || userData?.role === "site_admin";
 
-      if (resolvedMode === 'view' || resolvedMode === 'approve') {
+      if (resolvedMode === 'view') {
         return false;
+      }
+      if (isFocalFiltered || focalProjectCodes.length > 0) {
+        return true;
       }
       if (resolvedMode === 'verify') {
         return isFocalFiltered || isAdmin || (hasStructuredClearance && permissions.attendance === true);
@@ -953,11 +1051,14 @@ export default function TimesheetFinalizer({
       if (resolvedMode === 'finalize') {
         return permissions.timesheet_finalizer === true || isAdmin;
       }
+      if (resolvedMode === 'approve') {
+        return isApproverFiltered || approverProjectCodes.length > 0 || focalProjectCodes.length > 0 || isAdmin || (hasStructuredClearance && permissions.timesheet_approver === true);
+      }
       return false;
     } catch {
       return userData?.role === "admin" || userData?.role === "site_admin";
     }
-  }, [userData, resolvedMode, isFocalFiltered]);
+  }, [userData, resolvedMode, isFocalFiltered, focalProjectCodes, isApproverFiltered, approverProjectCodes]);
 
   const canUserAction = useMemo(() => {
     try {
@@ -1057,7 +1158,7 @@ export default function TimesheetFinalizer({
     const inTime = firstPunch ? extractTime(firstPunch.punch_time) : '';
     const outTime = lastPunch ? extractTime(lastPunch.punch_time) : '';
 
-    let resolvedAttestedBy = firstPunch ? firstPunch.device_serial : 'Timekeeper';
+    let resolvedAttestedBy = firstPunch ? firstPunch.device_serial : (userData?.email || 'Timekeeper');
     if (firstPunch && (firstPunch.mobile_location || (firstPunch.raw && firstPunch.raw.includes('MOBILE')))) {
       const { location: projName } = parsePunchLocation(firstPunch.mobile_location, undefined);
       if (projName === 'Un-Mapped') {
@@ -1127,7 +1228,7 @@ export default function TimesheetFinalizer({
         { data: punchesData, error: punchErr }
       ] = await Promise.all([
         supabase.from('employees').select('id, device_user_id, name, department, emp_id, emp_type').or('status.ilike.active,status.is.null').order('name'),
-        supabase.from('projects').select('project_code, project_name, project_in_time, project_out_time, project_location').order('project_code'),
+        supabase.from('projects').select('project_code, project_name, project_in_time, project_out_time, project_location, focal_point_email, approver_email').order('project_code'),
         supabase.from('devices').select('serial_no, project_code'),
         supabase.from('v_employee_latest_project').select('emp_id, current_project'),
         supabase.from('punches').select('*').gte('punch_time', start).lte('punch_time', end).order('punch_time', { ascending: true })
@@ -1150,25 +1251,23 @@ export default function TimesheetFinalizer({
       setEmployeeAssignedProjects(assignedProjMap);
 
       // 1. Determine if focal point filter is active
-      let focalProjectCodes: string[] = [];
-      let isFocalFiltered = false;
+      let focalProjectCodesLocal: string[] = [];
+      let isFocalFilteredLocal = false;
 
-      if (resolvedMode === 'verify') {
-        if (userData?.role !== 'admin' && userData?.email) {
-          const { data: focalProjects } = await supabase
-            .from('projects')
-            .select('project_code')
-            .eq('focal_point_email', userData.email);
+      if (userData?.role !== 'admin' && userData?.email) {
+        const { data: focalProjects } = await supabase
+          .from('projects')
+          .select('project_code')
+          .eq('focal_point_email', userData.email);
 
-          if (focalProjects && focalProjects.length > 0) {
-            focalProjectCodes = focalProjects.map(p => p.project_code);
-            isFocalFiltered = true;
-          }
+        if (focalProjects && focalProjects.length > 0) {
+          focalProjectCodesLocal = focalProjects.map(p => p.project_code);
+          isFocalFilteredLocal = true;
         }
       }
 
-      setFocalProjectCodes(focalProjectCodes);
-      setIsFocalFiltered(isFocalFiltered);
+      setFocalProjectCodes(focalProjectCodesLocal);
+      setIsFocalFiltered(isFocalFilteredLocal);
 
       // 1b. Determine if approver filter is active
       let approverProjectCodesLocal: string[] = [];
@@ -1349,10 +1448,7 @@ export default function TimesheetFinalizer({
       const isDayLocked = filteredExistingRows.length > 0 && filteredEmployees.every(emp =>
         filteredExistingRows.some(row => {
           if (row.employee_code !== emp.device_user_id) return false;
-          if (resolvedMode === 'verify') return row.approved_by !== 'review';
-          if (resolvedMode === 'approve') return !!row.approved_by && row.approved_by !== 'review';
-          if (resolvedMode === 'finalize') return !!row.approval;
-          if (resolvedMode === 'view') return true;
+          if (resolvedMode === 'finalize' || resolvedMode === 'view') return !!row.approval || resolvedMode === 'view';
           return false;
         })
       );
@@ -1677,32 +1773,25 @@ export default function TimesheetFinalizer({
       .filter(r => {
         const isStatusRed = !r.status || r.status === 'no status';
         if (isStatusRed) return false;
-
-        if (r.status !== 'absent' && r.status !== 'no status') {
-          const isProjectRed = !r.project_code || r.project_code === '' || r.project_code === 'UNASSIGNED';
-          if (isProjectRed) return false;
-
-          // Punch In & Out check
-          if (!r.punch_in || !r.punch_out) return false;
-        }
-
-        if (r.status === 'absent') {
-          const isRemarksRed = !r.remarks || r.remarks.trim() === '' || r.remarks === 'Custom: ' || r.remarks.trim() === 'Custom:';
-          if (isRemarksRed) return false;
-        }
         return true;
       })
       .map(r => {
         const inTimestamp = buildTimestamp(date, r.punch_in);
         const outTimestamp = buildTimestamp(date, r.punch_out);
         const dbFields = getDbAttestedAndVerified(r, userData?.email);
-        const verifiedBy = resolvedMode === 'verify'
-          ? (userData?.email || null)
-          : (r.verified_by || dbFields.verified_by || null);
+        const empProjCode = r.project_code || (r.employee_code ? employeeAssignedProjects[r.employee_code] : '') || '';
+        const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
+        const isUserFocal = isFocalFiltered || focalProjectCodes.length > 0 || isDual;
+        const isUserApprover = resolvedMode === 'approve' || isApproverFiltered || approverProjectCodes.length > 0 || isDual;
+        const isDualUserOrProj = isDual || (isUserFocal && isUserApprover);
 
-        const approvedBy = resolvedMode === 'approve'
-          ? (userData?.email || null)
-          : (r.approved_by || null);
+        const verifiedBy = (r.isVerified || r.isEdited || !!r.verified_by || resolvedMode === 'verify' || isUserFocal)
+          ? (r.verified_by || userData?.email || dbFields.verified_by || null)
+          : null;
+
+        const approvedBy = (r.isApproved || !!r.approved_by || isDualUserOrProj || resolvedMode === 'approve')
+          ? (r.approved_by || userData?.email || null)
+          : null;
 
         const approvalVal = resolvedMode === 'finalize'
           ? true
@@ -1716,8 +1805,8 @@ export default function TimesheetFinalizer({
           punch_out: outTimestamp,
           overtime: r.overtime,
           verify_type: r.verify_type,
-          attested_by: dbFields.attested_by,
-          machine: dbFields.machine,
+          attested_by: dbFields.attested_by || r.attested_by || 'Timekeeper',
+          machine: r.machine || dbFields.machine || null,
           verified_by: verifiedBy,
           approved_by: approvedBy,
           remarks: (r.remarks || '').startsWith('Custom: ')
@@ -1772,112 +1861,107 @@ export default function TimesheetFinalizer({
     } catch (err: any) {
       console.error('Batch auto-post failed:', err);
       toast.error('Failed to auto-save changes.', { id: 'autosave' });
+    } finally {
+      setVerifyingRowIds(prev => {
+        const next = new Set(prev);
+        updatedRows.forEach(r => next.delete(r.employee_code));
+        return next;
+      });
     }
-  }, [date, resolvedMode, isFocalFiltered, canUserEdit, userData?.email]);
+  }, [date, resolvedMode, isFocalFiltered, canUserEdit, userData?.email, projects, employeeAssignedProjects, focalProjectCodes, isApproverFiltered, approverProjectCodes]);
 
   const updateRow = useCallback((userId: string, key: keyof TimesheetRow, value: any) => {
     pushHistory(rows);
-    let updatedRow: TimesheetRow | null = null;
-    setRows(prev => {
-      const current = prev[userId];
-      if (!current) return prev;
-      const updated = { ...current, [key]: value };
+    const current = rows[userId];
+    if (!current) return;
 
-      // Set isEdited flag if user modifies main fields
-      if (key === 'punch_in' || key === 'punch_out' || key === 'overtime' || key === 'project_code' || key === 'status' || key === 'remarks') {
-        updated.isEdited = true;
-        updated.verify_type = 'Manual Input';
-        updated.attested_by = userData?.email || 'Timekeeper';
-      }
+    const updated = { ...current, [key]: value };
 
-      // Automatically handle status adjustments
-      if (key === 'status') {
+    if (key === 'punch_in' || key === 'punch_out' || key === 'overtime' || key === 'project_code' || key === 'status' || key === 'remarks') {
+      updated.isEdited = true;
+      updated.verify_type = 'Manual Input';
+      updated.attested_by = userData?.email || 'Timekeeper';
+    }
+
+    if (key === 'status') {
+      const emp = employeesMap[userId];
+      const isStaff = emp?.emp_type === 'staff';
+      const statusVal = (value === 'present with OT' && isStaff) ? 'present' : (value as 'present' | 'absent' | 'present with OT' | 'no status');
+      updated.status = statusVal;
+
+      if (statusVal === 'absent') {
+        updated.punch_in = '';
+        updated.punch_out = '';
+        updated.overtime = 0;
+        updated.remarks = '';
+        if (emp) {
+          updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
+        }
+      } else if (statusVal === 'no status') {
+        updated.punch_in = '';
+        updated.punch_out = '';
+        updated.overtime = 0;
+        updated.remarks = '';
+      } else if (statusVal === 'present' || statusVal === 'present with OT') {
         const emp = employeesMap[userId];
-        const isStaff = emp?.emp_type === 'staff';
-        const statusVal = (value === 'present with OT' && isStaff) ? 'present' : (value as 'present' | 'absent' | 'present with OT' | 'no status');
-        updated.status = statusVal;
+        const projCode = current.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
+        const targetProj = projects.find(p => p.project_code === projCode);
+        const inTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
+        const outTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
 
-        if (statusVal === 'absent') {
-          updated.punch_in = '';
-          updated.punch_out = '';
-          updated.overtime = 0;
+        if (!current.punch_in && !current.punch_out) {
+          updated.punch_in = inTime;
+          updated.punch_out = outTime;
+        }
+        if (current.remarks === 'Absent') {
           updated.remarks = '';
-          const emp = employeesMap[userId];
-          if (emp) {
-            updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
-          }
-        } else if (statusVal === 'no status') {
-          updated.punch_in = '';
-          updated.punch_out = '';
-          updated.overtime = 0;
-          updated.remarks = '';
-        } else if (statusVal === 'present' || statusVal === 'present with OT') {
+        }
+      }
+    }
+
+    if (key === 'punch_in' || key === 'punch_out') {
+      const inTime = key === 'punch_in' ? value : current.punch_in;
+      const outTime = key === 'punch_out' ? value : current.punch_out;
+
+      if (inTime || outTime) {
+        updated.status = (updated.overtime > 0) ? 'present with OT' : 'present';
+      } else {
+        updated.status = 'absent';
+        updated.overtime = 0;
+        updated.remarks = '';
+        const emp = employeesMap[userId];
+        if (emp) {
+          updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
+        }
+      }
+    }
+
+    if (key === 'overtime') {
+      const otVal = value as number;
+      if (otVal > 0) {
+        updated.status = 'present with OT';
+        if (!current.punch_in && !current.punch_out) {
           const emp = employeesMap[userId];
           const projCode = current.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
           const targetProj = projects.find(p => p.project_code === projCode);
           const inTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
           const outTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
-
-          if (!current.punch_in && !current.punch_out) {
-            updated.punch_in = inTime;
-            updated.punch_out = outTime;
-          }
-          if (current.remarks === 'Absent') {
-            updated.remarks = '';
-          }
-
-          if (statusVal === 'present' || statusVal === 'present with OT') {
-            if (updated.overtime > 0 && statusVal === 'present') {
-              updated.overtime = 0;
-            }
-          }
+          updated.punch_in = inTime;
+          updated.punch_out = outTime;
         }
+      } else {
+        updated.status = (updated.punch_in || updated.punch_out) ? 'present' : 'absent';
       }
-
-      // Sync status on input change without auto-calculating overtime
-      if (key === 'punch_in' || key === 'punch_out') {
-        const inTime = key === 'punch_in' ? value : current.punch_in;
-        const outTime = key === 'punch_out' ? value : current.punch_out;
-
-        if (inTime || outTime) {
-          updated.status = (updated.overtime > 0) ? 'present with OT' : 'present';
-        } else {
-          updated.status = 'absent';
-          updated.overtime = 0;
-          updated.remarks = '';
-          const emp = employeesMap[userId];
-          if (emp) {
-            updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
-          }
-        }
-      }
-
-      if (key === 'overtime') {
-        const otVal = value as number;
-        if (otVal > 0) {
-          updated.status = 'present with OT';
-          if (!current.punch_in && !current.punch_out) {
-            const emp = employeesMap[userId];
-            const projCode = current.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
-            const targetProj = projects.find(p => p.project_code === projCode);
-            const inTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
-            const outTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
-            updated.punch_in = inTime;
-            updated.punch_out = outTime;
-          }
-        } else {
-          updated.status = (updated.punch_in || updated.punch_out) ? 'present' : 'absent';
-        }
-      }
-
-      updatedRow = updated;
-      return { ...prev, [userId]: updated };
-    });
-
-    if (updatedRow) {
-      autoPostRowsBatch([updatedRow]);
     }
-  }, [employeesMap, employeeAssignedProjects, roundOT, userData?.email, projects, autoPostRowsBatch]);
+
+    setRows(prev => ({ ...prev, [userId]: updated }));
+    autoPostRowsBatch([updated]);
+  }, [rows, employeesMap, employeeAssignedProjects, userData?.email, projects, autoPostRowsBatch, pushHistory]);
+
+  const handleVerifyBiometricRow = useCallback((userId: string) => {
+    setVerifyingRowIds(prev => new Set(prev).add(userId));
+    updateRow(userId, 'isEdited', true);
+  }, [updateRow]);
 
   const handleRowSelect = useCallback((userId: string) => {
     setSelectedRowIds(prev => {
@@ -1977,23 +2061,23 @@ export default function TimesheetFinalizer({
           }
         }
 
-      // Sync status on input change without auto-calculating overtime
-      if (field === 'punch_in' || field === 'punch_out') {
-        const inTime = field === 'punch_in' ? value : current.punch_in;
-        const outTime = field === 'punch_out' ? value : current.punch_out;
+        // Sync status on input change without auto-calculating overtime
+        if (field === 'punch_in' || field === 'punch_out') {
+          const inTime = field === 'punch_in' ? value : current.punch_in;
+          const outTime = field === 'punch_out' ? value : current.punch_out;
 
-        if (inTime || outTime) {
-          updated.status = (updated.overtime > 0) ? 'present with OT' : 'present';
-        } else {
-          updated.status = 'absent';
-          updated.overtime = 0;
-          updated.remarks = '';
-          const emp = employeesMap[userId];
-          if (emp) {
-            updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
+          if (inTime || outTime) {
+            updated.status = (updated.overtime > 0) ? 'present with OT' : 'present';
+          } else {
+            updated.status = 'absent';
+            updated.overtime = 0;
+            updated.remarks = '';
+            const emp = employeesMap[userId];
+            if (emp) {
+              updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
+            }
           }
         }
-      }
 
         if (field === 'overtime') {
           const otVal = value as number;
@@ -2229,12 +2313,17 @@ export default function TimesheetFinalizer({
           const outTimestamp = buildTimestamp(date, r.punch_out);
           const dbFields = getDbAttestedAndVerified(r, userData?.email);
 
-          const verifiedBy = resolvedMode === 'verify'
-            ? (userData?.email || null)
+          const empProjCode = r.project_code || (r.employee_code ? employeeAssignedProjects[r.employee_code] : '') || '';
+          const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
+          const isUserFocal = isFocalFiltered || focalProjectCodes.length > 0 || isDual;
+          const isUserApprover = resolvedMode === 'approve' || isApproverFiltered || approverProjectCodes.length > 0 || isDual;
+
+          const verifiedBy = (resolvedMode === 'verify' || isUserFocal)
+            ? (r.verified_by || userData?.email || dbFields.verified_by || null)
             : (r.verified_by || dbFields.verified_by || null);
 
-          const approvedBy = resolvedMode === 'approve'
-            ? (userData?.email || null)
+          const approvedBy = (isUserApprover)
+            ? (r.approved_by || userData?.email || null)
             : (r.approved_by || null);
 
           const approvalVal = resolvedMode === 'finalize'
@@ -2403,96 +2492,177 @@ export default function TimesheetFinalizer({
   }, [employees, rows, search, punchInFilter, punchOutFilter, selectedProjects, sourceFilter, empTypeFilter, statusFilter, selectedProjectFilter]);
 
   const handleAutoFillEmptyPunchIn = useCallback(() => {
+    if (!canUserEdit) {
+      toast.error('You do not have clearance to modify this.');
+      return;
+    }
+
     pushHistory(rows);
-    let filledCount = 0;
+
     const updatedRows: TimesheetRow[] = [];
+    const updatedMap: Record<string, TimesheetRow> = {};
 
-    setRows(prev => {
-      const next = { ...prev };
-      filteredEmployees.forEach(emp => {
-        const r = next[emp.device_user_id];
-        if (!r) return;
+    filteredEmployees.forEach(emp => {
+      const userId = emp.device_user_id;
+      const r = rows[userId];
+      if (!r) return;
 
-        if (!r.punch_in || r.punch_in.trim() === '') {
-          const empProjCode = r.project_code || employeeAssignedProjects[emp.emp_id] || '';
-          const targetProj = projects.find(p => p.project_code === empProjCode);
-          const defaultInTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
+      if (!r.punch_in || r.punch_in.trim() === '') {
+        const empProjCode = r.project_code || employeeAssignedProjects[emp.emp_id] || '';
+        const targetProj = projects.find(p => p.project_code === empProjCode);
+        const defaultInTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
 
-          if (defaultInTime) {
-            const updated = {
-              ...r,
-              punch_in: defaultInTime,
-              isEdited: true,
-              verify_type: 'Manual Input',
-              attested_by: userData?.email || 'Timekeeper',
-            };
-            next[emp.device_user_id] = updated;
-            updatedRows.push(updated);
-            filledCount++;
-          }
+        if (defaultInTime) {
+          const effectiveStatus = (r.overtime && r.overtime > 0) ? 'present with OT' : 'present';
+          const updated: TimesheetRow = {
+            ...r,
+            punch_in: defaultInTime,
+            project_code: empProjCode,
+            status: effectiveStatus,
+            isEdited: true,
+            verify_type: 'Manual Input',
+            attested_by: userData?.email || 'Timekeeper',
+          };
+          updatedMap[userId] = updated;
+          updatedRows.push(updated);
         }
-      });
-      return next;
+      }
     });
 
-    if (filledCount > 0) {
-      toast.success(`Auto-filled default Punch In for ${filledCount} empty field(s).`);
+    if (updatedRows.length > 0) {
+      setRows(prev => ({ ...prev, ...updatedMap }));
+      toast.success(`Auto-filled default Punch In for ${updatedRows.length} empty field(s).`);
       autoPostRowsBatch(updatedRows);
     } else {
       toast.info('No empty Punch In fields to fill.');
     }
-  }, [filteredEmployees, projects, employeeAssignedProjects, setRows, rows, pushHistory, userData?.email, autoPostRowsBatch]);
+  }, [filteredEmployees, projects, employeeAssignedProjects, rows, canUserEdit, pushHistory, userData?.email, autoPostRowsBatch]);
 
   const handleAutoFillEmptyPunchOut = useCallback(() => {
+    if (!canUserEdit) {
+      toast.error('You do not have clearance to modify this.');
+      return;
+    }
+
     pushHistory(rows);
-    let filledCount = 0;
+
     const updatedRows: TimesheetRow[] = [];
+    const updatedMap: Record<string, TimesheetRow> = {};
 
-    setRows(prev => {
-      const next = { ...prev };
-      filteredEmployees.forEach(emp => {
-        const r = next[emp.device_user_id];
-        if (!r) return;
+    filteredEmployees.forEach(emp => {
+      const userId = emp.device_user_id;
+      const r = rows[userId];
+      if (!r) return;
 
-        const hasInTime = !!(r.punch_in && r.punch_in.trim() !== '');
-        if (hasInTime && (!r.punch_out || r.punch_out.trim() === '')) {
-          const empProjCode = r.project_code || employeeAssignedProjects[emp.emp_id] || '';
-          const targetProj = projects.find(p => p.project_code === empProjCode);
-          const defaultOutTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
+      const hasInTime = !!(r.punch_in && r.punch_in.trim() !== '');
+      if (hasInTime && (!r.punch_out || r.punch_out.trim() === '')) {
+        const empProjCode = r.project_code || employeeAssignedProjects[emp.emp_id] || '';
+        const targetProj = projects.find(p => p.project_code === empProjCode);
+        const defaultOutTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
 
-          if (defaultOutTime) {
-            const updated = {
-              ...r,
-              punch_out: defaultOutTime,
-              isEdited: true,
-              verify_type: 'Manual Input',
-              attested_by: userData?.email || 'Timekeeper',
-            };
-            next[emp.device_user_id] = updated;
-            updatedRows.push(updated);
-            filledCount++;
-          }
+        if (defaultOutTime) {
+          const effectiveStatus = (r.overtime && r.overtime > 0) ? 'present with OT' : 'present';
+          const updated: TimesheetRow = {
+            ...r,
+            punch_out: defaultOutTime,
+            project_code: empProjCode,
+            status: effectiveStatus,
+            isEdited: true,
+            verify_type: 'Manual Input',
+            attested_by: userData?.email || 'Timekeeper',
+          };
+          updatedMap[userId] = updated;
+          updatedRows.push(updated);
         }
-      });
-      return next;
+      }
     });
 
-    if (filledCount > 0) {
-      toast.success(`Auto-filled default Punch Out for ${filledCount} empty field(s).`);
+    if (updatedRows.length > 0) {
+      setRows(prev => ({ ...prev, ...updatedMap }));
+      toast.success(`Auto-filled default Punch Out for ${updatedRows.length} empty field(s).`);
       autoPostRowsBatch(updatedRows);
     } else {
       toast.info('No empty Punch Out fields with existing In times to fill.');
     }
-  }, [filteredEmployees, projects, employeeAssignedProjects, setRows, rows, pushHistory, userData?.email, autoPostRowsBatch]);
+  }, [filteredEmployees, projects, employeeAssignedProjects, rows, canUserEdit, pushHistory, userData?.email, autoPostRowsBatch]);
+
+  const handleApproveAllValidRecords = useCallback(() => {
+    if (!canUserEdit) {
+      toast.error('You do not have clearance to modify this.');
+      return;
+    }
+
+    pushHistory(rows);
+
+    const validRowsToPost: TimesheetRow[] = [];
+    const updatedMap: Record<string, TimesheetRow> = {};
+
+    filteredEmployees.forEach(emp => {
+      const userId = emp.device_user_id;
+      const r = rows[userId];
+      if (!r) return;
+
+      if (r.isApproved && (r.isVerified || !!r.verified_by)) return;
+
+      const currentStatus = r.status || 'no status';
+      const isStatusValid = currentStatus !== 'no status';
+      if (!isStatusValid) return;
+
+      const effectiveProjectCode = r.project_code || employeeAssignedProjects[emp.emp_id] || '';
+
+      if (currentStatus !== 'absent') {
+        const isProjectValid = !!effectiveProjectCode && effectiveProjectCode !== 'UNASSIGNED';
+        const isPunchesValid = !!(r.punch_in && r.punch_out);
+        if (!isProjectValid || !isPunchesValid) return;
+      } else {
+        const isRemarksValid = r.remarks && r.remarks.trim() !== '' && r.remarks !== 'Custom: ' && r.remarks.trim() !== 'Custom:';
+        if (!isRemarksValid) return;
+      }
+
+      const updated: TimesheetRow = {
+        ...r,
+        project_code: effectiveProjectCode,
+        isEdited: true,
+        isVerified: true,
+        isApproved: true,
+        verified_by: r.verified_by || userData?.email || 'Timekeeper',
+        approved_by: r.approved_by || userData?.email || 'Timekeeper'
+      };
+
+      updatedMap[userId] = updated;
+      validRowsToPost.push(updated);
+    });
+
+    if (validRowsToPost.length > 0) {
+      setRows(prev => ({ ...prev, ...updatedMap }));
+      toast.success(`Verified & Approved ${validRowsToPost.length} valid record(s).`);
+      autoPostRowsBatch(validRowsToPost);
+    } else {
+      toast.info('No valid unapproved records to process.');
+    }
+  }, [filteredEmployees, rows, canUserEdit, pushHistory, userData?.email, autoPostRowsBatch, employeeAssignedProjects]);
+
+  const baseRelevantEmployees = useMemo(() => {
+    return employees.filter(emp => {
+      const row = rows[emp.device_user_id];
+      if (!row) return false;
+
+      if (selectedProjectFilter !== 'ALL') {
+        if (row.project_code !== selectedProjectFilter) return false;
+      }
+
+      return true;
+    });
+  }, [employees, rows, selectedProjectFilter]);
 
   const progressStats = useMemo(() => {
-    const total = filteredEmployees.length;
+    const total = baseRelevantEmployees.length;
     if (total === 0) {
       return { total: 0, completed: 0, remaining: 0, percentage: 0, isComplete: false };
     }
 
     let completed = 0;
-    filteredEmployees.forEach(emp => {
+    baseRelevantEmployees.forEach(emp => {
       const r = rows[emp.device_user_id];
       if (!r) return;
 
@@ -2512,37 +2682,99 @@ export default function TimesheetFinalizer({
     const isComplete = completed >= total && total > 0;
 
     return { total, completed, remaining, percentage, isComplete };
-  }, [filteredEmployees, rows, resolvedMode]);
+  }, [baseRelevantEmployees, rows, resolvedMode]);
 
-  const handleUndo = useCallback(() => {
+  const handleUndo = useCallback(async () => {
     if (history.length === 0) return;
 
     const previousRows = history[history.length - 1];
+    const currentRows = rows;
+
     setHistory(prev => prev.slice(0, prev.length - 1));
-    setRedoStack(prev => [...prev, { ...rows }]);
+    setRedoStack(prev => [...prev, { ...currentRows }]);
     setRows(previousRows);
 
-    const changed = Object.values(previousRows).filter(r => r.isEdited || r.inDatabase);
-    if (changed.length > 0) {
-      autoPostRowsBatch(changed);
-    }
-    toast.info('Undo applied.');
-  }, [history, rows, autoPostRowsBatch]);
+    const userIds = Object.keys(currentRows);
+    const rowsToDelete: string[] = [];
+    const rowsToUpsert: TimesheetRow[] = [];
 
-  const handleRedo = useCallback(() => {
+    userIds.forEach(userId => {
+      const prevR = previousRows[userId];
+      const currR = currentRows[userId];
+      if (!prevR || !currR) return;
+
+      const wasInDb = currR.inDatabase || currR.isApproved || currR.isVerified || currR.isEdited;
+      const isNowInDb = prevR.inDatabase || prevR.isApproved || prevR.isVerified || prevR.isEdited;
+
+      if (wasInDb && !isNowInDb) {
+        rowsToDelete.push(currR.employee_code || userId);
+      } else if (wasInDb && isNowInDb) {
+        rowsToUpsert.push(prevR);
+      }
+    });
+
+    try {
+      if (rowsToDelete.length > 0) {
+        await supabase
+          .from('timesheet')
+          .delete()
+          .eq('date', date)
+          .in('employee_code', rowsToDelete);
+      }
+      if (rowsToUpsert.length > 0) {
+        await autoPostRowsBatch(rowsToUpsert);
+      }
+      toast.info('Undo applied & changes revoked.');
+    } catch (err) {
+      console.error('Undo sync failed:', err);
+    }
+  }, [history, rows, date, autoPostRowsBatch]);
+
+  const handleRedo = useCallback(async () => {
     if (redoStack.length === 0) return;
 
     const nextRows = redoStack[redoStack.length - 1];
+    const currentRows = rows;
+
     setRedoStack(prev => prev.slice(0, prev.length - 1));
-    setHistory(prev => [...prev, { ...rows }]);
+    setHistory(prev => [...prev, { ...currentRows }]);
     setRows(nextRows);
 
-    const changed = Object.values(nextRows).filter(r => r.isEdited || r.inDatabase);
-    if (changed.length > 0) {
-      autoPostRowsBatch(changed);
+    const userIds = Object.keys(nextRows);
+    const rowsToDelete: string[] = [];
+    const rowsToUpsert: TimesheetRow[] = [];
+
+    userIds.forEach(userId => {
+      const currR = currentRows[userId];
+      const nextR = nextRows[userId];
+      if (!currR || !nextR) return;
+
+      const wasInDb = currR.inDatabase || currR.isApproved || currR.isVerified || currR.isEdited;
+      const isNowInDb = nextR.inDatabase || nextR.isApproved || nextR.isVerified || nextR.isEdited;
+
+      if (wasInDb && !isNowInDb) {
+        rowsToDelete.push(currR.employee_code || userId);
+      } else if (isNowInDb) {
+        rowsToUpsert.push(nextR);
+      }
+    });
+
+    try {
+      if (rowsToDelete.length > 0) {
+        await supabase
+          .from('timesheet')
+          .delete()
+          .eq('date', date)
+          .in('employee_code', rowsToDelete);
+      }
+      if (rowsToUpsert.length > 0) {
+        await autoPostRowsBatch(rowsToUpsert);
+      }
+      toast.info('Redo applied.');
+    } catch (err) {
+      console.error('Redo sync failed:', err);
     }
-    toast.info('Redo applied.');
-  }, [redoStack, rows, autoPostRowsBatch]);
+  }, [redoStack, rows, date, autoPostRowsBatch]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -2903,26 +3135,28 @@ export default function TimesheetFinalizer({
               )}
 
               {/* Undo / Redo Action Buttons */}
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  disabled={history.length === 0 || saving || loading}
-                  onClick={handleUndo}
-                  className="h-8 w-8 p-0 rounded-lg flex items-center justify-center border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs"
-                  title="Undo last change (Ctrl+Z)"
-                >
-                  <Undo2 className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  disabled={redoStack.length === 0 || saving || loading}
-                  onClick={handleRedo}
-                  className="h-8 w-8 p-0 rounded-lg flex items-center justify-center border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs"
-                  title="Redo action (Ctrl+Y)"
-                >
-                  <Redo2 className="w-4 h-4" />
-                </button>
-              </div>
+              {resolvedMode !== 'view' && (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    disabled={history.length === 0 || saving || loading}
+                    onClick={handleUndo}
+                    className="h-8 w-8 p-0 rounded-lg flex items-center justify-center border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs"
+                    title="Undo last change (Ctrl+Z)"
+                  >
+                    <Undo2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={redoStack.length === 0 || saving || loading}
+                    onClick={handleRedo}
+                    className="h-8 w-8 p-0 rounded-lg flex items-center justify-center border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs"
+                    title="Redo action (Ctrl+Y)"
+                  >
+                    <Redo2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
 
               <DatePicker
                 value={date}
@@ -3528,7 +3762,7 @@ export default function TimesheetFinalizer({
                     </th>
                   )}
                   <th style={{ width: '200px' }}>Remarks</th>
-                  <th className="sticky-action text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '250px', right: resolvedMode === 'approve' ? '100px' : '0' }}>
+                  <th className="sticky-action text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '250px', right: (resolvedMode === 'approve' && !isFocalFiltered) ? '100px' : '0' }}>
                     <DropdownMenu>
                       <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
                         <span className="truncate">
@@ -3585,18 +3819,44 @@ export default function TimesheetFinalizer({
                         >
                           No Source
                         </DropdownMenuCheckboxItem>
+                        <div className="h-px bg-slate-200 my-1" />
+                        <DropdownMenuItem
+                          onClick={handleApproveAllValidRecords}
+                          disabled={saving || loading || !canUserEdit}
+                          className="rounded-md focus:bg-teal-50 text-teal-700 font-semibold cursor-pointer text-xs flex items-center gap-1.5 p-2"
+                        >
+                          <SquareCheck className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                          <span>Approve Valid Records</span>
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </th>
-                  {resolvedMode === 'approve' && (
-                    <th className="sticky-approver-action text-left px-2 py-1 font-medium text-xs tracking-wide uppercase" style={{ width: '100px', minWidth: '100px' }}>Action</th>
+                  {(resolvedMode === 'approve' && !isFocalFiltered) && (
+                    <th className="text-left px-1 py-1 font-medium text-xs tracking-wide uppercase sticky-approver-action" style={{ width: '110px', minWidth: '110px' }}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
+                          <span className="truncate">Action</span>
+                          <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[190px] p-1 bg-white border border-slate-200 z-50">
+                          <DropdownMenuItem
+                            onClick={handleApproveAllValidRecords}
+                            disabled={saving || loading || !canUserEdit}
+                            className="rounded-md focus:bg-indigo-50 text-indigo-700 font-semibold cursor-pointer text-xs flex items-center gap-1.5 p-2"
+                          >
+                            <SquareCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                            <span>Approve Valid Records</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </th>
                   )}
                 </tr>
               </thead>
               <tbody>
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={resolvedMode === 'approve' ? 10 : (isFocalFiltered ? 9 : 10)} className="py-20 text-center text-gray-400 font-medium bg-white">
+                    <td colSpan={(resolvedMode === 'approve' && !isFocalFiltered) ? 10 : (isFocalFiltered ? 9 : 10)} className="py-20 text-center text-gray-400 font-medium bg-white">
                       No matching records found.
                     </td>
                   </tr>
@@ -3624,12 +3884,14 @@ export default function TimesheetFinalizer({
                           onApproveRow={handleApproveRow}
                           onReviewRow={handleReviewRow}
                           onRevokeApproveRow={handleRevokeApproveRow}
+                          isVerifying={verifyingRowIds.has(emp.device_user_id)}
+                          onVerifyBiometricRow={handleVerifyBiometricRow}
                         />
                       );
                     })}
                     {filteredEmployees.length > renderLimit && (
                       <tr>
-                        <td colSpan={resolvedMode === 'approve' ? 10 : (isFocalFiltered ? 9 : 10)} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
+                        <td colSpan={(resolvedMode === 'approve' && !isFocalFiltered) ? 10 : (isFocalFiltered ? 9 : 10)} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
                           <div className="flex items-center justify-center gap-4 w-full">
                             <span className="text-xs text-gray-500 font-medium text-center">
                               Showing {renderLimit} of {filteredEmployees.length} records
