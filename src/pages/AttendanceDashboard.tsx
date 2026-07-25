@@ -45,10 +45,36 @@ export default function AttendanceDashboard() {
   const [terminalHasPendingTasks, setTerminalHasPendingTasks] = useState(false);
 
   const { punches, employees, employeeSummaries, loading, refetch, useFirstLast, setUseFirstLast, activeCount, inactiveCount } = useAttendance(date);
-  const [navVisible, setNavVisible] = useState(true);
   const { userData } = useAuth();
-
+  const [navVisible, setNavVisible] = useState(true);
   const [dbCount, setDbCount] = useState<number | null>(null);
+  const [isFocalPoint, setIsFocalPoint] = useState(false);
+  const [isTimesheetApprover, setIsTimesheetApprover] = useState(false);
+
+  useEffect(() => {
+    const checkFocalPointAndApprover = async () => {
+      if (userData?.role !== 'admin' && userData?.email) {
+        // Query focal point
+        const { data: focalData } = await supabase
+          .from('projects')
+          .select('project_code')
+          .eq('focal_point_email', userData.email);
+        if (focalData && focalData.length > 0) {
+          setIsFocalPoint(true);
+        }
+
+        // Query approver
+        const { data: approverData } = await supabase
+          .from('projects')
+          .select('project_code')
+          .eq('approver_email', userData.email);
+        if (approverData && approverData.length > 0) {
+          setIsTimesheetApprover(true);
+        }
+      }
+    };
+    checkFocalPointAndApprover();
+  }, [userData]);
 
   useEffect(() => {
     setTabLoading(false);
@@ -124,6 +150,17 @@ export default function AttendanceDashboard() {
       // Fallback
     }
 
+    let finalizeLabel = 'Finalize Timesheets';
+    if (isTimesheetApprover) {
+      finalizeLabel = 'Approvals';
+    } else if (permissions.timesheet_finalizer === true) {
+      finalizeLabel = 'Finalize Timesheets';
+    } else if (permissions.timesheet_viewer === true) {
+      finalizeLabel = 'View Timesheets';
+    } else if (isFocalPoint) {
+      finalizeLabel = 'Verify Timesheets';
+    }
+
     const options = [
       { value: 'summary', label: 'Dashboard', icon: <LayoutGrid color="darkblue" className="w-4 h-4" /> },
       { value: 'transfers', label: 'Transfers', icon: <ArrowRightLeft color="darkblue" className="w-4 h-4" /> },
@@ -134,7 +171,7 @@ export default function AttendanceDashboard() {
       { value: 'reports', label: 'Reports', icon: <TrendingUp color="darkblue" className="w-4 h-4" /> },
       { value: 'devices', label: 'Devices', icon: <Laptop2 color="darkblue" className="w-4 h-4" /> },
       { value: 'projects', label: 'Projects', icon: <FolderKanban color="darkblue" className="w-4 h-4" /> },
-      { value: 'finalize', label: 'Finalize Timesheets', icon: <FileCheck color="darkblue" className="w-4 h-4" /> },
+      { value: 'finalize', label: finalizeLabel, icon: <FileCheck color="darkblue" className="w-4 h-4" /> },
       { value: 'leave-log', label: 'Leave Log', icon: <Calendar color="darkblue" className="w-4 h-4" /> },
       { value: 'terminal', label: 'Terminal', icon: <TerminalIcon color="darkblue" className="w-4 h-4" /> },
       { value: 'data-management', label: 'Data Management', icon: <Database color="darkblue" className="w-4 h-4" /> },
@@ -149,17 +186,17 @@ export default function AttendanceDashboard() {
         if (opt.value === 'reports') return permissions.attendance_reports === true;
         if (opt.value === 'projects') return permissions.attendance_projects === true;
         if (opt.value === 'terminal') return permissions.attendance_manage === true;
-        if (opt.value === 'finalize') return permissions.attendance_finalize === true;
+        if (opt.value === 'finalize') return permissions.timesheet_finalizer === true || isTimesheetApprover || permissions.timesheet_viewer === true || isFocalPoint;
         if (opt.value === 'leave-log') return permissions.attendance_leave_log === true;
         return true;
       });
     }
 
-    if (!canEditAttendance) {
+    if (!canEditAttendance && !isFocalPoint && !isTimesheetApprover) {
       return options.filter(opt => opt.value !== 'manage' && opt.value !== 'finalize' && opt.value !== 'leave-log');
     }
     return options;
-  }, [canEditAttendance, userData?.clearance]);
+  }, [canEditAttendance, userData?.clearance, isFocalPoint, isTimesheetApprover]);
 
   const isAllowed = (tabValue: Tab) => {
     return viewOptions.some(opt => opt.value === tabValue);
@@ -313,7 +350,7 @@ export default function AttendanceDashboard() {
                   )}
 
                   {isAllowed('finalize') && (
-                    <Directive bg={tab === 'finalize' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('finalize')} title="Finalize" icon={<Check size={16} />} />
+                    <Directive bg={tab === 'finalize' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('finalize')} title={isTimesheetApprover ? "Approvals" : (isFocalPoint ? "Verify" : "Finalize")} icon={<Check size={16} />} />
                   )}
                 </div>
 
@@ -508,9 +545,33 @@ export default function AttendanceDashboard() {
               <DevicesMaster refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
             ) : tab === 'projects' ? (
               <ProjectsMaster refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} employeeSummaries={employeeSummaries} />
-            ) : tab === 'finalize' ? (
-              <TimesheetFinalizer refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
-            ) : tab === 'leave-log' ? (
+            ) : tab === 'finalize' ? (() => {
+              let permissions: Record<string, boolean> = {};
+              try {
+                permissions = JSON.parse(userData?.clearance || "{}");
+              } catch (e) {}
+              
+              let finalizerMode: 'verify' | 'approve' | 'finalize' | 'view' = 'verify';
+              if (permissions.timesheet_finalizer === true) {
+                finalizerMode = 'finalize';
+              } else if (isTimesheetApprover) {
+                finalizerMode = 'approve';
+              } else if (permissions.timesheet_viewer === true) {
+                finalizerMode = 'view';
+              } else if (isFocalPoint) {
+                finalizerMode = 'verify';
+              } else if (userData?.role === 'admin' || userData?.role === 'site_admin') {
+                finalizerMode = 'finalize';
+              }
+
+              return (
+                <TimesheetFinalizer 
+                  mode={finalizerMode}
+                  refreshTrigger={refreshTrigger} 
+                  onLoadingChange={setTabLoading} 
+                />
+              );
+            })() : tab === 'leave-log' ? (
               <LeaveLog refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
             ) : tab === 'terminal' ? (
               <Terminal />

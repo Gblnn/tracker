@@ -35,6 +35,9 @@ interface Project {
   focal_point_id: string | null;
   focal_point_name: string | null;
   focal_point_email: string | null;
+  approver_id: string | null;
+  approver_name: string | null;
+  approver_email: string | null;
 }
 
 interface Device {
@@ -57,6 +60,9 @@ interface ProjectForm {
   focal_point_id: string;
   focal_point_name: string;
   focal_point_email: string;
+  approver_id: string;
+  approver_name: string;
+  approver_email: string;
 }
 
 const defaultForm: ProjectForm = {
@@ -71,7 +77,10 @@ const defaultForm: ProjectForm = {
   geofence_radius: '',
   focal_point_id: '',
   focal_point_name: '',
-  focal_point_email: ''
+  focal_point_email: '',
+  approver_id: '',
+  approver_name: '',
+  approver_email: ''
 };
 
 const toISOString = (timeStr: string | null): string | null => {
@@ -181,6 +190,36 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
       String(emp.id) === focalForm.focal_point_id
     );
   }, [employeesList, focalForm.focal_point_id]);
+
+  // Approver Dialog States
+  const [approverPointProject, setApproverPointProject] = useState<Project | null>(null);
+  const [approverForm, setApproverForm] = useState({
+    approver_id: '',
+    approver_name: '',
+    approver_email: ''
+  });
+
+  const [openApproverSelect, setOpenApproverSelect] = useState(false);
+  const [approverSearch, setApproverSearch] = useState("");
+
+  const selectableApproverEmployees = useMemo(() => {
+    if (!approverSearch.trim()) return employeesList;
+    const q = approverSearch.toLowerCase().trim();
+    return employeesList.filter(emp =>
+      (emp.name && emp.name.toLowerCase().includes(q)) ||
+      (emp.emp_id && emp.emp_id.toLowerCase().includes(q)) ||
+      (emp.device_user_id && emp.device_user_id.toLowerCase().includes(q))
+    );
+  }, [employeesList, approverSearch]);
+
+  const selectedApproverEmp = useMemo(() => {
+    if (!approverForm.approver_id) return null;
+    return employeesList.find(emp =>
+      emp.emp_id === approverForm.approver_id ||
+      emp.device_user_id === approverForm.approver_id ||
+      String(emp.id) === approverForm.approver_id
+    );
+  }, [employeesList, approverForm.approver_id]);
 
   // Geofence Dialog States
   const [geofenceProject, setGeofenceProject] = useState<Project | null>(null);
@@ -415,7 +454,10 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
           project_out_time: outTimeISO,
           focal_point_id: form.focal_point_id.trim() || null,
           focal_point_name: form.focal_point_name.trim() || null,
-          focal_point_email: form.focal_point_email.trim() || null
+          focal_point_email: form.focal_point_email.trim() || null,
+          approver_id: form.approver_id.trim() || null,
+          approver_name: form.approver_name.trim() || null,
+          approver_email: form.approver_email.trim() || null
         });
 
       if (err) throw err;
@@ -445,7 +487,10 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
       geofence_radius: geofence ? String(geofence.radius) : '',
       focal_point_id: project.focal_point_id || '',
       focal_point_name: project.focal_point_name || '',
-      focal_point_email: project.focal_point_email || ''
+      focal_point_email: project.focal_point_email || '',
+      approver_id: project.approver_id || '',
+      approver_name: project.approver_name || '',
+      approver_email: project.approver_email || ''
     });
     setFormError(null);
   }
@@ -504,7 +549,10 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
           project_out_time: outTimeISO,
           focal_point_id: form.focal_point_id.trim() || null,
           focal_point_name: form.focal_point_name.trim() || null,
-          focal_point_email: form.focal_point_email.trim() || null
+          focal_point_email: form.focal_point_email.trim() || null,
+          approver_id: form.approver_id.trim() || null,
+          approver_name: form.approver_name.trim() || null,
+          approver_email: form.approver_email.trim() || null
         })
         .eq('project_code', editingProject.project_code)
         .select();
@@ -606,6 +654,52 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
     }
   }
 
+  function openApproverModal(project: Project) {
+    setApproverPointProject(project);
+    setApproverForm({
+      approver_id: project.approver_id || '',
+      approver_name: project.approver_name || '',
+      approver_email: project.approver_email || ''
+    });
+    setFormError(null);
+  }
+
+  function closeApproverModal() {
+    setApproverPointProject(null);
+    setFormError(null);
+  }
+
+  async function handleSaveApprover() {
+    if (!approverPointProject) return;
+    setSaving(true);
+    setFormError(null);
+
+    try {
+      const { data, error: err } = await supabase
+        .from('projects')
+        .update({
+          approver_id: approverForm.approver_id.trim() || null,
+          approver_name: approverForm.approver_name.trim() || null,
+          approver_email: approverForm.approver_email.trim() || null
+        })
+        .eq('project_code', approverPointProject.project_code)
+        .select();
+
+      if (err) throw err;
+      if (!data || data.length === 0) {
+        throw new Error('Update failed. This may be due to Row Level Security (RLS) policies blocking updates on the projects table.');
+      }
+
+      toast.success('Timesheet approver updated successfully!');
+      closeApproverModal();
+      loadData(true);
+    } catch (err: any) {
+      setFormError(err.message || 'Failed to update timesheet approver.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function openGeofenceModal(project: Project) {
     setGeofenceProject(project);
     const { geofence, name: displayName } = parseLocationGeofence(project.project_location);
@@ -621,7 +715,10 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
       geofence_radius: geofence?.radius ? String(geofence.radius) : '100',
       focal_point_id: project.focal_point_id || '',
       focal_point_name: project.focal_point_name || '',
-      focal_point_email: project.focal_point_email || ''
+      focal_point_email: project.focal_point_email || '',
+      approver_id: project.approver_id || '',
+      approver_name: project.approver_name || '',
+      approver_email: project.approver_email || ''
     });
     setFormError(null);
     setIsEditingGeofence(true);
@@ -1137,6 +1234,32 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
                                   <div className="flex items-center gap-1.5 mt-0.5">
                                     {project.focal_point_id && <span className="text-[10px] text-gray-400 font-mono bg-gray-100/60 px-1 py-0.2 rounded">{project.focal_point_id}</span>}
                                     {project.focal_point_email && <span className="text-[10px] text-gray-500 truncate" title={project.focal_point_email}>{project.focal_point_email}</span>}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-400 italic font-light">Not Assigned</span>
+                              )}
+                            </div>
+
+                            {/* Timesheet Approver Information */}
+                            <div className="meta-item flex flex-col gap-0.5 border-t border-gray-100/80 pt-2 mt-1">
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                <span className="text-[9px] uppercase tracking-wider font-semibold text-gray-400">Timesheet Approver</span>
+                                {canEditAttendance && (
+                                  <button
+                                    onClick={() => openApproverModal(project)}
+                                    className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer bg-transparent border-0 outline-none p-0"
+                                  >
+                                    {project.approver_name ? 'Edit' : 'Assign'}
+                                  </button>
+                                )}
+                              </div>
+                              {project.approver_name ? (
+                                <div className="flex flex-col text-xs text-gray-700">
+                                  <span className="font-semibold text-gray-900">{project.approver_name}</span>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    {project.approver_id && <span className="text-[10px] text-gray-400 font-mono bg-gray-100/60 px-1 py-0.2 rounded">{project.approver_id}</span>}
+                                    {project.approver_email && <span className="text-[10px] text-gray-500 truncate" title={project.approver_email}>{project.approver_email}</span>}
                                   </div>
                                 </div>
                               ) : (
@@ -1794,6 +1917,210 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
               >
                 {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 {saving ? 'Saving…' : 'Save Focal Point'}
+              </button>
+            </div>
+          </div>
+        )}
+      </ResponsiveModal>
+
+      {/* Assign Timesheet Approver Dialog */}
+      <ResponsiveModal
+        open={!!approverPointProject}
+        onOpenChange={(open) => { if (!open) closeApproverModal(); }}
+        title=""
+        description=""
+        hideHeader
+        contentStyle={{ padding: 0 }}
+      >
+        {approverPointProject && (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }} className="overflow-hidden">
+            <div style={{ justifyContent: "space-between" }} className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
+                  <FolderKanban className="w-4 h-4 text-indigo-500" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-900">Assign Timesheet Approver</h2>
+                  <p className="text-xs text-gray-400 font-mono">{approverPointProject.project_name} ({approverPointProject.project_code})</p>
+                </div>
+              </div>
+              <button onClick={closeApproverModal} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="px-4 py-4 space-y-4">
+              {formError && (
+                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                  {formError}
+                </div>
+              )}
+
+              <div className="relative employee-dropdown-container">
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Select Employee
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setOpenApproverSelect(!openApproverSelect)}
+                  className="h-10 text-sm w-full bg-white border border-gray-200 rounded-lg px-3 py-2 flex items-center justify-between shadow-xs hover:bg-gray-50 transition-colors text-left"
+                >
+                  <span className="truncate text-gray-700 capitalize">
+                    {selectedApproverEmp ? selectedApproverEmp.name.toLowerCase() : "Select Employee (Autofills below)"}
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                </button>
+
+                {openApproverSelect && (
+                  <div className="absolute left-0 right-0 mt-1 p-0 bg-white border border-gray-200 shadow-md rounded-md z-[100]">
+                    {/* Search Input Area */}
+                    <div className="p-2 border-b border-gray-100 bg-gray-50/55 bg-gray-50/50">
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-white border border-gray-200 rounded-md">
+                        <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                        <input
+                          type="text"
+                          placeholder="Search name or ID..."
+                          value={approverSearch}
+                          onChange={(e) => setApproverSearch(e.target.value)}
+                          className="text-xs bg-transparent border-0 outline-none w-full p-0 focus:ring-0 placeholder:text-gray-400 normal-case"
+                          autoFocus
+                        />
+                        {approverSearch && (
+                          <button
+                            type="button"
+                            onClick={() => setApproverSearch("")}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* List Area */}
+                    <div className="max-h-[220px] overflow-y-auto py-1">
+                      {selectableApproverEmployees.length === 0 ? (
+                        <div className="px-3 py-4 text-center text-xs text-gray-400 font-medium">
+                          No results found
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            style={{ justifyContent: "space-between" }}
+                            type="button"
+                            onClick={() => {
+                              setApproverForm({
+                                approver_id: '',
+                                approver_name: '',
+                                approver_email: ''
+                              });
+                              setOpenApproverSelect(false);
+                              setApproverSearch("");
+                            }}
+                            className="w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-gray-50 bg-transparent text-red-600 font-semibold"
+                          >
+                            -- Clear Selection --
+                          </button>
+                          {selectableApproverEmployees.map((emp) => {
+                            const isSelected = selectedApproverEmp?.device_user_id === emp.device_user_id || selectedApproverEmp?.emp_id === emp.emp_id;
+                            const empVal = emp.emp_id || emp.device_user_id || String(emp.id);
+                            return (
+                              <button
+                                style={{ justifyContent: "space-between" }}
+                                key={emp.id}
+                                type="button"
+                                onClick={() => {
+                                  setApproverForm({
+                                    approver_id: empVal,
+                                    approver_name: emp.name || '',
+                                    approver_email: emp.email || ''
+                                  });
+                                  setOpenApproverSelect(false);
+                                  setApproverSearch("");
+                                }}
+                                className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between capitalize font-medium ${isSelected
+                                  ? "bg-indigo-50 text-indigo-900"
+                                  : "hover:bg-gray-50 bg-transparent"
+                                  }`}
+                              >
+                                <div className="truncate">
+                                  <div>{emp.name.toLowerCase()}</div>
+                                  {emp.emp_id && (
+                                    <div className="text-[10px] text-gray-400 font-normal normal-case">
+                                      ID: {emp.emp_id}
+                                    </div>
+                                  )}
+                                </div>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600" />}
+                              </button>
+                            );
+                          })}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-gray-100 pt-3 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-650 mb-1.5">
+                      Approver Name
+                    </label>
+                    <input
+                      type="text"
+                      disabled
+                      value={approverForm.approver_name}
+                      placeholder="No Employee Selected"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none bg-gray-50 text-gray-500 cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-650 mb-1.5">
+                      Approver Email
+                    </label>
+                    <input
+                      type="email"
+                      disabled
+                      value={approverForm.approver_email}
+                      placeholder="No Employee Selected"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none bg-gray-50 text-gray-500 cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-650 mb-1.5">
+                    Approver ID / Employee ID
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    value={approverForm.approver_id}
+                    placeholder="No Employee Selected"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none bg-gray-50 text-gray-500 cursor-not-allowed font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-100 bg-gray-50">
+              <button
+                style={{ flex: 1 }}
+                onClick={closeApproverModal}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                style={{ flex: 1 }}
+                onClick={handleSaveApprover}
+                disabled={saving}
+                className="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {saving ? 'Saving…' : 'Save Approver'}
               </button>
             </div>
           </div>

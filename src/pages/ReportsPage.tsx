@@ -684,13 +684,27 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
 
       let allowedEmpIds = new Set<number>();
       let allowedDeviceUserIds = new Set<string>();
+      const punchedOnProjectDevicesInPeriod = new Set<string>();
 
       if (isFocalFiltered) {
         if (projectDeviceSerials.length > 0) {
-          const { data: cmdData } = await supabase
-            .from('device_commands')
-            .select('employee_id')
-            .in('device_serial', projectDeviceSerials);
+          const [ { data: cmdData }, { data: punchUserIds }, { data: periodPunchUserIds } ] = await Promise.all([
+            supabase
+              .from('device_commands')
+              .select('employee_id')
+              .in('device_serial', projectDeviceSerials),
+            supabase
+              .from('punches')
+              .select('user_id')
+              .in('device_serial', projectDeviceSerials)
+              .limit(5000),
+            supabase
+              .from('punches')
+              .select('user_id')
+              .in('device_serial', projectDeviceSerials)
+              .gte('punch_time', start)
+              .lte('punch_time', end)
+          ]);
 
           if (cmdData) {
             cmdData.forEach(c => {
@@ -698,15 +712,15 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
             });
           }
 
-          const { data: punchUserIds } = await supabase
-            .from('punches')
-            .select('user_id')
-            .in('device_serial', projectDeviceSerials)
-            .limit(5000);
-
           if (punchUserIds) {
             punchUserIds.forEach(p => {
               if (p.user_id) allowedDeviceUserIds.add(p.user_id);
+            });
+          }
+
+          if (periodPunchUserIds) {
+            periodPunchUserIds.forEach(p => {
+              if (p.user_id) punchedOnProjectDevicesInPeriod.add(p.user_id);
             });
           }
         }
@@ -727,7 +741,17 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
 
             const hasLocationMatch = emp.location && focalProjectLocations.includes(emp.location.toLowerCase().trim());
             const hasVerifiedMatch = verifiedLoc && focalProjectLocations.includes(verifiedLoc.toLowerCase().trim());
-            return hasCommand || hasPunch || hasLocationMatch || hasVerifiedMatch;
+            
+            const belongsToProject = hasLocationMatch || hasVerifiedMatch;
+            if (belongsToProject) return true;
+
+            const hasDifferentLocation = (emp.location && !focalProjectLocations.includes(emp.location.toLowerCase().trim())) ||
+                                         (verifiedLoc && !focalProjectLocations.includes(verifiedLoc.toLowerCase().trim()));
+            if (hasDifferentLocation) {
+              return punchedOnProjectDevicesInPeriod.has(emp.device_user_id);
+            }
+
+            return hasCommand || hasPunch;
           })
         : (empData || []);
 

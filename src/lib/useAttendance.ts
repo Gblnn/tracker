@@ -77,7 +77,7 @@ export function useAttendance(date: string) {
         supabase.from('employees').select('*').order('name', { ascending: true }),
         supabase.from('devices').select('serial_no, location, start_time, end_time, project_code'),
         supabase.from('transfers').select('*'),
-        supabase.from('projects').select('project_code, project_name, project_location, focal_point_email'),
+        supabase.from('projects').select('project_code, project_name, project_location, focal_point_email, approver_email'),
         supabase.from('v_employee_latest_project').select('emp_id, current_project')
       ]);
 
@@ -129,6 +129,18 @@ export function useAttendance(date: string) {
             .map(p => parseLocationGeofence(p.project_location).name.toLowerCase().trim())
             .filter(Boolean);
           isFocalFiltered = true;
+        }
+      }
+
+      // 1b. Determine if approver filter is active (only if not already focal filtered)
+      let approverProjectCodes: string[] = [];
+      let isApproverFiltered = false;
+
+      if (!isFocalFiltered && userData?.role !== 'admin' && userData?.email) {
+        const approverProjects = (allProjData ?? []).filter((p: any) => p.approver_email === userData.email);
+        if (approverProjects && approverProjects.length > 0) {
+          approverProjectCodes = approverProjects.map((p: any) => p.project_code);
+          isApproverFiltered = true;
         }
       }
 
@@ -209,6 +221,15 @@ export function useAttendance(date: string) {
       }
 
       // 5. Filter employee list (Active only, and calculate counts)
+      const punchedOnProjectDevicesToday = new Set<string>();
+      if (isFocalFiltered && punchData && projectDeviceSerials.length > 0) {
+        punchData.forEach(p => {
+          if (p.user_id && p.device_serial && projectDeviceSerials.includes(p.device_serial)) {
+            punchedOnProjectDevicesToday.add(p.user_id);
+          }
+        });
+      }
+
       const allEmployees = empData ?? [];
       const activeEmployees = allEmployees.filter(emp => {
         const status = emp.status?.trim().toLowerCase();
@@ -243,7 +264,20 @@ export function useAttendance(date: string) {
           const verifiedLocCode = verifiedLoc ? findProjectCode(verifiedLoc, allProjData || []) : '';
           const hasTransferProjectMatch = verifiedLocCode && focalProjectCodes.includes(verifiedLocCode);
 
-          return hasCommand || hasPunch || hasLocationMatch || hasVerifiedMatch || hasProjectMatch || hasTransferProjectMatch;
+          const belongsToProject = hasLocationMatch || hasVerifiedMatch || hasProjectMatch || hasTransferProjectMatch;
+          if (belongsToProject) return true;
+
+          const empProjCode = emp.emp_id ? assignedProjMap[emp.emp_id] : '';
+          const hasDifferentProjectAssigned = (empProjCode && !focalProjectCodes.includes(empProjCode)) ||
+                                              (verifiedLocCode && !focalProjectCodes.includes(verifiedLocCode)) ||
+                                              (emp.location && !focalProjectLocations.includes(emp.location.toLowerCase().trim())) ||
+                                              (verifiedLoc && !focalProjectLocations.includes(verifiedLoc.toLowerCase().trim()));
+          
+          if (hasDifferentProjectAssigned) {
+            return punchedOnProjectDevicesToday.has(emp.device_user_id);
+          }
+
+          return hasCommand || hasPunch;
         });
 
         currentActiveCount = filteredEmployees.length;
@@ -275,10 +309,43 @@ export function useAttendance(date: string) {
             const verifiedLocCode = verifiedLoc ? findProjectCode(verifiedLoc, allProjData || []) : '';
             const hasTransferProjectMatch = verifiedLocCode && focalProjectCodes.includes(verifiedLocCode);
 
-            return hasCommand || hasPunch || hasLocationMatch || hasVerifiedMatch || hasProjectMatch || hasTransferProjectMatch;
+            const belongsToProject = hasLocationMatch || hasVerifiedMatch || hasProjectMatch || hasTransferProjectMatch;
+            if (belongsToProject) return true;
+
+            const empProjCode = emp.emp_id ? assignedProjMap[emp.emp_id] : '';
+            const hasDifferentProjectAssigned = (empProjCode && !focalProjectCodes.includes(empProjCode)) ||
+                                                (verifiedLocCode && !focalProjectCodes.includes(verifiedLocCode)) ||
+                                                (emp.location && !focalProjectLocations.includes(emp.location.toLowerCase().trim())) ||
+                                                (verifiedLoc && !focalProjectLocations.includes(verifiedLoc.toLowerCase().trim()));
+            
+            if (hasDifferentProjectAssigned) {
+              return punchedOnProjectDevicesToday.has(emp.device_user_id);
+            }
+
+            return hasCommand || hasPunch;
           });
 
         currentInactiveCount = filteredInactiveEmployees.length;
+      }
+
+      // 5b. Apply approver filter if active
+      if (isApproverFiltered && !isFocalFiltered) {
+        filteredEmployees = activeEmployees.filter(emp => {
+          const empProjCode = emp.emp_id ? assignedProjMap[emp.emp_id] : '';
+          return empProjCode && approverProjectCodes.includes(empProjCode);
+        });
+        currentActiveCount = filteredEmployees.length;
+
+        const filteredInactive = allEmployees
+          .filter(emp => {
+            const status = emp.status?.trim().toLowerCase();
+            return status !== 'active' && !!emp.status;
+          })
+          .filter(emp => {
+            const empProjCode = emp.emp_id ? assignedProjMap[emp.emp_id] : '';
+            return empProjCode && approverProjectCodes.includes(empProjCode);
+          });
+        currentInactiveCount = filteredInactive.length;
       }
 
       setActiveCount(currentActiveCount);
@@ -326,11 +393,16 @@ export function useAttendance(date: string) {
           }
           return false;
         });
+      } else if (isApproverFiltered) {
+        const visibleDeviceUserIds = new Set(filteredEmployees.map(e => e.device_user_id));
+        filteredPunches = punchesWithLocation.filter(p =>
+          p.user_id && visibleDeviceUserIds.has(p.user_id)
+        );
       }
 
       // 7. Update Ref for realtime use
       filterRef.current = {
-        isFocalFiltered,
+        isFocalFiltered: isFocalFiltered || isApproverFiltered,
         projectDeviceSerials,
         focalProjectLocations,
         visibleDeviceUserIds: new Set(filteredEmployees.map(e => e.device_user_id))

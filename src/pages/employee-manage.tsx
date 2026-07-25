@@ -935,7 +935,17 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     const resolvedProjCode = calculatedLoc ? findProjectCode(calculatedLoc, projData || []) : '';
                     const hasProjectMatch = resolvedProjCode && focalProjectCodes.includes(resolvedProjCode);
 
-                    return hasCommand || hasPunch || hasLocationMatch || hasCalculatedLocMatch || hasProjectMatch;
+                    const belongsToProject = hasLocationMatch || hasCalculatedLocMatch || hasProjectMatch;
+                    if (belongsToProject) return true;
+
+                    const empLocProjCode = emp.location ? findProjectCode(emp.location, projData || []) : '';
+                    const hasDifferentProjectAssigned = (empLocProjCode && !focalProjectCodes.includes(empLocProjCode)) ||
+                                                        (resolvedProjCode && !focalProjectCodes.includes(resolvedProjCode));
+                    if (hasDifferentProjectAssigned) {
+                        return false;
+                    }
+
+                    return hasCommand || hasPunch;
                 });
             }
 

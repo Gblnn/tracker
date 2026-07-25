@@ -40,6 +40,7 @@ interface Employee {
   department: string | null;
   emp_id: string | null;
   location?: string | null;
+  status?: string | null;
 }
 
 export default function TransferRequests({ embedMode = false, refreshTrigger, onLoadingChange }: Props = {}) {
@@ -110,7 +111,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
 
       const [transRes, empsRes, devRes, punchRes, projRes] = await Promise.all([
         supabase.from("transfers").select("*").order("created_at", { ascending: false }),
-        supabase.from("employees").select("*").or("status.ilike.active,status.is.null").order("name", { ascending: true }),
+        supabase.from("employees").select("*").order("name", { ascending: true }),
         supabase.from("devices").select("serial_no, location"),
         supabase.from("punches").select("user_id, device_serial, mobile_location").order("punch_time", { ascending: false }).limit(2000),
         supabase.from("projects").select("project_name, project_location")
@@ -305,15 +306,22 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
     }
   };
 
+  const activeEmployees = useMemo(() => {
+    return employees.filter(emp => {
+      const status = emp.status?.trim().toLowerCase();
+      return !status || status === 'active';
+    });
+  }, [employees]);
+
   const empCodePrefixes = useMemo(() => {
     const prefixes = new Set<string>();
-    employees.forEach((emp) => {
+    activeEmployees.forEach((emp) => {
       if (emp.emp_id && emp.emp_id.length >= 2) {
         prefixes.add(emp.emp_id.slice(0, 2).toUpperCase());
       }
     });
     return Array.from(prefixes).sort();
-  }, [employees]);
+  }, [activeEmployees]);
 
   const transferPrefixes = useMemo(() => {
     const prefixes = new Set<string>();
@@ -379,24 +387,24 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
   }, [transfers, employees, searchQuery, selectedTransferPrefixes, selectedFromProjects, selectedToProjects, filterCreatedDate]);
 
   const uniqueDepartments = useMemo(() => {
-    const depts = [...new Set(employees.map(emp => emp.department).filter(Boolean) as string[])].sort();
-    const hasBlank = employees.some(emp => !emp.department || emp.department.trim() === '');
+    const depts = [...new Set(activeEmployees.map(emp => emp.department).filter(Boolean) as string[])].sort();
+    const hasBlank = activeEmployees.some(emp => !emp.department || emp.department.trim() === '');
     if (hasBlank) {
       depts.push('(Blank)');
     }
     return depts;
-  }, [employees]);
+  }, [activeEmployees]);
 
   const uniqueLocations = useMemo(() => {
     const locSet = new Set<string>();
-    employees.forEach(emp => {
+    activeEmployees.forEach(emp => {
       const loc = employeeLocations[emp.id];
       if (loc && loc !== "—") {
         locSet.add(loc);
       }
     });
     const sorted = Array.from(locSet).sort();
-    const hasBlank = employees.some(emp => {
+    const hasBlank = activeEmployees.some(emp => {
       const loc = employeeLocations[emp.id];
       return !loc || loc === "—" || loc.trim() === '';
     });
@@ -404,10 +412,10 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
       sorted.push('(Blank)');
     }
     return sorted;
-  }, [employees, employeeLocations]);
+  }, [activeEmployees, employeeLocations]);
 
   const filteredEmployees = useMemo(() => {
-    return employees.filter((emp) => {
+    return activeEmployees.filter((emp) => {
       const q = searchEmployeeQuery.toLowerCase();
       const loc = employeeLocations[emp.id] || "";
 
@@ -434,7 +442,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
 
       return matchesSearch && matchesDept && matchesLoc && matchesPrefix;
     });
-  }, [employees, searchEmployeeQuery, employeeLocations, selectedDepartments, selectedLocations, selectedEmpPrefixes]);
+  }, [activeEmployees, searchEmployeeQuery, employeeLocations, selectedDepartments, selectedLocations, selectedEmpPrefixes]);
 
   const toggleSelectEmployee = (id: number) => {
     setSelectedEmployeeIds(prev => {
@@ -1506,7 +1514,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                 }}
               >
                 <option value="">-- Choose Employee --</option>
-                {employees.map(emp => (
+                {activeEmployees.map(emp => (
                   <option key={emp.id} value={String(emp.id)}>
                     {emp.name} ({emp.emp_id || emp.device_user_id})
                   </option>
