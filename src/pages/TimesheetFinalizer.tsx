@@ -430,9 +430,9 @@ const TimesheetRowComponent = memo(({
 
 
       {/* Status Select */}
-      <td>
+      <td style={{ textAlign: 'center' }}>
         {(resolvedMode === 'approve' || isLocked || !canUserEdit || row.status === 'present' || row.status === 'present with OT') ? (
-          <span className={`text-xs font-semibold px-2 py-1 rounded inline-block ${row.status === 'present' ? 'text-emerald-700 bg-emerald-50/80 border border-emerald-200' :
+          <span className={`text-xs font-semibold px-2 py-1 rounded inline-flex items-center justify-center ${row.status === 'present' ? 'text-emerald-700 bg-emerald-50/80 border border-emerald-200' :
             row.status === 'present with OT' ? 'text-indigo-700 bg-indigo-50/80 border border-indigo-200' :
               row.status === 'absent' ? 'text-rose-700 bg-rose-50/80 border border-rose-200' :
                 'text-slate-500 bg-slate-100 border border-slate-200'
@@ -463,9 +463,9 @@ const TimesheetRowComponent = memo(({
       </td>
 
       {/* Punch In Input */}
-      <td>
+      <td style={{ textAlign: 'center' }}>
         {(resolvedMode === 'approve' || isLocked || !canUserEdit || !!row.original_in_punch) ? (
-          <span className="text-xs text-slate-800 font-semibold px-2 py-1">
+          <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {row.punch_in || '—'}
           </span>
         ) : (
@@ -485,9 +485,9 @@ const TimesheetRowComponent = memo(({
       </td>
 
       {/* Punch Out Input */}
-      <td>
+      <td style={{ textAlign: 'center' }}>
         {(resolvedMode === 'approve' || isLocked || !canUserEdit || !!row.original_out_punch) ? (
-          <span className="text-xs text-slate-800 font-semibold px-2 py-1">
+          <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {row.punch_out || '—'}
           </span>
         ) : (
@@ -512,9 +512,9 @@ const TimesheetRowComponent = memo(({
       </td>
 
       {/* Overtime Input */}
-      <td>
+      <td style={{ textAlign: 'center' }}>
         {(resolvedMode === 'approve' || isLocked || !canUserEdit || emp.emp_type === 'staff') ? (
-          <span className="text-xs text-slate-800 font-semibold px-2 py-1">
+          <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {emp.emp_type === 'staff' ? '—' : (row.overtime ?? 0)}
           </span>
         ) : (
