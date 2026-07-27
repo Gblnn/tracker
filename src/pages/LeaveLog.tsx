@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Calendar, Check, ChevronDown, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
+import { Calendar, Check, ChevronDown, Loader2, MinusCircle, Plus, Search, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
@@ -37,6 +37,7 @@ interface LeaveRecord {
   status: string;
   created_at: string;
   employee_name?: string;
+  actual_return: string | null;
 }
 
 interface Employee {
@@ -249,17 +250,40 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
     }
   };
 
-  const handleSetReturnDate = async (id: number, empId: string, returnDate: string) => {
+  const handleSetReturnDate = async (id: number, returnDate: string) => {
     if (!canEditLeaves) {
       toast.error('You do not have permission to edit leave logs.');
       return;
     }
-    toast.loading('Setting return date...', { id: `return-leave-${id}` });
+    toast.loading('Setting expected return date...', { id: `return-leave-${id}` });
     try {
-      // 1. Update the leave log entry with the return date (till)
+      // 1. Update the leave log entry with the expected return date (till)
       const { error: updErr } = await supabase
         .from('leave_log')
         .update({ till: returnDate })
+        .eq('id', id);
+
+      if (updErr) throw updErr;
+
+      toast.success('Expected return date set successfully.', { id: `return-leave-${id}` });
+      loadData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to set expected return date.', { id: `return-leave-${id}` });
+    }
+  };
+
+  const handleSetActualReturnDate = async (id: number, empId: string, actualReturnDate: string) => {
+    if (!canEditLeaves) {
+      toast.error('You do not have permission to edit leave logs.');
+      return;
+    }
+    toast.loading('Setting actual return date...', { id: `actual-return-${id}` });
+    try {
+      // 1. Update the leave log entry with the actual return date
+      const { error: updErr } = await supabase
+        .from('leave_log')
+        .update({ actual_return: actualReturnDate })
         .eq('id', id);
 
       if (updErr) throw updErr;
@@ -274,17 +298,17 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
         if (empErr) throw empErr;
       }
 
-      toast.success('Return date set successfully. Employee status updated to Active.', { id: `return-leave-${id}` });
+      toast.success('Actual return date set successfully. Employee status updated to Active.', { id: `actual-return-${id}` });
       loadData();
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || 'Failed to set return date.', { id: `return-leave-${id}` });
+      toast.error(err.message || 'Failed to set actual return date.', { id: `actual-return-${id}` });
     }
   };
 
   const filteredLeaves = useMemo(() => {
     return leaves.filter(l => {
-      const matchesSearch = l.employee_name?.toLowerCase().includes(search.toLowerCase()) || 
+      const matchesSearch = l.employee_name?.toLowerCase().includes(search.toLowerCase()) ||
         l.emp_id.toLowerCase().includes(search.toLowerCase());
       const matchesStatus = !statusFilter || statusFilter === 'ALL_TYPES' || l.status === statusFilter;
       return matchesSearch && matchesStatus;
@@ -329,7 +353,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
       }}
       className="p-6"
     >
-      
+
       {/* Header and Controls */}
       {/* <div style={{ width: '100%', minWidth: 0 }} className="flex justify-between items-center mb-5 shrink-0">
         <div>
@@ -345,7 +369,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
         <div className="relative flex-1 min-w-[240px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
-          style={{ paddingLeft: '2.25rem', background:"rgba(100 100 100/ 0.05)", border:"none" }}
+            style={{ paddingLeft: '2.25rem', background: "rgba(100 100 100/ 0.05)", border: "none" }}
             type="text"
             placeholder="Search employee name or code..."
             value={search}
@@ -354,7 +378,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
           />
         </div>
 
-        
+
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[120px] h-9">
@@ -404,23 +428,52 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
                 <TableHead className="font-semibold text-slate-700">Employee</TableHead>
                 <TableHead className="font-semibold text-slate-700">Leave Type</TableHead>
                 <TableHead className="font-semibold text-slate-700">From</TableHead>
-                <TableHead className="font-semibold text-slate-700">Till (Return)</TableHead>
+                <TableHead className="font-semibold text-slate-700">Expected Return</TableHead>
+                <TableHead className="font-semibold text-slate-700">Actual Return</TableHead>
                 {canEditLeaves && <TableHead className="font-semibold text-slate-700 text-center w-[80px]">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredLeaves.map(record => (
                 <TableRow key={record.id} className="hover:bg-slate-50/50">
-                  <TableCell className="py-3">
-                    <div className="font-medium text-slate-900">{record.employee_name}</div>
-                    <div className="text-xs text-slate-500 font-mono">Code: {record.emp_id}</div>
+                  <TableCell className="py-3 text-left">
+                    <div style={{ justifyContent: "flex-start" }} className="flex items-center justify-start text-left gap-3">
+                      <div
+                        style={{
+                          width: '35px',
+                          height: '35px',
+                          borderRadius: '50%',
+                          backgroundColor: '#f1f5f9',
+                          color: '#475569',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          letterSpacing: '0.05em',
+                          border: 'none',
+                          flexShrink: 0
+                        }}
+                        title={record.employee_name}
+                      >
+                        {(() => {
+                          const parts = record.employee_name ? record.employee_name.trim().split(/\s+/) : [];
+                          if (parts.length === 0) return '??';
+                          if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+                          return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                        })()}
+                      </div>
+                      <div className="text-left">
+                        <div className="font-medium text-slate-900 text-left">{record.employee_name}</div>
+                        <div className="text-xs text-slate-500 font-mono text-left">{record.emp_id}</div>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell className="py-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      record.status === 'Sick Leave' ? 'bg-red-50 text-red-700 border border-red-100' :
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${record.status === 'Sick Leave' ? 'bg-red-50 text-red-700 border border-red-100' :
                       record.status === 'Annual Leave' ? 'bg-green-50 text-green-700 border border-green-100' :
-                      'bg-blue-50 text-blue-700 border border-blue-100'
-                    }`}>
+                        'bg-blue-50 text-blue-700 border border-blue-100'
+                      }`}>
                       {record.status}
                     </span>
                   </TableCell>
@@ -439,12 +492,35 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
                             onChange={async (e) => {
                               const dateVal = e.target.value;
                               if (dateVal) {
-                                await handleSetReturnDate(record.id, record.emp_id, dateVal);
+                                await handleSetReturnDate(record.id, dateVal);
                               }
                             }}
                             className="text-xs border border-slate-200 rounded px-1.5 py-0.5 bg-white text-slate-600 cursor-pointer hover:border-slate-300 focus:outline-none"
-                            title="Set return date"
+                            title="Set expected return date"
                           />
+                        )}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="py-3">
+                    {record.actual_return ? (
+                      <span className="text-slate-600 font-medium">{record.actual_return}</span>
+                    ) : (
+                      <div>
+                        {canEditLeaves ? (
+                          <input
+                            type="date"
+                            onChange={async (e) => {
+                              const dateVal = e.target.value;
+                              if (dateVal) {
+                                await handleSetActualReturnDate(record.id, record.emp_id, dateVal);
+                              }
+                            }}
+                            className="text-xs border border-slate-200 rounded px-1.5 py-0.5 bg-white text-slate-600 cursor-pointer hover:border-slate-300 focus:outline-none"
+                            title="Set actual return date"
+                          />
+                        ) : (
+                          <span className="text-slate-400 text-xs italic">Not returned yet</span>
                         )}
                       </div>
                     )}
@@ -458,7 +534,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
                         className="h-8 w-8 hover:text-red-650 hover:bg-red-50 text-slate-500 transition-colors"
                         title="Delete leave log"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <MinusCircle className="w-4 h-4 text-rose-600" />
                       </Button>
                     </TableCell>
                   )}
@@ -518,8 +594,8 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
 
                 {openEmpSelect && (
                   <div className="absolute left-0 right-0 z-[100] mt-2 flex max-h-[320px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-                    <div style={{border:"", width:"100%"}} className="border-b border-slate-100 bg-slate-50/70 p-2.5">
-                      <div  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2">
+                    <div style={{ border: "", width: "100%" }} className="border-b border-slate-100 bg-slate-50/70 p-2.5">
+                      <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2">
                         <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                         <input
                           type="text"
@@ -541,7 +617,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
                       </div>
                     </div>
 
-                    <div style={{width:"100%"}} className="max-h-[220px] overflow-y-auto py-1.5">
+                    <div style={{ width: "100%" }} className="max-h-[220px] overflow-y-auto py-1.5">
                       {selectableEmployees.length === 0 ? (
                         <div className="px-3 py-5 text-center text-xs font-medium text-slate-400">
                           No results found
@@ -550,7 +626,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
                         <>
                           <button
                             type="button"
-                            style={{marginBottom:"0.5rem", borderRadius:"0"}}
+                            style={{ marginBottom: "0.5rem", borderRadius: "0" }}
                             onClick={() => {
                               setAddForm(f => ({ ...f, emp_id: '' }));
                               setOpenEmpSelect(false);
@@ -566,17 +642,16 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
                             return (
                               <div
                                 key={emp.device_user_id}
-                          
+
                                 onClick={() => {
                                   setAddForm(f => ({ ...f, emp_id: empVal }));
                                   setOpenEmpSelect(false);
                                   setEmpSearch('');
                                 }}
-                                className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-xs font-medium capitalize transition-colors ${
-                                  isSelected ? 'bg-slate-100 text-slate-900' : 'bg-transparent hover:bg-slate-50'
-                                }`}
+                                className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-xs font-medium capitalize transition-colors ${isSelected ? 'bg-slate-100 text-slate-900' : 'bg-transparent hover:bg-slate-50'
+                                  }`}
                               >
-                                <div style={{width:"100%"}} className="min-w-0 truncate text-left">
+                                <div style={{ width: "100%" }} className="min-w-0 truncate text-left">
                                   <div className="truncate">{emp.name.toLowerCase()}</div>
                                   <div className="truncate text-[10px] font-normal text-slate-400 normal-case">
                                     Device ID: {emp.device_user_id}
@@ -628,7 +703,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
                 </div>
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-slate-600">
-                    Return Date <span className="text-slate-400">(Optional)</span>
+                    Expected Return Date <span className="text-slate-400">(Optional)</span>
                   </label>
                   <Input
                     type="date"

@@ -1975,7 +1975,11 @@ export default function TimesheetFinalizer({
     });
   }, []);
 
-  const handleBulkUpdate = (field: keyof TimesheetRow, value: any) => {
+  const handleBulkUpdate = (
+    field: keyof TimesheetRow,
+    value: any,
+    options?: { remarks?: string; punchIn?: string; punchOut?: string }
+  ) => {
     if (selectedRowIds.size === 0) {
       toast.error('No rows selected.');
       return;
@@ -2010,7 +2014,7 @@ export default function TimesheetFinalizer({
             updated.punch_in = '';
             updated.punch_out = '';
             updated.overtime = 0;
-            updated.remarks = '';
+            updated.remarks = options?.remarks !== undefined ? options.remarks : '';
             const emp = employeesMap[userId];
             if (emp) {
               updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
@@ -2027,10 +2031,12 @@ export default function TimesheetFinalizer({
             const inTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
             const outTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
 
-            if (!current.punch_in && !current.punch_out) {
-              updated.punch_in = inTime;
-              updated.punch_out = outTime;
-            }
+            const finalPunchIn = (options?.punchIn !== undefined && options.punchIn !== '') ? options.punchIn : (current.punch_in || inTime);
+            const finalPunchOut = (options?.punchOut !== undefined && options.punchOut !== '') ? options.punchOut : (current.punch_out || outTime);
+
+            updated.punch_in = finalPunchIn;
+            updated.punch_out = finalPunchOut;
+
             if (current.remarks === 'Absent') {
               updated.remarks = '';
             }
@@ -3255,6 +3261,10 @@ export default function TimesheetFinalizer({
                     <DropdownMenuItem
                       onClick={() => {
                         setBulkStatusValue('present');
+                        setBulkPunchInValue('08:00');
+                        setBulkPunchOutValue('17:00');
+                        setBulkRemarksValue('');
+                        setBulkCustomRemarksValue('');
                         setIsBulkStatusOpen(true);
                       }}
                       className="text-xs cursor-pointer focus:bg-slate-50 rounded-md p-2"
@@ -4108,6 +4118,79 @@ export default function TimesheetFinalizer({
                 </SelectContent>
               </Select>
             </div>
+
+            {bulkStatusValue === 'absent' && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-600 block">Remark</label>
+                <Select
+                  value={
+                    bulkRemarksValue === ''
+                      ? 'NONE'
+                      : (bulkRemarksValue === 'Present' || bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave')
+                        ? bulkRemarksValue
+                        : 'CUSTOM'
+                  }
+                  onValueChange={(val) => {
+                    if (val === 'NONE') {
+                      setBulkRemarksValue('');
+                    } else if (val === 'CUSTOM') {
+                      setBulkRemarksValue('Custom: ');
+                    } else {
+                      setBulkRemarksValue(val);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full text-xs h-9 bg-white border border-slate-300">
+                    <SelectValue placeholder="No Remark" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-slate-200 z-[120]">
+                    <SelectItem value="NONE" className="text-xs cursor-pointer focus:bg-slate-50">No Remark</SelectItem>
+                    <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
+                    <SelectItem value="Sick Leave" className="text-xs cursor-pointer focus:bg-slate-50">Sick Leave</SelectItem>
+                    <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
+                    <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
+                    <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
+                    <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {bulkStatusValue === 'absent' && bulkRemarksValue.startsWith('Custom: ') && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-600 block">Custom Remark</label>
+                <Input
+                  type="text"
+                  value={bulkCustomRemarksValue}
+                  onChange={(e) => setBulkCustomRemarksValue(e.target.value)}
+                  placeholder="Type custom remark..."
+                  className="h-9"
+                />
+              </div>
+            )}
+
+            {(bulkStatusValue === 'present' || bulkStatusValue === 'present with OT') && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-600 block">Punch In Time</label>
+                  <Input
+                    type="time"
+                    value={bulkPunchInValue}
+                    onChange={(e) => setBulkPunchInValue(e.target.value)}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-600 block">Punch Out Time</label>
+                  <Input
+                    type="time"
+                    value={bulkPunchOutValue}
+                    onChange={(e) => setBulkPunchOutValue(e.target.value)}
+                    className="h-9"
+                  />
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter className="flex gap-2">
             <Button
@@ -4121,7 +4204,14 @@ export default function TimesheetFinalizer({
             <Button
               type="button"
               onClick={() => {
-                handleBulkUpdate('status', bulkStatusValue);
+                const finalRemark = bulkRemarksValue.startsWith('Custom: ')
+                  ? 'Custom: ' + bulkCustomRemarksValue
+                  : bulkRemarksValue;
+                handleBulkUpdate('status', bulkStatusValue, {
+                  remarks: bulkStatusValue === 'absent' ? finalRemark : '',
+                  punchIn: (bulkStatusValue === 'present' || bulkStatusValue === 'present with OT') ? bulkPunchInValue : '',
+                  punchOut: (bulkStatusValue === 'present' || bulkStatusValue === 'present with OT') ? bulkPunchOutValue : ''
+                });
                 setIsBulkStatusOpen(false);
               }}
               className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
