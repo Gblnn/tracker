@@ -467,7 +467,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Status Select */}
       <td style={{ textAlign: 'center' }}>
-        {(!canUserEdit || isLocked) ? (
+        {(!canUserEdit || isLocked || resolvedMode === 'approve') ? (
           <span className={`text-xs font-semibold px-2 py-1 rounded inline-flex items-center justify-center ${row.status === 'present' ? 'text-emerald-700 bg-emerald-50/80 border border-emerald-200' :
             row.status === 'present with OT' ? 'text-indigo-700 bg-indigo-50/80 border border-indigo-200' :
               row.status === 'absent' ? 'text-rose-700 bg-rose-50/80 border border-rose-200' :
@@ -500,7 +500,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Punch In Input */}
       <td style={{ textAlign: 'center' }}>
-        {(!canUserEdit || isLocked || !!row.original_in_punch) ? (
+        {(!canUserEdit || isLocked || !!row.original_in_punch || resolvedMode === 'approve') ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {row.punch_in || '—'}
           </span>
@@ -522,7 +522,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Punch Out Input */}
       <td style={{ textAlign: 'center' }}>
-        {(!canUserEdit || isLocked || !!row.original_out_punch) ? (
+        {(!canUserEdit || isLocked || !!row.original_out_punch || resolvedMode === 'approve') ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {row.punch_out || '—'}
           </span>
@@ -549,7 +549,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Overtime Input */}
       <td style={{ textAlign: 'center' }}>
-        {(!canUserEdit || isLocked || emp.emp_type === 'staff') ? (
+        {(!canUserEdit || isLocked || emp.emp_type === 'staff' || resolvedMode === 'approve') ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {emp.emp_type === 'staff' ? '—' : (row.overtime ?? 0)}
           </span>
@@ -578,7 +578,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Remarks Input */}
       <td>
-        {(!canUserEdit || isLocked) ? (
+        {(!canUserEdit || isLocked || resolvedMode === 'approve') ? (
           <span className="text-xs text-slate-800 font-medium px-2 py-1">
             {row.remarks ? (row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks) : '—'}
           </span>
@@ -1291,11 +1291,11 @@ export default function TimesheetFinalizer({
       setIsApproverFiltered(isApproverFilteredLocal);
 
       const projectDeviceSerials = (devData ?? [])
-        .filter(d => d.project_code && focalProjectCodes.includes(d.project_code))
+        .filter(d => d.project_code && focalProjectCodesLocal.includes(d.project_code))
         .map(d => d.serial_no);
 
       const punchedOnProjectDevicesToday = new Set<string>();
-      if (isFocalFiltered && punchesData && projectDeviceSerials.length > 0) {
+      if (isFocalFilteredLocal && punchesData && projectDeviceSerials.length > 0) {
         punchesData.forEach(p => {
           if (p.user_id && p.device_serial && projectDeviceSerials.includes(p.device_serial)) {
             punchedOnProjectDevicesToday.add(p.user_id);
@@ -1306,7 +1306,7 @@ export default function TimesheetFinalizer({
       let allowedEmpIds = new Set<number>();
       let allowedDeviceUserIds = new Set<string>();
 
-      if (isFocalFiltered) {
+      if (isFocalFilteredLocal) {
         if (projectDeviceSerials.length > 0) {
           const { data: cmdData } = await supabase
             .from('device_commands')
@@ -1333,13 +1333,13 @@ export default function TimesheetFinalizer({
         }
       }
 
-      const filteredEmployees = isFocalFiltered
+      const filteredEmployees = isFocalFilteredLocal
         ? (empData || []).filter(emp => {
-          const hasProjectMatch = emp.emp_id && assignedProjMap[emp.emp_id] && focalProjectCodes.includes(assignedProjMap[emp.emp_id]);
+          const hasProjectMatch = emp.emp_id && assignedProjMap[emp.emp_id] && focalProjectCodesLocal.includes(assignedProjMap[emp.emp_id]);
           if (hasProjectMatch) return true;
 
           const empProjCode = emp.emp_id ? assignedProjMap[emp.emp_id] : '';
-          const hasDifferentProjectAssigned = empProjCode && !focalProjectCodes.includes(empProjCode);
+          const hasDifferentProjectAssigned = empProjCode && !focalProjectCodesLocal.includes(empProjCode);
           if (hasDifferentProjectAssigned) {
             return punchedOnProjectDevicesToday.has(emp.device_user_id);
           }
@@ -1354,8 +1354,8 @@ export default function TimesheetFinalizer({
           })
           : (empData || []);
 
-      const filteredProjects = isFocalFiltered
-        ? (projData || []).filter(p => focalProjectCodes.includes(p.project_code))
+      const filteredProjects = isFocalFilteredLocal
+        ? (projData || []).filter(p => focalProjectCodesLocal.includes(p.project_code))
         : isApproverFilteredLocal
           ? (projData || []).filter(p => approverProjectCodesLocal.includes(p.project_code))
           : (projData || []);
@@ -1369,7 +1369,7 @@ export default function TimesheetFinalizer({
       setDeviceProjectMap(devProjMap);
 
       const visibleDeviceUserIds = new Set(filteredEmployees.map(emp => emp.device_user_id).filter(Boolean));
-      const filteredPunches = isFocalFiltered
+      const filteredPunches = isFocalFilteredLocal
         ? (punchesData || []).filter(p =>
           (p.user_id && visibleDeviceUserIds.has(p.user_id)) ||
           (p.device_serial && projectDeviceSerials.includes(p.device_serial))
@@ -1436,8 +1436,8 @@ export default function TimesheetFinalizer({
         }
       });
 
-      const filteredExistingRows = isFocalFiltered
-        ? (existingRows || []).filter(row => row.project_code && focalProjectCodes.includes(row.project_code))
+      const filteredExistingRows = isFocalFilteredLocal
+        ? (existingRows || []).filter(row => row.project_code && focalProjectCodesLocal.includes(row.project_code))
         : (existingRows || []);
 
       // Calculate global lock: locked if all employees have a matching timesheet database record
@@ -4203,9 +4203,14 @@ export default function TimesheetFinalizer({
             </Button>
             <Button
               type="button"
+              disabled={
+                bulkStatusValue === 'absent' && (
+                  !bulkRemarksValue || (bulkRemarksValue.startsWith('Custom: ') && !bulkCustomRemarksValue.trim())
+                )
+              }
               onClick={() => {
                 const finalRemark = bulkRemarksValue.startsWith('Custom: ')
-                  ? 'Custom: ' + bulkCustomRemarksValue
+                  ? 'Custom: ' + bulkCustomRemarksValue.trim()
                   : bulkRemarksValue;
                 handleBulkUpdate('status', bulkStatusValue, {
                   remarks: bulkStatusValue === 'absent' ? finalRemark : '',
