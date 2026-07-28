@@ -257,7 +257,7 @@ const getDbAttestedAndVerified = (r: TimesheetRow, userEmail: string | null | un
   if (r.original_in_punch) devSerials.push(r.original_in_punch.device_serial);
   if (r.original_out_punch) devSerials.push(r.original_out_punch.device_serial);
   const uniqueSerials = Array.from(new Set(devSerials)).filter(Boolean);
-  
+
   let deviceCode = uniqueSerials.join('/');
   if (!deviceCode && r.machine && r.machine !== 'Un-Mapped' && r.machine !== 'Timekeeper') {
     deviceCode = r.machine;
@@ -346,9 +346,9 @@ const TimesheetRowComponent = memo(({
     const isBiometricFullyPopulated = !!row.original_in_punch && !!row.original_out_punch;
     const needsRemarks = row.status === 'absent' ||
       ((row.status === 'present' || row.status === 'present with OT') &&
-       row.project_code &&
-       projectsWithDevices.has(row.project_code) &&
-       !isBiometricFullyPopulated);
+        row.project_code &&
+        projectsWithDevices.has(row.project_code) &&
+        !isBiometricFullyPopulated);
 
     return needsRemarks && (!row.remarks || row.remarks.trim() === '' || row.remarks === 'Custom: ' || row.remarks.trim() === 'Custom:');
   }, [row.status, row.project_code, row.remarks, row.original_in_punch, row.original_out_punch, projectsWithDevices]);
@@ -373,37 +373,7 @@ const TimesheetRowComponent = memo(({
     return true;
   }, [row.status, row.project_code, row.punch_in, row.punch_out, isRemarksInvalid]);
 
-  const deviceCode = useMemo(() => {
-    // 1. If it's a complete match of biometric punches
-    if (row.original_in_punch && row.original_out_punch) {
-      const inM = extractTime(row.original_in_punch.punch_time);
-      const outM = extractTime(row.original_out_punch.punch_time);
-      if (row.punch_in === inM && row.punch_out === outM) {
-        return row.original_in_punch.device_serial === row.original_out_punch.device_serial
-          ? row.original_in_punch.device_serial
-          : `${row.original_in_punch.device_serial}/${row.original_out_punch.device_serial}`;
-      }
-    }
-    // 2. If it's a partial match/incomplete biometric punch (e.g. only one punch exists, or one of them was modified by the user)
-    const devSerials: string[] = [];
-    if (row.original_in_punch) {
-      devSerials.push(row.original_in_punch.device_serial);
-    }
-    if (row.original_out_punch) {
-      devSerials.push(row.original_out_punch.device_serial);
-    }
-    const uniqueSerials = Array.from(new Set(devSerials)).filter(Boolean);
-    if (uniqueSerials.length > 0) {
-      return uniqueSerials.join('/');
-    }
 
-    // 3. Fallback: if loaded from database and matched.machine is set
-    if (row.machine) {
-      return row.machine;
-    }
-
-    return '';
-  }, [row.punch_in, row.punch_out, row.original_in_punch, row.original_out_punch, row.machine]);
 
   return (
     <tr className={row.isApproved ? 'indigo-row-highlight' : (hasNoRedBorders ? 'green-row-highlight' : undefined)}>
@@ -823,8 +793,7 @@ const TimesheetRowComponent = memo(({
                     emails.push(userData.email);
                   }
                   const uniqueEmails = Array.from(new Set(emails));
-                  const emailsText = uniqueEmails.length > 0 ? uniqueEmails.join(' | ') : (userData?.email || 'Timekeeper');
-                  return deviceCode ? `${emailsText} (${deviceCode})` : emailsText;
+                  return uniqueEmails.length > 0 ? uniqueEmails.join(' | ') : (userData?.email || 'Timekeeper');
                 })()}
               </span>
             ) : (
@@ -999,6 +968,8 @@ export default function TimesheetFinalizer({
   useEffect(() => {
     rowsRef.current = rows;
   }, [rows]);
+
+  const reloadTimerRef = useRef<any>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1233,8 +1204,10 @@ export default function TimesheetFinalizer({
     // toast.success(`Switched to ${newMode === 'first_last' ? 'First In / Last Out' : 'Check In / Check Out'} logic.`);
   };
 
-  const loadTimesheet = useCallback(async () => {
-    setLoading(true);
+  const loadTimesheet = useCallback(async (isSilent = false) => {
+    if (!isSilent) {
+      setLoading(true);
+    }
     setError(null);
     try {
       // 1. Fetch employees, projects, devices, latest employee project mappings, and punches for the selected date
@@ -1537,12 +1510,56 @@ export default function TimesheetFinalizer({
           };
         }
       });
-      setRows(initialRows);
+      setRows(prev => {
+        let hasChanges = false;
+        const next = { ...prev };
+
+        Object.keys(initialRows).forEach(userId => {
+          const prevRow = prev[userId];
+          const nextRow = initialRows[userId];
+
+          if (!prevRow) {
+            next[userId] = nextRow;
+            hasChanges = true;
+          } else {
+            const isDifferent =
+              prevRow.inDatabase !== nextRow.inDatabase ||
+              prevRow.punch_in !== nextRow.punch_in ||
+              prevRow.punch_out !== nextRow.punch_out ||
+              prevRow.remarks !== nextRow.remarks ||
+              prevRow.status !== nextRow.status ||
+              prevRow.overtime !== nextRow.overtime ||
+              prevRow.project_code !== nextRow.project_code ||
+              prevRow.isVerified !== nextRow.isVerified ||
+              prevRow.isApproved !== nextRow.isApproved ||
+              prevRow.approval !== nextRow.approval ||
+              prevRow.verified_by !== nextRow.verified_by ||
+              prevRow.approved_by !== nextRow.approved_by ||
+              prevRow.attested_by !== nextRow.attested_by;
+
+            if (isDifferent) {
+              next[userId] = nextRow;
+              hasChanges = true;
+            }
+          }
+        });
+
+        Object.keys(prev).forEach(userId => {
+          if (!initialRows[userId]) {
+            delete next[userId];
+            hasChanges = true;
+          }
+        });
+
+        return hasChanges ? next : prev;
+      });
       initialRowsRef.current = initialRows;
     } catch (err: any) {
       setError(err.message || 'Failed to load timesheet finalizer data.');
     } finally {
-      setLoading(false);
+      if (!isSilent) {
+        setLoading(false);
+      }
       setIsInitialLoad(false);
     }
   }, [date, userData?.email]);
@@ -1552,69 +1569,134 @@ export default function TimesheetFinalizer({
   }, [loadTimesheet, refreshTrigger]);
 
   useEffect(() => {
+    console.log('Subscribing to realtime updates for TimesheetFinalizer...');
+
+    const debouncedReload = () => {
+      if (reloadTimerRef.current) {
+        clearTimeout(reloadTimerRef.current);
+      }
+      reloadTimerRef.current = setTimeout(() => {
+        console.log('Executing debounced loadTimesheet (silent)...');
+        loadTimesheet(true);
+      }, 400);
+    };
+
+    const handleTimesheetChange = (rec: any, isDelete: boolean) => {
+      if (!rec) return;
+
+      // Extract and normalize date (YYYY-MM-DD)
+      const targetDate = rec.date ? rec.date.substring(0, 10) : '';
+      if (targetDate !== date) {
+        console.log(`Ignoring event: Date ${targetDate} does not match current view date ${date}`);
+        return;
+      }
+
+      if (isDelete) {
+        console.log('Timesheet record deleted, scheduling reload...');
+        debouncedReload();
+        return;
+      }
+
+      const localRow = rowsRef.current[rec.employee_code];
+      if (!localRow) {
+        console.log('New timesheet record found, scheduling reload...');
+        debouncedReload();
+        return;
+      }
+
+      const dbPunchIn = rec.punch_in ? extractTime(rec.punch_in) : '';
+      const dbPunchOut = rec.punch_out ? extractTime(rec.punch_out) : '';
+      const dbRemarks = rec.remarks || '';
+      const localRemarks = (localRow.remarks || '').startsWith('Custom: ')
+        ? (localRow.remarks || '').substring(8).trim()
+        : (localRow.remarks || '').trim();
+
+      const isDifferent =
+        !localRow.inDatabase ||
+        dbPunchIn !== (localRow.punch_in || '') ||
+        dbPunchOut !== (localRow.punch_out || '') ||
+        dbRemarks !== localRemarks ||
+        rec.status !== (localRow.status || null) ||
+        rec.overtime !== (localRow.overtime || 0) ||
+        rec.verified_by !== (localRow.verified_by || null) ||
+        rec.approved_by !== (localRow.approved_by || null) ||
+        rec.approval !== (localRow.approval || false) ||
+        rec.project_code !== (localRow.project_code || null);
+
+      if (isDifferent) {
+        console.log('Difference detected between database and local state, scheduling reload...');
+        debouncedReload();
+      } else {
+        console.log('Database change matches local optimistic update, ignoring reload.');
+      }
+    };
+
     const channel = supabase
       .channel('timesheet_finalizer_realtime_sync')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'timesheet' },
+        { event: 'INSERT', schema: 'public', table: 'timesheet' },
         (payload) => {
-          const newRec = payload.new as any;
-          const isDelete = payload.eventType === 'DELETE';
-
-          if (isDelete) {
-            loadTimesheet();
-            return;
-          }
-
-          if (newRec) {
-            const localRow = rowsRef.current[newRec.employee_code];
-            if (!localRow) {
-              loadTimesheet();
-              return;
-            }
-
-            const dbPunchIn = newRec.punch_in ? extractTime(newRec.punch_in) : '';
-            const dbPunchOut = newRec.punch_out ? extractTime(newRec.punch_out) : '';
-            const dbRemarks = newRec.remarks || '';
-            const localRemarks = (localRow.remarks || '').startsWith('Custom: ')
-              ? (localRow.remarks || '').substring(8).trim()
-              : (localRow.remarks || '').trim();
-
-            const isDifferent =
-              dbPunchIn !== (localRow.punch_in || '') ||
-              dbPunchOut !== (localRow.punch_out || '') ||
-              dbRemarks !== localRemarks ||
-              newRec.status !== (localRow.status || null) ||
-              newRec.overtime !== (localRow.overtime || 0) ||
-              newRec.verified_by !== (localRow.verified_by || null) ||
-              newRec.approved_by !== (localRow.approved_by || null) ||
-              newRec.approval !== (localRow.approval || false) ||
-              newRec.project_code !== (localRow.project_code || null);
-
-            if (isDifferent) {
-              loadTimesheet();
-            }
-          }
+          console.log('Realtime timesheet INSERT received:', payload);
+          handleTimesheetChange(payload.new, false);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'timesheet' },
+        (payload) => {
+          console.log('Realtime timesheet UPDATE received:', payload);
+          handleTimesheetChange(payload.new, false);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'timesheet' },
+        (payload) => {
+          console.log('Realtime timesheet DELETE received:', payload);
+          handleTimesheetChange(payload.old, true);
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'punches' },
-        () => {
-          loadTimesheet();
+        (payload) => {
+          console.log('Realtime punches change received, scheduling reload...', payload);
+          debouncedReload();
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'leave_log' },
-        () => {
-          loadTimesheet();
+        (payload) => {
+          console.log('Realtime leave_log change received, scheduling reload...', payload);
+          debouncedReload();
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        console.log(`Realtime subscription status: ${status}`, err || '');
+      });
 
     return () => {
+      console.log('Unsubscribing from realtime updates...');
+      if (reloadTimerRef.current) {
+        clearTimeout(reloadTimerRef.current);
+      }
       supabase.removeChannel(channel);
+    };
+  }, [loadTimesheet, date]);
+
+  // Silent polling fallback
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        console.log('Polling database for silent sync updates...');
+        loadTimesheet(true);
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
     };
   }, [loadTimesheet]);
 
@@ -1878,9 +1960,9 @@ export default function TimesheetFinalizer({
       const isBiometricFullyPopulated = !!r.original_in_punch && !!r.original_out_punch;
       const needsRemarks = r.status === 'absent' ||
         ((r.status === 'present' || r.status === 'present with OT') &&
-         r.project_code &&
-         projectsWithDevices.has(r.project_code) &&
-         !isBiometricFullyPopulated);
+          r.project_code &&
+          projectsWithDevices.has(r.project_code) &&
+          !isBiometricFullyPopulated);
 
       const isRemarksInvalid = needsRemarks && (!r.remarks || r.remarks.trim() === '' || r.remarks === 'Custom: ' || r.remarks.trim() === 'Custom:');
       if (isRemarksInvalid) return false;
@@ -3850,7 +3932,7 @@ export default function TimesheetFinalizer({
                       <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
                         <span className="truncate">
                           {punchInFilter === 'all'
-                            ? 'Punch In (All)'
+                            ? 'In (All)'
                             : punchInFilter === 'null'
                               ? 'In (Empty)'
                               : 'In (Filled)'}
@@ -3901,7 +3983,7 @@ export default function TimesheetFinalizer({
                       <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
                         <span className="truncate">
                           {punchOutFilter === 'all'
-                            ? 'Punch Out (All)'
+                            ? 'Out (All)'
                             : punchOutFilter === 'null'
                               ? 'Out (Empty)'
                               : 'Out (Filled)'}

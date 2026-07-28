@@ -26,6 +26,18 @@ interface Props {
 
 const CHANGELOGS = [
   {
+    version: "v1.82",
+    date: "July 28, 2026",
+    changes: [
+      "Added silent background database synchronization and a 5-second polling fallback to Timesheet Finalizer.",
+      "Fixed focal point employee project visibility bugs.",
+      "Implemented read-only plain-text table display in Approver mode.",
+      "Enforced manual remark validation for incomplete biometric punch logs.",
+      "Restricted 'No Device' automatic remark defaulting to non-device projects only.",
+      "Cleaned up timesheet actions: removed 'Allocate Punch Time' and bracketed device details from badges.",
+    ]
+  },
+  {
     version: "v1.67",
     date: "July 14, 2026",
     changes: [
@@ -295,7 +307,7 @@ export default function IndexDropDown(props: Props) {
         <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ justifyContent: "space-between" }} className="flex items-center justify-between border-b border-gray-100 pb-2">
             <h2 className="text-sm font-bold text-gray-900">Version History</h2>
-            <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-full">v1.67 (Latest)</span>
+            <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-full">v1.82 (Latest)</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxHeight: '400px', overflowY: 'auto', paddingRight: '0.25rem' }}>
