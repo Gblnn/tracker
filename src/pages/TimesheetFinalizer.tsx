@@ -319,6 +319,7 @@ const TimesheetRowComponent = memo(({
   onRevokeApproveRow,
   isVerifying,
   onVerifyBiometricRow,
+  projectsWithDevices,
 }: {
   emp: Employee;
   row: TimesheetRow;
@@ -337,8 +338,21 @@ const TimesheetRowComponent = memo(({
   onRevokeApproveRow: (userId: string) => void;
   isVerifying?: boolean;
   onVerifyBiometricRow?: (userId: string) => void;
+  projectsWithDevices: Set<string>;
 }) => {
   const { userData } = useAuth();
+
+  const isRemarksInvalid = useMemo(() => {
+    const isBiometricFullyPopulated = !!row.original_in_punch && !!row.original_out_punch;
+    const needsRemarks = row.status === 'absent' ||
+      ((row.status === 'present' || row.status === 'present with OT') &&
+       row.project_code &&
+       projectsWithDevices.has(row.project_code) &&
+       !isBiometricFullyPopulated);
+
+    return needsRemarks && (!row.remarks || row.remarks.trim() === '' || row.remarks === 'Custom: ' || row.remarks.trim() === 'Custom:');
+  }, [row.status, row.project_code, row.remarks, row.original_in_punch, row.original_out_punch, projectsWithDevices]);
+
   const hasNoRedBorders = useMemo(() => {
     // 1. Status check
     const isStatusRed = !row.status || row.status === 'no status';
@@ -353,14 +367,11 @@ const TimesheetRowComponent = memo(({
       if (!row.punch_in || !row.punch_out) return false;
     }
 
-    // 3. Remarks check (only when status is absent)
-    if (row.status === 'absent') {
-      const isRemarksRed = !row.remarks || row.remarks.trim() === '' || row.remarks === 'Custom: ' || row.remarks.trim() === 'Custom:';
-      if (isRemarksRed) return false;
-    }
+    // 3. Remarks check
+    if (isRemarksInvalid) return false;
 
     return true;
-  }, [row.status, row.project_code, row.remarks, row.punch_in, row.punch_out]);
+  }, [row.status, row.project_code, row.punch_in, row.punch_out, isRemarksInvalid]);
 
   const deviceCode = useMemo(() => {
     // 1. If it's a complete match of biometric punches
@@ -588,7 +599,7 @@ const TimesheetRowComponent = memo(({
               value={
                 row.remarks === ''
                   ? 'NONE'
-                  : (row.remarks === 'Present' || row.remarks === 'Forgot to Punch' || row.remarks === 'Sick Leave' || row.remarks === 'Unpaid Leave' || row.remarks === 'Casual Leave' || row.remarks === 'Emergency Leave')
+                  : (row.remarks === 'Present' || row.remarks === 'Forgot to Punch' || row.remarks === 'Sick Leave' || row.remarks === 'Unpaid Leave' || row.remarks === 'Casual Leave' || row.remarks === 'Emergency Leave' || row.remarks === 'No Device')
                     ? row.remarks
                     : 'CUSTOM'
               }
@@ -602,7 +613,7 @@ const TimesheetRowComponent = memo(({
                 }
               }}
             >
-              <SelectTrigger className={`w-[150px] text-xs h-8 bg-white border focus:ring-1 ${(row.status === 'absent' && (!row.remarks || row.remarks.trim() === '' || row.remarks === 'Custom: '))
+              <SelectTrigger className={`w-[150px] text-xs h-8 bg-white border focus:ring-1 ${isRemarksInvalid
                 ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
                 : 'border-slate-300 focus:ring-slate-300'
                 }`}>
@@ -616,18 +627,19 @@ const TimesheetRowComponent = memo(({
                 <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
                 <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
                 <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
+                <SelectItem value="No Device" className="text-xs cursor-pointer focus:bg-slate-50">No Device</SelectItem>
 
                 <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
               </SelectContent>
             </Select>
 
-            {(row.remarks !== '' && row.remarks !== 'Present' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Sick Leave' && row.remarks !== 'Unpaid Leave' && row.remarks !== 'Casual Leave' && row.remarks !== 'Emergency Leave') && (
+            {(row.remarks !== '' && row.remarks !== 'Present' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Sick Leave' && row.remarks !== 'Unpaid Leave' && row.remarks !== 'Casual Leave' && row.remarks !== 'Emergency Leave' && row.remarks !== 'No Device') && (
               <Input
                 type="text"
                 value={row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks}
                 onChange={(e) => onUpdateRow(emp.device_user_id, 'remarks', 'Custom: ' + e.target.value)}
                 placeholder="Type custom remark..."
-                className={`h-8 text-xs w-[150px] bg-white border focus:ring-1 ${(row.status === 'absent' && (row.remarks === 'Custom: ' || row.remarks.trim() === 'Custom:'))
+                className={`h-8 text-xs w-[150px] bg-white border focus:ring-1 ${isRemarksInvalid
                   ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
                   : 'border-slate-300 focus:ring-slate-300'
                   }`}
@@ -953,6 +965,10 @@ export default function TimesheetFinalizer({
   const [deviceProjectMap, setDeviceProjectMap] = useState<Record<string, string>>({});
   const [employeeAssignedProjects, setEmployeeAssignedProjects] = useState<Record<string, string>>({});
 
+  const projectsWithDevices = useMemo(() => {
+    return new Set(Object.values(deviceProjectMap).filter(Boolean));
+  }, [deviceProjectMap]);
+
   // Selection and bulk states
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
@@ -978,6 +994,11 @@ export default function TimesheetFinalizer({
   useEffect(() => {
     punchModeRef.current = punchMode;
   }, [punchMode]);
+
+  const rowsRef = useRef(rows);
+  useEffect(() => {
+    rowsRef.current = rows;
+  }, [rows]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1530,6 +1551,73 @@ export default function TimesheetFinalizer({
     loadTimesheet();
   }, [loadTimesheet, refreshTrigger]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('timesheet_finalizer_realtime_sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'timesheet' },
+        (payload) => {
+          const newRec = payload.new as any;
+          const isDelete = payload.eventType === 'DELETE';
+
+          if (isDelete) {
+            loadTimesheet();
+            return;
+          }
+
+          if (newRec) {
+            const localRow = rowsRef.current[newRec.employee_code];
+            if (!localRow) {
+              loadTimesheet();
+              return;
+            }
+
+            const dbPunchIn = newRec.punch_in ? extractTime(newRec.punch_in) : '';
+            const dbPunchOut = newRec.punch_out ? extractTime(newRec.punch_out) : '';
+            const dbRemarks = newRec.remarks || '';
+            const localRemarks = (localRow.remarks || '').startsWith('Custom: ')
+              ? (localRow.remarks || '').substring(8).trim()
+              : (localRow.remarks || '').trim();
+
+            const isDifferent =
+              dbPunchIn !== (localRow.punch_in || '') ||
+              dbPunchOut !== (localRow.punch_out || '') ||
+              dbRemarks !== localRemarks ||
+              newRec.status !== (localRow.status || null) ||
+              newRec.overtime !== (localRow.overtime || 0) ||
+              newRec.verified_by !== (localRow.verified_by || null) ||
+              newRec.approved_by !== (localRow.approved_by || null) ||
+              newRec.approval !== (localRow.approval || false) ||
+              newRec.project_code !== (localRow.project_code || null);
+
+            if (isDifferent) {
+              loadTimesheet();
+            }
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'punches' },
+        () => {
+          loadTimesheet();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'leave_log' },
+        () => {
+          loadTimesheet();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadTimesheet]);
+
   const handleUndoRow = useCallback(async (userId: string) => {
     const currentVal = rows[userId];
     if (!currentVal) return;
@@ -1769,13 +1857,40 @@ export default function TimesheetFinalizer({
   const autoPostRowsBatch = useCallback(async (updatedRows: TimesheetRow[]) => {
     if (!canUserEdit || updatedRows.length === 0) return;
 
-    const payloads = updatedRows
-      .filter(r => {
-        const isStatusRed = !r.status || r.status === 'no status';
-        if (isStatusRed) return false;
-        return true;
-      })
-      .map(r => {
+    const validPayloads: any[] = [];
+    const invalidEmployeeCodesToDelete: string[] = [];
+
+    // Helper validation check
+    const checkRowValidity = (r: TimesheetRow): boolean => {
+      // 1. Status check
+      if (!r.status || r.status === 'no status') return false;
+
+      // 2. Project & Punch check (only when status is not absent/no status)
+      if (r.status !== 'absent' && r.status !== 'no status') {
+        const isProjectRed = !r.project_code || r.project_code === '' || r.project_code === 'UNASSIGNED';
+        if (isProjectRed) return false;
+
+        // Both punch times must be filled
+        if (!r.punch_in || !r.punch_out) return false;
+      }
+
+      // 3. Remarks check
+      const isBiometricFullyPopulated = !!r.original_in_punch && !!r.original_out_punch;
+      const needsRemarks = r.status === 'absent' ||
+        ((r.status === 'present' || r.status === 'present with OT') &&
+         r.project_code &&
+         projectsWithDevices.has(r.project_code) &&
+         !isBiometricFullyPopulated);
+
+      const isRemarksInvalid = needsRemarks && (!r.remarks || r.remarks.trim() === '' || r.remarks === 'Custom: ' || r.remarks.trim() === 'Custom:');
+      if (isRemarksInvalid) return false;
+
+      return true;
+    };
+
+    updatedRows.forEach(r => {
+      const isValid = checkRowValidity(r);
+      if (isValid) {
         const inTimestamp = buildTimestamp(date, r.punch_in);
         const outTimestamp = buildTimestamp(date, r.punch_out);
         const dbFields = getDbAttestedAndVerified(r, userData?.email);
@@ -1797,7 +1912,7 @@ export default function TimesheetFinalizer({
           ? true
           : (r.approval || false);
 
-        return {
+        validPayloads.push({
           date: date,
           project_code: r.project_code || null,
           employee_code: r.employee_code,
@@ -1815,47 +1930,85 @@ export default function TimesheetFinalizer({
           status: r.status || null,
           last_updated: new Date().toISOString(),
           approval: approvalVal
-        };
-      });
+        });
+      } else {
+        if (r.inDatabase) {
+          invalidEmployeeCodesToDelete.push(r.employee_code);
+        }
+      }
+    });
 
-    if (payloads.length === 0) return;
+    if (validPayloads.length === 0 && invalidEmployeeCodesToDelete.length === 0) return;
 
     try {
-      const employeeCodes = payloads.map(p => p.employee_code);
-      const { error: delErr } = await supabase
-        .from('timesheet')
-        .delete()
-        .eq('date', date)
-        .in('employee_code', employeeCodes);
-      if (delErr) throw delErr;
+      // 1. Handle Deletions for Invalid Rows
+      if (invalidEmployeeCodesToDelete.length > 0) {
+        const { error: delErr } = await supabase
+          .from('timesheet')
+          .delete()
+          .eq('date', date)
+          .in('employee_code', invalidEmployeeCodesToDelete);
+        if (delErr) throw delErr;
 
-      const { error: insErr } = await supabase
-        .from('timesheet')
-        .insert(payloads);
-      if (insErr) throw insErr;
-
-      setRows(prev => {
-        const next = { ...prev };
-        payloads.forEach(payload => {
-          const userId = payload.employee_code;
-          const curr = next[userId];
-          if (curr) {
-            next[userId] = {
-              ...curr,
-              inDatabase: true,
-              isVerified: !!payload.verified_by,
-              isApproved: !!payload.approved_by,
-              approval: !!payload.approval,
-              machine: payload.machine,
-              verified_by: payload.verified_by,
-              approved_by: payload.approved_by,
-              attested_by: payload.attested_by,
-              isEdited: payload.verify_type === 'Manual Input' || !!payload.verified_by
-            };
-          }
+        setRows(prev => {
+          const next = { ...prev };
+          invalidEmployeeCodesToDelete.forEach(userId => {
+            const curr = next[userId];
+            if (curr) {
+              next[userId] = {
+                ...curr,
+                inDatabase: false,
+                isVerified: false,
+                isApproved: false,
+                approval: false,
+                verified_by: null,
+                approved_by: null,
+                isEdited: false
+              };
+            }
+          });
+          return next;
         });
-        return next;
-      });
+      }
+
+      // 2. Handle Upsert/Insert for Valid Rows
+      if (validPayloads.length > 0) {
+        const employeeCodes = validPayloads.map(p => p.employee_code);
+        const { error: delErr } = await supabase
+          .from('timesheet')
+          .delete()
+          .eq('date', date)
+          .in('employee_code', employeeCodes);
+        if (delErr) throw delErr;
+
+        const { error: insErr } = await supabase
+          .from('timesheet')
+          .insert(validPayloads);
+        if (insErr) throw insErr;
+
+        setRows(prev => {
+          const next = { ...prev };
+          validPayloads.forEach(payload => {
+            const userId = payload.employee_code;
+            const curr = next[userId];
+            if (curr) {
+              next[userId] = {
+                ...curr,
+                inDatabase: true,
+                isVerified: !!payload.verified_by,
+                isApproved: !!payload.approved_by,
+                approval: !!payload.approval,
+                machine: payload.machine,
+                verified_by: payload.verified_by,
+                approved_by: payload.approved_by,
+                attested_by: payload.attested_by,
+                isEdited: payload.verify_type === 'Manual Input' || !!payload.verified_by
+              };
+            }
+          });
+          return next;
+        });
+      }
 
       toast.success('Changes saved to timesheet.', { id: 'autosave' });
     } catch (err: any) {
@@ -1868,7 +2021,7 @@ export default function TimesheetFinalizer({
         return next;
       });
     }
-  }, [date, resolvedMode, isFocalFiltered, canUserEdit, userData?.email, projects, employeeAssignedProjects, focalProjectCodes, isApproverFiltered, approverProjectCodes]);
+  }, [date, resolvedMode, isFocalFiltered, canUserEdit, userData?.email, projects, employeeAssignedProjects, focalProjectCodes, isApproverFiltered, approverProjectCodes, projectsWithDevices]);
 
   const updateRow = useCallback((userId: string, key: keyof TimesheetRow, value: any) => {
     pushHistory(rows);
@@ -1954,9 +2107,34 @@ export default function TimesheetFinalizer({
       }
     }
 
+    if (updated.status === 'present' || updated.status === 'present with OT') {
+      const emp = employeesMap[userId];
+      const projCode = updated.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
+      const hasDevice = projCode && Object.values(deviceProjectMap).includes(projCode);
+      const isBiometricFullyPopulated = !!updated.original_in_punch && !!updated.original_out_punch;
+
+      if (!hasDevice) {
+        const shouldDefaultRemark = !updated.remarks || key === 'status' || key === 'project_code';
+        if (shouldDefaultRemark) {
+          updated.remarks = 'No Device';
+        }
+      } else {
+        if (!isBiometricFullyPopulated) {
+          const shouldDefaultRemark = !updated.remarks || key === 'status' || key === 'project_code';
+          if (shouldDefaultRemark) {
+            updated.remarks = '';
+          }
+        } else {
+          if (updated.remarks === 'Forgot to Punch' || updated.remarks === 'No Device') {
+            updated.remarks = '';
+          }
+        }
+      }
+    }
+
     setRows(prev => ({ ...prev, [userId]: updated }));
     autoPostRowsBatch([updated]);
-  }, [rows, employeesMap, employeeAssignedProjects, userData?.email, projects, autoPostRowsBatch, pushHistory]);
+  }, [rows, employeesMap, employeeAssignedProjects, userData?.email, projects, autoPostRowsBatch, pushHistory, deviceProjectMap]);
 
   const handleVerifyBiometricRow = useCallback((userId: string) => {
     setVerifyingRowIds(prev => new Set(prev).add(userId));
@@ -2103,6 +2281,31 @@ export default function TimesheetFinalizer({
           }
         }
 
+        if (updated.status === 'present' || updated.status === 'present with OT') {
+          const emp = employeesMap[userId];
+          const projCode = updated.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
+          const hasDevice = projCode && Object.values(deviceProjectMap).includes(projCode);
+          const isBiometricFullyPopulated = !!updated.original_in_punch && !!updated.original_out_punch;
+
+          if (!hasDevice) {
+            const shouldDefaultRemark = !updated.remarks || field === 'status' || field === 'project_code';
+            if (shouldDefaultRemark) {
+              updated.remarks = 'No Device';
+            }
+          } else {
+            if (!isBiometricFullyPopulated) {
+              const shouldDefaultRemark = !updated.remarks || field === 'status' || field === 'project_code';
+              if (shouldDefaultRemark) {
+                updated.remarks = '';
+              }
+            } else {
+              if (updated.remarks === 'Forgot to Punch' || updated.remarks === 'No Device') {
+                updated.remarks = '';
+              }
+            }
+          }
+        }
+
         next[userId] = updated;
         updatedRows.push(updated);
       });
@@ -2159,6 +2362,31 @@ export default function TimesheetFinalizer({
         } else {
           updated.status = 'absent';
           updated.overtime = 0;
+        }
+
+        if (updated.status === 'present' || updated.status === 'present with OT') {
+          const emp = employeesMap[userId];
+          const projCode = updated.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
+          const hasDevice = projCode && Object.values(deviceProjectMap).includes(projCode);
+          const isBiometricFullyPopulated = !!updated.original_in_punch && !!updated.original_out_punch;
+
+          if (!hasDevice) {
+            const shouldDefaultRemark = !updated.remarks;
+            if (shouldDefaultRemark) {
+              updated.remarks = 'No Device';
+            }
+          } else {
+            if (!isBiometricFullyPopulated) {
+              const shouldDefaultRemark = !updated.remarks;
+              if (shouldDefaultRemark) {
+                updated.remarks = '';
+              }
+            } else {
+              if (updated.remarks === 'Forgot to Punch' || updated.remarks === 'No Device') {
+                updated.remarks = '';
+              }
+            }
+          }
         }
 
         next[userId] = updated;
@@ -2529,6 +2757,28 @@ export default function TimesheetFinalizer({
             verify_type: 'Manual Input',
             attested_by: userData?.email || 'Timekeeper',
           };
+
+          const hasDevice = empProjCode && Object.values(deviceProjectMap).includes(empProjCode);
+          const isBiometricFullyPopulated = !!updated.original_in_punch && !!updated.original_out_punch;
+
+          if (!hasDevice) {
+            const shouldDefaultRemark = !updated.remarks;
+            if (shouldDefaultRemark) {
+              updated.remarks = 'No Device';
+            }
+          } else {
+            if (!isBiometricFullyPopulated) {
+              const shouldDefaultRemark = !updated.remarks;
+              if (shouldDefaultRemark) {
+                updated.remarks = '';
+              }
+            } else {
+              if (updated.remarks === 'Forgot to Punch' || updated.remarks === 'No Device') {
+                updated.remarks = '';
+              }
+            }
+          }
+
           updatedMap[userId] = updated;
           updatedRows.push(updated);
         }
@@ -2542,7 +2792,7 @@ export default function TimesheetFinalizer({
     } else {
       toast.info('No empty Punch In fields to fill.');
     }
-  }, [filteredEmployees, projects, employeeAssignedProjects, rows, canUserEdit, pushHistory, userData?.email, autoPostRowsBatch]);
+  }, [filteredEmployees, projects, employeeAssignedProjects, rows, canUserEdit, pushHistory, userData?.email, autoPostRowsBatch, deviceProjectMap]);
 
   const handleAutoFillEmptyPunchOut = useCallback(() => {
     if (!canUserEdit) {
@@ -2577,6 +2827,28 @@ export default function TimesheetFinalizer({
             verify_type: 'Manual Input',
             attested_by: userData?.email || 'Timekeeper',
           };
+
+          const hasDevice = empProjCode && Object.values(deviceProjectMap).includes(empProjCode);
+          const isBiometricFullyPopulated = !!updated.original_in_punch && !!updated.original_out_punch;
+
+          if (!hasDevice) {
+            const shouldDefaultRemark = !updated.remarks;
+            if (shouldDefaultRemark) {
+              updated.remarks = 'No Device';
+            }
+          } else {
+            if (!isBiometricFullyPopulated) {
+              const shouldDefaultRemark = !updated.remarks;
+              if (shouldDefaultRemark) {
+                updated.remarks = '';
+              }
+            } else {
+              if (updated.remarks === 'Forgot to Punch' || updated.remarks === 'No Device') {
+                updated.remarks = '';
+              }
+            }
+          }
+
           updatedMap[userId] = updated;
           updatedRows.push(updated);
         }
@@ -2590,7 +2862,7 @@ export default function TimesheetFinalizer({
     } else {
       toast.info('No empty Punch Out fields with existing In times to fill.');
     }
-  }, [filteredEmployees, projects, employeeAssignedProjects, rows, canUserEdit, pushHistory, userData?.email, autoPostRowsBatch]);
+  }, [filteredEmployees, projects, employeeAssignedProjects, rows, canUserEdit, pushHistory, userData?.email, autoPostRowsBatch, deviceProjectMap]);
 
   const handleApproveAllValidRecords = useCallback(() => {
     if (!canUserEdit) {
@@ -3228,16 +3500,7 @@ export default function TimesheetFinalizer({
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-[180px] bg-white border border-slate-200 z-50 p-1">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setBulkPunchInValue('');
-                        setBulkPunchOutValue('');
-                        setIsBulkPunchTimeOpen(true);
-                      }}
-                      className="text-xs cursor-pointer focus:bg-slate-50 rounded-md p-2"
-                    >
-                      Allocate Punch Time
-                    </DropdownMenuItem>
+
                     <DropdownMenuItem
                       onClick={() => {
                         setBulkOvertimeValue(0);
@@ -3896,6 +4159,7 @@ export default function TimesheetFinalizer({
                           onRevokeApproveRow={handleRevokeApproveRow}
                           isVerifying={verifyingRowIds.has(emp.device_user_id)}
                           onVerifyBiometricRow={handleVerifyBiometricRow}
+                          projectsWithDevices={projectsWithDevices}
                         />
                       );
                     })}
@@ -4126,7 +4390,7 @@ export default function TimesheetFinalizer({
                   value={
                     bulkRemarksValue === ''
                       ? 'NONE'
-                      : (bulkRemarksValue === 'Present' || bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave')
+                      : (bulkRemarksValue === 'Present' || bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave' || bulkRemarksValue === 'No Device')
                         ? bulkRemarksValue
                         : 'CUSTOM'
                   }
@@ -4150,6 +4414,7 @@ export default function TimesheetFinalizer({
                     <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
                     <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
                     <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
+                    <SelectItem value="No Device" className="text-xs cursor-pointer focus:bg-slate-50">No Device</SelectItem>
                     <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
                   </SelectContent>
                 </Select>
@@ -4243,7 +4508,7 @@ export default function TimesheetFinalizer({
                 value={
                   bulkRemarksValue === ''
                     ? 'NONE'
-                    : (bulkRemarksValue === 'Present' || bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave')
+                    : (bulkRemarksValue === 'Present' || bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave' || bulkRemarksValue === 'No Device')
                       ? bulkRemarksValue
                       : 'CUSTOM'
                 }
@@ -4267,6 +4532,7 @@ export default function TimesheetFinalizer({
                   <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
                   <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
                   <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
+                  <SelectItem value="No Device" className="text-xs cursor-pointer focus:bg-slate-50">No Device</SelectItem>
                   <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
                 </SelectContent>
               </Select>
