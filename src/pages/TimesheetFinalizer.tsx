@@ -135,6 +135,7 @@ interface TimesheetRow {
   machine?: string | null;
   verified_by?: string | null;
   approved_by?: string | null;
+  lastLocalEdit?: number;
 }
 
 type SourceFilter = 'ALL' | 'MANUAL' | 'LEAVE_LOG' | 'DEVICE' | 'NO_SOURCE';
@@ -320,6 +321,8 @@ const TimesheetRowComponent = memo(({
   isVerifying,
   onVerifyBiometricRow,
   projectsWithDevices,
+  projects,
+  employeeAssignedProjects,
 }: {
   emp: Employee;
   row: TimesheetRow;
@@ -339,8 +342,16 @@ const TimesheetRowComponent = memo(({
   isVerifying?: boolean;
   onVerifyBiometricRow?: (userId: string) => void;
   projectsWithDevices: Set<string>;
+  projects: Project[];
+  employeeAssignedProjects: Record<string, string>;
 }) => {
   const { userData } = useAuth();
+
+  const empProjCode = row.project_code || employeeAssignedProjects[emp.emp_id] || '';
+  const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
+  const isUserFocalOnly = resolvedMode === 'verify' && !isDual;
+  const isRecordApproved = row.isApproved || !!row.approved_by || row.approval;
+  const isRowEditable = canUserEdit && !isLocked && !(isUserFocalOnly && isRecordApproved);
 
   const isRemarksInvalid = useMemo(() => {
     const isBiometricFullyPopulated = !!row.original_in_punch && !!row.original_out_punch;
@@ -376,7 +387,7 @@ const TimesheetRowComponent = memo(({
 
 
   return (
-    <tr className={row.isApproved ? 'indigo-row-highlight' : (hasNoRedBorders ? 'green-row-highlight' : undefined)}>
+    <tr data-row-id={emp.device_user_id} className={row.isApproved ? 'indigo-row-highlight' : ((row.inDatabase && hasNoRedBorders) ? 'green-row-highlight' : undefined)}>
       <td
         className="sticky-checkbox transition-[width,opacity] duration-200 ease-in-out overflow-hidden"
         style={{
@@ -448,7 +459,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Status Select */}
       <td style={{ textAlign: 'center' }}>
-        {(!canUserEdit || isLocked || resolvedMode === 'approve') ? (
+        {(!isRowEditable || resolvedMode === 'approve' || row.inDatabase || !!row.original_in_punch || !!row.original_out_punch) ? (
           <span className={`text-xs font-semibold px-2 py-1 rounded inline-flex items-center justify-center ${row.status === 'present' ? 'text-emerald-700 bg-emerald-50/80 border border-emerald-200' :
             row.status === 'present with OT' ? 'text-indigo-700 bg-indigo-50/80 border border-indigo-200' :
               row.status === 'absent' ? 'text-rose-700 bg-rose-50/80 border border-rose-200' :
@@ -481,7 +492,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Punch In Input */}
       <td style={{ textAlign: 'center' }}>
-        {(!canUserEdit || isLocked || !!row.original_in_punch || resolvedMode === 'approve') ? (
+        {(!isRowEditable || resolvedMode === 'approve' || row.inDatabase || !!row.original_in_punch) ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {row.punch_in || '—'}
           </span>
@@ -503,7 +514,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Punch Out Input */}
       <td style={{ textAlign: 'center' }}>
-        {(!canUserEdit || isLocked || !!row.original_out_punch || resolvedMode === 'approve') ? (
+        {(!isRowEditable || resolvedMode === 'approve' || row.inDatabase || !!row.original_out_punch) ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {row.punch_out || '—'}
           </span>
@@ -530,7 +541,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Overtime Input */}
       <td style={{ textAlign: 'center' }}>
-        {(!canUserEdit || isLocked || emp.emp_type === 'staff' || resolvedMode === 'approve') ? (
+        {(!isRowEditable || resolvedMode === 'approve' || row.inDatabase || emp.emp_type === 'staff') ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {emp.emp_type === 'staff' ? '—' : (row.overtime ?? 0)}
           </span>
@@ -559,17 +570,18 @@ const TimesheetRowComponent = memo(({
 
       {/* Remarks Input */}
       <td>
-        {(!canUserEdit || isLocked || resolvedMode === 'approve') ? (
+        {(!isRowEditable || resolvedMode === 'approve' || row.inDatabase) ? (
           <span className="text-xs text-slate-800 font-medium px-2 py-1">
             {row.remarks ? (row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks) : '—'}
           </span>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <Select
+              disabled={!row.status || row.status === 'no status'}
               value={
                 row.remarks === ''
                   ? 'NONE'
-                  : (row.remarks === 'Present' || row.remarks === 'Forgot to Punch' || row.remarks === 'Sick Leave' || row.remarks === 'Unpaid Leave' || row.remarks === 'Casual Leave' || row.remarks === 'Emergency Leave' || row.remarks === 'No Device')
+                  : (row.remarks === 'Present' || row.remarks === 'Forgot to Punch' || row.remarks === 'Forgot to Punch In' || row.remarks === 'Forgot to Punch Out' || row.remarks === 'Sick Leave' || row.remarks === 'Unpaid Leave' || row.remarks === 'Casual Leave' || row.remarks === 'Emergency Leave' || row.remarks === 'No Device')
                     ? row.remarks
                     : 'CUSTOM'
               }
@@ -592,18 +604,41 @@ const TimesheetRowComponent = memo(({
               <SelectContent className="bg-white border border-slate-200 z-50">
                 <SelectItem value="NONE" className="text-xs cursor-pointer focus:bg-slate-50">No Remark</SelectItem>
 
-                <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
-                <SelectItem value="Sick Leave" className="text-xs cursor-pointer focus:bg-slate-50">Sick Leave</SelectItem>
-                <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
-                <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
-                <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
-                <SelectItem value="No Device" className="text-xs cursor-pointer focus:bg-slate-50">No Device</SelectItem>
+                {(row.status === 'present' || row.status === 'present with OT') ? (
+                  <>
+                    {(row.original_in_punch && !row.original_out_punch) ? (
+                      <SelectItem value="Forgot to Punch Out" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch Out</SelectItem>
+                    ) : (!row.original_in_punch && row.original_out_punch) ? (
+                      <SelectItem value="Forgot to Punch In" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch In</SelectItem>
+                    ) : (
+                      <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
+                    )}
+                  </>
+                ) : row.status === 'absent' ? (
+                  <>
+                    <SelectItem value="Sick Leave" className="text-xs cursor-pointer focus:bg-slate-50">Sick Leave</SelectItem>
+                    <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
+                    <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
+                    <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
+                    <SelectItem value="Forgot to Punch In" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch In</SelectItem>
+                    <SelectItem value="Forgot to Punch Out" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch Out</SelectItem>
+                    <SelectItem value="Sick Leave" className="text-xs cursor-pointer focus:bg-slate-50">Sick Leave</SelectItem>
+                    <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
+                    <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
+                    <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
+                    <SelectItem value="No Device" className="text-xs cursor-pointer focus:bg-slate-50">No Device</SelectItem>
+                  </>
+                )}
 
                 <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
               </SelectContent>
             </Select>
 
-            {(row.remarks !== '' && row.remarks !== 'Present' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Sick Leave' && row.remarks !== 'Unpaid Leave' && row.remarks !== 'Casual Leave' && row.remarks !== 'Emergency Leave' && row.remarks !== 'No Device') && (
+            {(row.remarks !== '' && row.remarks !== 'Present' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Forgot to Punch In' && row.remarks !== 'Forgot to Punch Out' && row.remarks !== 'Sick Leave' && row.remarks !== 'Unpaid Leave' && row.remarks !== 'Casual Leave' && row.remarks !== 'Emergency Leave' && row.remarks !== 'No Device') && (
               <Input
                 type="text"
                 value={row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks}
@@ -733,8 +768,9 @@ const TimesheetRowComponent = memo(({
               }
 
               const isSavedOrVerified = row.inDatabase || row.isVerified || row.isApproved || !!row.verified_by || !!row.approved_by;
+              const canRevoke = !(isUserFocalOnly && isRecordApproved);
 
-              if (isSavedOrVerified && !isLocked && canUserEdit) {
+              if (isSavedOrVerified && !isLocked && canUserEdit && canRevoke) {
                 return (
                   <button
                     type="button"
@@ -753,7 +789,7 @@ const TimesheetRowComponent = memo(({
               const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
               const isBiometricFullyPopulated = (!!row.original_in_punch && !!row.original_out_punch) || (hasDevice && !!row.punch_in && !!row.punch_out);
 
-              if (isBiometricFullyPopulated && !isLocked && canUserEdit) {
+              if (isBiometricFullyPopulated && !isLocked && canUserEdit && !isSavedOrVerified) {
                 return (
                   <button
                     type="button"
@@ -1468,6 +1504,11 @@ export default function TimesheetFinalizer({
       filteredEmployees.forEach(emp => {
         const matched = existingRowsMap[emp.device_user_id];
         if (matched) {
+          const empPunches = pGroups[emp.device_user_id] || [];
+          const sorted = [...empPunches].sort((a, b) => a.punch_time.localeCompare(b.punch_time));
+          const original_in_punch = sorted.length > 0 ? sorted[0] : null;
+          const original_out_punch = sorted.length > 1 ? sorted[sorted.length - 1] : null;
+
           initialRows[emp.device_user_id] = {
             employee_code: emp.device_user_id,
             employee_name: emp.name,
@@ -1487,7 +1528,9 @@ export default function TimesheetFinalizer({
             inDatabase: true,
             machine: matched.machine,
             verified_by: matched.verified_by,
-            approved_by: matched.approved_by
+            approved_by: matched.approved_by,
+            original_in_punch,
+            original_out_punch
           };
         } else {
           // Guess initial values from raw punches
@@ -1522,24 +1565,33 @@ export default function TimesheetFinalizer({
             next[userId] = nextRow;
             hasChanges = true;
           } else {
-            const isDifferent =
-              prevRow.inDatabase !== nextRow.inDatabase ||
-              prevRow.punch_in !== nextRow.punch_in ||
-              prevRow.punch_out !== nextRow.punch_out ||
-              prevRow.remarks !== nextRow.remarks ||
-              prevRow.status !== nextRow.status ||
-              prevRow.overtime !== nextRow.overtime ||
-              prevRow.project_code !== nextRow.project_code ||
-              prevRow.isVerified !== nextRow.isVerified ||
-              prevRow.isApproved !== nextRow.isApproved ||
-              prevRow.approval !== nextRow.approval ||
-              prevRow.verified_by !== nextRow.verified_by ||
-              prevRow.approved_by !== nextRow.approved_by ||
-              prevRow.attested_by !== nextRow.attested_by;
+            // Keep local changes if the user is actively focusing an input in this row,
+            // or if it was recently edited (within the last 10 seconds) to prevent overwriting active user typing
+            const activeEl = document.activeElement;
+            const isCurrentlyEditing = activeEl && activeEl.closest(`[data-row-id="${userId}"]`);
 
-            if (isDifferent) {
-              next[userId] = nextRow;
-              hasChanges = true;
+            if (isCurrentlyEditing || (prevRow.lastLocalEdit && (Date.now() - prevRow.lastLocalEdit < 10000))) {
+              next[userId] = prevRow;
+            } else {
+              const isDifferent =
+                prevRow.inDatabase !== nextRow.inDatabase ||
+                prevRow.punch_in !== nextRow.punch_in ||
+                prevRow.punch_out !== nextRow.punch_out ||
+                prevRow.remarks !== nextRow.remarks ||
+                prevRow.status !== nextRow.status ||
+                prevRow.overtime !== nextRow.overtime ||
+                prevRow.project_code !== nextRow.project_code ||
+                prevRow.isVerified !== nextRow.isVerified ||
+                prevRow.isApproved !== nextRow.isApproved ||
+                prevRow.approval !== nextRow.approval ||
+                prevRow.verified_by !== nextRow.verified_by ||
+                prevRow.approved_by !== nextRow.approved_by ||
+                prevRow.attested_by !== nextRow.attested_by;
+
+              if (isDifferent) {
+                next[userId] = nextRow;
+                hasChanges = true;
+              }
             }
           }
         });
@@ -1686,19 +1738,7 @@ export default function TimesheetFinalizer({
     };
   }, [loadTimesheet, date]);
 
-  // Silent polling fallback
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        console.log('Polling database for silent sync updates...');
-        loadTimesheet(true);
-      }
-    }, 5000);
 
-    return () => {
-      clearInterval(interval);
-    };
-  }, [loadTimesheet]);
 
   const handleUndoRow = useCallback(async (userId: string) => {
     const currentVal = rows[userId];
@@ -1709,8 +1749,14 @@ export default function TimesheetFinalizer({
       return;
     }
 
-    if (isFocalFiltered && currentVal.approval) {
-      toast.error('Cannot revoke a record that has already been approved by the admin.');
+    const emp = employeesMap[userId];
+    const empProjCode = currentVal.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
+    const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
+    const isUserFocalOnly = resolvedMode === 'verify' && !isDual;
+    const isRecordApproved = currentVal.isApproved || !!currentVal.approved_by || currentVal.approval;
+
+    if (isUserFocalOnly && isRecordApproved) {
+      toast.error('Cannot revoke a record that has already been approved.');
       return;
     }
 
@@ -1755,7 +1801,7 @@ export default function TimesheetFinalizer({
     if (!currentVal.inDatabase) {
       toast.success("Changes reverted to original.");
     }
-  }, [rows, date, isFocalFiltered, canUserEdit, employeesMap, punchGroups, punchMode, projects, deviceProjectMap, employeeAssignedProjects, guessRow]);
+  }, [rows, date, isFocalFiltered, canUserEdit, employeesMap, punchGroups, punchMode, projects, deviceProjectMap, employeeAssignedProjects, guessRow, resolvedMode, userData?.email]);
 
   const handleApproveRow = useCallback(async (userId: string) => {
     if (!canUserAction) {
@@ -2110,7 +2156,18 @@ export default function TimesheetFinalizer({
     const current = rows[userId];
     if (!current) return;
 
-    const updated = { ...current, [key]: value };
+    const emp = employeesMap[userId];
+    const empProjCode = current.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
+    const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
+    const isUserFocalOnly = resolvedMode === 'verify' && !isDual;
+    const isRecordApproved = current.isApproved || !!current.approved_by || current.approval;
+
+    if (isUserFocalOnly && isRecordApproved) {
+      toast.error('Cannot modify a record that has already been approved.');
+      return;
+    }
+
+    const updated = { ...current, [key]: value, lastLocalEdit: Date.now() };
 
     if (key === 'punch_in' || key === 'punch_out' || key === 'overtime' || key === 'project_code' || key === 'status' || key === 'remarks') {
       updated.isEdited = true;
@@ -2204,10 +2261,16 @@ export default function TimesheetFinalizer({
         if (!isBiometricFullyPopulated) {
           const shouldDefaultRemark = !updated.remarks || key === 'status' || key === 'project_code';
           if (shouldDefaultRemark) {
-            updated.remarks = '';
+            if (updated.original_in_punch && !updated.original_out_punch) {
+              updated.remarks = 'Forgot to Punch Out';
+            } else if (!updated.original_in_punch && updated.original_out_punch) {
+              updated.remarks = 'Forgot to Punch In';
+            } else {
+              updated.remarks = '';
+            }
           }
         } else {
-          if (updated.remarks === 'Forgot to Punch' || updated.remarks === 'No Device') {
+          if (updated.remarks === 'Forgot to Punch' || updated.remarks === 'Forgot to Punch In' || updated.remarks === 'Forgot to Punch Out' || updated.remarks === 'No Device') {
             updated.remarks = '';
           }
         }
@@ -2216,7 +2279,7 @@ export default function TimesheetFinalizer({
 
     setRows(prev => ({ ...prev, [userId]: updated }));
     autoPostRowsBatch([updated]);
-  }, [rows, employeesMap, employeeAssignedProjects, userData?.email, projects, autoPostRowsBatch, pushHistory, deviceProjectMap]);
+  }, [rows, employeesMap, employeeAssignedProjects, userData?.email, projects, autoPostRowsBatch, pushHistory, deviceProjectMap, resolvedMode]);
 
   const handleVerifyBiometricRow = useCallback((userId: string) => {
     setVerifyingRowIds(prev => new Set(prev).add(userId));
@@ -2378,10 +2441,16 @@ export default function TimesheetFinalizer({
             if (!isBiometricFullyPopulated) {
               const shouldDefaultRemark = !updated.remarks || field === 'status' || field === 'project_code';
               if (shouldDefaultRemark) {
-                updated.remarks = '';
+                if (updated.original_in_punch && !updated.original_out_punch) {
+                  updated.remarks = 'Forgot to Punch Out';
+                } else if (!updated.original_in_punch && updated.original_out_punch) {
+                  updated.remarks = 'Forgot to Punch In';
+                } else {
+                  updated.remarks = '';
+                }
               }
             } else {
-              if (updated.remarks === 'Forgot to Punch' || updated.remarks === 'No Device') {
+              if (updated.remarks === 'Forgot to Punch' || updated.remarks === 'Forgot to Punch In' || updated.remarks === 'Forgot to Punch Out' || updated.remarks === 'No Device') {
                 updated.remarks = '';
               }
             }
@@ -2461,10 +2530,16 @@ export default function TimesheetFinalizer({
             if (!isBiometricFullyPopulated) {
               const shouldDefaultRemark = !updated.remarks;
               if (shouldDefaultRemark) {
-                updated.remarks = '';
+                if (updated.original_in_punch && !updated.original_out_punch) {
+                  updated.remarks = 'Forgot to Punch Out';
+                } else if (!updated.original_in_punch && updated.original_out_punch) {
+                  updated.remarks = 'Forgot to Punch In';
+                } else {
+                  updated.remarks = '';
+                }
               }
             } else {
-              if (updated.remarks === 'Forgot to Punch' || updated.remarks === 'No Device') {
+              if (updated.remarks === 'Forgot to Punch' || updated.remarks === 'Forgot to Punch In' || updated.remarks === 'Forgot to Punch Out' || updated.remarks === 'No Device') {
                 updated.remarks = '';
               }
             }
@@ -2503,7 +2578,14 @@ export default function TimesheetFinalizer({
     const recordsToRevoke = userIds.filter(userId => {
       const r = rows[userId];
       if (!r) return false;
-      if (isFocalFiltered && r.approval) return false;
+
+      const emp = employeesMap[userId];
+      const empProjCode = r.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
+      const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
+      const isUserFocalOnly = resolvedMode === 'verify' && !isDual;
+      const isRecordApproved = r.isApproved || !!r.approved_by || r.approval;
+
+      if (isUserFocalOnly && isRecordApproved) return false;
       return true;
     });
 
@@ -2557,7 +2639,7 @@ export default function TimesheetFinalizer({
       toast.success("Changes reverted to original.");
     }
 
-  }, [selectedRowIds, rows, date, isFocalFiltered, canUserEdit, employeesMap, punchGroups, punchMode, projects, deviceProjectMap, employeeAssignedProjects, guessRow]);
+  }, [selectedRowIds, rows, date, isFocalFiltered, canUserEdit, employeesMap, punchGroups, punchMode, projects, deviceProjectMap, employeeAssignedProjects, guessRow, resolvedMode, userData?.email]);
 
   const handleFinalize = async () => {
     if (!canUserAction) {
@@ -2852,10 +2934,16 @@ export default function TimesheetFinalizer({
             if (!isBiometricFullyPopulated) {
               const shouldDefaultRemark = !updated.remarks;
               if (shouldDefaultRemark) {
-                updated.remarks = '';
+                if (updated.original_in_punch && !updated.original_out_punch) {
+                  updated.remarks = 'Forgot to Punch Out';
+                } else if (!updated.original_in_punch && updated.original_out_punch) {
+                  updated.remarks = 'Forgot to Punch In';
+                } else {
+                  updated.remarks = '';
+                }
               }
             } else {
-              if (updated.remarks === 'Forgot to Punch' || updated.remarks === 'No Device') {
+              if (updated.remarks === 'Forgot to Punch' || updated.remarks === 'Forgot to Punch In' || updated.remarks === 'Forgot to Punch Out' || updated.remarks === 'No Device') {
                 updated.remarks = '';
               }
             }
@@ -2956,13 +3044,19 @@ export default function TimesheetFinalizer({
 
     const validRowsToPost: TimesheetRow[] = [];
     const updatedMap: Record<string, TimesheetRow> = {};
+    const isApproverMode = resolvedMode === 'approve';
 
     filteredEmployees.forEach(emp => {
       const userId = emp.device_user_id;
       const r = rows[userId];
       if (!r) return;
 
-      if (r.isApproved && (r.isVerified || !!r.verified_by)) return;
+      // Skip processed records depending on role
+      if (isApproverMode) {
+        if (r.isApproved) return;
+      } else {
+        if (r.inDatabase || r.isVerified) return;
+      }
 
       const currentStatus = r.status || 'no status';
       const isStatusValid = currentStatus !== 'no status';
@@ -2984,9 +3078,9 @@ export default function TimesheetFinalizer({
         project_code: effectiveProjectCode,
         isEdited: true,
         isVerified: true,
-        isApproved: true,
+        isApproved: isApproverMode ? true : false,
         verified_by: r.verified_by || userData?.email || 'Timekeeper',
-        approved_by: r.approved_by || userData?.email || 'Timekeeper'
+        approved_by: isApproverMode ? (r.approved_by || userData?.email || 'Timekeeper') : null
       };
 
       updatedMap[userId] = updated;
@@ -2995,12 +3089,132 @@ export default function TimesheetFinalizer({
 
     if (validRowsToPost.length > 0) {
       setRows(prev => ({ ...prev, ...updatedMap }));
-      toast.success(`Verified & Approved ${validRowsToPost.length} valid record(s).`);
+      if (isApproverMode) {
+        toast.success(`Approved ${validRowsToPost.length} valid record(s).`);
+      } else {
+        toast.success(`Verified ${validRowsToPost.length} valid record(s).`);
+      }
       autoPostRowsBatch(validRowsToPost);
     } else {
-      toast.info('No valid unapproved records to process.');
+      if (isApproverMode) {
+        toast.info('No valid unapproved records to process.');
+      } else {
+        toast.info('No valid unverified records to process.');
+      }
     }
-  }, [filteredEmployees, rows, canUserEdit, pushHistory, userData?.email, autoPostRowsBatch, employeeAssignedProjects]);
+  }, [filteredEmployees, rows, canUserEdit, pushHistory, userData?.email, autoPostRowsBatch, employeeAssignedProjects, resolvedMode]);
+
+  const handleRevokeAllRecords = useCallback(async () => {
+    if (!canUserEdit) {
+      toast.error('You do not have clearance to modify this.');
+      return;
+    }
+
+    const isApproverMode = resolvedMode === 'approve';
+    const rowsToProcess: string[] = [];
+
+    filteredEmployees.forEach(emp => {
+      const userId = emp.device_user_id;
+      const r = rows[userId];
+      if (!r) return;
+
+      if (isApproverMode) {
+        // Dual roles / Approvers: revoke approved records
+        if (r.inDatabase && (r.isApproved || !!r.approved_by || r.approval)) {
+          rowsToProcess.push(userId);
+        }
+      } else {
+        // Focal points: revoke verified records (inDatabase is true) that are not approved
+        const empProjCode = r.project_code || employeeAssignedProjects[emp.emp_id] || '';
+        const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
+        const isUserFocalOnly = resolvedMode === 'verify' && !isDual;
+        const isRecordApproved = r.isApproved || !!r.approved_by || r.approval;
+
+        if (isUserFocalOnly && isRecordApproved) {
+          // Cannot revoke approved records
+          return;
+        }
+
+        if (r.inDatabase) {
+          rowsToProcess.push(userId);
+        }
+      }
+    });
+
+    if (rowsToProcess.length === 0) {
+      toast.info(isApproverMode ? 'No approved records to revoke.' : 'No verified records to revoke.');
+      return;
+    }
+
+    setSaving(true);
+    const actionText = isApproverMode ? 'approval' : 'verification';
+    toast.loading(`Revoking ${actionText} for ${rowsToProcess.length} record(s)...`, { id: 'bulk-revoke' });
+
+    try {
+      if (isApproverMode) {
+        // Update database: set approved_by to null
+        const { error: updErr } = await supabase
+          .from('timesheet')
+          .update({
+            approved_by: null,
+            last_updated: new Date().toISOString()
+          })
+          .eq('date', date)
+          .in('employee_code', rowsToProcess);
+
+        if (updErr) throw updErr;
+      } else {
+        // Delete database rows
+        const { error: delErr } = await supabase
+          .from('timesheet')
+          .delete()
+          .eq('date', date)
+          .in('employee_code', rowsToProcess);
+
+        if (delErr) throw delErr;
+      }
+
+      // Revert local state rows
+      setRows(prev => {
+        const next = { ...prev };
+        rowsToProcess.forEach(userId => {
+          const current = prev[userId];
+          if (!current) return;
+
+          if (isApproverMode) {
+            // Revert approval state but keep inDatabase
+            next[userId] = {
+              ...current,
+              isApproved: false,
+              approval: false,
+              approved_by: null
+            };
+          } else {
+            // Completely revert verification state
+            const emp = employeesMap[userId];
+            if (!emp) return;
+            const empPunches = punchGroups[userId] || [];
+            const guessed = guessRow(emp, empPunches, punchMode, projects, deviceProjectMap, employeeAssignedProjects);
+
+            next[userId] = {
+              ...guessed,
+              isApproved: false,
+              approval: false,
+              inDatabase: false
+            };
+          }
+        });
+        return next;
+      });
+
+      toast.success(`Successfully revoked ${actionText} for ${rowsToProcess.length} record(s).`, { id: 'bulk-revoke' });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || `Failed to revoke ${actionText} in bulk.`, { id: 'bulk-revoke' });
+    } finally {
+      setSaving(false);
+    }
+  }, [filteredEmployees, rows, canUserEdit, resolvedMode, date, employeeAssignedProjects, projects, userData?.email, employeesMap, punchGroups, punchMode, deviceProjectMap, setSaving, setRows]);
 
   const baseRelevantEmployees = useMemo(() => {
     return employees.filter(emp => {
@@ -4181,7 +4395,15 @@ export default function TimesheetFinalizer({
                           className="rounded-md focus:bg-teal-50 text-teal-700 font-semibold cursor-pointer text-xs flex items-center gap-1.5 p-2"
                         >
                           <SquareCheck className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-                          <span>Approve Valid Records</span>
+                          <span>{resolvedMode === 'approve' ? 'Approve Valid Records' : 'Verify Valid Records'}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={handleRevokeAllRecords}
+                          disabled={saving || loading || !canUserEdit}
+                          className="rounded-md focus:bg-rose-50 text-rose-700 font-semibold cursor-pointer text-xs flex items-center gap-1.5 p-2"
+                        >
+                          <Undo2 className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                          <span>{resolvedMode === 'approve' ? 'Revoke Approval for All' : 'Revoke All'}</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -4201,6 +4423,14 @@ export default function TimesheetFinalizer({
                           >
                             <SquareCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                             <span>Approve Valid Records</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={handleRevokeAllRecords}
+                            disabled={saving || loading || !canUserEdit}
+                            className="rounded-md focus:bg-rose-50 text-rose-700 font-semibold cursor-pointer text-xs flex items-center gap-1.5 p-2"
+                          >
+                            <Undo2 className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                            <span>Revoke Approval for All</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -4242,6 +4472,8 @@ export default function TimesheetFinalizer({
                           isVerifying={verifyingRowIds.has(emp.device_user_id)}
                           onVerifyBiometricRow={handleVerifyBiometricRow}
                           projectsWithDevices={projectsWithDevices}
+                          projects={projects}
+                          employeeAssignedProjects={employeeAssignedProjects}
                         />
                       );
                     })}
@@ -4472,7 +4704,7 @@ export default function TimesheetFinalizer({
                   value={
                     bulkRemarksValue === ''
                       ? 'NONE'
-                      : (bulkRemarksValue === 'Present' || bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave' || bulkRemarksValue === 'No Device')
+                      : (bulkRemarksValue === 'Present' || bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Forgot to Punch In' || bulkRemarksValue === 'Forgot to Punch Out' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave' || bulkRemarksValue === 'No Device')
                         ? bulkRemarksValue
                         : 'CUSTOM'
                   }
@@ -4492,6 +4724,8 @@ export default function TimesheetFinalizer({
                   <SelectContent className="bg-white border border-slate-200 z-[120]">
                     <SelectItem value="NONE" className="text-xs cursor-pointer focus:bg-slate-50">No Remark</SelectItem>
                     <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
+                    <SelectItem value="Forgot to Punch In" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch In</SelectItem>
+                    <SelectItem value="Forgot to Punch Out" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch Out</SelectItem>
                     <SelectItem value="Sick Leave" className="text-xs cursor-pointer focus:bg-slate-50">Sick Leave</SelectItem>
                     <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
                     <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
@@ -4590,7 +4824,7 @@ export default function TimesheetFinalizer({
                 value={
                   bulkRemarksValue === ''
                     ? 'NONE'
-                    : (bulkRemarksValue === 'Present' || bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave' || bulkRemarksValue === 'No Device')
+                    : (bulkRemarksValue === 'Present' || bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Forgot to Punch In' || bulkRemarksValue === 'Forgot to Punch Out' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave' || bulkRemarksValue === 'No Device')
                       ? bulkRemarksValue
                       : 'CUSTOM'
                 }
@@ -4610,6 +4844,8 @@ export default function TimesheetFinalizer({
                 <SelectContent className="bg-white border border-slate-200 z-[120]">
                   <SelectItem value="NONE" className="text-xs cursor-pointer focus:bg-slate-50">No Remark</SelectItem>
                   <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
+                  <SelectItem value="Forgot to Punch In" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch In</SelectItem>
+                  <SelectItem value="Forgot to Punch Out" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch Out</SelectItem>
                   <SelectItem value="Sick Leave" className="text-xs cursor-pointer focus:bg-slate-50">Sick Leave</SelectItem>
                   <SelectItem value="Unpaid Leave" className="text-xs cursor-pointer focus:bg-slate-50">Unpaid Leave</SelectItem>
                   <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>

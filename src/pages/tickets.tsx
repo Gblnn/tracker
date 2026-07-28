@@ -157,8 +157,8 @@ const getPlainTextFromHtml = (html: string) => {
 };
 
 export default function Tickets() {
-  const { userData } = useAuth();
-  const user = auth.currentUser;
+  const { userData, user } = useAuth();
+  const activeUserEmail = user?.email || userData?.email || '';
   const [isDesktop, setIsDesktop] = useState<boolean>(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
 
   const hasTicketHandler = useMemo(() => {
@@ -262,7 +262,7 @@ export default function Tickets() {
       console.error(err); setLoadingTickets(false);
     });
     return unsub;
-  }, [user?.email]);
+  }, [activeUserEmail]);
 
   // when a ticket is selected, stream its messages
   useEffect(() => {
@@ -447,7 +447,7 @@ export default function Tickets() {
     const list = (tickets || []).filter(t => {
       // Ensure consistent case for email comparison
       const ticketCreatorEmail = t.createdBy?.toLowerCase();
-      const currentUserEmail = user?.email?.toLowerCase();
+      const currentUserEmail = activeUserEmail.toLowerCase();
 
       if (t.confidential && !hasTicketHandler && ticketCreatorEmail !== currentUserEmail) return false;
       return true;
@@ -500,13 +500,13 @@ export default function Tickets() {
   // post: do not append anything locally until server confirms. Return boolean success.
   const postMessage = async (ticketId: string, text: string, parentId?: string | null): Promise<boolean> => {
     const plainText = getPlainTextFromHtml(text).trim();
-    if (!plainText || !user) return false;
+    if (!plainText || !activeUserEmail) return false;
     setSending(true);
     try {
       // store on server
       await addDoc(collection(db, `tickets/${ticketId}/messages`), {
         text: plainText,
-        createdBy: user.email,
+        createdBy: activeUserEmail,
         createdAt: serverTimestamp(),
         parentId: parentId || null,
       });
@@ -527,7 +527,7 @@ export default function Tickets() {
 
   const handleCreateTicket = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const creatorEmail = user?.email || userData?.email || null;
+    const creatorEmail = activeUserEmail || null;
     if (!newTicket.title || !newTicket.description || !creatorEmail) {
       toast.error('Unable to determine your email address. Please refresh or check your profile.');
       return;
@@ -610,7 +610,7 @@ export default function Tickets() {
 
 
               {(() => {
-                const canEdit = !!(userData?.role === 'admin' || (user && node.createdBy === user.email));
+                const canEdit = !!(userData?.role === 'admin' || (activeUserEmail && node.createdBy === activeUserEmail));
                 return (
                   <CustomDropDown
                     className=""
@@ -787,7 +787,7 @@ export default function Tickets() {
                           </div>
 
                         </div>
-                        {(t.createdBy === user?.email || (overrideDeleteEnabled && hasTicketHandler)) && (
+                        {(t.createdBy === activeUserEmail || (overrideDeleteEnabled && hasTicketHandler)) && (
                           <CustomDropDown
                             trigger={<MoreVertical size={15} />}
                             option1Text={'Edit'}
@@ -812,14 +812,14 @@ export default function Tickets() {
                           {expanded ? <ArrowUp size={15} /> : <ArrowDown size={15} />} {expanded ? "Hide Replies " : "Replies "} ({messageCounts[t.id] ?? 0})
                         </p>
 
-                        {(t.createdBy === user?.email || hasTicketHandler) ? (
-                          <button onClick={(e) => { e.stopPropagation(); handleToggleConfidential(t.id, !!t.confidential); }} title={t.confidential ? 'Private' : 'Public'} style={{ background: t.createdBy === user?.email ? "#eef2ff" : "none", border: '', padding: "0.5rem", cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, borderRadius: 6, marginRight: "0.75rem" }}>
+                        {(t.createdBy === activeUserEmail || hasTicketHandler) ? (
+                          <button onClick={(e) => { e.stopPropagation(); handleToggleConfidential(t.id, !!t.confidential); }} title={t.confidential ? 'Private' : 'Public'} style={{ background: t.createdBy === activeUserEmail ? "#eef2ff" : "none", border: '', padding: "0.5rem", cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, borderRadius: 6, marginRight: "0.75rem" }}>
                             <p>{t.confidential ? <Lock color="darkblue" size={12} /> : <Globe color="darkblue" size={12} />}</p>
                             {/* <p>{t.confidential ? 'Private Thread' : 'Public Thread'}</p> */}
                             {/* <ChevronRight size={12} style={{ marginLeft: 4, opacity: 0.6 }} /> */}
                           </button>
                         ) : (
-                          <div title={t.confidential ? 'Private' : 'Public'} style={{ background: t.createdBy === user?.email ? "#eef2ff" : "none", border: '', padding: "0.5rem", borderRadius: 6, fontSize: 12, color: "", opacity: 0.8, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: t.createdBy === user?.email ? 'pointer' : "", marginRight: "0.75rem", fontWeight: "500", }}>
+                          <div title={t.confidential ? 'Private' : 'Public'} style={{ background: t.createdBy === activeUserEmail ? "#eef2ff" : "none", border: '', padding: "0.5rem", borderRadius: 6, fontSize: 12, color: "", opacity: 0.8, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: t.createdBy === activeUserEmail ? 'pointer' : "", marginRight: "0.75rem", fontWeight: "500", }}>
                             {t.confidential ? <Lock color="darkblue" size={12} /> : <Globe color="darkblue" size={12} />}
                             {/* <span style={{ fontSize: 12 }}>{t.confidential ? 'Private' : 'Public Thread'}</span> */}
                           </div>
@@ -947,12 +947,12 @@ export default function Tickets() {
         <ResponsiveModal title="New Ticket" open={showNewModal} onOpenChange={(v) => { if (!v) { setShowNewModal(false); setNewTicket({ title: '', description: '', priority: 'Normal', confidential: false }); } }} hideHeader>
           <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 16 }}>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
-              <button onClick={(e) => { e.stopPropagation(); }} style={{ width: 62, height: 62, borderRadius: 12, background: avatarColor(user?.email || ''), color: 'white', border: 'none', fontWeight: 700 }}>
+              <button onClick={(e) => { e.stopPropagation(); }} style={{ width: 62, height: 62, borderRadius: 12, background: avatarColor(activeUserEmail || ''), color: 'white', border: 'none', fontWeight: 700 }}>
                 <Ticket />
               </button>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ fontSize: '1rem', fontWeight: 500 }}>New Ticket</div>
-                <div style={{ fontSize: 12, color: 'darkblue', fontWeight: '500' }}>{user?.email}</div>
+                <div style={{ fontSize: 12, color: 'darkblue', fontWeight: '500' }}>{activeUserEmail}</div>
               </div>
             </div>
 

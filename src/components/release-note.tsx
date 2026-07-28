@@ -46,12 +46,13 @@ export default function ReleaseNote() {
             }}
           >
             <ul style={{ listStyle: "disc" }}>
-              <li>Added silent background database synchronization and a 5-second polling fallback</li>
+              <li>Added silent background database synchronization using explicit realtime listeners</li>
               <li>Fixed focal point employee project visibility visibility bugs</li>
               <li>Implemented read-only plain-text table display in Approver mode</li>
               <li>Enforced manual remark validation for incomplete biometric punch logs</li>
               <li>Restricted 'No Device' automatic remark defaulting to non-device projects only</li>
               <li>Cleaned up timesheet actions: removed 'Allocate Punch Time' and bracketed device details</li>
+              <li>Replaced the status dropdown with plain text for records having at least 1 machine logged punch</li>
             </ul>
           </div>
         </AccordionContent>

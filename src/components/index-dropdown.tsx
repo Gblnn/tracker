@@ -29,12 +29,13 @@ const CHANGELOGS = [
     version: "v1.82",
     date: "July 28, 2026",
     changes: [
-      "Added silent background database synchronization and a 5-second polling fallback to Timesheet Finalizer.",
+      "Added silent background database synchronization using explicit realtime listeners to Timesheet Finalizer.",
       "Fixed focal point employee project visibility bugs.",
       "Implemented read-only plain-text table display in Approver mode.",
       "Enforced manual remark validation for incomplete biometric punch logs.",
       "Restricted 'No Device' automatic remark defaulting to non-device projects only.",
       "Cleaned up timesheet actions: removed 'Allocate Punch Time' and bracketed device details from badges.",
+      "Replaced the status dropdown with plain text for records having at least 1 machine logged punch.",
     ]
   },
   {
