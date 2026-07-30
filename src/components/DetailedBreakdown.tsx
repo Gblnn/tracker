@@ -475,12 +475,12 @@ export default function DetailedBreakdown({ summaries }: DetailedBreakdownProps)
 
           {/* Sticky footer for totals */}
           <tfoot className="sticky bottom-0 z-30 bg-slate-100">
-            {/* Total Employees Row */}
-            <tr className="bg-slate-100 hover:bg-slate-100 transition-colors">
+            {/* Absent Employees Row */}
+            <tr className="bg-slate-50 hover:bg-slate-50 transition-colors">
               <td
-                className="sticky left-0 bg-slate-100 z-40 px-4 py-2.5 font-bold text-gray-800 border-r border-b border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-t border-gray-300"
+                className="sticky left-0 bg-slate-50 z-40 px-4 py-2.5 font-bold text-gray-800 border-r border-b border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-t border-gray-300"
               >
-                Total Employees
+                Absent
               </td>
               {columns.map((col, idx) => {
                 const total = colTotals[idx];
@@ -494,32 +494,28 @@ export default function DetailedBreakdown({ summaries }: DetailedBreakdownProps)
                 return (
                   <td
                     key={col}
-                    onClick={() => setDrilldown({ title: col, company: col })}
-                    className="px-4 py-2.5 text-center border-r border-b border-gray-200 border-t border-gray-300 cursor-pointer hover:bg-teal-50/50 transition-colors"
+                    onClick={() => setDrilldown({ title: `${col} — Absent`, company: col, absentOnly: true })}
+                    className={`px-4 py-2.5 text-center font-bold border-r border-b border-gray-200 border-t border-gray-300 cursor-pointer hover:bg-rose-50/40 transition-colors ${total.absent > 0 ? 'text-rose-600 bg-rose-50/20' : 'text-gray-500'}`}
                   >
-                    <div className="inline-flex items-center justify-center gap-1 font-bold">
-                      <span className="text-teal-700">{total.present}</span>
-                      <span className="text-gray-400">/</span>
-                      <span className="text-gray-700">{total.total}</span>
-                    </div>
+                    {total.absent}
                   </td>
                 );
               })}
-              {/* Sticky Grand Total cell */}
+              {/* Sticky Grand Absent cell */}
               <td
-                onClick={() => setDrilldown({ title: 'Total Employees' })}
-                className="sticky right-0 bg-slate-100 z-40 px-4 py-2.5 text-center font-extrabold text-teal-800 border-l border-b border-gray-200 border-t border-gray-300 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] cursor-pointer hover:bg-teal-50/50 transition-colors"
+                onClick={() => setDrilldown({ title: 'Absent Employees', absentOnly: true })}
+                className={`sticky right-0 bg-slate-50 z-40 px-4 py-2.5 text-center font-extrabold border-l border-b border-gray-200 border-t border-gray-300 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] cursor-pointer hover:bg-rose-50/50 transition-colors ${grandTotal.absent > 0 ? 'text-rose-700' : 'text-gray-700'}`}
               >
-                {grandTotal.present}/{grandTotal.total}
+                {grandTotal.absent}
               </td>
             </tr>
 
-            {/* Absent Employees Row */}
-            <tr className="bg-slate-50 hover:bg-slate-50 transition-colors">
+            {/* Total Employees Row */}
+            <tr className="bg-slate-100 hover:bg-slate-100 transition-colors">
               <td
-                className="sticky left-0 bg-slate-50 z-40 px-4 py-2.5 font-bold text-gray-800 border-r border-b border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                className="sticky left-0 bg-slate-100 z-40 px-4 py-2.5 font-bold text-gray-800 border-r border-b border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
               >
-                Absent
+                Total Employees
               </td>
               {columns.map((col, idx) => {
                 const total = colTotals[idx];
@@ -533,19 +529,23 @@ export default function DetailedBreakdown({ summaries }: DetailedBreakdownProps)
                 return (
                   <td
                     key={col}
-                    onClick={() => setDrilldown({ title: `${col} — Absent`, company: col, absentOnly: true })}
-                    className={`px-4 py-2.5 text-center font-bold border-r border-b border-gray-200 cursor-pointer hover:bg-rose-50/40 transition-colors ${total.absent > 0 ? 'text-rose-600 bg-rose-50/20' : 'text-gray-500'}`}
+                    onClick={() => setDrilldown({ title: col, company: col })}
+                    className="px-4 py-2.5 text-center border-r border-b border-gray-200 cursor-pointer hover:bg-teal-50/50 transition-colors"
                   >
-                    {total.absent}
+                    <div className="inline-flex items-center justify-center gap-1 font-bold">
+                      <span className="text-teal-700">{total.present}</span>
+                      <span className="text-gray-400">/</span>
+                      <span className="text-gray-700">{total.total}</span>
+                    </div>
                   </td>
                 );
               })}
-              {/* Sticky Grand Absent cell */}
+              {/* Sticky Grand Total cell */}
               <td
-                onClick={() => setDrilldown({ title: 'Absent Employees', absentOnly: true })}
-                className={`sticky right-0 bg-slate-50 z-40 px-4 py-2.5 text-center font-extrabold border-l border-b border-gray-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] cursor-pointer hover:bg-rose-50/50 transition-colors ${grandTotal.absent > 0 ? 'text-rose-700' : 'text-gray-700'}`}
+                onClick={() => setDrilldown({ title: 'Total Employees' })}
+                className="sticky right-0 bg-slate-100 z-40 px-4 py-2.5 text-center font-extrabold text-teal-800 border-l border-b border-gray-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] cursor-pointer hover:bg-teal-50/50 transition-colors"
               >
-                {grandTotal.absent}
+                {grandTotal.present}/{grandTotal.total}
               </td>
             </tr>
           </tfoot>
