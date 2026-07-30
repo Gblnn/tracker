@@ -15,10 +15,9 @@ import {
   deleteDoc,
   doc,
   getDocs,
-  orderBy,
   query,
   updateDoc,
-  where,
+  where
 } from "firebase/firestore";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -50,8 +49,9 @@ import {
   UserCheck,
   Users as UsersIcon,
   Wallet,
+  Search,
 } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 
 // Constants for localStorage keys
@@ -146,7 +146,7 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
   role,
   setRole,
   clearance,
-  
+
   editor,
   setEditor,
   sensitive_data,
@@ -154,7 +154,7 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
   loading,
   onUpdate,
   onDelete,
-  
+
   onOpenClearanceDrawer,
 }) => {
   // Parse clearance to count enabled modules
@@ -170,7 +170,7 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
     <div style={{ display: "flex", flexDirection: "column", maxHeight: "75vh", width: "100%" }}>
       {/* Fixed Header */}
       <div style={{
-        paddingTop:"0rem",
+        paddingTop: "0rem",
         padding: "1.5rem",
         paddingBottom: "1rem",
         borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
@@ -179,7 +179,7 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
         width: "100%"
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "", gap: "", flexFlow:"column" }}>
+          <div style={{ display: "flex", alignItems: "", gap: "", flexFlow: "column" }}>
             {/* <div style={{
               background: "black",
               padding: "0.75rem",
@@ -190,33 +190,33 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
             }}>
               <User color="white" width="1.5rem" />
             </div> */}
-            <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em",  }}>{display_name}</h2>
-            <div style={{fontSize:"0.8rem", marginLeft:"0.25rem"}}>{display_email}</div>
+            <h2 style={{ fontSize: "1.5rem", letterSpacing: "-0.02em", }}>{display_name}</h2>
+            <div style={{ fontSize: "0.8rem", marginLeft: "0.25rem" }}>{display_email}</div>
           </div>
           {
-            display_email != "it@soharstar.com"&&
+            display_email != "it@soharstar.com" &&
             <button
-            onClick={onDelete}
-            style={{
-              fontSize: "0.75rem",
-              paddingLeft: "1rem",
-              paddingRight: "1rem",
-              height: "2rem",
-              background: "rgba(220, 38, 38, 0.1)",
-              // border: "1px solid rgba(220, 38, 38, 0.3)",
-              borderRadius: "0.5rem",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              color: "crimson"
-            }}
-          >
-            <MinusCircle width={"1rem"} color="crimson" />
-            Remove
-          </button>
+              onClick={onDelete}
+              style={{
+                fontSize: "0.75rem",
+                paddingLeft: "1rem",
+                paddingRight: "1rem",
+                height: "2rem",
+                background: "rgba(220, 38, 38, 0.1)",
+                // border: "1px solid rgba(220, 38, 38, 0.3)",
+                borderRadius: "0.5rem",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                color: "crimson"
+              }}
+            >
+              <MinusCircle width={"1rem"} color="crimson" />
+              Remove
+            </button>
           }
-          
+
         </div>
       </div>
 
@@ -249,13 +249,13 @@ const UserDetailsContent: React.FC<UserDetailsContentProps> = ({
               icon={<Package width="1.25rem" color="mediumslateblue" />}
               id_subtitle={`${getEnabledModulesCount()} modules enabled`}
             />
-            <RoleSelect 
-              value={role.toLowerCase()} 
+            <RoleSelect
+              value={role.toLowerCase()}
               onChange={(newRole) => {
                 setRole(newRole);
               }}
             />
-            
+
             <IOMenu
               title="Editing"
               placeholder="Clearance"
@@ -328,7 +328,7 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
   modulePermissions,
   onToggleModule,
   onSave,
-  
+
 }) => {
   const [offerLettersOptionsOpen, setOfferLettersOptionsOpen] = useState(false);
   const [ticketOptionsOpen, setTicketOptionsOpen] = useState(false);
@@ -338,7 +338,7 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
 
   useEffect(() => {
     const prev = prevPermissionsRef.current;
-    
+
     if (modulePermissions.offer_letters && !prev.offer_letters) {
       setOfferLettersOptionsOpen(true);
     } else if (!modulePermissions.offer_letters && prev.offer_letters) {
@@ -362,8 +362,8 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem", justifyContent:"center" }}>
-        
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem", justifyContent: "center" }}>
+
         <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Module Clearance</h2>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "50vh", overflowY: "auto" }}>
@@ -481,7 +481,7 @@ const ModuleClearanceContent: React.FC<ModuleClearanceContentProps> = ({
                     ) : (
                       <div style={{ width: "1.5rem", height: "1.5rem" }} />
                     )}
-                    {isImageIcon ? ( 
+                    {isImageIcon ? (
                       <img
                         src={Icon as string}
                         alt={module.name}
@@ -781,6 +781,17 @@ export default function Users() {
   const [showModuleIcons, setShowModuleIcons] = useState(false);
   const [fetchingData, setfetchingData] = useState(false);
   const [users, setUsers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery.trim()) return users;
+    const query = searchQuery.toLowerCase().trim();
+    return users.filter((user: any) => {
+      const nameMatch = (user.name || "").toLowerCase().includes(query);
+      const emailMatch = (user.email || "").toLowerCase().includes(query);
+      return nameMatch || emailMatch;
+    });
+  }, [users, searchQuery]);
   const [userDialog, setUserDialog] = useState(false);
   const { userData: currentUserData } = useAuth();
 
@@ -800,7 +811,7 @@ export default function Users() {
   const [editor, setEditor] = useState("");
   const [sensitive_data, setSensitiveData] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  
+
   // Clearance drawer states
   const [clearanceDrawerOpen, setClearanceDrawerOpen] = useState(false);
   const [modulePermissions, setModulePermissions] = useState<Record<string, boolean>>({});
@@ -911,10 +922,10 @@ export default function Users() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
@@ -931,7 +942,7 @@ export default function Users() {
           const updatedUser = { ...parsedUser, ...updatedData };
           localStorage.setItem(CACHED_USER_KEY, JSON.stringify(updatedUser));
 
-         
+
         }
       }
     } catch (error) {
@@ -1004,12 +1015,19 @@ export default function Users() {
   const fetchUsers = async () => {
     setfetchingData(true);
     const RecordCollection = collection(db, "users");
-    const recordQuery = query(RecordCollection, orderBy("role"));
+    const recordQuery = query(RecordCollection);
     const querySnapshot = await getDocs(recordQuery);
     const fetchedData: any = [];
 
     querySnapshot.forEach((doc: any) => {
       fetchedData.push({ id: doc.id, ...doc.data() });
+    });
+
+    // Sort users by last active time descending, putting inactive users at the end
+    fetchedData.sort((a: any, b: any) => {
+      const timeA = a.last_active ? new Date(a.last_active).getTime() : 0;
+      const timeB = b.last_active ? new Date(b.last_active).getTime() : 0;
+      return timeB - timeA;
     });
     setfetchingData(false);
     setUsers(fetchedData);
@@ -1072,10 +1090,15 @@ export default function Users() {
         background: "radial-gradient(circle at 12% -8%, rgba(35, 84, 220, 0.26), rgba(255,255,255,0) 42%), radial-gradient(circle at 86% 8%, rgba(42, 110, 255, 0.2), rgba(255,255,255,0) 40%), var(--background)",
       }}
     >
+      <style>{`
+        .search-input-field::placeholder {
+          color: rgba(255, 255, 255, 0.5) !important;
+        }
+      `}</style>
       <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
         <Back
-        blurBG
-       fixed
+          blurBG
+          fixed
           title="Users"
           extra={
             <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -1138,9 +1161,49 @@ export default function Users() {
                     onChange={e => setShowModuleIcons(e.target.checked)}
                     style={{ accentColor: "#1e40af", width: "1.1rem", height: "1.1rem", marginRight: "0.3rem" }}
                   /> */}
-                  <KeyRound style={{scale:"0.8"}} onClick={() => setShowModuleIcons(!showModuleIcons)} />
+                  <KeyRound style={{ scale: "0.8" }} onClick={() => setShowModuleIcons(!showModuleIcons)} />
                 </label>
               </div>
+            </div>
+
+            {/* Search Input Row */}
+            <div style={{ marginTop: "0.8rem", position: "relative", display: "flex", alignItems: "center" }}>
+              <Search
+                style={{
+                  position: "absolute",
+                  left: "0.75rem",
+                  width: "1rem",
+                  height: "1rem",
+                  color: CONTROL_THEME.mutedText,
+                  pointerEvents: "none"
+                }}
+              />
+              <input
+                className="search-input-field"
+                type="text"
+                placeholder="Search users by name or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "0.55rem 1rem 0.55rem 2.2rem",
+                  borderRadius: "0.6rem",
+                  border: "1px solid rgba(255, 255, 255, 0.15)",
+                  background: "rgba(255, 255, 255, 0.08)",
+                  color: "white",
+                  fontSize: "0.85rem",
+                  outline: "none",
+                  transition: "border-color 0.2s, background-color 0.2s",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "rgba(255, 255, 255, 0.35)";
+                  e.target.style.backgroundColor = "rgba(255, 255, 255, 0.12)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "rgba(255, 255, 255, 0.15)";
+                  e.target.style.backgroundColor = "rgba(255, 255, 255, 0.08)";
+                }}
+              />
             </div>
           </div>
         </div>
@@ -1157,15 +1220,15 @@ export default function Users() {
               alignItems: "center",
               justifyContent: "center",
               height: "100svh",
-              
+
             }}
           >
             <Loader2 className="animate-spin" style={{ color: "darkblue", scale: "1.5" }} />
           </div>
         ) : (
           <div
-          className=""
-          
+            className=""
+
             style={{
               display: isMobile ? "flex" : "grid",
               flexFlow: isMobile ? "column" : undefined,
@@ -1175,23 +1238,41 @@ export default function Users() {
               height: "",
               overflowY: "auto",
               padding: "1.25rem",
-              paddingTop: isMobile ? "9.2rem" : "10rem",
+              paddingTop: isMobile ? "13.2rem" : "14rem",
               paddingBottom: "7rem"
             }}
           >
-            {users.map((user: any) => {
+            {filteredUsers.length === 0 && searchQuery.trim() && (
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "4rem 2rem",
+                  color: "rgba(17, 24, 39, 0.6)",
+                  textAlign: "center",
+                  width: "100%",
+                }}
+              >
+                <Search style={{ width: "2rem", height: "2rem", opacity: 0.5, marginBottom: "1rem" }} />
+                <span style={{ fontSize: "0.9rem", fontWeight: 500 }}>No users found matching "{searchQuery}"</span>
+              </div>
+            )}
+            {filteredUsers.map((user: any) => {
               // Parse clearance for this user
               let userModulePermissions: Record<string, boolean> = {};
               try {
                 userModulePermissions = JSON.parse(user.clearance || '{}');
-              } catch {}
-               return (
-                
-                <div key={user.id} style={{ display: "flex", flexDirection: "column", height: "100%", border:"" }}>
-                  <div style={{ display: "flex", flexDirection: "column", border:"", height:"fit-content" }}>
-                   
+              } catch { }
+              return (
+
+                <div key={user.id} style={{ display: "flex", flexDirection: "column", height: "100%", border: "" }}>
+                  <div style={{ display: "flex", flexDirection: "column", border: "", height: "fit-content" }}>
+
                     <Directive
-                    height="fit-content"
+                      height="fit-content"
                       onClick={() => {
                         // Restrict viewing of special developer account to the developer only
                         if (user.email === "it@soharstar.com" && currentUserData?.email !== "it@soharstar.com") {
@@ -1223,18 +1304,18 @@ export default function Users() {
                       subtext={
                         user.last_active
                           ? (() => {
-                              const d = new Date(user.last_active);
-                              const now = new Date();
-                              const diffMs = now.getTime() - d.getTime();
-                              const diffMins = Math.floor(diffMs / 60000);
-                              const diffHours = Math.floor(diffMins / 60);
-                              const diffDays = Math.floor(diffHours / 24);
-                              if (diffMins < 1) return "Active just now";
-                              if (diffMins < 60) return `Active ${diffMins}m ago`;
-                              if (diffHours < 24) return `Active ${diffHours}h ago`;
-                              if (diffDays < 30) return `Active ${diffDays}d ago`;
-                              return `Last active ${d.toLocaleDateString()}`;
-                            })()
+                            const d = new Date(user.last_active);
+                            const now = new Date();
+                            const diffMs = now.getTime() - d.getTime();
+                            const diffMins = Math.floor(diffMs / 60000);
+                            const diffHours = Math.floor(diffMins / 60);
+                            const diffDays = Math.floor(diffHours / 24);
+                            if (diffMins < 1) return "Active just now";
+                            if (diffMins < 60) return `Active ${diffMins}m ago`;
+                            if (diffHours < 24) return `Active ${diffHours}h ago`;
+                            if (diffDays < 30) return `Active ${diffDays}d ago`;
+                            return `Last active ${d.toLocaleDateString()}`;
+                          })()
                           : "No Activity Yet"
                       }
                     />
@@ -1250,7 +1331,7 @@ export default function Users() {
                       background: "rgba(246 248 252 / 0.68)",
                       borderRadius: "0.5rem",
                       marginTop: "0.25rem",
-                      
+
                     }}>
                       {MODULES.filter(m => userModulePermissions[m.id]).map((m) => {
                         const Icon = m.icon;
@@ -1270,7 +1351,7 @@ export default function Users() {
                               // background: isHighlighted ? "rgba(30,144,255,0.13)" : undefined,
                               cursor: "pointer",
                               transition: "color 0.15s, background 0.15s",
-                              height:"1.25rem"
+                              height: "1.25rem"
                             }}
                             onMouseEnter={() => setHoveredModuleId(m.id)}
                             onMouseLeave={() => setHoveredModuleId(null)}
@@ -1358,7 +1439,7 @@ export default function Users() {
         hideHeader={true}
       >
         <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", width: "100%", boxSizing: "border-box" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem", justifyContent:"center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem", justifyContent: "center" }}>
             <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Add User</h2>
           </div>
           <input
@@ -1490,8 +1571,8 @@ export default function Users() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-         
-          
+
+
         }}
       >
         <Plus width="1.5rem" />

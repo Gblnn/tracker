@@ -268,7 +268,7 @@ export default function Terminal() {
                 <span className="select-text" style={{ userSelect: "text", WebkitUserSelect: "text" }}>
                   Task #{task.id}: {task.command_type} {employeeInfo} to device {task.device_serial} {deviceLocation}
                 </span>
-                {canEditAttendance && task.status === 'sent' && (
+                {canEditAttendance && task.status === 'error' && (
                   <button
                     style={{ padding: "0", background: "none" }}
                     onClick={() => handleRetryTask(task.id)}
