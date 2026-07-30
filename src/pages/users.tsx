@@ -1149,8 +1149,18 @@ export default function Users() {
                 <span style={{ fontSize: "0.65rem", letterSpacing: "0.12em", textTransform: "uppercase", color: CONTROL_THEME.mutedText }}>
                   Access Control Module
                 </span>
-                <h2 style={{ fontSize: isMobile ? "1.34rem" : "1.34rem", fontWeight: 500, color: "white", lineHeight: 1.2 }}>
-                  User Clearance
+                <h2 style={{ fontSize: isMobile ? "1.34rem" : "1.34rem", fontWeight: 500, color: "white", lineHeight: 1.2, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span>User Clearance</span>
+                  <span style={{
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    background: "rgba(255, 255, 255, 0.15)",
+                    padding: "0.15rem 0.5rem",
+                    borderRadius: "0.5rem",
+                    color: CONTROL_THEME.accentText
+                  }}>
+                    {searchQuery.trim() ? `${filteredUsers.length} of ${users.length}` : users.length} users
+                  </span>
                 </h2>
               </div>
               <div style={{ display: "flex", gap: "0.7rem", alignItems: "center" }}>

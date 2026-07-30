@@ -384,6 +384,8 @@ const TimesheetRowComponent = memo(({
     return true;
   }, [row.status, row.project_code, row.punch_in, row.punch_out, isRemarksInvalid]);
 
+  const isApproveModeReadOnly = resolvedMode === 'approve' && !(isDual && (!row.status || row.status === 'no status' || !hasNoRedBorders));
+
 
 
   return (
@@ -459,7 +461,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Status Select */}
       <td style={{ textAlign: 'center' }}>
-        {(!isRowEditable || resolvedMode === 'approve' || row.inDatabase || !!row.original_in_punch || !!row.original_out_punch) ? (
+        {(!isRowEditable || isApproveModeReadOnly || row.inDatabase || !!row.original_in_punch || !!row.original_out_punch) ? (
           <span className={`text-xs font-semibold px-2 py-1 rounded inline-flex items-center justify-center ${row.status === 'present' ? 'text-emerald-700 bg-emerald-50/80 border border-emerald-200' :
             row.status === 'present with OT' ? 'text-indigo-700 bg-indigo-50/80 border border-indigo-200' :
               row.status === 'absent' ? 'text-rose-700 bg-rose-50/80 border border-rose-200' :
@@ -492,7 +494,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Punch In Input */}
       <td style={{ textAlign: 'center' }}>
-        {(!isRowEditable || resolvedMode === 'approve' || row.inDatabase || !!row.original_in_punch) ? (
+        {(!isRowEditable || isApproveModeReadOnly || row.inDatabase || !!row.original_in_punch) ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {row.punch_in || '—'}
           </span>
@@ -514,7 +516,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Punch Out Input */}
       <td style={{ textAlign: 'center' }}>
-        {(!isRowEditable || resolvedMode === 'approve' || row.inDatabase || !!row.original_out_punch) ? (
+        {(!isRowEditable || isApproveModeReadOnly || row.inDatabase || !!row.original_out_punch) ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {row.punch_out || '—'}
           </span>
@@ -541,7 +543,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Overtime Input */}
       <td style={{ textAlign: 'center' }}>
-        {(!isRowEditable || resolvedMode === 'approve' || row.inDatabase || emp.emp_type === 'staff') ? (
+        {(!isRowEditable || isApproveModeReadOnly || row.inDatabase || emp.emp_type === 'staff') ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {emp.emp_type === 'staff' ? '—' : (row.overtime ?? 0)}
           </span>
@@ -570,7 +572,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Remarks Input */}
       <td>
-        {(!isRowEditable || resolvedMode === 'approve' || row.inDatabase) ? (
+        {(!isRowEditable || isApproveModeReadOnly || row.inDatabase) ? (
           <span className="text-xs text-slate-800 font-medium px-2 py-1">
             {row.remarks ? (row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks) : '—'}
           </span>
