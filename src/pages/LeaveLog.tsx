@@ -484,7 +484,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
                     ) : (
                       <div className="flex items-center gap-2">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-orange-50 text-orange-800 text-[10px] font-semibold border border-orange-100">
-                          Perpetual Leave
+                          Perpetual
                         </span>
                         {canEditLeaves && (
                           <input

@@ -17,7 +17,8 @@ import {
   Scan,
   Search,
   Trash2,
-  X
+  X,
+  CircleMinus
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -1753,16 +1754,35 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">
                   Select Employee
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setOpenEmpSelect(!openEmpSelect)}
-                  className="h-10 text-sm w-full bg-white border border-gray-200 rounded-lg px-3 py-2 flex items-center justify-between shadow-xs hover:bg-gray-50 transition-colors text-left"
-                >
-                  <span className="truncate text-gray-700 capitalize">
-                    {selectedEmp ? selectedEmp.name.toLowerCase() : "Select Employee (Autofills below)"}
-                  </span>
-                  <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setOpenEmpSelect(!openEmpSelect)}
+                    className="h-10 text-sm flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 flex items-center justify-between shadow-xs hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <span className="truncate text-gray-700 capitalize">
+                      {selectedEmp ? selectedEmp.name.toLowerCase() : "Select Employee (Autofills below)"}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFocalForm({
+                        focal_point_id: '',
+                        focal_point_name: '',
+                        focal_point_email: ''
+                      });
+                      setOpenEmpSelect(false);
+                      setEmpSearch("");
+                    }}
+                    disabled={!focalForm.focal_point_id}
+                    className="h-10 w-10 flex items-center justify-center border border-gray-200 rounded-lg bg-white text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-500 disabled:hover:border-gray-200"
+                    title="Clear selection"
+                  >
+                    <CircleMinus className="w-4 h-4" />
+                  </button>
+                </div>
 
                 {openEmpSelect && (
                   <div className="absolute left-0 right-0 mt-1 p-0 bg-white border border-gray-200 shadow-md rounded-md z-[100]">
@@ -1960,16 +1980,35 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">
                   Select Employee
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setOpenApproverSelect(!openApproverSelect)}
-                  className="h-10 text-sm w-full bg-white border border-gray-200 rounded-lg px-3 py-2 flex items-center justify-between shadow-xs hover:bg-gray-50 transition-colors text-left"
-                >
-                  <span className="truncate text-gray-700 capitalize">
-                    {selectedApproverEmp ? selectedApproverEmp.name.toLowerCase() : "Select Employee (Autofills below)"}
-                  </span>
-                  <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setOpenApproverSelect(!openApproverSelect)}
+                    className="h-10 text-sm flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 flex items-center justify-between shadow-xs hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <span className="truncate text-gray-700 capitalize">
+                      {selectedApproverEmp ? selectedApproverEmp.name.toLowerCase() : "Select Employee (Autofills below)"}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setApproverForm({
+                        approver_id: '',
+                        approver_name: '',
+                        approver_email: ''
+                      });
+                      setOpenApproverSelect(false);
+                      setApproverSearch("");
+                    }}
+                    disabled={!approverForm.approver_id}
+                    className="h-10 w-10 flex items-center justify-center border border-gray-200 rounded-lg bg-white text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-500 disabled:hover:border-gray-200"
+                    title="Clear selection"
+                  >
+                    <CircleMinus className="w-4 h-4" />
+                  </button>
+                </div>
 
                 {openApproverSelect && (
                   <div className="absolute left-0 right-0 mt-1 p-0 bg-white border border-gray-200 shadow-md rounded-md z-[100]">
