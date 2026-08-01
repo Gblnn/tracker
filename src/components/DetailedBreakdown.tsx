@@ -256,7 +256,13 @@ export default function DetailedBreakdown({ summaries }: DetailedBreakdownProps)
     if (event.button !== 0 || !tableScrollRef.current) return;
 
     const target = event.target as HTMLElement;
-    if (target.closest('button, input, a, [role="button"], [role="menuitem"]')) {
+
+    // Ignore events that bubble through React portals from outside the header DOM tree
+    if (!event.currentTarget.contains(target)) {
+      return;
+    }
+
+    if (target.closest('button, input, a, [role="button"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]')) {
       return;
     }
 
@@ -326,6 +332,7 @@ export default function DetailedBreakdown({ summaries }: DetailedBreakdownProps)
                                 setSelectedDepts(prev => prev.filter(d => d !== dept));
                               }
                             }}
+                            onSelect={(e) => e.preventDefault()}
                             className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-gray-700 rounded-md hover:bg-gray-100 cursor-pointer select-none"
                           >
                             {dept}

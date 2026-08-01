@@ -398,13 +398,10 @@ const TimesheetRowComponent = memo(({
   const isRemarksInvalid = useMemo(() => {
     const isBiometricFullyPopulated = !!row.original_in_punch && !!row.original_out_punch;
     const needsRemarks = row.status === 'absent' ||
-      ((row.status === 'present' || row.status === 'present with OT') &&
-        row.project_code &&
-        projectsWithDevices.has(row.project_code) &&
-        !isBiometricFullyPopulated);
+      ((row.status === 'present' || row.status === 'present with OT') && !isBiometricFullyPopulated);
 
     return needsRemarks && (!row.remarks || row.remarks.trim() === '' || row.remarks === 'Custom: ' || row.remarks.trim() === 'Custom:');
-  }, [row.status, row.project_code, row.remarks, row.original_in_punch, row.original_out_punch, projectsWithDevices]);
+  }, [row.status, row.remarks, row.original_in_punch, row.original_out_punch]);
 
   const hasNoRedBorders = useMemo(() => {
     // 1. Status check
@@ -649,15 +646,19 @@ const TimesheetRowComponent = memo(({
                 <SelectItem value="NONE" className="text-xs cursor-pointer focus:bg-slate-50">No Remark</SelectItem>
 
                 {(row.status === 'present' || row.status === 'present with OT') ? (
-                  <>
-                    {(row.original_in_punch && !row.original_out_punch) ? (
-                      <SelectItem value="Forgot to Punch Out" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch Out</SelectItem>
-                    ) : (!row.original_in_punch && row.original_out_punch) ? (
-                      <SelectItem value="Forgot to Punch In" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch In</SelectItem>
-                    ) : (
-                      <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
-                    )}
-                  </>
+                  !projectsWithDevices.has(empProjCode) ? (
+                    <SelectItem value="No Device" className="text-xs cursor-pointer focus:bg-slate-50">No Device</SelectItem>
+                  ) : (
+                    <>
+                      {(row.original_in_punch && !row.original_out_punch) ? (
+                        <SelectItem value="Forgot to Punch Out" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch Out</SelectItem>
+                      ) : (!row.original_in_punch && row.original_out_punch) ? (
+                        <SelectItem value="Forgot to Punch In" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch In</SelectItem>
+                      ) : (
+                        <SelectItem value="Forgot to Punch" className="text-xs cursor-pointer focus:bg-slate-50">Forgot to Punch</SelectItem>
+                      )}
+                    </>
+                  )
                 ) : row.status === 'absent' ? (
                   <>
                     <SelectItem value="Sick Leave" className="text-xs cursor-pointer focus:bg-slate-50">Sick Leave</SelectItem>
@@ -2049,10 +2050,7 @@ export default function TimesheetFinalizer({
       // 3. Remarks check
       const isBiometricFullyPopulated = !!r.original_in_punch && !!r.original_out_punch;
       const needsRemarks = r.status === 'absent' ||
-        ((r.status === 'present' || r.status === 'present with OT') &&
-          r.project_code &&
-          projectsWithDevices.has(r.project_code) &&
-          !isBiometricFullyPopulated);
+        ((r.status === 'present' || r.status === 'present with OT') && !isBiometricFullyPopulated);
 
       const isRemarksInvalid = needsRemarks && (!r.remarks || r.remarks.trim() === '' || r.remarks === 'Custom: ' || r.remarks.trim() === 'Custom:');
       if (isRemarksInvalid) return false;
@@ -2299,7 +2297,7 @@ export default function TimesheetFinalizer({
       if (!hasDevice) {
         const shouldDefaultRemark = !updated.remarks || key === 'status' || key === 'project_code';
         if (shouldDefaultRemark) {
-          updated.remarks = 'No Device';
+          updated.remarks = '';
         }
       } else {
         if (!isBiometricFullyPopulated) {
@@ -2479,7 +2477,7 @@ export default function TimesheetFinalizer({
           if (!hasDevice) {
             const shouldDefaultRemark = !updated.remarks || field === 'status' || field === 'project_code';
             if (shouldDefaultRemark) {
-              updated.remarks = 'No Device';
+              updated.remarks = '';
             }
           } else {
             if (!isBiometricFullyPopulated) {
@@ -2568,7 +2566,7 @@ export default function TimesheetFinalizer({
           if (!hasDevice) {
             const shouldDefaultRemark = !updated.remarks;
             if (shouldDefaultRemark) {
-              updated.remarks = 'No Device';
+              updated.remarks = '';
             }
           } else {
             if (!isBiometricFullyPopulated) {
@@ -2733,6 +2731,19 @@ export default function TimesheetFinalizer({
 
       if (hasNoRemarksAbsentRows) {
         toast.error("Cannot finalize. All absent employees must have a reason selected in remarks.");
+        setSaving(false);
+        return;
+      }
+
+      const hasNoRemarksManualRows = Object.values(rows).some(r => {
+        const isManualInput = r.verify_type === 'Manual Input';
+        return (r.status === 'present' || r.status === 'present with OT') &&
+          isManualInput &&
+          (!r.remarks || r.remarks.trim() === '' || r.remarks === 'Custom: ' || r.remarks.trim() === 'Custom:');
+      });
+
+      if (hasNoRemarksManualRows) {
+        toast.error(`Cannot process. All manually set or edited present employees must have a remark/reason selected.`);
         setSaving(false);
         return;
       }
@@ -2972,7 +2983,7 @@ export default function TimesheetFinalizer({
           if (!hasDevice) {
             const shouldDefaultRemark = !updated.remarks;
             if (shouldDefaultRemark) {
-              updated.remarks = 'No Device';
+              updated.remarks = '';
             }
           } else {
             if (!isBiometricFullyPopulated) {
@@ -3048,7 +3059,7 @@ export default function TimesheetFinalizer({
           if (!hasDevice) {
             const shouldDefaultRemark = !updated.remarks;
             if (shouldDefaultRemark) {
-              updated.remarks = 'No Device';
+              updated.remarks = '';
             }
           } else {
             if (!isBiometricFullyPopulated) {
@@ -3107,11 +3118,26 @@ export default function TimesheetFinalizer({
       if (!isStatusValid) return;
 
       const effectiveProjectCode = r.project_code || employeeAssignedProjects[emp.emp_id] || '';
+      let finalRemarks = r.remarks;
 
       if (currentStatus !== 'absent') {
         const isProjectValid = !!effectiveProjectCode && effectiveProjectCode !== 'UNASSIGNED';
         const isPunchesValid = !!(r.punch_in && r.punch_out);
         if (!isProjectValid || !isPunchesValid) return;
+
+        const isManualInput = r.verify_type === 'Manual Input';
+        if (isManualInput) {
+          const isRemarksValid = r.remarks && r.remarks.trim() !== '' && r.remarks !== 'Custom: ' && r.remarks.trim() !== 'Custom:';
+          if (!isRemarksValid) {
+            const isDual = isProjectDualRole(effectiveProjectCode, projects, userData?.email);
+            const isProjectWithoutDevice = !projectsWithDevices.has(effectiveProjectCode);
+            if (isDual && isProjectWithoutDevice) {
+              finalRemarks = 'No Device';
+            } else {
+              return;
+            }
+          }
+        }
       } else {
         const isRemarksValid = r.remarks && r.remarks.trim() !== '' && r.remarks !== 'Custom: ' && r.remarks.trim() !== 'Custom:';
         if (!isRemarksValid) return;
@@ -3120,6 +3146,7 @@ export default function TimesheetFinalizer({
       const updated: TimesheetRow = {
         ...r,
         project_code: effectiveProjectCode,
+        remarks: finalRemarks,
         isEdited: true,
         isVerified: true,
         isApproved: isApproverMode ? true : false,
@@ -3155,22 +3182,31 @@ export default function TimesheetFinalizer({
     }
 
     const isApproverMode = resolvedMode === 'approve';
-    const rowsToProcess: string[] = [];
+    const dualRowsToProcess: string[] = [];
+    const nonDualRowsToProcess: string[] = [];
 
     filteredEmployees.forEach(emp => {
       const userId = emp.device_user_id;
       const r = rows[userId];
       if (!r) return;
 
+      const empProjCode = r.project_code || employeeAssignedProjects[emp.emp_id] || '';
+      const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
+
       if (isApproverMode) {
-        // Dual roles / Approvers: revoke approved records
-        if (r.inDatabase && (r.isApproved || !!r.approved_by || r.approval)) {
-          rowsToProcess.push(userId);
+        if (isDual) {
+          // Dual roles: select any record that has been verified/approved (in database)
+          if (r.inDatabase) {
+            dualRowsToProcess.push(userId);
+          }
+        } else {
+          // Standard Approvers: only approved records
+          if (r.inDatabase && (r.isApproved || !!r.approved_by || r.approval)) {
+            nonDualRowsToProcess.push(userId);
+          }
         }
       } else {
         // Focal points: revoke verified records (inDatabase is true) that are not approved
-        const empProjCode = r.project_code || employeeAssignedProjects[emp.emp_id] || '';
-        const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
         const isUserFocalOnly = resolvedMode === 'verify' && !isDual;
         const isRecordApproved = r.isApproved || !!r.approved_by || r.approval;
 
@@ -3180,23 +3216,35 @@ export default function TimesheetFinalizer({
         }
 
         if (r.inDatabase) {
-          rowsToProcess.push(userId);
+          dualRowsToProcess.push(userId);
         }
       }
     });
 
-    if (rowsToProcess.length === 0) {
+    const totalCount = dualRowsToProcess.length + nonDualRowsToProcess.length;
+    if (totalCount === 0) {
       toast.info(isApproverMode ? 'No approved records to revoke.' : 'No verified records to revoke.');
       return;
     }
 
     setSaving(true);
     const actionText = isApproverMode ? 'approval' : 'verification';
-    toast.loading(`Revoking ${actionText} for ${rowsToProcess.length} record(s)...`, { id: 'bulk-revoke' });
+    toast.loading(`Revoking ${actionText} for ${totalCount} record(s)...`, { id: 'bulk-revoke' });
 
     try {
-      if (isApproverMode) {
-        // Update database: set approved_by to null
+      // 1. Delete rows from database for dual-role/focal revokes
+      if (dualRowsToProcess.length > 0) {
+        const { error: delErr } = await supabase
+          .from('timesheet')
+          .delete()
+          .eq('date', date)
+          .in('employee_code', dualRowsToProcess);
+
+        if (delErr) throw delErr;
+      }
+
+      // 2. Set approved_by to null for standard approver revokes
+      if (nonDualRowsToProcess.length > 0) {
         const { error: updErr } = await supabase
           .from('timesheet')
           .update({
@@ -3204,54 +3252,47 @@ export default function TimesheetFinalizer({
             last_updated: new Date().toISOString()
           })
           .eq('date', date)
-          .in('employee_code', rowsToProcess);
+          .in('employee_code', nonDualRowsToProcess);
 
         if (updErr) throw updErr;
-      } else {
-        // Delete database rows
-        const { error: delErr } = await supabase
-          .from('timesheet')
-          .delete()
-          .eq('date', date)
-          .in('employee_code', rowsToProcess);
-
-        if (delErr) throw delErr;
       }
 
       // Revert local state rows
       setRows(prev => {
         const next = { ...prev };
-        rowsToProcess.forEach(userId => {
+
+        nonDualRowsToProcess.forEach(userId => {
+          const current = prev[userId];
+          if (!current) return;
+          next[userId] = {
+            ...current,
+            isApproved: false,
+            approval: false,
+            approved_by: null
+          };
+        });
+
+        dualRowsToProcess.forEach(userId => {
           const current = prev[userId];
           if (!current) return;
 
-          if (isApproverMode) {
-            // Revert approval state but keep inDatabase
-            next[userId] = {
-              ...current,
-              isApproved: false,
-              approval: false,
-              approved_by: null
-            };
-          } else {
-            // Completely revert verification state
-            const emp = employeesMap[userId];
-            if (!emp) return;
-            const empPunches = punchGroups[userId] || [];
-            const guessed = guessRow(emp, empPunches, punchMode, projects, deviceProjectMap, employeeAssignedProjects);
+          const emp = employeesMap[userId];
+          if (!emp) return;
+          const empPunches = punchGroups[userId] || [];
+          const guessed = guessRow(emp, empPunches, punchMode, projects, deviceProjectMap, employeeAssignedProjects);
 
-            next[userId] = {
-              ...guessed,
-              isApproved: false,
-              approval: false,
-              inDatabase: false
-            };
-          }
+          next[userId] = {
+            ...guessed,
+            isApproved: false,
+            approval: false,
+            inDatabase: false
+          };
         });
+
         return next;
       });
 
-      toast.success(`Successfully revoked ${actionText} for ${rowsToProcess.length} record(s).`, { id: 'bulk-revoke' });
+      toast.success(`Successfully revoked ${actionText} for ${totalCount} record(s).`, { id: 'bulk-revoke' });
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || `Failed to revoke ${actionText} in bulk.`, { id: 'bulk-revoke' });
