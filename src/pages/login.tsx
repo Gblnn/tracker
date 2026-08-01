@@ -30,7 +30,7 @@ export default function Login() {
       // Store user data in localStorage for components that still rely on it
       localStorage.setItem("userRole", userData.role);
       localStorage.setItem("userEmail", userData.email);
-      
+
       // Set persistence after successful login
       if (stayLoggedIn) {
         const { getFirebaseAuth } = await import("@/firebase");
@@ -41,7 +41,7 @@ export default function Login() {
 
       // Navigate to the return path or index, using replace to avoid history stack
       let returnPath = location.state?.returnPath;
-      
+
       if (!returnPath) {
         // Role-based redirection
         switch (userData.role) {
@@ -62,7 +62,7 @@ export default function Login() {
             break;
         }
       }
-      
+
       navigate(returnPath, { replace: true });
     } catch (err: any) {
       const errorMessage = err.message;
@@ -98,10 +98,10 @@ export default function Login() {
             <img src="/stardox-bg.png" style={{ width: "4rem", border: "" }} />
 
             <div
-              style={{ display: "flex", alignItems: "center", gap: "0.75rem",color:"white"  }}
+              style={{ display: "flex", alignItems: "center", gap: "0.75rem", color: "white" }}
             >
-              <p style={{ fontWeight: 400, fontSize: "2.25rem"}}>StarBoard</p>
-              <p>v1.23</p>
+              <p style={{ fontWeight: 400, fontSize: "2.25rem" }}>StarBoard</p>
+              <p>v1.84</p>
             </div>
           </div>
         </div>
@@ -157,7 +157,7 @@ export default function Login() {
               <br />
 
               <input
-            
+
                 autoComplete="email"
                 id="email"
                 onChange={(e: any) => {
@@ -224,7 +224,7 @@ export default function Login() {
                 >
                   <div style={{ display: "flex", gap: "0.5rem" }}>
                     <Checkbox
-                    style={{border:"none"}}
+                      style={{ border: "none" }}
                       checked={stayLoggedIn}
                       onCheckedChange={(checked) =>
                         setStayLoggedIn(checked === true)

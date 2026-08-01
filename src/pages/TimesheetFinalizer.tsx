@@ -100,17 +100,59 @@ const findProjectCode = (currentProject: string | null | undefined, projectList:
   if (!currentProject || currentProject === 'No Project Assigned') return '';
 
   const normCp = normalizeString(currentProject);
-  const match = projectList.find(p => {
+  let bestMatch: Project | null = null;
+  let bestScore = 0;
+
+  for (const p of projectList) {
     const normCode = normalizeString(p.project_code);
     const normName = normalizeString(p.project_name);
     const normLoc = p.project_location ? normalizeString(parseLocationGeofence(p.project_location).name) : '';
-    return normCode === normCp || normName === normCp || (normLoc && normLoc === normCp) ||
-      normCode.includes(normCp) || normCp.includes(normCode) ||
-      normName.includes(normCp) || normCp.includes(normName) ||
-      (normLoc && (normLoc.includes(normCp) || normCp.includes(normLoc)));
-  });
 
-  return match ? match.project_code : '';
+    let score = 0;
+
+    // 1. Exact Match (Score: 100)
+    if (normCode === normCp || normName === normCp || (normLoc && normLoc === normCp)) {
+      score = 100;
+    } else {
+      // Tokenize for word-boundary matches
+      const cpTokens = currentProject.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+      const codeTokens = p.project_code.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+      const nameTokens = p.project_name.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+      const locTokens = p.project_location ? parseLocationGeofence(p.project_location).name.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean) : [];
+
+      const hasCodeToken = codeTokens.length > 0 && codeTokens.every(t => cpTokens.includes(t));
+      const hasNameToken = nameTokens.length > 0 && nameTokens.every(t => cpTokens.includes(t));
+      const hasLocToken = locTokens.length > 0 && locTokens.every(t => cpTokens.includes(t));
+
+      // 2. Token-level/Word-level match (Score: 80)
+      if (hasCodeToken || hasNameToken || hasLocToken) {
+        score = 80;
+      } else {
+        // 3. Substring match (Score: 50, but ignore short codes < 3 chars to prevent false positives like 'ng')
+        const isCodeMatch = normCode.includes(normCp) || normCp.includes(normCode);
+        const isNameMatch = normName.includes(normCp) || normCp.includes(normName);
+        const isLocMatch = normLoc && (normLoc.includes(normCp) || normCp.includes(normLoc));
+
+        if (isCodeMatch || isNameMatch || isLocMatch) {
+          let isTooShort = false;
+          if (isCodeMatch && normCode.length < 3) isTooShort = true;
+          if (isNameMatch && normName.length < 3) isTooShort = true;
+          if (isLocMatch && normLoc.length < 3) isTooShort = true;
+
+          if (!isTooShort) {
+            score = 50;
+          }
+        }
+      }
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = p;
+    }
+  }
+
+  return bestMatch ? bestMatch.project_code : '';
 };
 
 interface TimesheetRow {
