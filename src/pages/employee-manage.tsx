@@ -2916,15 +2916,10 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                     <SelectValue placeholder="Select Status" />
                                                 </SelectTrigger>
                                                 <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg">
-                                                    {(() => {
-                                                        const allowed: EmployeeStatus[] = ['Cancel', 'OM50', 'Long Leave'];
-                                                        const current = editStatus || 'Active';
-                                                        const items = allowed.includes(current) ? allowed : [current, ...allowed];
-                                                        return items.map((status) => (
-                                                            <SelectItem key={status} value={status} className="rounded-md focus:bg-gray-50 cursor-pointer">{status.toUpperCase()}</SelectItem>
-                                                        ));
-                                                    })()}
-                                                </SelectContent>
+                                                     {EMPLOYEE_STATUSES.map((status) => (
+                                                         <SelectItem key={status} value={status} className="rounded-md focus:bg-gray-50 cursor-pointer">{status.toUpperCase()}</SelectItem>
+                                                     ))}
+                                                 </SelectContent>
                                             </Select>
                                         </div>
                                         <div className="space-y-1.5">
