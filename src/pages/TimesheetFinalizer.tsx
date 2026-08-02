@@ -712,8 +712,8 @@ const TimesheetRowComponent = memo(({
                 badgeBg = '#ea580c';
                 badgeText = 'Needs Review';
               } else if (row.approval) {
-                badgeBg = '#4f46e5';
-                badgeText = 'Finalized';
+                badgeBg = '#0d9488';
+                badgeText = 'Verified';
               } else if (row.isApproved) {
                 badgeBg = '#4f46e5';
                 badgeText = 'Verified & Approved';
@@ -1806,6 +1806,35 @@ export default function TimesheetFinalizer({
     }
 
     if (currentVal.inDatabase) {
+      if (resolvedMode === 'finalize' && currentVal.approval) {
+        toast.loading(`Revoking verification...`, { id: `undo-${userId}` });
+        try {
+          const { error: updErr } = await supabase
+            .from('timesheet')
+            .update({
+              approval: false,
+              last_updated: new Date().toISOString()
+            })
+            .eq('date', date)
+            .eq('employee_code', userId);
+          if (updErr) throw updErr;
+
+          setRows(prev => ({
+            ...prev,
+            [userId]: {
+              ...prev[userId],
+              approval: false
+            }
+          }));
+          toast.success(`Verification for ${currentVal.employee_name} revoked.`, { id: `undo-${userId}` });
+          return;
+        } catch (err: any) {
+          console.error(err);
+          toast.error(err.message || `Failed to revoke verification.`, { id: `undo-${userId}` });
+          return;
+        }
+      }
+
       const actionText = isFocalFiltered ? 'verification' : 'approval';
       toast.loading(`Revoking ${actionText} and reverting...`, { id: `undo-${userId}` });
       try {
@@ -2637,17 +2666,37 @@ export default function TimesheetFinalizer({
     }
 
     const recordsInDb = recordsToRevoke.filter(userId => rows[userId]?.inDatabase);
+    const finalizeRecordsInDb = resolvedMode === 'finalize'
+      ? recordsInDb.filter(userId => rows[userId]?.approval)
+      : [];
+    const deleteRecordsInDb = resolvedMode === 'finalize'
+      ? recordsInDb.filter(userId => !rows[userId]?.approval)
+      : recordsInDb;
 
     if (recordsInDb.length > 0) {
       const actionText = isFocalFiltered ? 'verification' : 'approval';
       toast.loading(`Revoking ${actionText} for ${recordsInDb.length} records...`, { id: 'bulk-revoke' });
       try {
-        const { error: delErr } = await supabase
-          .from('timesheet')
-          .delete()
-          .eq('date', date)
-          .in('employee_code', recordsInDb);
-        if (delErr) throw delErr;
+        if (finalizeRecordsInDb.length > 0) {
+          const { error: updErr } = await supabase
+            .from('timesheet')
+            .update({
+              approval: false,
+              last_updated: new Date().toISOString()
+            })
+            .eq('date', date)
+            .in('employee_code', finalizeRecordsInDb);
+          if (updErr) throw updErr;
+        }
+
+        if (deleteRecordsInDb.length > 0) {
+          const { error: delErr } = await supabase
+            .from('timesheet')
+            .delete()
+            .eq('date', date)
+            .in('employee_code', deleteRecordsInDb);
+          if (delErr) throw delErr;
+        }
         toast.success(`Verification/Approval for selected records revoked & reverted.`, { id: 'bulk-revoke' });
       } catch (err: any) {
         console.error(err);
@@ -2662,17 +2711,24 @@ export default function TimesheetFinalizer({
         const current = next[userId];
         if (!current) return;
 
-        const emp = employeesMap[userId];
-        if (!emp) return;
-        const empPunches = punchGroups[userId] || [];
-        const guessed = guessRow(emp, empPunches, punchMode, projects, deviceProjectMap, employeeAssignedProjects);
+        if (resolvedMode === 'finalize' && current.approval) {
+          next[userId] = {
+            ...current,
+            approval: false
+          };
+        } else {
+          const emp = employeesMap[userId];
+          if (!emp) return;
+          const empPunches = punchGroups[userId] || [];
+          const guessed = guessRow(emp, empPunches, punchMode, projects, deviceProjectMap, employeeAssignedProjects);
 
-        next[userId] = {
-          ...guessed,
-          isApproved: false,
-          approval: false,
-          inDatabase: false
-        };
+          next[userId] = {
+            ...guessed,
+            isApproved: false,
+            approval: false,
+            inDatabase: false
+          };
+        }
       });
       return next;
     });
@@ -2692,7 +2748,7 @@ export default function TimesheetFinalizer({
     setSaving(true);
     const actionPastText = resolvedMode === 'verify'
       ? 'verified'
-      : (resolvedMode === 'approve' ? 'approved' : 'finalized and locked');
+      : (resolvedMode === 'approve' ? 'approved' : 'verified');
     try {
       if (resolvedMode === 'approve') {
         const unverifiedCount = Object.values(rows).filter(r => !r.isVerified && !r.verified_by).length;
@@ -2831,7 +2887,7 @@ export default function TimesheetFinalizer({
       toast.success(`Timesheets for ${date} ${actionPastText} for payroll!`);
       loadTimesheet();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to finalize timesheet.');
+      toast.error(err.message || 'Failed to verify timesheet.');
     } finally {
       setSaving(false);
     }
@@ -2877,7 +2933,7 @@ export default function TimesheetFinalizer({
 
       const actionText = resolvedMode === 'verify'
         ? 'unlocked'
-        : (resolvedMode === 'approve' ? 'approval revoked' : 'finalization revoked');
+        : (resolvedMode === 'approve' ? 'approval revoked' : 'verification revoked');
 
       toast.success(`Timesheets for ${date} ${actionText}.`);
       loadTimesheet();
@@ -3181,9 +3237,11 @@ export default function TimesheetFinalizer({
       return;
     }
 
+    const isFinalizerMode = resolvedMode === 'finalize';
     const isApproverMode = resolvedMode === 'approve';
     const dualRowsToProcess: string[] = [];
     const nonDualRowsToProcess: string[] = [];
+    const finalizeRowsToProcess: string[] = [];
 
     filteredEmployees.forEach(emp => {
       const userId = emp.device_user_id;
@@ -3193,7 +3251,11 @@ export default function TimesheetFinalizer({
       const empProjCode = r.project_code || employeeAssignedProjects[emp.emp_id] || '';
       const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
 
-      if (isApproverMode) {
+      if (isFinalizerMode) {
+        if (r.inDatabase && r.approval) {
+          finalizeRowsToProcess.push(userId);
+        }
+      } else if (isApproverMode) {
         if (isDual) {
           // Dual roles: select any record that has been verified/approved (in database)
           if (r.inDatabase) {
@@ -3221,17 +3283,31 @@ export default function TimesheetFinalizer({
       }
     });
 
-    const totalCount = dualRowsToProcess.length + nonDualRowsToProcess.length;
+    const totalCount = dualRowsToProcess.length + nonDualRowsToProcess.length + finalizeRowsToProcess.length;
     if (totalCount === 0) {
-      toast.info(isApproverMode ? 'No approved records to revoke.' : 'No verified records to revoke.');
+      toast.info(isFinalizerMode ? 'No verified records to revoke.' : (isApproverMode ? 'No approved records to revoke.' : 'No verified records to revoke.'));
       return;
     }
 
     setSaving(true);
-    const actionText = isApproverMode ? 'approval' : 'verification';
+    const actionText = isFinalizerMode ? 'verification' : (isApproverMode ? 'approval' : 'verification');
     toast.loading(`Revoking ${actionText} for ${totalCount} record(s)...`, { id: 'bulk-revoke' });
 
     try {
+      // 0. Update rows setting approval to false for finalizer revokes
+      if (finalizeRowsToProcess.length > 0) {
+        const { error: updErr } = await supabase
+          .from('timesheet')
+          .update({
+            approval: false,
+            last_updated: new Date().toISOString()
+          })
+          .eq('date', date)
+          .in('employee_code', finalizeRowsToProcess);
+
+        if (updErr) throw updErr;
+      }
+
       // 1. Delete rows from database for dual-role/focal revokes
       if (dualRowsToProcess.length > 0) {
         const { error: delErr } = await supabase
@@ -3260,6 +3336,15 @@ export default function TimesheetFinalizer({
       // Revert local state rows
       setRows(prev => {
         const next = { ...prev };
+
+        finalizeRowsToProcess.forEach(userId => {
+          const current = prev[userId];
+          if (!current) return;
+          next[userId] = {
+            ...current,
+            approval: false
+          };
+        });
 
         nonDualRowsToProcess.forEach(userId => {
           const current = prev[userId];
@@ -3299,7 +3384,7 @@ export default function TimesheetFinalizer({
     } finally {
       setSaving(false);
     }
-  }, [filteredEmployees, rows, canUserEdit, resolvedMode, date, employeeAssignedProjects, projects, userData?.email, employeesMap, punchGroups, punchMode, deviceProjectMap, setSaving, setRows]);
+  }, [filteredEmployees, rows, canUserEdit, date, supabase, setRows, employeesMap, punchGroups, punchMode, projects, deviceProjectMap, employeeAssignedProjects, resolvedMode, userData?.email]);
 
   const baseRelevantEmployees = useMemo(() => {
     return employees.filter(emp => {
@@ -4007,7 +4092,7 @@ export default function TimesheetFinalizer({
                   }}
                   title={
                     progressStats.isComplete
-                      ? `${resolvedMode === 'approve' ? 'Approval' : (resolvedMode === 'verify' ? 'Verification' : 'Finalization')} Complete`
+                      ? `${resolvedMode === 'approve' ? 'Approval' : 'Verification'} Complete`
                       : `Click to process remaining ${progressStats.remaining} record(s)`
                   }
                 >
@@ -4037,15 +4122,13 @@ export default function TimesheetFinalizer({
                         <span>
                           {resolvedMode === 'approve'
                             ? 'Approval Complete'
-                            : resolvedMode === 'verify'
-                              ? 'Verification Complete'
-                              : 'Finalization Complete'}
+                            : 'Verification Complete'}
                         </span>
                       </>
                     ) : (
                       <>
                         <span className="tabular-nums font-bold">
-                          {progressStats.percentage}% {resolvedMode === 'approve' ? 'Approved' : (resolvedMode === 'verify' ? 'Verified' : 'Finalized')}
+                          {progressStats.percentage}% {resolvedMode === 'approve' ? 'Approved' : 'Verified'}
                         </span>
                         <span className="opacity-75 text-[11px] font-normal">
                           ({progressStats.remaining} remaining)
