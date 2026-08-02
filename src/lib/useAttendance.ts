@@ -135,28 +135,32 @@ export function useAttendance(date: string) {
       if (latestProjData) {
         latestProjData.forEach(item => {
           if (item.emp_id && item.current_project) {
-            assignedProjMap[item.emp_id] = findProjectCode(item.current_project, allProjData || []);
+            let activeProjectName = item.current_project;
+
+            if (transData) {
+              const matchedEmp = (empData || []).find(e => e.emp_id === item.emp_id || String(e.id) === item.emp_id);
+              if (matchedEmp) {
+                const empTransfers = transData
+                  .filter(t => t.emp_id === matchedEmp.emp_id || String(t.emp_id) === String(matchedEmp.id))
+                  .sort((a: any, b: any) => new Date(b.transfer_date).getTime() - new Date(a.transfer_date).getTime());
+
+                for (const t of empTransfers) {
+                  const tDateStr = t.transfer_date ? t.transfer_date.slice(0, 10) : '';
+                  const queryDateStr = date;
+
+                  if (queryDateStr < tDateStr) {
+                    activeProjectName = t.from_project;
+                  } else {
+                    break;
+                  }
+                }
+              }
+            }
+
+            assignedProjMap[item.emp_id] = findProjectCode(activeProjectName, allProjData || []);
           }
         });
       }
-
-      // Fallback/enrich with transfers table
-      const sortedTransfers = [...(transData || [])].sort((a: any, b: any) => 
-        new Date(a.transfer_date).getTime() - new Date(b.transfer_date).getTime() ||
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
-      sortedTransfers.forEach(item => {
-        const empCode = item.emp_id;
-        if (empCode && item.to_project) {
-          const resolvedCode = findProjectCode(item.to_project, allProjData || []);
-          if (resolvedCode) {
-            const matchedEmp = (empData || []).find(e => String(e.id) === String(empCode) || e.emp_id === empCode);
-            if (matchedEmp && matchedEmp.emp_id) {
-              assignedProjMap[matchedEmp.emp_id] = resolvedCode;
-            }
-          }
-        }
-      });
 
       // 1. Determine if focal point filter is active
       let focalProjectCodes: string[] = [];

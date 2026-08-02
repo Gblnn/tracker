@@ -1300,13 +1300,15 @@ export default function TimesheetFinalizer({
         { data: projData, error: projErr },
         { data: devData, error: devErr },
         { data: latestProjData, error: latestProjErr },
-        { data: punchesData, error: punchErr }
+        { data: punchesData, error: punchErr },
+        { data: transfersData, error: transfersErr }
       ] = await Promise.all([
         supabase.from('employees').select('id, device_user_id, name, department, emp_id, emp_type').or('status.ilike.active,status.is.null').order('name'),
         supabase.from('projects').select('project_code, project_name, project_in_time, project_out_time, project_location, focal_point_email, approver_email').order('project_code'),
         supabase.from('devices').select('serial_no, project_code'),
         supabase.from('v_employee_latest_project').select('emp_id, current_project'),
-        supabase.from('punches').select('*').gte('punch_time', start).lte('punch_time', end).order('punch_time', { ascending: true })
+        supabase.from('punches').select('*').gte('punch_time', start).lte('punch_time', end).order('punch_time', { ascending: true }),
+        supabase.from('transfers').select('emp_id, transfer_date, from_project, to_project').order('transfer_date', { ascending: false })
       ]);
 
       if (empErr) throw empErr;
@@ -1314,12 +1316,29 @@ export default function TimesheetFinalizer({
       if (devErr) throw devErr;
       if (latestProjErr) throw latestProjErr;
       if (punchErr) throw punchErr;
+      if (transfersErr) throw transfersErr;
 
       const assignedProjMap: Record<string, string> = {};
       if (latestProjData) {
         latestProjData.forEach(item => {
           if (item.emp_id && item.current_project) {
-            assignedProjMap[item.emp_id] = findProjectCode(item.current_project, projData || []);
+            let activeProjectName = item.current_project;
+
+            if (transfersData) {
+              const empTransfers = transfersData.filter(t => t.emp_id === item.emp_id);
+              for (const t of empTransfers) {
+                const tDateStr = t.transfer_date ? t.transfer_date.slice(0, 10) : '';
+                const queryDateStr = date;
+                
+                if (queryDateStr < tDateStr) {
+                  activeProjectName = t.from_project;
+                } else {
+                  break;
+                }
+              }
+            }
+
+            assignedProjMap[item.emp_id] = findProjectCode(activeProjectName, projData || []);
           }
         });
       }
