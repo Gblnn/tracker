@@ -20,6 +20,7 @@ interface EmployeeTableProps {
   useFirstLast?: boolean;
   activeCount?: number;
   inactiveCount?: number;
+  onTotalClick?: () => void;
 }
 
 function RollingDigit({ next, direction, durationMs }: { next: string; direction: 'up' | 'down'; durationMs: number }) {
@@ -65,7 +66,7 @@ function RollingNumber({ value, durationMs = 620 }: { value: number; durationMs?
   );
 }
 
-export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useFirstLast = true, activeCount = 0, inactiveCount = 0 }: EmployeeTableProps) {
+export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useFirstLast = true, activeCount = 0, inactiveCount = 0, onTotalClick }: EmployeeTableProps) {
   const [search, setSearch] = useState('');
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedAssignedLocations, setSelectedAssignedLocations] = useState<string[]>([]);
@@ -496,25 +497,33 @@ export function EmployeeTable({ summaries, onFilteredSummariesChange, date, useF
           // Stat Cards
           <div style={{ width: "100%", display: "flex", justifyContent: "space-between", padding: "0.75rem", gap: "0.75rem", borderBottom: "1px solid rgba(100 100 100/ 0.1)" }}>
 
-            <div style={{
-              display: "flex",
-              flex: 1,
-              background: "rgba(100 100 100/ 0.05)",
-              borderRadius: "0.5rem",
-              padding: "0.75rem",
-              flexFlow: "column",
-              height: "9.5rem",
-              minWidth: 0,
-              justifyContent: "space-between",
-              alignItems: "stretch"
-            }}>
+            <div 
+              onClick={onTotalClick}
+              style={{
+                display: "flex",
+                flex: 1,
+                background: "rgba(100 100 100/ 0.05)",
+                borderRadius: "0.5rem",
+                padding: "0.75rem",
+                flexFlow: "column",
+                height: "9.5rem",
+                minWidth: 0,
+                justifyContent: "space-between",
+                alignItems: "stretch",
+                cursor: onTotalClick ? "pointer" : "default"
+              }}
+              className="hover:opacity-85 transition-opacity"
+            >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "0.25rem", zIndex: 20 }}>
                 <p style={{ fontSize: "1.05rem", fontWeight: 600, color: "#111827", margin: 0, paddingLeft: "0.25rem" }}>
                   {totalPage === 0 ? "Total" : totalPage === 1 ? `Total (${stats.total}) - ID` : `Total (${stats.total}) - Project`}
                 </p>
                 <button
                   type="button"
-                  onClick={() => setTotalPage(prev => (prev === 0 ? 1 : prev === 1 ? 2 : 0))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTotalPage(prev => (prev === 0 ? 1 : prev === 1 ? 2 : 0));
+                  }}
                   style={{
                     background: "rgba(0,0,0,0.05)",
                     border: "none",

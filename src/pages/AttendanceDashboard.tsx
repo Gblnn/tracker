@@ -166,7 +166,7 @@ export default function AttendanceDashboard() {
       { value: 'transfers', label: 'Transfers', icon: <ArrowRightLeft color="darkblue" className="w-4 h-4" /> },
       { value: 'breakdown', label: 'Detailed Breakdown', icon: <Table color="darkblue" className="w-4 h-4" /> },
       { value: 'analytics', label: 'Analytics', icon: <BarChart3 color="darkblue" className="w-4 h-4" /> },
-      { value: 'manage', label: 'Manage', icon: <UserPlus color="darkblue" className="w-4 h-4" /> },
+      { value: 'manage', label: canEditAttendance ? 'Manage' : 'Master', icon: <UserPlus color="darkblue" className="w-4 h-4" /> },
       { value: 'log', label: 'Punch Log', icon: <List color="darkblue" className="w-4 h-4" /> },
       { value: 'reports', label: 'Reports', icon: <TrendingUp color="darkblue" className="w-4 h-4" /> },
       { value: 'devices', label: 'Devices', icon: <Laptop2 color="darkblue" className="w-4 h-4" /> },
@@ -322,7 +322,7 @@ export default function AttendanceDashboard() {
                   )}
 
                   {isAllowed('manage') && (
-                    <Directive bg={tab === 'manage' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('manage')} title="Manage" icon={<UserCog size={16} />} />
+                    <Directive bg={tab === 'manage' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('manage')} title={canEditAttendance ? "Manage" : "Master"} icon={<UserCog size={16} />} />
                   )}
 
                   {isAllowed('log') && (
@@ -521,7 +521,14 @@ export default function AttendanceDashboard() {
                   <Loader2 className="animate-spin" />
                 </div>
               ) : (
-                <EmployeeTable summaries={employeeSummaries} date={date} useFirstLast={useFirstLast} activeCount={activeCount} inactiveCount={inactiveCount} />
+                <EmployeeTable 
+                  summaries={employeeSummaries} 
+                  date={date} 
+                  useFirstLast={useFirstLast} 
+                  activeCount={activeCount} 
+                  inactiveCount={inactiveCount} 
+                  onTotalClick={() => setTab('manage')}
+                />
               )
             ) : tab === 'breakdown' ? (
               loading ? (

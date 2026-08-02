@@ -1791,11 +1791,12 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
                       <div className="flex items-center gap-1.5 px-2 py-1 bg-white border border-gray-200 rounded-md">
                         <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                         <input
+                          style={{ fontSize: '1rem' }}
                           type="text"
                           placeholder="Search name or ID..."
                           value={empSearch}
                           onChange={(e) => setEmpSearch(e.target.value)}
-                          className="text-xs bg-transparent border-0 outline-none w-full p-0 focus:ring-0 placeholder:text-gray-400 normal-case"
+                          className="bg-transparent border-0 outline-none w-full p-0 focus:ring-0 placeholder:text-gray-400 normal-case"
                           autoFocus
                         />
                         {empSearch && (
@@ -1818,9 +1819,9 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
                         </div>
                       ) : (
                         <>
-                          <button
+                          <div
                             style={{ justifyContent: "space-between" }}
-                            type="button"
+
                             onClick={() => {
                               setFocalForm({
                                 focal_point_id: '',
@@ -1833,15 +1834,14 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
                             className="w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-gray-50 bg-transparent text-red-600 font-semibold"
                           >
                             -- Clear Selection --
-                          </button>
+                          </div>
                           {selectableEmployees.map((emp) => {
                             const isSelected = selectedEmp?.device_user_id === emp.device_user_id || selectedEmp?.emp_id === emp.emp_id;
                             const empVal = emp.emp_id || emp.device_user_id || String(emp.id);
                             return (
-                              <button
+                              <div
                                 style={{ justifyContent: "space-between" }}
                                 key={emp.id}
-                                type="button"
                                 onClick={() => {
                                   setFocalForm({
                                     focal_point_id: empVal,
@@ -1865,7 +1865,7 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
                                   )}
                                 </div>
                                 {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600" />}
-                              </button>
+                              </div>
                             );
                           })}
                         </>
@@ -2017,11 +2017,12 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
                       <div className="flex items-center gap-1.5 px-2 py-1 bg-white border border-gray-200 rounded-md">
                         <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                         <input
+                          style={{ fontSize: '1rem' }}
                           type="text"
                           placeholder="Search name or ID..."
                           value={approverSearch}
                           onChange={(e) => setApproverSearch(e.target.value)}
-                          className="text-xs bg-transparent border-0 outline-none w-full p-0 focus:ring-0 placeholder:text-gray-400 normal-case"
+                          className="bg-transparent border-0 outline-none w-full p-0 focus:ring-0 placeholder:text-gray-400 normal-case"
                           autoFocus
                         />
                         {approverSearch && (
@@ -2044,9 +2045,9 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
                         </div>
                       ) : (
                         <>
-                          <button
+                          <div
                             style={{ justifyContent: "space-between" }}
-                            type="button"
+
                             onClick={() => {
                               setApproverForm({
                                 approver_id: '',
@@ -2059,15 +2060,15 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
                             className="w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-gray-50 bg-transparent text-red-600 font-semibold"
                           >
                             -- Clear Selection --
-                          </button>
+                          </div>
                           {selectableApproverEmployees.map((emp) => {
                             const isSelected = selectedApproverEmp?.device_user_id === emp.device_user_id || selectedApproverEmp?.emp_id === emp.emp_id;
                             const empVal = emp.emp_id || emp.device_user_id || String(emp.id);
                             return (
-                              <button
+                              <div
                                 style={{ justifyContent: "space-between" }}
                                 key={emp.id}
-                                type="button"
+
                                 onClick={() => {
                                   setApproverForm({
                                     approver_id: empVal,
@@ -2091,7 +2092,7 @@ export default function ProjectsMaster({ refreshTrigger, onLoadingChange, employ
                                   )}
                                 </div>
                                 {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600" />}
-                              </button>
+                              </div>
                             );
                           })}
                         </>

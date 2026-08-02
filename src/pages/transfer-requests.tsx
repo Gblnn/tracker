@@ -1642,9 +1642,44 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
                   <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Transfer Date</span>
-                  <span style={{ fontSize: "0.85rem", color: "#111827", fontWeight: 500 }}>
-                    {new Date(selectedTransfer.transfer_date).toLocaleDateString(undefined, { dateStyle: "long" })}
-                  </span>
+                  {canEditAttendance ? (
+                    <input
+                      type="date"
+                      value={selectedTransfer.transfer_date ? selectedTransfer.transfer_date.slice(0, 10) : ''}
+                      onChange={async (e) => {
+                        const newDate = e.target.value;
+                        if (!newDate) return;
+                        const toastId = toast.loading("Updating transfer date...");
+                        try {
+                          const { error } = await supabase
+                            .from("transfers")
+                            .update({ transfer_date: newDate })
+                            .eq("id", selectedTransfer.id);
+                          if (error) throw error;
+                          
+                          setTransfers(prev => prev.map(t => t.id === selectedTransfer.id ? { ...t, transfer_date: newDate } : t));
+                          setSelectedTransfer(prev => prev ? { ...prev, transfer_date: newDate } : null);
+                          toast.success("Transfer date updated successfully!", { id: toastId });
+                        } catch (err: any) {
+                          toast.error(err.message || "Failed to update transfer date", { id: toastId });
+                        }
+                      }}
+                      style={{
+                        fontSize: "0.8rem",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "0.375rem",
+                        padding: "0.25rem 0.5rem",
+                        color: "#111827",
+                        fontWeight: 500,
+                        backgroundColor: "white",
+                        outline: "none"
+                      }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: "0.85rem", color: "#111827", fontWeight: 500 }}>
+                      {new Date(selectedTransfer.transfer_date).toLocaleDateString(undefined, { dateStyle: "long" })}
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
                   <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Logged At</span>
