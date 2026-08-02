@@ -142,16 +142,27 @@ export function useAttendance(date: string) {
               if (matchedEmp) {
                 const empTransfers = transData
                   .filter(t => t.emp_id === matchedEmp.emp_id || String(t.emp_id) === String(matchedEmp.id))
-                  .sort((a: any, b: any) => new Date(b.transfer_date).getTime() - new Date(a.transfer_date).getTime());
+                  .sort((a: any, b: any) => {
+                    const dateA = a.transfer_date ? a.transfer_date.slice(0, 10) : '';
+                    const dateB = b.transfer_date ? b.transfer_date.slice(0, 10) : '';
+                    if (dateA !== dateB) return dateA.localeCompare(dateB);
+                    return (a.created_at || '').localeCompare(b.created_at || '');
+                  });
 
-                for (const t of empTransfers) {
-                  const tDateStr = t.transfer_date ? t.transfer_date.slice(0, 10) : '';
+                if (empTransfers.length > 0) {
                   const queryDateStr = date;
+                  let lastEffectiveTransfer = null;
+                  for (const t of empTransfers) {
+                    const tDateStr = t.transfer_date ? t.transfer_date.slice(0, 10) : '';
+                    if (tDateStr <= queryDateStr) {
+                      lastEffectiveTransfer = t;
+                    }
+                  }
 
-                  if (queryDateStr < tDateStr) {
-                    activeProjectName = t.from_project;
+                  if (lastEffectiveTransfer) {
+                    activeProjectName = lastEffectiveTransfer.to_project;
                   } else {
-                    break;
+                    activeProjectName = empTransfers[0].from_project;
                   }
                 }
               }

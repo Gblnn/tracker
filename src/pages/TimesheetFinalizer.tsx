@@ -1325,15 +1325,32 @@ export default function TimesheetFinalizer({
             let activeProjectName = item.current_project;
 
             if (transfersData) {
-              const empTransfers = transfersData.filter(t => t.emp_id === item.emp_id);
-              for (const t of empTransfers) {
-                const tDateStr = t.transfer_date ? t.transfer_date.slice(0, 10) : '';
-                const queryDateStr = date;
-                
-                if (queryDateStr < tDateStr) {
-                  activeProjectName = t.from_project;
-                } else {
-                  break;
+              const matchedEmp = (empData || []).find(e => e.emp_id === item.emp_id || String(e.id) === item.emp_id);
+              if (matchedEmp) {
+                const empTransfers = transfersData
+                  .filter(t => t.emp_id === matchedEmp.emp_id || String(t.emp_id) === String(matchedEmp.id))
+                  .sort((a: any, b: any) => {
+                    const dateA = a.transfer_date ? a.transfer_date.slice(0, 10) : '';
+                    const dateB = b.transfer_date ? b.transfer_date.slice(0, 10) : '';
+                    if (dateA !== dateB) return dateA.localeCompare(dateB);
+                    return (a.created_at || '').localeCompare(b.created_at || '');
+                  });
+
+                if (empTransfers.length > 0) {
+                  const queryDateStr = date;
+                  let lastEffectiveTransfer = null;
+                  for (const t of empTransfers) {
+                    const tDateStr = t.transfer_date ? t.transfer_date.slice(0, 10) : '';
+                    if (tDateStr <= queryDateStr) {
+                      lastEffectiveTransfer = t;
+                    }
+                  }
+
+                  if (lastEffectiveTransfer) {
+                    activeProjectName = lastEffectiveTransfer.to_project;
+                  } else {
+                    activeProjectName = empTransfers[0].from_project;
+                  }
                 }
               }
             }
