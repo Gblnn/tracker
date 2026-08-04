@@ -3,7 +3,7 @@ import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRightLeft, BarChart3, Calendar, ChartLine, Check, Database, FileCheck, FolderKanban, Laptop2, LayoutGrid, List, Loader2, PenLine, Sidebar, Table, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap } from 'lucide-react';
+import { ArrowRightLeft, BarChart3, Calendar, ChartLine, Check, Database, FileCheck, FolderKanban, Laptop2, LayoutGrid, List, Loader2, PenLine, Sidebar, Table, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap, FileSpreadsheet } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
@@ -20,6 +20,7 @@ import Terminal from './Terminal';
 import TimesheetFinalizer from './TimesheetFinalizer';
 import TransferRequests from './transfer-requests';
 import LeaveLog from './LeaveLog';
+import TimesheetViewer from '../components/TimesheetViewer';
 
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '../lib/supabase';
@@ -35,7 +36,7 @@ const formatSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management' | 'analytics' | 'transfers' | 'projects' | 'finalize' | 'breakdown' | 'leave-log';
+type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management' | 'analytics' | 'transfers' | 'projects' | 'finalize' | 'breakdown' | 'leave-log' | 'timesheets';
 
 export default function AttendanceDashboard() {
   const [date, setDate] = useState<string>(todayISO());
@@ -172,6 +173,7 @@ export default function AttendanceDashboard() {
       { value: 'devices', label: 'Devices', icon: <Laptop2 color="darkblue" className="w-4 h-4" /> },
       { value: 'projects', label: 'Projects', icon: <FolderKanban color="darkblue" className="w-4 h-4" /> },
       { value: 'finalize', label: finalizeLabel, icon: <FileCheck color="darkblue" className="w-4 h-4" /> },
+      { value: 'timesheets', label: 'Timesheets', icon: <FileSpreadsheet color="darkblue" className="w-4 h-4" /> },
       { value: 'leave-log', label: 'Leave Log', icon: <Calendar color="darkblue" className="w-4 h-4" /> },
       { value: 'terminal', label: 'Terminal', icon: <TerminalIcon color="darkblue" className="w-4 h-4" /> },
       { value: 'data-management', label: 'Data Management', icon: <Database color="darkblue" className="w-4 h-4" /> },
@@ -188,12 +190,13 @@ export default function AttendanceDashboard() {
         if (opt.value === 'terminal') return permissions.attendance_manage === true;
         if (opt.value === 'finalize') return permissions.timesheet_finalizer === true || isTimesheetApprover || permissions.timesheet_viewer === true || isFocalPoint;
         if (opt.value === 'leave-log') return permissions.attendance_leave_log === true;
+        if (opt.value === 'timesheets') return permissions.timesheet_viewer === true || permissions.timesheet_finalizer === true || permissions.attendance === true || isTimesheetApprover || isFocalPoint;
         return true;
       });
     }
 
     if (!canEditAttendance && !isFocalPoint && !isTimesheetApprover) {
-      return options.filter(opt => opt.value !== 'manage' && opt.value !== 'finalize' && opt.value !== 'leave-log');
+      return options.filter(opt => opt.value !== 'manage' && opt.value !== 'finalize' && opt.value !== 'leave-log' && opt.value !== 'timesheets');
     }
     return options;
   }, [canEditAttendance, userData?.clearance, isFocalPoint, isTimesheetApprover]);
@@ -351,6 +354,10 @@ export default function AttendanceDashboard() {
 
                   {isAllowed('finalize') && (
                     <Directive bg={tab === 'finalize' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('finalize')} title={isTimesheetApprover ? "Approvals" : (isFocalPoint ? "Verify" : "Finalize")} icon={<Check size={16} />} />
+                  )}
+
+                  {isAllowed('timesheets') && (
+                    <Directive bg={tab === 'timesheets' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('timesheets')} title="Timesheets" icon={<FileSpreadsheet size={16} />} />
                   )}
                 </div>
 
@@ -521,12 +528,12 @@ export default function AttendanceDashboard() {
                   <Loader2 className="animate-spin" />
                 </div>
               ) : (
-                <EmployeeTable 
-                  summaries={employeeSummaries} 
-                  date={date} 
-                  useFirstLast={useFirstLast} 
-                  activeCount={activeCount} 
-                  inactiveCount={inactiveCount} 
+                <EmployeeTable
+                  summaries={employeeSummaries}
+                  date={date}
+                  useFirstLast={useFirstLast}
+                  activeCount={activeCount}
+                  inactiveCount={inactiveCount}
                   onTotalClick={() => setTab('manage')}
                 />
               )
@@ -556,8 +563,8 @@ export default function AttendanceDashboard() {
               let permissions: Record<string, boolean> = {};
               try {
                 permissions = JSON.parse(userData?.clearance || "{}");
-              } catch (e) {}
-              
+              } catch (e) { }
+
               let finalizerMode: 'verify' | 'approve' | 'finalize' | 'view' = 'verify';
               if (permissions.timesheet_finalizer === true) {
                 finalizerMode = 'finalize';
@@ -572,10 +579,10 @@ export default function AttendanceDashboard() {
               }
 
               return (
-                <TimesheetFinalizer 
+                <TimesheetFinalizer
                   mode={finalizerMode}
-                  refreshTrigger={refreshTrigger} 
-                  onLoadingChange={setTabLoading} 
+                  refreshTrigger={refreshTrigger}
+                  onLoadingChange={setTabLoading}
                 />
               );
             })() : tab === 'leave-log' ? (
@@ -588,6 +595,8 @@ export default function AttendanceDashboard() {
               <AddEmployee />
             ) : tab === 'manage' ? (
               <EmployeeManage refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
+            ) : tab === 'timesheets' ? (
+              <TimesheetViewer />
             ) : (
               <ReportsPage refreshTrigger={refreshTrigger} onLoadingChange={setTabLoading} />
             )}

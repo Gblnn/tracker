@@ -1308,7 +1308,7 @@ export default function TimesheetFinalizer({
         supabase.from('devices').select('serial_no, project_code'),
         supabase.from('v_employee_latest_project').select('emp_id, current_project'),
         supabase.from('punches').select('*').gte('punch_time', start).lte('punch_time', end).order('punch_time', { ascending: true }),
-        supabase.from('transfers').select('emp_id, transfer_date, from_project, to_project').order('transfer_date', { ascending: false })
+        supabase.from('transfers').select('emp_id, transfer_date, from_project, to_project, created_at').order('transfer_date', { ascending: false })
       ]);
 
       if (empErr) throw empErr;
@@ -1590,13 +1590,14 @@ export default function TimesheetFinalizer({
           const original_in_punch = sorted.length > 0 ? sorted[0] : null;
           const original_out_punch = sorted.length > 1 ? sorted[sorted.length - 1] : null;
 
+          const guessed = guessRow(emp, empPunches, punchModeRef.current, filteredProjects, devProjMap, assignedProjMap);
           initialRows[emp.device_user_id] = {
             employee_code: emp.device_user_id,
             employee_name: emp.name,
             department: emp.department,
             punch_in: extractTime(matched.punch_in),
             punch_out: extractTime(matched.punch_out),
-            project_code: matched.project_code ?? '',
+            project_code: (matched.approved_by || matched.approval) ? (matched.project_code ?? '') : (guessed.project_code || matched.project_code || ''),
             overtime: matched.overtime ?? 0,
             remarks: matched.remarks ?? '',
             verify_type: matched.verify_type || 'Manual Input',
@@ -1951,7 +1952,6 @@ export default function TimesheetFinalizer({
           : ((currentRow.remarks || '').trim() || null),
         status: currentRow.status || null,
         last_updated: new Date().toISOString(),
-        approval: false,
       };
 
       // Upsert (delete + insert) for this single employee
@@ -2018,7 +2018,6 @@ export default function TimesheetFinalizer({
           : ((currentRow.remarks || '').trim() || null),
         status: currentRow.status || null,
         last_updated: new Date().toISOString(),
-        approval: false,
       };
 
       const { error: delErr } = await supabase
@@ -2129,7 +2128,8 @@ export default function TimesheetFinalizer({
         const inTimestamp = buildTimestamp(date, r.punch_in);
         const outTimestamp = buildTimestamp(date, r.punch_out);
         const dbFields = getDbAttestedAndVerified(r, userData?.email);
-        const empProjCode = r.project_code || (r.employee_code ? employeeAssignedProjects[r.employee_code] : '') || '';
+        const emp = r.employee_code ? employeesMap[r.employee_code] : null;
+        const empProjCode = r.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
         const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
         const isUserFocal = isFocalFiltered || focalProjectCodes.length > 0 || isDual;
         const isUserApprover = resolvedMode === 'approve' || isApproverFiltered || approverProjectCodes.length > 0 || isDual;
@@ -2139,13 +2139,9 @@ export default function TimesheetFinalizer({
           ? (r.verified_by || userData?.email || dbFields.verified_by || null)
           : null;
 
-        const approvedBy = (r.isApproved || !!r.approved_by || isDualUserOrProj || resolvedMode === 'approve')
+        const approvedBy = (r.isApproved || !!r.approved_by || isDualUserOrProj || resolvedMode === 'approve' || resolvedMode === 'finalize')
           ? (r.approved_by || userData?.email || null)
           : null;
-
-        const approvalVal = resolvedMode === 'finalize'
-          ? true
-          : (r.approval || false);
 
         validPayloads.push({
           date: date,
@@ -2164,7 +2160,6 @@ export default function TimesheetFinalizer({
             : ((r.remarks || '').trim() || null),
           status: r.status || null,
           last_updated: new Date().toISOString(),
-          approval: approvalVal
         });
       } else {
         if (r.inDatabase) {
@@ -2232,7 +2227,7 @@ export default function TimesheetFinalizer({
                 inDatabase: true,
                 isVerified: !!payload.verified_by,
                 isApproved: !!payload.approved_by,
-                approval: !!payload.approval,
+                approval: !!payload.approved_by,
                 machine: payload.machine,
                 verified_by: payload.verified_by,
                 approved_by: payload.approved_by,
@@ -2256,7 +2251,7 @@ export default function TimesheetFinalizer({
         return next;
       });
     }
-  }, [date, resolvedMode, isFocalFiltered, canUserEdit, userData?.email, projects, employeeAssignedProjects, focalProjectCodes, isApproverFiltered, approverProjectCodes, projectsWithDevices]);
+  }, [date, resolvedMode, isFocalFiltered, canUserEdit, userData?.email, projects, employeeAssignedProjects, focalProjectCodes, isApproverFiltered, approverProjectCodes, projectsWithDevices, employeesMap]);
 
   const updateRow = useCallback((userId: string, key: keyof TimesheetRow, value: any) => {
     pushHistory(rows);
@@ -2717,7 +2712,7 @@ export default function TimesheetFinalizer({
           const { error: updErr } = await supabase
             .from('timesheet')
             .update({
-              approval: false,
+              approved_by: null,
               last_updated: new Date().toISOString()
             })
             .eq('date', date)
@@ -2858,7 +2853,8 @@ export default function TimesheetFinalizer({
           const outTimestamp = buildTimestamp(date, r.punch_out);
           const dbFields = getDbAttestedAndVerified(r, userData?.email);
 
-          const empProjCode = r.project_code || (r.employee_code ? employeeAssignedProjects[r.employee_code] : '') || '';
+          const emp = r.employee_code ? employeesMap[r.employee_code] : null;
+          const empProjCode = r.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
           const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
           const isUserFocal = isFocalFiltered || focalProjectCodes.length > 0 || isDual;
           const isUserApprover = resolvedMode === 'approve' || isApproverFiltered || approverProjectCodes.length > 0 || isDual;
@@ -2959,7 +2955,7 @@ export default function TimesheetFinalizer({
         if (updErr) throw updErr;
       } else if (resolvedMode === 'finalize') {
         // Revert finalization by setting approval to false
-        let updateQuery = supabase.from('timesheet').update({ approval: false }).eq('date', date);
+        let updateQuery = supabase.from('timesheet').update({ approved_by: null }).eq('date', date);
         if (isFocalFiltered && focalProjectCodes.length > 0) {
           updateQuery = updateQuery.in('project_code', focalProjectCodes);
         }
@@ -4600,14 +4596,6 @@ export default function TimesheetFinalizer({
                         >
                           <SquareCheck className="w-3.5 h-3.5 text-teal-600 shrink-0" />
                           <span>{resolvedMode === 'approve' ? 'Approve Valid Records' : 'Verify Valid Records'}</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={handleRevokeAllRecords}
-                          disabled={saving || loading || !canUserEdit}
-                          className="rounded-md focus:bg-rose-50 text-rose-700 font-semibold cursor-pointer text-xs flex items-center gap-1.5 p-2"
-                        >
-                          <Undo2 className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                          <span>{resolvedMode === 'approve' ? 'Revoke Approval for All' : 'Revoke All'}</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
