@@ -830,10 +830,7 @@ const TimesheetRowComponent = memo(({
                 if (row.approved_by === 'review') {
                   badgeBg = '#ea580c';
                   badgeText = 'Needs Review';
-                } else if (row.approval) {
-                  badgeBg = '#0d9488';
-                  badgeText = 'Verified';
-                } else if (row.isApproved) {
+                } else if (row.isApproved || row.approval || (row.approved_by && row.approved_by !== 'review')) {
                   badgeBg = '#4f46e5';
                   badgeText = 'Verified & Approved';
                 } else if (row.isVerified || hasNoRedBorders) {
