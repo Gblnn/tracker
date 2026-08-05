@@ -2856,6 +2856,16 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-555 block">Civil ID</label>
+                                        <Input
+                                            type="text"
+                                            value={editCivilId}
+                                            onChange={(e) => setEditCivilId(e.target.value)}
+                                            placeholder="Enter Civil ID"
+                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
                                         <label className="text-xs font-semibold text-gray-555 block">Full Name <span className="text-red-500">*</span></label>
                                         <Input
                                             type="text"
@@ -2961,16 +2971,6 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             value={editEmail}
                                             onChange={(e) => setEditEmail(e.target.value)}
                                             placeholder="john@company.com"
-                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-555 block">Civil ID</label>
-                                        <Input
-                                            type="text"
-                                            value={editCivilId}
-                                            onChange={(e) => setEditCivilId(e.target.value)}
-                                            placeholder="Enter Civil ID"
                                             className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
                                         />
                                     </div>
@@ -3270,6 +3270,16 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             />
                                         </div>
                                     </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-555 block">Civil ID</label>
+                                        <Input
+                                            type="text"
+                                            value={addCivilId}
+                                            onChange={(e) => setAddCivilId(e.target.value)}
+                                            placeholder="Enter Civil ID"
+                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                        />
+                                    </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
@@ -3381,16 +3391,6 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             value={addCompany}
                                             onChange={(e) => setAddCompany(e.target.value)}
                                             placeholder="e.g. Acme Corp"
-                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-555 block">Civil ID</label>
-                                        <Input
-                                            type="text"
-                                            value={addCivilId}
-                                            onChange={(e) => setAddCivilId(e.target.value)}
-                                            placeholder="Enter Civil ID"
                                             className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
                                         />
                                     </div>
