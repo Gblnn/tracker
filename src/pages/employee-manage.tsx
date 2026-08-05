@@ -228,6 +228,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [editShift, setEditShift] = useState<'day' | 'night'>('day');
     const [editStatus, setEditStatus] = useState<EmployeeStatus>('Active');
     const [editNationality, setEditNationality] = useState('');
+    const [editCivilId, setEditCivilId] = useState('');
     const [editDesignation, setEditDesignation] = useState('');
     const [editCompany, setEditCompany] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -718,6 +719,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [addShift, setAddShift] = useState<'day' | 'night'>('day');
     const [addStatus, setAddStatus] = useState<EmployeeStatus>('Active');
     const [addNationality, setAddNationality] = useState('');
+    const [addCivilId, setAddCivilId] = useState('');
     const [addDesignation, setAddDesignation] = useState('');
     const [addCompany, setAddCompany] = useState('');
     const [devices, setDevices] = useState<Device[]>([]);
@@ -1056,6 +1058,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     shift: addShift,
                     status: normalizeEmployeeStatus(addStatus),
                     nationality: addNationality || null,
+                    civil_id: addCivilId.trim() || null,
                     designation: addDesignation.trim() || null,
                     company: addCompany.trim() || null,
                 })
@@ -1092,6 +1095,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
             setAddShift('day');
             setAddStatus('Active');
             setAddNationality('');
+            setAddCivilId('');
             setAddDesignation('');
             setAddCompany('');
             setSelectedDevices(new Set());
@@ -1169,6 +1173,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                     shift: editShift,
                     status: normalizeEmployeeStatus(editStatus),
                     nationality: editNationality || null,
+                    civil_id: editCivilId.trim() || null,
                     designation: editDesignation.trim() || null,
                     company: editCompany.trim() || null,
                 })
@@ -2606,6 +2611,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             setEditShift(emp.shift || 'day');
                                             setEditStatus(normalizeEmployeeStatus(emp.status));
                                             setEditNationality(emp.nationality || '');
+                                            setEditCivilId(emp.civil_id || '');
                                             setEditDesignation(emp.designation || '');
                                             setEditCompany(emp.company || '');
                                         }
@@ -2955,6 +2961,16 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             value={editEmail}
                                             onChange={(e) => setEditEmail(e.target.value)}
                                             placeholder="john@company.com"
+                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-555 block">Civil ID</label>
+                                        <Input
+                                            type="text"
+                                            value={editCivilId}
+                                            onChange={(e) => setEditCivilId(e.target.value)}
+                                            placeholder="Enter Civil ID"
                                             className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl"
                                         />
                                     </div>
@@ -3365,6 +3381,16 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                             value={addCompany}
                                             onChange={(e) => setAddCompany(e.target.value)}
                                             placeholder="e.g. Acme Corp"
+                                            className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-555 block">Civil ID</label>
+                                        <Input
+                                            type="text"
+                                            value={addCivilId}
+                                            onChange={(e) => setAddCivilId(e.target.value)}
+                                            placeholder="Enter Civil ID"
                                             className="text-sm bg-gray-50 border-gray-100 focus:bg-white transition-all rounded-xl h-10 w-full"
                                         />
                                     </div>
