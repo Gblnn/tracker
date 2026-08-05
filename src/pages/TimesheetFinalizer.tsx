@@ -390,6 +390,18 @@ const TimesheetRowComponent = memo(({
 
   const [swapClicks, setSwapClicks] = useState(0);
   const [isHighlighting, setIsHighlighting] = useState(false);
+
+  const parentCustomText = useMemo(() => {
+    if (!row.remarks) return '';
+    return row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : '';
+  }, [row.remarks]);
+
+  const [localRemarks, setLocalRemarks] = useState(parentCustomText);
+
+  useEffect(() => {
+    setLocalRemarks(parentCustomText);
+  }, [parentCustomText]);
+
   const empProjCode = row.project_code || employeeAssignedProjects[emp.emp_id] || '';
   const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
   const isUserFocalOnly = resolvedMode === 'verify' && !isDual;
@@ -720,16 +732,33 @@ const TimesheetRowComponent = memo(({
             </Select>
 
             {(row.remarks !== '' && row.remarks !== 'Present' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Forgot to Punch In' && row.remarks !== 'Forgot to Punch Out' && row.remarks !== 'Sick Leave' && row.remarks !== 'Unpaid Leave' && row.remarks !== 'Casual Leave' && row.remarks !== 'Emergency Leave' && row.remarks !== 'No Device') && (
-              <Input
-                type="text"
-                value={row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks}
-                onChange={(e) => onUpdateRow(emp.device_user_id, 'remarks', 'Custom: ' + e.target.value)}
-                placeholder="Type custom remark..."
-                className={`h-8 text-xs w-[150px] bg-white border focus:ring-1 ${isRemarksInvalid
-                  ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
-                  : 'border-slate-300 focus:ring-slate-300'
-                  }`}
-              />
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <Input
+                  type="text"
+                  value={localRemarks}
+                  onChange={(e) => setLocalRemarks(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      onUpdateRow(emp.device_user_id, 'remarks', 'Custom: ' + localRemarks);
+                    }
+                  }}
+                  placeholder="Enter remark"
+                  className={`h-8 text-xs w-[112px] bg-white border focus:ring-1 ${isRemarksInvalid
+                    ? 'border-red-500 focus:ring-red-500 bg-red-50/30'
+                    : 'border-slate-300 focus:ring-slate-300'
+                    }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    onUpdateRow(emp.device_user_id, 'remarks', 'Custom: ' + localRemarks);
+                  }}
+                  className="flex items-center justify-center hover:bg-emerald-100 rounded-md text-emerald-700 h-8 w-8 cursor-pointer shadow-xs shrink-0 transition-colors"
+                  title="Save custom remark"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
+              </div>
             )}
           </div>
         )}
