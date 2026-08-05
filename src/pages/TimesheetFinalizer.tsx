@@ -577,9 +577,8 @@ const TimesheetRowComponent = memo(({
               title="Swap In and Out times"
             >
               <ArrowRightLeft
-                className={`w-4 h-4 text-slate-400 hover:text-slate-600 transition-all duration-300 ease-out ${
-                  isHighlighting ? 'text-emerald-500 scale-75' : ''
-                }`}
+                className={`w-4 h-4 text-slate-400 hover:text-slate-600 transition-all duration-300 ease-out ${isHighlighting ? 'text-emerald-500 scale-75' : ''
+                  }`}
                 style={{
                   transform: `rotate(${swapClicks * 180}deg)`,
                   transition: 'transform 0.5s ease-out'
@@ -1003,7 +1002,7 @@ export default function TimesheetFinalizer({
   const [isLocked, setIsLocked] = useState(false);
   const [lockedBy, setLockedBy] = useState<string | null>(null);
 
-  const [punchMode, setPunchMode] = useState<'first_last' | 'check_in_out'>('first_last');
+  const [punchMode] = useState<'first_last' | 'check_in_out'>('first_last');
   const [punchGroups, setPunchGroups] = useState<Record<string, Punch[]>>({});
   const [deviceProjectMap, setDeviceProjectMap] = useState<Record<string, string>>({});
   const [employeeAssignedProjects, setEmployeeAssignedProjects] = useState<Record<string, string>>({});
@@ -1257,26 +1256,7 @@ export default function TimesheetFinalizer({
     };
   }, [userData?.email]);
 
-  const handleModeChange = (newMode: 'first_last' | 'check_in_out') => {
-    setPunchMode(newMode);
-    setRows(prev => {
-      const next = { ...prev };
-      employees.forEach(emp => {
-        const row = next[emp.device_user_id];
-        if (row && !row.isEdited && !row.isApproved && !row.inDatabase) {
-          const empPunches = punchGroups[emp.device_user_id] || [];
-          next[emp.device_user_id] = {
-            ...guessRow(emp, empPunches, newMode, projects, deviceProjectMap, employeeAssignedProjects),
-            isApproved: false,
-            approval: false,
-            inDatabase: false
-          };
-        }
-      });
-      return next;
-    });
-    // toast.success(`Switched to ${newMode === 'first_last' ? 'First In / Last Out' : 'Check In / Check Out'} logic.`);
-  };
+
 
   const loadTimesheet = useCallback(async (isSilent = false) => {
     if (!isSilent) {
@@ -2314,13 +2294,13 @@ export default function TimesheetFinalizer({
       const isBiometricFullyPopulated = !!updated.original_in_punch && !!updated.original_out_punch;
 
       if (!hasDevice) {
-        const shouldDefaultRemark = key !== 'swap_punches' && (!updated.remarks || key === 'status' || key === 'project_code');
+        const shouldDefaultRemark = resolvedMode !== 'approve' && key !== 'swap_punches' && (!updated.remarks || key === 'status' || key === 'project_code');
         if (shouldDefaultRemark) {
           updated.remarks = '';
         }
       } else {
         if (!isBiometricFullyPopulated) {
-          const shouldDefaultRemark = key !== 'swap_punches' && (!updated.remarks || key === 'status' || key === 'project_code');
+          const shouldDefaultRemark = resolvedMode !== 'approve' && key !== 'swap_punches' && (!updated.remarks || key === 'status' || key === 'project_code');
           if (shouldDefaultRemark) {
             if (updated.original_in_punch && !updated.original_out_punch) {
               updated.remarks = 'Forgot to Punch Out';
@@ -4030,41 +4010,6 @@ export default function TimesheetFinalizer({
               </button>
             ) : (
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {/* Animated Toggle for In/Out Logic */}
-                <div
-                  onClick={() => handleModeChange(punchMode === 'first_last' ? 'check_in_out' : 'first_last')}
-                  className="h-8 select-none border border-slate-300 bg-white hover:bg-slate-50 active:bg-slate-100 rounded-lg flex items-center justify-center cursor-pointer font-medium text-[12px] text-slate-700 relative overflow-hidden transition-all duration-200 shrink-0 animate-fade-in"
-                  style={{ width: "9rem" }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={e => {
-                    if (e.key === ' ' || e.key === 'Enter') {
-                      handleModeChange(punchMode === 'first_last' ? 'check_in_out' : 'first_last');
-                    }
-                  }}
-                >
-                  <div
-                    className="absolute inset-0 flex items-center justify-center transition-all duration-300 transform"
-                    style={{
-                      opacity: punchMode === 'first_last' ? 1 : 0,
-                      transform: punchMode === 'first_last' ? 'translateY(0)' : 'translateY(-15px)',
-                      pointerEvents: punchMode === 'first_last' ? 'auto' : 'none'
-                    }}
-                  >
-                    First In / Last Out
-                  </div>
-                  <div
-                    className="absolute inset-0 flex items-center justify-center transition-all duration-300 transform"
-                    style={{
-                      opacity: punchMode === 'first_last' ? 0 : 1,
-                      transform: punchMode === 'first_last' ? 'translateY(15px)' : 'translateY(0)',
-                      pointerEvents: punchMode === 'first_last' ? 'none' : 'auto'
-                    }}
-                  >
-                    Check In / Check Out
-                  </div>
-                </div>
-
                 {/* Progress Button replacing Approve/Verify/Set as Review buttons */}
                 <button
                   type="button"
