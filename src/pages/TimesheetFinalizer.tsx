@@ -978,7 +978,7 @@ const TimesheetRowComponent = memo(({
 
           {/* 2. Attestation Details & Status/Actions inline underneath */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            {(row.isEdited || row.verified_by || row.approved_by || row.isVerified) ? (
+            {(row.isEdited || row.verified_by || row.approved_by || row.isVerified || (row.inDatabase && hasNoRedBorders)) ? (
               <span className={row.isApproved ? 'text-indigo-600 font-semibold' : (hasNoRedBorders ? 'text-teal-600' : 'text-amber-700')} style={{ fontSize: '10px', whiteSpace: 'nowrap', fontWeight: 555 }}>
                 {(() => {
                   const emails: string[] = [];
@@ -1922,7 +1922,8 @@ export default function TimesheetFinalizer({
     const currentRow = rows[userId];
     if (!currentRow) return;
 
-    const isRowVerified = currentRow.isVerified || !!currentRow.verified_by;
+    const isMachineLoggedComplete = !!currentRow.original_in_punch && !!currentRow.original_out_punch;
+    const isRowVerified = currentRow.isVerified || !!currentRow.verified_by || isMachineLoggedComplete;
     if (!isRowVerified) {
       toast.error(`Cannot approve ${currentRow.employee_name}. Timesheet must be verified first.`);
       return;
