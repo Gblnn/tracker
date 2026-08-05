@@ -437,7 +437,7 @@ const TimesheetRowComponent = memo(({
     return true;
   }, [row.status, row.project_code, row.punch_in, row.punch_out, isRemarksInvalid]);
 
-  const isApproveModeReadOnly = resolvedMode === 'approve' && !(!row.status || row.status === 'no status' || !hasNoRedBorders);
+  const isApproveModeReadOnly = resolvedMode === 'approve' && !isDual && !(!row.status || row.status === 'no status' || !hasNoRedBorders);
 
 
 
@@ -630,7 +630,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Overtime Input */}
       <td style={{ textAlign: 'center' }}>
-        {(!isRowEditable || isApproveModeReadOnly || isSaved || emp.emp_type === 'staff') ? (
+        {(!isRowEditable || (resolvedMode === 'approve' && !isDual) || isRecordApproved || emp.emp_type === 'staff') ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {emp.emp_type === 'staff' ? '—' : (row.overtime ?? 0)}
           </span>
