@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { parseLocationGeofence } from '../lib/geofence';
 import { supabase } from '../lib/supabase';
-import { todayISO } from '../lib/utilis';
+import { yesterdayISO } from '../lib/utilis';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -568,7 +568,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
   const [pdfLoading, setPdfLoading] = useState(false);
   const [reportView, setReportView] = useState<ReportView>('daily');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
-  const [selectedDailyDate, setSelectedDailyDate] = useState<string>(() => todayISO());
+  const [selectedDailyDate, setSelectedDailyDate] = useState<string>(() => yesterdayISO());
   const [empSearch, setEmpSearch] = useState("");
   const [openEmpSelect, setOpenEmpSelect] = useState(false);
 
@@ -1201,7 +1201,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
       rows.push([`Staff Individual Monthly Report — ${selectedEmp.name}`]);
       rows.push([`Period: ${monthLabel(month, year)}`]);
       rows.push([]);
-      rows.push(['Date', 'Day', 'Status', 'Check In', 'Check Out', 'Hours', 'Overtime', 'Approved By']);
+      rows.push(['Date', 'Day', 'Status', 'Check In', 'Check Out', 'Hours', 'Overtime', 'Remarks', 'Approved By']);
 
       dayList.forEach((d) => {
         const pad = (n: number) => String(n).padStart(2, '0');
@@ -1263,12 +1263,13 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
           checkOutText,
           hoursText,
           overtimeText,
+          c?.remarks || '',
           c?.approved_by || ''
         ]);
       });
 
       const ws = XLSX.utils.aoa_to_sheet(rows);
-      ws['!cols'] = [{ wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 30 }, { wch: 30 }, { wch: 8 }, { wch: 8 }, { wch: 25 }];
+      ws['!cols'] = [{ wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 30 }, { wch: 30 }, { wch: 8 }, { wch: 8 }, { wch: 25 }, { wch: 25 }];
       XLSX.utils.book_append_sheet(wb, ws, `Individual_Report`);
       XLSX.writeFile(wb, `Individual_${selectedEmp.name.replace(/\s+/g, '_')}_${year}_${String(month + 1).padStart(2, '0')}.xlsx`);
       return;
@@ -1279,7 +1280,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
       rows.push([`Staff Daily Attendance Report`]);
       rows.push([`Date: ${selectedDailyDate}`]);
       rows.push([]);
-      const dailyHeaders = ['Date', '#', 'Name', 'Department', 'Location', 'Status', 'Check In', 'Check Out', 'Hours', 'Overtime', 'Approved By'];
+      const dailyHeaders = ['Date', '#', 'Name', 'Emp ID', 'Department', 'Location', 'Status', 'Check In', 'Check Out', 'Hours', 'Overtime', 'Remarks', 'Approved By'];
       if (isFocal) {
         dailyHeaders.splice(5, 1);
       }
@@ -1349,6 +1350,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
             checkOutText,
             hoursText,
             overtimeText,
+            c?.remarks || '',
             c?.approved_by || ''
           ];
           if (isFocal) {
@@ -1359,7 +1361,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
       });
 
       const ws = XLSX.utils.aoa_to_sheet(rows);
-      const colWidths = [{ wch: 12 }, { wch: 4 }, { wch: 25 }, { wch: 10 }, { wch: 18 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 25 }];
+      const colWidths = [{ wch: 12 }, { wch: 4 }, { wch: 25 }, { wch: 10 }, { wch: 18 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 25 }, { wch: 25 }];
       if (isFocal) {
         colWidths.splice(5, 1);
       }
@@ -1678,37 +1680,37 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
 
         pdf.save(`Individual_Attendance_${selectedEmp?.name?.replace(/\s+/g, '_')}_${year}_${String(month + 1).padStart(2, '0')}.pdf`);
       } else {
-      const canvas = await html2canvas(offscreen, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: totalWidth,
-      });
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const layoutWidth = offscreen.offsetWidth;
-      const layoutHeight = offscreen.offsetHeight;
-
-      if (isDaily) {
-        const pdf = new jsPDF({
-          orientation: layoutWidth > layoutHeight ? 'l' : 'p',
-          unit: 'px',
-          format: [layoutWidth, layoutHeight]
+        const canvas = await html2canvas(offscreen, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          windowWidth: totalWidth,
         });
 
-        pdf.addImage(imgData, 'JPEG', 0, 0, layoutWidth, layoutHeight, undefined, 'FAST');
-        pdf.save(`Staff_Daily_Attendance_${selectedDailyDate}.pdf`);
-      } else {
-        const pdf = new jsPDF({
-          orientation: layoutWidth > layoutHeight ? 'l' : 'p',
-          unit: 'px',
-          format: [layoutWidth, layoutHeight]
-        });
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const layoutWidth = offscreen.offsetWidth;
+        const layoutHeight = offscreen.offsetHeight;
 
-        pdf.addImage(imgData, 'JPEG', 0, 0, layoutWidth, layoutHeight, undefined, 'FAST');
-        pdf.save(`Staff_Attendance_${year}_${String(month + 1).padStart(2, '0')}.pdf`);
-      }
+        if (isDaily) {
+          const pdf = new jsPDF({
+            orientation: layoutWidth > layoutHeight ? 'l' : 'p',
+            unit: 'px',
+            format: [layoutWidth, layoutHeight]
+          });
+
+          pdf.addImage(imgData, 'JPEG', 0, 0, layoutWidth, layoutHeight, undefined, 'FAST');
+          pdf.save(`Staff_Daily_Attendance_${selectedDailyDate}.pdf`);
+        } else {
+          const pdf = new jsPDF({
+            orientation: layoutWidth > layoutHeight ? 'l' : 'p',
+            unit: 'px',
+            format: [layoutWidth, layoutHeight]
+          });
+
+          pdf.addImage(imgData, 'JPEG', 0, 0, layoutWidth, layoutHeight, undefined, 'FAST');
+          pdf.save(`Staff_Attendance_${year}_${String(month + 1).padStart(2, '0')}.pdf`);
+        }
       }
     } catch (err) {
       console.error("Failed to generate PDF:", err);
@@ -2186,13 +2188,14 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Out</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Hours</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Overtime</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 180 }}>Remarks</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 140 }}>Approved By</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {dateListInRange.length === 0 || filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={isFocal ? 9 : 10} className="py-20 text-center text-gray-400 font-medium bg-white">
+                  <td colSpan={isFocal ? 10 : 11} className="py-20 text-center text-gray-400 font-medium bg-white">
                     No employees found.
                   </td>
                 </tr>
@@ -2295,6 +2298,9 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                           <td className={`px-4 py-2 tabular-nums text-xs text-left ${timeColor}`}>{checkOutText}</td>
                           <td className="px-4 py-2 text-gray-600 font-semibold tabular-nums text-xs text-center">{hoursText}</td>
                           <td className="px-4 py-2 text-gray-600 font-semibold tabular-nums text-xs text-center">{overtimeText}</td>
+                          <td className="px-4 py-2 text-slate-500 font-medium text-xs text-left whitespace-nowrap" title={c?.remarks || '—'}>
+                            {c?.remarks || '—'}
+                          </td>
                           <td className="px-4 py-2 text-slate-500 font-medium text-xs text-left whitespace-nowrap" title={c?.approved_by || '—'}>
                             {c?.approved_by || '—'}
                           </td>
@@ -2304,7 +2310,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                   })}
                   {filtered.length > limit && (
                     <tr >
-                      <td colSpan={isFocal ? 9 : 10} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
+                      <td colSpan={isFocal ? 10 : 11} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
                         <div className="flex items-center justify-center gap-4 w-full">
                           <span className="text-xs text-gray-500 font-medium text-center">
                             Showing {limit} of {filtered.length} records
@@ -2338,13 +2344,14 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Check Out</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Hours</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Overtime</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 180 }}>Remarks</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 140 }}>Approved By</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {!selectedEmp ? (
                 <tr>
-                  <td colSpan={8} className="py-20 text-center text-gray-400 font-medium bg-white">
+                  <td colSpan={9} className="py-20 text-center text-gray-400 font-medium bg-white">
                     No employee selected.
                   </td>
                 </tr>
@@ -2430,6 +2437,9 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                       <td className={`px-4 py-2 tabular-nums text-xs text-left ${timeColor}`}>{checkOutText}</td>
                       <td className="px-4 py-2 text-slate-950 font-bold tabular-nums text-xs text-center">{hoursText}</td>
                       <td className="px-4 py-2 text-slate-950 font-bold tabular-nums text-xs text-center">{overtimeText}</td>
+                      <td className="px-4 py-2 text-slate-950 font-semibold text-xs text-left whitespace-nowrap" title={c?.remarks || '—'}>
+                        {c?.remarks || '—'}
+                      </td>
                       <td className="px-4 py-2 text-slate-950 font-semibold text-xs text-left whitespace-nowrap" title={c?.approved_by || '—'}>
                         {c?.approved_by ? (c.approved_by.includes('@') ? c.approved_by.split('@')[0] : c.approved_by) : '—'}
                       </td>
@@ -2450,6 +2460,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                   <td className="px-4 py-2 text-center bg-gray-100 text-slate-950 font-bold tabular-nums">
                     {totalOvertime(selectedEmp.device_user_id, selectedEmp.emp_type)}
                   </td>
+                  <td className="px-4 py-2 text-left bg-gray-100 text-slate-950">—</td>
                   <td className="px-4 py-2 text-left bg-gray-100 text-slate-950">—</td>
                 </tr>
               </tfoot>

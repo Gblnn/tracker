@@ -30,6 +30,12 @@ export function todayISO(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' });
 }
 
+export function yesterdayISO(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Muscat' });
+}
+
 const AVATAR_COLORS = [
   { bg: '#E6F1FB', text: '#0C447C' },
   { bg: '#E1F5EE', text: '#085041' },

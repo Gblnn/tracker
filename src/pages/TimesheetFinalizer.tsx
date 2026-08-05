@@ -35,6 +35,7 @@ import {
   Redo2,
   Users,
   Sparkles,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
 import { toast } from 'sonner';
@@ -358,7 +359,6 @@ const TimesheetRowComponent = memo(({
   onUpdateRow,
   onUndoRow,
   onApproveRow,
-  onReviewRow,
   onRevokeApproveRow,
   isVerifying,
   onVerifyBiometricRow,
@@ -376,10 +376,9 @@ const TimesheetRowComponent = memo(({
   resolvedMode: 'verify' | 'approve' | 'finalize' | 'view';
   saving: boolean;
   onRowSelect: (userId: string) => void;
-  onUpdateRow: (userId: string, key: keyof TimesheetRow, value: any) => void;
+  onUpdateRow: (userId: string, key: keyof TimesheetRow | 'swap_punches', value?: any) => void;
   onUndoRow: (userId: string) => void;
   onApproveRow: (userId: string) => void;
-  onReviewRow: (userId: string) => void;
   onRevokeApproveRow: (userId: string) => void;
   isVerifying?: boolean;
   onVerifyBiometricRow?: (userId: string) => void;
@@ -389,11 +388,14 @@ const TimesheetRowComponent = memo(({
 }) => {
   const { userData } = useAuth();
 
+  const [swapClicks, setSwapClicks] = useState(0);
+  const [isHighlighting, setIsHighlighting] = useState(false);
   const empProjCode = row.project_code || employeeAssignedProjects[emp.emp_id] || '';
   const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
   const isUserFocalOnly = resolvedMode === 'verify' && !isDual;
   const isRecordApproved = row.isApproved || !!row.approved_by || row.approval;
   const isRowEditable = canUserEdit && !isLocked && !(isUserFocalOnly && isRecordApproved);
+  const isSaved = row.inDatabase && row.status !== 'no status' && !!row.status;
 
   const isRemarksInvalid = useMemo(() => {
     const isBiometricFullyPopulated = !!row.original_in_punch && !!row.original_out_punch;
@@ -423,7 +425,7 @@ const TimesheetRowComponent = memo(({
     return true;
   }, [row.status, row.project_code, row.punch_in, row.punch_out, isRemarksInvalid]);
 
-  const isApproveModeReadOnly = resolvedMode === 'approve' && !(isDual && (!row.status || row.status === 'no status' || !hasNoRedBorders));
+  const isApproveModeReadOnly = resolvedMode === 'approve' && !(!row.status || row.status === 'no status' || !hasNoRedBorders);
 
 
 
@@ -500,7 +502,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Status Select */}
       <td style={{ textAlign: 'center' }}>
-        {(!isRowEditable || isApproveModeReadOnly || row.inDatabase || !!row.original_in_punch || !!row.original_out_punch) ? (
+        {(!isRowEditable || isApproveModeReadOnly || isSaved || !!row.original_in_punch || !!row.original_out_punch) ? (
           <span className={`text-xs font-semibold px-2 py-1 rounded inline-flex items-center justify-center ${row.status === 'present' ? 'text-emerald-700 bg-emerald-50/80 border border-emerald-200' :
             row.status === 'present with OT' ? 'text-indigo-700 bg-indigo-50/80 border border-indigo-200' :
               row.status === 'absent' ? 'text-rose-700 bg-rose-50/80 border border-rose-200' :
@@ -533,29 +535,64 @@ const TimesheetRowComponent = memo(({
 
       {/* Punch In Input */}
       <td style={{ textAlign: 'center' }}>
-        {(!isRowEditable || isApproveModeReadOnly || row.inDatabase || !!row.original_in_punch) ? (
-          <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
-            {row.punch_in || '—'}
-          </span>
-        ) : (
-          <Input
-            type="time"
-            value={row.punch_in}
-            onChange={(e) => onUpdateRow(emp.device_user_id, 'punch_in', e.target.value)}
-            style={((row.status === 'present' || row.status === 'present with OT') && !row.punch_in) ? {
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: '#ef4444',
-              backgroundColor: 'rgba(254, 242, 242, 0.3)'
-            } : undefined}
-            className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-slate-300"
-          />
-        )}
+        <div className="relative w-full flex items-center justify-center">
+          {(!isRowEditable || isApproveModeReadOnly || isSaved || !!row.original_in_punch) ? (
+            <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
+              {row.punch_in || '—'}
+            </span>
+          ) : (
+            <Input
+              type="time"
+              value={row.punch_in}
+              onChange={(e) => onUpdateRow(emp.device_user_id, 'punch_in', e.target.value)}
+              style={((row.status === 'present' || row.status === 'present with OT') && !row.punch_in) ? {
+                borderWidth: '1px',
+                borderStyle: 'solid',
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(254, 242, 242, 0.3)'
+              } : undefined}
+              className="h-8 text-xs w-[120px] bg-white border border-slate-300 focus:ring-1 focus:ring-slate-300"
+            />
+          )}
+
+          {/* Swap In/Out Button */}
+          {(((row.punch_in && !row.punch_out) || (!row.punch_in && row.punch_out)) && row.status && row.status !== 'no status' && !isSaved && !isLocked && canUserEdit && !isApproveModeReadOnly) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSwapClicks(prev => prev + 1);
+                setIsHighlighting(true);
+                onUpdateRow(emp.device_user_id, 'swap_punches');
+                setTimeout(() => setIsHighlighting(false), 500);
+              }}
+              className="absolute flex items-center justify-center rounded-md cursor-pointer focus:outline-none transition-all duration-200 hover:scale-125 active:scale-90"
+              style={{
+                right: '-26px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '28px',
+                height: '28px',
+                background: "none"
+              }}
+              title="Swap In and Out times"
+            >
+              <ArrowRightLeft
+                className={`w-4 h-4 text-slate-400 hover:text-slate-600 transition-all duration-300 ease-out ${
+                  isHighlighting ? 'text-emerald-500 scale-75' : ''
+                }`}
+                style={{
+                  transform: `rotate(${swapClicks * 180}deg)`,
+                  transition: 'transform 0.5s ease-out'
+                }}
+              />
+            </button>
+          )}
+        </div>
       </td>
 
       {/* Punch Out Input */}
       <td style={{ textAlign: 'center' }}>
-        {(!isRowEditable || isApproveModeReadOnly || row.inDatabase || !!row.original_out_punch) ? (
+        {(!isRowEditable || isApproveModeReadOnly || isSaved || !!row.original_out_punch) ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {row.punch_out || '—'}
           </span>
@@ -582,7 +619,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Overtime Input */}
       <td style={{ textAlign: 'center' }}>
-        {(!isRowEditable || isApproveModeReadOnly || row.inDatabase || emp.emp_type === 'staff') ? (
+        {(!isRowEditable || isApproveModeReadOnly || isSaved || emp.emp_type === 'staff') ? (
           <span className="text-xs text-slate-800 font-semibold px-2 py-1 block text-center">
             {emp.emp_type === 'staff' ? '—' : (row.overtime ?? 0)}
           </span>
@@ -611,7 +648,7 @@ const TimesheetRowComponent = memo(({
 
       {/* Remarks Input */}
       <td>
-        {(!isRowEditable || isApproveModeReadOnly || row.inDatabase) ? (
+        {(!isRowEditable || isApproveModeReadOnly || isSaved) ? (
           <span className="text-xs text-slate-800 font-medium px-2 py-1">
             {row.remarks ? (row.remarks.startsWith('Custom: ') ? row.remarks.substring(8) : row.remarks) : '—'}
           </span>
@@ -700,57 +737,112 @@ const TimesheetRowComponent = memo(({
       </td>
 
       {/* Source & Actions */}
-      <td className="sticky-action" style={(resolvedMode === 'approve' && !isFocalFiltered) ? { right: '100px' } : { right: '0' }}>
+      <td className="sticky-action" style={{ right: '0' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px 6px' }}>
           {/* 1. Source Badge (Original & Unchanged - Full Width) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
-            {(row.isVerified || row.isApproved || row.approved_by === 'review' || row.approval || row.isEdited) ? (() => {
-              let badgeBg = 'teal';
-              let badgeText = 'Verified';
+            {(() => {
+              const showApproverButtons = resolvedMode === 'approve' && !isFocalFiltered && (row.isVerified || row.approval || hasNoRedBorders) && !row.isApproved && row.approved_by !== 'review';
+              if (showApproverButtons) {
+                return (
+                  <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => onApproveRow(emp.device_user_id)}
+                      style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        background: '#0d9488',
+                        color: 'white',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        flex: 1,
+                        justifyContent: 'center',
+                        height: '24px',
+                      }}
+                    >
+                      <Check className="w-3.5 h-3.5" /> Approve
+                    </button>
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => onUndoRow(emp.device_user_id)}
+                      style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        padding: '3px 8px',
+                        borderRadius: '4px',
 
-              if (row.approved_by === 'review') {
-                badgeBg = '#ea580c';
-                badgeText = 'Needs Review';
-              } else if (row.approval) {
-                badgeBg = '#0d9488';
-                badgeText = 'Verified';
-              } else if (row.isApproved) {
-                badgeBg = '#4f46e5';
-                badgeText = 'Verified & Approved';
-              } else if (row.isVerified || hasNoRedBorders) {
-                badgeBg = '#0d9488';
-                badgeText = 'Verified';
-              } else if (row.isEdited) {
-                badgeBg = '#d97706';
-                badgeText = 'Manual';
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        flex: 1,
+                        justifyContent: 'center',
+                        height: '24px',
+                      }}
+                      title="Revoke verification & revert to original"
+                    >
+                      <Undo2 className="w-3.5 h-3.5" /> Revoke
+                    </button>
+                  </div>
+                );
               }
 
-              return (
-                <span
-                  style={{
-                    fontSize: "0.7rem",
-                    background: badgeBg,
-                    color: 'white',
-                    border: "none",
-                    fontWeight: 500,
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "1px 6px",
-                    borderRadius: "3px",
-                    flex: 1
-                  }}
-                  className="source-badge"
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    {(badgeText === 'Verified' || badgeText === 'Verified & Approved') && <Check className="w-3 h-3 shrink-0" />}
-                    {badgeText === 'Approved' && <Stamp className="w-3 h-3 shrink-0" />}
-                    {badgeText === 'Finalized' && <SquareCheck className="w-3 h-3 shrink-0" />}
-                    {badgeText === 'Needs Review' && <AlertCircle className="w-3 h-3 shrink-0" />}
-                    {badgeText}
+              if (row.isVerified || row.isApproved || row.approved_by === 'review' || row.approval || row.isEdited) {
+                let badgeBg = 'teal';
+                let badgeText = 'Verified';
+
+                if (row.approved_by === 'review') {
+                  badgeBg = '#ea580c';
+                  badgeText = 'Needs Review';
+                } else if (row.approval) {
+                  badgeBg = '#0d9488';
+                  badgeText = 'Verified';
+                } else if (row.isApproved) {
+                  badgeBg = '#4f46e5';
+                  badgeText = 'Verified & Approved';
+                } else if (row.isVerified || hasNoRedBorders) {
+                  badgeBg = '#0d9488';
+                  badgeText = 'Verified';
+                } else if (row.isEdited) {
+                  badgeBg = '#d97706';
+                  badgeText = 'Manual';
+                }
+
+                return (
+                  <span
+                    style={{
+                      fontSize: "0.7rem",
+                      background: badgeBg,
+                      color: 'white',
+                      border: "none",
+                      fontWeight: 500,
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "1px 6px",
+                      borderRadius: "3px",
+                      flex: 1
+                    }}
+                    className="source-badge"
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      {(badgeText === 'Verified' || badgeText === 'Verified & Approved') && <Check className="w-3 h-3 shrink-0" />}
+                      {badgeText === 'Approved' && <Stamp className="w-3 h-3 shrink-0" />}
+                      {badgeText === 'Finalized' && <SquareCheck className="w-3 h-3 shrink-0" />}
+                      {badgeText === 'Needs Review' && <AlertCircle className="w-3 h-3 shrink-0" />}
+                      {badgeText}
+                    </span>
                   </span>
-                </span>
-              );
-            })() : (() => {
+                );
+              }
+
               const { machineCode } = parseAttestedBy(row.attested_by, !!row.isApproved);
               const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
               if (machineCode === 'Leave Log') {
@@ -888,105 +980,6 @@ const TimesheetRowComponent = memo(({
         </div>
       </td>
 
-      {/* Approver Actions Column */}
-      {(resolvedMode === 'approve' && !isFocalFiltered) && (
-        <td className="sticky-approver-action" style={{ width: '100px', minWidth: '100px', padding: '6px 8px', verticalAlign: 'middle' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {(() => {
-              const isRowVerified = row.isVerified || !!row.verified_by;
-              if (!row.isApproved) {
-                return (
-                  <button
-                    type="button"
-                    disabled={saving || !isRowVerified}
-                    onClick={() => onApproveRow(emp.device_user_id)}
-                    title={!isRowVerified ? "Row must be verified before approval" : "Approve"}
-                    style={{
-                      fontSize: '0.65rem',
-                      fontWeight: 600,
-                      padding: '3px 8px',
-                      borderRadius: '4px',
-                      background: !isRowVerified ? '#94a3b8' : '#0d9488',
-                      color: 'white',
-                      border: 'none',
-                      cursor: (saving || !isRowVerified) ? 'not-allowed' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '3px',
-                      width: '100%',
-                      justifyContent: 'center',
-                      opacity: saving ? 0.6 : (!isRowVerified ? 0.5 : 1),
-                    }}
-                  >
-                    <Check className="w-2.5 h-2.5" /> Approve
-                  </button>
-                );
-              }
-              return (
-                <span style={{
-                  fontSize: '0.65rem',
-                  fontWeight: 600,
-                  padding: '3px 8px',
-                  borderRadius: '4px',
-                  background: '#ccfbf1',
-                  color: '#0f766e',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '3px',
-                  width: '100%',
-                  justifyContent: 'center',
-                }}>
-                  <Check className="w-2.5 h-2.5" /> Approved
-                </span>
-              );
-            })()}
-
-            {!row.isApproved && (
-              row.approved_by !== 'review' ? (
-                <button
-                  type="button"
-                  disabled={saving}
-                  onClick={() => onReviewRow(emp.device_user_id)}
-                  style={{
-                    fontSize: '0.65rem',
-                    fontWeight: 600,
-                    padding: '3px 8px',
-                    borderRadius: '4px',
-
-                    border: 'none',
-                    cursor: saving ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    width: '100%',
-                    justifyContent: 'center',
-                    opacity: saving ? 0.6 : 1,
-                  }}
-                >
-                  <AlertCircle className="w-2.5 h-2.5" /> Review
-                </button>
-              ) : (
-                <span style={{
-                  fontSize: '0.65rem',
-                  fontWeight: 600,
-                  padding: '3px 8px',
-                  borderRadius: '4px',
-                  background: '#fed7aa',
-                  color: '#9a3412',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '3px',
-                  width: '100%',
-                  justifyContent: 'center',
-                }}>
-                  <AlertCircle className="w-2.5 h-2.5" /> Needs Review
-                </span>
-              )
-            )}
-          </div>
-        </td>
-      )}
     </tr>
   );
 });
@@ -1365,7 +1358,7 @@ export default function TimesheetFinalizer({
       let focalProjectCodesLocal: string[] = [];
       let isFocalFilteredLocal = false;
 
-      if (userData?.role !== 'admin' && userData?.email) {
+      if (resolvedMode === 'verify' && userData?.role !== 'admin' && userData?.email) {
         const { data: focalProjects } = await supabase
           .from('projects')
           .select('project_code')
@@ -1384,17 +1377,15 @@ export default function TimesheetFinalizer({
       let approverProjectCodesLocal: string[] = [];
       let isApproverFilteredLocal = false;
 
-      if (resolvedMode === 'approve') {
-        if (userData?.role !== 'admin' && userData?.email) {
-          const { data: approverProjects } = await supabase
-            .from('projects')
-            .select('project_code')
-            .eq('approver_email', userData.email);
+      if (resolvedMode === 'approve' && userData?.role !== 'admin' && userData?.email) {
+        const { data: approverProjects } = await supabase
+          .from('projects')
+          .select('project_code')
+          .eq('approver_email', userData.email);
 
-          if (approverProjects && approverProjects.length > 0) {
-            approverProjectCodesLocal = approverProjects.map(p => p.project_code);
-            isApproverFilteredLocal = true;
-          }
+        if (approverProjects && approverProjects.length > 0) {
+          approverProjectCodesLocal = approverProjects.map(p => p.project_code);
+          isApproverFilteredLocal = true;
         }
       }
 
@@ -1549,7 +1540,9 @@ export default function TimesheetFinalizer({
 
       const filteredExistingRows = isFocalFilteredLocal
         ? (existingRows || []).filter(row => row.project_code && focalProjectCodesLocal.includes(row.project_code))
-        : (existingRows || []);
+        : isApproverFilteredLocal
+          ? (existingRows || []).filter(row => row.project_code && approverProjectCodesLocal.includes(row.project_code))
+          : (existingRows || []);
 
       // Calculate global lock: locked if all employees have a matching timesheet database record
       // Under new flow:
@@ -1986,69 +1979,7 @@ export default function TimesheetFinalizer({
     }
   }, [canUserAction, rows, date, userData?.email, setSaving, setRows]);
 
-  const handleReviewRow = useCallback(async (userId: string) => {
-    if (!canUserAction) {
-      toast.error('You do not have clearance to update timesheets.');
-      return;
-    }
 
-    const currentRow = rows[userId];
-    if (!currentRow) return;
-
-    setSaving(true);
-    try {
-      const inTimestamp = buildTimestamp(date, currentRow.punch_in);
-      const outTimestamp = buildTimestamp(date, currentRow.punch_out);
-      const dbFields = getDbAttestedAndVerified(currentRow, userData?.email);
-
-      const payload = {
-        date: date,
-        project_code: currentRow.project_code || null,
-        employee_code: currentRow.employee_code,
-        punch_in: inTimestamp,
-        punch_out: outTimestamp,
-        overtime: currentRow.overtime,
-        verify_type: currentRow.verify_type,
-        attested_by: dbFields.attested_by,
-        machine: dbFields.machine,
-        verified_by: currentRow.verified_by || dbFields.verified_by || null,
-        approved_by: 'review',
-        remarks: (currentRow.remarks || '').startsWith('Custom: ')
-          ? ((currentRow.remarks || '').substring(8).trim() || null)
-          : ((currentRow.remarks || '').trim() || null),
-        status: currentRow.status || null,
-        last_updated: new Date().toISOString(),
-      };
-
-      const { error: delErr } = await supabase
-        .from('timesheet')
-        .delete()
-        .eq('date', date)
-        .eq('employee_code', userId);
-      if (delErr) throw delErr;
-
-      const { error: insErr } = await supabase
-        .from('timesheet')
-        .insert([payload]);
-      if (insErr) throw insErr;
-
-      setRows(prev => ({
-        ...prev,
-        [userId]: {
-          ...prev[userId],
-          isApproved: false,
-          approved_by: 'review',
-          inDatabase: true,
-        }
-      }));
-
-      toast.success(`Set as needs review for ${currentRow.employee_name}.`);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to set as review.');
-    } finally {
-      setSaving(false);
-    }
-  }, [canUserAction, rows, date, userData?.email, setSaving, setRows]);
 
   const handleRevokeApproveRow = useCallback(async (userId: string) => {
     if (!canUserAction) {
@@ -2253,7 +2184,7 @@ export default function TimesheetFinalizer({
     }
   }, [date, resolvedMode, isFocalFiltered, canUserEdit, userData?.email, projects, employeeAssignedProjects, focalProjectCodes, isApproverFiltered, approverProjectCodes, projectsWithDevices, employeesMap]);
 
-  const updateRow = useCallback((userId: string, key: keyof TimesheetRow, value: any) => {
+  const updateRow = useCallback((userId: string, key: keyof TimesheetRow | 'swap_punches', value?: any) => {
     pushHistory(rows);
     const current = rows[userId];
     if (!current) return;
@@ -2269,12 +2200,40 @@ export default function TimesheetFinalizer({
       return;
     }
 
-    const updated = { ...current, [key]: value, lastLocalEdit: Date.now() };
+    const updated = { ...current, lastLocalEdit: Date.now() };
 
-    if (key === 'punch_in' || key === 'punch_out' || key === 'overtime' || key === 'project_code' || key === 'status' || key === 'remarks') {
+    if (key === 'swap_punches') {
+      const tempTime = current.punch_in || '';
+      const tempOriginal = current.original_in_punch;
+
+      updated.punch_in = current.punch_out || '';
+      updated.original_in_punch = current.original_out_punch || null;
+      updated.punch_out = tempTime;
+      updated.original_out_punch = tempOriginal || null;
       updated.isEdited = true;
       updated.verify_type = 'Manual Input';
       updated.attested_by = userData?.email || 'Timekeeper';
+
+      const inTime = updated.punch_in;
+      const outTime = updated.punch_out;
+      if (inTime || outTime) {
+        updated.status = (updated.overtime > 0) ? 'present with OT' : 'present';
+      } else {
+        updated.status = 'absent';
+        updated.overtime = 0;
+        updated.remarks = '';
+        if (emp) {
+          updated.project_code = employeeAssignedProjects[emp.emp_id] || '';
+        }
+      }
+    } else {
+      (updated as any)[key] = value;
+
+      if (key === 'punch_in' || key === 'punch_out' || key === 'overtime' || key === 'project_code' || key === 'status' || key === 'remarks') {
+        updated.isEdited = true;
+        updated.verify_type = 'Manual Input';
+        updated.attested_by = userData?.email || 'Timekeeper';
+      }
     }
 
     if (key === 'status') {
@@ -2355,13 +2314,13 @@ export default function TimesheetFinalizer({
       const isBiometricFullyPopulated = !!updated.original_in_punch && !!updated.original_out_punch;
 
       if (!hasDevice) {
-        const shouldDefaultRemark = !updated.remarks || key === 'status' || key === 'project_code';
+        const shouldDefaultRemark = key !== 'swap_punches' && (!updated.remarks || key === 'status' || key === 'project_code');
         if (shouldDefaultRemark) {
           updated.remarks = '';
         }
       } else {
         if (!isBiometricFullyPopulated) {
-          const shouldDefaultRemark = !updated.remarks || key === 'status' || key === 'project_code';
+          const shouldDefaultRemark = key !== 'swap_punches' && (!updated.remarks || key === 'status' || key === 'project_code');
           if (shouldDefaultRemark) {
             if (updated.original_in_punch && !updated.original_out_punch) {
               updated.remarks = 'Forgot to Punch Out';
@@ -4531,7 +4490,7 @@ export default function TimesheetFinalizer({
                     </th>
                   )}
                   <th style={{ width: '200px' }}>Remarks</th>
-                  <th className="sticky-action text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '250px', right: (resolvedMode === 'approve' && !isFocalFiltered) ? '100px' : '0' }}>
+                  <th className="sticky-action text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '250px', right: '0' }}>
                     <DropdownMenu>
                       <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
                         <span className="truncate">
@@ -4597,25 +4556,7 @@ export default function TimesheetFinalizer({
                           <SquareCheck className="w-3.5 h-3.5 text-teal-600 shrink-0" />
                           <span>{resolvedMode === 'approve' ? 'Approve Valid Records' : 'Verify Valid Records'}</span>
                         </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </th>
-                  {(resolvedMode === 'approve' && !isFocalFiltered) && (
-                    <th className="text-left px-1 py-1 font-medium text-xs tracking-wide uppercase sticky-approver-action" style={{ width: '110px', minWidth: '110px' }}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
-                          <span className="truncate">Action</span>
-                          <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-[190px] p-1 bg-white border border-slate-200 z-50">
-                          <DropdownMenuItem
-                            onClick={handleApproveAllValidRecords}
-                            disabled={saving || loading || !canUserEdit}
-                            className="rounded-md focus:bg-indigo-50 text-indigo-700 font-semibold cursor-pointer text-xs flex items-center gap-1.5 p-2"
-                          >
-                            <SquareCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                            <span>Approve Valid Records</span>
-                          </DropdownMenuItem>
+                        {resolvedMode === 'approve' && (
                           <DropdownMenuItem
                             onClick={handleRevokeAllRecords}
                             disabled={saving || loading || !canUserEdit}
@@ -4624,16 +4565,17 @@ export default function TimesheetFinalizer({
                             <Undo2 className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                             <span>Revoke Approval for All</span>
                           </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </th>
-                  )}
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </th>
+
                 </tr>
               </thead>
               <tbody>
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={(resolvedMode === 'approve' && !isFocalFiltered) ? 10 : (isFocalFiltered ? 9 : 10)} className="py-20 text-center text-gray-400 font-medium bg-white">
+                    <td colSpan={isFocalFiltered ? 9 : 10} className="py-20 text-center text-gray-400 font-medium bg-white">
                       No matching records found.
                     </td>
                   </tr>
@@ -4659,7 +4601,6 @@ export default function TimesheetFinalizer({
                           onUpdateRow={updateRow}
                           onUndoRow={handleUndoRow}
                           onApproveRow={handleApproveRow}
-                          onReviewRow={handleReviewRow}
                           onRevokeApproveRow={handleRevokeApproveRow}
                           isVerifying={verifyingRowIds.has(emp.device_user_id)}
                           onVerifyBiometricRow={handleVerifyBiometricRow}
@@ -4671,7 +4612,7 @@ export default function TimesheetFinalizer({
                     })}
                     {filteredEmployees.length > renderLimit && (
                       <tr>
-                        <td colSpan={(resolvedMode === 'approve' && !isFocalFiltered) ? 10 : (isFocalFiltered ? 9 : 10)} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
+                        <td colSpan={isFocalFiltered ? 9 : 10} style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: "1rem" }} className="p-4 text-center bg-white/80 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150">
                           <div className="flex items-center justify-center gap-4 w-full">
                             <span className="text-xs text-gray-500 font-medium text-center">
                               Showing {renderLimit} of {filteredEmployees.length} records
