@@ -179,6 +179,7 @@ interface TimesheetRow {
   verified_by?: string | null;
   approved_by?: string | null;
   lastLocalEdit?: number;
+  created_at?: string | null;
 }
 
 type SourceFilter = 'ALL' | 'MANUAL' | 'LEAVE_LOG' | 'DEVICE' | 'NO_SOURCE';
@@ -189,6 +190,28 @@ const getYesterdayString = () => {
   const mm = String(yesterday.getMonth() + 1).padStart(2, '0');
   const dd = String(yesterday.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
+};
+
+const formatTwitterTimeAgo = (dateStr: string | null | undefined) => {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    if (seconds < 60) return 'now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d`;
+    const weeks = Math.floor(days / 7);
+    if (weeks < 4) return `${weeks}w`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } catch {
+    return '';
+  }
 };
 
 const extractTime = (timestampStr: string | null) => {
@@ -345,6 +368,8 @@ const getDbAttestedAndVerified = (r: TimesheetRow, userEmail: string | null | un
   }
 };
 
+const employeeEmailCache: Record<string, any> = {};
+
 const TimesheetRowComponent = memo(({
   emp,
   row,
@@ -401,6 +426,63 @@ const TimesheetRowComponent = memo(({
   useEffect(() => {
     setLocalRemarks(parentCustomText);
   }, [parentCustomText]);
+
+  const [hoveredEmail, setHoveredEmail] = useState<string | null>(null);
+  const [hoveredEmpDetails, setHoveredEmpDetails] = useState<any>(null);
+  const [loadingHover, setLoadingHover] = useState(false);
+  const [popupDirection, setPopupDirection] = useState<'up' | 'down'>('up');
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleEmailMouseEnter = async (email: string, e: React.MouseEvent) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    setHoveredEmail(email);
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (rect.top < 180) {
+      setPopupDirection('down');
+    } else {
+      setPopupDirection('up');
+    }
+
+    if (employeeEmailCache[email]) {
+      setHoveredEmpDetails(employeeEmailCache[email]);
+      return;
+    }
+
+    setLoadingHover(true);
+    setHoveredEmpDetails(null);
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('name, emp_id, department, designation, company, status')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const details = data || { name: 'Unknown User', emp_id: '—' };
+      employeeEmailCache[email] = details;
+      setHoveredEmpDetails(details);
+    } catch (err) {
+      console.error('Error fetching employee hover details:', err);
+      setHoveredEmpDetails({ name: 'Error Loading', emp_id: '—' });
+    } finally {
+      setLoadingHover(false);
+    }
+  };
+
+  const handleEmailMouseLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredEmail(null);
+      setHoveredEmpDetails(null);
+    }, 200);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    };
+  }, []);
 
   const empProjCode = row.project_code || employeeAssignedProjects[emp.emp_id] || '';
   const isDual = isProjectDualRole(empProjCode, projects, userData?.email);
@@ -768,7 +850,7 @@ const TimesheetRowComponent = memo(({
       </td>
 
       {/* Source & Actions */}
-      <td className="sticky-action" style={{ right: '0' }}>
+      <td className="sticky-action" style={{ right: '0', zIndex: hoveredEmail ? 100 : undefined }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px 6px' }}>
           {/* 1. Source Badge (Original & Unchanged - Full Width) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
@@ -854,9 +936,11 @@ const TimesheetRowComponent = memo(({
                       fontWeight: 500,
                       display: "flex",
                       alignItems: "center",
+                      justifyContent: 'space-between',
                       padding: "1px 6px",
                       borderRadius: "3px",
-                      flex: 1
+                      flex: 1,
+                      width: '100%'
                     }}
                     className="source-badge"
                   >
@@ -867,6 +951,11 @@ const TimesheetRowComponent = memo(({
                       {badgeText === 'Needs Review' && <AlertCircle className="w-3 h-3 shrink-0" />}
                       {badgeText}
                     </span>
+                    {(badgeText === 'Verified' || badgeText === 'Verified & Approved') && row.created_at && (
+                      <span className="opacity-75 text-[9px] font-normal pl-2 shrink-0">
+                        {formatTwitterTimeAgo(row.created_at)}
+                      </span>
+                    )}
                   </span>
                 );
               }
@@ -982,7 +1071,7 @@ const TimesheetRowComponent = memo(({
           {/* 2. Attestation Details & Status/Actions inline underneath */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             {(row.isEdited || row.verified_by || row.approved_by || row.isVerified || (row.inDatabase && hasNoRedBorders)) ? (
-              <span className={row.isApproved ? 'text-indigo-600 font-semibold' : (hasNoRedBorders ? 'text-teal-600' : 'text-amber-700')} style={{ fontSize: '10px', whiteSpace: 'nowrap', fontWeight: 555 }}>
+              <span className={row.isApproved ? 'text-indigo-600 font-semibold' : (hasNoRedBorders ? 'text-teal-600' : 'text-amber-700')} style={{ fontSize: '10px', whiteSpace: 'nowrap', fontWeight: 555, display: 'inline-flex', alignItems: 'center' }}>
                 {(() => {
                   const emails: string[] = [];
                   if (row.verified_by && row.verified_by.includes('@')) emails.push(row.verified_by);
@@ -994,7 +1083,65 @@ const TimesheetRowComponent = memo(({
                     emails.push(userData.email);
                   }
                   const uniqueEmails = Array.from(new Set(emails));
-                  return uniqueEmails.length > 0 ? uniqueEmails.join(' | ') : (userData?.email || 'Timekeeper');
+                  if (uniqueEmails.length === 0) {
+                    return <span>{userData?.email || 'Timekeeper'}</span>;
+                  }
+                  return uniqueEmails.map((email, idx) => (
+                    <span key={email} className="inline-flex items-center">
+                      {idx > 0 && <span style={{ color: '#94a3b8', margin: '0 4px', fontWeight: 'normal' }}>|</span>}
+                      <span
+                        onMouseEnter={(e) => handleEmailMouseEnter(email, e)}
+                        onMouseLeave={handleEmailMouseLeave}
+                        className="cursor-help hover:underline decoration-dotted relative inline-block"
+                      >
+                        {email}
+                        {hoveredEmail === email && (
+                          <div className={`absolute ${popupDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} left-1/2 -translate-x-1/2 z-[9999] bg-white text-slate-800 border border-slate-200 rounded-xl p-3 shadow-xl w-64 text-xs font-normal normal-case leading-relaxed pointer-events-none transition-all duration-200 animate-in fade-in slide-in-from-bottom-2`}>
+                            {loadingHover ? (
+                              <div className="flex items-center justify-center py-4">
+                                <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                                <span className="ml-2 text-slate-500">Loading details...</span>
+                              </div>
+                            ) : (
+                              <div className="space-y-1.5">
+                                <div className="min-w-0">
+                                  <h4 className="font-semibold text-slate-900 text-sm leading-none truncate">
+                                    {hoveredEmpDetails?.name || 'Unknown User'}
+                                  </h4>
+                                  <p className="text-slate-400 text-[10px] truncate mt-0.5">
+                                    {email}
+                                  </p>
+                                </div>
+                                <div className="h-px bg-slate-100 my-1" />
+                                <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-[10px] text-left">
+                                  <div>
+                                    <span className="text-slate-400 block font-medium">Emp ID</span>
+                                    <span className="text-slate-700 font-semibold">{hoveredEmpDetails?.emp_id || '—'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-400 block font-medium">Department</span>
+                                    <span className="text-slate-700 font-semibold">{hoveredEmpDetails?.department || '—'}</span>
+                                  </div>
+                                  {hoveredEmpDetails?.designation && (
+                                    <div className="col-span-2">
+                                      <span className="text-slate-400 block font-medium">Designation</span>
+                                      <span className="text-slate-700 font-semibold truncate block">{hoveredEmpDetails.designation}</span>
+                                    </div>
+                                  )}
+                                  {hoveredEmpDetails?.company && (
+                                    <div className="col-span-2">
+                                      <span className="text-slate-400 block font-medium">Company</span>
+                                      <span className="text-slate-700 font-semibold truncate block">{hoveredEmpDetails.company}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </span>
+                    </span>
+                  ));
                 })()}
               </span>
             ) : (
@@ -1228,7 +1375,10 @@ export default function TimesheetFinalizer({
       }
     }
 
-    if (firstPunch) {
+    const assignedProj = assignedProjectsMap[emp.emp_id] || '';
+    if (assignedProj) {
+      computedProject = assignedProj;
+    } else if (firstPunch) {
       const isMobilePunch = firstPunch.mobile_location || (firstPunch.raw && firstPunch.raw.includes('MOBILE'));
 
       if (isMobilePunch) {
@@ -1245,8 +1395,6 @@ export default function TimesheetFinalizer({
       } else {
         computedProject = currentDeviceProjectMap[firstPunch.device_serial] || '';
       }
-    } else {
-      computedProject = assignedProjectsMap[emp.emp_id] || '';
     }
 
     const inTime = firstPunch ? extractTime(firstPunch.punch_time) : '';
@@ -1599,7 +1747,7 @@ export default function TimesheetFinalizer({
             department: emp.department,
             punch_in: extractTime(matched.punch_in),
             punch_out: extractTime(matched.punch_out),
-            project_code: (matched.approved_by || matched.approval) ? (matched.project_code ?? '') : (guessed.project_code || matched.project_code || ''),
+            project_code: guessed.project_code || matched.project_code || '',
             overtime: matched.overtime ?? 0,
             remarks: matched.remarks ?? '',
             verify_type: matched.verify_type || 'Manual Input',
@@ -1614,7 +1762,8 @@ export default function TimesheetFinalizer({
             verified_by: matched.verified_by,
             approved_by: matched.approved_by,
             original_in_punch,
-            original_out_punch
+            original_out_punch,
+            created_at: matched.last_updated || null
           };
         } else {
           // Guess initial values from raw punches
@@ -1978,6 +2127,7 @@ export default function TimesheetFinalizer({
           isApproved: true,
           approved_by: userData?.email || null,
           inDatabase: true,
+          created_at: prev[userId]?.created_at || new Date().toISOString()
         }
       }));
 
@@ -2173,7 +2323,8 @@ export default function TimesheetFinalizer({
                 verified_by: payload.verified_by,
                 approved_by: payload.approved_by,
                 attested_by: payload.attested_by,
-                isEdited: payload.verify_type === 'Manual Input' || !!payload.verified_by
+                isEdited: payload.verify_type === 'Manual Input' || !!payload.verified_by,
+                created_at: curr.created_at || new Date().toISOString()
               };
             }
           });
