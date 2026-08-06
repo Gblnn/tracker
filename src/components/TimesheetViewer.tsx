@@ -540,6 +540,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
   const [timesheetData, setTimesheetData] = useState<TimesheetRow[]>([]);
   const [transfers, setTransfers] = useState<any[]>([]);
   const [isFocal, setIsFocal] = useState(false);
+  const [projectNameMap, setProjectNameMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
@@ -660,25 +661,83 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
     }
 
     try {
+      const { data: allProjectsData } = await supabase
+        .from('projects')
+        .select('project_code, project_name');
+
+      const nameMap: Record<string, string> = {};
+      (allProjectsData || []).forEach(p => {
+        const normCode = p.project_code.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const normName = p.project_name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        nameMap[normCode] = p.project_name;
+        nameMap[normName] = p.project_name;
+      });
+      setProjectNameMap(nameMap);
+
+      // 1. Fetch timesheet records from Supabase first
+      let allTimesheets: TimesheetRow[] = [];
+      let fromRange = 0;
+      let toRange = 999;
+      let finished = false;
+
+      while (!finished) {
+        const { data: timesheetResult, error: tsErr } = await supabase
+          .from('timesheet')
+          .select('*')
+          .gte('date', start)
+          .lte('date', end)
+          .range(fromRange, toRange);
+
+        if (tsErr) {
+          setError(tsErr.message);
+          setLoading(false);
+          return;
+        }
+
+        if (timesheetResult && timesheetResult.length > 0) {
+          allTimesheets = [...allTimesheets, ...timesheetResult];
+          if (timesheetResult.length < 1000) {
+            finished = true;
+          } else {
+            fromRange += 1000;
+            toRange += 1000;
+          }
+        } else {
+          finished = true;
+        }
+      }
+
+      // 2. Fetch employee, device and transfer details
       let empData: Employee[] | null = null;
       let eErr: any = null;
 
       const empWithLocation = await supabase.from('employees')
-        .select('id, device_user_id, name, department, emp_type, emp_id, company, location')
+        .select('id, device_user_id, name, department, emp_type, emp_id, company')
         .or('status.ilike.active,status.is.null')
         .order('name', { ascending: true });
 
-      if (empWithLocation.error && /employees\.location/i.test(empWithLocation.error.message || '')) {
-        const empWithoutLocation = await supabase.from('employees')
-          .select('id, device_user_id, name, department, emp_type, emp_id, company')
-          .or('status.ilike.active,status.is.null')
-          .order('name', { ascending: true });
+      empData = (empWithLocation.data as Employee[] | null) || [];
+      eErr = empWithLocation.error;
 
-        empData = (empWithoutLocation.data || []).map((emp: any) => ({ ...emp, location: null }));
-        eErr = empWithoutLocation.error;
-      } else {
-        empData = (empWithLocation.data as Employee[] | null) || [];
-        eErr = empWithLocation.error;
+      // 3. Fetch details for any missing employees who have timesheet records in the period
+      const existingUserIds = new Set((empData || []).map(e => e.device_user_id).filter(Boolean));
+      const missingUserIds = Array.from(new Set(
+        allTimesheets
+          .map(ts => ts.employee_code)
+          .filter(code => code && !existingUserIds.has(code))
+      )) as string[];
+
+      if (missingUserIds.length > 0) {
+        const { data: missingEmps, error: mErr } = await supabase
+          .from('employees')
+          .select('id, device_user_id, name, department, emp_type, emp_id, company')
+          .in('device_user_id', missingUserIds);
+
+        if (!mErr && missingEmps) {
+          // Map each missing employee to have location: null to match the active list structure
+          const formattedMissing = missingEmps.map(emp => ({ ...emp, location: null }));
+          empData = [...(empData || []), ...formattedMissing];
+        }
       }
 
       const [
@@ -706,7 +765,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
       }
       setTransfers(transData || []);
 
-      // 1. Determine if focal point filter is active
+      // 4. Determine if focal point filter is active
       let focalProjectCodes: string[] = [];
       let focalProjectLocations: string[] = [];
       let isFocalFiltered = false;
@@ -726,6 +785,27 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
         }
       }
       setIsFocal(isFocalFiltered);
+
+      // Build Set of employee codes who have timesheet entries on our project(s)
+      const employeesWithTimesheetOnProject = new Set<string>();
+      if (isFocalFiltered) {
+        allTimesheets.forEach(ts => {
+          if (ts.project_code && ts.employee_code) {
+            const normTsCode = ts.project_code.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const tsProjName = nameMap[normTsCode] || ts.project_code;
+            
+            const isMatch = focalProjectCodes.some(code => {
+              const normFocalCode = code.toLowerCase().replace(/[^a-z0-9]/g, '');
+              const focalProjName = nameMap[normFocalCode] || code;
+              return tsProjName.toLowerCase().replace(/[^a-z0-9]/g, '') === focalProjName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            });
+            
+            if (isMatch) {
+              employeesWithTimesheetOnProject.add(ts.employee_code);
+            }
+          }
+        });
+      }
 
       const projectDeviceSerials = (devData ?? [])
         .filter(d => d.project_code && focalProjectCodes.includes(d.project_code))
@@ -777,6 +857,9 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
 
       const filteredEmployees = isFocalFiltered
         ? (empData || []).filter(emp => {
+          if (employeesWithTimesheetOnProject.has(emp.device_user_id)) {
+            return true;
+          }
           const hasCommand = allowedEmpIds.has(emp.id);
           const hasPunch = allowedDeviceUserIds.has(emp.device_user_id);
 
@@ -803,39 +886,6 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
           return hasCommand || hasPunch;
         })
         : (empData || []);
-
-      // Fetch timesheet records from Supabase instead of punches
-      let allTimesheets: TimesheetRow[] = [];
-      let fromRange = 0;
-      let toRange = 999;
-      let finished = false;
-
-      while (!finished) {
-        const { data: timesheetResult, error: tsErr } = await supabase
-          .from('timesheet')
-          .select('*')
-          .gte('date', start)
-          .lte('date', end)
-          .range(fromRange, toRange);
-
-        if (tsErr) {
-          setError(tsErr.message);
-          setLoading(false);
-          return;
-        }
-
-        if (timesheetResult && timesheetResult.length > 0) {
-          allTimesheets = [...allTimesheets, ...timesheetResult];
-          if (timesheetResult.length < 1000) {
-            finished = true;
-          } else {
-            fromRange += 1000;
-            toRange += 1000;
-          }
-        } else {
-          finished = true;
-        }
-      }
 
       setEmployees(filteredEmployees);
       setTimesheetData(allTimesheets);
@@ -930,11 +980,14 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
       const loc = row.project_code;
       if (!uid || !loc) return;
 
+      const norm = loc.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const resolvedLoc = projectNameMap[norm] || loc;
+
       if (!userLocationCounts[uid]) {
         userLocationCounts[uid] = {};
       }
-      userLocationCounts[uid][loc] = (userLocationCounts[uid][loc] || 0) + 1;
-      latestPunchLoc[uid] = loc;
+      userLocationCounts[uid][resolvedLoc] = (userLocationCounts[uid][resolvedLoc] || 0) + 1;
+      latestPunchLoc[uid] = resolvedLoc;
     });
 
     const primLocs: Record<string, string> = {};
@@ -964,11 +1017,13 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
       }
 
       // Precedence: verified transfer -> latest project -> most frequent project -> default employee location
-      const finalLoc = verifiedLoc || latestPunchLoc[uid] || primLocs[uid] || emp.location || '';
+      const rawLoc = verifiedLoc || latestPunchLoc[uid] || primLocs[uid] || emp.location || '';
+      const normRaw = rawLoc.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const finalLoc = projectNameMap[normRaw] || rawLoc;
       result[uid] = finalLoc;
     });
     return result;
-  }, [timesheetData, employees, transfers]);
+  }, [timesheetData, employees, transfers, projectNameMap]);
 
 
   const locations = useMemo(() => {
