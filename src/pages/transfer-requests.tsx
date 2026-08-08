@@ -837,7 +837,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                     </th>
                     <th style={{ fontWeight: 600, color: "#374151", verticalAlign: "middle", width: "160px", padding: "0.25rem" }} className="text-left font-medium text-gray-500 text-xs uppercase tracking-wide">
                       <DropdownMenu>
-                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-700 hover:bg-gray-100 transition-colors px-2 rounded-md font-semibold w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-700 hover:bg-gray-100 transition-colors px-2 rounded-md font-semibold flex items-center gap-1 outline-none uppercase tracking-wide text-left">
                           <span className="truncate">
                             {selectedLocations.length === 0
                               ? 'Loc (All)'
@@ -845,7 +845,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                                 ? selectedLocations[0]
                                 : `Loc (${selectedLocations.length})`}
                           </span>
-                          <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
+                          <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-[180px] max-h-[300px] overflow-y-auto p-0 z-50 bg-white border border-gray-200 rounded-lg shadow-md">
                           <div
@@ -916,8 +916,6 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                     </tr>
                   ) : (
                     filteredEmployees.map((emp, idx) => {
-                      const empTrans = transfers.filter(t => t.emp_id === emp.emp_id || t.emp_id === String(emp.id));
-                      const hasTransfer = empTrans.length > 0;
                       const loc = employeeLocations[emp.id] || "—";
                       return (
                         <tr
@@ -955,41 +953,8 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                           <td style={{ fontSize: "0.85rem", color: "#4b5563" }} className="px-4 py-3">
                             {emp.department || "—"}
                           </td>
-                          <td className="px-4 py-3">
-                            {hasTransfer ? (
-                              <div style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "0.25rem",
-                                backgroundColor: "#eff6ff",
-                                color: "#1e40af",
-                                border: "1px solid #bfdbfe",
-                                padding: "0.2rem 0.5rem",
-                                borderRadius: "9999px",
-                                fontSize: "0.75rem",
-                                fontWeight: 500
-                              }}>
-                                <span style={{ display: "inline-block", width: "6px", height: "6px", backgroundColor: "#3b82f6", borderRadius: "50%" }}></span>
-                                {loc}
-
-                              </div>
-                            ) : (
-                              <div style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "0.25rem",
-                                backgroundColor: "#f3f4f6",
-                                color: "#374151",
-                                border: "1px solid #e5e7eb",
-                                padding: "0.2rem 0.5rem",
-                                borderRadius: "9999px",
-                                fontSize: "0.75rem",
-                                fontWeight: 500
-                              }}>
-                                <span style={{ display: "inline-block", width: "6px", height: "6px", backgroundColor: "#9ca3af", borderRadius: "50%" }}></span>
-                                {loc}
-                              </div>
-                            )}
+                          <td style={{ fontSize: "0.85rem", color: "#4b5563", textAlign: "left" }} className="px-4 py-3 text-left">
+                            {loc}
                           </td>
                         </tr>
                       );
@@ -1180,7 +1145,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                     </th>
                     <th style={{ fontWeight: 600, color: "#374151", verticalAlign: "middle", width: "150px", padding: "0.25rem" }} className="text-left font-medium text-gray-500 text-xs uppercase tracking-wide">
                       <DropdownMenu>
-                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-700 hover:bg-gray-100 transition-colors px-2 rounded-md font-semibold w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-700 hover:bg-gray-100 transition-colors px-2 rounded-md font-semibold flex items-center gap-1 outline-none uppercase tracking-wide text-left">
                           <span className="truncate">
                             {selectedFromProjects.length === 0
                               ? 'From (All)'
@@ -1188,7 +1153,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                                 ? selectedFromProjects[0]
                                 : `From (${selectedFromProjects.length})`}
                           </span>
-                          <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
+                          <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-[180px] max-h-[300px] overflow-y-auto p-0 z-50 bg-white border border-gray-200 rounded-lg shadow-md">
                           <div
@@ -1247,7 +1212,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                     </th>
                     <th style={{ fontWeight: 600, color: "#374151", verticalAlign: "middle", width: "150px", padding: "0.25rem" }} className="text-left font-medium text-gray-500 text-xs uppercase tracking-wide">
                       <DropdownMenu>
-                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-700 hover:bg-gray-100 transition-colors px-2 rounded-md font-semibold w-full justify-between flex items-center outline-none uppercase tracking-wide">
+                        <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-700 hover:bg-gray-100 transition-colors px-2 rounded-md font-semibold flex items-center gap-1 outline-none uppercase tracking-wide text-left">
                           <span className="truncate">
                             {selectedToProjects.length === 0
                               ? 'To (All)'
@@ -1255,7 +1220,7 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                                 ? selectedToProjects[0]
                                 : `To (${selectedToProjects.length})`}
                           </span>
-                          <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
+                          <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-[180px] max-h-[300px] overflow-y-auto p-0 z-50 bg-white border border-gray-200 rounded-lg shadow-md">
                           <div
@@ -1384,10 +1349,10 @@ export default function TransferRequests({ embedMode = false, refreshTrigger, on
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-4 py-3 text-gray-500 font-medium text-gray-700">
+                              <td style={{ textAlign: "left" }} className="px-4 py-3 text-gray-500 font-medium text-gray-700 text-left">
                                 {t.from_project}
                               </td>
-                              <td className="px-4 py-3 text-gray-500 font-medium text-indigo-700">
+                              <td style={{ textAlign: "left" }} className="px-4 py-3 text-gray-500 font-medium text-indigo-700 text-left">
                                 {t.to_project}
                               </td>
                               {!employeeMasterVisible && (

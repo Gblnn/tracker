@@ -187,6 +187,8 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
     const [isBulkShiftOpen, setIsBulkShiftOpen] = useState(false);
     const [bulkShiftValue, setBulkShiftValue] = useState<'day' | 'night'>('day');
     const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+    const [isBulkNationalityOpen, setIsBulkNationalityOpen] = useState(false);
+    const [bulkNationalityValue, setBulkNationalityValue] = useState('');
 
     // Bulk push states
     const [isBulkPushOpen, setIsBulkPushOpen] = useState(false);
@@ -1315,6 +1317,31 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
         }
     };
 
+    const handleBulkNationalitySubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (selectedEmployeeIds.size === 0) return;
+        setIsSubmitting(true);
+        try {
+            const { error: err } = await supabase
+                .from('employees')
+                .update({ nationality: bulkNationalityValue || null })
+                .in('id', Array.from(selectedEmployeeIds));
+
+            if (err) throw err;
+
+            toast.success(`Successfully updated nationality for ${selectedEmployeeIds.size} employee(s)`);
+            setIsBulkNationalityOpen(false);
+            setBulkNationalityValue('');
+            setSelectedEmployeeIds(new Set());
+            setIsSelectionMode(false);
+            fetchEmployees();
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to bulk update nationality');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleBulkDeleteSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (selectedEmployeeIds.size === 0) return;
@@ -1767,6 +1794,12 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                 className="rounded-md focus:bg-gray-50 cursor-pointer"
                             >
                                 Change Shift
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => setIsBulkNationalityOpen(true)}
+                                className="rounded-md focus:bg-gray-50 cursor-pointer"
+                            >
+                                Change Nationality
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1 border-gray-100" />
                             <DropdownMenuItem
@@ -3472,7 +3505,7 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                                                             }`}
                                                     >
                                                         <div
-                                                            className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all shrink-0 ${isChecked
+                                                            className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${isChecked
                                                                 ? 'bg-indigo-700 border-indigo-700 text-white'
                                                                 : 'border-gray-300 bg-white'
                                                                 }`}
@@ -3724,6 +3757,50 @@ export default function EmployeeManage({ refreshTrigger, onLoadingChange }: Empl
                             </Button>
                             <Button style={{ flex: 1 }} type="submit" disabled={isSubmitting}>
                                 {isSubmitting ? 'Updating...' : 'Update Shift'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bulk Change Nationality Dialog */}
+            <Dialog open={isBulkNationalityOpen} onOpenChange={(open) => { if (!open) setIsBulkNationalityOpen(false); }}>
+                <DialogContent className="sm:max-w-[425px] bg-white border border-gray-100 shadow-xl rounded-lg p-6">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-semibold text-gray-900">Bulk Update Nationality</DialogTitle>
+                        <DialogDescription className="text-sm text-gray-555">
+                            Select a new nationality for the {selectedEmployeeIds.size} selected employee(s).
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleBulkNationalitySubmit} className="space-y-4 mt-2">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-gray-600 block">New Nationality</label>
+                            <Select value={bulkNationalityValue} onValueChange={(e) => setBulkNationalityValue(e)}>
+                                <SelectTrigger className="text-sm bg-gray-50 border-gray-100 rounded-xl w-full">
+                                    <SelectValue placeholder="Select Nationality" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border border-gray-100 shadow-xl rounded-lg max-h-[220px] overflow-y-auto">
+                                    {NATIONALITIES.map((nat) => (
+                                        <SelectItem key={nat} value={nat} className="rounded-md focus:bg-gray-50 cursor-pointer">
+                                            {nat.toUpperCase()}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <DialogFooter className="pt-4 flex gap-2">
+                            <Button
+                                style={{ flex: 1 }}
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsBulkNationalityOpen(false)}
+                                disabled={isSubmitting}
+                                className="rounded-xl"
+                            >
+                                Cancel
+                            </Button>
+                            <Button style={{ flex: 1 }} type="submit" disabled={isSubmitting} className="rounded-xl bg-gray-900 text-white hover:bg-gray-800">
+                                {isSubmitting ? 'Updating...' : 'Update Nationality'}
                             </Button>
                         </DialogFooter>
                     </form>

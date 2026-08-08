@@ -19,7 +19,7 @@ import { db } from '@/firebase';
 import { addDoc, collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Check, ChevronDown, ChevronLeft, ChevronRight, CircleMinus, Download, Hash, Highlighter, Loader2, Plus, Search, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, ChevronRight, CircleMinus, Download, Hash, Highlighter, Loader2, Plus, Search, X, User } from 'lucide-react';
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
@@ -548,6 +548,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
   const [selectedEmpPrefixes, setSelectedEmpPrefixes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [presenceFilter, setPresenceFilter] = useState<'ALL' | 'ZERO' | 'NON_ZERO'>('ALL');
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [highlightMode, setHighlightMode] = useState(false);
   const [highlightedRows, setHighlightedRows] = useState<Set<string>>(new Set());
 
@@ -1048,6 +1049,9 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
     if (selectedDepartments.length > 0) {
       list = list.filter(e => e.department && selectedDepartments.includes(e.department));
     }
+    if (selectedTypes.length > 0) {
+      list = list.filter(e => e.emp_type && selectedTypes.includes(e.emp_type.toLowerCase()));
+    }
     if (selectedEmpPrefixes.length > 0) {
       list = list.filter(e => {
         if (!e.emp_id || e.emp_id.length < 2) return false;
@@ -1121,7 +1125,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
       );
     }
     return list;
-  }, [employees, selectedDepartments, selectedLocations, selectedEmpPrefixes, selectedStatuses, presenceFilter, dayList, searchQuery, employeeLocations, reportView, selectedDailyDate, matrix, useFirstLast, holidays, year, month]);
+  }, [employees, selectedDepartments, selectedLocations, selectedEmpPrefixes, selectedStatuses, presenceFilter, dayList, searchQuery, employeeLocations, reportView, selectedDailyDate, matrix, useFirstLast, holidays, year, month, selectedTypes]);
 
   const selectedEmp = useMemo(() => {
     return employees.find(e => e.device_user_id === selectedEmployeeId) || filtered[0] || employees[0];
@@ -2635,6 +2639,74 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                                 className="rounded-md focus:bg-gray-50 cursor-pointer text-xs normal-case font-medium"
                               >
                                 {prefix}
+                              </DropdownMenuCheckboxItem>
+                            );
+                          })}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      {/* Filter Type Button */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className={`h-6 w-6 shrink-0 flex items-center justify-center border rounded transition-colors ${selectedTypes.length > 0
+                              ? 'border-indigo-500 text-indigo-500 hover:bg-indigo-500/10'
+                              : 'border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400'
+                              }`}
+                            title="Filter Type (Staff/Worker)"
+                          >
+                            <User size={14} className="" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[180px] p-0 z-50 bg-white border border-gray-200 rounded-lg shadow-md">
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b border-gray-100 bg-gray-50/95 backdrop-blur-xs"
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedTypes(['staff', 'worker']);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-left normal-case"
+                              style={{ background: "none", flex: 1 }}
+                            >
+                              Select All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedTypes([]);
+                              }}
+                              className="text-[10px] font-semibold text-gray-500 hover:text-gray-800 cursor-pointer text-right normal-case"
+                              style={{ background: "none", flex: 1 }}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                          {['staff', 'worker'].map(type => {
+                            const isChecked = selectedTypes.includes(type);
+                            return (
+                              <DropdownMenuCheckboxItem
+                                key={type}
+                                checked={isChecked}
+                                onSelect={(e) => e.preventDefault()}
+                                onCheckedChange={checked => {
+                                  if (checked) {
+                                    setSelectedTypes([...selectedTypes, type]);
+                                  } else {
+                                    setSelectedTypes(selectedTypes.filter(item => item !== type));
+                                  }
+                                }}
+                                style={{ fontWeight: 400 }}
+                                className="rounded-md focus:bg-gray-50 cursor-pointer text-xs capitalize font-medium"
+                              >
+                                {type}
                               </DropdownMenuCheckboxItem>
                             );
                           })}
