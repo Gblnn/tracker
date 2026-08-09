@@ -19,7 +19,7 @@ import { db } from '@/firebase';
 import { addDoc, collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Check, ChevronDown, ChevronLeft, ChevronRight, CircleMinus, Download, Hash, Highlighter, Loader2, Plus, Search, X, User } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, ChevronRight, CircleMinus, Download, Hash, Highlighter, Loader2, Plus, Search, X, User, Globe } from 'lucide-react';
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
@@ -38,6 +38,7 @@ interface Employee {
   emp_id: string | null;
   company?: string | null;
   location?: string | null;
+  nationality?: string | null;
 }
 
 interface TimesheetRow {
@@ -102,9 +103,13 @@ function getDayName(year: number, month: number, day: number): string {
   return new Date(year, month, day).toLocaleDateString('en-OM', { weekday: 'short' });
 }
 
-function isWeekend(year: number, month: number, day: number): boolean {
+function isWeekend(year: number, month: number, day: number, emp?: Employee): boolean {
   const d = new Date(year, month, day).getDay();
-  return d === 5; // Friday
+  const isOmani = emp?.nationality?.toLowerCase().trim() === 'omani';
+  if (isOmani) {
+    return d === 5 || d === 6; // Friday and Saturday
+  }
+  return d === 5; // Friday only
 }
 
 function monthLabel(month: number, year: number): string {
@@ -115,17 +120,25 @@ function getDayHours(summary: DaySummary | undefined): string {
   if (!summary || !summary.firstPunch || !summary.lastPunch) return '—';
   if (summary.status === 'off' || summary.status === 'leave' || summary.status === 'absent') return '—';
 
+  let diffHrs = 0;
   if (summary.firstPunch.includes(':') && !summary.firstPunch.includes('T')) {
     const [h1, m1] = summary.firstPunch.split(':').map(Number);
     const [h2, m2] = summary.lastPunch.split(':').map(Number);
     const diff = (h2 * 60 + m2) - (h1 * 60 + m1);
-    return diff > 0 ? (diff / 60).toFixed(1) : '—';
+    if (diff > 0) {
+      diffHrs = diff / 60;
+    } else {
+      return '—';
+    }
+  } else {
+    const start = new Date(summary.firstPunch).getTime();
+    const end = new Date(summary.lastPunch).getTime();
+    if (isNaN(start) || isNaN(end)) return '—';
+    diffHrs = (end - start) / (1000 * 60 * 60);
   }
 
-  const start = new Date(summary.firstPunch).getTime();
-  const end = new Date(summary.lastPunch).getTime();
-  if (isNaN(start) || isNaN(end)) return '—';
-  return ((end - start) / (1000 * 60 * 60)).toFixed(1);
+  const finalHrs = Math.max(0, diffHrs - 1);
+  return finalHrs > 0 ? finalHrs.toFixed(1) : '—';
 }
 
 function getOvertime(summary: DaySummary | undefined, _empType?: string | null): string {
@@ -145,7 +158,7 @@ const HEAD_R2 = 26;
 
 // ─── Memoized Subcomponents ───────────────────────────────────────────────────
 
-const InCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayMap }: {
+const InCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayMap, emp }: {
   daySummary: DaySummary | undefined;
   year: number;
   month: number;
@@ -153,12 +166,26 @@ const InCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayM
   today: Date;
   useFirstLast: boolean;
   holidayMap: Record<number, { id: string; name: string }>;
+  emp?: Employee;
 }) => {
   if (daySummary?.status === 'leave') return <td className="text-center text-amber-600 font-bold text-[12px] bg-amber-50/20" style={{ height: ROW_H }}>L</td>;
   if (daySummary?.status === 'off') return <td className="text-center text-slate-400 font-semibold text-[11px] bg-slate-50/50" style={{ height: ROW_H }}>OFF</td>;
   if (daySummary?.status === 'absent') return <td className="text-center text-red-500 font-bold text-[12px] bg-red-50/10" style={{ height: ROW_H }}>A</td>;
 
-  if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
+  if (isWeekend(year, month, d, emp)) {
+    if (daySummary?.isPresent) {
+      const displayTime = useFirstLast ? formatTime(daySummary.firstPunch) : (formatTime(daySummary.firstIn) || '✓');
+      const isApproved = daySummary.approved_by || daySummary.approval;
+      const textColor = isApproved ? 'text-indigo-600 font-medium' : 'text-slate-500 font-medium';
+      const bgStyle = isApproved ? { height: ROW_H, backgroundColor: '#f0f3ff' } : { height: ROW_H, backgroundColor: '#fef3c7' };
+      return (
+        <td className={`text-center font-medium tabular-nums text-[11px] whitespace-nowrap ${textColor}`} style={bgStyle} title="Weekend Worked">
+          {displayTime} (W)
+        </td>
+      );
+    }
+    return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
+  }
   const holiday = holidayMap?.[d];
   if (holiday) {
     if (daySummary?.isPresent) {
@@ -197,20 +224,36 @@ const InCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayM
 });
 InCell.displayName = 'InCell';
 
-const OutCell = memo(({ daySummary, year, month, d, useFirstLast, holidayMap }: {
+const OutCell = memo(({ daySummary, year, month, d, useFirstLast, holidayMap, emp }: {
   daySummary: DaySummary | undefined;
   year: number;
   month: number;
   d: number;
   useFirstLast: boolean;
   holidayMap: Record<number, { id: string; name: string }>;
+  emp?: Employee;
 }) => {
   if (daySummary?.status === 'leave' || daySummary?.status === 'off' || daySummary?.status === 'absent') {
     const bg = daySummary.status === 'off' ? 'bg-slate-50/50' : daySummary.status === 'leave' ? 'bg-amber-50/10' : 'bg-red-50/10';
     return <td className={`text-center text-[12px] ${bg}`} style={{ height: ROW_H }} />;
   }
 
-  if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
+  if (isWeekend(year, month, d, emp)) {
+    if (daySummary?.isPresent) {
+      const displayTime = useFirstLast
+        ? (daySummary.firstPunch === daySummary.lastPunch ? '' : formatTime(daySummary.lastPunch))
+        : (formatTime(daySummary.lastOut) || '—');
+      const isApproved = daySummary.approved_by || daySummary.approval;
+      const textColor = isApproved ? 'text-indigo-600 font-medium' : 'text-slate-500 font-medium';
+      const bgStyle = isApproved ? { height: ROW_H, backgroundColor: '#f0f3ff' } : { height: ROW_H, backgroundColor: '#fef3c7' };
+      return (
+        <td className={`text-center font-medium tabular-nums text-[11px] whitespace-nowrap ${textColor}`} style={bgStyle} title="Weekend Worked">
+          {displayTime}
+        </td>
+      );
+    }
+    return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
+  }
   const holiday = holidayMap?.[d];
   if (holiday) {
     if (daySummary?.isPresent) {
@@ -245,7 +288,7 @@ const OutCell = memo(({ daySummary, year, month, d, useFirstLast, holidayMap }: 
 });
 OutCell.displayName = 'OutCell';
 
-const LocationInCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayMap }: {
+const LocationInCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayMap, emp }: {
   daySummary: DaySummary | undefined;
   year: number;
   month: number;
@@ -253,12 +296,30 @@ const LocationInCell = memo(({ daySummary, year, month, d, today, useFirstLast, 
   today: Date;
   useFirstLast: boolean;
   holidayMap: Record<number, { id: string; name: string }>;
+  emp?: Employee;
 }) => {
   if (daySummary?.status === 'leave') return <td className="text-center text-amber-600 font-bold text-[12px] bg-amber-50/20" style={{ height: ROW_H }}>L</td>;
   if (daySummary?.status === 'off') return <td className="text-center text-slate-400 font-semibold text-[11px] bg-slate-50/50" style={{ height: ROW_H }}>OFF</td>;
   if (daySummary?.status === 'absent') return <td className="text-center text-red-500 font-bold text-[12px] bg-red-50/10" style={{ height: ROW_H }}>A</td>;
 
-  if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[11px]" style={{ height: ROW_H }}>—</td>;
+  if (isWeekend(year, month, d, emp)) {
+    if (daySummary?.isPresent) {
+      const displayTime = useFirstLast ? formatTime(daySummary.firstPunch) : (formatTime(daySummary.firstIn) || '✓');
+      const displayLoc = useFirstLast ? daySummary.firstPunchLocation : (daySummary.firstInLocation || '—');
+      const isApproved = daySummary.approved_by || daySummary.approval;
+      const textColor = isApproved ? 'text-indigo-600 font-medium' : 'text-slate-500 font-medium';
+      const bgStyle = isApproved ? { height: ROW_H, verticalAlign: 'middle', padding: '2px', backgroundColor: '#f0f3ff' } : { height: ROW_H, verticalAlign: 'middle', padding: '2px', backgroundColor: '#fef3c7' };
+      return (
+        <td className="text-center" style={bgStyle} title="Weekend Worked">
+          <div className="flex flex-col items-center justify-center leading-tight">
+            <span className={`tabular-nums text-[11px] ${textColor}`}>{displayTime} (W)</span>
+            <span className="text-gray-400 text-[10px] truncate max-w-[110px]" title={displayLoc || ''}>{displayLoc || '—'}</span>
+          </div>
+        </td>
+      );
+    }
+    return <td className="bg-gray-50 text-gray-300 text-center text-[11px]" style={{ height: ROW_H }}>—</td>;
+  }
   const holiday = holidayMap?.[d];
   if (holiday) {
     if (daySummary?.isPresent) {
@@ -305,20 +366,48 @@ const LocationInCell = memo(({ daySummary, year, month, d, today, useFirstLast, 
 });
 LocationInCell.displayName = 'LocationInCell';
 
-const LocationOutCell = memo(({ daySummary, year, month, d, useFirstLast, holidayMap }: {
+const LocationOutCell = memo(({ daySummary, year, month, d, useFirstLast, holidayMap, emp }: {
   daySummary: DaySummary | undefined;
   year: number;
   month: number;
   d: number;
   useFirstLast: boolean;
   holidayMap: Record<number, { id: string; name: string }>;
+  emp?: Employee;
 }) => {
   if (daySummary?.status === 'leave' || daySummary?.status === 'off' || daySummary?.status === 'absent') {
     const bg = daySummary.status === 'off' ? 'bg-slate-50/50' : daySummary.status === 'leave' ? 'bg-amber-50/10' : 'bg-red-50/10';
     return <td className={`text-center text-[12px] ${bg}`} style={{ height: ROW_H }} />;
   }
 
-  if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[11px]" style={{ height: ROW_H }}>—</td>;
+  if (isWeekend(year, month, d, emp)) {
+    if (daySummary?.isPresent) {
+      const displayTime = useFirstLast
+        ? (daySummary.firstPunch === daySummary.lastPunch ? '' : formatTime(daySummary.lastPunch))
+        : (formatTime(daySummary.lastOut) || '—');
+      const displayLoc = useFirstLast
+        ? (daySummary.firstPunch === daySummary.lastPunch ? '' : (daySummary.lastPunchLocation || '—'))
+        : (daySummary.lastOutLocation || '—');
+
+      if (!displayTime && !displayLoc) {
+        return <td className="text-center text-[12px] bg-gray-50" style={{ height: ROW_H }} />;
+      }
+
+      const isApproved = daySummary.approved_by || daySummary.approval;
+      const textColor = isApproved ? 'text-indigo-600 font-medium' : 'text-slate-500 font-medium';
+      const bgStyle = isApproved ? { height: ROW_H, verticalAlign: 'middle', padding: '2px', backgroundColor: '#f0f3ff' } : { height: ROW_H, verticalAlign: 'middle', padding: '2px', backgroundColor: '#fef3c7' };
+
+      return (
+        <td className="text-center" style={bgStyle} title="Weekend Worked">
+          <div className="flex flex-col items-center justify-center leading-tight">
+            <span className={`tabular-nums text-[11px] ${textColor}`}>{displayTime || '—'}</span>
+            <span className="text-gray-400 text-[10px] truncate max-w-[110px]" title={displayLoc || ''}>{displayLoc || '—'}</span>
+          </div>
+        </td>
+      );
+    }
+    return <td className="bg-gray-50 text-gray-300 text-center text-[11px]" style={{ height: ROW_H }}>—</td>;
+  }
   const holiday = holidayMap?.[d];
   if (holiday) {
     if (daySummary?.isPresent) {
@@ -445,6 +534,7 @@ interface ScrollableRowProps {
 }
 
 const ScrollableRow = memo(({
+  emp,
   dayList,
   reportType,
   useFirstLast,
@@ -470,7 +560,7 @@ const ScrollableRow = memo(({
 
         if (reportType === 'hourly') {
           const holiday = holidayMap?.[d];
-          const bg = isWeekend(year, month, d) ? '#f9fafb' : holiday ? '#eef2ff' : 'white';
+          const bg = isWeekend(year, month, d, emp) ? '#f9fafb' : holiday ? '#eef2ff' : 'white';
           return (
             <td key={`day-${d}`} className="text-center text-[12px] font-medium text-gray-400" style={{ height: ROW_H, background: bg }} title={holiday ? `Holiday: ${holiday.name}` : undefined}>
               {holiday && (!c || !c.isPresent) ? 'HOL' : getDayHours(c)}
@@ -481,12 +571,15 @@ const ScrollableRow = memo(({
           let content = '';
           let color = '';
           const holiday = holidayMap?.[d];
-          const bg = isWeekend(year, month, d) ? '#f9fafb' : holiday ? '#eef2ff' : 'white';
+          const bg = isWeekend(year, month, d, emp) ? '#f9fafb' : holiday ? '#eef2ff' : 'white';
 
           if (c?.status === 'leave') { content = 'L'; color = 'text-amber-600 font-bold'; }
           else if (c?.status === 'off') { content = 'OFF'; color = 'text-slate-400 font-semibold'; }
           else if (c?.status === 'absent') { content = 'A'; color = 'text-red-400 font-bold'; }
-          else if (isWeekend(year, month, d)) { content = '—'; color = 'text-gray-300'; }
+          else if (isWeekend(year, month, d, emp)) {
+            if (c?.isPresent) { content = 'P(W)'; color = 'text-teal-600 font-bold'; }
+            else { content = '—'; color = 'text-gray-300'; }
+          }
           else if (holiday) {
             if (c?.isPresent) { content = 'P(H)'; color = 'text-teal-600 font-bold'; }
             else { content = 'H'; color = 'text-indigo-500 font-bold'; }
@@ -504,15 +597,15 @@ const ScrollableRow = memo(({
         if (reportType === 'location_inout') {
           return (
             <Fragment key={`day-${d}`}>
-              <LocationInCell daySummary={c} year={year} month={month} d={d} today={today} useFirstLast={useFirstLast} holidayMap={holidayMap} />
-              <LocationOutCell daySummary={c} year={year} month={month} d={d} useFirstLast={useFirstLast} holidayMap={holidayMap} />
+              <LocationInCell daySummary={c} year={year} month={month} d={d} today={today} useFirstLast={useFirstLast} holidayMap={holidayMap} emp={emp} />
+              <LocationOutCell daySummary={c} year={year} month={month} d={d} useFirstLast={useFirstLast} holidayMap={holidayMap} emp={emp} />
             </Fragment>
           );
         }
         return (
           <Fragment key={`day-${d}`}>
-            <InCell daySummary={c} year={year} month={month} d={d} today={today} useFirstLast={useFirstLast} holidayMap={holidayMap} />
-            <OutCell daySummary={c} year={year} month={month} d={d} useFirstLast={useFirstLast} holidayMap={holidayMap} />
+            <InCell daySummary={c} year={year} month={month} d={d} today={today} useFirstLast={useFirstLast} holidayMap={holidayMap} emp={emp} />
+            <OutCell daySummary={c} year={year} month={month} d={d} useFirstLast={useFirstLast} holidayMap={holidayMap} emp={emp} />
           </Fragment>
         );
       })}
@@ -549,6 +642,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [presenceFilter, setPresenceFilter] = useState<'ALL' | 'ZERO' | 'NON_ZERO'>('ALL');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [nationalityFilter, setNationalityFilter] = useState<'ALL' | 'OMANI' | 'NON_OMANI'>('ALL');
   const [highlightMode, setHighlightMode] = useState(false);
   const [highlightedRows, setHighlightedRows] = useState<Set<string>>(new Set());
 
@@ -579,7 +673,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
 
   useEffect(() => {
     setRenderLimit(100);
-  }, [searchQuery, selectedDepartments, selectedLocations, selectedEmpPrefixes, selectedStatuses, presenceFilter, reportView, reportType, selectedDailyDate]);
+  }, [searchQuery, selectedDepartments, selectedLocations, selectedEmpPrefixes, selectedStatuses, presenceFilter, reportView, reportType, selectedDailyDate, nationalityFilter]);
 
   // Holidays State
   interface Holiday {
@@ -713,7 +807,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
       let eErr: any = null;
 
       const empWithLocation = await supabase.from('employees')
-        .select('id, device_user_id, name, department, emp_type, emp_id, company')
+        .select('id, device_user_id, name, department, emp_type, emp_id, company, nationality')
         .or('status.ilike.active,status.is.null')
         .order('name', { ascending: true });
 
@@ -731,7 +825,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
       if (missingUserIds.length > 0) {
         const { data: missingEmps, error: mErr } = await supabase
           .from('employees')
-          .select('id, device_user_id, name, department, emp_type, emp_id, company')
+          .select('id, device_user_id, name, department, emp_type, emp_id, company, nationality')
           .in('device_user_id', missingUserIds);
 
         if (!mErr && missingEmps) {
@@ -1052,6 +1146,11 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
     if (selectedTypes.length > 0) {
       list = list.filter(e => e.emp_type && selectedTypes.includes(e.emp_type.toLowerCase()));
     }
+    if (nationalityFilter === 'OMANI') {
+      list = list.filter(e => e.nationality?.toLowerCase().trim() === 'omani');
+    } else if (nationalityFilter === 'NON_OMANI') {
+      list = list.filter(e => e.nationality?.toLowerCase().trim() !== 'omani');
+    }
     if (selectedEmpPrefixes.length > 0) {
       list = list.filter(e => {
         if (!e.emp_id || e.emp_id.length < 2) return false;
@@ -1073,7 +1172,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
         const c = matrix[e.device_user_id]?.[selectedDailyDate];
         const [y, m, d] = selectedDailyDate.split('-').map(Number);
         const dateObj = new Date(y, m - 1, d);
-        const isWeekendDay = isWeekend(y, m - 1, d);
+        const isWeekendDay = isWeekend(y, m - 1, d, e);
         const isHolidayDay = holidays.some(h => h.day === d && year === y && month === (m - 1));
 
         let statusText = 'Absent';
@@ -1125,7 +1224,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
       );
     }
     return list;
-  }, [employees, selectedDepartments, selectedLocations, selectedEmpPrefixes, selectedStatuses, presenceFilter, dayList, searchQuery, employeeLocations, reportView, selectedDailyDate, matrix, useFirstLast, holidays, year, month, selectedTypes]);
+  }, [employees, selectedDepartments, selectedLocations, selectedEmpPrefixes, selectedStatuses, presenceFilter, dayList, searchQuery, employeeLocations, reportView, selectedDailyDate, matrix, useFirstLast, holidays, year, month, selectedTypes, nationalityFilter]);
 
   const selectedEmp = useMemo(() => {
     return employees.find(e => e.device_user_id === selectedEmployeeId) || filtered[0] || employees[0];
@@ -1157,13 +1256,14 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
     }).length;
   };
   const absentDays = (uid: string) => {
+    const emp = employees.find(e => e.device_user_id === uid);
     return dayList.filter(d => {
       const pad = (n: number) => String(n).padStart(2, '0');
       const dateKey = `${year}-${pad(month + 1)}-${pad(d)}`;
       const c = matrix[uid]?.[dateKey];
       return (
         new Date(year, month, d) <= today &&
-        !isWeekend(year, month, d) &&
+        !isWeekend(year, month, d, emp) &&
         !isHoliday(d) &&
         (!c || c.status === 'absent')
       );
@@ -1270,7 +1370,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
         const displayDayName = getDayName(year, month, d);
 
         const c = matrix[selectedEmp.device_user_id]?.[dateStr];
-        const isWeekendDay = isWeekend(year, month, d);
+        const isWeekendDay = isWeekend(year, month, d, selectedEmp);
         const isHolidayDay = isHoliday(d);
         const holiday = holidayMap[d];
 
@@ -1286,7 +1386,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
           else if (c.status === 'absent') statusText = 'Absent';
           else if (c.status === 'present' || c.status === 'present with ot') statusText = 'Present';
         } else if (isWeekendDay) {
-          statusText = 'Weekend';
+          statusText = c?.isPresent ? 'Worked (Weekend)' : 'Weekend';
         } else if (isHolidayDay) {
           statusText = c?.isPresent ? 'Worked (Holiday)' : `Holiday (${holiday?.name || 'Holiday'})`;
         } else {
@@ -1349,10 +1449,10 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
         const [y, m, d] = dateStr.split('-').map(Number);
         const dateObj = new Date(y, m - 1, d);
         const displayDate = dateObj.toLocaleDateString('en-OM', { day: '2-digit', month: 'short', year: 'numeric' });
-        const isWeekendDay = isWeekend(y, m - 1, d);
         const isHolidayDay = holidays.some(h => h.day === d && year === y && month === (m - 1));
 
         filtered.forEach((emp, idx) => {
+          const isWeekendDay = isWeekend(y, m - 1, d, emp);
           const c = matrix[emp.device_user_id]?.[dateStr];
 
           let statusText = 'Absent';
@@ -1478,14 +1578,14 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
         if (reportType === 'hourly') {
           if (c?.status === 'leave') { row.push('L'); }
           else if (c?.status === 'off') { row.push('OFF'); }
-          else if (isWeekend(year, month, d)) { row.push('OFF'); }
+          else if (isWeekend(year, month, d, emp)) { row.push('OFF'); }
           else if (isHolidayDay) { row.push(c?.isPresent ? getDayHours(c) : 'HOL'); }
           else { row.push(getDayHours(c)); }
         } else if (reportType === 'pa') {
           if (c?.status === 'leave') { row.push('L'); }
           else if (c?.status === 'off') { row.push('OFF'); }
           else if (c?.status === 'absent') { row.push('A'); }
-          else if (isWeekend(year, month, d)) { row.push('OFF'); }
+          else if (isWeekend(year, month, d, emp)) { row.push('OFF'); }
           else if (isHolidayDay) { row.push(c?.isPresent ? 'P(H)' : 'H'); }
           else if (c?.isPresent) { row.push('P'); }
           else if (new Date(year, month, d) > today) { row.push('—'); }
@@ -1494,7 +1594,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
           if (c?.status === 'leave') { row.push('L', ''); }
           else if (c?.status === 'off') { row.push('OFF', ''); }
           else if (c?.status === 'absent') { row.push('A', ''); }
-          else if (isWeekend(year, month, d)) { row.push('OFF', ''); }
+          else if (isWeekend(year, month, d, emp)) { row.push('OFF', ''); }
           else if (isHolidayDay && !c?.isPresent) { row.push(`HOL (${holiday?.name || 'Holiday'})`, ''); }
           else if (c?.isPresent) {
             if (useFirstLast) {
@@ -1523,7 +1623,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
           if (c?.status === 'leave') { row.push('L', ''); }
           else if (c?.status === 'off') { row.push('OFF', ''); }
           else if (c?.status === 'absent') { row.push('A', ''); }
-          else if (isWeekend(year, month, d)) { row.push('OFF', ''); }
+          else if (isWeekend(year, month, d, emp)) { row.push('OFF', ''); }
           else if (isHolidayDay && !c?.isPresent) { row.push('HOL', ''); }
           else if (c?.isPresent) {
             if (useFirstLast) {
@@ -2019,7 +2119,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
           <table className="w-full text-sm text-left border-collapse">
             <thead className="bg-slate-100 text-slate-700 border-b border-slate-200 sticky top-0 z-10">
               <tr style={{ height: "2.5rem" }}>
-                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 120 }}>Date</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 140 }}>Date</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 320, verticalAlign: 'middle' }}>
                   <div className="flex items-center gap-1.5 w-full">
                     <div className="relative flex-1 ">
@@ -2245,7 +2345,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                 </th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">In</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Out</th>
-                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Hours</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 85 }} title="Excludes 1 hour lunch break">Hours (-1)</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Overtime</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 180 }}>Remarks</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 140 }}>Approved By</th>
@@ -2264,10 +2364,10 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                     const [y, m, d] = dateStr.split('-').map(Number);
                     const dateObj = new Date(y, m - 1, d);
                     const displayDate = dateObj.toLocaleDateString('en-OM', { day: '2-digit', month: 'short', year: 'numeric' });
-                    const isWeekendDay = isWeekend(y, m - 1, d);
                     const isHolidayDay = holidays.some(h => h.day === d && year === y && month === (m - 1));
 
                     return filtered.slice(0, limit).map((emp) => {
+                      const isWeekendDay = isWeekend(y, m - 1, d, emp);
                       const c = matrix[emp.device_user_id]?.[dateStr];
 
                       let statusBadge = null;
@@ -2401,7 +2501,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 120 }}>Status</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Check In</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Check Out</th>
-                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Hours</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 85 }} title="Excludes 1 hour lunch break">Hours (-1)</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Overtime</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 180 }}>Remarks</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 140 }}>Approved By</th>
@@ -2423,7 +2523,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                   const displayDayName = getDayName(year, month, d);
 
                   const c = matrix[selectedEmp.device_user_id]?.[dateStr];
-                  const isWeekendDay = isWeekend(year, month, d);
+                  const isWeekendDay = isWeekend(year, month, d, selectedEmp);
                   const isHolidayDay = isHoliday(d);
                   const holiday = holidayMap[d];
 
@@ -2444,7 +2544,11 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                       statusBadge = <span className="text-xs font-semibold text-slate-950">Present</span>;
                     }
                   } else if (isWeekendDay) {
-                    statusBadge = <span className="text-xs font-semibold text-slate-950">Weekend</span>;
+                    statusBadge = c?.isPresent ? (
+                      <span className="text-xs font-semibold text-slate-950">Worked (Weekend)</span>
+                    ) : (
+                      <span className="text-xs font-semibold text-slate-950">Weekend</span>
+                    );
                   } else if (isHolidayDay) {
                     statusBadge = c?.isPresent ? (
                       <span className="text-xs font-semibold text-slate-950">Worked (H)</span>
@@ -2710,6 +2814,47 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                               </DropdownMenuCheckboxItem>
                             );
                           })}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      {/* Filter Nationality Button */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className={`h-6 w-6 shrink-0 flex items-center justify-center border rounded transition-colors ${nationalityFilter !== 'ALL'
+                              ? 'border-indigo-500 text-indigo-500 hover:bg-indigo-500/10'
+                              : 'border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400'
+                              }`}
+                            title="Filter Nationality"
+                          >
+                            <Globe size={14} className="" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[180px] p-0 z-50 bg-white border border-gray-200 rounded-lg shadow-md">
+                          <div className="py-1">
+                            <DropdownMenuCheckboxItem
+                              checked={nationalityFilter === 'ALL'}
+                              onCheckedChange={() => setNationalityFilter('ALL')}
+                              className="rounded-md focus:bg-gray-50 cursor-pointer text-xs font-medium"
+                            >
+                              All Nationalities
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                              checked={nationalityFilter === 'OMANI'}
+                              onCheckedChange={() => setNationalityFilter('OMANI')}
+                              className="rounded-md focus:bg-gray-50 cursor-pointer text-xs font-medium"
+                            >
+                              Omani Only
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                              checked={nationalityFilter === 'NON_OMANI'}
+                              onCheckedChange={() => setNationalityFilter('NON_OMANI')}
+                              className="rounded-md focus:bg-gray-50 cursor-pointer text-xs font-medium"
+                            >
+                              Non-Omani Only
+                            </DropdownMenuCheckboxItem>
+                          </div>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>

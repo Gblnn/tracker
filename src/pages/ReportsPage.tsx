@@ -37,6 +37,7 @@ interface Employee {
   emp_type: string | null;
   emp_id: string | null;
   location?: string | null;
+  nationality?: string | null;
 }
 
 interface PunchDetail {
@@ -80,9 +81,13 @@ function getDayName(year: number, month: number, day: number): string {
   return new Date(year, month, day).toLocaleDateString('en-OM', { weekday: 'short' });
 }
 
-function isWeekend(year: number, month: number, day: number): boolean {
+function isWeekend(year: number, month: number, day: number, emp?: Employee): boolean {
   const d = new Date(year, month, day).getDay();
-  return d === 5; // Friday
+  const isOmani = emp?.nationality?.toLowerCase().trim() === 'omani';
+  if (isOmani) {
+    return d === 5 || d === 6; // Friday and Saturday
+  }
+  return d === 5; // Friday only
 }
 
 function monthLabel(month: number, year: number): string {
@@ -93,7 +98,10 @@ function getDayHours(summary: DaySummary | undefined): string {
   if (!summary || !summary.firstPunch || !summary.lastPunch || summary.firstPunch === summary.lastPunch) return '—';
   const start = new Date(summary.firstPunch).getTime();
   const end = new Date(summary.lastPunch).getTime();
-  return ((end - start) / (1000 * 60 * 60)).toFixed(1);
+  if (isNaN(start) || isNaN(end)) return '—';
+  const diffHrs = (end - start) / (1000 * 60 * 60);
+  const finalHrs = Math.max(0, diffHrs - 1);
+  return finalHrs > 0 ? finalHrs.toFixed(1) : '—';
 }
 
 function getOvertime(summary: DaySummary | undefined, empType: string | null): string {
@@ -112,7 +120,7 @@ const HEAD_R2 = 26;
 
 // ─── Memoized Subcomponents ───────────────────────────────────────────────────
 
-const InCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayMap }: {
+const InCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayMap, emp }: {
   daySummary: DaySummary | undefined;
   year: number;
   month: number;
@@ -120,8 +128,19 @@ const InCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayM
   today: Date;
   useFirstLast: boolean;
   holidayMap: Record<number, { id: string; name: string }>;
+  emp?: Employee;
 }) => {
-  if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
+  if (isWeekend(year, month, d, emp)) {
+    if (daySummary?.isPresent) {
+      const displayTime = useFirstLast ? formatTime(daySummary.firstPunch) : (formatTime(daySummary.firstIn) || '✓');
+      return (
+        <td className="text-center font-medium tabular-nums text-[11px] whitespace-nowrap text-slate-500" style={{ height: ROW_H, backgroundColor: '#fef3c7' }} title="Weekend Worked">
+          {displayTime} (W)
+        </td>
+      );
+    }
+    return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
+  }
   const holiday = holidayMap?.[d];
   if (holiday) {
     if (daySummary?.isPresent) {
@@ -154,15 +173,28 @@ const InCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayM
 });
 InCell.displayName = 'InCell';
 
-const OutCell = memo(({ daySummary, year, month, d, useFirstLast, holidayMap }: {
+const OutCell = memo(({ daySummary, year, month, d, useFirstLast, holidayMap, emp }: {
   daySummary: DaySummary | undefined;
   year: number;
   month: number;
   d: number;
   useFirstLast: boolean;
   holidayMap: Record<number, { id: string; name: string }>;
+  emp?: Employee;
 }) => {
-  if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
+  if (isWeekend(year, month, d, emp)) {
+    if (daySummary?.isPresent) {
+      const displayTime = useFirstLast
+        ? (daySummary.firstPunch === daySummary.lastPunch ? '' : formatTime(daySummary.lastPunch))
+        : (formatTime(daySummary.lastOut) || '—');
+      return (
+        <td className="text-center font-medium tabular-nums text-[11px] whitespace-nowrap text-slate-500" style={{ height: ROW_H, backgroundColor: '#fef3c7' }} title="Weekend Worked">
+          {displayTime}
+        </td>
+      );
+    }
+    return <td className="bg-gray-50 text-gray-300 text-center text-[12px]" style={{ height: ROW_H }}>—</td>;
+  }
   const holiday = holidayMap?.[d];
   if (holiday) {
     if (daySummary?.isPresent) {
@@ -191,7 +223,7 @@ const OutCell = memo(({ daySummary, year, month, d, useFirstLast, holidayMap }: 
 });
 OutCell.displayName = 'OutCell';
 
-const LocationInCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayMap }: {
+const LocationInCell = memo(({ daySummary, year, month, d, today, useFirstLast, holidayMap, emp }: {
   daySummary: DaySummary | undefined;
   year: number;
   month: number;
@@ -199,8 +231,23 @@ const LocationInCell = memo(({ daySummary, year, month, d, today, useFirstLast, 
   today: Date;
   useFirstLast: boolean;
   holidayMap: Record<number, { id: string; name: string }>;
+  emp?: Employee;
 }) => {
-  if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[11px]" style={{ height: ROW_H }}>—</td>;
+  if (isWeekend(year, month, d, emp)) {
+    if (daySummary?.isPresent) {
+      const displayTime = useFirstLast ? formatTime(daySummary.firstPunch) : (formatTime(daySummary.firstIn) || '✓');
+      const displayLoc = useFirstLast ? daySummary.firstPunchLocation : (daySummary.firstInLocation || '—');
+      return (
+        <td className="text-center" style={{ height: ROW_H, verticalAlign: 'middle', padding: '2px', backgroundColor: '#fef3c7' }} title="Weekend Worked">
+          <div className="flex flex-col items-center justify-center leading-tight">
+            <span className="text-slate-500 font-semibold tabular-nums text-[11px]">{displayTime} (W)</span>
+            <span className="text-gray-400 text-[10px] truncate max-w-[110px]" title={displayLoc || ''}>{displayLoc || '—'}</span>
+          </div>
+        </td>
+      );
+    }
+    return <td className="bg-gray-50 text-gray-300 text-center text-[11px]" style={{ height: ROW_H }}>—</td>;
+  }
   const holiday = holidayMap?.[d];
   if (holiday) {
     if (daySummary?.isPresent) {
@@ -241,15 +288,39 @@ const LocationInCell = memo(({ daySummary, year, month, d, today, useFirstLast, 
 });
 LocationInCell.displayName = 'LocationInCell';
 
-const LocationOutCell = memo(({ daySummary, year, month, d, useFirstLast, holidayMap }: {
+const LocationOutCell = memo(({ daySummary, year, month, d, useFirstLast, holidayMap, emp }: {
   daySummary: DaySummary | undefined;
   year: number;
   month: number;
   d: number;
   useFirstLast: boolean;
   holidayMap: Record<number, { id: string; name: string }>;
+  emp?: Employee;
 }) => {
-  if (isWeekend(year, month, d)) return <td className="bg-gray-50 text-gray-300 text-center text-[11px]" style={{ height: ROW_H }}>—</td>;
+  if (isWeekend(year, month, d, emp)) {
+    if (daySummary?.isPresent) {
+      const displayTime = useFirstLast
+        ? (daySummary.firstPunch === daySummary.lastPunch ? '' : formatTime(daySummary.lastPunch))
+        : (formatTime(daySummary.lastOut) || '—');
+      const displayLoc = useFirstLast
+        ? (daySummary.firstPunch === daySummary.lastPunch ? '' : (daySummary.lastPunchLocation || '—'))
+        : (daySummary.lastOutLocation || '—');
+
+      if (!displayTime && !displayLoc) {
+        return <td className="text-center text-[11px] bg-gray-50" style={{ height: ROW_H }} />;
+      }
+
+      return (
+        <td className="text-center" style={{ height: ROW_H, verticalAlign: 'middle', padding: '2px', backgroundColor: '#fef3c7' }} title="Weekend Worked">
+          <div className="flex flex-col items-center justify-center leading-tight">
+            <span className="text-slate-500 font-semibold tabular-nums text-[11px]">{displayTime || '—'}</span>
+            <span className="text-gray-400 text-[10px] truncate max-w-[110px]" title={displayLoc || ''}>{displayLoc || '—'}</span>
+          </div>
+        </td>
+      );
+    }
+    return <td className="bg-gray-50 text-gray-300 text-center text-[11px]" style={{ height: ROW_H }}>—</td>;
+  }
   const holiday = holidayMap?.[d];
   if (holiday) {
     if (daySummary?.isPresent) {
@@ -368,6 +439,7 @@ interface ScrollableRowProps {
 }
 
 const ScrollableRow = memo(({
+  emp,
   dayList,
   reportType,
   useFirstLast,
@@ -392,7 +464,7 @@ const ScrollableRow = memo(({
         const c = matrixForEmployee?.[dateKey];
         if (reportType === 'hourly') {
           const holiday = holidayMap?.[d];
-          const bg = isWeekend(year, month, d) ? '#f9fafb' : holiday ? '#eef2ff' : 'white';
+          const bg = isWeekend(year, month, d, emp) ? '#f9fafb' : holiday ? '#eef2ff' : 'white';
           return (
             <td key={`day-${d}`} className="text-center text-[12px] font-medium text-gray-400" style={{ height: ROW_H, background: bg }} title={holiday ? `Holiday: ${holiday.name}` : undefined}>
               {holiday && !c?.isPresent ? 'HOL' : getDayHours(c)}
@@ -403,9 +475,12 @@ const ScrollableRow = memo(({
           let content = '';
           let color = '';
           const holiday = holidayMap?.[d];
-          const bg = isWeekend(year, month, d) ? '#f9fafb' : holiday ? '#eef2ff' : 'white';
+          const bg = isWeekend(year, month, d, emp) ? '#f9fafb' : holiday ? '#eef2ff' : 'white';
 
-          if (isWeekend(year, month, d)) { content = '—'; color = 'text-gray-300'; }
+          if (isWeekend(year, month, d, emp)) {
+            if (c?.isPresent) { content = 'P(W)'; color = 'text-teal-600 font-bold'; }
+            else { content = '—'; color = 'text-gray-300'; }
+          }
           else if (holiday) {
             if (c?.isPresent) { content = 'P(H)'; color = 'text-teal-600 font-bold'; }
             else { content = 'H'; color = 'text-indigo-500 font-bold'; }
@@ -423,15 +498,15 @@ const ScrollableRow = memo(({
         if (reportType === 'location_inout') {
           return (
             <Fragment key={`day-${d}`}>
-              <LocationInCell daySummary={c} year={year} month={month} d={d} today={today} useFirstLast={useFirstLast} holidayMap={holidayMap} />
-              <LocationOutCell daySummary={c} year={year} month={month} d={d} useFirstLast={useFirstLast} holidayMap={holidayMap} />
+              <LocationInCell daySummary={c} year={year} month={month} d={d} today={today} useFirstLast={useFirstLast} holidayMap={holidayMap} emp={emp} />
+              <LocationOutCell daySummary={c} year={year} month={month} d={d} useFirstLast={useFirstLast} holidayMap={holidayMap} emp={emp} />
             </Fragment>
           );
         }
         return (
           <Fragment key={`day-${d}`}>
-            <InCell daySummary={c} year={year} month={month} d={d} today={today} useFirstLast={useFirstLast} holidayMap={holidayMap} />
-            <OutCell daySummary={c} year={year} month={month} d={d} useFirstLast={useFirstLast} holidayMap={holidayMap} />
+            <InCell daySummary={c} year={year} month={month} d={d} today={today} useFirstLast={useFirstLast} holidayMap={holidayMap} emp={emp} />
+            <OutCell daySummary={c} year={year} month={month} d={d} useFirstLast={useFirstLast} holidayMap={holidayMap} emp={emp} />
           </Fragment>
         );
       })}
@@ -615,13 +690,13 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
       let eErr: any = null;
 
       const empWithLocation = await supabase.from('employees')
-        .select('id, device_user_id, name, department, emp_type, emp_id, location')
+        .select('id, device_user_id, name, department, emp_type, emp_id, location, nationality')
         .or('status.ilike.active,status.is.null')
         .order('name', { ascending: true });
 
       if (empWithLocation.error && /employees\.location/i.test(empWithLocation.error.message || '')) {
         const empWithoutLocation = await supabase.from('employees')
-          .select('id, device_user_id, name, department, emp_type, emp_id')
+          .select('id, device_user_id, name, department, emp_type, emp_id, nationality')
           .or('status.ilike.active,status.is.null')
           .order('name', { ascending: true });
 
@@ -1085,7 +1160,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
         const c = matrix[e.device_user_id]?.[selectedDailyDate];
         const [y, m, d] = selectedDailyDate.split('-').map(Number);
         const dateObj = new Date(y, m - 1, d);
-        const isWeekendDay = isWeekend(y, m - 1, d);
+        const isWeekendDay = isWeekend(y, m - 1, d, e);
         const isHolidayDay = holidays.some(h => h.day === d && year === y && month === (m - 1));
 
         let statusText = 'Absent';
@@ -1170,12 +1245,13 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
     }).length;
   };
   const absentDays = (uid: string) => {
+    const emp = employees.find(e => e.device_user_id === uid);
     return dayList.filter(d => {
       const pad = (n: number) => String(n).padStart(2, '0');
       const dateKey = `${year}-${pad(month + 1)}-${pad(d)}`;
       return (
         new Date(year, month, d) <= today &&
-        !isWeekend(year, month, d) &&
+        !isWeekend(year, month, d, emp) &&
         !isHoliday(d) &&
         !matrix[uid]?.[dateKey]?.isPresent
       );
@@ -1282,7 +1358,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
         const displayDayName = getDayName(year, month, d);
 
         const c = matrix[selectedEmp.device_user_id]?.[dateStr];
-        const isWeekendDay = isWeekend(year, month, d);
+        const isWeekendDay = isWeekend(year, month, d, selectedEmp);
         const isHolidayDay = isHoliday(d);
         const holiday = holidayMap[d];
 
@@ -1383,10 +1459,10 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
         const [y, m, d] = dateStr.split('-').map(Number);
         const dateObj = new Date(y, m - 1, d);
         const displayDate = dateObj.toLocaleDateString('en-OM', { day: '2-digit', month: 'short', year: 'numeric' });
-        const isWeekendDay = isWeekend(y, m - 1, d);
         const isHolidayDay = holidays.some(h => h.day === d && year === y && month === (m - 1));
 
         filtered.forEach((emp, idx) => {
+          const isWeekendDay = isWeekend(y, m - 1, d, emp);
           const c = matrix[emp.device_user_id]?.[dateStr];
 
           let statusText = 'Absent';
@@ -1505,17 +1581,17 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
         const holiday = holidayMap[d];
 
         if (reportType === 'hourly') {
-          if (isWeekend(year, month, d)) { row.push('OFF'); }
+          if (isWeekend(year, month, d, emp)) { row.push('OFF'); }
           else if (isHolidayDay) { row.push(c?.isPresent ? getDayHours(c) : 'HOL'); }
           else { row.push(getDayHours(c)); }
         } else if (reportType === 'pa') {
-          if (isWeekend(year, month, d)) { row.push('OFF'); }
+          if (isWeekend(year, month, d, emp)) { row.push('OFF'); }
           else if (isHolidayDay) { row.push(c?.isPresent ? 'P(H)' : 'H'); }
           else if (c?.isPresent) { row.push('P'); }
           else if (new Date(year, month, d) > today) { row.push('—'); }
           else { row.push('A'); }
         } else if (reportType === 'location_inout') {
-          if (isWeekend(year, month, d)) { row.push('OFF', ''); }
+          if (isWeekend(year, month, d, emp)) { row.push('OFF', ''); }
           else if (isHolidayDay && !c?.isPresent) { row.push(`HOL (${holiday?.name || 'Holiday'})`, ''); }
           else if (c?.isPresent) {
             if (useFirstLast) {
@@ -1541,7 +1617,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
           else if (new Date(year, month, d) > today) { row.push('—', ''); }
           else { row.push('A', ''); }
         } else {
-          if (isWeekend(year, month, d)) { row.push('OFF', ''); }
+          if (isWeekend(year, month, d, emp)) { row.push('OFF', ''); }
           else if (isHolidayDay && !c?.isPresent) { row.push('HOL', ''); }
           else if (c?.isPresent) {
             if (useFirstLast) {
@@ -2021,7 +2097,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
           <table className="w-full text-sm text-left border-collapse">
             <thead className="bg-[#111827] text-white sticky top-0 z-10">
               <tr style={{ height: "2.5rem" }}>
-                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 110 }}>Date</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 140 }}>Date</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 50 }}>#</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 270, verticalAlign: 'middle' }}>
                   <div className="flex items-center gap-1.5 w-full">
@@ -2316,7 +2392,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                 </th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Check In</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Check Out</th>
-                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Hours</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 85 }} title="Excludes 1 hour lunch break">Hours (-1)</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Overtime</th>
               </tr>
             </thead>
@@ -2333,10 +2409,10 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                     const [y, m, d] = dateStr.split('-').map(Number);
                     const dateObj = new Date(y, m - 1, d);
                     const displayDate = dateObj.toLocaleDateString('en-OM', { day: '2-digit', month: 'short', year: 'numeric' });
-                    const isWeekendDay = isWeekend(y, m - 1, d);
                     const isHolidayDay = holidays.some(h => h.day === d && year === y && month === (m - 1));
 
                     return filtered.slice(0, limit).map((emp, empIdx) => {
+                      const isWeekendDay = isWeekend(y, m - 1, d, emp);
                       const c = matrix[emp.device_user_id]?.[dateStr];
 
                       let statusBadge = null;
@@ -2446,7 +2522,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left" style={{ width: 140 }}>Status</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Check In</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-left">Check Out</th>
-                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Hours</th>
+                <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 85 }} title="Excludes 1 hour lunch break">Hours (-1)</th>
                 <th className="px-4 py-2 font-medium text-xs uppercase tracking-wide text-center" style={{ width: 80 }}>Overtime</th>
               </tr>
             </thead>
@@ -2466,7 +2542,7 @@ export default function StaffMonthlyReport({ refreshTrigger, onLoadingChange }: 
                   const displayDayName = getDayName(year, month, d);
 
                   const c = matrix[selectedEmp.device_user_id]?.[dateStr];
-                  const isWeekendDay = isWeekend(year, month, d);
+                  const isWeekendDay = isWeekend(year, month, d, selectedEmp);
                   const isHolidayDay = isHoliday(d);
                   const holiday = holidayMap[d];
 

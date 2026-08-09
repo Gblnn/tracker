@@ -241,6 +241,8 @@ const calculateTotalHours = (punchIn: string, punchOut: string) => {
     if (isNaN(inH) || isNaN(inM) || isNaN(outH) || isNaN(outM)) return '—';
     let diffMin = (outH * 60 + outM) - (inH * 60 + inM);
     if (diffMin < 0) diffMin += 24 * 60;
+    // Deduct 1 hour (60 minutes) for lunch break
+    diffMin = Math.max(0, diffMin - 60);
     const hrs = Math.floor(diffMin / 60);
     const mins = diffMin % 60;
     const formattedHrs = String(hrs).padStart(2, '0');
@@ -4528,7 +4530,7 @@ export default function TimesheetFinalizer({
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </th>
-                  <th style={{ width: '65px', textAlign: 'center' }}>Total</th>
+                  <th style={{ width: '85px', textAlign: 'center' }} title="Excludes 1 hour lunch break">Total (-1)</th>
                   <th style={{ width: '90px' }}>Overtime</th>
                   {!(isFocalFiltered || resolvedMode === 'approve') && (
                     <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '160px' }}>
