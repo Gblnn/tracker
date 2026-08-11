@@ -852,7 +852,7 @@ const TimesheetRowComponent = memo(({
       </td>
 
       {/* Source & Actions */}
-      <td className="sticky-action" style={{ right: '0', zIndex: hoveredEmail ? 100 : undefined }}>
+      <td className="sticky-action" style={{ right: '0', zIndex: hoveredEmail ? 99999 : undefined }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px 6px' }}>
           {/* 1. Source Badge (Original & Unchanged - Full Width) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
@@ -1045,7 +1045,7 @@ const TimesheetRowComponent = memo(({
               const hasDevice = machineCode && machineCode !== 'Un-Mapped' && machineCode !== 'Timekeeper';
               const isBiometricFullyPopulated = (!!row.original_in_punch && !!row.original_out_punch) || (hasDevice && !!row.punch_in && !!row.punch_out);
 
-              if (isBiometricFullyPopulated && !isLocked && canUserEdit && !isSavedOrVerified) {
+              if (isBiometricFullyPopulated && !isLocked && canUserEdit && !isSavedOrVerified && resolvedMode !== 'approve') {
                 return (
                   <button
                     type="button"
@@ -1098,7 +1098,7 @@ const TimesheetRowComponent = memo(({
                       >
                         {email}
                         {hoveredEmail === email && (
-                          <div className={`absolute ${popupDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} left-1/2 -translate-x-1/2 z-[9999] bg-white text-slate-800 border border-slate-200 rounded-xl p-3 shadow-xl w-64 text-xs font-normal normal-case leading-relaxed pointer-events-none transition-all duration-200 animate-in fade-in slide-in-from-bottom-2`}>
+                          <div className={`absolute ${popupDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 z-[9999] bg-white text-slate-800 border border-slate-200 rounded-xl p-3 shadow-xl w-64 text-xs font-normal normal-case leading-relaxed pointer-events-none transition-all duration-200 animate-in fade-in slide-in-from-bottom-2`}>
                             {loadingHover ? (
                               <div className="flex items-center justify-center py-4">
                                 <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
@@ -2077,7 +2077,7 @@ export default function TimesheetFinalizer({
     if (!currentRow) return;
 
     const isMachineLoggedComplete = !!currentRow.original_in_punch && !!currentRow.original_out_punch;
-    const isRowVerified = currentRow.isVerified || !!currentRow.verified_by || isMachineLoggedComplete;
+    const isRowVerified = currentRow.isVerified || !!currentRow.verified_by || isMachineLoggedComplete || resolvedMode === 'approve';
     if (!isRowVerified) {
       toast.error(`Cannot approve ${currentRow.employee_name}. Timesheet must be verified first.`);
       return;

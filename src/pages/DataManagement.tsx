@@ -1,10 +1,13 @@
+import { useAuth } from '@/components/AuthProvider';
 import { ResponsiveModal } from '@/components/responsive-modal';
 import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
   CircleMinus,
+  CloudDownload,
   Database,
+  Disc,
   HardDrive,
   Laptop,
   List,
@@ -15,8 +18,9 @@ import {
   Zap
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
+import { MonthPicker } from '../components/month-picker';
 import { supabase } from '../lib/supabase';
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
@@ -104,6 +108,14 @@ export default function DataManagement() {
   const [loadingEmpPunches, setLoadingEmpPunches] = useState<boolean>(false);
   const [deletingPunchId, setDeletingPunchId] = useState<number | null>(null);
   const [deletingAll, setDeletingAll] = useState<boolean>(false);
+
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const d = new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${d.getFullYear()}-${mm}`;
+  });
+  const [downloadingMonth, setDownloadingMonth] = useState<boolean>(false);
+  const [clearingMonth, setClearingMonth] = useState<boolean>(false);
 
   const { userData } = useAuth();
 
@@ -296,6 +308,124 @@ export default function DataManagement() {
     }
   };
 
+  const handleDownloadMonthlyPunches = async () => {
+    if (!selectedMonth) return;
+    setDownloadingMonth(true);
+    try {
+      const [yearStr, monthStr] = selectedMonth.split('-');
+      const yr = parseInt(yearStr);
+      const mo = parseInt(monthStr);
+      const start = `${yearStr}-${monthStr}-01T00:00:00Z`;
+      const end = new Date(yr, mo, 1).toISOString();
+
+      let punchesList: any[] = [];
+      let from = 0;
+      let to = 999;
+      let finished = false;
+
+      while (!finished) {
+        const { data, error } = await supabase
+          .from('punches')
+          .select('*')
+          .gte('punch_time', start)
+          .lt('punch_time', end)
+          .range(from, to);
+
+        if (error) throw error;
+        if (data && data.length > 0) {
+          punchesList = [...punchesList, ...data];
+          if (data.length < 1000) {
+            finished = true;
+          } else {
+            from += 1000;
+            to += 1000;
+          }
+        } else {
+          finished = true;
+        }
+      }
+
+      if (punchesList.length === 0) {
+        toast.info('No punch records found for the selected month');
+        return;
+      }
+
+      const employeeMap = new Map(employees.map(e => [e.device_user_id, e]));
+      const rows = punchesList.map(p => {
+        const emp = employeeMap.get(p.user_id);
+        const verifyMethod = getVerifyTypeName(p.verify_type);
+        const punchType = p.punch_type === 0 ? 'IN' : 'OUT';
+        return {
+          'Punch ID': p.id,
+          'Employee Name': emp ? emp.name : 'Unmapped Device User',
+          'HR Employee ID': emp ? emp.emp_id : 'N/A',
+          'Device User ID': p.user_id,
+          'Punch Time': new Date(p.punch_time).toLocaleString(),
+          'Punch Type': punchType,
+          'Verify Method': verifyMethod,
+          'Source/Location': p.mobile_location ? (p.location || 'Mobile') : (p.device_serial || 'Device')
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Punches');
+      XLSX.writeFile(workbook, `Punches_${selectedMonth}.xlsx`);
+      toast.success(`Successfully downloaded ${punchesList.length} punch records.`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to download monthly punch data');
+    } finally {
+      setDownloadingMonth(false);
+    }
+  };
+
+  const handleClearMonthlyPunches = async () => {
+    if (!selectedMonth) return;
+    if (!canEditAttendance) {
+      toast.error('Permission denied: You do not have permission to delete punch records.');
+      return;
+    }
+
+    const [yearStr, monthStr] = selectedMonth.split('-');
+    const yr = parseInt(yearStr);
+    const mo = parseInt(monthStr);
+    const monthName = new Date(yr, mo - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const msg = `WARNING: This will permanently delete ALL punch records for the month of ${monthName}.\nThis action CANNOT be undone.\n\nTo proceed, please type 'DELETE' in all uppercase:`;
+    const confirmInput = prompt(msg);
+
+    if (confirmInput !== 'DELETE') {
+      if (confirmInput !== null) {
+        toast.error('Confirmation mismatch. Deletion aborted.');
+      }
+      return;
+    }
+
+    setClearingMonth(true);
+    try {
+      const start = `${yearStr}-${monthStr}-01T00:00:00Z`;
+      const end = new Date(yr, mo, 1).toISOString();
+
+      const { data, error } = await supabase
+        .from('punches')
+        .delete()
+        .gte('punch_time', start)
+        .lt('punch_time', end)
+        .select();
+
+      if (error) throw error;
+
+      const deletedCount = data ? data.length : 0;
+      toast.success(`Successfully deleted ${deletedCount} punch records for ${monthName}.`);
+      fetchMetadata(); // update counts
+      fetchPunches(); // update cache
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to clear punch records');
+    } finally {
+      setClearingMonth(false);
+    }
+  };
+
   const getVerifyTypeName = (type: number): string => {
     switch (type) {
       case 1: return 'Fingerprint';
@@ -420,7 +550,8 @@ export default function DataManagement() {
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', width: '100%', padding: '1rem', boxSizing: 'border-box', backgroundColor: '#f9fafb' }}>
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(4px); }
           to { opacity: 1; transform: translateY(0); }
@@ -436,7 +567,7 @@ export default function DataManagement() {
       <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm flex-shrink-0">
         <div style={{ alignItems: "center", border: "", justifyContent: "space-between" }} className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-teal-500" />
+            <Zap className="w-4 h-4 text-teal-500 animate-pulse" />
             <span style={{ fontSize: "1rem", fontWeight: 500 }} className="font-semibold text-gray-755">Supabase Free Plan Usage</span>
             <span style={{ fontSize: "0.9rem", fontWeight: 600 }} className="text-gray-900">
               {formatSize(totalSpaceUsed)} / 500 MB ({quotaPercent}%)
@@ -445,26 +576,66 @@ export default function DataManagement() {
 
           <div style={{ marginRight: "0.75rem" }} className="flex justify-between items-center text-[11px] text-gray-500 font-normal">
             <span className="font-semibold text-teal-500">{formatSize(remainingSpace)} remaining </span>
-
           </div>
         </div>
 
         {/* Progress Bar Container */}
-        <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden border border-gray-250/20 mb-2">
+        <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden border border-gray-200 mb-1">
           <div
             className={`h-full bg-gradient-to-r ${getProgressGradient()} transition-all duration-500 ease-out`}
             style={{ width: `${Math.min(100, quotaPercent)}%` }}
           />
         </div>
-
-
       </div>
 
       {/* ── STATISTICS GRID ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 flex-shrink-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4 flex-shrink-0">
+
+
+        {/* Card 5: Monthly Actions */}
+        <div style={{ justifyContent: "flex-start" }} className="bg-white border border-gray-200 rounded-xl p-3.5 shadow-sm flex items-center gap-3">
+          <div className="p-2.5 bg-teal-50 text-teal-500 rounded-lg shrink-0">
+            <Disc className="w-8 h-8" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p style={{ fontWeight: 505 }} className="text-[11px] uppercase font-bold text-gray-400 leading-tight">Manage</p>
+            <div className="flex gap-1.5 mt-1.5 flex-wrap" style={{ justifyContent: "flex-start", alignItems: "center" }}>
+              <MonthPicker
+                value={selectedMonth}
+                onChange={setSelectedMonth}
+              />
+              <button
+                onClick={handleDownloadMonthlyPunches}
+                disabled={downloadingMonth || statsLoading || recordsLoading}
+                className="h-7 w-7 bg-teal-50 hover:bg-teal-100 disabled:opacity-50 text-teal-600 rounded-md flex items-center justify-center transition-colors cursor-pointer shrink-0 border-0"
+                title="Download Excel Report for selected month"
+              >
+                {downloadingMonth ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <CloudDownload className="w-3.5 h-3.5" />
+                )}
+              </button>
+              {canEditAttendance && (
+                <button
+                  onClick={handleClearMonthlyPunches}
+                  disabled={clearingMonth || statsLoading || recordsLoading}
+                  className="h-7 w-7 disabled:opacity-50 text-red-655 rounded-md flex items-center justify-center transition-colors cursor-pointer shrink-0 border-0"
+                  title="Purge database punch records for selected month"
+                >
+                  {clearingMonth ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-red-500" />
+                  ) : (
+                    <CircleMinus className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
         {/* Card 1: Total Punches */}
         <div style={{ justifyContent: "flex-start" }} className="bg-white border border-gray-200 rounded-xl p-3.5 shadow-sm flex items-center gap-3">
-          <div className="p-2.5 bg-teal-50 text-teal-500 rounded-lg">
+          <div className="p-2.5 bg-teal-50 text-teal-500 rounded-lg shrink-0">
             <Database className="w-8 h-8" />
           </div>
           <div>
@@ -477,7 +648,7 @@ export default function DataManagement() {
 
         {/* Card 2: Total Space */}
         <div style={{ justifyContent: "flex-start" }} className="bg-white border border-gray-200 rounded-xl p-3.5 shadow-sm flex items-center gap-3">
-          <div className="p-2.5 bg-teal-50 text-teal-500 rounded-lg">
+          <div className="p-2.5 bg-teal-50 text-teal-500 rounded-lg shrink-0">
             <HardDrive className="w-8 h-8" />
           </div>
           <div>
@@ -490,7 +661,7 @@ export default function DataManagement() {
 
         {/* Card 3: Filtered Employees Count */}
         <div style={{ justifyContent: "flex-start" }} className="bg-white border border-gray-200 rounded-xl p-3.5 shadow-sm flex items-center gap-3">
-          <div className="p-2.5 bg-teal-50 text-teal-500 rounded-lg">
+          <div className="p-2.5 bg-teal-50 text-teal-500 rounded-lg shrink-0">
             <Users className="w-8 h-8" />
           </div>
           <div>
@@ -503,7 +674,7 @@ export default function DataManagement() {
 
         {/* Card 4: Selection Storage */}
         <div style={{ justifyContent: "flex-start" }} className="bg-white border border-gray-200 rounded-xl p-3.5 shadow-sm flex items-center gap-3">
-          <div className="p-2.5 bg-teal-50 text-teal-500 rounded-lg">
+          <div className="p-2.5 bg-teal-50 text-teal-500 rounded-lg shrink-0">
             <List className="w-8 h-8" />
           </div>
           <div>
@@ -513,6 +684,9 @@ export default function DataManagement() {
             </h3>
           </div>
         </div>
+
+
+
       </div>
 
       {/* ── RECORDS TABLE AREA ── */}
