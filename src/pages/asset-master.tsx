@@ -1,2261 +1,1656 @@
-import AddRecordButton from "@/components/add-record-button";
 import { useAuth } from "@/components/AuthProvider";
 import Back from "@/components/back";
-import ChevronSelect from "@/components/chevron-select";
-import Directive from "@/components/directive";
-import RefreshButton from "@/components/refresh-button";
+import { DatePicker } from "@/components/date-picker";
 import { ResponsiveModal } from "@/components/responsive-modal";
-import DefaultDialog from "@/components/ui/default-dialog";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Empty, EmptyContent, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { db } from "@/firebase";
-import * as XLSX from "@e965/xlsx";
-import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
-import { motion } from "framer-motion";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/lib/supabase";
 import {
-  Car,
-  ChevronRight,
-  Cog,
-  DownloadCloud,
-  EllipsisVerticalIcon,
-  FileDown,
-  Filter,
-  Globe,
-  Info,
+  ChevronDown,
+  CloudDownload,
+  Fingerprint,
+  HelpCircle,
+  Keyboard,
   Laptop2,
+  Layers,
   Loader2,
   MinusCircle,
-  Package,
+  Monitor,
   Plus,
+  Printer,
+  RotateCw,
   Search,
+  Server,
   Smartphone,
-  UploadCloud,
-  Wrench,
+  Trash2,
+  Wifi,
+  X
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-// Shared Asset Details Content Component
-interface AssetDetailsContentProps {
-  assetName: string;
-  setAssetName: (value: string) => void;
-  assetCategory: string;
-  setAssetCategory: (value: string) => void;
-  assetId: string;
-  setAssetId: (value: string) => void;
-  assetBrand: string;
-  setAssetBrand: (value: string) => void;
-  assetModel: string;
-  setAssetModel: (value: string) => void;
-  assetYear: string;
-  setAssetYear: (value: string) => void;
-  assetSerialNumber: string;
-  setAssetSerialNumber: (value: string) => void;
-  assetPurchaseDate: string;
-  setAssetPurchaseDate: (value: string) => void;
-  assetPurchasePrice: string;
-  setAssetPurchasePrice: (value: string) => void;
-  assetCondition: string;
-  setAssetCondition: (value: string) => void;
-  assetLocation: string;
-  setAssetLocation: (value: string) => void;
-  assetAssignedTo: string | null;
-  assetAssignedToName: string;
-  onOpenUserDialog: () => void;
-  assetNotes: string;
-  setAssetNotes: (value: string) => void;
-  assetRegistrationType: string;
-  setAssetRegistrationType: (value: string) => void;
-  loading: boolean;
-  onSave: () => void;
-  onDelete?: () => void;
-  isEditMode: boolean;
-  assetCategories: Array<{ id: string; label: string; icon: React.ReactNode }>;
-  conditionOptions: string[];
-  onReuseExisting?: () => void;
+// Types matching the user's Supabase columns + potential ID
+interface Asset {
+  id?: number | string;
+  created_at?: string;
+  device_id: string;
+  category: string;
+  make: string;
+  spec: string;
+  previous_posession?: string | null;
+  current_posession?: string | null;
+  allocation_date?: string | null;
+  remarks?: string | null;
+  condition?: string | null;
 }
 
-type ImportedAssetRow = {
+interface EmployeeOption {
+  id: string | number;
   name: string;
-  category: string;
-  assetId: string;
-  brand: string;
-  model: string;
-  year: string;
-  serialNumber: string;
-  purchaseDate: string;
-  purchasePrice: string;
-  condition: string;
-  location: string;
-  assignedTo: string;
-  notes: string;
+  emp_id?: string;
+}
+
+const CATEGORIES = [
+  { value: "Laptop", label: "Laptop", icon: Laptop2 },
+  { value: "Monitor", label: "Monitor", icon: Monitor },
+  { value: "Biometric Reader", label: "Biometric Reader", icon: Fingerprint },
+  { value: "Printer", label: "Printer", icon: Printer },
+  { value: "Router", label: "Router", icon: Wifi },
+  { value: "Peripheral", label: "Peripheral", icon: Keyboard },
+  { value: "Mobile Phone", label: "Mobile Phone", icon: Smartphone },
+  { value: "Server", label: "Server", icon: Server },
+  { value: "Other", label: "Other", icon: HelpCircle },
+];
+
+const CATEGORY_PREFIXES: Record<string, string> = {
+  "Laptop": "SSU-LPTPH-",
+  "Monitor": "SSU-MON-",
+  "Biometric Reader": "SSU-BIO-",
+  "Printer": "SSU-PRN-",
+  "Router": "SSU-RTR-",
+  "Peripheral": "SSU-PER-",
+  "Mobile Phone": "SSU-MOB-",
+  "Server": "SSU-SRV-",
+  "Other": "SSU-AST-",
 };
-const AssetDetailsContent: React.FC<AssetDetailsContentProps> = ({
-  assetName,
-  setAssetName,
-  assetCategory,
-  setAssetCategory,
-  assetId,
-  setAssetId,
-  assetBrand,
-  setAssetBrand,
-  assetModel,
-  setAssetModel,
-  assetYear,
-  setAssetYear,
-  assetSerialNumber,
-  setAssetSerialNumber,
-  assetPurchaseDate,
-  setAssetPurchaseDate,
-  assetPurchasePrice,
-  setAssetPurchasePrice,
-  assetCondition,
-  setAssetCondition,
-  assetLocation,
-  setAssetLocation,
-  assetAssignedTo,
-  assetAssignedToName,
-  onOpenUserDialog,
-  assetNotes,
-  setAssetNotes,
-  assetRegistrationType,
-  setAssetRegistrationType,
-  loading,
-  onSave,
-  onDelete,
-  isEditMode,
-  assetCategories,
-  conditionOptions,
-  onReuseExisting,
-}) => {
-  const getCategoryIcon = (categoryId: string) => {
-    const category = assetCategories.find(c => c.id === categoryId);
-    return category?.icon || <Package width={20} />;
-  };
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", maxHeight: "75vh", width: "100%" }}>
-      {/* Fixed Header */}
-      <div style={{
-        paddingTop: "0rem",
-        padding: "1.5rem",
-        paddingBottom: "1rem",
-        borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
-        background: "var(--background)",
-        boxSizing: "border-box",
-        width: "100%"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <div style={{
-              background: "darkblue",
-              color: "white",
-              padding: "0.75rem",
-              borderRadius: "0.75rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center"
-            }}>
-              {getCategoryIcon(assetCategory)}
-            </div>
-            <div style={{ letterSpacing: "-0.02em", display: "flex", flexDirection: "column", lineHeight: 1 }}>
-              {isEditMode ? (
-                <>
-                  <p style={{ fontSize: "1.5rem", fontWeight: 600 }}>{assetId || "Asset"}</p>
-                  <p style={{ fontSize: "0.875rem", opacity: 0.6, marginTop: "0.25rem" }}>{assetName || "No ID"}</p>
-                </>
-              ) : (
-                <div>
-                  <p style={{ fontSize: "1.5rem", fontWeight: 600 }}>Add Asset</p>
-                  {onReuseExisting && (
-                    <button
-                      type="button"
-                      onClick={onReuseExisting}
-                      style={{
-                        marginTop: "0.25rem",
-                        fontSize: "0.75rem",
-                        color: "darkblue",
-                        background: "rgba(123, 104, 238, 0.1)",
-                        border: "none",
-                        borderRadius: "0.5rem",
-                        padding: "0.2rem 0.6rem",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Copy from existing
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-          {isEditMode && onDelete && (
-            <button
-              onClick={onDelete}
-              style={{
-                fontSize: "0.75rem",
-                paddingLeft: "1rem",
-                paddingRight: "1rem",
-                height: "2rem",
-                background: "rgba(220, 38, 38, 0.1)",
-                borderRadius: "0.5rem",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                color: "crimson",
-                border: "none"
-              }}
-            >
-              <MinusCircle width={"1rem"} color="crimson" />
-              Remove
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Scrollable Content */}
-      <div style={{
-        flex: 1,
-        padding: "1.5rem",
-        paddingTop: "1.5rem",
-        paddingBottom: "0",
-        width: "100%",
-        boxSizing: "border-box",
-        overflowY: "auto",
-        minHeight: 0
-      }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%", paddingBottom: "1.5rem" }}>
-
-            {/* Assigned To */}
-            <div style={{
-              background: "rgba(100, 100, 100, 0.05)",
-              padding: "1rem",
-              borderRadius: "1rem",
-            }}>
-              <label style={{
-                fontSize: "0.875rem",
-                fontWeight: "600",
-                opacity: 0.9,
-                marginBottom: "0.75rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem"
-              }}>
-                <Package color="darkblue" width="1.125rem" />
-                Assigned To
-              </label>
-              <button
-                type="button"
-                onClick={onOpenUserDialog}
-                style={{
-                  width: "100%",
-                  borderRadius: "0.75rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.08)",
-                  border: "none",
-                  padding: "0.875rem 1rem",
-                  color: assetAssignedTo ? "inherit" : "rgba(100, 100, 100, 0.6)",
-                  fontSize: "1rem",
-                  boxSizing: "border-box",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  textAlign: "left"
-                }}
-              >
-                <span>{assetAssignedTo ? assetAssignedToName : "Unassigned"}</span>
-                <ChevronRight width="1.125rem" opacity={0.5} />
-              </button>
-            </div>
-
-            {/* Category Select */}
-            <ChevronSelect
-              title="Category *"
-              icon={getCategoryIcon(assetCategory)}
-              options={assetCategories.map(cat => ({ value: cat.id, label: cat.label }))}
-              value={assetCategory}
-              onChange={setAssetCategory}
-              placeholder="Select category"
-            />
-
-            {/* Asset Name */}
-            <div style={{
-              background: "rgba(100, 100, 100, 0.05)",
-              padding: "1rem",
-              borderRadius: "1rem",
-            }}>
-              <label style={{
-                fontSize: "0.875rem",
-                fontWeight: "600",
-                opacity: 0.9,
-                marginBottom: "0.75rem",
-                display: "block"
-              }}>
-                Asset Name *
-              </label>
-              <input
-                placeholder="e.g., Dell Laptop, iPhone 14"
-                value={assetName}
-                onChange={(e) => setAssetName(e.target.value)}
-                required
-                style={{
-                  width: "100%",
-                  borderRadius: "0.75rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.08)",
-                  border: "none",
-                  padding: "0.875rem 1rem",
-                  color: "inherit",
-                  fontSize: "1rem",
-                  boxSizing: "border-box"
-                }}
-              />
-            </div>
-
-            {/* Asset ID */}
-            <div style={{
-              background: "rgba(100, 100, 100, 0.05)",
-              padding: "1rem",
-              borderRadius: "1rem",
-            }}>
-              <label style={{
-                fontSize: "0.875rem",
-                fontWeight: "600",
-                opacity: 0.9,
-                marginBottom: "0.75rem",
-                display: "block"
-              }}>
-                {assetCategory === "vehicle" ? "Vehicle Number" : "Asset ID"}
-              </label>
-              <input
-                placeholder={assetCategory === "vehicle" ? "e.g., V-001" : "e.g., LAPTOP-001"}
-                value={assetId}
-                onChange={(e) => setAssetId(e.target.value)}
-                style={{
-                  width: "100%",
-                  borderRadius: "0.75rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.08)",
-                  border: "none",
-                  padding: "0.875rem 1rem",
-                  color: "inherit",
-                  fontSize: "1rem",
-                  boxSizing: "border-box"
-                }}
-              />
-            </div>
-
-            {/* Brand/Make */}
-            <div style={{
-              background: "rgba(100, 100, 100, 0.05)",
-              padding: "1rem",
-              borderRadius: "1rem",
-            }}>
-              <label style={{
-                fontSize: "0.875rem",
-                fontWeight: "600",
-                opacity: 0.9,
-                marginBottom: "0.75rem",
-                display: "block"
-              }}>
-                {assetCategory === "vehicle" ? "Make" : "Brand"}
-              </label>
-              <input
-                placeholder={assetCategory === "vehicle" ? "e.g., Toyota" : "e.g., Dell, Apple"}
-                value={assetBrand}
-                onChange={(e) => setAssetBrand(e.target.value)}
-                style={{
-                  width: "100%",
-                  borderRadius: "0.75rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.08)",
-                  border: "none",
-                  padding: "0.875rem 1rem",
-                  color: "inherit",
-                  fontSize: "1rem",
-                  boxSizing: "border-box"
-                }}
-              />
-            </div>
-
-            {/* Model */}
-            <div style={{
-              background: "rgba(100, 100, 100, 0.05)",
-              padding: "1rem",
-              borderRadius: "1rem",
-            }}>
-              <label style={{
-                fontSize: "0.875rem",
-                fontWeight: "600",
-                opacity: 0.9,
-                marginBottom: "0.75rem",
-                display: "block"
-              }}>
-                Model
-              </label>
-              <input
-                placeholder="e.g., Latitude 5420, Camry"
-                value={assetModel}
-                onChange={(e) => setAssetModel(e.target.value)}
-                style={{
-                  width: "100%",
-                  borderRadius: "0.75rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.08)",
-                  border: "none",
-                  padding: "0.875rem 1rem",
-                  color: "inherit",
-                  fontSize: "1rem",
-                  boxSizing: "border-box"
-                }}
-              />
-            </div>
-
-            {/* Year (for vehicles) or Serial Number (for others) */}
-            {assetCategory === "vehicle" ? (
-              <div style={{
-                background: "rgba(100, 100, 100, 0.05)",
-                padding: "1rem",
-                borderRadius: "1rem",
-              }}>
-                <label style={{
-                  fontSize: "0.875rem",
-                  fontWeight: "600",
-                  opacity: 0.9,
-                  marginBottom: "0.75rem",
-                  display: "block"
-                }}>
-                  Year
-                </label>
-                <input
-                  placeholder="e.g., 2023"
-                  value={assetYear}
-                  onChange={(e) => setAssetYear(e.target.value)}
-                  style={{
-                    width: "100%",
-                    borderRadius: "0.75rem",
-                    backgroundColor: "rgba(100, 100, 100, 0.08)",
-                    border: "none",
-                    padding: "0.875rem 1rem",
-                    color: "inherit",
-                    fontSize: "1rem",
-                    boxSizing: "border-box"
-                  }}
-                />
-              </div>
-            ) : (
-              <div style={{
-                background: "rgba(100, 100, 100, 0.05)",
-                padding: "1rem",
-                borderRadius: "1rem",
-              }}>
-                <label style={{
-                  fontSize: "0.875rem",
-                  fontWeight: "600",
-                  opacity: 0.9,
-                  marginBottom: "0.75rem",
-                  display: "block"
-                }}>
-                  Serial Number
-                </label>
-                <input
-                  placeholder="e.g., SN123456789"
-                  value={assetSerialNumber}
-                  onChange={(e) => setAssetSerialNumber(e.target.value)}
-                  style={{
-                    width: "100%",
-                    borderRadius: "0.75rem",
-                    backgroundColor: "rgba(100, 100, 100, 0.08)",
-                    border: "none",
-                    padding: "0.875rem 1rem",
-                    color: "inherit",
-                    fontSize: "1rem",
-                    boxSizing: "border-box"
-                  }}
-                />
-              </div>
-            )}
-
-            {/* Purchase Date & Price (only for non-vehicles) */}
-            {assetCategory !== "vehicle" && (
-              <>
-                <div style={{
-                  background: "rgba(100, 100, 100, 0.05)",
-                  padding: "1rem",
-                  borderRadius: "1rem",
-                }}>
-                  <label style={{
-                    fontSize: "0.875rem",
-                    fontWeight: "600",
-                    opacity: 0.9,
-                    marginBottom: "0.75rem",
-                    display: "block"
-                  }}>
-                    Purchase Date
-                  </label>
-                  <input
-                    type="date"
-                    value={assetPurchaseDate}
-                    onChange={(e) => setAssetPurchaseDate(e.target.value)}
-                    style={{
-                      width: "100%",
-                      borderRadius: "0.75rem",
-                      backgroundColor: "rgba(100, 100, 100, 0.08)",
-                      border: "none",
-                      padding: "0.875rem 1rem",
-                      color: "inherit",
-                      fontSize: "1rem",
-                      boxSizing: "border-box"
-                    }}
-                  />
-                </div>
-
-                <div style={{
-                  background: "rgba(100, 100, 100, 0.05)",
-                  padding: "1rem",
-                  borderRadius: "1rem",
-                }}>
-                  <label style={{
-                    fontSize: "0.875rem",
-                    fontWeight: "600",
-                    opacity: 0.9,
-                    marginBottom: "0.75rem",
-                    display: "block"
-                  }}>
-                    Purchase Price
-                  </label>
-                  <input
-                    placeholder="e.g., $1000"
-                    value={assetPurchasePrice}
-                    onChange={(e) => setAssetPurchasePrice(e.target.value)}
-                    style={{
-                      width: "100%",
-                      borderRadius: "0.75rem",
-                      backgroundColor: "rgba(100, 100, 100, 0.08)",
-                      border: "none",
-                      padding: "0.875rem 1rem",
-                      color: "inherit",
-                      fontSize: "1rem",
-                      boxSizing: "border-box"
-                    }}
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Condition */}
-            <ChevronSelect
-              title="Condition"
-              icon={<Package color="darkblue" width="1.125rem" />}
-              options={conditionOptions.map(opt => ({ value: opt, label: opt }))}
-              value={assetCondition}
-              onChange={setAssetCondition}
-              placeholder="Select condition"
-            />
-
-            {/* Registration Type (vehicles only) */}
-            {assetCategory === "vehicle" && (
-              <div style={{
-                background: "rgba(100, 100, 100, 0.05)",
-                padding: "1rem",
-                borderRadius: "1rem",
-              }}>
-                <label style={{
-                  fontSize: "0.875rem",
-                  fontWeight: "600",
-                  opacity: 0.9,
-                  marginBottom: "0.75rem",
-                  display: "block"
-                }}>
-                  Registration Type
-                </label>
-                <div style={{ display: "flex", gap: "0.5rem" }}>
-                  {["Private", "Commercial"].map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setAssetRegistrationType(type)}
-                      style={{
-                        flex: 1,
-                        padding: "0.625rem 0.75rem",
-                        borderRadius: "0.75rem",
-                        border: "none",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                        fontSize: "0.9rem",
-                        background: assetRegistrationType === type
-                          ? (type === "Private" ? "goldenrod" : "darkblue")
-                          : "rgba(100, 100, 100, 0.1)",
-                        color: assetRegistrationType === type
-                          ? (type === "Private" ? "black" : "white")
-                          : "inherit",
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Location (only for non-vehicles) */}
-            {assetCategory !== "vehicle" && (
-              <div style={{
-                background: "rgba(100, 100, 100, 0.05)",
-                padding: "1rem",
-                borderRadius: "1rem",
-              }}>
-                <label style={{
-                  fontSize: "0.875rem",
-                  fontWeight: "600",
-                  opacity: 0.9,
-                  marginBottom: "0.75rem",
-                  display: "block"
-                }}>
-                  Location
-                </label>
-                <input
-                  placeholder="e.g., Office - IT Department"
-                  value={assetLocation}
-                  onChange={(e) => setAssetLocation(e.target.value)}
-                  style={{
-                    width: "100%",
-                    borderRadius: "0.75rem",
-                    backgroundColor: "rgba(100, 100, 100, 0.08)",
-                    border: "none",
-                    padding: "0.875rem 1rem",
-                    color: "inherit",
-                    fontSize: "1rem",
-                    boxSizing: "border-box"
-                  }}
-                />
-              </div>
-            )}
-
-            {/* Notes */}
-            <div style={{
-              background: "rgba(100, 100, 100, 0.05)",
-              padding: "1rem",
-              borderRadius: "1rem",
-            }}>
-              <label style={{
-                fontSize: "0.875rem",
-                fontWeight: "600",
-                opacity: 0.9,
-                marginBottom: "0.75rem",
-                display: "block"
-              }}>
-                Notes
-              </label>
-              <textarea
-                placeholder="Additional notes..."
-                value={assetNotes}
-                onChange={(e) => setAssetNotes(e.target.value)}
-                rows={3}
-                style={{
-                  width: "100%",
-                  borderRadius: "0.75rem",
-                  backgroundColor: "rgba(100, 100, 100, 0.08)",
-                  border: "none",
-                  padding: "0.875rem 1rem",
-                  color: "inherit",
-                  fontSize: "1rem",
-                  boxSizing: "border-box",
-                  resize: "vertical"
-                }}
-              />
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Fixed Footer with Save Button */}
-      <div style={{
-        padding: "1rem",
-        paddingBottom: "2rem",
-        background: "var(--background)",
-        boxSizing: "border-box",
-        borderTop: "1px solid rgba(100, 100, 100, 0.1)",
-        width: "100%"
-      }}>
-        <motion.button
-          type="button"
-          disabled={loading || !assetName.trim() || !assetCategory}
-          whileTap={{ scale: 0.97 }}
-          whileHover={{ scale: 1.01 }}
-          onClick={onSave}
-          style={{
-            width: "100%",
-            padding: "1rem",
-            borderRadius: "1rem",
-            background: loading || !assetName.trim() || !assetCategory ? "rgba(100, 100, 100, 0.3)" : "black",
-            color: "white",
-            fontSize: "1.0625rem",
-            border: "none",
-            cursor: loading || !assetName.trim() || !assetCategory ? "not-allowed" : "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "0.5rem",
-            fontWeight: "500"
-          }}
-        >
-          {loading ? (
-            <Loader2 className="animate-spin" width="1.25rem" />
-          ) : (
-            <span>{isEditMode ? "Update Asset" : "Add Asset"}</span>
-          )}
-        </motion.button>
-      </div>
-    </div>
+function getNextDeviceId(category: string, assets: Asset[]): string {
+  // 1. Find all assets belonging to this category (case-insensitive)
+  const categoryAssets = assets.filter(
+    (asset) => asset.category && asset.category.toLowerCase() === category.toLowerCase()
   );
+
+  // 2. If there are existing assets in this category, extract prefix/format and increment the highest one
+  if (categoryAssets.length > 0) {
+    let maxNum = -1;
+    let bestPrefix = "";
+    let bestDigitsLength = 3;
+
+    categoryAssets.forEach((asset) => {
+      if (!asset.device_id) return;
+      // Match text prefix at start followed by digits at the end
+      const match = asset.device_id.match(/^(.*?)(\d+)$/);
+      if (match) {
+        const prefix = match[1];
+        const numStr = match[2];
+        const num = parseInt(numStr, 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+          bestPrefix = prefix;
+          bestDigitsLength = numStr.length;
+        }
+      }
+    });
+
+    if (maxNum !== -1) {
+      const nextNum = maxNum + 1;
+      const paddedNum = String(nextNum).padStart(bestDigitsLength, "0");
+      return `${bestPrefix}${paddedNum}`;
+    }
+  }
+
+  // 3. Fallback to default prefixes if no assets exist in the category yet
+  const defaultPrefix = CATEGORY_PREFIXES[category] || "SSU-AST-";
+  return `${defaultPrefix}001`;
+}
+
+const EMPTY_FORM: Asset = {
+  device_id: "",
+  category: "Laptop",
+  make: "",
+  spec: "",
+  previous_posession: "",
+  current_posession: "",
+  allocation_date: new Date().toISOString().split("T")[0],
+  remarks: "",
+  condition: "Working",
+};
+
+const getAssetConditionRowStyle = (condition?: string | null) => {
+  switch (condition) {
+    case "Repair":
+      return {
+        base: "rgba(250, 204, 21, 0.18)",
+        hover: "rgba(250, 204, 21, 0.28)",
+      };
+    case "Written Off":
+      return {
+        base: "rgba(239, 68, 68, 0.08)",
+        hover: "rgba(239, 68, 68, 0.14)",
+      };
+    default:
+      return {
+        base: "transparent",
+        hover: "rgba(100, 100, 100, 0.02)",
+      };
+  }
 };
 
 export default function AssetMaster() {
-  const ASSIGNEE_RESULT_LIMIT = 180;
-    const [loading, setLoading] = useState(true);
-    const [assets, setAssets] = useState<any[]>([]);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState<string>("all");
-    const [assignmentFilter, setAssignmentFilter] = useState<"all" | "assigned" | "unassigned">("all");
-    const [addAssetDrawer, setAddAssetDrawer] = useState(false);
-    const [editAssetDrawer, setEditAssetDrawer] = useState(false);
-    const [selectedAsset, setSelectedAsset] = useState<any>(null);
-    const [records, setRecords] = useState<{ id: string; name: string }[]>([]);
-    const { userData } = useAuth();
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [employees, setEmployees] = useState<EmployeeOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedMakes, setSelectedMakes] = useState<string[]>([]);
 
-    // Form fields
-    const [assetName, setAssetName] = useState("");
-    const [assetCategory, setAssetCategory] = useState<string>("");
-    const [assetId, setAssetId] = useState("");
-    const [assetBrand, setAssetBrand] = useState("");
-    const [assetModel, setAssetModel] = useState("");
-    const [assetYear, setAssetYear] = useState(""); // For vehicles
-    const [assetSerialNumber, setAssetSerialNumber] = useState("");
-    const [assetPurchaseDate, setAssetPurchaseDate] = useState("");
-    const [assetPurchasePrice, setAssetPurchasePrice] = useState("");
-    const [assetCondition, setAssetCondition] = useState("Good");
-    const [assetLocation, setAssetLocation] = useState("");
-    const [assetAssignedTo, setAssetAssignedTo] = useState<string | null>(null);
-    const [assetNotes, setAssetNotes] = useState("");
-    const [assetRegistrationType, setAssetRegistrationType] = useState("Private");
+  // Modal Controls
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<"add" | "edit">("add");
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [formState, setFormState] = useState<Asset>({ ...EMPTY_FORM });
 
-    interface Asset {
-        id: string;
-        name: string;
-        category: string;
-        assetId: string;
-        brand?: string;
-        model?: string;
-        serialNumber?: string;
-        purchaseDate?: string;
-        purchasePrice?: string;
-        condition: string;
-        location?: string;
-        assignedTo?: string | null;
-        notes?: string;
-        created_at: Date;
-        updated_at?: Date;
-        created_by?: string;
-        isVehicle?: boolean; // Flag to identify vehicle_master items
-        // Vehicle-specific fields
-        year?: string;
-        type?: string;
-        registration_type?: string;
+  // Autocomplete suggestions
+  const [prevSuggestionsOpen, setPrevSuggestionsOpen] = useState(false);
+  const [currSuggestionsOpen, setCurrSuggestionsOpen] = useState(false);
+  const [brandSuggestionsOpen, setBrandSuggestionsOpen] = useState(false);
+  const [specSuggestionsOpen, setSpecSuggestionsOpen] = useState(false);
+
+  // Deletion Confirm Control
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [assetToDelete, setAssetToDelete] = useState<Asset | null>(null);
+
+  const { userData } = useAuth();
+
+  // Fetch initial data
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [assetsResponse, employeesResponse] = await Promise.all([
+        supabase.from("assets").select("*").order("created_at", { ascending: false }),
+        supabase.from("employees").select("id, name, emp_id").order("name", { ascending: true }),
+      ]);
+
+      if (assetsResponse.error) throw assetsResponse.error;
+      setAssets(assetsResponse.data || []);
+
+      if (employeesResponse.data) {
+        setEmployees(employeesResponse.data);
+      }
+    } catch (error: any) {
+      console.error("Error fetching data:", error);
+      toast.error(error.message || "Failed to load assets data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Check user editing permissions
+  const canEdit = useMemo(() => {
+    return !!userData;
+  }, [userData]);
+
+  // Unique Lists for filtering
+  const uniqueCategoriesList = useMemo(() => {
+    const cats = new Set<string>();
+    assets.forEach((a) => {
+      if (a.category) cats.add(a.category);
+    });
+    return Array.from(cats).sort();
+  }, [assets]);
+
+  const uniqueMakesList = useMemo(() => {
+    const makes = new Set<string>();
+    assets.forEach((a) => {
+      if (a.make) makes.add(a.make);
+    });
+    return Array.from(makes).sort();
+  }, [assets]);
+
+  // Filtered Assets
+  const filteredAssets = useMemo(() => {
+    return assets.filter((asset) => {
+      // Category Filter
+      if (selectedCategories.length > 0) {
+        if (!asset.category || !selectedCategories.includes(asset.category)) {
+          return false;
+        }
+      }
+
+      // Make/Brand Filter
+      if (selectedMakes.length > 0) {
+        if (!asset.make || !selectedMakes.includes(asset.make)) {
+          return false;
+        }
+      }
+
+      // Search Query filter
+      if (searchQuery.trim() !== "") {
+        const query = searchQuery.toLowerCase();
+        const deviceIdMatch = asset.device_id?.toLowerCase().includes(query);
+        const categoryMatch = asset.category?.toLowerCase().includes(query);
+        const makeMatch = asset.make?.toLowerCase().includes(query);
+        const specMatch = asset.spec?.toLowerCase().includes(query);
+        const prevPossMatch = asset.previous_posession?.toLowerCase().includes(query);
+        const currPossMatch = asset.current_posession?.toLowerCase().includes(query);
+        const remarksMatch = asset.remarks?.toLowerCase().includes(query);
+
+        return (
+          deviceIdMatch ||
+          categoryMatch ||
+          makeMatch ||
+          specMatch ||
+          prevPossMatch ||
+          currPossMatch ||
+          remarksMatch
+        );
+      }
+
+      return true;
+    });
+  }, [assets, searchQuery, selectedCategories, selectedMakes]);
+
+  // Suggestion filtering
+  const filteredPrevSuggestions = useMemo(() => {
+    const query = (formState.previous_posession || "").toLowerCase();
+    if (!query) return employees.slice(0, 10);
+    return employees.filter((e) => e.name.toLowerCase().includes(query));
+  }, [employees, formState.previous_posession]);
+
+  const filteredCurrSuggestions = useMemo(() => {
+    const query = (formState.current_posession || "").toLowerCase();
+    if (!query) return employees.slice(0, 10);
+    return employees.filter((e) => e.name.toLowerCase().includes(query));
+  }, [employees, formState.current_posession]);
+
+  // Unique historical options parsed from existing assets
+  const brandHistory = useMemo(() => {
+    const unique = new Set(
+      assets
+        .map((a) => a.make?.trim())
+        .filter((m): m is string => !!m)
+    );
+    return Array.from(unique).sort();
+  }, [assets]);
+
+  const specHistory = useMemo(() => {
+    const unique = new Set(
+      assets
+        .map((a) => a.spec?.trim())
+        .filter((s): s is string => !!s)
+    );
+    return Array.from(unique).sort();
+  }, [assets]);
+
+  // Brand and Specifications input filters
+  const filteredBrandSuggestions = useMemo(() => {
+    const query = (formState.make || "").toLowerCase().trim();
+    if (!query) return brandHistory.slice(0, 10);
+    return brandHistory.filter((brand) => brand.toLowerCase().includes(query));
+  }, [brandHistory, formState.make]);
+
+  const filteredSpecSuggestions = useMemo(() => {
+    const query = (formState.spec || "").toLowerCase().trim();
+    if (!query) return specHistory.slice(0, 10);
+    return specHistory.filter((spec) => spec.toLowerCase().includes(query));
+  }, [specHistory, formState.spec]);
+
+  // Save (Create / Update) Handler
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formState.device_id.trim()) {
+      toast.error("Device ID is required.");
+      return;
+    }
+    if (!formState.make.trim()) {
+      toast.error("Make / Manufacturer is required.");
+      return;
+    }
+    if (!formState.spec.trim()) {
+      toast.error("Specification is required.");
+      return;
     }
 
-    const assetCategories = [
-      { id: "vehicle", label: "Vehicle", icon: <Car width={20} /> },
-      { id: "laptop", label: "Laptop", icon: <Laptop2 width={20} /> },
-      { id: "phone", label: "Phone", icon: <Smartphone width={20} /> },
-      { id: "network", label: "Network Device", icon: <Globe width={20} /> },
-      { id: "tool", label: "Tool", icon: <Wrench width={20} /> },
-      { id: "machinery", label: "Machinery", icon: <Cog width={20} /> },
-      { id: "other", label: "Other", icon: <Package width={20} /> },
+    setActionLoading(true);
+
+    try {
+      const payload: Partial<Asset> = {
+        device_id: formState.device_id.trim(),
+        category: formState.category,
+        make: formState.make.trim(),
+        spec: formState.spec.trim(),
+        previous_posession: (formState.previous_posession || "").trim(),
+        current_posession: (formState.current_posession || "").trim(),
+        allocation_date: formState.allocation_date || null,
+        remarks: (formState.remarks || "").trim(),
+        condition: formState.condition || "Working",
+      };
+
+      if (modalMode === "edit" && selectedAsset) {
+        // Update asset
+        let query = supabase.from("assets").update(payload);
+        if (selectedAsset.id !== undefined) {
+          query = query.eq("id", selectedAsset.id);
+        } else {
+          query = query.eq("device_id", selectedAsset.device_id);
+        }
+
+        const { error } = await query;
+        if (error) throw error;
+        toast.success("Asset updated successfully.");
+      } else {
+        // Create asset
+        // Check if device_id already exists to prevent duplicate key errors
+        const { data: existing } = await supabase
+          .from("assets")
+          .select("device_id")
+          .eq("device_id", payload.device_id)
+          .maybeSingle();
+
+        if (existing) {
+          throw new Error(`Asset with Device ID "${payload.device_id}" already exists.`);
+        }
+
+        const { error } = await supabase.from("assets").insert([payload]);
+        if (error) throw error;
+        toast.success("Asset created successfully.");
+      }
+
+      setModalOpen(false);
+      fetchData();
+    } catch (error: any) {
+      console.error("Error saving asset:", error);
+      toast.error(error.message || "Failed to save asset.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Delete Handler
+  const handleDelete = async () => {
+    if (!assetToDelete) return;
+    setActionLoading(true);
+    try {
+      let query = supabase.from("assets").delete();
+      if (assetToDelete.id !== undefined) {
+        query = query.eq("id", assetToDelete.id);
+      } else {
+        query = query.eq("device_id", assetToDelete.device_id);
+      }
+
+      const { error } = await query;
+      if (error) throw error;
+
+      toast.success(`Asset "${assetToDelete.device_id}" deleted successfully.`);
+      setDeleteConfirmOpen(false);
+      setAssetToDelete(null);
+      fetchData();
+    } catch (error: any) {
+      console.error("Error deleting asset:", error);
+      toast.error(error.message || "Failed to delete asset.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Export to CSV Function
+  const exportToCSV = () => {
+    if (filteredAssets.length === 0) {
+      toast.error("No data available to export.");
+      return;
+    }
+
+    const headers = [
+      "Device ID",
+      "Category",
+      "Make",
+      "Specification",
+      "Previous Possession",
+      "Current Possession",
+      "Allocation Date",
+      "Remarks",
+      "Created At",
     ];
 
-    const conditionOptions = ["Excellent", "Good", "Fair", "Poor", "Needs Repair"];
-
-    const fetchAssets = async () => {
-        try {
-            setLoading(true);
-            const [vehiclesSnapshot, assetsSnapshot, recordsSnapshot] = await Promise.all([
-                getDocs(collection(db, "vehicle_master")),
-                getDocs(collection(db, "assets")),
-                getDocs(collection(db, "records"))
-            ]);
-
-            // Map vehicles from vehicle_master with category "vehicle"
-            const vehiclesData = vehiclesSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                name: `${doc.data().make || ''} ${doc.data().model || ''}`.trim() || doc.data().vehicle_number,
-                category: "vehicle",
-                assetId: doc.data().vehicle_number,
-                brand: doc.data().make,
-                model: doc.data().model,
-                year: doc.data().year,
-                type: doc.data().type,
-                condition: doc.data().status || "Good",
-                registration_type: doc.data().registration_type,
-                assignedTo: doc.data().assigned_to,
-                notes: doc.data().notes,
-                created_at: doc.data().createdAt ? new Date(doc.data().createdAt) : new Date(),
-                updated_at: doc.data().updatedAt ? new Date(doc.data().updatedAt) : undefined,
-                isVehicle: true // Flag to identify vehicle_master items
-            }));
-
-            // Map other assets from assets collection
-            const otherAssetsData = assetsSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-                created_at: doc.data().created_at?.toDate() || new Date(),
-                updated_at: doc.data().updated_at?.toDate(),
-                isVehicle: false
-            } as Asset));
-
-            // Combine both datasets
-            const allAssets = [...vehiclesData, ...otherAssetsData];
-            setAssets(allAssets);
-
-            const recordsData = recordsSnapshot.docs.map(doc => ({
-                id: doc.id,
-                name: doc.data().name || doc.data().full_name || 'Unknown'
-            }));
-            setRecords(recordsData);
-
-            setLoading(false);
-            setRefreshCompleted(true);
-            setTimeout(() => setRefreshCompleted(false), 1000);
-        } catch (error) {
-            console.error("Error fetching assets:", error);
-            toast.error("Failed to fetch assets");
-            setLoading(false);
-        }
-    };
-
-    // Sync allocated_vehicle on the records document when a vehicle assignment changes.
-    // newRecordId = the record the vehicle is now assigned to (null = unassigned)
-    // oldRecordId = the record it was previously assigned to (null = was unassigned)
-    // vehicleNumber = the vehicle's plate / ID stored in vehicle_master
-    const syncVehicleAllocationToRecord = async (
-        newRecordId: string | null | undefined,
-        oldRecordId: string | null | undefined,
-        vehicleNumber: string
-    ) => {
-        const oldId = oldRecordId || null;
-        const newId = newRecordId || null;
-        // Clear old record's allocated_vehicle if it changed
-        if (oldId && oldId !== newId) {
-            await updateDoc(doc(db, "records", oldId), { allocated_vehicle: null });
-        }
-        // Set new record's allocated_vehicle
-        if (newId) {
-            await updateDoc(doc(db, "records", newId), { allocated_vehicle: vehicleNumber });
-        }
-    };
-
-    const addAsset = async () => {
-        if (!assetName || !assetCategory) {
-            toast.error("Please fill in required fields");
-            return;
-        }
-
-        try {
-            setLoading(true);
-            
-            // If category is vehicle, add to vehicle_master collection
-            if (assetCategory === "vehicle") {
-                await addDoc(collection(db, "vehicle_master"), {
-                    vehicle_number: assetId,
-                    make: assetBrand,
-                    model: assetModel,
-                    year: assetYear,
-                    type: assetModel, // or create a separate field for vehicle type
-                    status: assetCondition,
-                    registration_type: assetRegistrationType,
-                    assigned_to: assetAssignedTo,
-                    notes: assetNotes,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                });
-                // Sync allocation to the records document so fuel-log can read it
-                if (assetAssignedTo && assetId) {
-                    try {
-                        await syncVehicleAllocationToRecord(assetAssignedTo, null, assetId);
-                    } catch (syncErr) {
-                        console.warn("Vehicle allocation sync to records failed (non-critical):", syncErr);
-                    }
-                }
-            } else {
-                // For other categories, add to assets collection
-                await addDoc(collection(db, "assets"), {
-                    name: assetName,
-                    category: assetCategory,
-                    assetId: assetId,
-                    brand: assetBrand,
-                    model: assetModel,
-                    serialNumber: assetSerialNumber,
-                    purchaseDate: assetPurchaseDate,
-                    purchasePrice: assetPurchasePrice,
-                    condition: assetCondition,
-                    location: assetLocation,
-                    assignedTo: assetAssignedTo,
-                    notes: assetNotes,
-                    created_by: userData?.email || "unknown",
-                    created_at: new Date()
-                });
-            }
-            
-            toast.success("Asset added successfully");
-            setAddAssetDrawer(false);
-            resetForm();
-            await fetchAssets();
-        } catch (error) {
-            console.error("Error adding asset:", error);
-            toast.error("Failed to add asset");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const updateAsset = async () => {
-        if (!selectedAsset) return;
-
-        try {
-            setLoading(true);
-            
-            // If this is a vehicle (from vehicle_master), update that collection
-            if (selectedAsset.isVehicle) {
-                const effectiveVehicleNumber = assetId || selectedAsset.assetId;
-                await updateDoc(doc(db, "vehicle_master", selectedAsset.id), {
-                    vehicle_number: effectiveVehicleNumber || null,
-                    make: assetBrand || selectedAsset.brand || null,
-                    model: assetModel || selectedAsset.model || null,
-                    year: assetYear || selectedAsset.year || null,
-                    type: assetModel || selectedAsset.type || null,
-                    status: assetCondition || selectedAsset.condition || null,
-                    registration_type: assetRegistrationType,
-                    assigned_to: assetAssignedTo,
-                    notes: assetNotes || selectedAsset.notes || null,
-                    updatedAt: new Date().toISOString()
-                });
-                // Sync allocation to the records document so fuel-log can read it.
-                // Wrapped in its own try-catch so a failure here never blocks the asset update.
-                try {
-                    await syncVehicleAllocationToRecord(
-                        assetAssignedTo,
-                        selectedAsset.assignedTo,
-                        effectiveVehicleNumber
-                    );
-                } catch (syncErr) {
-                    console.warn("Vehicle allocation sync to records failed (non-critical):", syncErr);
-                }
-            } else {
-                // For other assets, update the assets collection
-                await updateDoc(doc(db, "assets", selectedAsset.id), {
-                    name: assetName || selectedAsset.name || null,
-                    category: assetCategory || selectedAsset.category || null,
-                    assetId: assetId || selectedAsset.assetId || null,
-                    brand: assetBrand || selectedAsset.brand || null,
-                    model: assetModel || selectedAsset.model || null,
-                    serialNumber: assetSerialNumber || selectedAsset.serialNumber || null,
-                    purchaseDate: assetPurchaseDate || selectedAsset.purchaseDate || null,
-                    purchasePrice: assetPurchasePrice || selectedAsset.purchasePrice || null,
-                    condition: assetCondition || selectedAsset.condition || null,
-                    location: assetLocation || selectedAsset.location || null,
-                    assignedTo: assetAssignedTo,
-                    notes: assetNotes || selectedAsset.notes || null,
-                    updated_at: new Date()
-                });
-            }
-            
-            toast.success("Asset updated successfully");
-            setEditAssetDrawer(false);
-            resetForm();
-            await fetchAssets();
-        } catch (error: any) {
-            console.error("Error updating asset:", error);
-            toast.error(`Failed to update asset: ${error?.message || error}`);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const deleteAsset = async (assetId: string) => {
-        if (!window.confirm("Are you sure you want to delete this asset?")) return;
-        if (!selectedAsset) return;
-
-        try {
-            setLoading(true);
-            
-            // Delete from the appropriate collection
-            const collectionName = selectedAsset.isVehicle ? "vehicle_master" : "assets";
-            await deleteDoc(doc(db, collectionName, assetId));
-            
-            toast.success("Asset deleted successfully");
-            await fetchAssets();
-        } catch (error) {
-            console.error("Error deleting asset:", error);
-            toast.error("Failed to delete asset");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const resetForm = () => {
-        setAssetName("");
-        setAssetCategory("");
-        setAssetId("");
-        setAssetBrand("");
-        setAssetModel("");
-        setAssetYear("");
-        setAssetSerialNumber("");
-        setAssetPurchaseDate("");
-        setAssetPurchasePrice("");
-        setAssetCondition("Good");
-        setAssetLocation("");
-        setAssetAssignedTo(null);
-        setAssetNotes("");
-        setAssetRegistrationType("Private");
-        setSelectedAsset(null);
-    };
-
-    const openEditDrawer = (asset: Asset) => {
-        setSelectedAsset(asset);
-        setAssetName(asset.name);
-        setAssetCategory(asset.category);
-        setAssetId(asset.assetId);
-        setAssetBrand(asset.brand || "");
-        setAssetModel(asset.model || "");
-        setAssetYear(asset.year || "");
-        setAssetSerialNumber(asset.serialNumber || "");
-        setAssetPurchaseDate(asset.purchaseDate || "");
-        setAssetPurchasePrice(asset.purchasePrice || "");
-        setAssetCondition(asset.condition);
-        setAssetLocation(asset.location || "");
-        setAssetAssignedTo(asset.assignedTo || null);
-        setAssetNotes(asset.notes || "");
-        setAssetRegistrationType(asset.registration_type || "Private");
-        setEditAssetDrawer(true);
-    };
-
-    const getCategoryIcon = (category: string) => {
-        const cat = assetCategories.find(c => c.id === category);
-        return cat?.icon || <Package width={20} />;
-    };
-
-    const recordNameMap = useMemo(() => {
-      const mapped = new Map<string, string>();
-      for (const record of records) {
-        mapped.set(record.id, record.name || "Unknown");
-      }
-      return mapped;
-    }, [records]);
-
-    const getAssignedName = (assignedToId: string | null | undefined) => {
-      if (!assignedToId) return "Unassigned";
-      return recordNameMap.get(assignedToId) || "Unknown";
-    };
-
-    useEffect(() => {
-        fetchAssets();
-    }, []);
-
-    const filteredAssets = useMemo(() => {
-      let filtered = assets;
-
-      if (assignmentFilter !== "all") {
-        filtered = filtered.filter((asset) => {
-          const isAssigned = Boolean(asset.assignedTo);
-          return assignmentFilter === "assigned" ? isAssigned : !isAssigned;
-        });
-      }
-
-      if (selectedCategory !== "all") {
-        filtered = filtered.filter((asset) => asset.category === selectedCategory);
-      }
-
-      const query = searchQuery.trim().toLowerCase();
-      if (!query) return filtered;
-
-      return filtered.filter((asset) =>
-        asset.name?.toLowerCase().includes(query) ||
-        asset.assetId?.toLowerCase().includes(query) ||
-        asset.brand?.toLowerCase().includes(query) ||
-        asset.model?.toLowerCase().includes(query) ||
-        asset.year?.toLowerCase().includes(query) ||
-        asset.serialNumber?.toLowerCase().includes(query) ||
-        asset.location?.toLowerCase().includes(query)
-      );
-    }, [assets, assignmentFilter, selectedCategory, searchQuery]);
-
-    const categoryCounts = useMemo(() => {
-      const counts: Record<string, number> = {};
-      for (const asset of assets) {
-        const key = asset.category || "other";
-        counts[key] = (counts[key] || 0) + 1;
-      }
-      return counts;
-    }, [assets]);
-
-    const assignmentCounts = useMemo(() => {
-      let assigned = 0;
-      let unassigned = 0;
-
-      for (const asset of assets) {
-        if (asset.assignedTo) {
-          assigned += 1;
-        } else {
-          unassigned += 1;
-        }
-      }
-
-      return {
-        assigned,
-        unassigned,
-      };
-    }, [assets]);
-
-    const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
-    const [refreshCompleted, setRefreshCompleted] = useState(false);
-    const [assigneeDialog, setAssigneeDialog] = useState(false);
-    const [assigneeSearchQuery, setAssigneeSearchQuery] = useState("");
-    const [reuseDialog, setReuseDialog] = useState(false);
-    const [reuseSearchQuery, setReuseSearchQuery] = useState("");
-    const [importDialog, setImportDialog] = useState(false);
-    const [importFile, setImportFile] = useState<File | null>(null);
-    const [importRows, setImportRows] = useState<ImportedAssetRow[]>([]);
-    const [duplicateImportRows, setDuplicateImportRows] = useState<ImportedAssetRow[]>([]);
-    const [importing, setImporting] = useState(false);
-    const [importProgressItem, setImportProgressItem] = useState("");
-
-    const normalizeCategory = (value: string): string => {
-      const raw = (value || "").toString().trim().toLowerCase();
-      if (!raw) return "other";
-      if (["vehicle", "car", "truck"].includes(raw)) return "vehicle";
-      if (["laptop", "computer", "pc"].includes(raw)) return "laptop";
-      if (["phone", "mobile", "smartphone"].includes(raw)) return "phone";
-      if (["tool", "tools"].includes(raw)) return "tool";
-      if (["machinery", "machine"].includes(raw)) return "machinery";
-      if (["other", "misc", "miscellaneous"].includes(raw)) return "other";
-      return "other";
-    };
-
-    const getImportValue = (row: Record<string, any>, keys: string[]): string => {
-      for (const key of keys) {
-        const value = row[key];
-        if (value !== undefined && value !== null && `${value}`.trim() !== "") {
-          return `${value}`.trim();
-        }
-      }
-      return "";
-    };
-
-    const parseImportRow = (row: Record<string, any>): ImportedAssetRow | null => {
-      const name = getImportValue(row, ["name", "assetName", "asset_name", "asset"]);
-      const category = normalizeCategory(getImportValue(row, ["category", "assetCategory", "asset_category", "type"]));
-      const assetId = getImportValue(row, ["assetId", "asset_id", "vehicle_number", "vehicleNumber", "id"]);
-
-      if (!name) return null;
-
-      return {
-        name,
-        category,
-        assetId,
-        brand: getImportValue(row, ["brand", "make", "assetBrand", "asset_brand"]),
-        model: getImportValue(row, ["model", "assetModel", "asset_model"]),
-        year: getImportValue(row, ["year", "assetYear", "asset_year"]),
-        serialNumber: getImportValue(row, ["serialNumber", "serial_number", "assetSerialNumber"]),
-        purchaseDate: getImportValue(row, ["purchaseDate", "purchase_date", "assetPurchaseDate"]),
-        purchasePrice: getImportValue(row, ["purchasePrice", "purchase_price", "assetPurchasePrice"]),
-        condition: getImportValue(row, ["condition", "assetCondition"]) || "Good",
-        location: getImportValue(row, ["location", "assetLocation", "asset_location"]),
-        assignedTo: getImportValue(row, ["assignedTo", "assigned_to", "assetAssignedTo"]),
-        notes: getImportValue(row, ["notes", "assetNotes", "asset_notes"]),
-      };
-    };
-
-    const handleImportPreview = () => {
-      if (!importFile) {
-        toast.error("Please choose an Excel file first");
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e: ProgressEvent<FileReader>) => {
-        try {
-          const data = e.target?.result;
-          if (!data) throw new Error("Unable to read selected file");
-
-          const workbook = XLSX.read(data, { type: "array", cellDates: true });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const parsedJson = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: "" });
-          const parsedRows = parsedJson.map(parseImportRow).filter((r): r is ImportedAssetRow => r !== null);
-
-          setImportRows(parsedRows);
-
-          const existingKeys = new Set(
-            assets
-              .filter((a) => a.assetId)
-              .map((a) => `${(a.assetId || "").trim().toLowerCase()}::${a.isVehicle ? "vehicle" : "asset"}`)
-          );
-
-          const duplicates = parsedRows.filter((row) => {
-            if (!row.assetId) return false;
-            const key = `${row.assetId.trim().toLowerCase()}::${row.category === "vehicle" ? "vehicle" : "asset"}`;
-            return existingKeys.has(key);
-          });
-          setDuplicateImportRows(duplicates);
-        } catch (error) {
-          console.error("Error reading import file:", error);
-          toast.error("Error reading file");
-        }
-      };
-
-      reader.readAsArrayBuffer(importFile);
-    };
-
-    const downloadImportTemplate = () => {
-      const sample = [
-        {
-          name: "Toyota Hilux",
-          category: "vehicle",
-          assetId: "V-001",
-          brand: "Toyota",
-          model: "Hilux",
-          year: "2022",
-          serialNumber: "",
-          purchaseDate: "2024-01-10",
-          purchasePrice: "12000",
-          condition: "Good",
-          location: "Yard A",
-          assignedTo: "",
-          notes: "",
-        },
-        {
-          name: "Dell Latitude",
-          category: "laptop",
-          assetId: "LAPTOP-001",
-          brand: "Dell",
-          model: "Latitude 5420",
-          year: "",
-          serialNumber: "SN-ABC-001",
-          purchaseDate: "2024-02-15",
-          purchasePrice: "650",
-          condition: "Excellent",
-          location: "Site Office",
-          assignedTo: "",
-          notes: "",
-        },
-      ];
-
-      const worksheet = XLSX.utils.json_to_sheet(sample);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "assets");
-      XLSX.writeFile(workbook, "asset-import-template.xlsx");
-    };
-
-    const uploadImportRows = async () => {
-      if (!importRows.length) {
-        toast.error("No parsed rows to upload");
-        return;
-      }
-
-      setImporting(true);
-      setImportProgressItem("Preparing import...");
-
-      let createdCount = 0;
-      let updatedCount = 0;
-      let skippedCount = 0;
-
-      try {
-        for (let i = 0; i < importRows.length; i++) {
-          const row = importRows[i];
-          setImportProgressItem(`Processing ${i + 1}/${importRows.length}`);
-
-          try {
-            const normalizedId = (row.assetId || "").trim().toLowerCase();
-            const existing = normalizedId
-              ? assets.find((a) => {
-                const sameId = (a.assetId || "").trim().toLowerCase() === normalizedId;
-                const sameCollectionType = row.category === "vehicle" ? a.isVehicle : !a.isVehicle;
-                return sameId && sameCollectionType;
-              })
-              : undefined;
-
-            if (row.category === "vehicle") {
-              const payload = {
-                vehicle_number: row.assetId,
-                make: row.brand,
-                model: row.model,
-                year: row.year,
-                type: row.model,
-                status: row.condition || "Good",
-                registration_type: "Private",
-                assigned_to: row.assignedTo || null,
-                notes: row.notes,
-                updatedAt: new Date().toISOString(),
-              };
-
-              if (existing?.isVehicle) {
-                await updateDoc(doc(db, "vehicle_master", existing.id), payload);
-                updatedCount++;
-              } else {
-                await addDoc(collection(db, "vehicle_master"), {
-                  ...payload,
-                  createdAt: new Date().toISOString(),
-                });
-                createdCount++;
-              }
-            } else {
-              const payload = {
-                name: row.name,
-                category: row.category || "other",
-                assetId: row.assetId,
-                brand: row.brand,
-                model: row.model,
-                serialNumber: row.serialNumber,
-                purchaseDate: row.purchaseDate,
-                purchasePrice: row.purchasePrice,
-                condition: row.condition || "Good",
-                location: row.location,
-                assignedTo: row.assignedTo || null,
-                notes: row.notes,
-                updated_at: new Date(),
-              };
-
-              if (existing && !existing.isVehicle) {
-                await updateDoc(doc(db, "assets", existing.id), payload);
-                updatedCount++;
-              } else {
-                await addDoc(collection(db, "assets"), {
-                  ...payload,
-                  created_by: userData?.email || "unknown",
-                  created_at: new Date(),
-                });
-                createdCount++;
-              }
-            }
-          } catch (rowError) {
-            skippedCount++;
-            console.error("Skipping row due to import error:", rowError);
-          }
-        }
-
-        toast.success(`Import complete: ${createdCount} created, ${updatedCount} updated, ${skippedCount} skipped`);
-        setImportDialog(false);
-        setImportFile(null);
-        setImportRows([]);
-        setDuplicateImportRows([]);
-        setImportProgressItem("");
-        await fetchAssets();
-      } catch (error) {
-        console.error("Error uploading import rows:", error);
-        toast.error("Import failed");
-      } finally {
-        setImporting(false);
-      }
-    };
-
-    const handleDeleteAsset = () => {
-        if (selectedAsset) {
-            deleteAsset(selectedAsset.id);
-        }
-    };
-
-    const openAssigneeDialog = () => {
-      setAssigneeSearchQuery("");
-      setAssigneeDialog(true);
-    };
-
-    const openAddAssetDialog = () => {
-      resetForm();
-      setEditAssetDrawer(false);
-      setAddAssetDrawer(true);
-    };
-
-    const openReuseDialog = () => {
-      if (!assetCategory) {
-        toast.info("Select an asset category first");
-        return;
-      }
-      setReuseSearchQuery("");
-      setReuseDialog(true);
-    };
-
-    const getNextMatchingAssetId = (source: any, targetCategory: string): string => {
-      const sourceId = `${source?.assetId || ""}`.trim();
-      const sourceCategory = `${targetCategory || source?.category || ""}`.trim();
-      if (!sourceCategory) return sourceId;
-
-      const sameCategoryIds = assets
-        .filter((asset) => asset.category === sourceCategory && asset.assetId)
-        .map((asset) => `${asset.assetId}`.trim())
-        .filter(Boolean);
-
-      if (sameCategoryIds.length === 0) return sourceId;
-
-      const sourcePrefixMatch = sourceId.match(/^(.*?)(\d+)$/);
-      const prefix = sourcePrefixMatch ? sourcePrefixMatch[1] : "";
-
-      const candidateIds = prefix
-        ? sameCategoryIds.filter((id) => id.startsWith(prefix))
-        : sameCategoryIds;
-
-      let bestId = sourceId || candidateIds[0] || "";
-      let bestNumber = -1;
-      let bestWidth = 0;
-
-      for (const id of candidateIds) {
-        const numericMatch = id.match(/(\d+)(?!.*\d)/);
-        if (!numericMatch) continue;
-        const numeric = Number(numericMatch[1]);
-        if (Number.isFinite(numeric) && numeric > bestNumber) {
-          bestNumber = numeric;
-          bestId = id;
-          bestWidth = numericMatch[1].length;
-        }
-      }
-
-      if (bestNumber < 0) return bestId;
-
-      const nextNumber = String(bestNumber + 1).padStart(bestWidth, "0");
-      return bestId.replace(/\d+(?!.*\d)/, nextNumber);
-    };
-
-    const copyFromAsset = (source: any) => {
-      const nextAssetId = getNextMatchingAssetId(source, assetCategory);
-      setAssetName(source.name || "");
-      setAssetCategory(source.category || "");
-      setAssetId(nextAssetId);
-      setAssetBrand(source.brand || "");
-      setAssetModel(source.model || "");
-      setAssetYear(source.year || "");
-      setAssetSerialNumber(source.serialNumber || "");
-      setAssetPurchaseDate(source.purchaseDate || "");
-      setAssetPurchasePrice(source.purchasePrice || "");
-      setAssetCondition(source.condition || "Good");
-      setAssetLocation(source.location || "");
-      setAssetAssignedTo(null); // clear — will be assigned to someone else
-      setAssetNotes(source.notes || "");
-      setReuseDialog(false);
-    };
-
-    const filteredAssetsForReuse = useMemo(() => {
-      if (!reuseDialog) return [];
-
-      return assets.filter((asset) => {
-        if (assetCategory && asset.category !== assetCategory) return false;
-        const q = reuseSearchQuery.trim().toLowerCase();
-        if (!q) return true;
-        return (
-          asset.name?.toLowerCase().includes(q) ||
-          asset.assetId?.toLowerCase().includes(q) ||
-          asset.brand?.toLowerCase().includes(q) ||
-          asset.model?.toLowerCase().includes(q)
-        );
-      });
-    }, [assets, assetCategory, reuseSearchQuery, reuseDialog]);
-
-    const distinctAssetsForReuse = useMemo(() => {
-      const grouped = new Map<string, any>();
-
-      for (const asset of filteredAssetsForReuse) {
-        const key = [
-          asset.category || "",
-          asset.name || "",
-          asset.brand || "",
-          asset.model || "",
-        ]
-          .map((v: string) => `${v}`.trim().toLowerCase())
-          .join("|");
-
-        const existing = grouped.get(key);
-        if (!existing) {
-          grouped.set(key, asset);
-          continue;
-        }
-
-        const existingNumber = Number((`${existing.assetId || ""}`.match(/(\d+)(?!.*\d)/)?.[1]) || -1);
-        const currentNumber = Number((`${asset.assetId || ""}`.match(/(\d+)(?!.*\d)/)?.[1]) || -1);
-        if (currentNumber > existingNumber) {
-          grouped.set(key, asset);
-        }
-      }
-
-      return Array.from(grouped.values());
-    }, [filteredAssetsForReuse]);
-
-    const filteredRecordsForAssignee = useMemo(() => {
-      if (!assigneeDialog) return [];
-
-      const query = assigneeSearchQuery.trim().toLowerCase();
-      const base = !query
-        ? records
-        : records.filter((record) => {
-            const name = (record.name || "").toLowerCase();
-            const id = (record.id || "").toLowerCase();
-            return name.includes(query) || id.includes(query);
-          });
-
-      return base.slice(0, ASSIGNEE_RESULT_LIMIT);
-    }, [assigneeDialog, assigneeSearchQuery, records]);
-
-    const exportAssetsToExcel = () => {
-      try {
-        if (!assets.length) {
-          toast.info("No assets to export");
-          return;
-        }
-
-        const rows = assets.map((asset) => ({
-          name: asset.name || "",
-          category: asset.category || "",
-          assetId: asset.assetId || "",
-          brand: asset.brand || "",
-          model: asset.model || "",
-          year: asset.year || "",
-          serialNumber: asset.serialNumber || "",
-          purchaseDate: asset.purchaseDate || "",
-          purchasePrice: asset.purchasePrice || "",
-          condition: asset.condition || "",
-          location: asset.location || "",
-          assignedTo: getAssignedName(asset.assignedTo),
-          notes: asset.notes || "",
-          sourceCollection: asset.isVehicle ? "vehicle_master" : "assets",
-        }));
-
-        const worksheet = XLSX.utils.json_to_sheet(rows);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "asset_master");
-
-        const dateTag = new Date().toISOString().slice(0, 10);
-        XLSX.writeFile(workbook, `asset-master-${dateTag}.xlsx`);
-        toast.success("Asset master exported");
-      } catch (error) {
-        console.error("Error exporting asset master:", error);
-        toast.error("Failed to export asset master");
-      }
-    };
-
-    return (
-      <div
-        style={{
-        height: "100svh",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        }}
-      >
-        <div style={{ padding: "", position: "fixed", zIndex: 20, left: 0, right: 0 }}>
-          <Back 
-            fixed
-            blurBG
-            title="Assets" 
-            extra={
-              <div style={{ display: "flex", gap: "0.5rem", height: "2.75rem" }}>
-                <RefreshButton
-                  fetchingData={loading}
-                  onClick={fetchAssets}
-                  refreshCompleted={refreshCompleted}
-                />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      style={{ width: "2.75rem" }}
-                      title="Actions"
-                    >
-                      <EllipsisVerticalIcon width={"1rem"} />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent style={{ margin: "0.25rem", marginRight: "1.25rem" }}>
-                    <DropdownMenuItem onClick={exportAssetsToExcel} style={{ width: "100%" }}>
-                      <DownloadCloud className="mr-2" color="lightgreen" />
-                      <span style={{ width: "100%" }}>Export xlsx</span>
-                    </DropdownMenuItem>
-                    {userData?.role === "admin" && (
-                      <DropdownMenuItem onClick={() => setImportDialog(true)} style={{ width: "100%" }}>
-                        <UploadCloud className="mr-2" color="salmon" />
-                        <span style={{ width: "100%" }}>Upload xlsx</span>
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            } 
-          />
-        </div>
-
-        {assets.length > 0 && (
-          <div
-            style={{
-              
-              position: "fixed",
-              top: "4.5rem",
-              left: 0,
-              right: 0,
-              padding: "0.75rem 1.25rem",
-              background: "rgba(250, 250, 250)",
-              zIndex: 15,
-              borderBottom: "1px solid rgba(100, 100, 100, 0.1)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                gap: "0.5rem",
-                overflowX: "auto",
-                marginBottom: "0.65rem",
-                paddingBottom: "0.1rem",
-              }}
-            >
-              <button
-                onClick={() => setSelectedCategory("all")}
+    const rows = filteredAssets.map((a) => [
+      a.device_id || "",
+      a.category || "",
+      a.make || "",
+      `"${(a.spec || "").replace(/"/g, '""')}"`,
+      a.previous_posession || "",
+      a.current_posession || "",
+      a.allocation_date || "",
+      `"${(a.remarks || "").replace(/"/g, '""')}"`,
+      a.created_at || "",
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `assets_export_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("CSV file downloaded successfully.");
+  };
+
+
+
+  return (
+    <>
+      <div style={{ height: "100svh", display: "flex", flexDirection: "column" }}>
+        {/* Header navigation bar */}
+        <Back
+          blurBG
+          fixed
+          title={"Devices"}
+          // subtitle={assets.length ? `${assets.length} items` : undefined}
+          extra={
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              {canEdit && (
+                <button
+                  onClick={() => {
+                    const defaultCategory = "Laptop";
+                    const nextId = getNextDeviceId(defaultCategory, assets);
+                    setFormState({
+                      ...EMPTY_FORM,
+                      category: defaultCategory,
+                      device_id: nextId
+                    });
+                    setModalMode("add");
+                    setModalOpen(true);
+                  }}
+                  style={{
+                    background: "#0f172a",
+                    color: "white",
+                    borderRadius: "0.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    padding: "0 1rem",
+                    height: "2.5rem",
+                    fontWeight: 500,
+                    fontSize: "0.85rem",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Asset</span>
+                </button>
+              )}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={fetchData}
+                disabled={loading}
                 style={{
-                  padding: "0.5rem 1rem",
-                  borderRadius: "1rem",
-                  background: selectedCategory === "all" ? "darkblue" : "rgba(150, 150, 150, 0.15)",
-                  color: selectedCategory === "all" ? "white" : "inherit",
-                  border: "none",
-                  fontSize: "0.875rem",
-                  whiteSpace: "nowrap",
+                  width: "2.5rem",
+                  height: "2.5rem",
+                  borderRadius: "0.5rem",
+                  border: "1px solid rgba(100,100,100,0.18)",
+                  background: "transparent",
                   cursor: "pointer",
                 }}
               >
-                All ({assets.length})
-              </button>
-              {assetCategories.map((cat) => {
-                const count = categoryCounts[cat.id] || 0;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    style={{
-                      padding: "0.5rem 1rem",
-                      borderRadius: "1rem",
-                      background: selectedCategory === cat.id ? "darkblue" : "rgba(150, 150, 150, 0.15)",
-                      color: selectedCategory === cat.id ? "white" : "inherit",
-                      border: "none",
-                      fontSize: "0.875rem",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.25rem",
-                      whiteSpace: "nowrap",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {cat.icon}
-                    {cat.label} ({count})
-                  </button>
-                );
-              })}
+                <RotateCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} style={{ opacity: 0.7 }} />
+              </Button>
             </div>
+          }
+        />
 
-            <div style={{ display: "flex", gap: "0.5rem", alignItems: "stretch" }}>
-              <div style={{ position: "relative", flex: 1 }}>
-                <Search
-                  width={18}
-                  style={{
-                    position: "absolute",
-                    left: "0.75rem",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    opacity: 0.5,
-                  }}
-                />
-                <input
-                  type="text"
-                  placeholder="Search assets..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "0.75rem 1rem 0.75rem 2.5rem",
-                    borderRadius: "0.75rem",
-                    background: "rgba(150, 150, 150, 0.15)",
-                    fontSize: "1rem",
-                    border: "none",
-                    boxSizing: "border-box",
-                  }}
-                />
-              </div>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    title={`Assignment filter: ${assignmentFilter}`}
-                    aria-label="Filter assets by assignment"
-                    style={{
-                      width: "3rem",
-                      minWidth: "3rem",
-                      borderRadius: "0.75rem",
-                      background: assignmentFilter === "all" ? "rgba(150, 150, 150, 0.15)" : "darkblue",
-                      color: assignmentFilter === "all" ? "inherit" : "white",
-                      border: "none",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <Filter width={16} />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" style={{ marginTop: "0.25rem" }}>
-                  <DropdownMenuItem onClick={() => setAssignmentFilter("all")} style={{ width: "100%", fontWeight: assignmentFilter === "all" ? 600 : 400 }}>
-                    All statuses ({assets.length})
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setAssignmentFilter("assigned")} style={{ width: "100%", fontWeight: assignmentFilter === "assigned" ? 600 : 400 }}>
-                    Assigned ({assignmentCounts.assigned})
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setAssignmentFilter("unassigned")} style={{ width: "100%", fontWeight: assignmentFilter === "unassigned" ? 600 : 400 }}>
-                    Unassigned ({assignmentCounts.unassigned})
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        )}
-
+        {/* Scrollable Page Body Container (FLEXES FULL WIDTH) */}
         <div
           style={{
-          flex: 1,
-          minHeight: 0,
-          position: "relative",
-          zIndex: 0,
-          isolation: "isolate",
-          overflowY: "auto",
-          padding: "1.25rem",
-          paddingTop: assets.length > 0 ? "10rem" : "4.75rem",
-          paddingBottom: "6rem",
+            flex: 1,
+            overflowY: "hidden",
+            paddingTop: "5.5rem",
+            paddingLeft: "1.25rem",
+            paddingRight: "1.25rem",
+            paddingBottom: "1.25rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: "1.5rem",
+            width: "100%",
+            boxSizing: "border-box",
           }}
         >
-        <div>
+          {/* Search bar + Download button Row */}
+          <div style={{ display: "flex", gap: "0.5rem", width: "100%", alignItems: "center" }}>
 
-                {filteredAssets.length < 1 && loading ? (
-                    <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: "75svh",
-                    }}>
-                        <Loader2 className="animate-spin" style={{ color: "darkblue", scale: "2" }} />
-                    </div>
-                ) : assets.length === 0 ? (
-                    <Empty style={{ height: "75svh" }}>
-                        <EmptyHeader>
-                            <EmptyMedia variant="icon">
-                                <Package />
-                            </EmptyMedia>
-                            <EmptyTitle>No assets added yet</EmptyTitle>
-                        </EmptyHeader>
-                        <EmptyContent>
-                            <button
-                              onClick={openAddAssetDialog}
-                                style={{
-                                    padding: "0.75rem 1.5rem",
-                                    borderRadius: "0.5rem",
-                                    background: "darkblue",
-                                    color: "white",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.5rem",
-                                    fontSize: "0.875rem",
-                                    fontWeight: "500",
-                                }}
-                            >
-                                <Plus width="1rem" />
-                                Add First Asset
-                                </button>
-                        </EmptyContent>
-                    </Empty>
-                ) : (
-                    <>
-                        {/* Assets List */}
-                        <div
-                            style={{
-                              border:"",
-                              paddingTop:"3rem",
-                                display: "flex",
-                                flexFlow: "column",
-                                gap: "0.5rem",
-                            position: "relative",
-                            zIndex: 1,
-                            mask: "none",
-                            WebkitMask: "none",
-                            }}
-                        >
-                            {filteredAssets.length === 0 ? (
-                                <div style={{ textAlign: "center", padding: "2rem", opacity: 0.5 }}>
-                                    No assets found
-                                </div>
-                            ) : (
-                                filteredAssets.map((asset) => (
-                                    <Directive
-                                    height="4rem"
-                                        key={asset.id}
-                                        icon={getCategoryIcon(asset.category)}
-                                        title={asset.name}
-                                        subtext={asset.assetId || "No ID"}
-                                        id_subtitle={`${getAssignedName(asset.assignedTo)}`.trim()}
-                                        onClick={() => openEditDrawer(asset)}
-                                    />
-                                ))
-                            )}
-                        </div>
-                    </>
-                )}
-            </div>
-              </div>
-
-            {/* Add Asset Dialog */}
-            <ResponsiveModal
-                open={addAssetDrawer}
-                onOpenChange={setAddAssetDrawer}
-                title=""
-                description=""
-            >
-                <AssetDetailsContent
-                    assetName={assetName}
-                    setAssetName={setAssetName}
-                    assetCategory={assetCategory}
-                    setAssetCategory={setAssetCategory}
-                    assetId={assetId}
-                    setAssetId={setAssetId}
-                    assetBrand={assetBrand}
-                    setAssetBrand={setAssetBrand}
-                    assetModel={assetModel}
-                    setAssetModel={setAssetModel}
-                    assetYear={assetYear}
-                    setAssetYear={setAssetYear}
-                    assetSerialNumber={assetSerialNumber}
-                    setAssetSerialNumber={setAssetSerialNumber}
-                    assetPurchaseDate={assetPurchaseDate}
-                    setAssetPurchaseDate={setAssetPurchaseDate}
-                    assetPurchasePrice={assetPurchasePrice}
-                    setAssetPurchasePrice={setAssetPurchasePrice}
-                    assetCondition={assetCondition}
-                    setAssetCondition={setAssetCondition}
-                    assetLocation={assetLocation}
-                    setAssetLocation={setAssetLocation}
-                    assetAssignedTo={assetAssignedTo}
-                    assetAssignedToName={getAssignedName(assetAssignedTo)}
-                    onOpenUserDialog={openAssigneeDialog}
-                    onReuseExisting={openReuseDialog}
-                    assetNotes={assetNotes}
-                    setAssetNotes={setAssetNotes}
-                    assetRegistrationType={assetRegistrationType}
-                    setAssetRegistrationType={setAssetRegistrationType}
-                    loading={loading}
-                    onSave={addAsset}
-                    isEditMode={false}
-                    assetCategories={assetCategories}
-                    conditionOptions={conditionOptions}
-                />
-            </ResponsiveModal>
-
-            {/* Edit Asset Dialog */}
-            <ResponsiveModal
-                open={editAssetDrawer}
-                onOpenChange={setEditAssetDrawer}
-                title=""
-                description=""
-            >
-                <AssetDetailsContent
-                    assetName={assetName}
-                    setAssetName={setAssetName}
-                    assetCategory={assetCategory}
-                    setAssetCategory={setAssetCategory}
-                    assetId={assetId}
-                    setAssetId={setAssetId}
-                    assetBrand={assetBrand}
-                    setAssetBrand={setAssetBrand}
-                    assetModel={assetModel}
-                    setAssetModel={setAssetModel}
-                    assetYear={assetYear}
-                    setAssetYear={setAssetYear}
-                    assetSerialNumber={assetSerialNumber}
-                    setAssetSerialNumber={setAssetSerialNumber}
-                    assetPurchaseDate={assetPurchaseDate}
-                    setAssetPurchaseDate={setAssetPurchaseDate}
-                    assetPurchasePrice={assetPurchasePrice}
-                    setAssetPurchasePrice={setAssetPurchasePrice}
-                    assetCondition={assetCondition}
-                    setAssetCondition={setAssetCondition}
-                    assetLocation={assetLocation}
-                    setAssetLocation={setAssetLocation}
-                    assetAssignedTo={assetAssignedTo}
-                    assetAssignedToName={getAssignedName(assetAssignedTo)}
-                    onOpenUserDialog={openAssigneeDialog}
-                    assetNotes={assetNotes}
-                    setAssetNotes={setAssetNotes}
-                    assetRegistrationType={assetRegistrationType}
-                    setAssetRegistrationType={setAssetRegistrationType}
-                    loading={loading}
-                    onSave={updateAsset}
-                    onDelete={() => setDeleteConfirmDialog(true)}
-                    isEditMode={true}
-                    assetCategories={assetCategories}
-                    conditionOptions={conditionOptions}
-                />
-            </ResponsiveModal>
-
-            <ResponsiveModal
-              open={assigneeDialog}
-              onOpenChange={setAssigneeDialog}
-              title=""
-              description=""
-            >
-              <div style={{
-                padding: "1rem",
-                maxHeight: "min(75vh, 680px)",
-                width: "min(720px, 100%)",
+            {/* Search Input Container */}
+            <div
+              style={{
+                position: "relative",
+                flex: 1,
                 boxSizing: "border-box",
+              }}
+            >
+              <Search
+                className="text-slate-400"
+                style={{
+                  position: "absolute",
+                  left: "0.85rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: "0.9rem",
+                  height: "0.9rem",
+                }}
+              />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search serial ID, brand, specifications..."
+                style={{
+                  paddingLeft: "2.2rem",
+                  paddingRight: searchQuery ? "2.2rem" : "0.75rem",
+                  height: "2.5rem",
+                  borderRadius: "0.5rem",
+                  border: "1px solid rgba(100, 100, 100, 0.2)",
+                  background: "transparent",
+                  fontSize: "1rem",
+                  width: "100%",
+                  boxSizing: "border-box",
+                }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  style={{
+                    position: "absolute",
+                    right: "0.75rem",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    color: "rgba(100, 100, 100, 0.5)",
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Download Button */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={exportToCSV}
+              disabled={loading || assets.length === 0}
+              style={{
+                width: "2.5rem",
+                height: "2.5rem",
+                borderRadius: "0.5rem",
+                border: "1px solid rgba(100,100,100,0.18)",
+                background: "transparent",
+                color: "#334155",
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+              title="Export Filtered Assets to CSV"
+            >
+              <CloudDownload className="w-4 h-4" />
+            </Button>
+
+          </div>
+
+          {/* Content Loading State */}
+          {loading ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, gap: "0.75rem", width: "100%" }}>
+              <Loader2 className="w-8 h-8 text-slate-400 animate-spin" style={{ margin: "0 auto" }} />
+              <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.5, textAlign: "center" }}>Loading assets data inventory...</p>
+            </div>
+          ) : filteredAssets.length === 0 ? (
+            /* Empty State */
+            <div
+              style={{
+                background: "transparent",
+                border: "1px dashed rgba(100, 100, 100, 0.25)",
+                borderRadius: "1rem",
                 display: "flex",
                 flexDirection: "column",
-                overflow: "hidden"
-              }}>
-                <p style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "0.75rem" }}>Assign To</p>
+                alignItems: "center",
+                justifyContent: "center",
+                flex: 1,
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "2rem",
+              }}
+            >
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia>
+                    <Layers className="text-slate-400 w-10 h-10" style={{ opacity: 0.5 }} />
+                  </EmptyMedia>
+                  <EmptyTitle>No Assets Found</EmptyTitle>
+                  <EmptyDescription>
+                    {assets.length === 0
+                      ? "No assets are registered in the inventory yet."
+                      : "Try tweaking your search keywords or filters to locate items."}
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            </div>
+          ) : (
+            <div
+              style={{
+                border: "1px solid rgba(100, 100, 100, 0.12)",
+                borderRadius: "0.5rem",
+                background: "rgba(100, 100, 100, 0.01)",
+                overflowX: "auto",
+                overflowY: "auto",
+                flex: 1,
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            >
+              <table style={{ width: "100%", minWidth: "900px", borderCollapse: "collapse", fontSize: "0.8rem" }}>
+                <thead style={{ position: "sticky", top: 0, zIndex: 10, backgroundColor: "#f9fafb", boxShadow: "0 1px 0 rgba(100, 100, 100, 0.12)" }}>
+                  <tr style={{ background: "#f9fafb" }}>
+                    <th style={{ textAlign: "left", padding: "0.5rem 0.6rem", fontWeight: 600, color: "#334155", width: "150px" }}>Device ID</th>
 
-                <div style={{ position: "relative", marginBottom: "0.75rem" }}>
-                  <Search
-                    width={16}
+                    {/* Category Filter Header */}
+                    <th style={{ textAlign: "left", padding: "0.25rem 0.6rem", fontWeight: 600, color: "#334155", width: "110px" }}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            padding: "0.25rem 0.35rem",
+                            borderRadius: "0.375rem",
+                            fontSize: "0.8rem",
+                            fontWeight: 600,
+                            color: "#334155",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.25rem",
+                            justifyContent: "space-between",
+                            width: "100%",
+                            outline: "none",
+                            boxSizing: "border-box",
+                          }}
+                          className="hover:bg-slate-100 dark:hover:bg-slate-900"
+                        >
+                          <span className="truncate">
+                            {selectedCategories.length === 0
+                              ? "Category"
+                              : selectedCategories.length === 1
+                                ? selectedCategories[0]
+                                : `Cat (${selectedCategories.length})`}
+                          </span>
+                          <ChevronDown className="h-3.5 w-3.5 opacity-60 shrink-0" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[150px] max-h-[300px] overflow-y-auto p-0 z-50 bg-white border border-slate-200 rounded-md shadow-lg">
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              position: "sticky",
+                              top: 0,
+                              zIndex: 10,
+                              display: "flex",
+                              justifyContent: "space-between",
+                              padding: "0.35rem 0.5rem",
+                              borderBottom: "1px solid #f1f5f9",
+                              backgroundColor: "#f8fafc",
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedCategories(uniqueCategoriesList);
+                              }}
+                              style={{ background: "none", border: "none", fontSize: "10px", fontWeight: 600, color: "#64748b", cursor: "pointer" }}
+                              className="hover:text-slate-800"
+                            >
+                              All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedCategories([]);
+                              }}
+                              style={{ background: "none", border: "none", fontSize: "10px", fontWeight: 600, color: "#64748b", cursor: "pointer" }}
+                              className="hover:text-slate-800"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                          <div style={{ padding: "0.25rem 0" }}>
+                            {uniqueCategoriesList.map((cat) => {
+                              const isChecked = selectedCategories.includes(cat);
+                              return (
+                                <DropdownMenuCheckboxItem
+                                  key={cat}
+                                  checked={isChecked}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedCategories([...selectedCategories, cat]);
+                                    } else {
+                                      setSelectedCategories(selectedCategories.filter((item) => item !== cat));
+                                    }
+                                  }}
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="rounded-md focus:bg-slate-50 cursor-pointer text-xs py-1.5 px-2 flex items-center gap-2"
+                                >
+                                  {cat}
+                                </DropdownMenuCheckboxItem>
+                              );
+                            })}
+                          </div>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </th>
+
+                    {/* Make Filter Header */}
+                    <th style={{ textAlign: "left", padding: "0.25rem 0.6rem", fontWeight: 600, color: "#334155", width: "190px" }}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            padding: "0.25rem 0.35rem",
+                            borderRadius: "0.375rem",
+                            fontSize: "0.8rem",
+                            fontWeight: 600,
+                            color: "#334155",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.25rem",
+                            justifyContent: "space-between",
+                            width: "100%",
+                            outline: "none",
+                            boxSizing: "border-box",
+                          }}
+                          className="hover:bg-slate-100 dark:hover:bg-slate-900"
+                        >
+                          <span className="truncate">
+                            {selectedMakes.length === 0
+                              ? "Make"
+                              : selectedMakes.length === 1
+                                ? selectedMakes[0]
+                                : `Make (${selectedMakes.length})`}
+                          </span>
+                          <ChevronDown className="h-3.5 w-3.5 opacity-60 shrink-0" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[150px] max-h-[300px] overflow-y-auto p-0 z-50 bg-white border border-slate-200 rounded-md shadow-lg">
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              position: "sticky",
+                              top: 0,
+                              zIndex: 10,
+                              display: "flex",
+                              justifyContent: "space-between",
+                              padding: "0.35rem 0.5rem",
+                              borderBottom: "1px solid #f1f5f9",
+                              backgroundColor: "#f8fafc",
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedMakes(uniqueMakesList);
+                              }}
+                              style={{ background: "none", border: "none", fontSize: "10px", fontWeight: 600, color: "#64748b", cursor: "pointer" }}
+                              className="hover:text-slate-800"
+                            >
+                              All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedMakes([]);
+                              }}
+                              style={{ background: "none", border: "none", fontSize: "10px", fontWeight: 600, color: "#64748b", cursor: "pointer" }}
+                              className="hover:text-slate-800"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                          <div style={{ padding: "0.25rem 0" }}>
+                            {uniqueMakesList.map((make) => {
+                              const isChecked = selectedMakes.includes(make);
+                              return (
+                                <DropdownMenuCheckboxItem
+                                  key={make}
+                                  checked={isChecked}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedMakes([...selectedMakes, make]);
+                                    } else {
+                                      setSelectedMakes(selectedMakes.filter((item) => item !== make));
+                                    }
+                                  }}
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="rounded-md focus:bg-slate-50 cursor-pointer text-xs py-1.5 px-2 flex items-center gap-2"
+                                >
+                                  {make}
+                                </DropdownMenuCheckboxItem>
+                              );
+                            })}
+                          </div>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </th>
+
+                    <th style={{ textAlign: "left", padding: "0.5rem 0.6rem", fontWeight: 600, color: "#334155", maxWidth: "250px" }}>Specifications</th>
+                    <th style={{ textAlign: "left", padding: "0.5rem 0.6rem", fontWeight: 600, color: "#334155" }}>Posession</th>
+                    <th style={{ textAlign: "left", padding: "0.5rem 0.6rem", fontWeight: 600, color: "#334155" }}>Allocated On</th>
+                    <th style={{ textAlign: "left", padding: "0.5rem 0.6rem", fontWeight: 600, color: "#334155", maxWidth: "200px" }}>Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAssets.map((asset) => {
+                    const isAllocated = asset.current_posession && asset.current_posession.trim() !== "";
+                    const rowStyle = getAssetConditionRowStyle(asset.condition);
+                    return (
+                      <tr
+                        key={asset.id || asset.device_id}
+                        style={{
+                          borderBottom: "1px solid rgba(100, 100, 100, 0.08)",
+                          cursor: canEdit ? "pointer" : "default",
+                          backgroundColor: rowStyle.base,
+                        }}
+                        onClick={() => {
+                          if (canEdit) {
+                            setSelectedAsset(asset);
+                            setFormState({ ...asset });
+                            setModalMode("edit");
+                            setModalOpen(true);
+                          }
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = rowStyle.hover;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = rowStyle.base;
+                        }}
+                      >
+                        {/* Device ID */}
+                        <td style={{ padding: "0.5rem 0.6rem", fontWeight: 600, verticalAlign: "middle", color: "#0f172a" }}>
+                          {asset.device_id}
+                        </td>
+
+                        {/* Category */}
+                        <td style={{ padding: "0.5rem 0.6rem", verticalAlign: "middle" }}>
+                          <span style={{
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            padding: "0.15rem 0.45rem",
+                            borderRadius: "4px",
+                            background: "rgba(100, 100, 100, 0.08)",
+                            color: "rgba(50, 50, 50, 0.8)",
+                            border: "1px solid rgba(100, 100, 100, 0.12)",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.025em"
+                          }}>
+                            {asset.category}
+                          </span>
+                        </td>
+
+                        {/* Make */}
+                        <td style={{ padding: "0.5rem 0.6rem", verticalAlign: "middle", color: "#334155", fontWeight: 500 }}>
+                          {asset.make}
+                        </td>
+
+                        {/* Specs */}
+                        <td style={{ padding: "0.5rem 0.6rem", verticalAlign: "middle", color: "rgba(50, 50, 50, 0.95)", maxWidth: "250px", wordBreak: "break-word", fontWeight: 500 }}>
+                          {asset.spec}
+                        </td>
+
+                        {/* Custody Flow */}
+                        <td style={{ padding: "0.5rem 0.6rem", verticalAlign: "middle" }}>
+                          <span style={{ fontSize: "0.8rem", fontWeight: isAllocated ? 500 : 600, color: isAllocated ? "#0f172a" : "teal", textTransform: "capitalize" }}>
+                            {isAllocated ? asset.current_posession?.toLowerCase() : "Available"}
+                          </span>
+                        </td>
+
+                        {/* Allocation Date */}
+                        <td style={{ padding: "0.5rem 0.6rem", verticalAlign: "middle", color: "rgba(100, 100, 100, 0.8)" }}>
+                          {asset.allocation_date || <span style={{ opacity: 0.35 }}>—</span>}
+                        </td>
+
+                        {/* Remarks */}
+                        <td style={{ padding: "0.5rem 0.6rem", verticalAlign: "middle", color: "rgba(100, 100, 100, 0.85)", maxWidth: "200px", wordBreak: "break-word" }}>
+                          {asset.remarks || <span style={{ opacity: 0.35 }}>—</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* CREATE & EDIT ASSET MODAL */}
+      <ResponsiveModal
+        open={modalOpen}
+        onOpenChange={(open) => {
+          setModalOpen(open);
+          if (!open) {
+            setFormState({ ...EMPTY_FORM });
+            setSelectedAsset(null);
+          }
+        }}
+        title=""
+        description=""
+        hideHeader={true}
+      >
+        <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", maxHeight: "85vh", overflow: "hidden" }}>
+          {/* Custom Modal Header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #f3f4f6", padding: "1rem 1.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Laptop2 className="w-5 h-5 text-indigo-900" />
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#111827", margin: 0 }}>
+                {modalMode === "edit" ? "Edit IT Asset" : "Register New IT Asset"}
+              </h3>
+            </div>
+            {modalMode === "edit" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setModalOpen(false);
+                  setAssetToDelete(selectedAsset);
+                  setDeleteConfirmOpen(true);
+                }}
+                disabled={actionLoading}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "crimson",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.25rem 0.5rem",
+                  borderRadius: "0.375rem",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(220, 50, 50, 0.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                <MinusCircle className="w-4 h-4" />
+                <span>Delete Asset</span>
+              </button>
+            )}
+          </div>
+
+          {/* Scrollable Form Body Container */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "1.25rem 1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+            {/* Device ID and Condition side-by-side */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              {/* Device ID */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Device ID / Serial *</label>
+                <input
+                  value={formState.device_id || ""}
+                  onChange={(e) => setFormState({ ...formState, device_id: e.target.value })}
+                  placeholder="e.g. SSU-LPTPH-000"
+                  disabled={modalMode === "edit" || actionLoading}
+                  required
+                  style={{
+                    height: "2.25rem",
+                    borderRadius: "0.375rem",
+                    border: "1px solid #e5e7eb",
+                    padding: "0 0.75rem",
+                    fontSize: "1rem",
+                    backgroundColor: "white",
+                    outline: "none",
+                    boxSizing: "border-box",
+                    width: "100%",
+                  }}
+                />
+              </div>
+
+              {/* Condition */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Condition *</label>
+                <Select
+                  value={formState.condition || "Working"}
+                  onValueChange={(val) => setFormState({ ...formState, condition: val })}
+                  disabled={actionLoading}
+                >
+                  <SelectTrigger
                     style={{
-                      position: "absolute",
-                      left: "0.75rem",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      opacity: 0.5,
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search records..."
-                    value={assigneeSearchQuery}
-                    onChange={(e) => setAssigneeSearchQuery(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "0.75rem 1rem 0.75rem 2.25rem",
-                      borderRadius: "0.75rem",
-                      background: "rgba(150, 150, 150, 0.1)",
-                      border: "none",
-                      fontSize: "0.95rem",
+                      height: "2.25rem",
+                      borderRadius: "0.375rem",
+                      border: "1px solid #e5e7eb",
+                      padding: "0 0.75rem",
+                      fontSize: "1rem",
+                      backgroundColor: "white",
+                      outline: "none",
                       boxSizing: "border-box",
-                    }}
-                  />
-                </div>
-
-                <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                  <button
-                    onClick={() => {
-                      setAssetAssignedTo(null);
-                      setAssigneeDialog(false);
-                    }}
-                    style={{
                       width: "100%",
-                      border: "none",
-                      borderRadius: "0.75rem",
-                      padding: "0.625rem 0.75rem",
-                      background: "rgba(150, 150, 150, 0.15)",
-                      cursor: "pointer",
+                      textAlign: "left",
                     }}
                   >
-                    Clear Assignment
-                  </button>
-                </div>
+                    <SelectValue placeholder="Select Condition" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Working">Working</SelectItem>
+                    <SelectItem value="Repair">Repair</SelectItem>
+                    <SelectItem value="Written Off">Written Off</SelectItem>
+                    <SelectItem value="Damaged">Damaged</SelectItem>
+                    <SelectItem value="Scrapped">Scrapped</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {modalMode !== "edit" && (
+                <p style={{ margin: 0, fontSize: "0.62rem", color: "#6b7280" }}>
+                  Must be a unique identification string.
+                </p>
+              )}
 
-                <div style={{
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                  flex: 1,
-                  minHeight: 0,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.5rem",
-                  paddingBottom: "0.25rem"
-                }}>
-                  {filteredRecordsForAssignee.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "1.25rem", opacity: 0.6 }}>
-                      No records found
-                    </div>
-                  ) : (
-                    filteredRecordsForAssignee.map((record) => (
+            {/* Category & Brand side-by-side */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+              {/* Category Selector */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Device Category *</label>
+                <Select
+                  value={formState.category}
+                  onValueChange={(val) => {
+                    const updates: Partial<Asset> = { category: val };
+                    if (modalMode === "add") {
+                      updates.device_id = getNextDeviceId(val, assets);
+                    }
+                    setFormState({ ...formState, ...updates });
+                  }}
+                  disabled={actionLoading}
+                >
+                  <SelectTrigger
+                    style={{
+                      height: "2.25rem",
+                      borderRadius: "0.375rem",
+                      border: "1px solid #e5e7eb",
+                      padding: "0 0.75rem",
+                      fontSize: "1rem",
+                      backgroundColor: "white",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      width: "100%",
+                      textAlign: "left",
+                    }}
+                  >
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Brand/Make */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", position: "relative" }}>
+                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Brand / Manufacturer *</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    value={formState.make || ""}
+                    onChange={(e) => {
+                      setFormState({ ...formState, make: e.target.value });
+                      setBrandSuggestionsOpen(true);
+                    }}
+                    onFocus={() => setBrandSuggestionsOpen(true)}
+                    onBlur={() => {
+                      setTimeout(() => setBrandSuggestionsOpen(false), 200);
+                    }}
+                    placeholder="e.g. HP, Lenovo, Dell"
+                    disabled={actionLoading}
+                    required
+                    style={{
+                      height: "2.25rem",
+                      borderRadius: "0.375rem",
+                      border: "1px solid #e5e7eb",
+                      padding: "0 0.75rem",
+                      fontSize: "1rem",
+                      backgroundColor: "white",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      width: "100%",
+                    }}
+                  />
+                  <ChevronDown
+                    style={{
+                      position: "absolute",
+                      right: "0.75rem",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: "0.9rem",
+                      height: "0.9rem",
+                      opacity: 0.5,
+                      pointerEvents: "none",
+                    }}
+                  />
+                </div>
+                {brandSuggestionsOpen && filteredBrandSuggestions.length > 0 && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      zIndex: 999,
+                      marginTop: "0.25rem",
+                      maxHeight: "12rem",
+                      overflowY: "auto",
+                      borderRadius: "0.5rem",
+                      border: "1px solid rgba(100, 100, 100, 0.15)",
+                      background: "white",
+                      padding: "0.25rem",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    }}
+                  >
+                    {filteredBrandSuggestions.map((brand, i) => (
                       <button
-                        key={record.id}
-                        onClick={() => {
-                          setAssetAssignedTo(record.id);
-                          setAssigneeDialog(false);
+                        key={i}
+                        type="button"
+                        onMouseDown={() => {
+                          setFormState({ ...formState, make: brand });
+                          setBrandSuggestionsOpen(false);
                         }}
                         style={{
                           width: "100%",
                           textAlign: "left",
-                          border: "1px solid rgba(100, 100, 100, 0.12)",
-                          background: assetAssignedTo === record.id ? "rgba(123, 104, 238, 0.12)" : "rgba(100, 100, 100, 0.05)",
-                          borderRadius: "0.75rem",
-                          padding: "0.75rem 0.875rem",
+                          padding: "0.5rem 0.75rem",
+                          background: "transparent",
+                          border: "none",
+                          borderRadius: "0.35rem",
+                          fontSize: "1rem",
                           cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: "0.75rem"
+                          display: "block",
+                          color: "inherit",
                         }}
+                        className="hover:bg-slate-100 dark:hover:bg-slate-900"
                       >
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: "0.9rem", fontWeight: 600, textTransform: "capitalize", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {record.name || "Unnamed"}
-                          </div>
-                          <div style={{ fontSize: "0.75rem", opacity: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {record.id}
-                          </div>
-                        </div>
-                        <div style={{ fontSize: "0.75rem", opacity: 0.75 }}>
-                          {assetAssignedTo === record.id ? "Selected" : "Assign"}
-                        </div>
+                        {brand}
                       </button>
-                    ))
-                  )}
-                  {records.length > ASSIGNEE_RESULT_LIMIT && (
-                    <div style={{ textAlign: "center", fontSize: "0.75rem", opacity: 0.6, paddingTop: "0.35rem" }}>
-                      Showing first {ASSIGNEE_RESULT_LIMIT} records. Search to narrow down.
-                    </div>
-                  )}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </ResponsiveModal>
+            </div>
 
-            {/* Reuse Existing Asset Picker */}
-            <ResponsiveModal
-                open={reuseDialog}
-                onOpenChange={setReuseDialog}
-                title=""
-                description=""
-            >
-                <div style={{ padding: "1rem", maxHeight: "75vh", display: "flex", flexDirection: "column" }}>
-                    <p style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "0.75rem" }}>Copy from Existing Asset</p>
-                    <p style={{ fontSize: "0.8rem", opacity: 0.6, marginBottom: "0.75rem" }}>
-                  Showing distinct {assetCategory || "selected"} assets only. On select, next asset ID is generated (latest + 1). Assignee is cleared.
-                    </p>
-
-                    <div style={{ position: "relative", marginBottom: "0.75rem" }}>
-                        <Search
-                            width={16}
-                            style={{
-                                position: "absolute",
-                                left: "0.75rem",
-                                top: "50%",
-                                transform: "translateY(-50%)",
-                                opacity: 0.5,
-                            }}
-                        />
-                        <input
-                            type="text"
-                            placeholder="Search by name, ID, brand, model..."
-                            value={reuseSearchQuery}
-                            onChange={(e) => setReuseSearchQuery(e.target.value)}
-                            style={{
-                                width: "100%",
-                                padding: "0.75rem 1rem 0.75rem 2.25rem",
-                                borderRadius: "0.75rem",
-                                background: "rgba(150, 150, 150, 0.1)",
-                                border: "none",
-                                fontSize: "0.95rem",
-                            }}
-                        />
-                    </div>
-
-                    <div style={{ overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.5rem", paddingBottom: "0.25rem" }}>
-                      {distinctAssetsForReuse.length === 0 ? (
-                            <div style={{ textAlign: "center", padding: "1.25rem", opacity: 0.6 }}>
-                                No assets found
-                            </div>
-                        ) : (
-                        distinctAssetsForReuse.map((asset) => (
-                                <Directive
-                                    key={asset.id}
-                                    status
-                                    icon={getCategoryIcon(asset.category)}
-                                    title={asset.name}
-                                    subtext={asset.assetId || "No ID"}
-                                    id_subtitle={`${asset.brand || ""}${asset.model ? " · " + asset.model : ""}`}
-                                    onClick={() => copyFromAsset(asset)}
-                                />
-                            ))
-                        )}
-                    </div>
-                </div>
-            </ResponsiveModal>
-
-            {/* Delete Confirmation Dialog */}
-            <DefaultDialog
-                destructive
-                open={deleteConfirmDialog}
-                onCancel={() => setDeleteConfirmDialog(false)}
-                title="Delete Asset?"
-                OkButtonText="Delete"
-                onOk={handleDeleteAsset}
-            />
-
-            <DefaultDialog
-              open={importDialog}
-              title="Upload XLSX"
-              titleIcon={<UploadCloud color="salmon" />}
-              OkButtonText="Upload"
-              created_on={importRows.length === 0 ? "" : importRows.length.toString()}
-              updating={importing}
-              disabled={!importRows.length}
-              progressItem={importProgressItem}
-              onCancel={() => {
-                setImportDialog(false);
-                setImportFile(null);
-                setImportRows([]);
-                setDuplicateImportRows([]);
-                setImportProgressItem("");
-              }}
-              onOk={uploadImportRows}
-              title_extra={
-                <button
-                  onClick={downloadImportTemplate}
+            {/* Specs */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", position: "relative" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Specifications *</label>
+              <div style={{ position: "relative" }}>
+                <textarea
+                  value={formState.spec || ""}
+                  onChange={(e) => {
+                    setFormState({ ...formState, spec: e.target.value });
+                    setSpecSuggestionsOpen(true);
+                  }}
+                  onFocus={() => setSpecSuggestionsOpen(true)}
+                  onBlur={() => {
+                    setTimeout(() => setSpecSuggestionsOpen(false), 200);
+                  }}
+                  placeholder="e.g. Core i7, 16GB RAM, 512GB SSD"
+                  disabled={actionLoading}
+                  required
+                  rows={2}
                   style={{
-                    fontSize: "0.8rem",
-                    height: "2rem",
-                    paddingLeft: "1rem",
-                    paddingRight: "1rem",
+                    borderRadius: "0.375rem",
+                    border: "1px solid #e5e7eb",
+                    padding: "0.5rem 2.25rem 0.5rem 0.75rem",
+                    fontSize: "1rem",
+                    backgroundColor: "white",
+                    outline: "none",
+                    resize: "vertical",
+                    fontFamily: "inherit",
+                    boxSizing: "border-box",
+                    width: "100%",
+                  }}
+                />
+                <ChevronDown
+                  style={{
+                    position: "absolute",
+                    right: "0.75rem",
+                    top: "1.1rem",
+                    width: "0.9rem",
+                    height: "0.9rem",
+                    opacity: 0.5,
+                    pointerEvents: "none",
+                  }}
+                />
+              </div>
+              {specSuggestionsOpen && filteredSpecSuggestions.length > 0 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    right: 0,
+                    zIndex: 999,
+                    marginTop: "0.25rem",
+                    maxHeight: "12rem",
+                    overflowY: "auto",
+                    borderRadius: "0.5rem",
+                    border: "1px solid rgba(100, 100, 100, 0.15)",
+                    background: "white",
+                    padding: "0.25rem",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                   }}
                 >
-                  <FileDown color="lightgreen" width="1rem" />
-                  Template
-                </button>
-              }
-              extra={
-                <>
-                  {importRows.length === 0 ? (
-                    <div
+                  {filteredSpecSuggestions.map((spec, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onMouseDown={() => {
+                        setFormState({ ...formState, spec: spec });
+                        setSpecSuggestionsOpen(false);
+                      }}
                       style={{
                         width: "100%",
-                        border: "3px dashed rgba(100 100 100 / 50%)",
-                        height: "2.5rem",
-                        borderRadius: "0.5rem",
-                        marginBottom: "0.5rem",
+                        textAlign: "left",
+                        padding: "0.5rem 0.75rem",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: "0.35rem",
+                        fontSize: "1rem",
+                        cursor: "pointer",
+                        display: "block",
+                        color: "inherit",
                       }}
-                    />
-                  ) : (
-                    <div
-                      className="recipients"
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        flexFlow: "column",
-                        gap: "0.35rem",
-                        maxHeight: "11.25rem",
-                        overflowY: "auto",
-                        paddingRight: "0.5rem",
-                        minHeight: "2.25rem",
-                        marginBottom: "0.5rem",
-                      }}
+                      className="hover:bg-slate-100 dark:hover:bg-slate-900"
                     >
-                      {importRows.map((row, index) => (
-                        <div key={`${row.assetId || row.name}-${index}`}>
-                          <Directive
-                            status
-                            noArrow
-                            onClick={() => {}}
-                            title={row.name}
-                            subtext={row.assetId || "No ID"}
-                            id_subtitle={`${row.category} • ${row.brand || row.model || "No details"}`}
-                            titleSize="0.75rem"
-                            icon={getCategoryIcon(row.category)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                      {spec}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-                  {importRows.length > 0 && duplicateImportRows.length > 0 && (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexFlow: "column",
-                        gap: "0.5rem",
-                        padding: "0.75rem",
-                        background: "rgba(255, 165, 0, 0.1)",
-                        borderRadius: "0.5rem",
-                        marginBottom: "0.5rem",
-                      }}
-                    >
-                      <p style={{ fontSize: "0.8rem", textAlign: "center", color: "orange" }}>
-                        At least {duplicateImportRows.length} existing asset(s) detected and will be updated
-                      </p>
-                    </div>
-                  )}
-
-                  <p
+            {/* Previous & Current Possession side-by-side */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+              {/* Autocomplete previous possession */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", position: "relative" }}>
+                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Previous Possession</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    value={formState.previous_posession || ""}
+                    onChange={(e) => {
+                      setFormState({ ...formState, previous_posession: e.target.value });
+                      setPrevSuggestionsOpen(true);
+                    }}
+                    onFocus={() => setPrevSuggestionsOpen(true)}
+                    onBlur={() => {
+                      setTimeout(() => setPrevSuggestionsOpen(false), 200);
+                    }}
+                    placeholder="Type previous user"
+                    disabled={actionLoading}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                      fontSize: "0.75rem",
-                      fontWeight: 400,
-                      marginBottom: "0.5rem",
+                      height: "2.25rem",
+                      borderRadius: "0.375rem",
+                      border: "1px solid #e5e7eb",
+                      padding: "0 0.75rem",
+                      fontSize: "1rem",
+                      backgroundColor: "white",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      width: "100%",
+                    }}
+                  />
+                  <ChevronDown
+                    style={{
+                      position: "absolute",
+                      right: "0.75rem",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: "0.9rem",
+                      height: "0.9rem",
+                      opacity: 0.5,
+                      pointerEvents: "none",
+                    }}
+                  />
+                </div>
+                {prevSuggestionsOpen && filteredPrevSuggestions.length > 0 && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      zIndex: 999,
+                      marginTop: "0.25rem",
+                      maxHeight: "12rem",
+                      overflowY: "auto",
+                      borderRadius: "0.5rem",
+                      border: "1px solid rgba(100, 100, 100, 0.15)",
+                      background: "white",
+                      padding: "0.25rem",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                     }}
                   >
-                    <Info width="1rem" />
-                    Rows with existing Asset ID will be updated. New Asset IDs will be inserted.
-                  </p>
+                    {filteredPrevSuggestions.map((emp) => (
+                      <button
+                        key={emp.id}
+                        type="button"
+                        onMouseDown={() => {
+                          setFormState({ ...formState, previous_posession: emp.name });
+                          setPrevSuggestionsOpen(false);
+                        }}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "0.5rem 0.75rem",
+                          background: "transparent",
+                          border: "none",
+                          borderRadius: "0.35rem",
+                          fontSize: "0.8rem",
+                          cursor: "pointer",
+                          display: "block",
+                          color: "inherit",
+                        }}
+                        className="hover:bg-slate-100 dark:hover:bg-slate-900"
+                      >
+                        {emp.name} {emp.emp_id ? `(${emp.emp_id})` : ""}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-                  <div style={{ display: "flex", gap: "0.5rem", width: "100%" }}>
-                    <input
-                      style={{ fontSize: "0.8rem" }}
-                      type="file"
-                      accept=".xls, .xlsx"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        if (e.target.files?.[0]) {
-                          setImportFile(e.target.files[0]);
-                          setImportRows([]);
-                          setDuplicateImportRows([]);
-                        }
-                      }}
-                    />
+              {/* Autocomplete current possession */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", position: "relative" }}>
+                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Current Possession</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    value={formState.current_posession || ""}
+                    onChange={(e) => {
+                      setFormState({ ...formState, current_posession: e.target.value });
+                      setCurrSuggestionsOpen(true);
+                    }}
+                    onFocus={() => setCurrSuggestionsOpen(true)}
+                    onBlur={() => {
+                      setTimeout(() => setCurrSuggestionsOpen(false), 200);
+                    }}
+                    placeholder="Type current user"
+                    disabled={actionLoading}
+                    style={{
+                      height: "2.25rem",
+                      borderRadius: "0.375rem",
+                      border: "1px solid #e5e7eb",
+                      padding: "0 0.75rem",
+                      fontSize: "1rem",
+                      backgroundColor: "white",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      width: "100%",
+                    }}
+                  />
+                  <ChevronDown
+                    style={{
+                      position: "absolute",
+                      right: "0.75rem",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: "0.9rem",
+                      height: "0.9rem",
+                      opacity: 0.5,
+                      pointerEvents: "none",
+                    }}
+                  />
+                </div>
+                {currSuggestionsOpen && filteredCurrSuggestions.length > 0 && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      zIndex: 999,
+                      marginTop: "0.25rem",
+                      maxHeight: "12rem",
+                      overflowY: "auto",
+                      borderRadius: "0.5rem",
+                      border: "1px solid rgba(100, 100, 100, 0.15)",
+                      background: "white",
+                      padding: "0.25rem",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    }}
+                  >
                     <button
-                      className={importFile ? "" : "disabled"}
-                      onClick={() => {
-                        if (importRows.length > 0) {
-                          setImportRows([]);
-                          setDuplicateImportRows([]);
-                        } else {
-                          handleImportPreview();
-                        }
+                      type="button"
+                      onMouseDown={() => {
+                        setFormState({ ...formState, current_posession: "" });
+                        setCurrSuggestionsOpen(false);
                       }}
                       style={{
+                        width: "100%",
+                        textAlign: "left",
+                        padding: "0.5rem 0.75rem",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: "0.35rem",
                         fontSize: "0.8rem",
-                        paddingRight: "1rem",
-                        paddingLeft: "1rem",
+                        cursor: "pointer",
+                        display: "block",
+                        color: "crimson",
+                        fontWeight: "bold",
                       }}
+                      className="hover:bg-slate-100 dark:hover:bg-slate-900"
                     >
-                      {importRows.length > 0 ? "Clear" : "Add"}
+                      Unassigned / Keep in IT Store
                     </button>
+                    {filteredCurrSuggestions.map((emp) => (
+                      <button
+                        key={emp.id}
+                        type="button"
+                        onMouseDown={() => {
+                          setFormState({ ...formState, current_posession: emp.name });
+                          setCurrSuggestionsOpen(false);
+                        }}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "0.5rem 0.75rem",
+                          background: "transparent",
+                          border: "none",
+                          borderRadius: "0.35rem",
+                          fontSize: "0.8rem",
+                          cursor: "pointer",
+                          display: "block",
+                          color: "inherit",
+                        }}
+                        className="hover:bg-slate-100 dark:hover:bg-slate-900"
+                      >
+                        {emp.name} {emp.emp_id ? `(${emp.emp_id})` : ""}
+                      </button>
+                    ))}
                   </div>
-                </>
-              }
-            />
+                )}
+              </div>
+            </div>
 
-            {/* Floating Add Button */}
-            {userData?.role === "admin" && (
-                <AddRecordButton
-                    icon={<Plus  />}
-                onClick={openAddAssetDialog}
-                    style=""
-                />
-            )}
+            {/* Allocation Date */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Allocation Date</label>
+              <DatePicker
+                value={formState.allocation_date || ""}
+                onChange={(val) => {
+                  const resolvedVal = typeof val === "function" ? (val as Function)(formState.allocation_date) : val;
+                  setFormState({ ...formState, allocation_date: resolvedVal });
+                }}
+                disabled={actionLoading}
+                style={{
+                  height: "2.25rem",
+                  borderRadius: "0.375rem",
+                  border: "1px solid #e5e7eb",
+                  padding: "0 0.75rem",
+                  fontSize: "1rem",
+                  backgroundColor: "white",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  width: "100%",
+                  textAlign: "left",
+                  justifyContent: "flex-start",
+                }}
+              />
+            </div>
+
+            {/* Remarks */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563" }}>Remarks</label>
+              <textarea
+                value={formState.remarks || ""}
+                onChange={(e) => setFormState({ ...formState, remarks: e.target.value })}
+                placeholder="Optional notes"
+                disabled={actionLoading}
+                rows={2}
+                style={{
+                  borderRadius: "0.375rem",
+                  border: "1px solid #e5e7eb",
+                  padding: "0.5rem 0.75rem",
+                  fontSize: "1rem",
+                  backgroundColor: "white",
+                  outline: "none",
+                  resize: "vertical",
+                  fontFamily: "inherit",
+                  boxSizing: "border-box",
+                  width: "100%",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Fixed Footer Buttons (equal flexed siblings side-by-side) */}
+          <div style={{ display: "flex", gap: "0.5rem", padding: "1rem 1.5rem", borderTop: "1px solid #f3f4f6", background: "#ffffff" }}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setModalOpen(false)}
+              style={{ flex: 1, height: "2.25rem", fontSize: "0.85rem" }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={actionLoading}
+              style={{
+                flex: 1,
+                height: "2.25rem",
+                fontSize: "0.85rem",
+                backgroundColor: "#0f172a",
+                color: "white"
+              }}
+            >
+              {actionLoading ? "Saving..." : modalMode === "edit" ? "Save Changes" : "Register Asset"}
+            </Button>
+          </div>
+        </form>
+      </ResponsiveModal>
+
+      {/* DELETION CONFIRMATION DIALOG */}
+      <ResponsiveModal
+        open={deleteConfirmOpen}
+        onOpenChange={(open) => {
+          setDeleteConfirmOpen(open);
+          if (!open) setAssetToDelete(null);
+        }}
+        title=""
+        description=""
+        hideHeader={true}
+      >
+        <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {/* Custom Header */}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderBottom: "1px solid #f3f4f6", padding: "1rem 1.5rem" }}>
+            <Trash2 className="w-5 h-5 text-rose-600" />
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#111827", margin: 0 }}>
+              Confirm Asset Deletion
+            </h3>
+          </div>
+
+          {/* Body */}
+          <div style={{ padding: "1.25rem 1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <p style={{ fontSize: "0.88rem", color: "#4b5563", margin: 0, lineHeight: "1.5" }}>
+              Are you absolutely sure you want to remove asset <strong>{assetToDelete?.device_id}</strong> ({assetToDelete?.make} {assetToDelete?.category})? This action will permanently delete it from the tracker database and cannot be undone.
+            </p>
+          </div>
+
+          {/* Footer */}
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", padding: "1rem 1.5rem", borderTop: "1px solid #f3f4f6", background: "#f9fafb" }}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setDeleteConfirmOpen(false);
+                setAssetToDelete(null);
+              }}
+              style={{ height: "2.25rem", fontSize: "0.85rem" }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleDelete}
+              disabled={actionLoading}
+              style={{
+                height: "2.25rem",
+                fontSize: "0.85rem",
+                backgroundColor: "crimson",
+                color: "white"
+              }}
+            >
+              {actionLoading ? "Deleting..." : "Delete Asset"}
+            </Button>
+          </div>
         </div>
-    );
+      </ResponsiveModal>
+    </>
+  );
 }

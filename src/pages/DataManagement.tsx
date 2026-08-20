@@ -116,6 +116,8 @@ export default function DataManagement() {
   });
   const [downloadingMonth, setDownloadingMonth] = useState<boolean>(false);
   const [clearingMonth, setClearingMonth] = useState<boolean>(false);
+  const [monthlyCount, setMonthlyCount] = useState<number | null>(null);
+  const [loadingMonthlyCount, setLoadingMonthlyCount] = useState<boolean>(false);
 
   const { userData } = useAuth();
 
@@ -210,11 +212,42 @@ export default function DataManagement() {
     }
   }, []);
 
-  // Initial load
+  // Fetch count of punches in the selected month
+  const fetchMonthlyCount = useCallback(async () => {
+    if (!selectedMonth) return;
+    setLoadingMonthlyCount(true);
+    try {
+      const [yearStr, monthStr] = selectedMonth.split('-');
+      const yr = parseInt(yearStr);
+      const mo = parseInt(monthStr);
+      const start = `${yearStr}-${monthStr}-01T00:00:00Z`;
+      const end = new Date(yr, mo, 1).toISOString();
+
+      const { count, error } = await supabase
+        .from('punches')
+        .select('*', { count: 'exact', head: true })
+        .gte('punch_time', start)
+        .lt('punch_time', end);
+
+      if (error) throw error;
+      setMonthlyCount(count ?? 0);
+    } catch (err) {
+      console.error('Error fetching monthly count:', err);
+      setMonthlyCount(0);
+    } finally {
+      setLoadingMonthlyCount(false);
+    }
+  }, [selectedMonth]);
+
+  // Initial load & monthly count refresh
   useEffect(() => {
     fetchMetadata();
     fetchPunches();
   }, [fetchMetadata, fetchPunches]);
+
+  useEffect(() => {
+    fetchMonthlyCount();
+  }, [fetchMonthlyCount]);
 
   const fetchEmpPunches = useCallback(async (userId: string) => {
     setLoadingEmpPunches(true);
@@ -419,6 +452,7 @@ export default function DataManagement() {
       toast.success(`Successfully deleted ${deletedCount} punch records for ${monthName}.`);
       fetchMetadata(); // update counts
       fetchPunches(); // update cache
+      fetchMonthlyCount(); // update monthly count
     } catch (err: any) {
       toast.error(err.message || 'Failed to clear punch records');
     } finally {
@@ -598,7 +632,16 @@ export default function DataManagement() {
             <Disc className="w-8 h-8" />
           </div>
           <div className="flex-1 min-w-0">
-            <p style={{ fontWeight: 505 }} className="text-[11px] uppercase font-bold text-gray-400 leading-tight">Manage</p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "0.15rem" }}>
+              <p style={{ fontWeight: 505, margin: 0 }} className="text-[11px] uppercase font-bold text-gray-400 leading-tight">Manage</p>
+              <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#0d9488" }} title="Punch records for selected month">
+                {loadingMonthlyCount ? (
+                  <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
+                ) : (
+                  `${(monthlyCount ?? 0).toLocaleString()} rows`
+                )}
+              </span>
+            </div>
             <div className="flex gap-1.5 mt-1.5 flex-wrap" style={{ justifyContent: "flex-start", alignItems: "center" }}>
               <MonthPicker
                 value={selectedMonth}

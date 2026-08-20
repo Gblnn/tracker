@@ -21,21 +21,23 @@ export type RangeValue = {
 
 type DatePickerProps =
   | {
-    mode?: "single"
-    value?: SingleValue
-    onChange: React.Dispatch<React.SetStateAction<string>>
-    placeholder?: string
-    className?: string
-    disabled?: boolean
-  }
+      mode?: "single"
+      value?: SingleValue
+      onChange: React.Dispatch<React.SetStateAction<string>>
+      placeholder?: string
+      className?: string
+      disabled?: boolean
+      style?: React.CSSProperties
+    }
   | {
-    mode: "range"
-    value?: RangeValue
-    onChange: React.Dispatch<React.SetStateAction<RangeValue>>
-    placeholder?: string
-    className?: string
-    disabled?: boolean
-  }
+      mode: "range"
+      value?: RangeValue
+      onChange: React.Dispatch<React.SetStateAction<RangeValue>>
+      placeholder?: string
+      className?: string
+      disabled?: boolean
+      style?: React.CSSProperties
+    }
 
 export function DatePicker(props: DatePickerProps) {
   const {
@@ -43,6 +45,7 @@ export function DatePicker(props: DatePickerProps) {
     placeholder = "Pick a date",
     className,
     disabled,
+    style,
   } = props as any
 
   const [open, setOpen] = React.useState(false)
@@ -66,7 +69,7 @@ export function DatePicker(props: DatePickerProps) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button
-            style={{ width: "fit-content", height: "1.9rem" }}
+            style={{ width: "fit-content", height: "1.9rem", ...style }}
             variant="outline"
             disabled={disabled}
             className={cn(
@@ -115,7 +118,7 @@ export function DatePicker(props: DatePickerProps) {
         <Button
           variant="outline"
           disabled={disabled}
-          style={{ border: "", width: "fit-content" }}
+          style={{ border: "", width: "fit-content", ...style }}
           className={cn(
             " justify-start text-left font-normal",
             !value?.from && "text-muted-foreground",

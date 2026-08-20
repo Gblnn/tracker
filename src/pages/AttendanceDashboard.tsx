@@ -3,7 +3,7 @@ import { DatePicker } from '@/components/date-picker';
 import Directive from '@/components/directive';
 import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRightLeft, BarChart3, Calendar, ChartLine, Check, Database, FileCheck, FolderKanban, Laptop2, LayoutGrid, List, Loader2, PenLine, Sidebar, Table, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap, FileSpreadsheet } from 'lucide-react';
+import { ArrowRightLeft, BarChart3, Calendar, ChartLine, Check, Database, FileCheck, FolderKanban, Laptop2, LayoutGrid, List, Loader2, PenLine, Sidebar, Table, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap, FileSpreadsheet, Pointer, PlaneTakeoff } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
@@ -49,6 +49,7 @@ export default function AttendanceDashboard() {
   const { userData } = useAuth();
   const [navVisible, setNavVisible] = useState(true);
   const [dbCount, setDbCount] = useState<number | null>(null);
+  const [biometricsSpace, setBiometricsSpace] = useState<number>(0);
   const [isFocalPoint, setIsFocalPoint] = useState(false);
   const [isTimesheetApprover, setIsTimesheetApprover] = useState(false);
 
@@ -115,6 +116,32 @@ export default function AttendanceDashboard() {
           setDbCount(count);
         }
       });
+
+    supabase
+      .from('employees')
+      .select('fingerprint_templates, face_templates')
+      .then(({ data, error }) => {
+        if (!error && data) {
+          let space = 0;
+          data.forEach((emp: any) => {
+            if (emp.fingerprint_templates) {
+              Object.values(emp.fingerprint_templates).forEach((val: any) => {
+                if (val && val.template) {
+                  space += val.template.length;
+                }
+              });
+            }
+            if (emp.face_templates) {
+              Object.values(emp.face_templates).forEach((val: any) => {
+                if (val && val.template) {
+                  space += val.template.length;
+                }
+              });
+            }
+          });
+          setBiometricsSpace(space);
+        }
+      });
   };
 
   const canEditAttendance = useMemo(() => {
@@ -168,7 +195,7 @@ export default function AttendanceDashboard() {
       { value: 'breakdown', label: 'Detailed Breakdown', icon: <Table color="darkblue" className="w-4 h-4" /> },
       { value: 'analytics', label: 'Analytics', icon: <BarChart3 color="darkblue" className="w-4 h-4" /> },
       { value: 'manage', label: canEditAttendance ? 'Manage' : 'Master', icon: <UserPlus color="darkblue" className="w-4 h-4" /> },
-      { value: 'log', label: 'Punch Log', icon: <List color="darkblue" className="w-4 h-4" /> },
+      { value: 'log', label: 'Punch Log', icon: <Pointer color="darkblue" className="w-4 h-4" /> },
       { value: 'reports', label: 'Reports', icon: <TrendingUp color="darkblue" className="w-4 h-4" /> },
       { value: 'devices', label: 'Devices', icon: <Laptop2 color="darkblue" className="w-4 h-4" /> },
       { value: 'projects', label: 'Projects', icon: <FolderKanban color="darkblue" className="w-4 h-4" /> },
@@ -345,7 +372,7 @@ export default function AttendanceDashboard() {
                   )}
 
                   {isAllowed('leave-log') && (
-                    <Directive bg={tab === 'leave-log' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('leave-log')} title="Leave Log" icon={<Calendar size={16} />} />
+                    <Directive bg={tab === 'leave-log' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('leave-log')} title="Leave Log" icon={<PlaneTakeoff size={16} />} />
                   )}
 
                   {isAllowed('terminal') && (
@@ -406,31 +433,34 @@ export default function AttendanceDashboard() {
                     </div>
 
                     {/* Middle row: Progress bar */}
-                    {dbCount !== null && (
-                      <div style={{ width: "100%", height: "5px", backgroundColor: tab === 'data-management' ? "#B2DFDB" : "#E5E7EB", borderRadius: "9999px", overflow: "hidden" }}>
-                        <div
-                          style={{
-                            width: `${Math.min(100, (dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100)}%`,
-                            height: "100%",
-                            background: ((dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100) > 85
-                              ? "linear-gradient(to right, #EF4444, #F43F5E)"
-                              : ((dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100) > 50
-                                ? "linear-gradient(to right, #F59E0B, #F97316)"
-                                : "linear-gradient(to right, #10B981, #14B8A6)",
-                            borderRadius: "9999px",
-                            transition: "width 0.5s ease-out"
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    {/* Bottom row: Usage labels */}
-                    {dbCount !== null && (
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", color: tab === 'data-management' ? "#00695C" : "#6B7280", fontWeight: 500 }}>
-                        <span>{formatSize(dbCount * ROW_SIZE_BYTES)} / 500 MB</span>
-                        <span>{Math.min(100, parseFloat(((dbCount * ROW_SIZE_BYTES / FREE_TIER_QUOTA_BYTES) * 100).toFixed(2)))}%</span>
-                      </div>
-                    )}
+                    {dbCount !== null && (() => {
+                      const totalSpaceUsed = dbCount * ROW_SIZE_BYTES + biometricsSpace;
+                      const quotaPercent = (totalSpaceUsed / FREE_TIER_QUOTA_BYTES) * 100;
+                      return (
+                        <>
+                          <div style={{ width: "100%", height: "5px", backgroundColor: tab === 'data-management' ? "#B2DFDB" : "#E5E7EB", borderRadius: "9999px", overflow: "hidden" }}>
+                            <div
+                              style={{
+                                width: `${Math.min(100, quotaPercent)}%`,
+                                height: "100%",
+                                background: quotaPercent > 85
+                                  ? "linear-gradient(to right, #EF4444, #F43F5E)"
+                                  : quotaPercent > 50
+                                    ? "linear-gradient(to right, #F59E0B, #F97316)"
+                                    : "linear-gradient(to right, #10B981, #14B8A6)",
+                                borderRadius: "9999px",
+                                transition: "width 0.5s ease-out"
+                              }}
+                            />
+                          </div>
+                          {/* Bottom row: Usage labels */}
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", color: tab === 'data-management' ? "#00695C" : "#6B7280", fontWeight: 500, marginTop: "0.25rem" }}>
+                            <span>{formatSize(totalSpaceUsed)} / 500 MB</span>
+                            <span>{Math.min(100, parseFloat(quotaPercent.toFixed(2)))}%</span>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </motion.div>
                 </div>
               </div>
