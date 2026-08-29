@@ -623,7 +623,7 @@ const TimesheetRowComponent = memo(({
               <SelectItem value="no status" className="text-xs cursor-pointer focus:bg-slate-50">No Status</SelectItem>
               <SelectItem value="present" className="text-xs cursor-pointer focus:bg-slate-50">Present</SelectItem>
               <SelectItem value="absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
-              <SelectItem value="weekend" className="text-xs cursor-pointer focus:bg-slate-50">Week End</SelectItem>
+              <SelectItem value="weekend" className="text-xs cursor-pointer focus:bg-slate-50">Weekend</SelectItem>
               <SelectItem value="holiday" className="text-xs cursor-pointer focus:bg-slate-50">Holiday</SelectItem>
               {emp.emp_type !== 'staff' && (
                 <SelectItem value="present with OT" className="text-xs cursor-pointer focus:bg-slate-50">Present with OT</SelectItem>
@@ -2406,7 +2406,7 @@ export default function TimesheetFinalizer({
     if (key === 'status') {
       const emp = employeesMap[userId];
       const isStaff = emp?.emp_type === 'staff';
-      const statusVal = (value === 'present with OT' && isStaff) ? 'present' : (value as 'present' | 'absent' | 'present with OT' | 'no status');
+      const statusVal = (value === 'present with OT' && isStaff) ? 'present' : (value as 'present' | 'absent' | 'present with OT' | 'holiday' | 'weekend' | 'no status');
       updated.status = statusVal;
 
       if (statusVal === 'absent') {
@@ -2558,7 +2558,7 @@ export default function TimesheetFinalizer({
         if (field === 'status') {
           const emp = employeesMap[userId];
           const isStaff = emp?.emp_type === 'staff';
-          const statusVal = (value === 'present with OT' && isStaff) ? 'present' : (value as 'present' | 'absent' | 'present with OT' | 'no status');
+          const statusVal = (value === 'present with OT' && isStaff) ? 'present' : (value as 'present' | 'absent' | 'present with OT' | 'holiday' | 'weekend' | 'no status');
           updated.status = statusVal;
 
           if (statusVal === 'absent') {
@@ -4978,6 +4978,8 @@ export default function TimesheetFinalizer({
                   <SelectItem value="present" className="text-xs cursor-pointer focus:bg-slate-50">Present</SelectItem>
                   <SelectItem value="absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
                   <SelectItem value="present with OT" className="text-xs cursor-pointer focus:bg-slate-50">Present with OT</SelectItem>
+                  <SelectItem value="holiday" className="text-xs cursor-pointer focus:bg-slate-50">Holiday</SelectItem>
+                  <SelectItem value="weekend" className="text-xs cursor-pointer focus:bg-slate-50">Weekend</SelectItem>
                 </SelectContent>
               </Select>
             </div>
