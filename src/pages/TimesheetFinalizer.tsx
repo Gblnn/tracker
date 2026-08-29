@@ -2438,6 +2438,11 @@ export default function TimesheetFinalizer({
           updated.remarks = '';
         }
       }
+       // Automatically verify records with 'weekend' or 'holiday' status
+      if (statusVal === 'weekend' || statusVal === 'holiday') {
+        updated.isVerified = true;
+        updated.verified_by = userData?.email || 'System';
+      }
     }
 
     if (key === 'punch_in' || key === 'punch_out') {
