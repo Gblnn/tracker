@@ -2198,7 +2198,8 @@ export default function TimesheetFinalizer({
     const checkRowValidity = (r: TimesheetRow): boolean => {
       // 1. Status check
       if (!r.status || r.status === 'no status') return false;
-
+      if (!r.status || r.status === 'holiday') return true;
+      if (!r.status || r.status === 'weekend') return true;
       // 2. Project & Punch check (only when status is not absent/no status)
       if (r.status !== 'absent' && r.status !== 'no status') {
         const isProjectRed = !r.project_code || r.project_code === '' || r.project_code === 'UNASSIGNED';
@@ -2422,7 +2423,7 @@ export default function TimesheetFinalizer({
         updated.punch_out = '';
         updated.overtime = 0;
         updated.remarks = '';
-      } else if (statusVal === 'present' || statusVal === 'present with OT') {
+      } else if (statusVal === 'present' || statusVal === 'present with OT' || statusVal === 'holiday' || statusVal === 'weekend') {
         const emp = employeesMap[userId];
         const projCode = current.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
         const targetProj = projects.find(p => p.project_code === projCode);
