@@ -624,8 +624,7 @@ const TimesheetRowComponent = memo(({
               <SelectItem value="present" className="text-xs cursor-pointer focus:bg-slate-50">Present</SelectItem>
               <SelectItem value="absent" className="text-xs cursor-pointer focus:bg-slate-50">Absent</SelectItem>
               <SelectItem value="weekend" className="text-xs cursor-pointer focus:bg-slate-50">Week End</SelectItem>
-              <SelectItem value="holiday" className="text-xs cursor-pointer focus:bg-slate-50">Holiday<
-            /SelectItem>
+              <SelectItem value="holiday" className="text-xs cursor-pointer focus:bg-slate-50">Holiday</SelectItem>
               {emp.emp_type !== 'staff' && (
                 <SelectItem value="present with OT" className="text-xs cursor-pointer focus:bg-slate-50">Present with OT</SelectItem>
               )}
