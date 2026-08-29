@@ -4385,7 +4385,11 @@ export default function TimesheetFinalizer({
                                 ? 'Absent'
                                 : statusFilter === 'present with OT'
                                   ? 'Present with OT'
-                                  : 'No Status'}
+                                    : statusFilter === 'holiday'
+                                      ? 'Holiday'
+                                        : statusFilter === 'weekend'
+                                          ? 'Weekend'
+                                            : 'No Status'}
                         </span>
                         <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
                       </DropdownMenuTrigger>
@@ -4421,6 +4425,22 @@ export default function TimesheetFinalizer({
                           className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
                         >
                           Absent
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={statusFilter === 'holiday'}
+                          onCheckedChange={() => setStatusFilter('holiday')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Holiday
+                          </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={statusFilter === 'weekend'}
+                          onCheckedChange={() => setStatusFilter('weekend')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          Weekend
                         </DropdownMenuCheckboxItem>
                         <DropdownMenuCheckboxItem
                           style={{ justifyContent: "flex-start" }}
