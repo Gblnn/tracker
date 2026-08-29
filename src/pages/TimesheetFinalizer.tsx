@@ -602,6 +602,8 @@ const TimesheetRowComponent = memo(({
           <span className={`text-xs font-semibold px-2 py-1 rounded inline-flex items-center justify-center ${row.status === 'present' ? 'text-emerald-700 bg-emerald-50/80 border border-emerald-200' :
             row.status === 'present with OT' ? 'text-indigo-700 bg-indigo-50/80 border border-indigo-200' :
               row.status === 'absent' ? 'text-rose-700 bg-rose-50/80 border border-rose-200' :
+                row.status === 'weekend' ? 'text-rose-700 bg-rose-50/80 border border-rose-200' :
+                  row.status === 'holiday' ? 'text-rose-700 bg-rose-50/80 border border-rose-200' :
                 'text-slate-500 bg-slate-100 border border-slate-200'
             }`}>
             {row.status ? (row.status === 'present with OT' ? 'Present (OT)' : row.status.charAt(0).toUpperCase() + row.status.slice(1)) : 'No Status'}
