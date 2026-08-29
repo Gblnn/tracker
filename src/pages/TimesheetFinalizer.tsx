@@ -1244,7 +1244,7 @@ export default function TimesheetFinalizer({
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('ALL');
   const [empTypeFilter, setEmpTypeFilter] = useState<'all' | 'staff' | 'worker'>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'absent' | 'present with OT' | 'no status'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'absent' | 'present with OT' | 'holiday'| 'weekend'| 'no status'>('all');
   const [roundOT] = useState(true);
   const [focalProjectCodes, setFocalProjectCodes] = useState<string[]>([]);
   const [isFocalFiltered, setIsFocalFiltered] = useState(false);
