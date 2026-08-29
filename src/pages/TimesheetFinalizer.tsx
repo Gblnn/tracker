@@ -1208,7 +1208,7 @@ export default function TimesheetFinalizer({
   const [bulkProjectValue, setBulkProjectValue] = useState('');
 
   const [isBulkStatusOpen, setIsBulkStatusOpen] = useState(false);
-  const [bulkStatusValue, setBulkStatusValue] = useState<'present' | 'absent' | 'present with OT' | 'no status'>('no status');
+  const [bulkStatusValue, setBulkStatusValue] = useState<'present' | 'absent' | 'present with OT' | 'holiday'| 'weekend'| 'no status'>('no status');
 
   const [isBulkRemarksOpen, setIsBulkRemarksOpen] = useState(false);
   const [bulkRemarksValue, setBulkRemarksValue] = useState('');
