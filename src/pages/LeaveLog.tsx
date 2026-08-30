@@ -197,7 +197,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
       const employee = employees.find(e => e.device_user_id === addForm.emp_id || e.emp_id === addForm.emp_id);
       if (employee) {
         //const nextStatus = 'Leave';
-          const nextStatus = addForm.status === 'Cancel' ? 'Cancel' : 'Leave';
+          const nextStatus = addForm.status.trim() === 'Cancel' ? 'Cancel' : 'Leave';
         await supabase
           .from('employees')
           .update({ status: nextStatus })
