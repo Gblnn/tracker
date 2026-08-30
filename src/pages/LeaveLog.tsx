@@ -196,7 +196,8 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
       // Update employee status
       const employee = employees.find(e => e.device_user_id === addForm.emp_id || e.emp_id === addForm.emp_id);
       if (employee) {
-        const nextStatus = 'Leave';
+        //const nextStatus = 'Leave';
+          const nextStatus = addForm.status === 'Cancel' ? 'Cancel' : 'Leave';
         await supabase
           .from('employees')
           .update({ status: nextStatus })
@@ -472,6 +473,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
                   <TableCell className="py-3">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${record.status === 'Sick Leave' ? 'bg-red-50 text-red-700 border border-red-100' :
                       record.status === 'Annual Leave' ? 'bg-green-50 text-green-700 border border-green-100' :
+                      record.status === 'Cancel' ? 'bg-slate-100 text-slate-700 border border-slate-200' :
                         'bg-blue-50 text-blue-700 border border-blue-100'
                       }`}>
                       {record.status}
