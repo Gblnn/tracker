@@ -337,7 +337,7 @@ export default function LeaveLog({ refreshTrigger, onLoadingChange }: LeaveLogPr
     );
   }, [employees, addForm.emp_id]);
 
-  const leaveTypes = ['Annual Leave', 'Sick Leave', 'Unpaid Leave', 'Casual Leave', 'Emergency Leave'];
+  const leaveTypes = ['Annual Leave', 'Sick Leave', 'Unpaid Leave', 'Casual Leave', 'Emergency Leave','Cancel'];
 
   return (
     <div
