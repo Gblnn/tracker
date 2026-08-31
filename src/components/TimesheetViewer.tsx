@@ -1024,7 +1024,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
       if (!r[empCode]) r[empCode] = {};
 
       const cleanStatus = (row.status || '').toLowerCase().trim();
-      const isPresent = cleanStatus === 'present' || cleanStatus === 'present with ot';
+      const isPresent = cleanStatus === 'present' || cleanStatus === 'present with ot' || cleanStatus === 'weekend' || cleanStatus === 'holiday';
 
       r[empCode][dateKey] = {
         firstIn: row.punch_in || null,
