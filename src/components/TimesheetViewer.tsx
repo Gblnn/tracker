@@ -1180,6 +1180,8 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
           if (c.status === 'leave') statusText = 'Leave';
           else if (c.status === 'off') statusText = 'Off';
           else if (c.status === 'absent') statusText = 'Absent';
+            else if (c.status === 'weekend') statusText = 'Weekend';
+              else if (c.status === 'holiday') statusText = 'Holiday';
           else if (c.status === 'present' || c.status === 'present with ot') statusText = 'Present';
         } else if (isWeekendDay) {
           statusText = 'Weekend';
@@ -1384,6 +1386,8 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
           if (c.status === 'leave') statusText = 'Leave';
           else if (c.status === 'off') statusText = 'Off';
           else if (c.status === 'absent') statusText = 'Absent';
+          else if (c.status === 'weekend') statusText = 'Weekend';
+          else if (c.status === 'holiday') statusText = 'Holiday';            
           else if (c.status === 'present' || c.status === 'present with ot') statusText = 'Present';
         } else if (isWeekendDay) {
           statusText = c?.isPresent ? 'Worked (Weekend)' : 'Weekend';
@@ -1465,6 +1469,8 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
             if (c.status === 'leave') statusText = 'Leave';
             else if (c.status === 'off') statusText = 'Off';
             else if (c.status === 'absent') statusText = 'Absent';
+            else if (c.status === 'weekend') statusText = 'Weekend';
+            else if (c.status === 'holiday') statusText = 'Holiday';              
             else if (c.status === 'present' || c.status === 'present with ot') statusText = 'Present';
           } else if (isWeekendDay) {
             statusText = 'Weekend';
@@ -2383,6 +2389,10 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                           statusBadge = <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500 font-semibold">Off</span>;
                         } else if (c.status === 'absent') {
                           statusBadge = <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 font-semibold">Absent</span>;
+                        } else if (c.status === 'weekend') {
+                          statusBadge = <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 font-semibold">Weekend</span>;
+                        } else if (c.status === 'holiday') {
+                          statusBadge = <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 font-semibold">Holiday</span>;                          
                         } else if (c.status === 'present' || c.status === 'present with ot') {
                           statusBadge = <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 font-semibold">Present</span>;
                         }
