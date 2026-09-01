@@ -50,6 +50,7 @@ interface Employee {
   department: string | null;
   emp_id: string;
   emp_type: 'staff' | 'worker' | null;
+  nationality: string | null;
 }
 
 interface Punch {
@@ -160,6 +161,7 @@ interface TimesheetRow {
   employee_code: string;
   employee_name: string;
   department: string | null;
+  nationality: string | null;
   punch_in: string; // "HH:MM" or ""
   punch_out: string; // "HH:MM" or ""
   project_code: string;
@@ -595,6 +597,12 @@ const TimesheetRowComponent = memo(({
         </div>
       </td>
 
+      {/* Nationality Display */}
+      <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+        <span className="text-xs text-slate-700 font-medium px-2 py-1 block">
+          {row.nationality || '—'}
+        </span>
+      </td>
 
       {/* Status Select */}
       <td style={{ textAlign: 'center' }}>
@@ -1245,6 +1253,7 @@ export default function TimesheetFinalizer({
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('ALL');
   const [empTypeFilter, setEmpTypeFilter] = useState<'all' | 'staff' | 'worker'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'absent' | 'present with OT' | 'holiday'| 'weekend'| 'no status'>('all');
+  const [nationalityFilter, setNationalityFilter] = useState<string>('ALL');
   const [roundOT] = useState(true);
   const [focalProjectCodes, setFocalProjectCodes] = useState<string[]>([]);
   const [isFocalFiltered, setIsFocalFiltered] = useState(false);
@@ -1424,6 +1433,7 @@ export default function TimesheetFinalizer({
       employee_code: emp.device_user_id,
       employee_name: emp.name,
       department: emp.department,
+      nationality: emp.nationality,
       punch_in: inTime,
       punch_out: outTime,
       project_code: computedProject,
@@ -1459,7 +1469,7 @@ export default function TimesheetFinalizer({
         { data: punchesData, error: punchErr },
         { data: transfersData, error: transfersErr }
       ] = await Promise.all([
-        supabase.from('employees').select('id, device_user_id, name, department, emp_id, emp_type').or('status.ilike.active,status.is.null').order('name'),
+        supabase.from('employees').select('id, device_user_id, name, department, emp_id, emp_type, nationality').or('status.ilike.active,status.is.null').order('name'),
         supabase.from('projects').select('project_code, project_name, project_in_time, project_out_time, project_location, focal_point_email, approver_email').order('project_code'),
         supabase.from('devices').select('serial_no, project_code'),
         supabase.from('v_employee_latest_project').select('emp_id, current_project'),
@@ -1751,6 +1761,7 @@ export default function TimesheetFinalizer({
             employee_code: emp.device_user_id,
             employee_name: emp.name,
             department: emp.department,
+            nationality: emp.nationality,
             punch_in: extractTime(matched.punch_in),
             punch_out: extractTime(matched.punch_out),
             project_code: guessed.project_code || matched.project_code || '',
@@ -3156,6 +3167,8 @@ export default function TimesheetFinalizer({
         if (empTypeFilter === 'worker' && empType !== 'worker') return false;
       }
 
+      if (nationalityFilter !== 'ALL' && emp.nationality !== nationalityFilter) return false;
+
       if (statusFilter !== 'all') {
         const currentStatus = row.status || 'no status';
         if (currentStatus !== statusFilter) return false;
@@ -3168,7 +3181,7 @@ export default function TimesheetFinalizer({
 
       return true;
     });
-  }, [employees, rows, search, punchInFilter, punchOutFilter, selectedProjects, sourceFilter, empTypeFilter, statusFilter, selectedProjectFilter]);
+  }, [employees, rows, search, punchInFilter, punchOutFilter, selectedProjects, sourceFilter, empTypeFilter, statusFilter, selectedProjectFilter, nationalityFilter]);
 
   const handleAutoFillEmptyPunchIn = useCallback(() => {
     if (!canUserEdit) {
@@ -4384,6 +4397,40 @@ export default function TimesheetFinalizer({
                     </div>
                   </th>
 
+                  <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '130px' }}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
+                        <span className="truncate">
+                          {nationalityFilter === 'ALL'
+                            ? 'Nationality (All)'
+                            : nationalityFilter}
+                        </span>
+                        <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[150px] p-1 bg-white border border-slate-200 z-50">
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={nationalityFilter === 'ALL'}
+                          onCheckedChange={() => setNationalityFilter('ALL')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          All Nationalities
+                        </DropdownMenuCheckboxItem>
+                        {employees.length > 0 && Array.from(new Set(employees.map(e => e.nationality).filter((n): n is string => n !== null && n !== undefined))).sort().map(nationality => (
+                          <DropdownMenuCheckboxItem
+                            key={nationality}
+                            style={{ justifyContent: "flex-start" }}
+                            checked={nationalityFilter === nationality}
+                            onCheckedChange={() => setNationalityFilter(nationality)}
+                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                          >
+                            {nationality}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </th>
+
                   <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '140px' }}>
                     <DropdownMenu>
                       <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
@@ -4739,7 +4786,7 @@ export default function TimesheetFinalizer({
               <tbody>
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={isFocalFiltered ? 9 : 10} className="py-20 text-center text-gray-400 font-medium bg-white">
+                    <td colSpan={isFocalFiltered ? 10 : 11} className="py-20 text-center text-gray-400 font-medium bg-white">
                       No matching records found.
                     </td>
                   </tr>
