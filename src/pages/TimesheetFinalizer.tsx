@@ -2622,14 +2622,14 @@ export default function TimesheetFinalizer({
                 updated.overtime = emp?.emp_type !== 'staff' ? 1.0 : 0;
               }
             }
-          }
-        }
-        } else if (statusVal === 'holiday' || statusVal === 'weekend') {
+          } else if (statusVal === 'holiday' || statusVal === 'weekend') {
           // Update remarks to match status for holiday/weekend
           updated.remarks = statusVal;
           updated.isVerified = true;
           updated.verified_by = userData?.email || 'System';
+          }         
         }
+        
         // Sync status on input change without auto-calculating overtime
         if (field === 'punch_in' || field === 'punch_out') {
           const inTime = field === 'punch_in' ? value : current.punch_in;
