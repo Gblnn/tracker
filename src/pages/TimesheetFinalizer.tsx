@@ -2427,7 +2427,7 @@ export default function TimesheetFinalizer({
         const emp = employeesMap[userId];
         const projCode = current.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
         const targetProj = projects.find(p => p.project_code === projCode);
-        if (statusVal === 'present' || statusVal === 'present with OT'){
+        if (statusVal === 'present' || statusVal === 'present with OT') {
           const inTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
           const outTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
         }
@@ -2438,7 +2438,6 @@ export default function TimesheetFinalizer({
         if (current.remarks === 'Absent') {
           updated.remarks = '';
         }
-      }
        // Automatically verify records with 'weekend' or 'holiday' status
       if (statusVal === 'weekend' || statusVal === 'holiday') {
         updated.isVerified = true;
@@ -2631,7 +2630,6 @@ export default function TimesheetFinalizer({
             }
           }
         }
-
         // Sync status on input change without auto-calculating overtime
         if (field === 'punch_in' || field === 'punch_out') {
           const inTime = field === 'punch_in' ? value : current.punch_in;
