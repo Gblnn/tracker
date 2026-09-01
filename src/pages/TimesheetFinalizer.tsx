@@ -597,13 +597,6 @@ const TimesheetRowComponent = memo(({
         </div>
       </td>
 
-      {/* Nationality Display */}
-      <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-        <span className="text-xs text-slate-700 font-medium px-2 py-1 block">
-          {row.nationality || '—'}
-        </span>
-      </td>
-
       {/* Status Select */}
       <td style={{ textAlign: 'center' }}>
         {(!isRowEditable || isApproveModeReadOnly || isSaved || !!row.original_in_punch || !!row.original_out_punch) ? (
@@ -766,7 +759,7 @@ const TimesheetRowComponent = memo(({
               value={
                 row.remarks === ''
                   ? 'NONE'
-                  : (row.remarks === 'Present' || row.remarks === 'Forgot to Punch' || row.remarks === 'Forgot to Punch In' || row.remarks === 'Forgot to Punch Out' || row.remarks === 'Sick Leave' || row.remarks === 'Unpaid Leave' || row.remarks === 'Casual Leave' || row.remarks === 'Emergency Leave' || row.remarks === 'No Device' || row.remarks === 'Half Day')
+                  : (row.remarks === 'Present' || row.remarks === 'Forgot to Punch' || row.remarks === 'Forgot to Punch In' || row.remarks === 'Forgot to Punch Out' || row.remarks === 'Sick Leave' || row.remarks === 'Unpaid Leave' || row.remarks === 'Casual Leave' || row.remarks === 'Emergency Leave' || row.remarks === 'No Device' || row.remarks === 'Half Day' || row.remarks === 'Weekend' || row.remarks === 'Holiday')
                     ? row.remarks
                     : 'CUSTOM'
               }
@@ -861,6 +854,13 @@ const TimesheetRowComponent = memo(({
             )}
           </div>
         )}
+      </td>
+
+      {/* Nationality Display */}
+      <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+        <span className="text-xs text-slate-700 font-medium px-2 py-1 block">
+          {row.nationality || '—'}
+        </span>
       </td>
 
       {/* Source & Actions */}
@@ -4397,40 +4397,6 @@ export default function TimesheetFinalizer({
                     </div>
                   </th>
 
-                  <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '130px' }}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
-                        <span className="truncate">
-                          {nationalityFilter === 'ALL'
-                            ? 'Nationality (All)'
-                            : nationalityFilter}
-                        </span>
-                        <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[150px] p-1 bg-white border border-slate-200 z-50">
-                        <DropdownMenuCheckboxItem
-                          style={{ justifyContent: "flex-start" }}
-                          checked={nationalityFilter === 'ALL'}
-                          onCheckedChange={() => setNationalityFilter('ALL')}
-                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                        >
-                          All Nationalities
-                        </DropdownMenuCheckboxItem>
-                        {employees.length > 0 && Array.from(new Set(employees.map(e => e.nationality).filter((n): n is string => n !== null && n !== undefined))).sort().map(nationality => (
-                          <DropdownMenuCheckboxItem
-                            key={nationality}
-                            style={{ justifyContent: "flex-start" }}
-                            checked={nationalityFilter === nationality}
-                            onCheckedChange={() => setNationalityFilter(nationality)}
-                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
-                          >
-                            {nationality}
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </th>
-
                   <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '140px' }}>
                     <DropdownMenu>
                       <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
@@ -4701,6 +4667,39 @@ export default function TimesheetFinalizer({
                     </th>
                   )}
                   <th style={{ width: '200px' }}>Remarks</th>
+                  <th className="text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '130px' }}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
+                        <span className="truncate">
+                          {nationalityFilter === 'ALL'
+                            ? 'Nationality (All)'
+                            : nationalityFilter}
+                        </span>
+                        <ChevronDown className="h-4 w-4 opacity-60 shrink-0 ml-1" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[150px] p-1 bg-white border border-slate-200 z-50">
+                        <DropdownMenuCheckboxItem
+                          style={{ justifyContent: "flex-start" }}
+                          checked={nationalityFilter === 'ALL'}
+                          onCheckedChange={() => setNationalityFilter('ALL')}
+                          className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                        >
+                          All Nationalities
+                        </DropdownMenuCheckboxItem>
+                        {employees.length > 0 && Array.from(new Set(employees.map(e => e.nationality).filter((n): n is string => n !== null && n !== undefined))).sort().map(nationality => (
+                          <DropdownMenuCheckboxItem
+                            key={nationality}
+                            style={{ justifyContent: "flex-start" }}
+                            checked={nationalityFilter === nationality}
+                            onCheckedChange={() => setNationalityFilter(nationality)}
+                            className="rounded-md focus:bg-gray-50 cursor-pointer text-xs"
+                          >
+                            {nationality}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </th>
                   <th className="sticky-action text-left px-1 py-1 font-medium text-xs tracking-wide" style={{ width: '250px', right: '0' }}>
                     <DropdownMenu>
                       <DropdownMenuTrigger className="h-8 text-xs bg-transparent border-0 text-gray-555 hover:bg-gray-100 transition-colors px-2 rounded-md font-medium w-full justify-between flex items-center outline-none uppercase tracking-wide cursor-pointer">
