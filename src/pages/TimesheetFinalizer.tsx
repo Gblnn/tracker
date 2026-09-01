@@ -2423,14 +2423,18 @@ export default function TimesheetFinalizer({
         updated.punch_out = '';
         updated.overtime = 0;
         updated.remarks = '';
-      } else if (statusVal === 'present' || statusVal === 'present with OT' || statusVal === 'holiday' || statusVal === 'weekend') {
+      } else if (statusVal === 'holiday' || statusVal === 'weekend') {
         const emp = employeesMap[userId];
         const projCode = current.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
         const targetProj = projects.find(p => p.project_code === projCode);
-        if (statusVal === 'present' || statusVal === 'present with OT') {
-          const inTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
-          const outTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
-        }
+        updated.punch_in = '';
+        updated.punch_out = '';
+      } else if (statusVal === 'present' || statusVal === 'present with OT') {
+        const emp = employeesMap[userId];
+        const projCode = current.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
+        const targetProj = projects.find(p => p.project_code === projCode);
+        const inTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
+        const outTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
         if (!current.punch_in && !current.punch_out) {
           updated.punch_in = inTime;
           updated.punch_out = outTime;
@@ -2511,7 +2515,8 @@ export default function TimesheetFinalizer({
         }
       }
     }
-
+  }
+    
     setRows(prev => ({ ...prev, [userId]: updated }));
     autoPostRowsBatch([updated]);
   }, [rows, employeesMap, employeeAssignedProjects, userData?.email, projects, autoPostRowsBatch, pushHistory, deviceProjectMap, resolvedMode]);
@@ -2629,7 +2634,6 @@ export default function TimesheetFinalizer({
               }
             }
           }
-        }
         // Sync status on input change without auto-calculating overtime
         if (field === 'punch_in' || field === 'punch_out') {
           const inTime = field === 'punch_in' ? value : current.punch_in;
