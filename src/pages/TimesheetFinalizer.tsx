@@ -2427,9 +2427,10 @@ export default function TimesheetFinalizer({
         const emp = employeesMap[userId];
         const projCode = current.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
         const targetProj = projects.find(p => p.project_code === projCode);
-        const inTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
-        const outTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
-
+        if (statusVal === 'present' || statusVal === 'present with OT'){
+          const inTime = targetProj?.project_in_time ? extractTime(targetProj.project_in_time) : '08:00';
+          const outTime = targetProj?.project_out_time ? extractTime(targetProj.project_out_time) : '17:00';
+        }
         if (!current.punch_in && !current.punch_out) {
           updated.punch_in = inTime;
           updated.punch_out = outTime;
@@ -2442,6 +2443,7 @@ export default function TimesheetFinalizer({
       if (statusVal === 'weekend' || statusVal === 'holiday') {
         updated.isVerified = true;
         updated.verified_by = userData?.email || 'System';
+        updated.remarks = statusVal;
       }
     }
 
@@ -2581,6 +2583,12 @@ export default function TimesheetFinalizer({
             updated.punch_out = '';
             updated.overtime = 0;
             updated.remarks = '';
+          } else if (statusVal === 'holiday' || statusVal === 'weekend') {
+          // Update remarks to match status for holiday/weekend
+            updated.remarks = statusVal;
+            updated.isVerified = true;
+            updated.verified_by = userData?.email || 'System';
+          }
           } else if (statusVal === 'present' || statusVal === 'present with OT') {
             const emp = employeesMap[userId];
             const projCode = current.project_code || (emp ? employeeAssignedProjects[emp.emp_id] : '') || '';
