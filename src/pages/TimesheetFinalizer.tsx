@@ -823,7 +823,7 @@ const TimesheetRowComponent = memo(({
               </SelectContent>
             </Select>
 
-            {(row.remarks !== '' && row.remarks !== 'Present' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Forgot to Punch In' && row.remarks !== 'Forgot to Punch Out' && row.remarks !== 'Sick Leave' && row.remarks !== 'Unpaid Leave' && row.remarks !== 'Casual Leave' && row.remarks !== 'Emergency Leave' && row.remarks !== 'No Device' && row.remarks !== 'Half Day') && (
+            {(row.remarks !== '' && row.remarks !== 'Present' && row.remarks !== 'Forgot to Punch' && row.remarks !== 'Forgot to Punch In' && row.remarks !== 'Forgot to Punch Out' && row.remarks !== 'Sick Leave' && row.remarks !== 'Unpaid Leave' && row.remarks !== 'Casual Leave' && row.remarks !== 'Emergency Leave' && row.remarks !== 'No Device' && row.remarks !== 'Half Day' && row.remarks !== 'Holiday' && row.remarks !== 'Weekend') && (
               <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                 <Input
                   type="text"
@@ -5049,7 +5049,7 @@ export default function TimesheetFinalizer({
                   value={
                     bulkRemarksValue === ''
                       ? 'NONE'
-                      : (bulkRemarksValue === 'Present' || bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Forgot to Punch In' || bulkRemarksValue === 'Forgot to Punch Out' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave' || bulkRemarksValue === 'No Device' || bulkRemarksValue === 'Half Day')
+                      : (bulkRemarksValue === 'Present' || bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Forgot to Punch In' || bulkRemarksValue === 'Forgot to Punch Out' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave' || bulkRemarksValue === 'No Device' || bulkRemarksValue === 'Half Day' || bulkRemarksValue === 'Holiday' || bulkRemarksValue === 'Weekend')
                         ? bulkRemarksValue
                         : 'CUSTOM'
                   }
@@ -5076,6 +5076,8 @@ export default function TimesheetFinalizer({
                     <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
                     <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
                     <SelectItem value="No Device" className="text-xs cursor-pointer focus:bg-slate-50">No Device</SelectItem>
+                    <SelectItem value="Holiday" className="text-xs cursor-pointer focus:bg-slate-50">Holiday</SelectItem>
+                    <SelectItem value="Weekend" className="text-xs cursor-pointer focus:bg-slate-50">Weekend</SelectItem>
                     <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
                   </SelectContent>
                 </Select>
@@ -5169,7 +5171,7 @@ export default function TimesheetFinalizer({
                 value={
                   bulkRemarksValue === ''
                     ? 'NONE'
-                    : (bulkRemarksValue === 'Present' || bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Forgot to Punch In' || bulkRemarksValue === 'Forgot to Punch Out' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave' || bulkRemarksValue === 'No Device' || bulkRemarksValue === 'Half Day')
+                    : (bulkRemarksValue === 'Present' || bulkRemarksValue === 'Forgot to Punch' || bulkRemarksValue === 'Forgot to Punch In' || bulkRemarksValue === 'Forgot to Punch Out' || bulkRemarksValue === 'Sick Leave' || bulkRemarksValue === 'Unpaid Leave' || bulkRemarksValue === 'Casual Leave' || bulkRemarksValue === 'Emergency Leave' || bulkRemarksValue === 'No Device' || bulkRemarksValue === 'Half Day' || bulkRemarksValue === 'Holiday' || bulkRemarksValue === 'Weekend')
                       ? bulkRemarksValue
                       : 'CUSTOM'
                 }
@@ -5197,6 +5199,8 @@ export default function TimesheetFinalizer({
                   <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
                   <SelectItem value="No Device" className="text-xs cursor-pointer focus:bg-slate-50">No Device</SelectItem>
                   <SelectItem value="Half Day" className="text-xs cursor-pointer focus:bg-slate-50">Half Day</SelectItem>
+                  <SelectItem value="Holiday" className="text-xs cursor-pointer focus:bg-slate-50">Holiday</SelectItem>
+                  <SelectItem value="Weekend" className="text-xs cursor-pointer focus:bg-slate-50">Weekend</SelectItem>                  
                   <SelectItem value="CUSTOM" className="text-xs cursor-pointer focus:bg-slate-50">Custom...</SelectItem>
                 </SelectContent>
               </Select>
