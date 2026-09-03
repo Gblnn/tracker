@@ -808,6 +808,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
 
       const empWithLocation = await supabase.from('employees')
         .select('id, device_user_id, name, department, emp_type, emp_id, company, nationality')
+        .neq('status', 'Inactive') 
         .or('status.ilike.active,status.is.null')
         .order('name', { ascending: true });
 
@@ -826,6 +827,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
         const { data: missingEmps, error: mErr } = await supabase
           .from('employees')
           .select('id, device_user_id, name, department, emp_type, emp_id, company, nationality')
+          .neq('status', 'Inactive') 
           .in('device_user_id', missingUserIds);
 
         if (!mErr && missingEmps) {
