@@ -183,7 +183,12 @@ interface TimesheetRow {
   lastLocalEdit?: number;
   created_at?: string | null;
 }
-
+const isHolidayOrWeekendRecord = (row: TimesheetRow): boolean => {
+  const status = row.status?.trim().toLowerCase();
+  const remarks = row.remarks?.trim().toLowerCase();
+  return (status === 'holiday' && remarks === 'holiday') ||
+    (status === 'weekend' && remarks === 'weekend');
+};
 type SourceFilter = 'ALL' | 'MANUAL' | 'LEAVE_LOG' | 'DEVICE' | 'NO_SOURCE';
 
 const getYesterdayString = () => {
@@ -504,12 +509,13 @@ const TimesheetRowComponent = memo(({
   }, [row.status, row.remarks, row.original_in_punch, row.original_out_punch]);
 
   const hasNoRedBorders = useMemo(() => {
+    const isHolidayOrWeekend = isHolidayOrWeekendRecord(row);
     // 1. Status check
     const isStatusRed = !row.status || row.status === 'no status';
     if (isStatusRed) return false;
 
     // 2. Project & Punch check (only when status is not absent/no status)
-    if (row.status !== 'absent' && row.status !== 'no status') {
+    if (!isHolidayOrWeekend && row.status !== 'absent' && row.status !== 'no status') {
       const isProjectRed = !row.project_code || row.project_code === '' || row.project_code === 'UNASSIGNED';
       if (isProjectRed) return false;
 
@@ -2094,7 +2100,7 @@ export default function TimesheetFinalizer({
     if (!currentRow) return;
 
     const isMachineLoggedComplete = !!currentRow.original_in_punch && !!currentRow.original_out_punch;
-    const isRowVerified = currentRow.isVerified || !!currentRow.verified_by || isMachineLoggedComplete || resolvedMode === 'approve';
+    const isRowVerified =  isHolidayOrWeekendRecord(currentRow) || currentRow.isVerified || !!currentRow.verified_by || isMachineLoggedComplete || resolvedMode === 'approve';
     if (!isRowVerified) {
       toast.error(`Cannot approve ${currentRow.employee_name}. Timesheet must be verified first.`);
       return;
@@ -2211,9 +2217,8 @@ export default function TimesheetFinalizer({
     const checkRowValidity = (r: TimesheetRow): boolean => {
       // 1. Status check
       if (!r.status || r.status === 'no status') return false;
-      if (!r.status || r.status === 'holiday') return true;
-      if (!r.status || r.status === 'weekend') return true;
-      if (r.status === 'holiday' || r.status === 'weekend') {
+      if (r.status === 'holiday' || r.status === 'weekend')
+      {
         return isHolidayOrWeekendRecord(r);
       }
       // 2. Project & Punch check (only when status is not absent/no status)
