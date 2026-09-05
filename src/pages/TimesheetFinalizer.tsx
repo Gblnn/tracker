@@ -1726,17 +1726,26 @@ export default function TimesheetFinalizer({
           : (existingRows || []);
 
       // Calculate global lock: locked if all employees have a matching timesheet database record
+      // Calculate global lock: finalized records, or a fully approved holiday/weekend day, are locked.
       // Under new flow:
       // - Focal point (verify mode): locked if a record exists.
       // - Approver (approve mode): locked if a record exists AND approved_by is not null.
       // - Finalizer (finalize mode): locked if a record exists AND approval === true.
+      const allRowsAreApprovedHolidayOrWeekend = filteredExistingRows.length > 0 &&
+        filteredEmployees.length > 0 &&
+        filteredEmployees.every(emp => filteredExistingRows.some(row =>
+          row.employee_code === emp.device_user_id &&
+          isHolidayOrWeekendRecord(row) &&
+          !!row.approved_by &&
+          row.approved_by !== 'review'
+        ));
       const isDayLocked = filteredExistingRows.length > 0 && filteredEmployees.every(emp =>
         filteredExistingRows.some(row => {
           if (row.employee_code !== emp.device_user_id) return false;
           if (resolvedMode === 'finalize' || resolvedMode === 'view') return !!row.approval || resolvedMode === 'view';
           return false;
-        })
-      );
+        })     
+         ) || allRowsAreApprovedHolidayOrWeekend;
       setIsLocked(isDayLocked);
 
       // Find locked metadata from the first record if any
@@ -2259,8 +2268,11 @@ export default function TimesheetFinalizer({
           ? (r.verified_by || userData?.email || dbFields.verified_by || null)
           : null;
 
-        const approvedBy = (isHolidayOrWeekend || r.isApproved || !!r.approved_by || isDualUserOrProj || resolvedMode === 'approve' || resolvedMode === 'finalize')
-          ? (r.approved_by || userData?.email || null)
+    //    const approvedBy = (isHolidayOrWeekend || r.isApproved || !!r.approved_by || isDualUserOrProj || resolvedMode === 'approve' || resolvedMode === 'finalize')
+      //    ? (r.approved_by || userData?.email || null)
+        const isHolidayWeekend = isHolidayOrWeekendRecord(r);
+        const approvedBy = (isHolidayWeekend || r.isApproved || !!r.approved_by || isDualUserOrProj || resolvedMode === 'approve' || resolvedMode === 'finalize')
+          ? (r.approved_by || userData?.email || 'System')        
           : null;
 
         validPayloads.push({
@@ -2465,6 +2477,8 @@ export default function TimesheetFinalizer({
       if (statusVal === 'weekend' || statusVal === 'holiday') {
         updated.isVerified = true;
         updated.verified_by = userData?.email || 'System';
+        updated.isApproved = true;
+        updated.approved_by = userData?.email || 'System';
         updated.remarks = statusVal === 'holiday' ? 'Holiday' : 'Weekend';
       }
     }
