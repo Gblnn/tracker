@@ -2453,7 +2453,7 @@ export default function TimesheetFinalizer({
       if (statusVal === 'weekend' || statusVal === 'holiday') {
         updated.isVerified = true;
         updated.verified_by = userData?.email || 'System';
-        updated.remarks = statusVal;
+        updated.remarks = statusVal === 'holiday' ? 'Holiday' : 'Weekend';
       }
     }
 
@@ -2635,7 +2635,7 @@ export default function TimesheetFinalizer({
             }
           } else if (statusVal === 'holiday' || statusVal === 'weekend') {
           // Update remarks to match status for holiday/weekend
-          updated.remarks = statusVal;
+          updated.remarks = statusVal === 'holiday' ? 'Holiday' : 'Weekend';
           updated.isVerified = true;
           updated.verified_by = userData?.email || 'System';
           }         
