@@ -816,6 +816,8 @@ const TimesheetRowComponent = memo(({
                     <SelectItem value="Casual Leave" className="text-xs cursor-pointer focus:bg-slate-50">Casual Leave</SelectItem>
                     <SelectItem value="Emergency Leave" className="text-xs cursor-pointer focus:bg-slate-50">Emergency Leave</SelectItem>
                     <SelectItem value="No Device" className="text-xs cursor-pointer focus:bg-slate-50">No Device</SelectItem>
+                    <SelectItem value="Holiday" className="text-xs cursor-pointer focus:bg-slate-50">Holiday</SelectItem>
+                    <SelectItem value="Weekend" className="text-xs cursor-pointer focus:bg-slate-50">Weekend</SelectItem>
                   </>
                 )}
 
