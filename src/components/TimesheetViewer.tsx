@@ -2547,32 +2547,32 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
 
                   if (c?.status) {
                     if (c.status === 'leave') {
-                      statusBadge = <span className="text-xs font-semibold text-slate-950">Leave</span>;
+                      statusBadge = <span className="text-base font-semibold text-slate-950">Leave</span>;
                     } else if (c.status === 'off') {
-                      statusBadge = <span className="text-xs font-semibold text-slate-950">Off</span>;
+                      statusBadge = <span className="text-base font-semibold text-slate-950">Off</span>;
                     } else if (c.status === 'absent') {
-                      statusBadge = <span className="text-xs font-semibold text-red-700">Absent</span>;
+                      statusBadge = <span className="text-base font-semibold text-red-700">Absent</span>;
                     } else if (c.status === 'present' || c.status === 'present with ot') {
-                      statusBadge = <span className="text-xs font-semibold text-slate-950">Present</span>;
+                      statusBadge = <span className="text-base font-semibold text-slate-950">Present</span>;
                     }
                   } else if (isWeekendDay) {
                     statusBadge = c?.isPresent ? (
-                      <span className="text-xs font-semibold text-slate-950">Worked (Weekend)</span>
+                      <span className="text-base font-semibold text-slate-950">Worked (Weekend)</span>
                     ) : (
-                      <span className="text-xs font-semibold text-slate-950">Weekend</span>
+                      <span className="text-base font-semibold text-slate-950">Weekend</span>
                     );
                   } else if (isHolidayDay) {
                     statusBadge = c?.isPresent ? (
-                      <span className="text-xs font-semibold text-slate-950">Worked (H)</span>
+                      <span className="text-base font-semibold text-slate-950">Worked (H)</span>
                     ) : (
-                      <span className="text-xs font-semibold text-slate-950">Holiday ({holiday?.name})</span>
+                      <span className="text-base font-semibold text-slate-950">Holiday ({holiday?.name})</span>
                     );
                   } else {
                     const isFuture = dateObj > today;
                     statusBadge = isFuture ? (
-                      <span className="text-xs font-semibold text-slate-700">—</span>
+                      <span className="text-base font-semibold text-slate-700">—</span>
                     ) : (
-                      <span className="text-xs font-semibold text-red-700">
+                      <span className="text-base font-semibold text-red-700">
                         Absent
                       </span>
                     );
@@ -2605,17 +2605,17 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
 
                   return (
                     <tr key={d} style={{ height: ROW_H }} className={`hover:bg-gray-55/50 transition-colors border-b border-gray-100 ${rowBg}`}>
-                      <td className="px-4 py-2 text-slate-950 font-semibold text-xs text-left">{displayDate}</td>
+                      <td className="px-4 py-2 text-slate-950 font-semibold text-base text-left">{displayDate}</td>
                       <td className="px-4 py-2 text-slate-950 font-medium text-left capitalize">{displayDayName.toLowerCase()}</td>
                       <td className="px-4 py-2 text-slate-950 font-semibold text-left">{statusBadge}</td>
-                      <td className={`px-4 py-2 tabular-nums text-xs text-left ${timeColor}`}>{checkInText}</td>
-                      <td className={`px-4 py-2 tabular-nums text-xs text-left ${timeColor}`}>{checkOutText}</td>
-                      <td className="px-4 py-2 text-slate-950 font-bold tabular-nums text-xs text-center">{hoursText}</td>
-                      <td className="px-4 py-2 text-slate-950 font-bold tabular-nums text-xs text-center">{overtimeText}</td>
-                      <td className="px-4 py-2 text-slate-950 font-semibold text-xs text-left whitespace-nowrap" title={c?.remarks || '—'}>
+                      <td className={`px-4 py-2 tabular-nums text-base text-left ${timeColor}`}>{checkInText}</td>
+                      <td className={`px-4 py-2 tabular-nums text-base text-left ${timeColor}`}>{checkOutText}</td>
+                      <td className="px-4 py-2 text-slate-950 font-bold tabular-nums text-base text-center">{hoursText}</td>
+                      <td className="px-4 py-2 text-slate-950 font-bold tabular-nums text-base text-center">{overtimeText}</td>
+                      <td className="px-4 py-2 text-slate-950 font-semibold text-base text-left whitespace-nowrap" title={c?.remarks || '—'}>
                         {c?.remarks || '—'}
                       </td>
-                      <td className="px-4 py-2 text-slate-950 font-semibold text-xs text-left whitespace-nowrap" title={c?.approved_by || '—'}>
+                      <td className="px-4 py-2 text-slate-950 font-semibold text-base text-left whitespace-nowrap" title={c?.approved_by || '—'}>
                         {c?.approved_by ? (c.approved_by.includes('@') ? c.approved_by.split('@')[0] : c.approved_by) : '—'}
                       </td>
                     </tr>
@@ -2625,7 +2625,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
             </tbody>
             {selectedEmp && (
               <tfoot className="sticky bottom-0 z-10 border-t-2 border-gray-300 shadow-[0_-2px_5px_rgba(0,0,0,0.05)]">
-                <tr style={{ height: ROW_H }} className="font-bold text-xs bg-gray-100 text-gray-800">
+                <tr style={{ height: ROW_H }} className="font-bold text-base bg-gray-100 text-gray-800">
                   <td className="px-4 py-2 text-left bg-gray-100 text-slate-950" colSpan={3}>TOTALS</td>
                   <td className="px-4 py-2 text-left bg-gray-100 text-slate-950">—</td>
                   <td className="px-4 py-2 text-left bg-gray-100 text-slate-950">—</td>
