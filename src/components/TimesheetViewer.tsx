@@ -1833,7 +1833,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
         const bodyRenderHeight = bodyLayoutHeight * scale;
         const footerImgData = footerCanvas ? footerCanvas.toDataURL('image/jpeg', 0.95) : null;
         const footerRenderWidth = footerImgData ? bodyLayoutWidth * scale : 0;
-        const footerRenderHeight = footerImgData ? footerLayoutHeight * scale : 0;
+        const footerRenderHeight = footerImgData ? footerLayoutHeight * scale * 2 : 0;
         const bodyX = (pageWidth - bodyRenderWidth) / 2;
         const bodyY = margin;
 
@@ -3020,7 +3020,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
                       <tr style={{ height: ROW_H }}>
                         <td colSpan={(reportType === 'hourly' ? 7 : 6) - (isFocal ? 1 : 0)} className="p-2 text-center bg-white/95 backdrop-blur-xs sticky bottom-0 z-10 border-t border-gray-150" style={{ height: ROW_H }}>
                           <div className="flex items-center justify-center gap-4 w-full h-full">
-                            <span className="text-xs text-gray-500 font-medium whitespace-nowrap text-center">
+                            <span className="text-base text-gray-500 font-medium whitespace-nowrap text-center">
                               Showing {limit} of {filtered.length} rows
                             </span>
                             <button
