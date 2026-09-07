@@ -2,7 +2,7 @@ import Back from '@/components/back';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
-import { Download, FileBarChart2, Loader2, Printer, RefreshCw, Search } from 'lucide-react';
+import { ChevronDown, Download, FileBarChart2, Loader2, Printer, RefreshCw, Search, Settings2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -28,14 +28,31 @@ type SummaryRow = {
 
 type DisplayRow = SummaryRow & {
   displayDate: string;
+  dateKey: string;
   displayPunchIn: string;
   displayPunchOut: string;
   displayOvertime: string;
   displayHours: string;
 };
 
-const PAGE_SIZE = 1000;
-const headers = ['Company', 'Employee ID', 'Name', 'Nationality', 'Date', 'Punch In', 'Punch Out', 'OT', 'Project', 'Timesheet Status', 'Timecard Status', 'Remarks', 'Total Hours'];
+const PAGE_SIZE = 100;
+const columns = [
+  { key: 'company_name', label: 'Company' },
+  { key: 'emp_id', label: 'Employee ID' },
+  { key: 'name', label: 'Name' },
+  { key: 'nationality', label: 'Nationality' },
+  { key: 'displayDate', label: 'Date' },
+  { key: 'displayPunchIn', label: 'Punch In' },
+  { key: 'displayPunchOut', label: 'Punch Out' },
+  { key: 'displayOvertime', label: 'OT' },
+  { key: 'project_code', label: 'Project' },
+  { key: 'timesheet_status', label: 'Timesheet Status' },
+  { key: 'timecard_status', label: 'Timecard Status' },
+  { key: 'remarks', label: 'Remarks' },
+  { key: 'displayHours', label: 'Total Hours' },
+] as const;
+type ColumnKey = typeof columns[number]['key'];
+const defaultVisibleColumns: Record<ColumnKey, boolean> = Object.fromEntries(columns.map(({ key }) => [key, true])) as Record<ColumnKey, boolean>;
 
 function formatDate(value: string | null): string {
   if (!value) return '';
@@ -44,6 +61,13 @@ function formatDate(value: string | null): string {
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Dubai',
   }).format(parsed).replace(/\//g, ':');
+}
+
+function dateKey(value: string | null): string {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value.slice(0, 10);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dubai' }).format(parsed);
 }
 
 function formatTime(value: string | null): string {
@@ -63,6 +87,7 @@ function toDisplayRow(row: SummaryRow): DisplayRow {
   return {
     ...row,
     displayDate: formatDate(row.date),
+    dateKey: dateKey(row.date),
     displayPunchIn: formatTime(row.punch_in),
     displayPunchOut: formatTime(row.punch_out),
     displayOvertime: formatTime(row.overtime),
@@ -70,22 +95,42 @@ function toDisplayRow(row: SummaryRow): DisplayRow {
   };
 }
 
-function excelRows(rows: DisplayRow[]) {
-  return rows.map((row) => ({
-    Company: row.company_name || '',
-    'Employee ID': row.emp_id || '',
-    Name: row.name || '',
-    Nationality: row.nationality || '',
-    Date: row.displayDate,
-    'Punch In': row.displayPunchIn,
-    'Punch Out': row.displayPunchOut,
-    OT: row.displayOvertime,
-    Project: row.project_code || '',
-    'Timesheet Status': row.timesheet_status || '',
-    'Timecard Status': row.timecard_status || '',
-    Remarks: row.remarks || '',
-    'Total Hours': row.displayHours,
-  }));
+function columnValue(row: DisplayRow, key: ColumnKey): string {
+  return String(row[key] ?? '');
+}
+
+function excelRows(rows: DisplayRow[], visibleColumns: Record<ColumnKey, boolean>) {
+  return rows.map((row) => Object.fromEntries(
+    columns.filter(({ key }) => visibleColumns[key]).map(({ key, label }) => [label, columnValue(row, key)]),
+  ));
+}
+
+function SearchableSelect({ label, value, options, onChange }: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const filteredOptions = options.filter((option) => option.toLowerCase().includes(query.toLowerCase()));
+
+  return (
+    <div className="relative">
+      <button type="button" onClick={() => setOpen((current) => !current)} className="inline-flex h-8 min-w-[145px] items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 text-left text-xs text-slate-700">
+        <span className="truncate">{value || `All ${label}`}</span><ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-9 z-30 w-60 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
+          <div className="flex items-center gap-1 rounded border border-slate-200 px-2"><Search className="h-3 w-3 text-slate-400" /><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${label.toLowerCase()}...`} className="h-7 w-full text-xs outline-none" /><button type="button" onClick={() => setQuery('')}><X className="h-3 w-3 text-slate-400" /></button></div>
+          <div className="mt-1 max-h-48 overflow-y-auto">
+            <button type="button" onClick={() => { onChange(''); setOpen(false); setQuery(''); }} className={`w-full rounded px-2 py-1.5 text-left text-xs hover:bg-slate-50 ${!value ? 'font-semibold text-teal-700' : ''}`}>All {label}</button>
+            {filteredOptions.map((option) => <button key={option} type="button" onClick={() => { onChange(option); setOpen(false); setQuery(''); }} className={`w-full truncate rounded px-2 py-1.5 text-left text-xs hover:bg-slate-50 ${value === option ? 'font-semibold text-teal-700' : ''}`}>{option}</button>)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function EmployeeTimesheetSummaryReport() {
@@ -96,7 +141,13 @@ export default function EmployeeTimesheetSummaryReport() {
   const [exportingPdf, setExportingPdf] = useState(false);
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [monthFilter, setMonthFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [companyFilter, setCompanyFilter] = useState('');
+  const [projectFilter, setProjectFilter] = useState('');
+  const [employeeFilter, setEmployeeFilter] = useState('');
+  const [visibleColumns, setVisibleColumns] = useState(defaultVisibleColumns);
+  const [hasMore, setHasMore] = useState(true);
   const reportRef = useRef<HTMLDivElement>(null);
 
   const canViewReport = useMemo(() => {
@@ -113,49 +164,86 @@ export default function EmployeeTimesheetSummaryReport() {
     if (userData && !canViewReport) navigate('/attendance', { replace: true });
   }, [canViewReport, navigate, userData]);
 
-  const fetchRows = useCallback(async () => {
+  const fetchRows = useCallback(async (reset = true, offset = 0) => {
     setLoading(true);
     try {
-      let from = 0;
-      const fetched: SummaryRow[] = [];
-      let hasMore = true;
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from('v_employee_timesheet_summary')
-          .select('*')
-          .range(from, from + PAGE_SIZE - 1);
-        if (error) throw error;
-        fetched.push(...((data || []) as SummaryRow[]));
-        hasMore = Boolean(data && data.length === PAGE_SIZE);
-        if (hasMore) from += PAGE_SIZE;
+      let startDate = dateFilter;
+      let endDate = dateFilter;
+      if (!startDate && monthFilter) {
+        const [year, month] = monthFilter.split('-').map(Number);
+        startDate = `${monthFilter}-01`;
+        const nextMonth = new Date(year, month, 1);
+        endDate = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`;
+      } else if (startDate) {
+        const nextDate = new Date(`${startDate}T00:00:00`);
+        nextDate.setDate(nextDate.getDate() + 1);
+        endDate = nextDate.toISOString().slice(0, 10);
       }
-      setRows(fetched.map(toDisplayRow));
+
+      if (!startDate && reset) {
+        const { data: latest, error: latestError } = await supabase
+          .from('v_employee_timesheet_summary')
+          .select('date')
+          .not('date', 'is', null)
+          .order('date', { ascending: false })
+          .limit(1);
+        if (latestError) throw latestError;
+        const latestDate = latest?.[0]?.date as string | undefined;
+        if (latestDate) {
+          startDate = dateKey(latestDate);
+          const nextDate = new Date(`${startDate}T00:00:00`);
+          nextDate.setDate(nextDate.getDate() + 1);
+          endDate = nextDate.toISOString().slice(0, 10);
+        }
+      }
+
+      const pageOffset = reset ? 0 : offset;
+      let query = supabase.from('v_employee_timesheet_summary').select('*').order('date', { ascending: false }).range(pageOffset, pageOffset + PAGE_SIZE - 1);
+      if (startDate && endDate) {
+        query = query.gte('date', `${startDate}T00:00:00+04:00`).lt('date', `${endDate}T00:00:00+04:00`);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      const nextRows = (data || []).map((row) => toDisplayRow(row as SummaryRow));
+      setRows((current) => reset ? nextRows : [...current, ...nextRows]);
+      setHasMore(nextRows.length === PAGE_SIZE);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to load the timesheet summary.');
-      setRows([]);
+      if (reset) setRows([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [dateFilter, monthFilter]);
 
-  useEffect(() => { void fetchRows(); }, [fetchRows]);
+  useEffect(() => {
+    if (userData && canViewReport) {
+      setRows([]);
+      void fetchRows();
+    }
+  }, [canViewReport, fetchRows, userData]);
 
+  const companies = useMemo(() => Array.from(new Set(rows.map((row) => row.company_name).filter(Boolean) as string[])).sort(), [rows]);
+  const projects = useMemo(() => Array.from(new Set(rows.map((row) => row.project_code).filter(Boolean) as string[])).sort(), [rows]);
+  const employees = useMemo(() => Array.from(new Set(rows.map((row) => row.name).filter(Boolean) as string[])).sort(), [rows]);
   const statuses = useMemo(() => Array.from(new Set(rows.map((row) => row.timecard_status).filter(Boolean) as string[])).sort(), [rows]);
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
     return rows.filter((row) => {
       const matchesSearch = !query || [row.company_name, row.emp_id, row.name, row.project_code, row.remarks]
         .some((value) => String(value || '').toLowerCase().includes(query));
-      const matchesDate = !dateFilter || row.displayDate === dateFilter;
+      const matchesDate = !dateFilter && !monthFilter || (dateFilter ? row.dateKey === dateFilter : row.dateKey.startsWith(monthFilter));
+      const matchesCompany = !companyFilter || row.company_name === companyFilter;
+      const matchesProject = !projectFilter || row.project_code === projectFilter;
+      const matchesEmployee = !employeeFilter || row.name === employeeFilter;
       const matchesStatus = statusFilter === 'ALL' || row.timecard_status === statusFilter;
-      return matchesSearch && matchesDate && matchesStatus;
+      return matchesSearch && matchesDate && matchesCompany && matchesProject && matchesEmployee && matchesStatus;
     });
-  }, [dateFilter, rows, search, statusFilter]);
+  }, [companyFilter, dateFilter, employeeFilter, monthFilter, projectFilter, rows, search, statusFilter]);
 
   const downloadExcel = () => {
     const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(excelRows(filteredRows));
-    worksheet['!cols'] = headers.map((header) => ({ wch: Math.max(header.length + 2, 15) }));
+    const worksheet = XLSX.utils.json_to_sheet(excelRows(filteredRows, visibleColumns));
+    worksheet['!cols'] = columns.filter(({ key }) => visibleColumns[key]).map(({ label }) => ({ wch: Math.max(label.length + 2, 15) }));
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Timesheet Summary');
     XLSX.writeFile(workbook, `employee_timesheet_summary_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`);
   };
@@ -168,7 +256,8 @@ export default function EmployeeTimesheetSummaryReport() {
       const margin = 8;
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const columnWidths = [24, 17, 27, 19, 18, 15, 15, 13, 19, 25, 25, 38, 20];
+      const visibleColumnDefs = columns.filter(({ key }) => visibleColumns[key]);
+      const columnWidths = visibleColumnDefs.map(({ key }) => key === 'remarks' ? 38 : 22);
       const rowHeight = 7;
       const title = 'Employee Timesheet Summary';
       const drawHeader = () => {
@@ -182,8 +271,8 @@ export default function EmployeeTimesheetSummaryReport() {
         pdf.setFillColor(30, 41, 59);
         pdf.setTextColor(255, 255, 255);
         pdf.rect(margin, 14, columnWidths.reduce((sum, width) => sum + width, 0), rowHeight, 'F');
-        headers.forEach((header, index) => {
-          pdf.text(header, x + 1.5, 18.5);
+        visibleColumnDefs.forEach(({ label }, index) => {
+          pdf.text(label, x + 1.5, 18.5);
           x += columnWidths[index];
         });
         pdf.setTextColor(30, 41, 59);
@@ -196,7 +285,7 @@ export default function EmployeeTimesheetSummaryReport() {
           drawHeader();
           y = 21;
         }
-        const values = [row.company_name, row.emp_id, row.name, row.nationality, row.displayDate, row.displayPunchIn, row.displayPunchOut, row.displayOvertime, row.project_code, row.timesheet_status, row.timecard_status, row.remarks, row.displayHours];
+        const values = visibleColumnDefs.map(({ key }) => columnValue(row, key));
         if (rowIndex % 2 === 0) {
           pdf.setFillColor(248, 250, 252);
           pdf.rect(margin, y, columnWidths.reduce((sum, width) => sum + width, 0), rowHeight, 'F');
@@ -204,7 +293,7 @@ export default function EmployeeTimesheetSummaryReport() {
         let x = margin;
         pdf.setFontSize(6.5);
         values.forEach((value, index) => {
-          const text = String(value || '').slice(0, index === 11 ? 42 : 22);
+          const text = String(value || '').slice(0, visibleColumnDefs[index].key === 'remarks' ? 42 : 22);
           pdf.text(text, x + 1.5, y + 4.5);
           x += columnWidths[index];
         });
@@ -235,14 +324,27 @@ export default function EmployeeTimesheetSummaryReport() {
 
       <div className="report-no-print flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/70 px-3 py-2">
         <div className="relative min-w-[220px] flex-1 sm:flex-none"><Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search employee, company, project..." className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-3 text-xs outline-none focus:border-teal-500" /></div>
-        <input value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} placeholder="DD:MM:YYYY" className="h-8 w-[125px] rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none focus:border-teal-500" />
+        <SearchableSelect label="Company" value={companyFilter} options={companies} onChange={setCompanyFilter} />
+        <SearchableSelect label="Project" value={projectFilter} options={projects} onChange={setProjectFilter} />
+        <SearchableSelect label="Employee" value={employeeFilter} options={employees} onChange={setEmployeeFilter} />
+        <input type="date" value={dateFilter} onChange={(event) => { setDateFilter(event.target.value); setMonthFilter(''); }} title="Select date" className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-teal-500" />
+        <input type="month" value={monthFilter} onChange={(event) => { setMonthFilter(event.target.value); setDateFilter(''); }} title="Select month" className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-teal-500" />
         <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-teal-500"><option value="ALL">All statuses</option>{statuses.map((status) => <option key={status} value={status}>{status}</option>)}</select>
+        <div className="relative">
+          <button type="button" onClick={(event) => { const menu = event.currentTarget.nextElementSibling; menu?.classList.toggle('hidden'); }} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700"><Settings2 className="h-3.5 w-3.5" />Columns</button>
+          <div className="hidden absolute right-0 top-9 z-30 w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
+            {columns.map(({ key, label }) => <label key={key} className="flex items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-slate-50"><input type="checkbox" checked={visibleColumns[key]} disabled={Object.values(visibleColumns).filter(Boolean).length === 1 && visibleColumns[key]} onChange={() => setVisibleColumns((current) => ({ ...current, [key]: !current[key] }))} />{label}</label>)}
+          </div>
+        </div>
         <span className="text-xs text-slate-500">{filteredRows.length} of {rows.length} records</span>
       </div>
 
       <div id="timesheet-summary-report" ref={reportRef} className="min-h-0 flex-1 overflow-auto p-3">
         <div className="mb-3 flex items-center gap-2"><FileBarChart2 className="h-5 w-5 text-teal-700" /><div><h1 className="text-lg font-semibold text-slate-800">Employee Timesheet Summary</h1><p className="text-xs text-slate-500">Date: DD:MM:YYYY | Time and hours: HH:MM</p></div></div>
-        {loading ? <div className="flex h-40 items-center justify-center gap-2 text-sm text-slate-400"><Loader2 className="h-4 w-4 animate-spin" />Loading report...</div> : <div className="overflow-auto rounded-lg border border-slate-200"><table className="w-full min-w-[1450px] border-collapse text-xs"><thead className="sticky top-0 z-10 bg-slate-800 text-left text-[10px] uppercase tracking-wide text-white"><tr>{headers.map((header) => <th key={header} className="whitespace-nowrap px-3 py-2 font-medium">{header}</th>)}</tr></thead><tbody>{filteredRows.length ? filteredRows.map((row, index) => <tr key={`${row.emp_id}-${row.date}-${index}`} className="border-t border-slate-100 even:bg-slate-50/60 hover:bg-teal-50/40"><td className="px-3 py-2">{row.company_name}</td><td className="px-3 py-2">{row.emp_id}</td><td className="whitespace-nowrap px-3 py-2 font-medium text-slate-700">{row.name}</td><td className="px-3 py-2">{row.nationality}</td><td className="whitespace-nowrap px-3 py-2 tabular-nums">{row.displayDate}</td><td className="px-3 py-2 tabular-nums">{row.displayPunchIn}</td><td className="px-3 py-2 tabular-nums">{row.displayPunchOut}</td><td className="px-3 py-2 tabular-nums">{row.displayOvertime}</td><td className="px-3 py-2">{row.project_code}</td><td className="px-3 py-2">{row.timesheet_status}</td><td className="px-3 py-2">{row.timecard_status}</td><td className="max-w-[240px] px-3 py-2">{row.remarks}</td><td className="px-3 py-2 tabular-nums">{row.displayHours}</td></tr>) : <tr><td colSpan={headers.length} className="px-3 py-12 text-center text-slate-400">No records found</td></tr>}</tbody></table></div>}
+        {loading && !rows.length ? <div className="flex h-40 items-center justify-center gap-2 text-sm text-slate-400"><Loader2 className="h-4 w-4 animate-spin" />Loading report...</div> : <>
+          <div className="overflow-auto rounded-lg border border-slate-200"><table className="w-full min-w-[1100px] border-collapse text-xs"><thead className="sticky top-0 z-10 bg-slate-800 text-left text-[10px] uppercase tracking-wide text-white"><tr>{columns.filter(({ key }) => visibleColumns[key]).map(({ key, label }) => <th key={key} className="whitespace-nowrap px-3 py-2 font-medium">{label}</th>)}</tr></thead><tbody>{filteredRows.length ? filteredRows.map((row, index) => <tr key={`${row.emp_id}-${row.date}-${index}`} className="border-t border-slate-100 even:bg-slate-50/60 hover:bg-teal-50/40">{columns.filter(({ key }) => visibleColumns[key]).map(({ key }) => <td key={key} className={`px-3 py-2 ${key === 'name' ? 'whitespace-nowrap font-medium text-slate-700' : ''} ${key === 'remarks' ? 'max-w-[240px]' : ''} ${key.startsWith('display') ? 'tabular-nums' : ''}`}>{columnValue(row, key)}</td>)}</tr>) : <tr><td colSpan={columns.filter(({ key }) => visibleColumns[key]).length} className="px-3 py-12 text-center text-slate-400">No records found</td></tr>}</tbody></table></div>
+          {hasMore && <div className="flex justify-center py-3"><button type="button" onClick={() => void fetchRows(false, rows.length)} disabled={loading} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Load 100 more</button></div>}
+        </>}
       </div>
     </div>
   );
