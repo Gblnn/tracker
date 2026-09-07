@@ -5,6 +5,7 @@ import RefreshButton from '@/components/refresh-button';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRightLeft, BarChart3, Calendar, ChartLine, Check, Database, FileCheck, FolderKanban, Laptop2, LayoutGrid, List, Loader2, PenLine, Sidebar, Table, Terminal as TerminalIcon, TrendingUp, UserCog, UserPlus, Zap, FileSpreadsheet, Pointer, PlaneTakeoff } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { EmployeeTable } from '../components/EmployeeTable';
 import { PunchLog } from '../components/PunchLog';
 import DetailedBreakdown from '../components/DetailedBreakdown';
@@ -39,6 +40,7 @@ const formatSize = (bytes: number): string => {
 type Tab = 'summary' | 'log' | 'reports' | 'devices' | 'add' | 'manage' | 'terminal' | 'data-management' | 'analytics' | 'transfers' | 'projects' | 'finalize' | 'breakdown' | 'leave-log' | 'timesheets';
 
 export default function AttendanceDashboard() {
+  const navigate = useNavigate();
   const [date, setDate] = useState<string>(todayISO());
   const [tab, setTab] = useState<Tab>('summary');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -386,6 +388,8 @@ export default function AttendanceDashboard() {
                   {isAllowed('timesheets') && (
                     <Directive bg={tab === 'timesheets' ? "rgba(100 100 100/ 0.05)" : "rgba(100 100 100/ 0)"} width="100%" height='3rem' titleSize="0.9rem" onClick={() => setTab('timesheets')} title="Timesheets" icon={<FileSpreadsheet size={16} />} />
                   )}
+                  
+                  <Directive bg="rgba(100 100 100/ 0)" width="100%" height='3rem' titleSize="0.9rem" onClick={() => navigate('/employee-timesheet-summary')} title="Summary Report" icon={<FileBarChart2 size={16} />} />
                 </div>
 
                 <div style={{ width: "100%", paddingTop: "0.2rem", flexShrink: 0 }}>
