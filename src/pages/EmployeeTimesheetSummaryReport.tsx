@@ -1,5 +1,6 @@
 import Back from '@/components/back';
 import { useAuth } from '@/components/AuthProvider';
+import { DatePicker } from '@/components/date-picker';
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 import { ChevronDown, Download, FileBarChart2, Loader2, Printer, RefreshCw, Search, Settings2, X } from 'lucide-react';
@@ -142,6 +143,7 @@ export default function EmployeeTimesheetSummaryReport() {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [monthFilter, setMonthFilter] = useState('');
+  const [calendarMode, setCalendarMode] = useState<'day' | 'month'>('day');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [companyFilter, setCompanyFilter] = useState('');
   const [projectFilter, setProjectFilter] = useState('');
@@ -178,23 +180,6 @@ export default function EmployeeTimesheetSummaryReport() {
         const nextDate = new Date(`${startDate}T00:00:00`);
         nextDate.setDate(nextDate.getDate() + 1);
         endDate = nextDate.toISOString().slice(0, 10);
-      }
-
-      if (!startDate && reset) {
-        const { data: latest, error: latestError } = await supabase
-          .from('v_employee_timesheet_summary')
-          .select('date')
-          .not('date', 'is', null)
-          .order('date', { ascending: false })
-          .limit(1);
-        if (latestError) throw latestError;
-        const latestDate = latest?.[0]?.date as string | undefined;
-        if (latestDate) {
-          startDate = dateKey(latestDate);
-          const nextDate = new Date(`${startDate}T00:00:00`);
-          nextDate.setDate(nextDate.getDate() + 1);
-          endDate = nextDate.toISOString().slice(0, 10);
-        }
       }
 
       const pageOffset = reset ? 0 : offset;
@@ -327,13 +312,30 @@ export default function EmployeeTimesheetSummaryReport() {
         <SearchableSelect label="Company" value={companyFilter} options={companies} onChange={setCompanyFilter} />
         <SearchableSelect label="Project" value={projectFilter} options={projects} onChange={setProjectFilter} />
         <SearchableSelect label="Employee" value={employeeFilter} options={employees} onChange={setEmployeeFilter} />
-        <input type="date" value={dateFilter} onChange={(event) => { setDateFilter(event.target.value); setMonthFilter(''); }} title="Select date" className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-teal-500" />
-        <input type="month" value={monthFilter} onChange={(event) => { setMonthFilter(event.target.value); setDateFilter(''); }} title="Select month" className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-teal-500" />
+        <div className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5">
+          <button type="button" onClick={() => setCalendarMode('day')} className={`h-7 rounded-md px-2 text-[11px] ${calendarMode === 'day' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>Day</button>
+          <button type="button" onClick={() => setCalendarMode('month')} className={`h-7 rounded-md px-2 text-[11px] ${calendarMode === 'month' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>Month</button>
+        </div>
+        <DatePicker
+          value={calendarMode === 'day' ? dateFilter : (monthFilter ? `${monthFilter}-01` : '')}
+          onChange={(value) => {
+            const selectedValue = typeof value === 'function' ? value(calendarMode === 'day' ? dateFilter : (monthFilter ? `${monthFilter}-01` : '')) : value;
+            if (calendarMode === 'day') {
+              setDateFilter(selectedValue);
+              setMonthFilter('');
+            } else {
+              setMonthFilter(selectedValue ? selectedValue.slice(0, 7) : '');
+              setDateFilter('');
+            }
+          }}
+          placeholder={calendarMode === 'day' ? 'All dates' : 'All months'}
+          className="h-8 w-[112px] px-2 text-xs"
+        />
         <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-teal-500"><option value="ALL">All statuses</option>{statuses.map((status) => <option key={status} value={status}>{status}</option>)}</select>
         <div className="relative">
           <button type="button" onClick={(event) => { const menu = event.currentTarget.nextElementSibling; menu?.classList.toggle('hidden'); }} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700"><Settings2 className="h-3.5 w-3.5" />Columns</button>
           <div className="hidden absolute right-0 top-9 z-30 w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-            {columns.map(({ key, label }) => <label key={key} className="flex items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-slate-50"><input type="checkbox" checked={visibleColumns[key]} disabled={Object.values(visibleColumns).filter(Boolean).length === 1 && visibleColumns[key]} onChange={() => setVisibleColumns((current) => ({ ...current, [key]: !current[key] }))} />{label}</label>)}
+            {columns.map(({ key, label }) => <label key={key} className="flex w-full items-center justify-start gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-slate-50"><input type="checkbox" checked={visibleColumns[key]} disabled={Object.values(visibleColumns).filter(Boolean).length === 1 && visibleColumns[key]} onChange={() => setVisibleColumns((current) => ({ ...current, [key]: !current[key] }))} />{label}</label>)}
           </div>
         </div>
         <span className="text-xs text-slate-500">{filteredRows.length} of {rows.length} records</span>
