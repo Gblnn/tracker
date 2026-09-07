@@ -1,8 +1,10 @@
 import Back from '@/components/back';
+import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 import { Download, FileBarChart2, Loader2, Printer, RefreshCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -87,6 +89,8 @@ function excelRows(rows: DisplayRow[]) {
 }
 
 export default function EmployeeTimesheetSummaryReport() {
+  const { userData } = useAuth();
+  const navigate = useNavigate();
   const [rows, setRows] = useState<DisplayRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [exportingPdf, setExportingPdf] = useState(false);
@@ -94,6 +98,20 @@ export default function EmployeeTimesheetSummaryReport() {
   const [dateFilter, setDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const reportRef = useRef<HTMLDivElement>(null);
+
+  const canViewReport = useMemo(() => {
+    if (userData?.role === 'admin' || userData?.role === 'site_admin') return true;
+    try {
+      const permissions = JSON.parse(userData?.clearance || '{}') as Record<string, boolean>;
+      return permissions.timesheet_summary_report === true;
+    } catch {
+      return false;
+    }
+  }, [userData]);
+
+  useEffect(() => {
+    if (userData && !canViewReport) navigate('/attendance', { replace: true });
+  }, [canViewReport, navigate, userData]);
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
