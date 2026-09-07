@@ -41,7 +41,7 @@ function formatDate(value: string | null): string {
   if (Number.isNaN(parsed.getTime())) return value.slice(0, 10);
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Dubai',
-  }).format(parsed).replaceAll('/', ':');
+  }).format(parsed).replace(/\//g, ':');
 }
 
 function formatTime(value: string | null): string {
