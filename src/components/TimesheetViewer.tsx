@@ -1361,7 +1361,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
 
     if (reportView === 'individual') {
       if (!selectedEmp) return;
-      rows.push([`Staff Individual Monthly Report — ${selectedEmp.name}`]);
+      rows.push([`Employee Individual Monthly Report — ${selectedEmp.name}`]);
       rows.push([`Period: ${monthLabel(month, year)}`]);
       rows.push([]);
       rows.push(['Date', 'Day', 'Status', 'Check In', 'Check Out', 'Hours', 'Overtime', 'Remarks', 'Approved By']);
@@ -1833,7 +1833,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
         const bodyRenderHeight = bodyLayoutHeight * scale;
         const footerImgData = footerCanvas ? footerCanvas.toDataURL('image/jpeg', 0.95) : null;
         const footerRenderWidth = footerImgData ? bodyLayoutWidth * scale : 0;
-        const footerRenderHeight = footerImgData ? footerLayoutHeight * scale * 2 : 0;
+        const footerRenderHeight = footerImgData ? footerLayoutHeight * scale : 0;
         const bodyX = (pageWidth - bodyRenderWidth) / 2;
         const bodyY = margin;
 
@@ -2605,11 +2605,11 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
 
                   return (
                     <tr key={d} style={{ height: ROW_H }} className={`hover:bg-gray-55/50 transition-colors border-b border-gray-100 ${rowBg}`}>
-                      <td className="px-4 py-2 text-slate-950 font-normal text-base text-left">{displayDate}</td>
+                      <td className="px-4 py-2 text-slate-950 font-medium text-base text-left">{displayDate}</td>
                       <td className="px-4 py-2 text-slate-950 font-medium text-left capitalize">{displayDayName.toLowerCase()}</td>
                       <td className="px-4 py-2 text-slate-950 font-normal text-left">{statusBadge}</td>
-                      <td className={`px-4 py-2 tabular-nums text-base text-left ${timeColor}`}>{checkInText}</td>
-                      <td className={`px-4 py-2 tabular-nums text-base text-left ${timeColor}`}>{checkOutText}</td>
+                      <td className={`px-4 py-2 tabular-nums text-base font-medium text-left ${timeColor}`}>{checkInText}</td>
+                      <td className={`px-4 py-2 tabular-nums text-base font-medium text-left ${timeColor}`}>{checkOutText}</td>
                       <td className="px-4 py-2 text-slate-950 font-normal tabular-nums text-base text-center">{hoursText}</td>
                       <td className="px-4 py-2 text-slate-950 font-normal tabular-nums text-base text-center">{overtimeText}</td>
                       <td className="px-4 py-2 text-slate-950 font-normal text-base text-left whitespace-nowrap" title={c?.remarks || '—'}>
