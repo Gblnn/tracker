@@ -97,6 +97,7 @@ const ATTENDANCE_FINALIZE_KEY = "attendance_finalize";
 const ATTENDANCE_LEAVE_LOG_KEY = "attendance_leave_log";
 const TIMESHEET_FINALIZER_KEY = "timesheet_finalizer";
 const TIMESHEET_VIEWER_KEY = "timesheet_viewer";
+const TIMESHEET_SUMMARY_REPORT_KEY = "timesheet_summary_report";
 
 const ATTENDANCE_SUBOPTIONS = [
   { key: ATTENDANCE_EDIT_KEY, label: 'Editing Privileges' },
@@ -108,6 +109,7 @@ const ATTENDANCE_SUBOPTIONS = [
   { key: ATTENDANCE_LEAVE_LOG_KEY, label: 'Leave Log Page' },
   { key: TIMESHEET_FINALIZER_KEY, label: 'Timesheet Finalizer' },
   { key: TIMESHEET_VIEWER_KEY, label: 'Timesheet Viewer' },
+  { key: TIMESHEET_SUMMARY_REPORT_KEY, label: 'Timesheet Summary Report' },  
 ];
 
 const countEnabledModules = (permissions: Record<string, boolean>) =>
@@ -861,6 +863,7 @@ export default function Users() {
         updated[ATTENDANCE_LEAVE_LOG_KEY] = false;
         updated[TIMESHEET_FINALIZER_KEY] = false;
         updated[TIMESHEET_VIEWER_KEY] = false;
+        updated[TIMESHEET_SUMMARY_REPORT_KEY] = false;        
       }
 
       return updated;
@@ -893,6 +896,7 @@ export default function Users() {
         updated[ATTENDANCE_LEAVE_LOG_KEY] = false;
         updated[TIMESHEET_FINALIZER_KEY] = false;
         updated[TIMESHEET_VIEWER_KEY] = false;
+        updated[TIMESHEET_SUMMARY_REPORT_KEY] = false;        
       }
 
       return updated;
