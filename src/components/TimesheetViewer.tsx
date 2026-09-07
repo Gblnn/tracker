@@ -1824,7 +1824,7 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
         });
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
-        const margin = 6;
+        const margin = 2;
         const maxWidth = pageWidth - margin * 2;
         const maxHeight = pageHeight - margin * 2;
         const combinedHeight = bodyLayoutHeight + footerLayoutHeight;
