@@ -3,7 +3,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { DatePicker } from '@/components/date-picker';
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
-import { ChevronDown, Download, FileBarChart2, Loader2, Printer, RefreshCw, Search, Settings2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, Download, FileBarChart2, Loader2, Printer, RefreshCw, Search, Settings2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -54,6 +54,7 @@ const columns = [
   { key: 'displayHours', label: 'Total Hours' },
 ] as const;
 type ColumnKey = typeof columns[number]['key'];
+type SortableColumnKey = Exclude<ColumnKey, 'serialNumber'>;
 const defaultVisibleColumns: Record<ColumnKey, boolean> = Object.fromEntries(columns.map(({ key }) => [key, true])) as Record<ColumnKey, boolean>;
 
 function formatDate(value: string | null): string {
@@ -158,6 +159,8 @@ export default function EmployeeTimesheetSummaryReport() {
   const [visibleColumns, setVisibleColumns] = useState(defaultVisibleColumns);
   const [hasMore, setHasMore] = useState(true);
   const [loadingAll, setLoadingAll] = useState(false);  
+  const [sortColumn, setSortColumn] = useState<SortableColumnKey | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');  
   const reportRef = useRef<HTMLDivElement>(null);
 
   const canViewReport = useMemo(() => {
@@ -266,7 +269,7 @@ export default function EmployeeTimesheetSummaryReport() {
   const statuses = useMemo(() => Array.from(new Set(rows.map((row) => row.timecard_status).filter(Boolean) as string[])).sort(), [rows]);
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return rows.filter((row) => {
+    const matchingRows = rows.filter((row) => {
       const matchesSearch = !query || [row.company_name, row.emp_id, row.name, row.project_code, row.remarks]
         .some((value) => String(value || '').toLowerCase().includes(query));
       const matchesDate = !dateFilter && !monthFilter || (dateFilter ? row.dateKey === dateFilter : row.dateKey.startsWith(monthFilter));
@@ -276,7 +279,33 @@ export default function EmployeeTimesheetSummaryReport() {
       const matchesStatus = statusFilter === 'ALL' || row.timecard_status === statusFilter;
       return matchesSearch && matchesDate && matchesCompany && matchesProject && matchesEmployee && matchesStatus;
     });
-  }, [companyFilter, dateFilter, employeeFilter, monthFilter, projectFilter, rows, search, statusFilter]);
+//  }, [companyFilter, dateFilter, employeeFilter, monthFilter, projectFilter, rows, search, statusFilter]);
+    if (!sortColumn) return matchingRows;
+
+    return [...matchingRows].sort((left, right) => {
+      const leftValue = sortColumn === 'displayDate' ? left.dateKey : String(left[sortColumn] ?? '');
+      const rightValue = sortColumn === 'displayDate' ? right.dateKey : String(right[sortColumn] ?? '');
+      const comparison = leftValue.localeCompare(rightValue, undefined, { numeric: true, sensitivity: 'base' });
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [companyFilter, dateFilter, employeeFilter, monthFilter, projectFilter, rows, search, sortColumn, sortDirection, statusFilter]);
+
+  const toggleSort = (key: ColumnKey) => {
+    if (key === 'serialNumber') return;
+    const sortableKey = key as SortableColumnKey;
+    if (sortColumn === sortableKey) {
+      setSortDirection((current) => current === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(sortableKey);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortIcon = (key: ColumnKey) => {
+    if (key === 'serialNumber') return null;
+    if (sortColumn !== key) return <ArrowUpDown className="h-3 w-3 opacity-50" />;
+    return sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
+  };    
 
   const downloadExcel = () => {
     const workbook = XLSX.utils.book_new();
@@ -397,8 +426,8 @@ export default function EmployeeTimesheetSummaryReport() {
       <div id="timesheet-summary-report" ref={reportRef} className="min-h-0 flex-1 overflow-auto p-3">
         <div className="mb-3 flex items-center gap-2"><FileBarChart2 className="h-5 w-5 text-teal-700" /><div><h1 className="text-lg font-semibold text-slate-800">Employee Timesheet Summary</h1><p className="text-xs text-slate-500">Date: DD-MM-YYYY | Time and hours: HH:MM</p></div></div>
         {loading && !rows.length ? <div className="flex h-40 items-center justify-center gap-2 text-sm text-slate-400"><Loader2 className="h-4 w-4 animate-spin" />Loading report...</div> : <>
-          <div className="overflow-auto rounded-lg border border-slate-200"><table className="w-full min-w-[1100px] border-collapse text-xs"><thead className="sticky top-0 z-10 bg-slate-800 text-left text-[10px] uppercase tracking-wide text-white"><tr>{columns.filter(({ key }) => visibleColumns[key]).map(({ key, label }) => <th key={key} className="whitespace-nowrap px-3 py-2 font-medium">{label}</th>)}</tr></thead><tbody>{filteredRows.length ? filteredRows.map((row, index) => <tr key={`${row.emp_id}-${row.date}-${index}`} className="border-t border-slate-100 even:bg-slate-50/60 hover:bg-teal-50/40">{columns.filter(({ key }) => visibleColumns[key]).map(({ key }) => <td key={key} className={`px-3 py-2 ${key === 'name' ? 'whitespace-nowrap font-medium text-slate-700' : ''} ${key === 'remarks' ? 'max-w-[240px]' : ''} ${key.startsWith('display') ? 'tabular-nums' : ''}`}>{columnValue(row, key, index + 1)}</td>)}</tr>) : <tr><td colSpan={columns.filter(({ key }) => visibleColumns[key]).length} className="px-3 py-12 text-center text-slate-400">No records found</td></tr>}</tbody></table></div>
-                    {hasMore && <div className="flex justify-center gap-2 py-3"><button type="button" onClick={() => void fetchRows(false, rows.length)} disabled={loading || loadingAll} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{loading && !loadingAll && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Load 100 more</button><button type="button" onClick={() => void loadAllRows()} disabled={!dateFilter && !monthFilter || loading || loadingAll} title={!dateFilter && !monthFilter ? 'Select a day or month to load the full report' : 'Load full report'} className="inline-flex items-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-xs font-medium text-white hover:bg-teal-600 disabled:cursor-not-allowed disabled:opacity-50">{loadingAll && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Load full report</button></div>}
+          <div className="overflow-auto rounded-lg border border-slate-200"><table className="w-full min-w-[1100px] border-collapse text-xs"><thead className="sticky top-0 z-10 bg-slate-800 text-left text-[10px] uppercase tracking-wide text-white"><tr>{columns.filter(({ key }) => visibleColumns[key]).map(({ key, label }) => <th key={key} className="whitespace-nowrap px-3 py-2 font-medium"><button type="button" onClick={() => toggleSort(key)} disabled={key === 'serialNumber'} className="inline-flex items-center gap-1 disabled:cursor-default">{label}{sortIcon(key)}</button></th>)}</tr></thead><tbody>{filteredRows.length ? filteredRows.map((row, index) => <tr key={`${row.emp_id}-${row.date}-${index}`} className="border-t border-slate-100 even:bg-slate-50/60 hover:bg-teal-50/40">{columns.filter(({ key }) => visibleColumns[key]).map(({ key }) => <td key={key} className={`px-3 py-2 ${key === 'name' ? 'whitespace-nowrap font-medium text-slate-700' : ''} ${key === 'remarks' ? 'max-w-[240px]' : ''} ${key.startsWith('display') ? 'tabular-nums' : ''}`}>{columnValue(row, key, index + 1)}</td>)}</tr>) : <tr><td colSpan={columns.filter(({ key }) => visibleColumns[key]).length} className="px-3 py-12 text-center text-slate-400">No records found</td></tr>}</tbody></table></div>
+          {hasMore && <div className="flex justify-center gap-2 py-3"><button type="button" onClick={() => void fetchRows(false, rows.length)} disabled={loading || loadingAll} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{loading && !loadingAll && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Load 100 more</button><button type="button" onClick={() => void loadAllRows()} disabled={!dateFilter && !monthFilter || loading || loadingAll} title={!dateFilter && !monthFilter ? 'Select a day or month to load the full report' : 'Load full report'} className="inline-flex items-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-xs font-medium text-white hover:bg-teal-600 disabled:cursor-not-allowed disabled:opacity-50">{loadingAll && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Load full report</button></div>}
         </>}
       </div>
     </div>
