@@ -39,6 +39,16 @@ type DatePickerProps =
       style?: React.CSSProperties
     }
 
+function parseDateValue(value: string): Date | undefined {
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (dateOnlyMatch) {
+    return new Date(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3]))
+  }
+
+  const date = new Date(value)
+  return isNaN(date.getTime()) ? undefined : date
+}
+
 export function DatePicker(props: DatePickerProps) {
   const {
     mode = "single",
@@ -61,8 +71,9 @@ export function DatePicker(props: DatePickerProps) {
 
     const selectedDate = React.useMemo(() => {
       if (!value) return undefined
-      const d = new Date(value)
-      return isNaN(d.getTime()) ? undefined : d
+      return parseDateValue(value)
+      //const d = new Date(value)
+      //return isNaN(d.getTime()) ? undefined : d
     }, [value])
 
     return (
@@ -79,7 +90,8 @@ export function DatePicker(props: DatePickerProps) {
             )}
           >
             {/* <CalendarIcon className="mr-2 h-2 w-2" /> */}
-            {selectedDate ? format(selectedDate, "PPP") : placeholder}
+            {selectedDate ? format(selectedDate, "dd-MM-yyyy") : placeholder}            
+            //{selectedDate ? format(selectedDate, "PPP") : placeholder}
           </Button>
         </DialogTrigger>
 
@@ -107,8 +119,10 @@ export function DatePicker(props: DatePickerProps) {
 
   const selectedRange = React.useMemo(() => {
     return {
-      from: value?.from ? new Date(value.from) : undefined,
-      to: value?.to ? new Date(value.to) : undefined,
+      from: value?.from ? parseDateValue(value.from) : undefined,
+      to: value?.to ? parseDateValue(value.to) : undefined,
+      //from: value?.from ? new Date(value.from) : undefined,
+      //to: value?.to ? new Date(value.to) : undefined,
     }
   }, [value])
 
@@ -128,9 +142,12 @@ export function DatePicker(props: DatePickerProps) {
           <CalendarIcon className="mr-2 h-4 w-4" />
           {value?.from ? (
             value?.to ? (
-              `${format(new Date(value.from), "PPP")} - ${format(
-                new Date(value.to),
-                "PPP"
+              `${format(parseDateValue(value.from)!, "dd-MM-yyyy")} - ${format(
+                parseDateValue(value.to)!,
+                "dd-MM-yyyy"              
+              //`${format(new Date(value.from), "PPP")} - ${format(
+                //new Date(value.to),
+                //"PPP"
               )}`
             ) : (
               format(new Date(value.from), "PPP")
