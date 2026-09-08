@@ -198,6 +198,11 @@ export default function EmployeeTimesheetSummaryReport() {
       if (startDate && endDate) {
         query = query.gte('date', `${startDate}T00:00:00+04:00`).lt('date', `${endDate}T00:00:00+04:00`);
       }
+      if (companyFilter) query = query.eq('company_name', companyFilter);
+      if (projectFilter) query = query.eq('project_code', projectFilter);
+      if (employeeFilter) query = query.eq('name', employeeFilter);
+      if (statusFilter !== 'ALL') query = query.eq('timecard_status', statusFilter);
+      
       const { data, error } = await query;
       if (error) throw error;
       const nextRows = (data || []).map((row) => toDisplayRow(row as SummaryRow));
@@ -209,7 +214,7 @@ export default function EmployeeTimesheetSummaryReport() {
     } finally {
       setLoading(false);
     }
-  }, [dateFilter, monthFilter]);
+    }, [companyFilter, dateFilter, employeeFilter, monthFilter, projectFilter, statusFilter]);
   
   const loadAllRows = useCallback(async () => {
     setLoadingAll(true);
