@@ -162,6 +162,7 @@ export default function EmployeeTimesheetSummaryReport() {
   const [sortColumn, setSortColumn] = useState<SortableColumnKey | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');  
   const reportRef = useRef<HTMLDivElement>(null);
+  const requestIdRef = useRef(0);
 
   const canViewReport = useMemo(() => {
     if (userData?.role === 'admin' || userData?.role === 'site_admin') return true;
@@ -178,6 +179,7 @@ export default function EmployeeTimesheetSummaryReport() {
   }, [canViewReport, navigate, userData]);
 
   const fetchRows = useCallback(async (reset = true, offset = 0) => {
+  const requestId = ++requestIdRef.current;    
     setLoading(true);
     try {
       let startDate = dateFilter;
@@ -201,22 +203,24 @@ export default function EmployeeTimesheetSummaryReport() {
       if (companyFilter) query = query.eq('company_name', companyFilter);
       if (projectFilter) query = query.eq('project_code', projectFilter);
       if (employeeFilter) query = query.eq('name', employeeFilter);
-      if (statusFilter !== 'ALL') query = query.eq('timecard_status', statusFilter);
-      
+      if (statusFilter !== 'ALL') query = query.eq('timecard_status', statusFilter);      
       const { data, error } = await query;
       if (error) throw error;
+      if (requestId !== requestIdRef.current) return;      
       const nextRows = (data || []).map((row) => toDisplayRow(row as SummaryRow));
       setRows((current) => reset ? nextRows : [...current, ...nextRows]);
       setHasMore(nextRows.length === PAGE_SIZE);
     } catch (error) {
+      if (requestId !== requestIdRef.current) return;      
       toast.error(error instanceof Error ? error.message : 'Unable to load the timesheet summary.');
       if (reset) setRows([]);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);      
     }
     }, [companyFilter, dateFilter, employeeFilter, monthFilter, projectFilter, statusFilter]);
   
   const loadAllRows = useCallback(async () => {
+    const requestId = ++requestIdRef.current;    
     setLoadingAll(true);
     setLoading(true);
     try {
@@ -245,7 +249,8 @@ export default function EmployeeTimesheetSummaryReport() {
         if (statusFilter !== 'ALL') query = query.eq('timecard_status', statusFilter);       
         const { data, error } = await query;
         if (error) throw error;
-
+        if (requestId !== requestIdRef.current) return;
+        
         pageRows = (data || []).map((row) => toDisplayRow(row as SummaryRow));
         allRows.push(...pageRows);
         offset += PAGE_SIZE;
@@ -254,10 +259,13 @@ export default function EmployeeTimesheetSummaryReport() {
       setRows(allRows);
       setHasMore(false);
     } catch (error) {
+      if (requestId !== requestIdRef.current) return;
       toast.error(error instanceof Error ? error.message : 'Unable to load the full timesheet summary.');
     } finally {
-      setLoading(false);
-      setLoadingAll(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+        setLoadingAll(false);
+      }
     }
   }, [companyFilter, dateFilter, employeeFilter, monthFilter, projectFilter, statusFilter]);
 
@@ -278,11 +286,12 @@ export default function EmployeeTimesheetSummaryReport() {
       const matchesSearch = !query || [row.company_name, row.emp_id, row.name, row.project_code, row.remarks]
         .some((value) => String(value || '').toLowerCase().includes(query));
       const matchesDate = !dateFilter && !monthFilter || (dateFilter ? row.dateKey === dateFilter : row.dateKey.startsWith(monthFilter));
-      const matchesCompany = !companyFilter || row.company_name === companyFilter;
-      const matchesProject = !projectFilter || row.project_code === projectFilter;
-      const matchesEmployee = !employeeFilter || row.name === employeeFilter;
-      const matchesStatus = statusFilter === 'ALL' || row.timecard_status === statusFilter;
-      return matchesSearch && matchesDate && matchesCompany && matchesProject && matchesEmployee && matchesStatus;
+      //const matchesCompany = !companyFilter || row.company_name === companyFilter;
+      //const matchesProject = !projectFilter || row.project_code === projectFilter;
+      //const matchesEmployee = !employeeFilter || row.name === employeeFilter;
+      //const matchesStatus = statusFilter === 'ALL' || row.timecard_status === statusFilter;
+      //return matchesSearch && matchesDate && matchesCompany && matchesProject && matchesEmployee && matchesStatus;
+      return matchesSearch && matchesDate;
     });
 //  }, [companyFilter, dateFilter, employeeFilter, monthFilter, projectFilter, rows, search, statusFilter]);
     if (!sortColumn) return matchingRows;
