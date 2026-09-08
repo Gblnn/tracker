@@ -254,11 +254,11 @@ export default function EmployeeTimesheetSummaryReport() {
   }, [companyFilter, dateFilter, employeeFilter, monthFilter, projectFilter, statusFilter]);
 
   useEffect(() => {
-    if (userData && canViewReport) {
+    if (userData?.email && canViewReport) {
       setRows([]);
       void fetchRows();
     }
-  }, [canViewReport, fetchRows, userData]);
+  }, [canViewReport, fetchRows, userData?.email]);
 
   const companies = useMemo(() => Array.from(new Set(rows.map((row) => row.company_name).filter(Boolean) as string[])).sort(), [rows]);
   const projects = useMemo(() => Array.from(new Set(rows.map((row) => row.project_code).filter(Boolean) as string[])).sort(), [rows]);
