@@ -83,7 +83,6 @@ export function DatePicker(props: DatePickerProps) {
             style={{ width: "fit-content", height: "1.9rem", ...style }}
             variant="outline"
             disabled={disabled}
-            aria-label={selectedDate ? format(selectedDate, "dd-MM-yyyy") : placeholder}            
             className={cn(
               "w-[180px] justify-start text-left font-normal",
               !value && "text-muted-foreground",
@@ -91,8 +90,7 @@ export function DatePicker(props: DatePickerProps) {
             )}
           >
             {/* <CalendarIcon className="mr-2 h-2 w-2" /> */}
-            {selectedDate ? format(selectedDate, "dd-MM-yyyy") : placeholder}            
-            //{selectedDate ? format(selectedDate, "PPP") : placeholder}
+            {selectedDate ? format(selectedDate, "PPP") : placeholder}
           </Button>
         </DialogTrigger>
 
@@ -133,11 +131,6 @@ export function DatePicker(props: DatePickerProps) {
         <Button
           variant="outline"
           disabled={disabled}
-          aria-label={value?.from ? (
-            value.to
-              ? `${format(parseDateValue(value.from)!, "dd-MM-yyyy")} - ${format(parseDateValue(value.to)!, "dd-MM-yyyy")}`
-              : format(parseDateValue(value.from)!, "dd-MM-yyyy")
-          ) : placeholder}         
           style={{ border: "", width: "fit-content", ...style }}
           className={cn(
             " justify-start text-left font-normal",
@@ -148,15 +141,12 @@ export function DatePicker(props: DatePickerProps) {
           <CalendarIcon className="mr-2 h-4 w-4" />
           {value?.from ? (
             value?.to ? (
-              `${format(parseDateValue(value.from)!, "dd-MM-yyyy")} - ${format(
+              `${format(parseDateValue(value.from)!, "PPP")} - ${format(
                 parseDateValue(value.to)!,
-                "dd-MM-yyyy"              
-              //`${format(new Date(value.from), "PPP")} - ${format(
-                //new Date(value.to),
-                //"PPP"
+                "PPP"
               )}`
             ) : (
-              format(new Date(value.from), "PPP")
+              format(parseDateValue(value.from)!, "PPP")
             )
           ) : (
             placeholder
