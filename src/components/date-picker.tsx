@@ -83,6 +83,7 @@ export function DatePicker(props: DatePickerProps) {
             style={{ width: "fit-content", height: "1.9rem", ...style }}
             variant="outline"
             disabled={disabled}
+            aria-label={selectedDate ? format(selectedDate, "dd-MM-yyyy") : placeholder}            
             className={cn(
               "w-[180px] justify-start text-left font-normal",
               !value && "text-muted-foreground",
@@ -132,6 +133,11 @@ export function DatePicker(props: DatePickerProps) {
         <Button
           variant="outline"
           disabled={disabled}
+          aria-label={value?.from ? (
+            value.to
+              ? `${format(parseDateValue(value.from)!, "dd-MM-yyyy")} - ${format(parseDateValue(value.to)!, "dd-MM-yyyy")}`
+              : format(parseDateValue(value.from)!, "dd-MM-yyyy")
+          ) : placeholder}         
           style={{ border: "", width: "fit-content", ...style }}
           className={cn(
             " justify-start text-left font-normal",
