@@ -36,6 +36,13 @@ type DisplayRow = SummaryRow & {
   displayHours: string;
 };
 
+type FilterOptions = {
+  companies: string[];
+  projects: string[];
+  employees: string[];
+  statuses: string[];
+};
+
 const PAGE_SIZE = 100;
 const columns = [
   { key: 'serialNumber', label: 'S.No.' },
@@ -160,7 +167,8 @@ export default function EmployeeTimesheetSummaryReport() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingAll, setLoadingAll] = useState(false);  
   const [sortColumn, setSortColumn] = useState<SortableColumnKey | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');  
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({ companies: [], projects: [], employees: [], statuses: [] });  
   const reportRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
 
@@ -208,6 +216,12 @@ export default function EmployeeTimesheetSummaryReport() {
       if (error) throw error;
       if (requestId !== requestIdRef.current) return;      
       const nextRows = (data || []).map((row) => toDisplayRow(row as SummaryRow));
+        setFilterOptions((current) => ({
+        companies: Array.from(new Set([...current.companies, ...nextRows.map((row) => row.company_name).filter(Boolean) as string[]])).sort(),
+        projects: Array.from(new Set([...current.projects, ...nextRows.map((row) => row.project_code).filter(Boolean) as string[]])).sort(),
+        employees: Array.from(new Set([...current.employees, ...nextRows.map((row) => row.name).filter(Boolean) as string[]])).sort(),
+        statuses: Array.from(new Set([...current.statuses, ...nextRows.map((row) => row.timecard_status).filter(Boolean) as string[]])).sort(),
+      }));      
       setRows((current) => reset ? nextRows : [...current, ...nextRows]);
       setHasMore(nextRows.length === PAGE_SIZE);
     } catch (error) {
@@ -252,6 +266,12 @@ export default function EmployeeTimesheetSummaryReport() {
         if (requestId !== requestIdRef.current) return;
         
         pageRows = (data || []).map((row) => toDisplayRow(row as SummaryRow));
+        setFilterOptions((current) => ({
+          companies: Array.from(new Set([...current.companies, ...pageRows.map((row) => row.company_name).filter(Boolean) as string[]])).sort(),
+          projects: Array.from(new Set([...current.projects, ...pageRows.map((row) => row.project_code).filter(Boolean) as string[]])).sort(),
+          employees: Array.from(new Set([...current.employees, ...pageRows.map((row) => row.name).filter(Boolean) as string[]])).sort(),
+          statuses: Array.from(new Set([...current.statuses, ...pageRows.map((row) => row.timecard_status).filter(Boolean) as string[]])).sort(),
+        }));      
         allRows.push(...pageRows);
         offset += PAGE_SIZE;
       } while (pageRows.length === PAGE_SIZE);
@@ -276,10 +296,10 @@ export default function EmployeeTimesheetSummaryReport() {
     }
   }, [canViewReport, fetchRows, userData?.email]);
 
-  const companies = useMemo(() => Array.from(new Set(rows.map((row) => row.company_name).filter(Boolean) as string[])).sort(), [rows]);
-  const projects = useMemo(() => Array.from(new Set(rows.map((row) => row.project_code).filter(Boolean) as string[])).sort(), [rows]);
-  const employees = useMemo(() => Array.from(new Set(rows.map((row) => row.name).filter(Boolean) as string[])).sort(), [rows]);
-  const statuses = useMemo(() => Array.from(new Set(rows.map((row) => row.timecard_status).filter(Boolean) as string[])).sort(), [rows]);
+  //const companies = useMemo(() => Array.from(new Set(rows.map((row) => row.company_name).filter(Boolean) as string[])).sort(), [rows]);
+  //const projects = useMemo(() => Array.from(new Set(rows.map((row) => row.project_code).filter(Boolean) as string[])).sort(), [rows]);
+  //const employees = useMemo(() => Array.from(new Set(rows.map((row) => row.name).filter(Boolean) as string[])).sort(), [rows]);
+  //const statuses = useMemo(() => Array.from(new Set(rows.map((row) => row.timecard_status).filter(Boolean) as string[])).sort(), [rows]);
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
     const matchingRows = rows.filter((row) => {
@@ -405,9 +425,9 @@ export default function EmployeeTimesheetSummaryReport() {
 
       <div className="report-no-print flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/70 px-3 py-2">
         <div className="relative min-w-[220px] flex-1 sm:flex-none"><Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search employee, company, project..." className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-3 text-xs outline-none focus:border-teal-500" /></div>
-        <SearchableSelect label="Company" value={companyFilter} options={companies} onChange={setCompanyFilter} />
-        <SearchableSelect label="Project" value={projectFilter} options={projects} onChange={setProjectFilter} />
-        <SearchableSelect label="Employee" value={employeeFilter} options={employees} onChange={setEmployeeFilter} />
+        <SearchableSelect label="Company" value={companyFilter} options={filterOptions.companies} onChange={setCompanyFilter} />
+        <SearchableSelect label="Project" value={projectFilter} options={filterOptions.projects} onChange={setProjectFilter} />
+        <SearchableSelect label="Employee" value={employeeFilter} options={filterOptions.employees} onChange={setEmployeeFilter} />
         <div className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5">
           <button type="button" onClick={() => setCalendarMode('day')} className={`h-7 rounded-md px-2 text-[11px] ${calendarMode === 'day' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>Day</button>
           <button type="button" onClick={() => setCalendarMode('month')} className={`h-7 rounded-md px-2 text-[11px] ${calendarMode === 'month' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>Month</button>
@@ -427,7 +447,7 @@ export default function EmployeeTimesheetSummaryReport() {
           placeholder={calendarMode === 'day' ? 'All dates' : 'All months'}
           className="h-8 w-[112px] px-2 text-xs"
         />
-        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-teal-500"><option value="ALL">All statuses</option>{statuses.map((status) => <option key={status} value={status}>{status}</option>)}</select>
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-teal-500"><option value="ALL">All statuses</option>{filterOptions.statuses.map((status) => <option key={status} value={status}>{status}</option>)}</select>        
         <div className="relative">
           <button type="button" onClick={(event) => { const menu = event.currentTarget.nextElementSibling; menu?.classList.toggle('hidden'); }} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700"><Settings2 className="h-3.5 w-3.5" />Columns</button>
           <div className="hidden absolute right-0 top-9 z-30 w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
