@@ -190,7 +190,8 @@ export default function EmployeeTimesheetSummaryReport() {
       const pageOffset = reset ? 0 : offset;
       let query = supabase.from('v_employee_timesheet_summary').select('*').order('date', { ascending: false }).range(pageOffset, pageOffset + PAGE_SIZE - 1);
       if (startDate && endDate) {
-        query = query.gte('date', `${startDate}T00:00:00+04:00`).lt('date', `${endDate}T00:00:00+04:00`);
+        //query = query.gte('date', `${startDate}T00:00:00+04:00`).lt('date', `${endDate}T00:00:00+04:00`);
+        query = query.gte('date', startDate).lt('date', endDate);
       }
       const { data, error } = await query;
       if (error) throw error;
