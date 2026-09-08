@@ -57,15 +57,20 @@ const defaultVisibleColumns: Record<ColumnKey, boolean> = Object.fromEntries(col
 
 function formatDate(value: string | null): string {
   if (!value) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-');
+    return `${day}-${month}-${year}`;
+  }
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value.slice(0, 10);
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Dubai',
-  }).format(parsed).replace(/\//g, ':');
+  }).format(parsed).replace(/\//g, '-');
 }
 
 function dateKey(value: string | null): string {
   if (!value) return '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value.slice(0, 10);
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dubai' }).format(parsed);
@@ -174,11 +179,11 @@ export default function EmployeeTimesheetSummaryReport() {
       if (!startDate && monthFilter) {
         const [year, month] = monthFilter.split('-').map(Number);
         startDate = `${monthFilter}-01`;
-        const nextMonth = new Date(year, month, 1);
-        endDate = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`;
+        const nextMonth = new Date(Date.UTC(year, month, 1));
+        endDate = nextMonth.toISOString().slice(0, 10);      
       } else if (startDate) {
-        const nextDate = new Date(`${startDate}T00:00:00`);
-        nextDate.setDate(nextDate.getDate() + 1);
+        const nextDate = new Date(`${startDate}T00:00:00Z`);
+        nextDate.setUTCDate(nextDate.getUTCDate() + 1);
         endDate = nextDate.toISOString().slice(0, 10);
       }
 
@@ -342,7 +347,7 @@ export default function EmployeeTimesheetSummaryReport() {
       </div>
 
       <div id="timesheet-summary-report" ref={reportRef} className="min-h-0 flex-1 overflow-auto p-3">
-        <div className="mb-3 flex items-center gap-2"><FileBarChart2 className="h-5 w-5 text-teal-700" /><div><h1 className="text-lg font-semibold text-slate-800">Employee Timesheet Summary</h1><p className="text-xs text-slate-500">Date: DD:MM:YYYY | Time and hours: HH:MM</p></div></div>
+        <div className="mb-3 flex items-center gap-2"><FileBarChart2 className="h-5 w-5 text-teal-700" /><div><h1 className="text-lg font-semibold text-slate-800">Employee Timesheet Summary</h1><p className="text-xs text-slate-500">Date: DD-MM-YYYY | Time and hours: HH:MM</p></div></div>
         {loading && !rows.length ? <div className="flex h-40 items-center justify-center gap-2 text-sm text-slate-400"><Loader2 className="h-4 w-4 animate-spin" />Loading report...</div> : <>
           <div className="overflow-auto rounded-lg border border-slate-200"><table className="w-full min-w-[1100px] border-collapse text-xs"><thead className="sticky top-0 z-10 bg-slate-800 text-left text-[10px] uppercase tracking-wide text-white"><tr>{columns.filter(({ key }) => visibleColumns[key]).map(({ key, label }) => <th key={key} className="whitespace-nowrap px-3 py-2 font-medium">{label}</th>)}</tr></thead><tbody>{filteredRows.length ? filteredRows.map((row, index) => <tr key={`${row.emp_id}-${row.date}-${index}`} className="border-t border-slate-100 even:bg-slate-50/60 hover:bg-teal-50/40">{columns.filter(({ key }) => visibleColumns[key]).map(({ key }) => <td key={key} className={`px-3 py-2 ${key === 'name' ? 'whitespace-nowrap font-medium text-slate-700' : ''} ${key === 'remarks' ? 'max-w-[240px]' : ''} ${key.startsWith('display') ? 'tabular-nums' : ''}`}>{columnValue(row, key)}</td>)}</tr>) : <tr><td colSpan={columns.filter(({ key }) => visibleColumns[key]).length} className="px-3 py-12 text-center text-slate-400">No records found</td></tr>}</tbody></table></div>
           {hasMore && <div className="flex justify-center py-3"><button type="button" onClick={() => void fetchRows(false, rows.length)} disabled={loading} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Load 100 more</button></div>}
