@@ -232,7 +232,38 @@ export default function EmployeeTimesheetSummaryReport() {
       if (requestId === requestIdRef.current) setLoading(false);      
     }
     }, [companyFilter, dateFilter, employeeFilter, monthFilter, projectFilter, statusFilter]);
-  
+
+  const fetchFilterOptions = useCallback(async () => {
+    try {
+      let offset = 0;
+      const options: FilterOptions = { companies: [], projects: [], employees: [], statuses: [] };
+      let page: Array<Pick<SummaryRow, 'company_name' | 'project_code' | 'name' | 'timecard_status'>>;
+
+      do {
+        const { data, error } = await supabase
+          .from('v_employee_timesheet_summary')
+          .select('company_name, project_code, name, timecard_status')
+          .range(offset, offset + PAGE_SIZE - 1);
+        if (error) throw error;
+
+        page = (data || []) as Array<Pick<SummaryRow, 'company_name' | 'project_code' | 'name' | 'timecard_status'>>;
+        options.companies.push(...page.map((row) => row.company_name).filter(Boolean) as string[]);
+        options.projects.push(...page.map((row) => row.project_code).filter(Boolean) as string[]);
+        options.employees.push(...page.map((row) => row.name).filter(Boolean) as string[]);
+        options.statuses.push(...page.map((row) => row.timecard_status).filter(Boolean) as string[]);
+        offset += PAGE_SIZE;
+      } while (page.length === PAGE_SIZE);
+
+      setFilterOptions({
+        companies: Array.from(new Set(options.companies)).sort(),
+        projects: Array.from(new Set(options.projects)).sort(),
+        employees: Array.from(new Set(options.employees)).sort(),
+        statuses: Array.from(new Set(options.statuses)).sort(),
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to load report filter options.');
+    }
+  }, []);  
   const loadAllRows = useCallback(async () => {
     const requestId = ++requestIdRef.current;    
     setLoadingAll(true);
@@ -296,6 +327,10 @@ export default function EmployeeTimesheetSummaryReport() {
     }
   }, [canViewReport, fetchRows, userData?.email]);
 
+  useEffect(() => {
+    if (userData?.email && canViewReport) void fetchFilterOptions();
+  }, [canViewReport, fetchFilterOptions, userData?.email]);
+  
   //const companies = useMemo(() => Array.from(new Set(rows.map((row) => row.company_name).filter(Boolean) as string[])).sort(), [rows]);
   //const projects = useMemo(() => Array.from(new Set(rows.map((row) => row.project_code).filter(Boolean) as string[])).sort(), [rows]);
   //const employees = useMemo(() => Array.from(new Set(rows.map((row) => row.name).filter(Boolean) as string[])).sort(), [rows]);
