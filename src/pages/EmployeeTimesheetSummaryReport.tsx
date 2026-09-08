@@ -38,6 +38,7 @@ type DisplayRow = SummaryRow & {
 
 const PAGE_SIZE = 100;
 const columns = [
+  { key: 'serialNumber', label: 'S.No.' },
   { key: 'company_name', label: 'Company' },
   { key: 'emp_id', label: 'Employee ID' },
   { key: 'name', label: 'Name' },
@@ -101,13 +102,14 @@ function toDisplayRow(row: SummaryRow): DisplayRow {
   };
 }
 
-function columnValue(row: DisplayRow, key: ColumnKey): string {
+function columnValue(row: DisplayRow, key: ColumnKey, serialNumber?: number): string {
+  if (key === 'serialNumber') return serialNumber === undefined ? '' : String(serialNumber);
   return String(row[key] ?? '');
 }
 
 function excelRows(rows: DisplayRow[], visibleColumns: Record<ColumnKey, boolean>) {
-  return rows.map((row) => Object.fromEntries(
-    columns.filter(({ key }) => visibleColumns[key]).map(({ key, label }) => [label, columnValue(row, key)]),
+  return rows.map((row, index) => Object.fromEntries(
+    columns.filter(({ key }) => visibleColumns[key]).map(({ key, label }) => [label, columnValue(row, key, index + 1)]),
   ));
 }
 
@@ -155,6 +157,7 @@ export default function EmployeeTimesheetSummaryReport() {
   const [employeeFilter, setEmployeeFilter] = useState('');
   const [visibleColumns, setVisibleColumns] = useState(defaultVisibleColumns);
   const [hasMore, setHasMore] = useState(true);
+  const [loadingAll, setLoadingAll] = useState(false);  
   const reportRef = useRef<HTMLDivElement>(null);
 
   const canViewReport = useMemo(() => {
@@ -203,6 +206,47 @@ export default function EmployeeTimesheetSummaryReport() {
       if (reset) setRows([]);
     } finally {
       setLoading(false);
+    }
+  }, [dateFilter, monthFilter]);
+  
+  const loadAllRows = useCallback(async () => {
+    setLoadingAll(true);
+    setLoading(true);
+    try {
+      let offset = 0;
+      const allRows: DisplayRow[] = [];
+      let pageRows: DisplayRow[];
+
+      do {
+        let startDate = dateFilter;
+        let endDate = dateFilter;
+        if (!startDate && monthFilter) {
+          const [year, month] = monthFilter.split('-').map(Number);
+          startDate = `${monthFilter}-01`;
+          endDate = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
+        } else if (startDate) {
+          const nextDate = new Date(`${startDate}T00:00:00Z`);
+          nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+          endDate = nextDate.toISOString().slice(0, 10);
+        }
+
+        let query = supabase.from('v_employee_timesheet_summary').select('*').order('date', { ascending: false }).range(offset, offset + PAGE_SIZE - 1);
+        if (startDate && endDate) query = query.gte('date', startDate).lt('date', endDate);
+        const { data, error } = await query;
+        if (error) throw error;
+
+        pageRows = (data || []).map((row) => toDisplayRow(row as SummaryRow));
+        allRows.push(...pageRows);
+        offset += PAGE_SIZE;
+      } while (pageRows.length === PAGE_SIZE);
+
+      setRows(allRows);
+      setHasMore(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to load the full timesheet summary.');
+    } finally {
+      setLoading(false);
+      setLoadingAll(false);
     }
   }, [dateFilter, monthFilter]);
 
@@ -276,7 +320,7 @@ export default function EmployeeTimesheetSummaryReport() {
           drawHeader();
           y = 21;
         }
-        const values = visibleColumnDefs.map(({ key }) => columnValue(row, key));
+        const values = visibleColumnDefs.map(({ key }) => columnValue(row, key, rowIndex + 1));    
         if (rowIndex % 2 === 0) {
           pdf.setFillColor(248, 250, 252);
           pdf.rect(margin, y, columnWidths.reduce((sum, width) => sum + width, 0), rowHeight, 'F');
@@ -350,8 +394,8 @@ export default function EmployeeTimesheetSummaryReport() {
       <div id="timesheet-summary-report" ref={reportRef} className="min-h-0 flex-1 overflow-auto p-3">
         <div className="mb-3 flex items-center gap-2"><FileBarChart2 className="h-5 w-5 text-teal-700" /><div><h1 className="text-lg font-semibold text-slate-800">Employee Timesheet Summary</h1><p className="text-xs text-slate-500">Date: DD-MM-YYYY | Time and hours: HH:MM</p></div></div>
         {loading && !rows.length ? <div className="flex h-40 items-center justify-center gap-2 text-sm text-slate-400"><Loader2 className="h-4 w-4 animate-spin" />Loading report...</div> : <>
-          <div className="overflow-auto rounded-lg border border-slate-200"><table className="w-full min-w-[1100px] border-collapse text-xs"><thead className="sticky top-0 z-10 bg-slate-800 text-left text-[10px] uppercase tracking-wide text-white"><tr>{columns.filter(({ key }) => visibleColumns[key]).map(({ key, label }) => <th key={key} className="whitespace-nowrap px-3 py-2 font-medium">{label}</th>)}</tr></thead><tbody>{filteredRows.length ? filteredRows.map((row, index) => <tr key={`${row.emp_id}-${row.date}-${index}`} className="border-t border-slate-100 even:bg-slate-50/60 hover:bg-teal-50/40">{columns.filter(({ key }) => visibleColumns[key]).map(({ key }) => <td key={key} className={`px-3 py-2 ${key === 'name' ? 'whitespace-nowrap font-medium text-slate-700' : ''} ${key === 'remarks' ? 'max-w-[240px]' : ''} ${key.startsWith('display') ? 'tabular-nums' : ''}`}>{columnValue(row, key)}</td>)}</tr>) : <tr><td colSpan={columns.filter(({ key }) => visibleColumns[key]).length} className="px-3 py-12 text-center text-slate-400">No records found</td></tr>}</tbody></table></div>
-          {hasMore && <div className="flex justify-center py-3"><button type="button" onClick={() => void fetchRows(false, rows.length)} disabled={loading} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Load 100 more</button></div>}
+          <div className="overflow-auto rounded-lg border border-slate-200"><table className="w-full min-w-[1100px] border-collapse text-xs"><thead className="sticky top-0 z-10 bg-slate-800 text-left text-[10px] uppercase tracking-wide text-white"><tr>{columns.filter(({ key }) => visibleColumns[key]).map(({ key, label }) => <th key={key} className="whitespace-nowrap px-3 py-2 font-medium">{label}</th>)}</tr></thead><tbody>{filteredRows.length ? filteredRows.map((row, index) => <tr key={`${row.emp_id}-${row.date}-${index}`} className="border-t border-slate-100 even:bg-slate-50/60 hover:bg-teal-50/40">{columns.filter(({ key }) => visibleColumns[key]).map(({ key }) => <td key={key} className={`px-3 py-2 ${key === 'name' ? 'whitespace-nowrap font-medium text-slate-700' : ''} ${key === 'remarks' ? 'max-w-[240px]' : ''} ${key.startsWith('display') ? 'tabular-nums' : ''}`}>{columnValue(row, key, index + 1)}</td>)}</tr>) : <tr><td colSpan={columns.filter(({ key }) => visibleColumns[key]).length} className="px-3 py-12 text-center text-slate-400">No records found</td></tr>}</tbody></table></div>
+          {hasMore && <div className="flex justify-center gap-2 py-3"><button type="button" onClick={() => void fetchRows(false, rows.length)} disabled={loading || loadingAll} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{loading && !loadingAll && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Load 100 more</button><button type="button" onClick={() => void loadAllRows()} disabled={loading || loadingAll} className="inline-flex items-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-xs font-medium text-white hover:bg-teal-600 disabled:opacity-50">{loadingAll && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Load full report</button></div>}
         </>}
       </div>
     </div>
