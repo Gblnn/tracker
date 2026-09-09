@@ -118,8 +118,8 @@ function monthLabel(month: number, year: number): string {
 
 function getDayHours(summary: DaySummary | undefined): string {
   if (!summary || !summary.firstPunch || !summary.lastPunch) return '—';
-  if (summary.status === 'off' || summary.status === 'leave' || summary.status === 'absent') return '—';
-
+  //if (summary.status === 'off' || summary.status === 'leave' || summary.status === 'absent') return '—';
+  if (summary.status === 'leave' || summary.status === 'absent') return '—';
   let diffHrs = 0;
   if (summary.firstPunch.includes(':') && !summary.firstPunch.includes('T')) {
     const [h1, m1] = summary.firstPunch.split(':').map(Number);
@@ -142,10 +142,26 @@ function getDayHours(summary: DaySummary | undefined): string {
 }
 
 function getOvertime(summary: DaySummary | undefined, _empType?: string | null): string {
-  if (summary && summary.overtime !== undefined) {
-    const otVal = typeof summary.overtime === 'string' ? parseFloat(summary.overtime) : summary.overtime;
-    if (otVal && !isNaN(otVal) && otVal > 0) {
-      return otVal.toFixed(1);
+//  if (summary && summary.overtime !== undefined) {
+//  const otVal = typeof summary.overtime === 'string' ? parseFloat(summary.overtime) : summary.overtime;
+//  if (otVal && !isNaN(otVal) && otVal > 0) {
+//    return otVal.toFixed(1);
+   if (summary?.firstPunch && summary.lastPunch) {
+    const parsePunch = (value: string): number | null => {
+      if (value.includes(':') && !value.includes('T')) {
+        const [hours, minutes] = value.split(':').map(Number);
+        if (Number.isFinite(hours) && Number.isFinite(minutes)) return hours * 60 + minutes;
+        return null;
+      }
+      const timestamp = new Date(value).getTime();
+      return Number.isNaN(timestamp) ? null : timestamp / (1000 * 60);
+    };
+
+    const start = parsePunch(summary.firstPunch);
+    const end = parsePunch(summary.lastPunch);
+    if (start !== null && end !== null) {
+      const diffMinutes = end >= start ? end - start : end + 24 * 60 - start;
+      return diffMinutes > 0 ? (diffMinutes / 60).toFixed(1) : '—';
     }
   }
   return '—';
@@ -1026,7 +1042,10 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
       if (!r[empCode]) r[empCode] = {};
 
       const cleanStatus = (row.status || '').toLowerCase().trim();
-      const isPresent = cleanStatus === 'present' || cleanStatus === 'present with ot' || cleanStatus === 'weekend' || cleanStatus === 'holiday';
+//      const isPresent = cleanStatus === 'present' || cleanStatus === 'present with ot' || cleanStatus === 'weekend' || cleanStatus === 'holiday';
+      const hasPunch = Boolean(row.punch_in || row.punch_out);
+      const isPresent = hasPunch || cleanStatus === 'present' || cleanStatus === 'present with ot' || cleanStatus === 'weekend' || cleanStatus === 'holiday';
+      const effectiveStatus = hasPunch && (cleanStatus === 'off' || cleanStatus === 'absent') ? 'present' : cleanStatus;
 
       r[empCode][dateKey] = {
         firstIn: row.punch_in || null,
@@ -1038,7 +1057,8 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
         lastPunch: row.punch_out || null,
         lastPunchLocation: row.project_code || null,
         isPresent: isPresent,
-        status: cleanStatus,
+//        status: cleanStatus,
+        status: effectiveStatus,        
         overtime: row.overtime || 0,
         remarks: row.remarks || '',
         approval: row.approval || false,
@@ -1586,14 +1606,16 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
         if (reportType === 'hourly') {
           if (c?.status === 'leave') { row.push('L'); }
           else if (c?.status === 'off') { row.push('OFF'); }
-          else if (isWeekend(year, month, d, emp)) { row.push('OFF'); }
+//          else if (isWeekend(year, month, d, emp)) { row.push('OFF'); }            
+          else if (isWeekend(year, month, d, emp) && !c?.isPresent) { row.push('OFF'); }            
           else if (isHolidayDay) { row.push(c?.isPresent ? getDayHours(c) : 'HOL'); }
           else { row.push(getDayHours(c)); }
         } else if (reportType === 'pa') {
           if (c?.status === 'leave') { row.push('L'); }
           else if (c?.status === 'off') { row.push('OFF'); }
           else if (c?.status === 'absent') { row.push('A'); }
-          else if (isWeekend(year, month, d, emp)) { row.push('OFF'); }
+//          else if (isWeekend(year, month, d, emp)) { row.push('OFF'); }
+          else if (isWeekend(year, month, d, emp) && !c?.isPresent) { row.push('OFF'); }            
           else if (isHolidayDay) { row.push(c?.isPresent ? 'P(H)' : 'H'); }
           else if (c?.isPresent) { row.push('P'); }
           else if (new Date(year, month, d) > today) { row.push('—'); }
@@ -1602,7 +1624,8 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
           if (c?.status === 'leave') { row.push('L', ''); }
           else if (c?.status === 'off') { row.push('OFF', ''); }
           else if (c?.status === 'absent') { row.push('A', ''); }
-          else if (isWeekend(year, month, d, emp)) { row.push('OFF', ''); }
+//          else if (isWeekend(year, month, d, emp)) { row.push('OFF', ''); }
+          else if (isWeekend(year, month, d, emp) && !c?.isPresent) { row.push('OFF', ''); }            
           else if (isHolidayDay && !c?.isPresent) { row.push(`HOL (${holiday?.name || 'Holiday'})`, ''); }
           else if (c?.isPresent) {
             if (useFirstLast) {
@@ -1631,7 +1654,8 @@ export default function TimesheetViewer({ refreshTrigger, onLoadingChange }: Tim
           if (c?.status === 'leave') { row.push('L', ''); }
           else if (c?.status === 'off') { row.push('OFF', ''); }
           else if (c?.status === 'absent') { row.push('A', ''); }
-          else if (isWeekend(year, month, d, emp)) { row.push('OFF', ''); }
+//          else if (isWeekend(year, month, d, emp)) { row.push('OFF', ''); }
+          else if (isWeekend(year, month, d, emp) && !c?.isPresent) { row.push('OFF', ''); }            
           else if (isHolidayDay && !c?.isPresent) { row.push('HOL', ''); }
           else if (c?.isPresent) {
             if (useFirstLast) {
