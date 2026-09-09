@@ -90,6 +90,14 @@ function formatTime(value: string | null): string {
   return value.length >= 5 ? value.slice(0, 5) : value;
 }
 
+function minutesToTime(value: string | number | null): string {
+  if (value === null || value === undefined || value === '') return '';
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes)) return String(value);
+  const totalMinutes = Math.max(0, Math.round(minutes));
+  return `${String(Math.floor(totalMinutes / 60)).padStart(2, '0')}:${String(totalMinutes % 60).padStart(2, '0')}`;
+}
+
 function decimalHoursToTime(value: number | string | null): string {
   if (value === null || value === undefined || value === '') return '';
   const hours = Number(value);
@@ -105,7 +113,7 @@ function toDisplayRow(row: SummaryRow): DisplayRow {
     dateKey: dateKey(row.date),
     displayPunchIn: formatTime(row.punch_in),
     displayPunchOut: formatTime(row.punch_out),
-    displayOvertime: formatTime(row.overtime),
+    displayOvertime: minutesToTime(row.overtime),
     displayHours: decimalHoursToTime(row.total_working_hours),
   };
 }
