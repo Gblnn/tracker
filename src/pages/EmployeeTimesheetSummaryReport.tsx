@@ -177,6 +177,7 @@ export default function EmployeeTimesheetSummaryReport() {
   const [sortColumn, setSortColumn] = useState<SortableColumnKey | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({ companies: [], projects: [], employees: [], statuses: [] });  
+  const [employeeOptions, setEmployeeOptions] = useState<string[]>([]);  
   const reportRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
 
@@ -227,7 +228,8 @@ export default function EmployeeTimesheetSummaryReport() {
         setFilterOptions((current) => ({
         companies: Array.from(new Set([...current.companies, ...nextRows.map((row) => row.company_name).filter(Boolean) as string[]])).sort(),
         projects: Array.from(new Set([...current.projects, ...nextRows.map((row) => row.project_code).filter(Boolean) as string[]])).sort(),
-        employees: Array.from(new Set([...current.employees, ...nextRows.map((row) => row.name).filter(Boolean) as string[]])).sort(),
+        //employees: Array.from(new Set([...current.employees, ...nextRows.map((row) => row.name).filter(Boolean) as string[]])).sort(),
+        employees: current.employees,          
         statuses: Array.from(new Set([...current.statuses, ...nextRows.map((row) => row.timecard_status).filter(Boolean) as string[]])).sort(),
       }));      
       setRows((current) => reset ? nextRows : [...current, ...nextRows]);
@@ -249,13 +251,16 @@ export default function EmployeeTimesheetSummaryReport() {
 
       const { data: employeeData, error: employeeError } = await supabase
         .from('employees')
-        .select('name')
+        .select('name, emp_id')
         .not('name', 'is', null)
         .order('name');
       if (employeeError) throw employeeError;
-      options.employees = (employeeData || [])
+//      options.employees = (employeeData || [])
+      const employees = (employeeData || [])        
         .map((employee) => employee.name)
         .filter(Boolean) as string[];
+      options.employees = employees;
+      setEmployeeOptions(Array.from(new Set(employees)).sort());
       
       do {
         const { data, error } = await supabase
@@ -318,7 +323,8 @@ export default function EmployeeTimesheetSummaryReport() {
         setFilterOptions((current) => ({
           companies: Array.from(new Set([...current.companies, ...pageRows.map((row) => row.company_name).filter(Boolean) as string[]])).sort(),
           projects: Array.from(new Set([...current.projects, ...pageRows.map((row) => row.project_code).filter(Boolean) as string[]])).sort(),
-          employees: Array.from(new Set([...current.employees, ...pageRows.map((row) => row.name).filter(Boolean) as string[]])).sort(),
+//          employees: Array.from(new Set([...current.employees, ...pageRows.map((row) => row.name).filter(Boolean) as string[]])).sort(),
+          employees: current.employees,          
           statuses: Array.from(new Set([...current.statuses, ...pageRows.map((row) => row.timecard_status).filter(Boolean) as string[]])).sort(),
         }));      
         allRows.push(...pageRows);
@@ -502,7 +508,8 @@ export default function EmployeeTimesheetSummaryReport() {
         <div className="relative min-w-[220px] flex-1 sm:flex-none"><Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search employee, company, project..." className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-3 text-xs outline-none focus:border-teal-500" /></div>
         <SearchableSelect label="Company" value={companyFilter} options={filterOptions.companies} onChange={setCompanyFilter} />
         <SearchableSelect label="Project" value={projectFilter} options={filterOptions.projects} onChange={setProjectFilter} />
-        <SearchableSelect label="Employee" value={employeeFilter} options={filterOptions.employees} onChange={setEmployeeFilter} />
+//        <SearchableSelect label="Employee" value={employeeFilter} options={filterOptions.employees} onChange={setEmployeeFilter} />
+        <SearchableSelect label="Employee" value={employeeFilter} options={employeeOptions} onChange={setEmployeeFilter} />        
         <div className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5">
           <button type="button" onClick={() => setCalendarMode('day')} className={`h-7 rounded-md px-2 text-[11px] ${calendarMode === 'day' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>Day</button>
           <button type="button" onClick={() => setCalendarMode('month')} className={`h-7 rounded-md px-2 text-[11px] ${calendarMode === 'month' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>Month</button>
