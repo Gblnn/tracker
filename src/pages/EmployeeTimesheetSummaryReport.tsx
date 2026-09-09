@@ -177,7 +177,7 @@ export default function EmployeeTimesheetSummaryReport() {
   const [sortColumn, setSortColumn] = useState<SortableColumnKey | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({ companies: [], projects: [], employees: [], statuses: [] });  
-  const [employeeOptions, setEmployeeOptions] = useState<string[]>([]);  
+  const [employeeOptions, setEmployeeOptions] = useState<string[]>([]);
   const reportRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
 
@@ -228,8 +228,7 @@ export default function EmployeeTimesheetSummaryReport() {
         setFilterOptions((current) => ({
         companies: Array.from(new Set([...current.companies, ...nextRows.map((row) => row.company_name).filter(Boolean) as string[]])).sort(),
         projects: Array.from(new Set([...current.projects, ...nextRows.map((row) => row.project_code).filter(Boolean) as string[]])).sort(),
-        //employees: Array.from(new Set([...current.employees, ...nextRows.map((row) => row.name).filter(Boolean) as string[]])).sort(),
-        employees: current.employees,          
+        employees: current.employees,
         statuses: Array.from(new Set([...current.statuses, ...nextRows.map((row) => row.timecard_status).filter(Boolean) as string[]])).sort(),
       }));      
       setRows((current) => reset ? nextRows : [...current, ...nextRows]);
@@ -255,13 +254,12 @@ export default function EmployeeTimesheetSummaryReport() {
         .not('name', 'is', null)
         .order('name');
       if (employeeError) throw employeeError;
-//      options.employees = (employeeData || [])
-      const employees = (employeeData || [])        
+      const employees = (employeeData || [])
         .map((employee) => employee.name)
         .filter(Boolean) as string[];
       options.employees = employees;
       setEmployeeOptions(Array.from(new Set(employees)).sort());
-      
+
       do {
         const { data, error } = await supabase
           .from('v_employee_timesheet_summary')
@@ -272,7 +270,6 @@ export default function EmployeeTimesheetSummaryReport() {
         page = (data || []) as Array<Pick<SummaryRow, 'company_name' | 'project_code' | 'name' | 'timecard_status'>>;
         options.companies.push(...page.map((row) => row.company_name).filter(Boolean) as string[]);
         options.projects.push(...page.map((row) => row.project_code).filter(Boolean) as string[]);
-//        options.employees.push(...page.map((row) => row.name).filter(Boolean) as string[]);
         options.statuses.push(...page.map((row) => row.timecard_status).filter(Boolean) as string[]);
         offset += PAGE_SIZE;
       } while (page.length === PAGE_SIZE);
@@ -323,8 +320,7 @@ export default function EmployeeTimesheetSummaryReport() {
         setFilterOptions((current) => ({
           companies: Array.from(new Set([...current.companies, ...pageRows.map((row) => row.company_name).filter(Boolean) as string[]])).sort(),
           projects: Array.from(new Set([...current.projects, ...pageRows.map((row) => row.project_code).filter(Boolean) as string[]])).sort(),
-//          employees: Array.from(new Set([...current.employees, ...pageRows.map((row) => row.name).filter(Boolean) as string[]])).sort(),
-          employees: current.employees,          
+          employees: current.employees,
           statuses: Array.from(new Set([...current.statuses, ...pageRows.map((row) => row.timecard_status).filter(Boolean) as string[]])).sort(),
         }));      
         allRows.push(...pageRows);
@@ -383,9 +379,9 @@ export default function EmployeeTimesheetSummaryReport() {
     });
   }, [companyFilter, dateFilter, employeeFilter, monthFilter, projectFilter, rows, search, sortColumn, sortDirection, statusFilter]);
 
-    const selectedEmployee = useMemo(() => {
+  const selectedEmployee = useMemo(() => {
     if (!employeeFilter) return null;
-    const employeeRow = rows.find((row) => row.name === employeeFilter);
+    const employeeRow = rows.find((row) => row.name === employeeFilter && row.emp_id);
     return {
       name: employeeFilter,
       empId: employeeRow?.emp_id ? String(employeeRow.emp_id) : '',
@@ -394,7 +390,7 @@ export default function EmployeeTimesheetSummaryReport() {
   const selectedEmployeeLabel = selectedEmployee
     ? `${selectedEmployee.name}${selectedEmployee.empId ? ` [${selectedEmployee.empId}]` : ''}`
     : '';
-  
+
   const toggleSort = (key: ColumnKey) => {
     if (key === 'serialNumber') return;
     const sortableKey = key as SortableColumnKey;
@@ -433,14 +429,14 @@ export default function EmployeeTimesheetSummaryReport() {
       const rowHeight = 7;
       const title = 'Employee Timesheet Summary';
       const drawHeader = () => {
-      const tableTop = selectedEmployeeLabel ? 18 : 14;        
+        const tableTop = selectedEmployeeLabel ? 18 : 14;
         pdf.setFontSize(14);
         pdf.setFont('helvetica', 'bold');
         pdf.text(title, margin, 10);
         if (selectedEmployeeLabel) {
           pdf.setFontSize(9);
           pdf.text(selectedEmployeeLabel, margin, 14);
-        }        
+        }
         pdf.setFontSize(7);
         pdf.setFont('helvetica', 'normal');
         pdf.text(`Generated ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pageWidth - margin, 10, { align: 'right' });
@@ -449,9 +445,15 @@ export default function EmployeeTimesheetSummaryReport() {
         pdf.setTextColor(255, 255, 255);
         pdf.rect(margin, tableTop, columnWidths.reduce((sum, width) => sum + width, 0), rowHeight, 'F');
         visibleColumnDefs.forEach(({ label }, index) => {
-          pdf.text(label, x + 1.5, tableTop + 4.5);          
+          pdf.text(label, x + 1.5, tableTop + 4.5);
           x += columnWidths[index];
         });
+        if (selectedEmployeeLabel) {
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(30, 41, 59);
+          pdf.text(selectedEmployeeLabel, pageWidth - margin, pageHeight - 4, { align: 'right' });
+        }
         pdf.setTextColor(30, 41, 59);
       };
       drawHeader();
@@ -474,11 +476,6 @@ export default function EmployeeTimesheetSummaryReport() {
           pdf.text(text, x + 1.5, y + 4.5);
           x += columnWidths[index];
         });
-      if (selectedEmployeeLabel) {
-        pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(selectedEmployeeLabel, pageWidth - margin, pageHeight - 4, { align: 'right' });
-      }
         pdf.setDrawColor(226, 232, 240);
         pdf.line(margin, y + rowHeight, margin + columnWidths.reduce((sum, width) => sum + width, 0), y + rowHeight);
         y += rowHeight;
@@ -493,7 +490,7 @@ export default function EmployeeTimesheetSummaryReport() {
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-white">
-      <style>{`@media print { @page { margin: 12mm; } body * { visibility: hidden; } #timesheet-summary-report, #timesheet-summary-report * { visibility: visible; } #timesheet-summary-report { position: absolute; inset: 0; width: 100%; overflow: visible; } .report-no-print { display: none !important; } .report-print-footer { display: block !important; position: fixed; bottom: 0; right: 0; text-align: right; } }`}</style>      
+      <style>{`@media print { @page { margin: 12mm; } body * { visibility: hidden; } #timesheet-summary-report, #timesheet-summary-report * { visibility: visible; } #timesheet-summary-report { position: absolute; inset: 0; width: 100%; overflow: visible; } .report-no-print { display: none !important; } .report-print-footer { display: block !important; position: fixed; bottom: 0; right: 0; text-align: right; } }`}</style>
       <div className="report-no-print flex shrink-0 items-center justify-between border-b border-slate-200 px-3 py-2">
         <Back title="Employee Timesheet Summary" />
         <div className="flex items-center gap-2">
@@ -508,8 +505,7 @@ export default function EmployeeTimesheetSummaryReport() {
         <div className="relative min-w-[220px] flex-1 sm:flex-none"><Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search employee, company, project..." className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-3 text-xs outline-none focus:border-teal-500" /></div>
         <SearchableSelect label="Company" value={companyFilter} options={filterOptions.companies} onChange={setCompanyFilter} />
         <SearchableSelect label="Project" value={projectFilter} options={filterOptions.projects} onChange={setProjectFilter} />
-//        <SearchableSelect label="Employee" value={employeeFilter} options={filterOptions.employees} onChange={setEmployeeFilter} />
-        <SearchableSelect label="Employee" value={employeeFilter} options={employeeOptions} onChange={setEmployeeFilter} />        
+        <SearchableSelect label="Employee" value={employeeFilter} options={employeeOptions} onChange={setEmployeeFilter} />
         <div className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5">
           <button type="button" onClick={() => setCalendarMode('day')} className={`h-7 rounded-md px-2 text-[11px] ${calendarMode === 'day' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>Day</button>
           <button type="button" onClick={() => setCalendarMode('month')} className={`h-7 rounded-md px-2 text-[11px] ${calendarMode === 'month' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>Month</button>
@@ -545,7 +541,7 @@ export default function EmployeeTimesheetSummaryReport() {
           <div className="overflow-auto rounded-lg border border-slate-200"><table className="w-full min-w-[1100px] border-collapse text-xs"><thead className="sticky top-0 z-10 bg-slate-800 text-left text-[10px] uppercase tracking-wide text-white"><tr>{columns.filter(({ key }) => visibleColumns[key]).map(({ key, label }) => <th key={key} className="whitespace-nowrap px-3 py-1.5 font-medium"><button type="button" onClick={() => toggleSort(key)} disabled={key === 'serialNumber'} className="inline-flex items-center gap-1 disabled:cursor-default">{label}{sortIcon(key)}</button></th>)}</tr></thead><tbody>{filteredRows.length ? filteredRows.map((row, index) => <tr key={`${row.emp_id}-${row.date}-${index}`} className="border-t border-slate-100 even:bg-slate-50/60 hover:bg-teal-50/40">{columns.filter(({ key }) => visibleColumns[key]).map(({ key }) => <td key={key} className={`px-3 py-1 ${key === 'name' ? 'max-w-[180px] whitespace-normal break-words font-medium text-slate-700' : ''} ${key === 'remarks' ? 'max-w-[240px] whitespace-normal break-words' : ''} ${key.startsWith('display') ? 'tabular-nums' : ''}`}>{columnValue(row, key, index + 1)}</td>)}</tr>) : <tr><td colSpan={columns.filter(({ key }) => visibleColumns[key]).length} className="px-3 py-12 text-center text-slate-400">No records found</td></tr>}</tbody></table></div>
           {hasMore && <div className="flex justify-center gap-2 py-3"><button type="button" onClick={() => void fetchRows(false, rows.length)} disabled={loading || loadingAll} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{loading && !loadingAll && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Load 100 more</button><button type="button" onClick={() => void loadAllRows()} disabled={!dateFilter && !monthFilter || loading || loadingAll} title={!dateFilter && !monthFilter ? 'Select a day or month to load the full report' : 'Load full report'} className="inline-flex items-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-xs font-medium text-white hover:bg-teal-600 disabled:cursor-not-allowed disabled:opacity-50">{loadingAll && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Load full report</button></div>}
         </>}
-        {selectedEmployeeLabel && <div className="report-print-footer hidden text-xs font-medium text-slate-600">{selectedEmployeeLabel}</div>}        
+        {selectedEmployeeLabel && <div className="report-print-footer hidden text-xs font-medium text-slate-600">{selectedEmployeeLabel}</div>}
       </div>
     </div>
   );
