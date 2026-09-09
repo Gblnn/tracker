@@ -39,7 +39,7 @@ type DisplayRow = SummaryRow & {
 type FilterOptions = {
   companies: string[];
   projects: string[];
-  employees: string[];
+//  employees: string[];
   statuses: string[];
 };
 
@@ -228,7 +228,7 @@ export default function EmployeeTimesheetSummaryReport() {
         setFilterOptions((current) => ({
         companies: Array.from(new Set([...current.companies, ...nextRows.map((row) => row.company_name).filter(Boolean) as string[]])).sort(),
         projects: Array.from(new Set([...current.projects, ...nextRows.map((row) => row.project_code).filter(Boolean) as string[]])).sort(),
-        employees: current.employees,
+//        employees: current.employees,
         statuses: Array.from(new Set([...current.statuses, ...nextRows.map((row) => row.timecard_status).filter(Boolean) as string[]])).sort(),
       }));      
       setRows((current) => reset ? nextRows : [...current, ...nextRows]);
@@ -245,7 +245,8 @@ export default function EmployeeTimesheetSummaryReport() {
   const fetchFilterOptions = useCallback(async () => {
     try {
       let offset = 0;
-      const options: FilterOptions = { companies: [], projects: [], employees: [], statuses: [] };
+//     const options: FilterOptions = { companies: [], projects: [], employees: [], statuses: [] };
+     const options: FilterOptions = { companies: [], projects: [], statuses: [] };
       let page: Array<Pick<SummaryRow, 'company_name' | 'project_code' | 'name' | 'timecard_status'>>;
 
       const { data: employeeData, error: employeeError } = await supabase
@@ -257,7 +258,7 @@ export default function EmployeeTimesheetSummaryReport() {
       const employees = (employeeData || [])
         .map((employee) => employee.name)
         .filter(Boolean) as string[];
-      options.employees = employees;
+//      options.employees = employees;
       setEmployeeOptions(Array.from(new Set(employees)).sort());
 
       do {
@@ -277,7 +278,7 @@ export default function EmployeeTimesheetSummaryReport() {
       setFilterOptions({
         companies: Array.from(new Set(options.companies)).sort(),
         projects: Array.from(new Set(options.projects)).sort(),
-        employees: Array.from(new Set(options.employees)).sort(),
+        // employees: Array.from(new Set(options.employees)).sort(),
         statuses: Array.from(new Set(options.statuses)).sort(),
       });
     } catch (error) {
@@ -320,7 +321,7 @@ export default function EmployeeTimesheetSummaryReport() {
         setFilterOptions((current) => ({
           companies: Array.from(new Set([...current.companies, ...pageRows.map((row) => row.company_name).filter(Boolean) as string[]])).sort(),
           projects: Array.from(new Set([...current.projects, ...pageRows.map((row) => row.project_code).filter(Boolean) as string[]])).sort(),
-          employees: current.employees,
+          // employees: Array.from(new Set([...current.employees, ...pageRows.map((row) => row.name).filter(Boolean) as string[]])).sort(),
           statuses: Array.from(new Set([...current.statuses, ...pageRows.map((row) => row.timecard_status).filter(Boolean) as string[]])).sort(),
         }));      
         allRows.push(...pageRows);
