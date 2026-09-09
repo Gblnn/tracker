@@ -367,6 +367,18 @@ export default function EmployeeTimesheetSummaryReport() {
     });
   }, [companyFilter, dateFilter, employeeFilter, monthFilter, projectFilter, rows, search, sortColumn, sortDirection, statusFilter]);
 
+    const selectedEmployee = useMemo(() => {
+    if (!employeeFilter) return null;
+    const employeeRow = rows.find((row) => row.name === employeeFilter);
+    return {
+      name: employeeFilter,
+      empId: employeeRow?.emp_id ? String(employeeRow.emp_id) : '',
+    };
+  }, [employeeFilter, rows]);
+  const selectedEmployeeLabel = selectedEmployee
+    ? `${selectedEmployee.name}${selectedEmployee.empId ? ` [${selectedEmployee.empId}]` : ''}`
+    : '';
+  
   const toggleSort = (key: ColumnKey) => {
     if (key === 'serialNumber') return;
     const sortableKey = key as SortableColumnKey;
@@ -405,29 +417,34 @@ export default function EmployeeTimesheetSummaryReport() {
       const rowHeight = 7;
       const title = 'Employee Timesheet Summary';
       const drawHeader = () => {
+      const tableTop = selectedEmployeeLabel ? 18 : 14;        
         pdf.setFontSize(14);
         pdf.setFont('helvetica', 'bold');
         pdf.text(title, margin, 10);
+        if (selectedEmployeeLabel) {
+          pdf.setFontSize(9);
+          pdf.text(selectedEmployeeLabel, margin, 14);
+        }        
         pdf.setFontSize(7);
         pdf.setFont('helvetica', 'normal');
         pdf.text(`Generated ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pageWidth - margin, 10, { align: 'right' });
         let x = margin;
         pdf.setFillColor(30, 41, 59);
         pdf.setTextColor(255, 255, 255);
-        pdf.rect(margin, 14, columnWidths.reduce((sum, width) => sum + width, 0), rowHeight, 'F');
+        pdf.rect(margin, tableTop, columnWidths.reduce((sum, width) => sum + width, 0), rowHeight, 'F');
         visibleColumnDefs.forEach(({ label }, index) => {
-          pdf.text(label, x + 1.5, 18.5);
+          pdf.text(label, x + 1.5, tableTop + 4.5);          
           x += columnWidths[index];
         });
         pdf.setTextColor(30, 41, 59);
       };
       drawHeader();
-      let y = 21;
+      let y = selectedEmployeeLabel ? 25 : 21;
       filteredRows.forEach((row, rowIndex) => {
-        if (y + rowHeight > pageHeight - margin) {
+        if (y + rowHeight > pageHeight - margin - (selectedEmployeeLabel ? 6 : 0)) {
           pdf.addPage();
           drawHeader();
-          y = 21;
+          y = selectedEmployeeLabel ? 25 : 21;
         }
         const values = visibleColumnDefs.map(({ key }) => columnValue(row, key, rowIndex + 1));    
         if (rowIndex % 2 === 0) {
@@ -441,6 +458,11 @@ export default function EmployeeTimesheetSummaryReport() {
           pdf.text(text, x + 1.5, y + 4.5);
           x += columnWidths[index];
         });
+      if (selectedEmployeeLabel) {
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(selectedEmployeeLabel, pageWidth - margin, pageHeight - 4, { align: 'right' });
+      }
         pdf.setDrawColor(226, 232, 240);
         pdf.line(margin, y + rowHeight, margin + columnWidths.reduce((sum, width) => sum + width, 0), y + rowHeight);
         y += rowHeight;
@@ -455,7 +477,7 @@ export default function EmployeeTimesheetSummaryReport() {
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-white">
-      <style>{`@media print { body * { visibility: hidden; } #timesheet-summary-report, #timesheet-summary-report * { visibility: visible; } #timesheet-summary-report { position: absolute; inset: 0; width: 100%; } .report-no-print { display: none !important; } }`}</style>
+      <style>{`@media print { @page { margin: 12mm; } body * { visibility: hidden; } #timesheet-summary-report, #timesheet-summary-report * { visibility: visible; } #timesheet-summary-report { position: absolute; inset: 0; width: 100%; overflow: visible; } .report-no-print { display: none !important; } .report-print-footer { display: block !important; position: fixed; bottom: 0; right: 0; text-align: right; } }`}</style>      
       <div className="report-no-print flex shrink-0 items-center justify-between border-b border-slate-200 px-3 py-2">
         <Back title="Employee Timesheet Summary" />
         <div className="flex items-center gap-2">
@@ -501,11 +523,12 @@ export default function EmployeeTimesheetSummaryReport() {
       </div>
 
       <div id="timesheet-summary-report" ref={reportRef} className="min-h-0 flex-1 overflow-auto p-3">
-        <div className="mb-3 flex items-center gap-2"><FileBarChart2 className="h-5 w-5 text-teal-700" /><div><h1 className="text-lg font-semibold text-slate-800">Employee Timesheet Summary</h1><p className="text-xs text-slate-500">Date: DD-MM-YYYY | Time and hours: HH:MM</p></div></div>
+        <div className="mb-3 flex items-center gap-2"><FileBarChart2 className="h-5 w-5 text-teal-700" /><div><h1 className="text-lg font-semibold text-slate-800">Employee Timesheet Summary{selectedEmployeeLabel && <span className="ml-2 font-medium text-teal-700">{selectedEmployeeLabel}</span>}</h1><p className="text-xs text-slate-500">Date: DD-MM-YYYY | Time and hours: HH:MM</p></div></div>
         {loading && !rows.length ? <div className="flex h-40 items-center justify-center gap-2 text-sm text-slate-400"><Loader2 className="h-4 w-4 animate-spin" />Loading report...</div> : <>
-          <div className="overflow-auto rounded-lg border border-slate-200"><table className="w-full min-w-[1100px] border-collapse text-xs"><thead className="sticky top-0 z-10 bg-slate-800 text-left text-[10px] uppercase tracking-wide text-white"><tr>{columns.filter(({ key }) => visibleColumns[key]).map(({ key, label }) => <th key={key} className="whitespace-nowrap px-3 py-2 font-medium"><button type="button" onClick={() => toggleSort(key)} disabled={key === 'serialNumber'} className="inline-flex items-center gap-1 disabled:cursor-default">{label}{sortIcon(key)}</button></th>)}</tr></thead><tbody>{filteredRows.length ? filteredRows.map((row, index) => <tr key={`${row.emp_id}-${row.date}-${index}`} className="border-t border-slate-100 even:bg-slate-50/60 hover:bg-teal-50/40">{columns.filter(({ key }) => visibleColumns[key]).map(({ key }) => <td key={key} className={`px-3 py-2 ${key === 'name' ? 'whitespace-nowrap font-medium text-slate-700' : ''} ${key === 'remarks' ? 'max-w-[240px]' : ''} ${key.startsWith('display') ? 'tabular-nums' : ''}`}>{columnValue(row, key, index + 1)}</td>)}</tr>) : <tr><td colSpan={columns.filter(({ key }) => visibleColumns[key]).length} className="px-3 py-12 text-center text-slate-400">No records found</td></tr>}</tbody></table></div>
+          <div className="overflow-auto rounded-lg border border-slate-200"><table className="w-full min-w-[1100px] border-collapse text-xs"><thead className="sticky top-0 z-10 bg-slate-800 text-left text-[10px] uppercase tracking-wide text-white"><tr>{columns.filter(({ key }) => visibleColumns[key]).map(({ key, label }) => <th key={key} className="whitespace-nowrap px-3 py-1.5 font-medium"><button type="button" onClick={() => toggleSort(key)} disabled={key === 'serialNumber'} className="inline-flex items-center gap-1 disabled:cursor-default">{label}{sortIcon(key)}</button></th>)}</tr></thead><tbody>{filteredRows.length ? filteredRows.map((row, index) => <tr key={`${row.emp_id}-${row.date}-${index}`} className="border-t border-slate-100 even:bg-slate-50/60 hover:bg-teal-50/40">{columns.filter(({ key }) => visibleColumns[key]).map(({ key }) => <td key={key} className={`px-3 py-1 ${key === 'name' ? 'max-w-[180px] whitespace-normal break-words font-medium text-slate-700' : ''} ${key === 'remarks' ? 'max-w-[240px] whitespace-normal break-words' : ''} ${key.startsWith('display') ? 'tabular-nums' : ''}`}>{columnValue(row, key, index + 1)}</td>)}</tr>) : <tr><td colSpan={columns.filter(({ key }) => visibleColumns[key]).length} className="px-3 py-12 text-center text-slate-400">No records found</td></tr>}</tbody></table></div>
           {hasMore && <div className="flex justify-center gap-2 py-3"><button type="button" onClick={() => void fetchRows(false, rows.length)} disabled={loading || loadingAll} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{loading && !loadingAll && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Load 100 more</button><button type="button" onClick={() => void loadAllRows()} disabled={!dateFilter && !monthFilter || loading || loadingAll} title={!dateFilter && !monthFilter ? 'Select a day or month to load the full report' : 'Load full report'} className="inline-flex items-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-xs font-medium text-white hover:bg-teal-600 disabled:cursor-not-allowed disabled:opacity-50">{loadingAll && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Load full report</button></div>}
         </>}
+        {selectedEmployeeLabel && <div className="report-print-footer hidden text-xs font-medium text-slate-600">{selectedEmployeeLabel}</div>}        
       </div>
     </div>
   );
