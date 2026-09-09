@@ -176,7 +176,7 @@ export default function EmployeeTimesheetSummaryReport() {
   const [loadingAll, setLoadingAll] = useState(false);  
   const [sortColumn, setSortColumn] = useState<SortableColumnKey | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [filterOptions, setFilterOptions] = useState<FilterOptions>({ companies: [], projects: [], employees: [], statuses: [] });  
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({ companies: [], projects: [], statuses: [] });  
   const [employeeOptions, setEmployeeOptions] = useState<string[]>([]);
   const reportRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
@@ -246,7 +246,7 @@ export default function EmployeeTimesheetSummaryReport() {
     try {
       let offset = 0;
 //     const options: FilterOptions = { companies: [], projects: [], employees: [], statuses: [] };
-     const options: FilterOptions = { companies: [], projects: [], statuses: [] };
+      const options: FilterOptions = { companies: [], projects: [], statuses: [] };
       let page: Array<Pick<SummaryRow, 'company_name' | 'project_code' | 'name' | 'timecard_status'>>;
 
       const { data: employeeData, error: employeeError } = await supabase
@@ -427,7 +427,10 @@ export default function EmployeeTimesheetSummaryReport() {
       const pageHeight = pdf.internal.pageSize.getHeight();
       const visibleColumnDefs = columns.filter(({ key }) => visibleColumns[key]);
       const columnWidths = visibleColumnDefs.map(({ key }) => key === 'remarks' ? 38 : 22);
-      const rowHeight = 7;
+      const rowsPerPage = 32;
+      const firstRowY = selectedEmployeeLabel ? 25 : 21;
+      const reservedFooterHeight = selectedEmployeeLabel ? 6 : 0;
+      const rowHeight = (pageHeight - margin - reservedFooterHeight - firstRowY) / rowsPerPage;
       const title = 'Employee Timesheet Summary';
       const drawHeader = () => {
         const tableTop = selectedEmployeeLabel ? 18 : 14;
@@ -458,12 +461,12 @@ export default function EmployeeTimesheetSummaryReport() {
         pdf.setTextColor(30, 41, 59);
       };
       drawHeader();
-      let y = selectedEmployeeLabel ? 25 : 21;
+      let y = firstRowY;
       filteredRows.forEach((row, rowIndex) => {
-        if (y + rowHeight > pageHeight - margin - (selectedEmployeeLabel ? 6 : 0)) {
+        if (y + rowHeight > pageHeight - margin - reservedFooterHeight) {
           pdf.addPage();
           drawHeader();
-          y = selectedEmployeeLabel ? 25 : 21;
+          y = firstRowY;
         }
         const values = visibleColumnDefs.map(({ key }) => columnValue(row, key, rowIndex + 1));    
         if (rowIndex % 2 === 0) {
