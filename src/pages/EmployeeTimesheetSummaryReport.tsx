@@ -247,6 +247,16 @@ export default function EmployeeTimesheetSummaryReport() {
       const options: FilterOptions = { companies: [], projects: [], employees: [], statuses: [] };
       let page: Array<Pick<SummaryRow, 'company_name' | 'project_code' | 'name' | 'timecard_status'>>;
 
+      const { data: employeeData, error: employeeError } = await supabase
+        .from('employees')
+        .select('name')
+        .not('name', 'is', null)
+        .order('name');
+      if (employeeError) throw employeeError;
+      options.employees = (employeeData || [])
+        .map((employee) => employee.name)
+        .filter(Boolean) as string[];
+      
       do {
         const { data, error } = await supabase
           .from('v_employee_timesheet_summary')
@@ -257,7 +267,7 @@ export default function EmployeeTimesheetSummaryReport() {
         page = (data || []) as Array<Pick<SummaryRow, 'company_name' | 'project_code' | 'name' | 'timecard_status'>>;
         options.companies.push(...page.map((row) => row.company_name).filter(Boolean) as string[]);
         options.projects.push(...page.map((row) => row.project_code).filter(Boolean) as string[]);
-        options.employees.push(...page.map((row) => row.name).filter(Boolean) as string[]);
+//        options.employees.push(...page.map((row) => row.name).filter(Boolean) as string[]);
         options.statuses.push(...page.map((row) => row.timecard_status).filter(Boolean) as string[]);
         offset += PAGE_SIZE;
       } while (page.length === PAGE_SIZE);
